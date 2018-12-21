@@ -4,6 +4,7 @@ import java.io.*;
 public class OutFile{
 
     private FileWriter fw;
+    private BufferedWriter bw;
     protected PrintWriter outFile;
     protected String name;
     private char delimit;
