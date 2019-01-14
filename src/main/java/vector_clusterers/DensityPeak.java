@@ -2,6 +2,7 @@ package vector_clusterers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import utilities.ClassifierTools;
 import weka.clusterers.AbstractClusterer;
@@ -37,7 +38,7 @@ public class DensityPeak extends AbstractClusterer{
     private double[] shortestDist;
     private int[] nearestNeighbours;
     private int numInstances;
-    private Integer[] sdIndex;
+    private Integer[] sortedDensitiesIndex;
     
     //Mean and stdev of each attribute for normalisation.
     private double[] attributeMeans;
@@ -146,6 +147,12 @@ public class DensityPeak extends AbstractClusterer{
                 }
             }
         }
+        
+//        System.out.println("cs = "+clusterCenters);
+//        System.out.println("ld = "+Arrays.toString(localDensities));
+//        System.out.println("sd = "+Arrays.toString(shortestDist));
+//        System.out.println("nn = "+Arrays.toString(nearestNeighbours));
+//        System.out.println("sdens = "+Arrays.toString(sortedDensitiesIndex));
     }
     
     //Create lower half distance matrix.
@@ -176,9 +183,11 @@ public class DensityPeak extends AbstractClusterer{
             }
         }
         
+        Collections.sort(sortedDistances);
+        
         double percent = 2.0;
         int position = (int)(sortedDistances.size() * percent / 100);
-        return sortedDistances.get(position);
+        return sortedDistances.get(position-1);
     }
     
     //Gets the local density for each instance i with the density defined as the
@@ -204,7 +213,7 @@ public class DensityPeak extends AbstractClusterer{
         for (int i = 0; i < numInstances; i++){
             for (int n = 0; n < i; n++){
                 double j = distanceMatrix[i][n] / distC;
-                j = Math.exp(-j*j);
+                j = Math.exp(-(j*j));
                         
                 localDensities[i] += j;
                 localDensities[n] += j;
@@ -214,14 +223,14 @@ public class DensityPeak extends AbstractClusterer{
     
     private void generateHighDensDistance(){
         //Find the indexes of the local densities sorted in descending order.
-        sdIndex = new Integer[numInstances];
+        sortedDensitiesIndex = new Integer[numInstances];
         for (int i = 0; i < numInstances; i++){
-            sdIndex[i] = i;
+            sortedDensitiesIndex[i] = i;
         }
         
         SortIndexDescending sort = new SortIndexDescending();
         sort.values = localDensities;
-        Arrays.sort(sdIndex, sort);
+        Arrays.sort(sortedDensitiesIndex, sort);
         
         shortestDist = new double[numInstances];
         nearestNeighbours = new int[numInstances];
@@ -229,19 +238,19 @@ public class DensityPeak extends AbstractClusterer{
         //Find the shortest distance/nearest neigbour from points with a higher
         //local density for each point;
         for (int i = 1; i < numInstances; i++){
-            shortestDist[sdIndex[i]] = Double.MAX_VALUE;
+            shortestDist[sortedDensitiesIndex[i]] = Double.MAX_VALUE;
             
             for (int n = 0; n < i; n++){
-                if (sdIndex[n] > sdIndex[i]){
-                    if (distanceMatrix[sdIndex[n]][sdIndex[i]] < shortestDist[sdIndex[i]]){
-                        shortestDist[sdIndex[i]] = distanceMatrix[sdIndex[n]][sdIndex[i]];
-                        nearestNeighbours[sdIndex[i]] = sdIndex[n];
+                if (sortedDensitiesIndex[n] > sortedDensitiesIndex[i]){
+                    if (distanceMatrix[sortedDensitiesIndex[n]][sortedDensitiesIndex[i]] < shortestDist[sortedDensitiesIndex[i]]){
+                        shortestDist[sortedDensitiesIndex[i]] = distanceMatrix[sortedDensitiesIndex[n]][sortedDensitiesIndex[i]];
+                        nearestNeighbours[sortedDensitiesIndex[i]] = sortedDensitiesIndex[n];
                     }
                 }
                 else {
-                    if (distanceMatrix[sdIndex[i]][sdIndex[n]] < shortestDist[sdIndex[i]]){
-                        shortestDist[sdIndex[i]] = distanceMatrix[sdIndex[i]][sdIndex[n]];
-                        nearestNeighbours[sdIndex[i]] = sdIndex[n];
+                    if (distanceMatrix[sortedDensitiesIndex[i]][sortedDensitiesIndex[n]] < shortestDist[sortedDensitiesIndex[i]]){
+                        shortestDist[sortedDensitiesIndex[i]] = distanceMatrix[sortedDensitiesIndex[i]][sortedDensitiesIndex[n]];
+                        nearestNeighbours[sortedDensitiesIndex[i]] = sortedDensitiesIndex[n];
                     }
                 }
             }
@@ -256,8 +265,8 @@ public class DensityPeak extends AbstractClusterer{
             }
         }
 
-        shortestDist[sdIndex[0]] = maxDensDist;
-        nearestNeighbours[sdIndex[0]] = -1;
+        shortestDist[sortedDensitiesIndex[0]] = maxDensDist;
+        nearestNeighbours[sortedDensitiesIndex[0]] = -1;
     }  
     
     private void findClusterCentres(){
@@ -278,7 +287,12 @@ public class DensityPeak extends AbstractClusterer{
 //        System.out.println("figure");
 //        System.out.println("b = " + Arrays.toString(localDensities));
 //        System.out.println("v = " + Arrays.toString(shortestDist));
-//        System.out.println("scatter(b,v,'filled')");
+//        System.out.println("scatter(b,v)");
+        
+        //Same as above but for estimates
+//        System.out.println("figure");
+//        System.out.println("e = " + Arrays.toString(estimates));
+//        System.out.println("scatter([1:length(e)],sort(e))");
         
         //Find the indexes of the estimates sorted in ascending order.
         Integer[] estIndexes = new Integer[numInstances];
@@ -323,8 +337,8 @@ public class DensityPeak extends AbstractClusterer{
     //nearest neighbour, iterating through the sorted local densities.
     private void assignClusters(){
         for (int i = 0; i < numInstances; i++){
-            if (!clusterCenters.contains(sdIndex[i])){
-                cluster[sdIndex[i]] = cluster[nearestNeighbours[sdIndex[i]]];
+            if (!clusterCenters.contains(sortedDensitiesIndex[i])){
+                cluster[sortedDensitiesIndex[i]] = cluster[nearestNeighbours[sortedDensitiesIndex[i]]];
             }
         }
         
@@ -340,7 +354,7 @@ public class DensityPeak extends AbstractClusterer{
     //density.
     private void cutoffOutliers(){
         if (outlierCutoff < 0){
-            outlierCutoff = numInstances/300;
+            outlierCutoff = numInstances/20;
         }
             
         for (int i = 0; i < numInstances; i++){
@@ -411,6 +425,11 @@ public class DensityPeak extends AbstractClusterer{
             "Z:/Data/ClusteringTestDatasets/DensityPeakVector/flame.arff",
             "Z:/Data/ClusteringTestDatasets/DensityPeakVector/spiral.arff"};
         String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
+        double[] cutoffs = {0.75, 1.5, 1, 4, 2, 0.3};
+
+//        String[] datasets = {"Z:/Data/ClusteringTestDatasets/DensityPeakVector/aggregation.arff"};
+//        String[] names = {"aggre"};
+
         boolean output = true;
         
         if(output){
@@ -421,7 +440,9 @@ public class DensityPeak extends AbstractClusterer{
         for (int i = 0; i < datasets.length; i++){
             Instances inst = ClassifierTools.loadData(datasets[i]);
             DensityPeak dp = new DensityPeak();
+            dp.setClusterCenterCutoff(cutoffs[i]);
             dp.setGaussianKernel(true);
+            dp.setHaloOutlierSelection(true);
             dp.buildClusterer(inst);
             
             if(output){
