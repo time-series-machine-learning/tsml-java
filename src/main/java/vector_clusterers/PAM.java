@@ -515,6 +515,7 @@ public class PAM extends AbstractClusterer{
         
         for (int i = 0; i < datasets.length; i++){
             Instances inst = ClassifierTools.loadData(datasets[i]);
+            inst.setClassIndex(inst.numAttributes()-1);
             PAM pam = new PAM();
             pam.setFindBestK(true);
             pam.setRefinedInitialMedoids(true);

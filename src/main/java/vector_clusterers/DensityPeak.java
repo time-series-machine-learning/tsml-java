@@ -439,10 +439,11 @@ public class DensityPeak extends AbstractClusterer{
         
         for (int i = 0; i < datasets.length; i++){
             Instances inst = ClassifierTools.loadData(datasets[i]);
+            inst.setClassIndex(inst.numAttributes()-1);
             DensityPeak dp = new DensityPeak();
             dp.setClusterCenterCutoff(cutoffs[i]);
             dp.setGaussianKernel(true);
-            dp.setHaloOutlierSelection(true);
+            dp.setHaloOutlierSelection(false);
             dp.buildClusterer(inst);
             
             if(output){

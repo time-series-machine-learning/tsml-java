@@ -1,7 +1,9 @@
-package vector_clusterers;
+package timeseriesweka.clusterers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import vector_clusterers.KMeans;
 import weka.clusterers.AbstractClusterer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

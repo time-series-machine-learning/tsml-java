@@ -19,9 +19,6 @@ import weka.core.Instances;
  */
 public class KMeans extends AbstractClusterer{
     
-    //Struggles to converge at higher values of k on test problems atleast.
-    //TODO: add somthing to help with that.
-    
     //MacQueen, James. 
     //"Some methods for classification and analysis of multivariate observations." 
     //Proceedings of the fifth Berkeley symposium on mathematical statistics and probability. Vol. 1. No. 14. 1967.
@@ -34,6 +31,7 @@ public class KMeans extends AbstractClusterer{
     private int numSubsamples = 30;
     private int seed = Integer.MIN_VALUE;
     private boolean changeOriginalInstances = true;
+    private int maxIterations = 200;
     
     private int numInstances;
     private double[][] centerDistances;
@@ -104,7 +102,11 @@ public class KMeans extends AbstractClusterer{
     }
     
     public void setChangeOriginalInstances(boolean b){
-        changeOriginalInstances = b;
+        this.changeOriginalInstances = b;
+    }
+    
+    public void setMaxIterations(int n){
+        this.maxIterations = n;
     }
     
     @Override
@@ -136,17 +138,21 @@ public class KMeans extends AbstractClusterer{
             boolean finished = false;
             cluster = new int[numInstances];
             
+            int iterations = 0;
+            
             //Change cluster centers until cluster membership no longer changes.
             while(!finished){
                 centerDistances = createCenterDistances(data);
                 
                 //If no clusters changed membership.
-                if (!calculateClusterMembership()){
+                if (!calculateClusterMembership() || iterations == maxIterations){
                     finished = true;
                 }
                 else{
                     selectClusterCenters(data);
                 }
+                
+                iterations++;
             }
         }
     }
@@ -283,8 +289,8 @@ public class KMeans extends AbstractClusterer{
                 
                 boolean emptyCluster = false;
                 
-                //If any cluster is empty set the initial cluster center to the
-                //point with the max distance.
+                //If any cluster is empty set the initial cluster centre to the
+                //point with the max distance from its centre.
                 for (int n = 0; n < k; n++){
                     if (kmeans.clusters[n].isEmpty()){
                         emptyCluster = true;
@@ -292,11 +298,22 @@ public class KMeans extends AbstractClusterer{
                         int maxIndex = -1;
                         
                         for (int g = 0; g < subsampleSize; g++){
-                            double dist = kmeans.centerDistances[n][g];
+                            double dist = kmeans.centerDistances[kmeans.cluster[g]][g];
                             
                             if (dist > maxDist){
-                                maxDist = dist;
-                                maxIndex = g;
+                                boolean contains = false;
+                                
+                                for (int j = 0; j < k; j++){
+                                    if (Arrays.equals(initialClusterCenters.get(j).toDoubleArray(),subsample.get(g).toDoubleArray())){
+                                        contains = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!contains){
+                                    maxDist = dist;
+                                    maxIndex = g;
+                                }
                             }
                         }
                         
@@ -542,6 +559,7 @@ public class KMeans extends AbstractClusterer{
         
         for (int i = 0; i < datasets.length; i++){
             Instances inst = ClassifierTools.loadData(datasets[i]);
+            inst.setClassIndex(inst.numAttributes()-1);
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);
             kmeans.setRefinedInitialMedoids(true);
