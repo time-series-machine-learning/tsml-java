@@ -5,9 +5,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import utilities.ClassifierTools;
-import weka.clusterers.AbstractClusterer;
-import weka.core.DistanceFunction;
-import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -17,37 +14,28 @@ import weka.core.Instances;
  * 
  * @author MMiddlehurst
  */
-public class KMeans extends AbstractClusterer{
+public class KMeans extends AbstractVectorClusterer{
     
     //MacQueen, James. 
     //"Some methods for classification and analysis of multivariate observations." 
     //Proceedings of the fifth Berkeley symposium on mathematical statistics and probability. Vol. 1. No. 14. 1967.
     
-    private DistanceFunction distFunc = new EuclideanDistance();
     private int k = 2;
-    private boolean normaliseData = true;
     private boolean findBestK = false;
     private boolean refinedInitialCenters = false;
     private int numSubsamples = 30;
     private int seed = Integer.MIN_VALUE;
-    private boolean changeOriginalInstances = true;
     private int maxIterations = 200;
     
     private int numInstances;
     private double[][] centerDistances;
     private boolean hasInitialCenters = false;
     
-    //Mean and stdev of each attribute for normalisation.
-    private double[] attributeMeans;
-    private double[] attributeStdDevs;
-    
     private Instances clusterCenters;
     private int[] cluster;
     private ArrayList<Integer>[] clusters;
     
-    public KMeans(){
-        super();
-    }
+    public KMeans(){}
     
     //Used when selecting refined initial centers.
     private KMeans(Instances initialCenters){
@@ -69,20 +57,12 @@ public class KMeans extends AbstractClusterer{
     }
     
     @Override
-    public int numberOfClusters() throws Exception {
+    public int numberOfClusters(){
         return k;
     }
-    
-    public void setDistanceFunction(DistanceFunction distFunc){
-        this.distFunc = distFunc;
-    }
-    
+
     public void setK(int k){
         this.k = k;
-    }
-    
-    public void setNormaliseData(boolean b){
-        this.normaliseData = b;
     }
     
     public void setFindBestK(boolean b){
@@ -99,10 +79,6 @@ public class KMeans extends AbstractClusterer{
     
     public void setSeed(int seed){
         this.seed = seed;
-    }
-    
-    public void setChangeOriginalInstances(boolean b){
-        this.changeOriginalInstances = b;
     }
     
     public void setMaxIterations(int n){
@@ -185,22 +161,6 @@ public class KMeans extends AbstractClusterer{
         }
         
         return centerDists;
-    }
-    
-    //Create lower half distance matrix.
-    private double[][] createDistanceMatrix(Instances data){
-        double[][] distMatrix = new double[numInstances][];
-
-        for (int i = 0; i < numInstances; i++){
-            distMatrix[i] = new double[i+1];
-            Instance first = data.get(i);
-
-            for (int n = 0; n < i; n++){
-                distMatrix[i][n] = distFunc.distance(first, data.get(n));
-            }
-        }
-        
-        return distMatrix;
     }
     
     //Randomly select initial cluster centers.
@@ -515,28 +475,6 @@ public class KMeans extends AbstractClusterer{
                 cluster = kmeans.cluster;
                 clusters = kmeans.clusters;
                 k = kmeans.k;
-            }
-        }
-    }
-    
-    //Normalise instances and save the means and standard deviations.
-    private void normaliseData(Instances data) throws Exception{
-        if (data.classIndex() != data.numAttributes()-1){
-            throw new Exception("Class attribute must be the final attribute.");
-        }
-        
-        attributeMeans = new double[data.numAttributes()-1];
-        attributeStdDevs = new double[data.numAttributes()-1];
-        
-        for (int i = 0; i < data.numAttributes()-1; i++){
-            attributeMeans[i] = data.attributeStats(i).numericStats.mean;
-            attributeStdDevs[i] = data.attributeStats(i).numericStats
-                    .stdDev;
-            
-            for (int n = 0; n < data.size(); n++){
-                Instance instance = data.get(n);
-                instance.setValue(i, (instance.value(i) - attributeMeans[i])
-                        /attributeStdDevs[i]);
             }
         }
     }

@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import utilities.ClassifierTools;
-import weka.clusterers.AbstractClusterer;
 import weka.core.DistanceFunction;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -17,37 +16,28 @@ import weka.core.Instances;
  * 
  * @author MMiddlehurst
  */
-public class PAM extends AbstractClusterer{
+public class PAM extends AbstractVectorClusterer{
     
     //Kaufman, Leonard, and Peter Rousseeuw. 
     //Clustering by means of medoids. 
     //North-Holland, 1987.
     
-    private DistanceFunction distFunc = new EuclideanDistance();
     private int k = 2;
-    private boolean normaliseData = true;
     private boolean findBestK = false;
     private boolean refinedInitialMedoids = false;
     private int numSubsamples = 30;
     private int seed = Integer.MIN_VALUE;
-    private boolean changeOriginalInstances = true;
     
     private double[][] distanceMatrix;
     private int numInstances;
     boolean hasInitialMedoids = false;
     private boolean hasDistances = false;
     
-    //mean and stdev of each attribute for normalisation.
-    private double[] attributeMeans;
-    private double[] attributeStdDevs;
-    
     private int[] medoids;
     private int[] cluster;
     private ArrayList<Integer>[] clusters;
     
-    public PAM(){
-        super();
-    }
+    public PAM(){}
     
     //Used when finding best value for k to avoid recalculating distances
     private PAM(double[][] distanceMatrix){
@@ -76,20 +66,12 @@ public class PAM extends AbstractClusterer{
     }
     
     @Override
-    public int numberOfClusters() throws Exception {
+    public int numberOfClusters(){
         return k;
     }
-    
-    public void setDistanceFunction(DistanceFunction distFunc){
-        this.distFunc = distFunc;
-    }
-    
+
     public void setK(int k){
         this.k = k;
-    }
-    
-    public void setNormaliseData(boolean b){
-        this.normaliseData = b;
     }
     
     public void setFindBestK(boolean b){
@@ -106,10 +88,6 @@ public class PAM extends AbstractClusterer{
     
     public void setSeed(int seed){
         this.seed = seed;
-    }
-    
-    public void setChangeOriginalInstances(boolean b){
-        changeOriginalInstances = b;
     }
 
     @Override
@@ -171,22 +149,6 @@ public class PAM extends AbstractClusterer{
         }
         
         return distSum;
-    }
-    
-    //Create lower half distance matrix.
-    private double[][] createDistanceMatrix(Instances data){
-        double[][] distMatrix = new double[numInstances][];
-
-        for (int i = 0; i < numInstances; i++){
-            distMatrix[i] = new double[i+1];
-            Instance first = data.get(i);
-
-            for (int n = 0; n < i; n++){
-                distMatrix[i][n] = distFunc.distance(first, data.get(n));
-            }
-        }
-        
-        return distMatrix;
     }
     
     //Randomly select initial medoids.
@@ -471,28 +433,6 @@ public class PAM extends AbstractClusterer{
                 cluster = pam.cluster;
                 clusters = pam.clusters;
                 k = pam.k;
-            }
-        }
-    }
-    
-    //Normalise instances and save the means and standard deviations.
-    private void normaliseData(Instances data) throws Exception{
-        if (data.classIndex() != data.numAttributes()-1){
-            throw new Exception("Class attribute must be the final attribute.");
-        }
-        
-        attributeMeans = new double[data.numAttributes()-1];
-        attributeStdDevs = new double[data.numAttributes()-1];
-        
-        for (int i = 0; i < data.numAttributes()-1; i++){
-            attributeMeans[i] = data.attributeStats(i).numericStats.mean;
-            attributeStdDevs[i] = data.attributeStats(i).numericStats
-                    .stdDev;
-            
-            for (int n = 0; n < data.size(); n++){
-                Instance instance = data.get(n);
-                instance.setValue(i, (instance.value(i) - attributeMeans[i])
-                        /attributeStdDevs[i]);
             }
         }
     }

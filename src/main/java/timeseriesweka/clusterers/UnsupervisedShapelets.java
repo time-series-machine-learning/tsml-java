@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import vector_clusterers.KMeans;
-import weka.clusterers.AbstractClusterer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -14,7 +13,7 @@ import weka.core.Instances;
  *
  * @author pfm15hbu
  */
-public class UnsupervisedShapelets extends AbstractClusterer{
+public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     
     int k;
     int seed = Integer.MIN_VALUE;
@@ -27,13 +26,15 @@ public class UnsupervisedShapelets extends AbstractClusterer{
     
     int numFolds = 5;
     
+    public UnsupervisedShapelets(){}
+    
     @Override
     public void buildClusterer(Instances data) throws Exception {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public int numberOfClusters() throws Exception {
+    public int numberOfClusters(){
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

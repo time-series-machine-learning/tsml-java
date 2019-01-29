@@ -5,10 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import utilities.ClassifierTools;
-import weka.clusterers.AbstractClusterer;
 import weka.core.DistanceFunction;
-import weka.core.EuclideanDistance;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -17,21 +14,18 @@ import weka.core.Instances;
  * 
  * @author MMiddlehurst
  */
-public class DensityPeak extends AbstractClusterer{
+public class DensityPeak extends AbstractVectorClusterer{
     
     //Rodriguez, Alex, and Alessandro Laio. 
     //"Clustering by fast search and find of density peaks." 
     //Science 344.6191 (2014): 1492-1496.
     
-    private DistanceFunction distFunc = new EuclideanDistance();
-    private boolean normaliseData = true;
     private boolean gaussianKernel = true;
     private boolean cutoffOutlierSelection = false;
     private boolean haloOutlierSelection = false;
     private double distC = -1;
     private double clusterCenterCutoff = -1;
     private double outlierCutoff = -1;
-    private boolean changeOriginalInstances = true;
     
     private double[][] distanceMatrix;
     private double[] localDensities;
@@ -40,17 +34,11 @@ public class DensityPeak extends AbstractClusterer{
     private int numInstances;
     private Integer[] sortedDensitiesIndex;
     
-    //Mean and stdev of each attribute for normalisation.
-    private double[] attributeMeans;
-    private double[] attributeStdDevs;
-    
     private ArrayList<Integer> clusterCenters;
     private int[] cluster;
     private ArrayList<Integer>[] clusters;
     
-    public DensityPeak(){
-        super();
-    }
+    public DensityPeak(){}
     
     public ArrayList<Integer> getClusterCenters(){
         return clusterCenters;
@@ -65,16 +53,8 @@ public class DensityPeak extends AbstractClusterer{
     }
     
     @Override
-    public int numberOfClusters() throws Exception {
+    public int numberOfClusters(){
         return clusterCenters.size();
-    }
-    
-    public void setDistanceFunction(DistanceFunction distFunc){
-        this.distFunc = distFunc;
-    }
-    
-    public void setNormaliseData(boolean b){
-        this.normaliseData = b;
     }
     
     public void setGaussianKernel(boolean b){
@@ -99,10 +79,6 @@ public class DensityPeak extends AbstractClusterer{
     
     public void setOutlierCutoff(double cutoff){
         this.outlierCutoff = cutoff;
-    }
-    
-    public void setChangeOriginalInstances(boolean b){
-        changeOriginalInstances = b;
     }
 
     @Override
@@ -153,22 +129,6 @@ public class DensityPeak extends AbstractClusterer{
 //        System.out.println("sd = "+Arrays.toString(shortestDist));
 //        System.out.println("nn = "+Arrays.toString(nearestNeighbours));
 //        System.out.println("sdens = "+Arrays.toString(sortedDensitiesIndex));
-    }
-    
-    //Create lower half distance matrix.
-    private double[][] createDistanceMatrix(Instances data){
-        double[][] distMatrix = new double[numInstances][];
-        
-        for (int i = 0; i < numInstances; i++){
-            distMatrix[i] = new double[i];
-            Instance first = data.get(i);
-            
-            for (int n = 0; n < i; n++){
-                distMatrix[i][n] = distFunc.distance(first, data.get(n));
-            }
-        }
-        
-        return distMatrix;
     }
     
     //Method used in the original implementation to set distC so that the 
@@ -391,28 +351,6 @@ public class DensityPeak extends AbstractClusterer{
                 if (localDensities[i] < border[cluster[i]]){
                     cluster[i] = -1;
                 }
-            }
-        }
-    }
-    
-    //Normalise instances and save the means and standard deviations.
-    protected void normaliseData(Instances data) throws Exception{
-        if (data.classIndex() != data.numAttributes()-1){
-            throw new Exception("Class attribute must be the final attribute.");
-        }
-        
-        attributeMeans = new double[data.numAttributes()-1];
-        attributeStdDevs = new double[data.numAttributes()-1];
-        
-        for (int i = 0; i < data.numAttributes()-1; i++){
-            attributeMeans[i] = data.attributeStats(i).numericStats.mean;
-            attributeStdDevs[i] = data.attributeStats(i).numericStats
-                    .stdDev;
-            
-            for (int n = 0; n < data.size(); n++){
-                Instance instance = data.get(n);
-                instance.setValue(i, (instance.value(i) - attributeMeans[i])
-                        /attributeStdDevs[i]);
             }
         }
     }
