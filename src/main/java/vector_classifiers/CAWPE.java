@@ -60,27 +60,27 @@ import weka.classifiers.functions.MultilayerPerceptron;
 
  CLASSIFICATION SETTINGS:
  Default setup is defined by setDefaultCAWPESettings(), i.e:
- Comps: SVML, MLP, NN, Logistic, C4.5
- Weight: TrainAcc(4) (train accuracies to the power 4)
- Vote: MajorityConfidence (summing probability distributions)
+   Comps: SVML, MLP, NN, Logistic, C4.5
+   Weight: TrainAcc(4) (train accuracies to the power 4)
+   Vote: MajorityConfidence (summing probability distributions)
 
  For the original settings used in an older version of cote, call setOriginalHESCASettings(), i.e:
- Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
- Weight: TrainAcc
- Vote: MajorityVote
+   Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
+   Weight: TrainAcc
+   Vote: MajorityVote
 
  EXPERIMENTAL USAGE:
  By default will build/cv members normally, and perform no file reading/writing.
  To turn on file handling of any kind, call
- setResultsFileLocationParameters(...)
+          setResultsFileLocationParameters(...)
  1) Can build ensemble and classify from results files of its members, call
- setBuildIndividualsFromResultsFiles(true)
+          setBuildIndividualsFromResultsFiles(true)
  2) If members built from scratch, can write the results files of the individuals with
- setWriteIndividualsTrainResultsFiles(true)
- and
- writeIndividualTestFiles(...) after testing is complete
+          setWriteIndividualsTrainResultsFiles(true)
+          and
+          writeIndividualTestFiles(...) after testing is complete
  3) And can write the ensemble train/testing files with
- writeEnsembleTrainTestFiles(...) after testing is complete
+         writeEnsembleTrainTestFiles(...) after testing is complete
 
  There are a bunch of little intricacies if you want to do stuff other than a bog standard run
  Best bet will be to email me for any specific usage questions.
@@ -172,16 +172,16 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     public void setClassifiersNamesForFileRead(String[] classifierNames) {
-        setClassifiers(null,classifierNames,null);
+    setClassifiers(null,classifierNames,null);
 
     }
 
     /**
      * If building CAWPE from scratch, the minimum requirement for running is the
-     classifiers array, the others could be left null.
+ classifiers array, the others could be left null.
      *
      * If building CAWPE from the results files of individuals, the minimum requirement for
-     running is the classifierNames list.
+ running is the classifierNames list.
      *
      * @param classifiers array of classifiers to use
      * @param classifierNames if null, will use the classifiers' class names by default
@@ -255,14 +255,14 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         kq.setExponent(2);
         svmq.setKernel(kq);
         if(setSeed)
-            svmq.setRandomSeed(seed);
+           svmq.setRandomSeed(seed);
         classifiers[4] =svmq;
         classifierNames[4] = "SVMQ";
 
         RandomForest r=new RandomForest();
         r.setNumTrees(500);
         if(setSeed)
-            r.setSeed(seed);
+           r.setSeed(seed);
         classifiers[5] = r;
         classifierNames[5] = "RandF";
 
@@ -270,7 +270,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         RotationForest rf=new RotationForest();
         rf.setNumIterations(50);
         if(setSeed)
-            rf.setSeed(seed);
+           rf.setSeed(seed);
         classifiers[6] = rf;
         classifierNames[6] = "RotF";
 
@@ -458,7 +458,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
     /**
      * this does cv writing for TrainAccuracyEstimate, where the output path (outputEnsembleTrainingPathAndFile, set by 'writeCVTrainToFile(...)')
-     may be different to the ensemble write path (readResultsFilesDirectories, set by 'setResultsFileLocationParameters(...))
+ may be different to the ensemble write path (readResultsFilesDirectories, set by 'setResultsFileLocationParameters(...))
      */
     protected void writeEnsembleCVResults(Instances data) throws IOException {
         StringBuilder output = new StringBuilder();
@@ -1042,9 +1042,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      * clean it up at some point and use the up to date methods
      */
     public static void buildAndWriteFullIndividualTrainTestResults(Instances defaultTrainPartition, Instances defaultTestPartition,
-                                                                   String resultOutputDir, String datasetIdentifier, String ensembleIdentifier, int resampleIdentifier,
-                                                                   Classifier[] classifiers, String[] cNames,
-                                                                   SimpleBatchFilter transform, boolean setSeed, boolean resample, boolean writeEnsembleResults) throws Exception{
+            String resultOutputDir, String datasetIdentifier, String ensembleIdentifier, int resampleIdentifier,
+            Classifier[] classifiers, String[] cNames,
+            SimpleBatchFilter transform, boolean setSeed, boolean resample, boolean writeEnsembleResults) throws Exception{
 
 
         Instances train = new Instances(defaultTrainPartition);
@@ -1238,11 +1238,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         for (int fold = 0; fold < numFolds; fold++) {
             String dataset = "breast-cancer-wisc-prog";
-            //        String dataset = "ItalyPowerDemand";
+    //        String dataset = "ItalyPowerDemand";
 
             Instances all = ClassifierTools.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-            //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-            //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1280,11 +1280,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         for (int fold = 0; fold < numFolds; fold++) {
             String dataset = "breast-cancer-wisc-prog";
-            //        String dataset = "ItalyPowerDemand";
+    //        String dataset = "ItalyPowerDemand";
 
             Instances all = ClassifierTools.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-            //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-            //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1328,7 +1328,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      * @param baseWritePath e.g { "C:/Results/" }
      */
     public static void buildCAWPEPaper_BuildClassifierResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths,
-                                                                   String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
+                                                            String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             for (String classifier : classifiers) {
                 System.out.println("\t" + classifier);
@@ -1401,34 +1401,34 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //build the ensembles
         String[] ensembleIDsInStorage = {
-                "CAWPE_BasicClassifiers",
-                "EnsembleSelection_BasicClassifiers",
-                "SMLR_BasicClassifiers",
-                "SMLRE_BasicClassifiers",
-                "SMM5_BasicClassifiers",
-                "PickBest_BasicClassifiers",
-                "MajorityVote_BasicClassifiers",
-                "WeightMajorityVote_BasicClassifiers",
-                "RecallCombiner_BasicClassifiers",
-                "NaiveBayesCombiner_BasicClassifiers"
+            "CAWPE_BasicClassifiers",
+            "EnsembleSelection_BasicClassifiers",
+            "SMLR_BasicClassifiers",
+            "SMLRE_BasicClassifiers",
+            "SMM5_BasicClassifiers",
+            "PickBest_BasicClassifiers",
+            "MajorityVote_BasicClassifiers",
+            "WeightMajorityVote_BasicClassifiers",
+            "RecallCombiner_BasicClassifiers",
+            "NaiveBayesCombiner_BasicClassifiers"
         };
 
         String[] ensembleIDsOnFigures = {
-                "CAWPE", "ES", "SMLR", "SMLRE", "SMM5",
-                "PB", "MV", "WMV", "RC", "NBC"
+            "CAWPE", "ES", "SMLR", "SMLRE", "SMM5",
+            "PB", "MV", "WMV", "RC", "NBC"
         };
 
         Class[] ensembleClasses = {
-                Class.forName("vector_classifiers.CAWPE"),
-                Class.forName("vector_classifiers.EnsembleSelection"),
-                Class.forName("vector_classifiers.stackers.SMLR"),
-                Class.forName("vector_classifiers.stackers.SMLRE"),
-                Class.forName("vector_classifiers.stackers.SMM5"),
-                Class.forName("vector_classifiers.weightedvoters.CAWPE_PickBest"),
-                Class.forName("vector_classifiers.weightedvoters.CAWPE_MajorityVote"),
-                Class.forName("vector_classifiers.weightedvoters.CAWPE_WeightedMajorityVote"),
-                Class.forName("vector_classifiers.weightedvoters.CAWPE_RecallCombiner"),
-                Class.forName("vector_classifiers.weightedvoters.CAWPE_NaiveBayesCombiner"),
+            Class.forName("vector_classifiers.CAWPE"),
+            Class.forName("vector_classifiers.EnsembleSelection"),
+            Class.forName("vector_classifiers.stackers.SMLR"),
+            Class.forName("vector_classifiers.stackers.SMLRE"),
+            Class.forName("vector_classifiers.stackers.SMM5"),
+            Class.forName("vector_classifiers.weightedvoters.CAWPE_PickBest"),
+            Class.forName("vector_classifiers.weightedvoters.CAWPE_MajorityVote"),
+            Class.forName("vector_classifiers.weightedvoters.CAWPE_WeightedMajorityVote"),
+            Class.forName("vector_classifiers.weightedvoters.CAWPE_RecallCombiner"),
+            Class.forName("vector_classifiers.weightedvoters.CAWPE_NaiveBayesCombiner"),
         };
 
         for (int ensemble = 0; ensemble < ensembleIDsInStorage.length; ensemble++)
@@ -1440,26 +1440,26 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             String analysisName = dataHeaders[archive] + "CAWPEvsHeteroEnsembles_BasicClassifiers";
             buildCAWPEPaper_BuildResultsAnalysis(writePathResults+dataHeaders[archive]+"/", writePathAnalysis,
-                    analysisName, ensembleIDsInStorage, ensembleIDsOnFigures, datasets[archive], numFolds);
+                                       analysisName, ensembleIDsInStorage, ensembleIDsOnFigures, datasets[archive], numFolds);
         }
 
         //done!
     }
 
     public static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
-                                                            String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
+                                       String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
         System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
-                setTestResultsOnly(false).
-                setBuildMatlabDiagrams(true).
-                setDatasets(datasets).
-                readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
-                runComparison();
+            setTestResultsOnly(false).
+            setBuildMatlabDiagrams(true).
+            setDatasets(datasets).
+            readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
+            runComparison();
     }
 
     public static void buildCAWPEPaper_BuildEnsembleFromResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths, String[][] datasetNames,
-                                                                     String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
+                                                                String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
 
         Instances train = null, test = null, all = null; //UCR has predefined train/test splits, UCI data just comes as a whole, so are loaded/resampled differently
         Instances[] data = null; //however it's loaded/resampled, will eventually end up here, { train, test }
