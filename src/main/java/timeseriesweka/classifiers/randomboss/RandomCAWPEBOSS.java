@@ -246,7 +246,6 @@ public class RandomCAWPEBOSS extends AbstractClassifierWithTrainingData implemen
                 boolean normalise = rand.nextBoolean();
 
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise);
-                boss.buildClassifier(data);
                 classifiers.add(boss);
                 
                 if (checkpoint && classifiers.size() % 50 == 0){
@@ -268,7 +267,6 @@ public class RandomCAWPEBOSS extends AbstractClassifierWithTrainingData implemen
                 boolean normalise = rand.nextBoolean();
 
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise);
-                boss.buildClassifier(data);
                 classifiers.add(boss);
                 
                 if (checkpoint){
