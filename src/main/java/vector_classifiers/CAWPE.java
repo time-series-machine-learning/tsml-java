@@ -51,39 +51,39 @@ import weka.classifiers.functions.MultilayerPerceptron;
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
  * Default settings are equivalent to the CAWPE in the paper. 
- See exampleCAWPEUsage() for more detailed options on defining different component sets, ensemble schemes, and file handling
- 
- ****************
- For examples of file creation and results analysis for reproduction purposes, see
- buildCAWPEPaper_AllResultsForFigure3()
- ****************
- 
- CLASSIFICATION SETTINGS:
- Default setup is defined by setDefaultCAWPESettings(), i.e:
-   Comps: SVML, MLP, NN, Logistic, C4.5
-   Weight: TrainAcc(4) (train accuracies to the power 4)
-   Vote: MajorityConfidence (summing probability distributions)  
- 
- For the original settings used in an older version of cote, call setOriginalHESCASettings(), i.e:
-   Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
-   Weight: TrainAcc
-   Vote: MajorityVote
- 
- EXPERIMENTAL USAGE:
- By default will build/cv members normally, and perform no file reading/writing. 
- To turn on file handling of any kind, call
-          setResultsFileLocationParameters(...) 
- 1) Can build ensemble and classify from results files of its members, call 
-          setBuildIndividualsFromResultsFiles(true)
- 2) If members built from scratch, can write the results files of the individuals with 
-          setWriteIndividualsTrainResultsFiles(true)
-          and
-          writeIndividualTestFiles(...) after testing is complete
- 3) And can write the ensemble train/testing files with 
-         writeEnsembleTrainTestFiles(...) after testing is complete
- 
- There are a bunch of little intricacies if you want to do stuff other than a bog standard run  
- Best bet will be to email me for any specific usage questions.
+ * See exampleCAWPEUsage() for more detailed options on defining different component sets, ensemble schemes, and file handling
+ * 
+ * ****************
+ * For examples of file creation and results analysis for reproduction purposes, see
+ * buildCAWPEPaper_AllResultsForFigure2()
+ * ****************
+ * 
+ * CLASSIFICATION SETTINGS:
+ * Default setup is defined by setDefaultCAWPESettings(), i.e:
+ *   Comps: SVML, MLP, NN, Logistic, C4.5
+ *   Weight: TrainAcc(4) (train accuracies to the power 4)
+ *   Vote: MajorityConfidence (summing probability distributions)  
+ * 
+ * For the original settings used in an older version of cote, call setOriginalHESCASettings(), i.e:
+ *   Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
+ *   Weight: TrainAcc
+ *   Vote: MajorityVote
+ * 
+ * EXPERIMENTAL USAGE:
+ * By default will build/cv members normally, and perform no file reading/writing. 
+ * To turn on file handling of any kind, call
+ *          setResultsFileLocationParameters(...) 
+ * 1) Can build ensemble and classify from results files of its members, call 
+ *          setBuildIndividualsFromResultsFiles(true)
+ * 2) If members built from scratch, can write the results files of the individuals with 
+ *          setWriteIndividualsTrainResultsFiles(true)
+ *          and
+ *          writeIndividualTestFiles(...) after testing is complete
+ * 3) And can write the ensemble train/testing files with 
+ *         writeEnsembleTrainTestFiles(...) after testing is complete
+ * 
+ * There are a bunch of little intricacies if you want to do stuff other than a bog standard run  
+ * Best bet will be to email me for any specific usage questions.
  * 
  * @author James Large (james.large@uea.ac.uk)
  *      
@@ -151,6 +151,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected String ensembleIdentifier = "CAWPE";
     protected int resampleIdentifier;
     protected String datasetName;
+    
+    protected int numCVFolds = 10;
+    
+    public void setNumCVFolds(int i){
+        numCVFolds = i;
+    }
     
     public CAWPE() {
         this.ensembleIdentifier = "CAWPE";
@@ -316,46 +322,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         
         setClassifiers(classifiers, classifierNames, null);
     }
-    
-    /**
-     * Uses the 'basic UCI' set up: 
-     * Comps: SVML, MLP, NN, Logistic, C4.5
-     * Weight: TrainAcc(4) (train accuracies to the power 4)
-     * Vote: MajorityConfidence (summing probability distributions)
-     */
-    public final void setDefaultCAWPESettings_NoLogistic(){
-        this.weightingScheme = new TrainAcc(4);
-        this.votingScheme = new MajorityConfidence();
-        
-        Classifier[] classifiers = new Classifier[4];
-        String[] classifierNames = new String[4];
-        
-        SMO smo = new SMO();
-        smo.turnChecksOff();
-        smo.setBuildLogisticModels(true);
-        PolyKernel kl = new PolyKernel();
-        kl.setExponent(1);
-        smo.setKernel(kl);
-        if (setSeed)
-            smo.setRandomSeed(seed);
-        classifiers[0] = smo;
-        classifierNames[0] = "SVML";
-
-        kNN k=new kNN(100);
-        k.setCrossValidate(true);
-        k.normalise(false);
-        k.setDistanceFunction(new EuclideanDistance());
-        classifiers[1] = k;
-        classifierNames[1] = "NN";
-        
-        classifiers[2] = new J48();
-        classifierNames[2] = "C4.5";
-        
-        classifiers[3] = new MultilayerPerceptron();
-        classifierNames[3] = "MLP";
-        
-        setClassifiers(classifiers, classifierNames, null);
-    }
 
         
     public final void setAdvancedCAWPESettings(){
@@ -417,7 +383,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
-        long startTime = System.nanoTime();
+        long startTime = System.currentTimeMillis();
         
         //transform data if specified
         if(this.transform==null){
@@ -438,7 +404,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         
         if(this.performEnsembleCV) {
             //buildTime does not include the ensemble's cv, only the work required to be ready for testing
-            long buildTime = System.nanoTime() - startTime; 
+            long buildTime = System.currentTimeMillis() - startTime; 
             
             ensembleTrainResults = doEnsembleCV(data); //combine modules to find overall ensemble trainpreds 
             ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
@@ -480,12 +446,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected void initialiseModules() throws Exception {       
         //prep cv         
         if (willNeedToDoCV()) {
-            int numFolds = setNumberOfFolds(train); //through TrainAccuracyEstimate interface
+            //int numFolds = setNumberOfFolds(train); //through TrainAccuracyEstimate interface
             
             cv = new CrossValidator();
             if (setSeed)
                 cv.setSeed(seed);
-            cv.setNumFolds(numFolds);
+            cv.setNumFolds(numCVFolds);
             cv.buildFolds(train);
         }
         
@@ -1081,8 +1047,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         Instances train = ClassifierTools.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
         Instances test = ClassifierTools.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
         
-        //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setDefaultCAWPESettings()
-        CAWPE cawpe = new CAWPE(); 
+        CAWPE cawpe = new CAWPE(); //Using predefined default settings. This is the CAWPE classifier in the paper, equivalent to setDefaultCAWPESettings()
         
         //Setting a transform (not used in CAWPE paper, mostly for COTE/HiveCOTE or particular applications)
         SimpleBatchFilter transform = new SAX();
@@ -1348,7 +1313,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
     
     /**
-     * This method would build all the results files leading up to figure 3,
+     * This method would build all the results files leading up to figure 2,
      * the heterogeneous ensemble comparison on the basic classifiers. 
      * 
      * It would take a long time to run, almost all of which is comprised of 
@@ -1372,7 +1337,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
      */
-    public static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
+    public static void buildCAWPEPaper_AllResultsForFigure2() throws Exception {
         //init, edit the paths for local running ofc
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "Z:/Data/UCIContinuous/", };
@@ -1514,7 +1479,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
 
-        buildCAWPEPaper_AllResultsForFigure3();
+        buildCAWPEPaper_AllResultsForFigure2();
 
 //        testBuildingInds(3);
 //        testLoadingInds(2);
