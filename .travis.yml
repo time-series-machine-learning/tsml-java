@@ -3,4 +3,4 @@ branches:
   only:
   - gh-pages
   - /.*/
-script: gradle test
+script: ./gradlew test
