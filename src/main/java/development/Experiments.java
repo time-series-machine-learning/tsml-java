@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import multivariate_timeseriesweka.classifiers.*;
+import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.BOSS;
 import timeseriesweka.classifiers.BagOfPatterns;
 import timeseriesweka.classifiers.DD_DTW;
@@ -43,6 +44,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.randomboss.*;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
 import utilities.InstanceTools;
@@ -574,6 +576,86 @@ public class Experiments implements Runnable{
                 break;
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
+                break;
+            case "RandomBOSS": case "RandomBOSS50": //Default ensemble size 50
+                c=new RandomBOSS();
+                break;
+            case "RandomBOSS10":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setEnsembleSize(10);
+                break;
+            case "RandomBOSS100":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomBOSS175":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setEnsembleSize(175);
+                break;
+            case "RandomBOSS250":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setEnsembleSize(250);
+                break;
+            case "RandomBOSSContracted5Minutes":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setMinuteLimit(5);
+                break;
+            case "RandomBOSSContracted30Minutes":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setMinuteLimit(30);
+                break;
+            case "RandomBOSSCheckpoint":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setMinuteLimit(5);
+                ((RandomBOSS)c).setSavePath("C:\\UEAMachineLearning\\Projects\\WEASEL");
+                break;
+            case "RandomTreeBOSS":
+                c=new RandomTreeBOSS();
+                ((RandomTreeBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomSVMBOSS":
+                c=new RandomSVMBOSS();
+                ((RandomSVMBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomCAWPEBOSS":
+                c=new RandomCAWPEBOSS();
+                ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomCAWPEBOSS5Folds":
+                c=new RandomCAWPEBOSS();
+                ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setNumCVFolds(5);
+                break;
+            case "RandomCAWPEBOSS4Folds":
+                c=new RandomCAWPEBOSS();
+                ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setNumCVFolds(4);
+                break;
+            case "RandomCAWPEBOSS3Folds":
+                c=new RandomCAWPEBOSS();
+                ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setNumCVFolds(3);
+                break;
+            case "RandomCAWPEBOSS2Folds":
+                c=new RandomCAWPEBOSS();
+                ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setNumCVFolds(2);
+                break;
+            case "RandomBaggingBOSS":
+                c=new RandomBaggingBOSS();
+                ((RandomBaggingBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomBaggingTreeBOSS":
+                c=new RandomBaggingTreeBOSS();
+                ((RandomBaggingTreeBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomBoostedBOSS":
+                c=new RandomBoostedBOSS();
+                ((RandomBoostedBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomBoostedTreeBOSS":
+                c=new RandomBoostedTreeBOSS();
+                ((RandomBoostedTreeBOSS)c).setEnsembleSize(100);
                 break;
             case "WEASEL":
                 c = new WEASEL();
@@ -1287,17 +1369,30 @@ Optional
                     int pred;
                     testResults = new ClassifierResults(test.numClasses());
                     double[] trueClassValues = test.attributeToDoubleArray(test.classIndex()); //store class values here
-                        
+
+                    OutFile timeOut=new OutFile(resultsPath+"/testFold"+fold+"time.csv");
+
 //                    long testTime = System.nanoTime();
                     for(int testInstIndex = 0; testInstIndex < numInsts; testInstIndex++) {
                         test.instance(testInstIndex).setClassMissing();//and remove from each instance given to the classifier (just to be sure)
 
                         //make prediction
+                        long testTimeStart = System.nanoTime();
                         double[] probs=c.distributionForInstance(test.instance(testInstIndex));
+                        long testTime = System.nanoTime() - testTimeStart;
+
+                        timeOut.writeLine(Long.toString(testTime));
+
                         testResults.storeSingleResult(probs);
                     }
+                    timeOut.closeFile();
 //                    testTime=System.nanoTime()-testTime;
-                    testResults.finaliseResults(trueClassValues); 
+                    testResults.finaliseResults(trueClassValues);
+
+//                    OutFile memOut=new OutFile(resultsPath+"/testFold"+fold+"mem.csv");
+//                    long mem = SizeOf.deepSizeOf(c);
+//                    memOut.writeLine(Long.toString(mem));
+//                    memOut.closeFile();
 
                     //Write results
                     OutFile testOut=new OutFile(resultsPath+testFoldPath);
