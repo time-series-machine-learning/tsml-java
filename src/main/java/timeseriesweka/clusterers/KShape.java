@@ -66,11 +66,9 @@ public class KShape extends AbstractTimeSeriesClusterer {
         
         centroids = new Instances("centroids", atts, k);
         
-        for (int i = 0; i < k; i++){
-            centroids.add(new DenseInstance(numAtts));
+        for (int i = 0; i < k; i++) {
+            centroids.add(new DenseInstance(1, new double[numAtts]));
         }
-        
-        System.out.println(centroids);
         
         Random rand;
         
@@ -147,7 +145,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
         double[][] subsampleArray = new double[subsample.numInstances()][];
         
         for (int i = 0; i < subsample.numInstances(); i++){
-            System.out.println(subsample.get(i));
             subsampleArray[i] = extractTimeSeries(subsample.get(i));
         }
         
@@ -159,7 +156,10 @@ public class KShape extends AbstractTimeSeriesClusterer {
         Matrix ones = new Matrix(seriesSize, seriesSize, 1);
         ones = ones.times(1.0/seriesSize);
         identity.minus(ones);
-        
+
+        System.out.println(matrix.getColumnDimension() + " " + matrix.getRowDimension());
+        System.out.println(identity.getColumnDimension() + " " + identity.getRowDimension());
+
         matrix = identity.times(matrix).times(identity);
         
         EigenvalueDecomposition eig = new EigenvalueDecomposition(matrix);
@@ -188,7 +188,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.dist);
 //        System.out.println(sbd.yShift);
 
-        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/ADIAC_TRAIN.arff");
+        Instances inst = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TRAIN.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         KShape k = new KShape();
         k.seed = 1;

@@ -3,7 +3,9 @@ package timeseriesweka.clusterers;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import utilities.ClassifierTools;
 import vector_clusterers.KMeans;
+import weka.clusterers.AbstractClusterer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -14,12 +16,12 @@ import weka.core.Instances;
  * @author pfm15hbu
  */
 public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
+
+    private int k = -1;
+    private int seed = Integer.MIN_VALUE;
     
-    int k;
-    int seed = Integer.MIN_VALUE;
-    
-    ArrayList<UShapelet> shapelets;
-    int numInstances;
+    private ArrayList<UShapelet> shapelets;
+    private int numInstances;
     
     private int[] cluster;
     private ArrayList<Integer>[] clusters;
@@ -30,12 +32,17 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (!changeOriginalInstances){
+            data = new Instances(data);
+        }
+
+        extractUShapelets(data);
+        clusterData();
     }
 
     @Override
     public int numberOfClusters(){
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return k;
     }
     
     private void extractUShapelets(Instances data){
@@ -215,7 +222,12 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
     
     public static void main(String[] args) throws Exception{
-        
+        Instances inst = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TRAIN.arff");
+        inst.setClassIndex(inst.numAttributes()-1);
+        UnsupervisedShapelets us = new UnsupervisedShapelets();
+        us.seed = 1;
+        us.buildClusterer(inst);
+        System.out.println(Arrays.toString(us.cluster));
     }
     
     private class UShapelet{
