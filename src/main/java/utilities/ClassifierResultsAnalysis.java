@@ -72,7 +72,7 @@ public class ClassifierResultsAnalysis {
     
     
     public static String expRootDirectory;
-    protected static String matlabFilePath = "matlabfiles/";
+    protected static String matlabFilePath = "src/main/matlab/";
     protected static String pairwiseScatterDiaPath = "PairwiseScatterDias/";
     protected static String cdDiaPath = "cddias/";
     protected static String pairwiseCDDiaDirectoryName = "pairwise/";
