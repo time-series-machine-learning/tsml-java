@@ -42,7 +42,7 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
         double[][] distMatrix = new double[data.numInstances()][];
         
         for (int i = 0; i < data.numInstances(); i++){
-            distMatrix[i] = new double[i];
+            distMatrix[i] = new double[i+1];
             Instance first = data.get(i);
             
             for (int n = 0; n < i; n++){

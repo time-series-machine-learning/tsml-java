@@ -191,6 +191,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/ADIAC_TRAIN.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         KShape k = new KShape();
+        k.seed = 1;
         k.buildClusterer(inst);
         System.out.println(Arrays.toString(k.cluster));
         System.out.println(k.centroids);
