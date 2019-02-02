@@ -17,6 +17,8 @@ public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
     protected boolean changeOriginalInstances = true;
     protected boolean hasClassValue = false;
+
+    private boolean checkedClass = false;
     
     public void setChangeOriginalInstances(boolean b){
         changeOriginalInstances = b;
@@ -24,49 +26,74 @@ public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
     public void setHasClassValue(boolean b){
         hasClassValue = b;
+        checkedClass = true;
     }
-    
-    protected void zNormalise(Instances data) throws Exception{  
-        if (data.classIndex() >= 0 && data.classIndex() != data.numAttributes()-1){
-            throw new Exception("Class attribute is available and not the final attribute.");
-        }
-        
+
+    protected void zNormalise(Instances data, boolean hasClass) throws Exception {
         int length;
         
-        if (data.classIndex() >= 0){
+        if (hasClass){
             length = data.numAttributes()-1;
-            hasClassValue = true;
         }
         else{
             length = data.numAttributes();
-            hasClassValue = false;
         }
         
         for (Instance inst: data){
-            double meanSum = 0;
+            zNormalise(inst, length);
+        }
+    }
 
-            for (int i = 0; i < inst.numAttributes(); i++){
-                meanSum += inst.value(i);
-            }
+    protected void zNormalise(Instance inst, boolean hasClass){
+        int length;
 
-            double mean = meanSum / length;
+        if (hasClass){
+            length = inst.numAttributes()-1;
+        }
+        else{
+            length = inst.numAttributes();
+        }
 
-            double squareSum = 0;
+        zNormalise(inst, length);
+    }
 
-            for (int i = 0; i < length; i++){
-                double temp = inst.value(i) - mean;
-                squareSum += temp * temp;
-            }
+    private void zNormalise(Instance inst, int length){
+        double meanSum = 0;
 
-            double stdev = Math.sqrt(squareSum/length);
+        for (int i = 0; i < length; i++){
+            meanSum += inst.value(i);
+        }
 
-            if (stdev == 0){
-                stdev = 1;
-            }
-            
-            for (int i = 0; i < length; i++){
-                inst.setValue(i, (inst.value(i) - mean) / stdev);
-            }
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < length; i++){
+            double temp = inst.value(i) - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < length; i++){
+            inst.setValue(i, (inst.value(i) - mean) / stdev);
+        }
+    }
+
+    protected void checkClass(Instances data) throws Exception {
+        if (data.classIndex() >= 0 && data.classIndex() != data.numAttributes()-1){
+            throw new Exception("Class attribute is available and not the final attribute.");
+        }
+
+        if (data.classIndex() >= 0){
+            hasClassValue = true;
+        }
+        else{
+            hasClassValue = false;
         }
     }
 }

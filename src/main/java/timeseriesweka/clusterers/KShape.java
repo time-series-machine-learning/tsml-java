@@ -9,14 +9,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import timeseriesweka.clusterers.AbstractTimeSeriesClusterer;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
 import utilities.ClassifierTools;
-import static utilities.Utilities.extractTimeSeries;
+import static utilities.Utilities.extractTimeSeries2;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.matrix.EigenvalueDecomposition;
@@ -50,24 +49,20 @@ public class KShape extends AbstractTimeSeriesClusterer {
         if (!changeOriginalInstances){
             data = new Instances(data);
         }
+
+        checkClass(data);
+        zNormalise(data, hasClassValue);
         
-        zNormalise(data);
-        int numAtts = data.numAttributes();
+        ArrayList<Attribute> atts = new ArrayList(data.numAttributes());
         
-        if (hasClassValue){
-            numAtts--;
-        }
-        
-        ArrayList<Attribute> atts = new ArrayList(numAtts);
-        
-        for (int i = 0; i < numAtts; i++){
+        for (int i = 0; i < data.numAttributes(); i++){
             atts.add(new Attribute("att" + i));
         }
         
         centroids = new Instances("centroids", atts, k);
         
         for (int i = 0; i < k; i++) {
-            centroids.add(new DenseInstance(1, new double[numAtts]));
+            centroids.add(new DenseInstance(1, new double[data.numAttributes()]));
         }
         
         Random rand;
@@ -83,15 +78,17 @@ public class KShape extends AbstractTimeSeriesClusterer {
         cluster = new double[data.numInstances()];
         
         for (int i = 0; i < cluster.length; i++){
-            cluster[i] = Math.round(rand.nextDouble()*k);
+            cluster[i] = Math.ceil(rand.nextDouble()*k)-1;
         }
-        
+
+        System.out.println(Arrays.toString(cluster));
+
         double[] prevCluster = new double[data.numInstances()];
         prevCluster[0] = -1;
         
         while (!Arrays.equals(cluster, prevCluster) && iterations < 100){
             prevCluster = Arrays.copyOf(cluster, cluster.length);
-            
+
             for (int i = 0; i < k; i ++){
                 centroids.set(i, shapeExtraction(data, centroids.get(i), i));
             }
@@ -101,27 +98,31 @@ public class KShape extends AbstractTimeSeriesClusterer {
                 
                 for (int n = 0; n < k; n++){
                     SBD sbd = new SBD(centroids.get(n), data.get(i), false);
-                    
+                    //System.out.println(sbd.dist);
                     if (sbd.dist < minDist){
                         minDist = sbd.dist;
                         cluster[i] = n;
                     }
                 }
+                //System.out.println(minDist + " " + i);
             }
             
             iterations++;
         }
     }
     
-    private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum){
+    private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum) throws Exception {
         Instances subsample = new Instances(data, 0);
         int seriesSize = centroid.numAttributes();
+
+        if (hasClassValue){
+            seriesSize--;
+        }
+
         double sum = 0;
         
         for (int i = 0; i < seriesSize; i++){
-            if (i != centroid.classIndex()){
-                sum += centroid.value(i);
-            }
+            sum += centroid.value(i);
         }
         
         boolean sumZero = sum == 0;
@@ -139,33 +140,61 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
         
         if (subsample.numInstances() == 0){
-            return new DenseInstance(seriesSize);
+            return new DenseInstance(1, new double[centroid.numAttributes()]);
         }
-        
+
+        zNormalise(subsample, hasClassValue);
+
         double[][] subsampleArray = new double[subsample.numInstances()][];
-        
+
         for (int i = 0; i < subsample.numInstances(); i++){
-            subsampleArray[i] = extractTimeSeries(subsample.get(i));
+            subsampleArray[i] = extractTimeSeries2(subsample.get(i));
         }
         
         Matrix matrix = new Matrix(subsampleArray);
         Matrix matrixT = matrix.transpose();
-        matrix = matrix.times(matrixT);
-        
+
+        matrix = matrixT.times(matrix);
+
         Matrix identity = Matrix.identity(seriesSize, seriesSize);
         Matrix ones = new Matrix(seriesSize, seriesSize, 1);
         ones = ones.times(1.0/seriesSize);
-        identity.minus(ones);
-
-        System.out.println(matrix.getColumnDimension() + " " + matrix.getRowDimension());
-        System.out.println(identity.getColumnDimension() + " " + identity.getRowDimension());
+        identity = identity.minus(ones);
 
         matrix = identity.times(matrix).times(identity);
-        
+
         EigenvalueDecomposition eig = new EigenvalueDecomposition(matrix);
-        double[] eigVector = eig.getV().getArray()[0];
-        
-        return new DenseInstance(1, eigVector);
+        Matrix v = eig.getV();
+        double[] eigVector = new double[centroid.numAttributes()];
+        double[] eigVectorNeg = new double[centroid.numAttributes()];
+
+        for (int i = 0; i < seriesSize; i++){
+            eigVector[i] = v.get(i,0);
+            eigVectorNeg[i] = -eigVector[i];
+        }
+
+        double eigSum = 0;
+        double eigSumNeg = 0;
+
+        for (int i = 0; i < seriesSize; i++){
+            double firstVal = subsample.get(0).value(i);
+
+            eigSum += (firstVal - eigVector[i]) * (firstVal - eigVector[i]);
+            eigSumNeg += (firstVal - eigVectorNeg[i]) * (firstVal - eigVectorNeg[i]);
+        }
+
+        Instance newCent;
+
+        if (Math.sqrt(eigSum) < Math.sqrt(eigSumNeg)){
+            newCent = new DenseInstance(1, eigVector);
+        }
+        else{
+            newCent = new DenseInstance(1, eigVectorNeg);
+        }
+
+        zNormalise(newCent, false);
+
+        return newCent;
     }
     
     public static void main(String[] args) throws Exception{
@@ -189,9 +218,13 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.yShift);
 
         Instances inst = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TEST.arff");
+        inst.addAll(inst2);
         inst.setClassIndex(inst.numAttributes()-1);
+
         KShape k = new KShape();
         k.seed = 1;
+        k.k = 5;
         k.buildClusterer(inst);
         System.out.println(Arrays.toString(k.cluster));
         System.out.println(k.centroids);
@@ -271,15 +304,15 @@ public class KShape extends AbstractTimeSeriesClusterer {
                     shift -= oldLengthY-1;
                 }
 
-                yShift = new DenseInstance(oldLengthY);
+                yShift = new DenseInstance(1, new double[second.numAttributes()]);
 
                 if (shift >= 0){
-                    for (int i = 0; i < second.numAttributes()-shift; i++){
+                    for (int i = 0; i < oldLengthY-shift; i++){
                         yShift.setValue(i + shift, second.value(i));
                     }
                 }
                 else {
-                    for (int i = 0; i < second.numAttributes()+shift; i++){
+                    for (int i = 0; i < oldLengthY+shift; i++){
                         yShift.setValue(i, second.value(i-shift));
                     }
                 }
