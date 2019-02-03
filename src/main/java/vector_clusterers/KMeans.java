@@ -90,14 +90,42 @@ public class KMeans extends AbstractVectorClusterer{
         if (changeOriginalInstances == false){
             data = new Instances(data);
         }
+
+        distFunc.setInstances(data);
+        numInstances = data.size();
+        cluster = new int[numInstances];
+
+        System.out.println(data);
+
+        if (numInstances <= k){
+            clusterCenters = new Instances(data);
+
+            for (int i = 0; i < numInstances; i++){
+                cluster[i] = i;
+            }
+
+            clusters = new ArrayList[k];
+
+            for (int i = 0; i < k; i++){
+                clusters[i] = new ArrayList();
+            }
+
+            for (int i = 0; i < numInstances; i++) {
+                for (int n = 0; n < k; n++) {
+                    if (n == cluster[i]) {
+                        clusters[n].add(i);
+                        break;
+                    }
+                }
+            }
+
+            return;
+        }
         
         if (normaliseData){
             normaliseData(data);
         }
-        
-        distFunc.setInstances(data);
-        numInstances = data.size();
-        
+
         if (findBestK){
             //Builds clusters using multiple values of k and keeps the best one.
             findBestK(data);
@@ -112,8 +140,6 @@ public class KMeans extends AbstractVectorClusterer{
             }
 
             boolean finished = false;
-            cluster = new int[numInstances];
-            
             int iterations = 0;
             
             //Change cluster centers until cluster membership no longer changes.
@@ -136,6 +162,7 @@ public class KMeans extends AbstractVectorClusterer{
     //Returns the sum of the squared distance from each point to its cluster
     //center.
     public double clusterSquaredDistance(Instances data){
+        distFunc.setInstances(data);
         double distSum = 0;
             
         for (int i = 0; i < k; i++){

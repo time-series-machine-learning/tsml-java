@@ -95,13 +95,40 @@ public class PAM extends AbstractVectorClusterer{
         if (changeOriginalInstances == false){
             data = new Instances(data);
         }
-        
+
+        numInstances = data.size();
+        cluster = new int[numInstances];
+
+        if (numInstances <= k){
+            for (int i = 0; i < numInstances; i++){
+                cluster[i] = i;
+                medoids[i] = i;
+            }
+
+            clusters = new ArrayList[k];
+
+            for (int i = 0; i < k; i++){
+                clusters[i] = new ArrayList();
+            }
+
+            for (int i = 0; i < numInstances; i++){
+                for (int n = 0; n < k; n++){
+                    if(n == cluster[i]){
+                        clusters[n].add(i);
+                        break;
+                    }
+                }
+            }
+
+            return;
+        }
+
+
         if (normaliseData){
             normaliseData(data);
         }
         
         distFunc.setInstances(data);
-        numInstances = data.size();
         
         if (!hasDistances){
             distanceMatrix = createDistanceMatrix(data);
@@ -267,8 +294,6 @@ public class PAM extends AbstractVectorClusterer{
     }
     
     private void calculateClusterMembership(){
-        cluster = new int[numInstances];
-        
         //Set membership of each point to the closest medoid.
         for (int i = 0; i < numInstances; i++){
             double minDist = Double.MAX_VALUE;
