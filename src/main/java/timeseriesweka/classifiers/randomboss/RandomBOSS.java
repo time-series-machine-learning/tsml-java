@@ -77,8 +77,6 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             
     private long contractTime = 0;
     private boolean contract = false;
-    private long contractTestTime = 0;
-    private boolean contractTest = false;
     
     private String trainCVPath;
     private boolean trainCV = false;
@@ -121,18 +119,33 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     //Define how to copy from a loaded object to this object
     @Override
     public void copyFromSerObject(Object obj) throws Exception{
-        if(!(obj instanceof RandomBOSS))
-            throw new Exception("The SER file is not an instance of RandomBOSS");
-        RandomBOSS saved = ((RandomBOSS)obj);
-        
-        classifiers = saved.classifiers;
+        if(!(obj instanceof RandomBOSSHeader))
+            throw new Exception("The SER file is not an instance of RandomBOSSHeader");
+        RandomBOSSHeader saved = ((RandomBOSSHeader)obj);
+
         ensembleSize = saved.ensembleSize;
         seed = saved.seed;
         rand = saved.rand;
-        
-        trainResults.buildTime = saved.trainResults.buildTime;
         checkpointTime = saved.checkpointTime;
         checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        contractTime = saved.contractTime;
+        contract = saved.contract;
+        trainCVPath = saved.trainCVPath;
+        trainCV = saved.trainCV;
+        trainResults = saved.trainResults;
+
+        classifiers = new LinkedList<BOSSIndividual>();
+        for (int i = 0; i < saved.numClassifiers; i++){
+            FileInputStream fis = new FileInputStream(saved.serPath + "BOSSindv" + i + ".ser");
+            try (ObjectInputStream in = new ObjectInputStream(fis)) {
+                Object indv=in.readObject();
+
+                if(!(indv instanceof BOSSIndividual))
+                    throw new Exception("The SER file " + i + " is not an instance of BOSSIndividual");
+
+                classifiers.add((BOSSIndividual)indv);
+            }
+        }
     }
     
     @Override
@@ -201,11 +214,11 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         trainResults.buildTime = System.nanoTime();
         
         String relationName = data.relationName();
-        String serPath = checkpointPath + "/" + relationName + "RandomBOSS.ser";
-        File f = new File(serPath);
+        String serPath = checkpointPath + "/" + relationName + "RandomBOSSser/";
+        File f = new File(serPath + "RandomBOSSHeader.ser");
         
         if (checkpoint && f.exists()){
-            loadFromFile(serPath);
+            loadFromFile(serPath + "RandomBOSSHeader.ser");
         }
         else {
             if (data.classIndex() != data.numAttributes()-1)
@@ -239,8 +252,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 boss.buildClassifier(data);
                 classifiers.add(boss);
                 
-                if (checkpoint && classifiers.size() % 50 == 0){
-                    System.out.println(classifiers.size());
+                if (checkpoint){
                     checkpoint(serPath, relationName);
                 }
             }
@@ -291,10 +303,35 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 if(!f.isDirectory())
                     f.mkdirs();
                 checkpointTime = System.nanoTime();
-                saveToFile(serPath);
+
+                RandomBOSSHeader header = new RandomBOSSHeader();
+                header.ensembleSize = ensembleSize;
+                header.seed = seed;
+                header.rand = rand;
+                header.checkpointTime = checkpointTime;
+                header.checkpointTimeDiff = checkpointTimeDiff;
+                header.contractTime = contractTime;
+                header.contract = contract;
+                header.trainCVPath = trainCVPath;
+                header.trainCV = trainCV;
+                header.trainResults = trainResults;
+                header.numClassifiers = classifiers.size();
+                header.serPath = serPath;
+
+                FileOutputStream fos = new FileOutputStream(serPath + "RandomBOSSHeader.ser");
+                try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                    out.writeObject(header);
+                    fos.close();
+                }
+
+                fos = new FileOutputStream(serPath + "BOSSindv" + (classifiers.size()-1) + ".ser");
+                try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                    out.writeObject(classifiers.get(classifiers.size()-1));
+                    fos.close();
+                }
             }
             catch(Exception e){
-                System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSS.ser  FAILED");
+                System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSSSer/  FAILED");
             }
         }
     }
@@ -1213,4 +1250,24 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         }
     }
 
+    private class RandomBOSSHeader implements Serializable{
+        public int ensembleSize;
+        public int seed;
+        public Random rand;
+
+        public long checkpointTime;
+        public long checkpointTimeDiff;
+
+        public long contractTime;
+        public boolean contract;
+
+        public String trainCVPath;
+        public boolean trainCV;
+
+        ClassifierResults trainResults;
+        int numClassifiers;
+        String serPath;
+
+        public RandomBOSSHeader(){};
+    }
 }
