@@ -132,7 +132,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         
         trainResults.buildTime = saved.trainResults.buildTime;
         checkpointTime = saved.checkpointTime;
-        checkpointTimeDiff = checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
     }
     
     @Override

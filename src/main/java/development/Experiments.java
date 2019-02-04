@@ -604,6 +604,10 @@ public class Experiments implements Runnable{
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setMinuteLimit(30);
                 break;
+            case "RandomBOSSContracted1Hour":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setHourLimit(1);
+                break;
             case "RandomBOSSCheckpoint":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setMinuteLimit(5);
@@ -656,6 +660,11 @@ public class Experiments implements Runnable{
             case "RandomBoostedTreeBOSS":
                 c=new RandomBoostedTreeBOSS();
                 ((RandomBoostedTreeBOSS)c).setEnsembleSize(100);
+                break;
+            case "RandomBOSSWhales":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setEnsembleSize(250);
+                ((RandomBOSS)c).setSavePath("/gpfs/home/pfm15hbu/scratch/Whales/");
                 break;
             case "WEASEL":
                 c = new WEASEL();
