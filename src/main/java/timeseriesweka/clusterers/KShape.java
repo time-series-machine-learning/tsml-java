@@ -217,8 +217,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.dist);
 //        System.out.println(sbd.yShift);
 
-        Instances inst = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TEST.arff");
+        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TEST.arff");
         inst.addAll(inst2);
         inst.setClassIndex(inst.numAttributes()-1);
 

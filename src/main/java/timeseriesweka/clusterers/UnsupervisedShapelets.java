@@ -11,6 +11,8 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static utilities.InstanceTools.toWekaInstances;
+
 /**
  *
  * @author pfm15hbu
@@ -42,7 +44,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
 
         extractUShapelets(data);
-        clusterData();
+        clusterData(data);
     }
 
     private void extractUShapelets(Instances data){
@@ -116,28 +118,26 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
     }
 
-    private void clusterData() throws Exception{
+    private void clusterData(Instances data) throws Exception{
 
-        ArrayList<Attribute> atts = new ArrayList();
-
-        for (int i = 0; i < numInstances; i++){
-            atts.add(new Attribute("att" + i));
-        }
-
-        Instances distanceMap = new Instances("temp", atts, 0);
+        Instances distanceMap;
 
         int[][] foldClusters = new int[shapelets.size()][];
+        double[][] distanceMatrix = new double[numInstances][1];
         double minRandIndex = 1;
         int minIndex = -1;
 
         for (int i = 0; i < shapelets.size(); i++){
             UShapelet shapelet = shapelets.get(i);
-            double[] distances = shapelet.distances;
+            double[] distances = shapelet.computeDistances(data);
             double minDist = Double.MAX_VALUE;
 
-            distanceMap.add(new DenseInstance(1,distances));
+            for (int n = 0; n < numInstances; n++) {
+                distanceMatrix[n] = Arrays.copyOf(distanceMatrix[n], i+1);
+                distanceMatrix[n][i] = distances[n];
+            }
 
-            System.out.println(distanceMap.size());
+            distanceMap = toWekaInstances(distanceMatrix);
 
             for (int n = 0; n < numFolds; n++){
                 KMeans kmeans = new KMeans();
@@ -145,7 +145,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
                 kmeans.setRefinedInitialMedoids(false);
-                kmeans.setSeed(seed);
+                kmeans.setSeed(seed+n);
                 kmeans.buildClusterer(distanceMap);
 
                 double dist = kmeans.clusterSquaredDistance(distanceMap);
@@ -179,7 +179,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         for (int i = 0; i < numInstances; i++){
             for (int n = 0; n < k; n++){
                 if(n == cluster[i]){
-                    clusters[i].add(n);
+                    clusters[n].add(i);
                     break;
                 }
             }
@@ -228,8 +228,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
 
     public static void main(String[] args) throws Exception{
-        Instances inst = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("D:/CMP Machine Learning/Datasets/TSC Archive/Adiac/ADIAC_TEST.arff");
+        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
         UnsupervisedShapelets us = new UnsupervisedShapelets();
@@ -247,8 +247,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         public double gap;
         public double dt;
 
-        public double[] distances;
-
         public UShapelet(int startPoint, int length, Instance inst){
             this.startPoint = startPoint;
             this.length = length;
@@ -256,9 +254,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
 
         public void computeGap(Instances data){
-            this.distances = computeDistances(data);
-
-            double[] sortedDistances = Arrays.copyOf(distances, distances.length);
+            double[] sortedDistances = computeDistances(data);
             Arrays.sort(sortedDistances);
 
             for (int i = 0; i < sortedDistances.length-1; i++){
@@ -295,10 +291,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
 
         public double[] computeDistances(Instances data){
-
-            if (distances != null){
-                return distances;
-            }
 
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();

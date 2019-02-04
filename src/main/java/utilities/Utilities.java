@@ -27,6 +27,24 @@ public class Utilities {
         }
     }
 
+    public static double[] extractTimeSeries2(Instance instance) {
+        if(instance.classIndex() >= 0) {
+            return instance.toDoubleArray();
+        } else {
+            double[] timeSeries = new double[instance.numAttributes() - 1];
+            for(int i = 0; i < instance.numAttributes(); i++) {
+                if (instance.classIndex() == i){
+                }
+                else if (i < instance.classIndex()) {
+                    timeSeries[i] = instance.value(i);
+                } else {
+                    timeSeries[i - 1] = instance.value(i);
+                }
+            }
+            return timeSeries;
+        }
+    }
+
     public static final void lessThanOrEqualTo(double value, double limit) {
         if(value > limit) {
             throw new IllegalArgumentException("Cannot be larger than");
