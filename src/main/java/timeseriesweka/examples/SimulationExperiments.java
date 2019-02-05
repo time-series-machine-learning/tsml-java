@@ -23,7 +23,7 @@ import timeseriesweka.classifiers.ElasticEnsemble;
 import timeseriesweka.classifiers.DD_DTW;
 import timeseriesweka.classifiers.BagOfPatterns;
 import timeseriesweka.classifiers.HiveCote;
-import development.experiments.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;

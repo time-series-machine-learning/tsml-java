@@ -1,7 +1,7 @@
 /*
  Class containing data sets used in various TSC papers
  */
-package development.experiments;
+package experiments;
 
 
 import fileIO.InFile;

@@ -43,7 +43,7 @@ contains pairwise comparisons of all the classifiers.
 
 
  */
-package development.experiments;
+package experiments;
 
 import fileIO.InFile;
 import fileIO.OutFile;
@@ -642,7 +642,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
        m.readInClassifiers(new String[] {"XGBoost"},
                "E://Results//UCI//Untuned");
        m.readInClassifiers(new String[] {"TunedXGBoost"}, 
@@ -656,7 +656,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
        m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
                "E://Results/UCI/Tuned");
        
@@ -672,7 +672,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
        m.readInClassifiers(new String[] {
            "RotFG3","RotFG4","RotFG5","RotFG6","RotFG7","RotFG8","RotFG9","RotFG10","RotFG11","RotFG12"}, 
                "E://Results/UCI/RotFSize");
@@ -690,7 +690,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
        m.readInClassifiers(new String[] {
            "RotRP1","RotRP2","RotRP3","RotRP4","RotRP5","RotRP6","RotRP7","RotRP8","RotRP9"}, 
                "E://Results/UCI/RotFPercentRemoved");
@@ -709,7 +709,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 121));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousFileNames, 0, 121));
        
        m.readInClassifiers(new String[] {"RandF","RotF","RandF10000"},//"SVMRBF","UBMLP 
                "E://Results//UCI//Untuned");
@@ -723,7 +723,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.tscProblems85, 0, 85));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
        m.readInClassifiers(new String[] {"RotF","RandF"},"E://Results//UCR//Untuned");
 //       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
        m.setTestResultsOnly(true);
@@ -735,7 +735,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.tscProblems85, 0, 85));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
        m.readInClassifiers(new String[] {"RotF","RandF","SVMQ"},"E://Results//STUCR");
 //       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
        m.setTestResultsOnly(true);
@@ -749,7 +749,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 121));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousFileNames, 0, 121));
        m.readInClassifiers(new String[] {classifier},"E://Results//UCI//Untuned");
        m.readInClassifiers(new String[] {"Tuned"+classifier},"E://Results//UCI//Tuned");
                
@@ -796,7 +796,7 @@ public static void basicSummaryComparisons(){
        m.setBuildMatlabDiagrams(true);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(development.experiments.DataSets.tscProblems85, 0, 85));
+       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
        m.readInClassifiers(new String[] {"RotF","RandF","SVMQ"},"E://Results//STUCR");
 //       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
        m.setTestResultsOnly(true);

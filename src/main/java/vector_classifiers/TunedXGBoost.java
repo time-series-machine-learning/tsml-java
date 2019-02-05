@@ -18,9 +18,9 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import development.experiments.CollateResults;
-import development.experiments.DataSets;
-import development.experiments.Experiments;
+import experiments.CollateResults;
+import experiments.DataSets;
+import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
 

@@ -1,8 +1,8 @@
 
 package papers.smoothing;
 
-import development.experiments.DataSets;
-import development.experiments.MultipleClassifierEvaluation;
+import experiments.DataSets;
+import experiments.MultipleClassifierEvaluation;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FilenameFilter;

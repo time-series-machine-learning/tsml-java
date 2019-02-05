@@ -1,4 +1,4 @@
-package development.experiments;
+package experiments;
 
 import fileIO.InFile;
 import fileIO.OutFile;

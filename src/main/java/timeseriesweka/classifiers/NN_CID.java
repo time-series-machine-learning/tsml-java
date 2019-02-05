@@ -26,7 +26,7 @@ ie the ratio of complexities. In the paper,
 */
 package timeseriesweka.classifiers;
 
-import development.experiments.DataSets;
+import experiments.DataSets;
 import utilities.ClassifierTools;
 import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;

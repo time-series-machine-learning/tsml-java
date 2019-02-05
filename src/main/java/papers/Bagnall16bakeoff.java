@@ -27,7 +27,7 @@ import timeseriesweka.classifiers.SAXVSM;
 import timeseriesweka.classifiers.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.DD_DTW;
 import timeseriesweka.classifiers.BagOfPatterns;
-import development.experiments.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;

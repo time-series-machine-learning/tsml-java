@@ -10,7 +10,7 @@ m_C
  */
 package vector_classifiers;
 
-import development.experiments.CollateResults;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;

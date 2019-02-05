@@ -1,7 +1,7 @@
 
 package vector_classifiers.weightedvoters;
 
-import development.experiments.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.FileNotFoundException;
 import timeseriesweka.classifiers.ensembles.voting.BestIndividualTrain;

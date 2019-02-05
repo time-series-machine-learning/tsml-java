@@ -1,9 +1,9 @@
 package vector_classifiers;
 
-import development.experiments.CollateResults;
-import development.experiments.DataSets;
-import development.experiments.Experiments;
-import development.experiments.MultipleClassifierEvaluation;
+import experiments.CollateResults;
+import experiments.DataSets;
+import experiments.Experiments;
+import experiments.MultipleClassifierEvaluation;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAccByClass;

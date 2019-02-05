@@ -1,10 +1,7 @@
 
-package development.experiments;
+package experiments;
 
-import static development.ExperimentsClean.debug;
 
-import development.RiseV2;
-import development.RotationForestLimitedAttributes;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -206,7 +203,8 @@ public class ClassifierLists {
                 ((TunedRandomForest)c).setCrossValidate(false);
                 ((TunedRandomForest)c).setEstimateAcc(true);
                 ((TunedRandomForest)c).setSeed(fold);
-                ((TunedRandomForest)c).setDebug(debug);
+//This some legacy? Can be removed
+//                ((TunedRandomForest)c).setDebug(debug);
                 
                 break;
             case "RandF": case "RandomForest": case "RandF500": case "RandomForest500":
@@ -251,19 +249,12 @@ public class ClassifierLists {
                 ((RotationForestBootstrap)c).setSeed(fold);
                 ((RotationForestBootstrap)c).estimateAccFromTrain(false);
                 break;
-            case "RotFLimited":
-                c= new RotationForestLimitedAttributes();
-                ((RotationForestLimitedAttributes)c).setNumIterations(200);
-                ((RotationForestLimitedAttributes)c).tuneParameters(false);
-                ((RotationForestLimitedAttributes)c).setSeed(fold);
-                ((RotationForestLimitedAttributes)c).estimateAccFromTrain(false);
-                break;
             case "TunedRandF":
                 c= new TunedRandomForest();
                 ((TunedRandomForest)c).tuneParameters(true);
                 ((TunedRandomForest)c).setCrossValidate(true);
                 ((TunedRandomForest)c).setSeed(fold);             
-                ((TunedRandomForest)c).setDebug(debug);
+//                ((TunedRandomForest)c).setDebug(debug);
                 break;
             case "TunedRandFOOB":
                 c= new TunedRandomForest();
@@ -362,11 +353,6 @@ public class ClassifierLists {
                 mlp3.setSeed(fold);
                 mlp3.setTrainingTime(200);
                 c= mlp3;
-                break;
-            case "RandomRotationForest1":
-                c= new RotationForestLimitedAttributes();
-                ((RotationForestLimitedAttributes)c).setNumIterations(200);
-                ((RotationForestLimitedAttributes)c).setMaxNumAttributes(100);
                 break;
             case "Logistic":
                 c= new Logistic();
@@ -467,10 +453,6 @@ public class ClassifierLists {
                 break;
             case "RISE":
                 c=new RISE();
-                break;
-            case "RISEV2":
-                c=new RiseV2();
-                ((RiseV2)c).buildFromSavedData(true);
                 break;
             case "TSBF":
                 c=new TSBF();

@@ -21,7 +21,7 @@ minimum per leaf, pruning, confidence etc.
  */
 package vector_classifiers;
 
-import development.experiments.CollateResults;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;

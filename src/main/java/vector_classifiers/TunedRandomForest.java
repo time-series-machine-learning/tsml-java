@@ -26,7 +26,7 @@ grid search is then just 55 values and because it uses OOB no CV is required
 package vector_classifiers;
 
 
-import development.experiments.CollateResults;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;

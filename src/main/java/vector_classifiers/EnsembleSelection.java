@@ -1,9 +1,9 @@
 
 package vector_classifiers;
 
-import development.experiments.CollateResults;
-import development.experiments.DataSets;
-import static development.experiments.Experiments.singleClassifierAndFoldTrainTestSplit;
+import experiments.CollateResults;
+import experiments.DataSets;
+import static experiments.Experiments.singleClassifierAndFoldTrainTestSplit;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;

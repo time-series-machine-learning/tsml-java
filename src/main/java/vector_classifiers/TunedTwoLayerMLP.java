@@ -23,7 +23,7 @@ total models = 4*2*2*8*8=1024
  */
 package vector_classifiers;
 
-import development.experiments.CollateResults;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
