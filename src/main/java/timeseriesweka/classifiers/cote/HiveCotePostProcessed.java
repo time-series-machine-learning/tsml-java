@@ -1,10 +1,9 @@
 package timeseriesweka.classifiers.cote;
 
-import development.DataSets;
+import development.experiments.DataSets;
 import java.util.ArrayList;
-import timeseriesweka.classifiers.HiveCote;
+
 import static utilities.ClassifierTools.loadData;
-import weka.core.Instances;
 
 /**
  *

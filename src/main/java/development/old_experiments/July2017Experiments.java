@@ -7,16 +7,12 @@
 */
 package development.old_experiments;
 
-import development.DataSets;
-import development.Experiments;
+import development.experiments.DataSets;
+import development.experiments.Experiments;
 import development.RotationForestLimitedAttributes;
-import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -25,7 +21,6 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import vector_classifiers.TunedSVM;
 import weka.classifiers.lazy.IBk;
-import weka.classifiers.meta.RotationForest;
 import vector_classifiers.TunedRotationForest;
 import vector_classifiers.CAWPE;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;

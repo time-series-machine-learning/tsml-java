@@ -2,6 +2,8 @@
 package papers.smoothing;
 
 import java.io.File;
+
+import development.experiments.DataSets;
 import utilities.ClassifierTools;
 import weka.attributeSelection.PrincipalComponents;
 import weka.core.Instance;
@@ -22,7 +24,7 @@ public class PCADatasetBulder {
     public static void makePCAUCRDatasets() throws Exception {
         boolean transformBack = false;
         
-        String[] dsets = development.DataSets.tscProblems85;
+        String[] dsets = DataSets.tscProblems85;
         assert(dsets.length == 85);
         
         int folds = 30;

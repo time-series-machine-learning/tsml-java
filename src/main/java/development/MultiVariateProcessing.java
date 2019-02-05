@@ -7,13 +7,14 @@ for TSC, the basic univariate syntax is
  */
 package development;
 
+import development.experiments.CollateResults;
+import development.experiments.DataSets;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
-import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -30,7 +31,7 @@ public class MultiVariateProcessing {
         OutFile out=new OutFile(path+"SummaryData.csv");
         out.writeLine("problem,numTrainCases,numTestCases,numDimensions,seriesLength,numClasses");
         String[] probs={"BasicMotions"};
-        for(String prob:DataSets.mtscProblems2018){
+        for(String prob: development.experiments.DataSets.mtscProblems2018){
             File t1=new File(dest+prob+"\\"+prob+"_TRAIN.arff");
             File t2=new File(dest+prob+"\\"+prob+"_TRAIN.arff");
             if(!(t1.exists()||t2.exists())){
@@ -116,8 +117,8 @@ public class MultiVariateProcessing {
     //TODO CHECK TO SEE IF FILES ALREADY MADE
     public static Instances[] convertToUnivariate(String path, String dest, String prob){
         
-        if (!CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN") 
-                || !CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TEST")){
+        if (!development.experiments.CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")
+                || !development.experiments.CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TEST")){
         
             Instances train =ClassifierTools.loadData(path+prob+"/"+prob+"_TRAIN");
             Instances test =ClassifierTools.loadData(path+prob+"/"+prob+"_TEST");
@@ -224,7 +225,7 @@ public class MultiVariateProcessing {
 
     public static void checkConcatenatedFiles(){
         String dest="Z:\\Data\\ConcatenatedMTSC\\";
-        for(String prob:DataSets.mtscProblems2018){
+        for(String prob: development.experiments.DataSets.mtscProblems2018){
                
 //            System.out.println(" Object type ="+x);
             try{
@@ -323,7 +324,7 @@ public class MultiVariateProcessing {
     }
     public static void makeSingleDimensionFiles(){
          String path="Z:\\Data\\MultivariateTSCProblems\\";
-        for(String prob: DataSets.mtscProblems2018){
+        for(String prob: development.experiments.DataSets.mtscProblems2018){
             
             File f= new File(path+prob+"\\"+prob+"Dimension"+(1)+"_TRAIN.arff");
             if(!f.exists()){

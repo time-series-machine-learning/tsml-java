@@ -37,13 +37,11 @@ Results:
 */
 package papers.bagnall17defaultparas;
 
-import development.DataSets;
-import development.HESCADevelopment.*;
+import development.experiments.DataSets;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -61,7 +59,6 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import vector_classifiers.CAWPE;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Instances;

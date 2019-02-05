@@ -1,23 +1,20 @@
 package vector_classifiers;
 
-import development.CollateResults;
-import development.DataSets;
-import development.Experiments;
-import development.MultipleClassifierEvaluation;
-import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
+import development.experiments.CollateResults;
+import development.experiments.DataSets;
+import development.experiments.Experiments;
+import development.experiments.MultipleClassifierEvaluation;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAccByClass;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
-import timeseriesweka.classifiers.ensembles.voting.NaiveBayesCombiner;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
-import development.MultipleClassifiersPairwiseTest;
-import fileIO.OutFile;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
+
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;

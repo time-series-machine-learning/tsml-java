@@ -17,6 +17,10 @@
  */
 package development;
 
+import development.experiments.ClassifierLists;
+import development.experiments.CollateResults;
+import development.experiments.DataSets;
+import development.experiments.Experiments;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
@@ -274,7 +278,7 @@ public class ExperimentsClean  {
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
         //paths. would rather just use the expSettings to do it all though 
         DataSets.resultsPath = expSettings.resultsWriteLocation;
-        DataSets.problemPath = expSettings.dataReadLocation;
+        development.experiments.DataSets.problemPath = expSettings.dataReadLocation;
         
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName;
         File f = new File(fullWriteLocation);
@@ -285,7 +289,7 @@ public class ExperimentsClean  {
         String targetFileName = fullWriteLocation + "/testFold" + expSettings.foldId + ".csv";
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if (CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (development.experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
@@ -298,7 +302,7 @@ public class ExperimentsClean  {
                 expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
                 
                 targetFileName = fullWriteLocation + "/fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (CollateResults.validateSingleFoldFile(targetFileName)) { 
+                if (development.experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
                     LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
                     return;
                 }
@@ -332,7 +336,7 @@ public class ExperimentsClean  {
      *      values 1 to numUniqueFirstAttValues OTHERWISE...
      * 5) error
      * 
-     * TODO: potentially just move to development.DataSets once we clean up that
+     * TODO: potentially just move to development.experiments.DataSets once we clean up that
      * 
      * @return new Instances[] { trainSet, testSet };
      */
@@ -403,7 +407,7 @@ public class ExperimentsClean  {
      * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
      * values 1 to numUniqueFirstAttValues
      * 
-     * TODO: potentially just move to development.DataSets once we clean up that
+     * TODO: potentially just move to development.experiments.DataSets once we clean up that
      * 
      * @return new Instances[] { trainSet, testSet };
      */
@@ -720,7 +724,7 @@ public class ExperimentsClean  {
         };
         
         Method[] mains = { 
-            Experiments.class.getMethod("main", String[].class), 
+            Experiments.class.getMethod("main", String[].class),
             ExperimentsClean.class.getMethod("main", String[].class) 
         };
         

@@ -5,8 +5,7 @@ import fileIO.OutFile;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -16,21 +15,16 @@ import utilities.ClassifierResults;
 import utilities.CrossValidator;
 import utilities.DebugPrinting;
 import utilities.TrainAccuracyEstimate;
-import vector_classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import development.CollateResults;
-import development.DataSets;
-import development.Experiments;
+import development.experiments.CollateResults;
+import development.experiments.DataSets;
+import development.experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import utilities.ClassifierTools;
-import utilities.InstanceTools;
+
 import utilities.SaveParameterInfo;
-import weka.classifiers.Classifier;
 
 /**
  * Original code repo, around which this class wraps: https://github.com/dmlc/xgboost

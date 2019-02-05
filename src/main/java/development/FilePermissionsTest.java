@@ -5,6 +5,7 @@
  */
 package development;
 
+import development.experiments.DataSets;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -31,7 +32,7 @@ public class FilePermissionsTest {
 //Read through a  results set for fold0, adding up the train accuracies
         double accSum=0;
         int count=0;
-        for(String str:DataSets.UCIContinuousFileNames){
+        for(String str: DataSets.UCIContinuousFileNames){
 //           
             if(new File(read+str).isDirectory()){
                 File f2=new File(read+str+"/testFold0.csv");

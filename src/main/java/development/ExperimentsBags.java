@@ -2,6 +2,9 @@
 package development;
 
 import java.io.File;
+
+import development.experiments.DataSets;
+import development.experiments.Experiments;
 import utilities.ClassifierTools;
 import weka.core.Instances;
 
@@ -15,7 +18,7 @@ import weka.core.Instances;
 public class ExperimentsBags {//extends Experiments {
     
     public static void main(String[] args) throws Exception{
-        Experiments.useBagsSampling = true;
+        development.experiments.Experiments.useBagsSampling = true;
         
         //exampleusage
 //        Experiments.main(new String[] { 
@@ -84,8 +87,8 @@ public class ExperimentsBags {//extends Experiments {
         
         Instances[] data = new Instances[2];
         
-        File trainFile = new File(DataSets.problemPath+problem+"/"+problem+fold+"_TRAIN.arff");
-        File testFile = new File(DataSets.problemPath+problem+"/"+problem+fold+"_TEST.arff");
+        File trainFile = new File(development.experiments.DataSets.problemPath+problem+"/"+problem+fold+"_TRAIN.arff");
+        File testFile = new File(development.experiments.DataSets.problemPath+problem+"/"+problem+fold+"_TEST.arff");
         if(trainFile.exists() && testFile.exists()) {
             data[0] = ClassifierTools.loadData(trainFile.getAbsolutePath());
             data[1] = ClassifierTools.loadData(testFile.getAbsolutePath());

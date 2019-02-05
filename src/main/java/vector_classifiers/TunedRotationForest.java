@@ -21,15 +21,12 @@ minimum per leaf, pruning, confidence etc.
  */
 package vector_classifiers;
 
-import development.CollateResults;
+import development.experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
-import java.io.FileNotFoundException;
-import weka.classifiers.trees.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,19 +36,9 @@ import utilities.CrossValidator;
 import utilities.InstanceTools;
 import utilities.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
-import weka.classifiers.Evaluation;
 import weka.classifiers.meta.RotationForest;
 import utilities.ClassifierResults;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Randomizable;
-import weka.core.Utils;
-import weka.filters.Filter;
-import weka.filters.unsupervised.attribute.Normalize;
-import weka.filters.unsupervised.attribute.RemoveUseless;
-import weka.filters.unsupervised.instance.RemovePercentage;
 
 /**
  *

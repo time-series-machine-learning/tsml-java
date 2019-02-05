@@ -3,29 +3,16 @@
 */
 package development;
 
-import fileIO.InFile;
+import development.experiments.DataSets;
+import development.experiments.Experiments;
 import fileIO.OutFile;
 import java.io.File;
-import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 import utilities.ClassifierTools;
-import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
-import vector_classifiers.TunedSVM;
-import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
-import vector_classifiers.TunedRotationForest;
-import vector_classifiers.CAWPE;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
-import utilities.ClassifierResults;
-import utilities.CrossValidator;
-import weka.classifiers.trees.RandomForest;
-import vector_classifiers.TunedRandomForest;
 import weka.classifiers.functions.LinearRegression;
 import static weka.classifiers.functions.LinearRegression.TAGS_SELECTION;
 import weka.core.Instance;
@@ -76,16 +63,16 @@ public class TimingExperiments{
         String pPath;
         if(dataSet.equals("UCI")){
             pPath=problemPath+"UCIContinuous/";
-            files=DataSets.UCIContinuousFileNames;
+            files= development.experiments.DataSets.UCIContinuousFileNames;
         }
         else if(dataSet.equals("UEA")){
             pPath=problemPath+"TSCProblems/";
-            files=DataSets.tscProblems46;
+            files= development.experiments.DataSets.tscProblems46;
             System.out.println("Doing UEA problems");
         }
         else if(dataSet.equals("ST")){
             pPath=problemPath+"BalancedClassShapeletTransform/";
-            files=DataSets.tscProblems46;
+            files= DataSets.tscProblems46;
         }
         else
             throw new Exception(dataSet+" not known");
@@ -108,7 +95,7 @@ public class TimingExperiments{
                     times.writeString(problem+","+(inst.numAttributes()-1)+","+(inst.numInstances())+",");
                     for(int i=0;i<folds;i++){
 
-                        Classifier c=Experiments.setClassifier(classifierName, i);
+                        Classifier c= development.experiments.Experiments.setClassifier(classifierName, i);
                         System.out.println(" Problem "+problem+" has "+(inst.numAttributes()-1)+" number of attributes");
                         if(dataSet.equals("ST"))
                             inst=ClassifierTools.loadData(pPath+problem+"/"+problem+i+"_TRAIN");
@@ -146,7 +133,7 @@ public class TimingExperiments{
                     times.writeString((inst.numAttributes()-1)+","+(inst.numInstances())+",");
                     for(int i=0;i<folds;i++){
 
-                        Classifier c=Experiments.setClassifier(classifierName, i);
+                        Classifier c= Experiments.setClassifier(classifierName, i);
 //                        System.out.println(" Problem "+problem+" has "+(inst.numAttributes()-1)+" number of attributes");
 
                         long t1=System.currentTimeMillis();
@@ -229,7 +216,7 @@ public class TimingExperiments{
     public static void UCIRotFTimingExperiment() throws Exception{
 //Restrict to those with over 40 attributes
         OutFile times=new OutFile("c:/temp/RotFUCITimes.csv");
-        for(String problem:DataSets.UCIContinuousFileNames){
+        for(String problem: development.experiments.DataSets.UCIContinuousFileNames){
 //See whether we want to do this one
             if(problem.equals("miniboone")||problem.equals("connect-4"))
                 continue;
@@ -269,7 +256,7 @@ public class TimingExperiments{
     public static void UCRRotFTimingExperiment() throws Exception{
 //Restrict to those with over 40 attributes
         OutFile times=new OutFile("c:/temp/RotFUCITimes.csv");
-        for(String problem:DataSets.tscProblems85){
+        for(String problem: development.experiments.DataSets.tscProblems85){
 //See whether we want to do this one
             Instances inst=ClassifierTools.loadData("C:/Data/TSC Problems/"+problem+"/"+problem+"_TRAIN");
             if(problem.equals("HandOutlines"))

@@ -28,12 +28,9 @@ All depreciated by James's changes
 
 package development;
 
+import development.experiments.DataSets;
+import experiments.SimulationExperiments;
 import fileIO.OutFile;
-import java.io.File;
-import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;

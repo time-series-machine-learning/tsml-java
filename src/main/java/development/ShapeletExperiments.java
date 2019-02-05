@@ -18,6 +18,7 @@ Save and plot to find the point at which sampling makes it significantly worse
 */
 package development;
 
+import development.experiments.DataSets;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateShapeletData;
@@ -90,17 +91,17 @@ public class ShapeletExperiments {
         
         if(args.length>0){
 //Set your cluster path gere        
-            DataSets.clusterPath="/gpfs/home/ajb/";
+            development.experiments.DataSets.clusterPath="/gpfs/home/ajb/";
 //Set wherever you are putting the files here
-            DataSets.resultsPath=DataSets.clusterPath+"Results/SimulationExperiments/";
+            development.experiments.DataSets.resultsPath= development.experiments.DataSets.clusterPath+"Results/SimulationExperiments/";
 //Arg 1 is series length, Arg 2 is the fold            
             int length=Integer.parseInt(args[0]);
             int fold=Integer.parseInt(args[1])-1;
             shapeletSimulatorWithLength(length,fold);
         }
         else{//Local run for debugging
-            DataSets.dropboxPath="C:/Users/ajb/Dropbox/";
-            DataSets.resultsPath=DataSets.dropboxPath+"Results/SimulationExperiments/";
+            development.experiments.DataSets.dropboxPath="C:/Users/ajb/Dropbox/";
+            development.experiments.DataSets.resultsPath= development.experiments.DataSets.dropboxPath+"Results/SimulationExperiments/";
             int length=100;
             int fold=0;
             shapeletSimulatorWithLength(length,fold);

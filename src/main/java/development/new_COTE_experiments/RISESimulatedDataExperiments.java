@@ -5,7 +5,7 @@
 */
 package development.new_COTE_experiments;
 
-import development.DataSets;
+import development.experiments.DataSets;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import statistics.distributions.Distribution;
@@ -17,9 +17,9 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import development.MatrixProfileExperiments;
+
 import static development.MatrixProfileExperiments.setClassifier;
-import development.SimulationExperiments;
+import experiments.SimulationExperiments;
 
 /**
  *

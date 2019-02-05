@@ -23,7 +23,7 @@ total models = 4*2*2*8*8=1024
  */
 package vector_classifiers;
 
-import development.CollateResults;
+import development.experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -35,7 +35,6 @@ import utilities.CrossValidator;
 import utilities.InstanceTools;
 import utilities.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
-import weka.classifiers.meta.RotationForest;
 import utilities.ClassifierResults;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.Instances;

@@ -7,6 +7,8 @@
 */
 package development;
 
+import development.experiments.CollateResults;
+import development.experiments.DataSets;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -52,14 +54,12 @@ import vector_classifiers.CAWPE;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
 import utilities.InstanceTools;
-import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.trees.RandomTree;
-import weka.core.Attribute;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
 
@@ -793,11 +793,11 @@ public class ExperimentsKaggle{
     }
     
     public static void singleExperiment(String[] args) throws Exception{
-            DataSets.problemPath=args[0];
-            DataSets.resultsPath=args[1];
+            development.experiments.DataSets.problemPath=args[0];
+            development.experiments.DataSets.resultsPath=args[1];
 //Arg 3 argument is whether to cross validate or not and produce train files
             generateTrainFiles=Boolean.parseBoolean(args[2]);
-            File f=new File(DataSets.resultsPath);
+            File f=new File(development.experiments.DataSets.resultsPath);
             if(!f.isDirectory()){
                 f.mkdirs();
                 f.setWritable(true, false);
@@ -861,13 +861,13 @@ public class ExperimentsKaggle{
         String problem=args[1];
         int fold=Integer.parseInt(args[2])-1;
    
-        String predictions = DataSets.resultsPath+classifier+"/Predictions/"+problem;
+        String predictions = development.experiments.DataSets.resultsPath+classifier+"/Predictions/"+problem;
         File f=new File(predictions);
         if(!f.exists())
             f.mkdirs();
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if(!CollateResults.validateSingleFoldFile(predictions+"/testFold"+fold+".csv"))
+        if(!development.experiments.CollateResults.validateSingleFoldFile(predictions+"/testFold"+fold+".csv"))
         {
             Classifier c=setClassifier(classifier,fold);;
             
@@ -875,11 +875,11 @@ public class ExperimentsKaggle{
             
             if(!predictionOutput){
                 if (MultiVariateProcessing.isMultivariateClassifier(classifier)){
-                    File trainFile=new File(DataSets.problemPath+problem+"/"+problem+"_TRAIN.arff");
+                    File trainFile=new File(development.experiments.DataSets.problemPath+problem+"/"+problem+"_TRAIN.arff");
                     data = InstanceTools.resampleInstances(ClassifierTools.loadData(trainFile.getAbsolutePath()), fold, SPLITPROP);
                 }
                 else{
-                    Instances train = MultiVariateProcessing.convertToUnivariateTrain(DataSets.problemPath, DataSets.problemPath, problem);
+                    Instances train = MultiVariateProcessing.convertToUnivariateTrain(development.experiments.DataSets.problemPath, DataSets.problemPath, problem);
                     problem = problem+"_UNI";
                     data = InstanceTools.resampleInstances(train, fold, SPLITPROP);
                 }
@@ -887,13 +887,13 @@ public class ExperimentsKaggle{
             else{
                 //checks if converts to univariate if classifiers cannot handle multivariate
                 if (MultiVariateProcessing.isMultivariateClassifier(classifier)){
-                    File trainFile=new File(DataSets.problemPath+problem+"/"+problem+"_TRAIN.arff");
-                    File testFile=new File(DataSets.problemPath+problem+"/"+problem+"_TEST.arff");
+                    File trainFile=new File(development.experiments.DataSets.problemPath+problem+"/"+problem+"_TRAIN.arff");
+                    File testFile=new File(development.experiments.DataSets.problemPath+problem+"/"+problem+"_TEST.arff");
                     data[0]=ClassifierTools.loadData(trainFile.getAbsolutePath());
                     data[1]=ClassifierTools.loadData(testFile.getAbsolutePath());
                 }
                 else {
-                    data = MultiVariateProcessing.convertToUnivariate(DataSets.problemPath, DataSets.problemPath, problem);
+                    data = MultiVariateProcessing.convertToUnivariate(development.experiments.DataSets.problemPath, development.experiments.DataSets.problemPath, problem);
                 }
             }
 
@@ -901,7 +901,7 @@ public class ExperimentsKaggle{
             {
                 checkpoint=false;
 //Check if it already exists, if it does, exit
-                if(CollateResults.validateSingleFoldFile(predictions+"/fold"+fold+"_"+parameterNum+".csv")){ //Exit
+                if(development.experiments.CollateResults.validateSingleFoldFile(predictions+"/fold"+fold+"_"+parameterNum+".csv")){ //Exit
                     System.out.println("Fold "+predictions+"/fold"+fold+"_"+parameterNum+".csv  already exists");
                     return; //Aready done
                 }
@@ -1012,10 +1012,10 @@ public class ExperimentsKaggle{
                 //Start of testing, only doing this if the test file doesnt exist
                 //This is checked before the buildClassifier also, but we have a special case for the file builder
                 //that copies the results over in buildClassifier. No harm in checking again!
-                if(!CollateResults.validateSingleFoldFile(resultsPath+testFoldPath)){
+                if(!development.experiments.CollateResults.validateSingleFoldFile(resultsPath+testFoldPath)){
                     int numInsts = test.numInstances();
                     
-                    InFile ids=new InFile(DataSets.problemPath+"ids.txt");
+                    InFile ids=new InFile(development.experiments.DataSets.problemPath+"ids.txt");
                     OutFile testOut=new OutFile(resultsPath+"predictions.csv");
                     testOut.writeLine(ids.readLine());
 
