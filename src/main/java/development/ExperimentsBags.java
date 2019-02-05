@@ -18,7 +18,7 @@ import weka.core.Instances;
 public class ExperimentsBags {//extends Experiments {
     
     public static void main(String[] args) throws Exception{
-        development.experiments.Experiments.useBagsSampling = true;
+//        development.experiments.Experiments.useBagsSampling = true;
         
         //exampleusage
 //        Experiments.main(new String[] { 
