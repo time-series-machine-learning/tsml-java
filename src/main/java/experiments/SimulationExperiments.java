@@ -43,7 +43,6 @@ import vector_classifiers.CAWPE;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.filters.MatrixProfile;
-import vector_classifiers.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
@@ -153,9 +152,6 @@ public class SimulationExperiments {
                 break;
             case "HESCA":
                 c=new CAWPE();
-                break;
-            case "RandF": case "MP_RotF":
-                c=new TunedRandomForest();
                 break;
             case "RotF":
                 c=new RotationForest();
