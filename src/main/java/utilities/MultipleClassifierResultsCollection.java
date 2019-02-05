@@ -1,7 +1,7 @@
 package utilities;
 
 import experiments.DataSets;
-import experiments.MultipleClassifierEvaluation;
+import statistics.tests.MultipleClassifierEvaluation;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;

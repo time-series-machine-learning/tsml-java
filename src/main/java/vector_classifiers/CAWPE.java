@@ -3,7 +3,7 @@ package vector_classifiers;
 import experiments.CollateResults;
 import experiments.DataSets;
 import experiments.Experiments;
-import experiments.MultipleClassifierEvaluation;
+import statistics.tests.MultipleClassifierEvaluation;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAccByClass;

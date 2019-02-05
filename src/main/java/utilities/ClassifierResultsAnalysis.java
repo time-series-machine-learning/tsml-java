@@ -4,7 +4,7 @@ package utilities;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
-import experiments.MultipleClassifiersPairwiseTest;
+import statistics.tests.MultipleClassifiersPairwiseTest;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;

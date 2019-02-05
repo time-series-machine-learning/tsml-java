@@ -1,4 +1,4 @@
-package experiments;
+package statistics.tests;
 
 import fileIO.InFile;
 import fileIO.OutFile;

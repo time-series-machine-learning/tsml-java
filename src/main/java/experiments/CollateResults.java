@@ -45,6 +45,8 @@ contains pairwise comparisons of all the classifiers.
  */
 package experiments;
 
+import statistics.tests.MultipleClassifiersPairwiseTest;
+import statistics.tests.MultipleClassifierEvaluation;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;

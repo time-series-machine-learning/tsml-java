@@ -1,4 +1,4 @@
-package experiments;
+package statistics.tests;
 
 import ResultsProcessing.MatlabController;
 import java.io.File;
