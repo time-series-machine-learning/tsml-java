@@ -33,7 +33,7 @@ import java.io.File;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;

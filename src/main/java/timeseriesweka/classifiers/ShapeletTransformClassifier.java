@@ -14,7 +14,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import vector_classifiers.CAWPE;
 import weka.core.Instance;

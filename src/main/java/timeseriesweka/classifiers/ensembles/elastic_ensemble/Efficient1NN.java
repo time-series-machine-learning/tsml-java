@@ -7,7 +7,7 @@ import java.util.Scanner;
 import utilities.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;

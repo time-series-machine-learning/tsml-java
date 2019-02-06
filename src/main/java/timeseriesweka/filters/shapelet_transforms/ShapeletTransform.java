@@ -31,8 +31,8 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
-import utilities.class_distributions.ClassDistribution;
+import timeseriesweka.classifiers.SaveParameterInfo;
+import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
@@ -349,7 +349,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param classDist
      * @return
      */
-    protected void initQualityBound(ClassDistribution classDist) {
+    protected void initQualityBound(ClassCounts classDist) {
         if (!useCandidatePruning) return;
         quality.initQualityBound(classDist, candidatePruningStartPercentage);
     }
@@ -1085,7 +1085,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         ncv.init(data);
 
         //Get class distributions 
-        ClassDistribution classDistribution = ncv.getClassDistributions();
+        ClassCounts classDistribution = ncv.getClassDistributions();
 
         //Allocate arrays for instances of every class
         for (int i = 0; i < classDistribution.size(); i++) {

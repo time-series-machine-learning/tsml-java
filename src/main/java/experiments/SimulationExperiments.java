@@ -35,7 +35,7 @@ import statistics.simulators.SimulateWholeSeriesData;
 import statistics.simulators.SimulateElasticData;
 import statistics.simulators.SimulateMatrixProfileData;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;

@@ -3,7 +3,6 @@ package timeseriesweka.classifiers;
 
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
 import utilities.ClassifierResults;
 import weka.core.Instance;

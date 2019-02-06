@@ -33,7 +33,7 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
 import utilities.ClassifierResults;

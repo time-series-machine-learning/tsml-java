@@ -23,7 +23,6 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
-import utilities.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import utilities.ClassifierResults;
 

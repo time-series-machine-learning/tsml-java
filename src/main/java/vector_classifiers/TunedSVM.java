@@ -23,7 +23,7 @@ import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;

@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
 
 import java.io.File;
 import java.io.FileInputStream;

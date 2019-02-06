@@ -31,7 +31,7 @@ import statistics.simulators.SimulateDictionaryData;
 import statistics.simulators.SimulateIntervalData;
 import statistics.simulators.SimulateShapeletData;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
