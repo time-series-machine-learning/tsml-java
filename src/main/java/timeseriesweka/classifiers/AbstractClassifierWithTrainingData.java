@@ -34,7 +34,7 @@ c.buildClassifier(train)    //ALL STATS SET HERE
 package timeseriesweka.classifiers;
 
 import weka.classifiers.AbstractClassifier;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 
 /**
  *

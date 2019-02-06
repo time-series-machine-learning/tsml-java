@@ -14,7 +14,7 @@ import java.util.Random;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.core.Instances;

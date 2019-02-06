@@ -1,4 +1,4 @@
-package utilities;
+package evaluation;
 
 import fileIO.InFile;
 import fileIO.OutFile;
@@ -9,6 +9,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
+import utilities.DebugPrinting;
+import utilities.GenericTools;
+import utilities.InstanceTools;
 
 /**
  * This class has morphed over time. At it's base form, it's a simple container class for the 

@@ -58,7 +58,7 @@ import java.util.Random;
 import java.util.Vector;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;

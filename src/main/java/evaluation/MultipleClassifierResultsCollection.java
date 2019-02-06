@@ -1,12 +1,16 @@
-package utilities;
+package evaluation;
 
+import evaluation.ClassifierResultsCollection;
 import experiments.DataSets;
-import statistics.tests.MultipleClassifierEvaluation;
+import evaluation.MultipleClassifierEvaluation;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.function.Function;
 import statistics.tests.TwoSampleTests;
+import utilities.DebugPrinting;
+import utilities.ErrorReport;
+import utilities.StatisticalUtilities;
 import vector_classifiers.ChooseDatasetFromFile;
 
 /**

@@ -1,8 +1,7 @@
-package statistics.tests;
+package evaluation;
 
 import ResultsProcessing.MatlabController;
 import java.io.File;
-import utilities.ClassifierResultsAnalysis;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Function;
-import utilities.ClassifierResults;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import utilities.generic_storage.Pair;

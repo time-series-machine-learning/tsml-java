@@ -21,7 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
-import utilities.CrossValidator;
+import evaluation.CrossValidator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
@@ -29,7 +29,7 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import weka.core.*;
 
 /**

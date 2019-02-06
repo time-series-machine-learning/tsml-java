@@ -35,7 +35,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import weka.core.TechnicalInformation;
 
 /**
