@@ -1,10 +1,10 @@
 
-package utilities;
+package evaluation;
 
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
-import statistics.tests.MultipleClassifiersPairwiseTest;
+import evaluation.MultipleClassifiersPairwiseTest;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,6 +25,9 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import statistics.tests.OneSampleTests;
 import statistics.tests.TwoSampleTests;
+import utilities.GenericTools;
+import utilities.InstanceTools;
+import utilities.StatisticalUtilities;
 import utilities.generic_storage.Pair;
 import weka.clusterers.XMeans;
 import weka.core.Instances;

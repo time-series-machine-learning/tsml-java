@@ -1,11 +1,14 @@
 
-package utilities;
+package evaluation;
 
+import evaluation.ClassifierResults;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
+import utilities.ClassifierTools;
+import utilities.StatisticalUtilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.kNN;
 import weka.core.Instances;

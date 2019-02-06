@@ -1,6 +1,6 @@
 package timeseriesweka.classifiers.ensembles;
 
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
