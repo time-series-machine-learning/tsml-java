@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 
 /**
  *
@@ -31,11 +31,11 @@ public abstract class ShapeletQualityBound implements Serializable {
     /**
      * Class distribution of the observed distance, class pairs
      */
-    protected ClassDistribution orderLineClassDist;
+    protected ClassCounts orderLineClassDist;
     /**
      * Class distribution of the dataset, which currently being processed
      */
-    protected ClassDistribution parentClassDist;
+    protected ClassCounts parentClassDist;
     /**
      * Number of instances in the dataset, which is currently being processed
      */
@@ -51,12 +51,12 @@ public abstract class ShapeletQualityBound implements Serializable {
      * @param classDist
      * @param percentage
      */
-    protected void initParentFields(ClassDistribution classDist, int percentage) {
+    protected void initParentFields(ClassCounts classDist, int percentage) {
         //Initialize the fields
         bsfQuality = Double.MAX_VALUE;
         orderLine = new ArrayList<>();
 
-        orderLineClassDist = new TreeSetClassDistribution();
+        orderLineClassDist = new TreeSetClassCounts();
         parentClassDist = classDist;
         this.percentage = percentage;
 

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;

@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.ClassDistribution;
+import utilities.class_counts.ClassCounts;
 
 
 /**
@@ -66,7 +66,7 @@ public class ShapeletQuality {
     
     //init static lists of constructors.
     private static final List<Supplier<ShapeletQualityMeasure>> qualityConstructors = createQuality();
-    private static final List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>>  boundConstructor = createBound();
+    private static final List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>>  boundConstructor = createBound();
     private static List<Supplier<ShapeletQualityMeasure>> createQuality(){
         List<Supplier<ShapeletQualityMeasure>> cons = new ArrayList<>();
         cons.add(InformationGain::new);
@@ -76,8 +76,8 @@ public class ShapeletQuality {
         return cons;
     }
     
-    private static List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>> createBound(){
-        List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>> cons = new ArrayList();
+    private static List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> createBound(){
+        List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> cons = new ArrayList();
         cons.add(InformationGainBound::new);
         cons.add(FStatBound::new);
         cons.add(KruskalWallisBound::new);
@@ -90,7 +90,7 @@ public class ShapeletQuality {
         qualityMeasure = qualityConstructors.get(choice.ordinal()).get();
     }
     
-    public void initQualityBound(ClassDistribution classDist, int percentage){
+    public void initQualityBound(ClassCounts classDist, int percentage){
         bound = Optional.of(boundConstructor.get(choice.ordinal()).apply(classDist, percentage));
     }
     

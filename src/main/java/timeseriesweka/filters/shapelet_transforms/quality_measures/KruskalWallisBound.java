@@ -7,7 +7,7 @@ package timeseriesweka.filters.shapelet_transforms.quality_measures;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import utilities.class_distributions.ClassDistribution;
+import utilities.class_counts.ClassCounts;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 
 /**
@@ -26,7 +26,7 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
          * @param percentage percentage of data required to be processed before
          *                   bounding mechanism is used.
          */
-        protected KruskalWallisBound(ClassDistribution classDist, int percentage){
+        protected KruskalWallisBound(ClassCounts classDist, int percentage){
             initParentFields(classDist, percentage);
         }
                

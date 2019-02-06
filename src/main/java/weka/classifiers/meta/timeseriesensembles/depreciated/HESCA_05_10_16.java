@@ -30,7 +30,7 @@ import vector_classifiers.TunedRandomForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.*;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
 /**
  *

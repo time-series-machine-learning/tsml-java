@@ -39,7 +39,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;

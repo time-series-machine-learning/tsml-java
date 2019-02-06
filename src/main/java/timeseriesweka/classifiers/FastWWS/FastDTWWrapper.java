@@ -7,7 +7,7 @@ package timeseriesweka.classifiers.FastWWS;
 import java.util.ArrayList;
 import timeseriesweka.classifiers.FastWWS.windowSearcher.*;
 import utilities.ClassifierResults;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 

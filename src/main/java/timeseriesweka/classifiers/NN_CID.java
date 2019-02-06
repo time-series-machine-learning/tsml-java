@@ -28,7 +28,6 @@ package timeseriesweka.classifiers;
 
 import experiments.DataSets;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
 import utilities.ClassifierResults;
 import weka.core.EuclideanDistance;
