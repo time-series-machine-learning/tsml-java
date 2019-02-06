@@ -26,7 +26,7 @@ grid search is then just 55 values and because it uses OOB no CV is required
 package vector_classifiers;
 
 
-import development.CollateResults;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -39,14 +39,12 @@ import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
 import utilities.ClassifierResults;
-import weka.classifiers.functions.SMO;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
-import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
 

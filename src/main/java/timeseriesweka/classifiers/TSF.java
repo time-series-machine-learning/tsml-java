@@ -50,7 +50,6 @@ import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import utilities.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import utilities.ClassifierResults;
 

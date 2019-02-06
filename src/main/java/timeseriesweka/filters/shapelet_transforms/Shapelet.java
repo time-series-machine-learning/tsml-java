@@ -20,7 +20,7 @@ package timeseriesweka.filters.shapelet_transforms;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
-import utilities.class_distributions.ClassDistribution;
+import utilities.class_counts.ClassCounts;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQualityMeasure;
 
 /**
@@ -154,7 +154,7 @@ public class Shapelet implements Comparable<Shapelet>, Serializable
         this.hasContent = false;
     }
 
-    public void calculateQuality(List<OrderLineObj> orderline, ClassDistribution classDistribution)
+    public void calculateQuality(List<OrderLineObj> orderline, ClassCounts classDistribution)
     {
         qualityValue = qualityType.calculateQuality(orderline, classDistribution);
         this.qualityValue = this.qualityType.calculateQuality(orderline, classDistribution);

@@ -1,13 +1,12 @@
 package utilities;
 
-import development.DataSets;
-import development.MultipleClassifierEvaluation;
+import experiments.DataSets;
+import statistics.tests.MultipleClassifierEvaluation;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.function.Function;
 import statistics.tests.TwoSampleTests;
-import vector_classifiers.ChooseClassifierFromFile;
 import vector_classifiers.ChooseDatasetFromFile;
 
 /**
@@ -166,7 +165,7 @@ public class MultipleClassifierResultsCollection implements DebugPrinting {
         new MultipleClassifierEvaluation( "C:/JamesLPHD/TSC_Smoothing/Analysis/", "EDvsED_FilteredFirst", 30).
             setBuildMatlabDiagrams(false).
 //            setUseAllStatistics().
-//            setDatasets(Arrays.copyOfRange(development.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster... 
+//            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
 //            setDatasets("C:/Temp/dsets.txt").
             setDatasets(DataSets.tscProblems85).
             readInClassifiers(new String[] {"ED","ED_Filtered"}, "C:/JamesLPHD/TSC_Smoothing/Results/").

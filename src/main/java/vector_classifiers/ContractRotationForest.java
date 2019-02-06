@@ -59,7 +59,7 @@ import java.util.Vector;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import utilities.ClassifierResults;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;

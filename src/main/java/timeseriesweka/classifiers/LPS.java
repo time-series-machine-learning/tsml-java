@@ -2,13 +2,11 @@
  */
 package timeseriesweka.classifiers;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -18,11 +16,9 @@ import java.util.Random;
 import java.util.Vector;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
-import static weka.classifiers.AbstractClassifier.runClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
-import weka.classifiers.trees.REPTree;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.ContingencyTables;
@@ -34,7 +30,6 @@ import weka.core.Option;
 import weka.core.OptionHandler;
 import weka.core.PartitionGenerator;
 import weka.core.Randomizable;
-import weka.core.RevisionHandler;
 import weka.core.RevisionUtils;
 import weka.core.TechnicalInformation;
 import weka.core.Utils;

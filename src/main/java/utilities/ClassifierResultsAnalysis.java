@@ -1,20 +1,13 @@
 
 package utilities;
 
-import ResultsProcessing.CreatePairwiseScatter;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
-import development.MultipleClassifiersPairwiseTest;
+import statistics.tests.MultipleClassifiersPairwiseTest;
 import fileIO.OutFile;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,13 +25,11 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import statistics.tests.OneSampleTests;
 import statistics.tests.TwoSampleTests;
-import utilities.ClassifierResults;
-import utilities.StatisticalUtilities;
 import utilities.generic_storage.Pair;
-import weka.clusterers.SimpleKMeans;
 import weka.clusterers.XMeans;
-import weka.core.Instance;
 import weka.core.Instances;
+
+
 
 /**
  *
@@ -58,7 +49,7 @@ import weka.core.Instances;
  in the correct format already (it is assumed that findAllStats on each classifierResults has already been called, and 
  if desired any results cleaning/nulling for space has already occurred)
  
- or you'd normally use development.MultipleClassifierEvaluation to set up results located in memory or
+ or you'd normally use development.experiments.MultipleClassifierEvaluation to set up results located in memory or
  on disk and call runComparison(), which essentially just wraps writeALLEvaluationFiles(...). Using this method 
  will call findAllStats on each of the classifier results, and there's a bool (default true) to set whether 
  to null the instance prediction info after stats are found to save memory. if some custom or future analysis 

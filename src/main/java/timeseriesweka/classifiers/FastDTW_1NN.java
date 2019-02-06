@@ -6,7 +6,6 @@ import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import utilities.ClassifierResults;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;

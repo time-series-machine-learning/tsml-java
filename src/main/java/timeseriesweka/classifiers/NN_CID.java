@@ -26,13 +26,10 @@ ie the ratio of complexities. In the paper,
 */
 package timeseriesweka.classifiers;
 
-import development.DataSets;
-import java.util.Enumeration;
+import experiments.DataSets;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
 import utilities.ClassifierResults;
-import weka.core.DistanceFunction;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;

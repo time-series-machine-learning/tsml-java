@@ -10,12 +10,10 @@ m_C
  */
 package vector_classifiers;
 
-import development.CollateResults;
-import fileIO.InFile;
+import experiments.CollateResults;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
@@ -25,10 +23,8 @@ import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
-import weka.classifiers.Evaluation;
-import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;

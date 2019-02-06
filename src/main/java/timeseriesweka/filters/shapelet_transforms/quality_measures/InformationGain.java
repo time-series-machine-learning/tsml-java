@@ -9,8 +9,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 /**
  *
@@ -40,7 +40,7 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
          * @return a measure of shapelet quality according to information gain
          */
         @Override
-        public double calculateQuality(List<OrderLineObj> orderline, ClassDistribution classDistribution)
+        public double calculateQuality(List<OrderLineObj> orderline, ClassCounts classDistribution)
         {
             Collections.sort(orderline);
             // for each split point, starting between 0 and 1, ending between end-1 and end
@@ -51,8 +51,8 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
             double bsfGain = -1;
 
             // initialise class counts
-            ClassDistribution lessClasses = new TreeSetClassDistribution();
-            ClassDistribution greaterClasses = new TreeSetClassDistribution();
+            ClassCounts lessClasses = new TreeSetClassCounts();
+            ClassCounts greaterClasses = new TreeSetClassCounts();
 
             // parent entropy will always be the same, so calculate just once
             double parentEntropy = entropy(classDistribution);
@@ -110,7 +110,7 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
             return bsfGain;
         }
 
-        public static double entropy(ClassDistribution classDistributions)
+        public static double entropy(ClassCounts classDistributions)
         {
             if (classDistributions.size() == 1)
             {

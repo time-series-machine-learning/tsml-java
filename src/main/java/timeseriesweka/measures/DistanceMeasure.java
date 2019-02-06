@@ -1,13 +1,11 @@
 package timeseriesweka.measures;
 
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.Instance;
 import weka.core.NormalizableDistance;
 import weka.core.TechnicalInformationHandler;
 
 import static utilities.Utilities.extractTimeSeries;
-import static utilities.Utilities.notNullCheck;
-import static utilities.Utilities.positiveCheck;
 
 // todo summary for each measure / relate to paper
 // auth
