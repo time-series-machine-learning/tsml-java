@@ -1,4 +1,4 @@
-package statistics.tests;
+package evaluation;
 
 import fileIO.InFile;
 import fileIO.OutFile;
@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.Scanner;
+import statistics.tests.OneSampleTests;
 import statistics.tests.OneSampleTests;
 import statistics.tests.TwoSampleTests;
 

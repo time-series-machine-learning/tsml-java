@@ -24,7 +24,7 @@ import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
 import utilities.TrainAccuracyEstimate;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 
 /*
 

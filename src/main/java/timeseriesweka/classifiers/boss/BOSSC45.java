@@ -27,7 +27,7 @@ import timeseriesweka.classifiers.BOSS;
 import utilities.BitWord;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

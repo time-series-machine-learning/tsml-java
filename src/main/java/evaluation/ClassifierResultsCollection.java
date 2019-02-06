@@ -1,6 +1,8 @@
-package utilities;
+package evaluation;
 
 import java.io.FileNotFoundException;
+import utilities.DebugPrinting;
+import utilities.ErrorReport;
 
 /**
  * Essentially just a wrapper for all results of a single classifier over some set of datasets/folds,
