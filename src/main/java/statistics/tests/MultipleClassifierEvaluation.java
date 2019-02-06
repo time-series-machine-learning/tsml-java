@@ -1,4 +1,4 @@
-package development;
+package statistics.tests;
 
 import ResultsProcessing.MatlabController;
 import java.io.File;
@@ -28,7 +28,7 @@ import utilities.generic_storage.Pair;
  * 
  * Least-code one-off use case that's good enough for most problems is: 
  *       new MultipleClassifierEvaluation("write/path/", "experimentName", numFolds).
- *          setDatasets(development.DataSets.UCIContinuousFileNames).
+ *          setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
  *          readInClassifiers(new String[] {"NN", "C4.5"}, baseReadingPath).
  *          runComparison();  
  * 
@@ -570,7 +570,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 ////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
 ////        mcc.setUseAllStatistics();
 //        
-//        mcc.setDatasets(development.DataSets.UCIContinuousFileNames);
+//        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
 //        
 //        //general rule of thumb: set/add/read the classifiers as the last thing before running
 //        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath); 
@@ -581,13 +581,13 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         
 //        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
 //            setTestResultsOnly(false).
-//            setDatasets(development.DataSets.UCIContinuousFileNames).
+//            setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
 //            readInClassifiers(new String[] {"1NN", "C4.5"}, "Z:/Results/FinalisedUCIContinuous/").
 //            runComparison(); 
 //        new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
 ////            setBuildMatlabDiagrams(true).
 ////            setUseAllStatistics().
-////            setDatasets(Arrays.copyOfRange(development.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster... 
+////            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
 ////            setDatasets("C:/Temp/dsets.txt").
 //            setDatasets("C:/Temp/dsets.txt"). 
 //            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups"). 
