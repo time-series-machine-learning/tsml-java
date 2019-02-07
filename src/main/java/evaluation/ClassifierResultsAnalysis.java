@@ -79,17 +79,11 @@ public class ClassifierResultsAnalysis {
     static boolean doStats = true; //the ultimate in hacks and spaghetti 
     //brought in with buildtime compilation, turns off stat code while 
     //making those files, thisll be cleaned up with time
-    
-    protected static final Function<ClassifierResults, Double> getAccs = (ClassifierResults cr) -> {return cr.acc;};
-    protected static final Function<ClassifierResults, Double> getBalAccs = (ClassifierResults cr) -> {return cr.balancedAcc;};
-    protected static final Function<ClassifierResults, Double> getAUROCs = (ClassifierResults cr) -> {return cr.meanAUROC;};
-    protected static final Function<ClassifierResults, Double> getNLLs = (ClassifierResults cr) -> {return cr.nll;};
-    protected static final Function<ClassifierResults, Double> getF1s = (ClassifierResults cr) -> {return cr.f1;};
-    protected static final Function<ClassifierResults, Double> getMCCs = (ClassifierResults cr) -> {return cr.mcc;};
-    protected static final Function<ClassifierResults, Double> getPrecisions = (ClassifierResults cr) -> {return cr.precision;};
-    protected static final Function<ClassifierResults, Double> getRecalls = (ClassifierResults cr) -> {return cr.recall;};
-    protected static final Function<ClassifierResults, Double> getSensitivities = (ClassifierResults cr) -> {return cr.sensitivity;};
-    protected static final Function<ClassifierResults, Double> getSpecificities = (ClassifierResults cr) -> {return cr.specificity;};
+   
+    private static final String testLabel = "TEST";
+    private static final String trainLabel = "TRAIN";
+    private static final String trainTestDiffLabel = "TRAINTESTDIFFS";
+    public static final String clusterGroupingIdentifier = "PostHocXmeansClustering";
     
     //START TIMING SHIT
 //    //NOTE TODO BUG CHECK: due to double precision, this cast (long to double) may end up causing problems in the future. 
@@ -126,102 +120,17 @@ public class ClassifierResultsAnalysis {
     }
     //END TIMING SHIT
 
-    private static final String testLabel = "TEST";
-    private static final String trainLabel = "TRAIN";
-    private static final String trainTestDiffLabel = "TRAINTESTDIFFS";
-    
-    public static final String clusterGroupingIdentifier = "PostHocXmeansClustering";
     
     public static class ClassifierEvaluation  {
         public String classifierName;
         public ClassifierResults[][] testResults; //[dataset][fold]
         public ClassifierResults[][] trainResults; //[dataset][fold]
-        public BVOnDset[] bvs; //bias variance decomposition, each element for one dataset
         
-        
-        public ClassifierEvaluation(String name, ClassifierResults[][] testResults, ClassifierResults[][] trainResults, BVOnDset[] bvs) {
+        public ClassifierEvaluation(String name, ClassifierResults[][] testResults, ClassifierResults[][] trainResults) {
             this.classifierName = name;
             this.testResults = testResults;
             this.trainResults = trainResults;
-            this.bvs = bvs;
         }
-    }
-    
-    public static class BVOnDset {
-        //bias variance decomposition for a single classifier on a single dataset
-        
-        public int numClasses;
-        public int[] trueClassVals; //[dataset][inst]
-        public ArrayList<Integer>[] allPreds; //[dataset][inst][fold]
-                
-        public BVOnDset(int[] trueClassVals, int numClasses) {
-            this.trueClassVals = trueClassVals;
-            this.numClasses = numClasses;
-            
-            allPreds = new ArrayList[trueClassVals.length];
-            for (int i = 0; i < allPreds.length; i++)
-                allPreds[i] = new ArrayList<>();
-        }
-        
-        /**
-         * stores the test predictions on a single fold of this dataset
-         */
-        public void storePreds(int[] testInds, int[] testPreds) {
-            for (int i = 0; i < testInds.length; i++)
-                allPreds[testInds[i]].add(testPreds[i]);
-        }
-        
-        public int[][] getFinalPreds() {
-            int[][] res = new int[allPreds.length][] ;
-            for (int i = 0; i < res.length; i++) {
-                res[i] = new int[allPreds[i].size()];
-                for (int j = 0; j < allPreds[i].size(); j++) 
-                    res[i][j] = allPreds[i].get(j);
-            }
-            return res;
-        }
-    }
-        
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccs));
-        stats.add(new Pair<>("BALACC", getBalAccs));
-        stats.add(new Pair<>("AUROC", getAUROCs));
-        stats.add(new Pair<>("NLL", getNLLs));
-        return stats;
-    }
-    
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics_AndF1MCC() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccs));
-        stats.add(new Pair<>("BALACC", getBalAccs));
-        stats.add(new Pair<>("AUROC", getAUROCs));
-        stats.add(new Pair<>("NLL", getNLLs));
-        stats.add(new Pair<>("F1", getF1s));
-        stats.add(new Pair<>("MCC", getMCCs));
-        return stats;
-    }
-    
-        
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccs));
-        stats.add(new Pair<>("BALACC", getBalAccs));
-        stats.add(new Pair<>("AUROC", getAUROCs));
-        stats.add(new Pair<>("NLL", getNLLs));
-        stats.add(new Pair<>("F1", getF1s));
-        stats.add(new Pair<>("MCC", getMCCs));
-        stats.add(new Pair<>("Prec", getPrecisions));
-        stats.add(new Pair<>("Recall", getRecalls));
-        stats.add(new Pair<>("Sens", getSensitivities));
-        stats.add(new Pair<>("Spec", getSpecificities));
-        return stats;
-    }
-    
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatisticOnly() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccs));
-        return stats;
     }
     
     protected static void writeTableFile(String filename, String tableName, double[][] accs, String[] cnames, String[] dsets) {
@@ -279,7 +188,6 @@ public class ClassifierResultsAnalysis {
         outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_tableWDLSig05_"+statName+".csv");
         outwdl.writeLine(sig05wdl[2]);
         outwdl.closeFile();
-        
         
         OutFile out=new OutFile(outPath+filename+"_"+statName+"_SUMMARY.csv");
         
@@ -746,7 +654,7 @@ public class ClassifierResultsAnalysis {
      * for legacy code, will call the overloaded version with acc,balacc,nll,auroc as the default statisitics
      */
     public static void writeAllEvaluationFiles(String outPath, String expname, ArrayList<ClassifierEvaluation> results, String[] dsets) {  
-        writeAllEvaluationFiles(outPath, expname, getDefaultStatistics(), results, dsets, new HashMap<String, Map<String, String[]>>());
+        writeAllEvaluationFiles(outPath, expname, ClassifierResults.getDefaultStatistics(), results, dsets, new HashMap<String, Map<String, String[]>>());
     }
     
     public static void writeAllEvaluationFiles(String outPath, String expname, ArrayList<Pair<String,Function<ClassifierResults,Double>>> statistics, ArrayList<ClassifierEvaluation> results, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) {

@@ -9,24 +9,26 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
+import java.util.function.Function;
 import utilities.DebugPrinting;
 import utilities.GenericTools;
 import utilities.InstanceTools;
+import utilities.generic_storage.Pair;
 
 /**
  * This class has morphed over time. At it's base form, it's a simple container class for the 
- * results of a classifier on a single resample of a dataset. 
+ * predictions and results of a classifier on a single set of instances (for example, the test 
+ * set of a particular resample of a particular dataset) 
  * 
- * It can be used in batch mode (add them all in at once) or online (add in one at a time).
+ * It can be used in batch mode (add all predictions at once) or online (add in one at a time).
  * The former is sensible for storing training set results, the latter for test results.
  * 
- * Supports reading/writing of results to file, in the 'classifier results file format'
+ * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  * 
  * Also supports the calculation of various evaluative stats based on the results (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline
  * 
- * 
- * @author James Large (james.large@uea.ac.uk) + edits from jsut about everybody
+ * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
     public long buildTime;
@@ -59,6 +61,21 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     private boolean finalised = false;
     private boolean allStatsFound = false;
+    
+    
+    
+    protected static final Function<ClassifierResults, Double> getAccs = (ClassifierResults cr) -> {return cr.acc;};
+    protected static final Function<ClassifierResults, Double> getBalAccs = (ClassifierResults cr) -> {return cr.balancedAcc;};
+    protected static final Function<ClassifierResults, Double> getAUROCs = (ClassifierResults cr) -> {return cr.meanAUROC;};
+    protected static final Function<ClassifierResults, Double> getNLLs = (ClassifierResults cr) -> {return cr.nll;};
+    protected static final Function<ClassifierResults, Double> getF1s = (ClassifierResults cr) -> {return cr.f1;};
+    protected static final Function<ClassifierResults, Double> getMCCs = (ClassifierResults cr) -> {return cr.mcc;};
+    protected static final Function<ClassifierResults, Double> getPrecisions = (ClassifierResults cr) -> {return cr.precision;};
+    protected static final Function<ClassifierResults, Double> getRecalls = (ClassifierResults cr) -> {return cr.recall;};
+    protected static final Function<ClassifierResults, Double> getSensitivities = (ClassifierResults cr) -> {return cr.sensitivity;};
+    protected static final Function<ClassifierResults, Double> getSpecificities = (ClassifierResults cr) -> {return cr.specificity;};
+    
+    
     
     public ClassifierResults() {
         actualClassValues= new ArrayList<>();
@@ -693,5 +710,37 @@ base xi+1 to xi , that is, A
         System.out.println("FILE TEST =\n"+cr.writeAllStats());
         OutFile out=new OutFile("C:\\JamesLPHD\\testFold1stats.csv");
         out.writeLine(cr.writeAllStats());
+    }
+    
+    
+    
+    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
+        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
+        stats.add(new Pair<>("ACC", getAccs));
+        stats.add(new Pair<>("BALACC", getBalAccs));
+        stats.add(new Pair<>("AUROC", getAUROCs));
+        stats.add(new Pair<>("NLL", getNLLs));
+        return stats;
+    }
+        
+    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
+        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
+        stats.add(new Pair<>("ACC", getAccs));
+        stats.add(new Pair<>("BALACC", getBalAccs));
+        stats.add(new Pair<>("AUROC", getAUROCs));
+        stats.add(new Pair<>("NLL", getNLLs));
+        stats.add(new Pair<>("F1", getF1s));
+        stats.add(new Pair<>("MCC", getMCCs));
+        stats.add(new Pair<>("Prec", getPrecisions));
+        stats.add(new Pair<>("Recall", getRecalls));
+        stats.add(new Pair<>("Sens", getSensitivities));
+        stats.add(new Pair<>("Spec", getSpecificities));
+        return stats;
+    }
+    
+    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatistic() { 
+        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
+        stats.add(new Pair<>("ACC", getAccs));
+        return stats;
     }
 }
