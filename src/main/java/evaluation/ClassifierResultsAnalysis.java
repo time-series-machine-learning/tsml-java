@@ -38,25 +38,22 @@ import weka.core.Instances;
  *
  * This is a monster of a class, with some bad code and not enough documentation. It's improving over time however.
  * If there are any questions about it, best bet would be to email me (see below).
+ *
+ * This class is given a much better front end/'api' in MultipleClassifierEvaluation.java. Users should almost always use
+ * that class for their comparative summaries of different classifiers. 
  * 
- * Basically functions to analyse/handle COMPLETED (i.e no folds missing out of those expected of the specified classifierXdatasetXfoldXsplit set) 
- * sets of results in ClassifierResults format
+ * The two functions from this class in particular a user would actually use in their code might be: 
+ * writeAllEvaluationFiles(...) and summariseTestAccuracies(...), the former of which is the the 
+ * function wrapped by MultipleClassifierEvaluation
  * 
- * For some reason, the excel workbook writer library i found/used makes xls files (instead of xlsx) and doens't 
- * support recent excel default fonts. Just open it and saveas if you want to
- 
- Future work when wanted/needed/motivation could be to handle incomplete results (e.g random folds missing), more matlab figures over time, 
- and a MASSIVE refactor to remove the crap code
- 
- Two ways to use, the big one-off static method writeALLEvaluationFiles(...) if you have everything in memory
- in the correct format already (it is assumed that findAllStats on each classifierResults has already been called, and 
- if desired any results cleaning/nulling for space has already occurred)
- 
- or you'd normally use development.experiments.MultipleClassifierEvaluation to set up results located in memory or
- on disk and call runComparison(), which essentially just wraps writeALLEvaluationFiles(...). Using this method 
- will call findAllStats on each of the classifier results, and there's a bool (default true) to set whether 
- to null the instance prediction info after stats are found to save memory. if some custom or future analysis 
- method not defined natively in classifierresults uses the individual prediction info, will need to keep it 
+ * Basically, this is a collection of static functions to analyse/handle COMPLETED (i.e no folds missing out 
+ * of those expected of the specified classifierXdatasetXfoldXsplit set) sets of results in ClassifierResults format
+ * 
+ * For some reason, the excel workbook writer library i found/used makes xls files (instead of xlsx) and doesn't 
+ * support recent excel default fonts. Just open it and saveas xlsx if you want to
+ *
+ * Future work when wanted/needed would be to handle incomplete results (e.g random folds missing), more matlab figures over time, 
+ * and a MASSIVE refactor to remove the crap code
  * 
  * @author James Large james.large@uea.ac.uk
  */
@@ -64,28 +61,32 @@ import weka.core.Instances;
 
 public class ClassifierResultsAnalysis {
     
-    
+    //actual parameters
     public static String expRootDirectory;
-    protected static String matlabFilePath = "src/main/matlab/";
-    protected static String pairwiseScatterDiaPath = "PairwiseScatterDias/";
-    protected static String cdDiaPath = "cddias/";
-    protected static String pairwiseCDDiaDirectoryName = "pairwise/";
-    protected static String friedmanCDDiaDirectoryName = "friedman/";
-    public static double FRIEDMANCDDIA_PVAL = 0.05;
-        
     public static boolean buildMatlabDiagrams = false;
     public static boolean testResultsOnly = false;
     
-    static boolean doStats = true; //the ultimate in hacks and spaghetti 
-    //brought in with buildtime compilation, turns off stat code while 
-    //making those files, thisll be cleaned up with time
-   
+    
+    
+    //final id's and path suffixes
+    protected static final String matlabFilePath = "src/main/matlab/";
+    protected static final String pairwiseScatterDiaPath = "PairwiseScatterDias/";
+    protected static final String cdDiaPath = "cddias/";
+    protected static final String pairwiseCDDiaDirectoryName = "pairwise/";
+    protected static final String friedmanCDDiaDirectoryName = "friedman/";
+    public static final double FRIEDMANCDDIA_PVAL = 0.05;
     private static final String testLabel = "TEST";
     private static final String trainLabel = "TRAIN";
     private static final String trainTestDiffLabel = "TRAINTESTDIFFS";
     public static final String clusterGroupingIdentifier = "PostHocXmeansClustering";
+        
     
-    //START TIMING SHIT
+    protected static boolean doStats = true; //the ultimate in hacks and spaghetti 
+    //brought in with buildtime compilation, turns off stat code while 
+    //making those files, thisll be cleaned up with time
+   
+    
+    //START TIMING TEMPORARY FIXES
 //    //NOTE TODO BUG CHECK: due to double precision, this cast (long to double) may end up causing problems in the future. 
 //    //if we were assume for now buildtime is no longer than a week, this won't cause problems
 //    //some post processed ensembles (e.g HIVE COTE) might break this assumption though
@@ -118,7 +119,7 @@ public class ClassifierResultsAnalysis {
             }
         };
     }
-    //END TIMING SHIT
+    //END TIMING TEMPORARY FIXES
 
     
     public static class ClassifierEvaluation  {
@@ -132,6 +133,112 @@ public class ClassifierResultsAnalysis {
             this.trainResults = trainResults;
         }
     }
+    
+    
+    //THESE ARE THE METHODS YOU'D ACTUALLY USE, the public 'actually do stuff' methods'
+    
+    /**
+     * for legacy code, will call the overloaded version with acc,balacc,nll,auroc as the default statisitics
+     */
+    public static void writeAllEvaluationFiles(
+            String outPath, 
+            String expname, 
+            ArrayList<ClassifierEvaluation> results, 
+            String[] dsets) 
+    {  
+        writeAllEvaluationFiles(outPath, expname, ClassifierResults.getDefaultStatistics(), results, dsets, new HashMap<String, Map<String, String[]>>());
+    }
+    
+    public static void writeAllEvaluationFiles(
+            String outPath, 
+            String expname, 
+            ArrayList<Pair<String,Function<ClassifierResults,Double>>> statistics, 
+            ArrayList<ClassifierEvaluation> results, 
+            String[] dsets, 
+            Map<String, Map<String, String[]>> dsetGroupings) 
+    {
+        //hacky housekeeping
+        MultipleClassifiersPairwiseTest.beQuiet = true;
+        OneSampleTests.beQuiet = true;
+        
+        outPath = outPath.replace("\\", "/"); 
+        if (!outPath.endsWith("/"))
+            outPath+="/";
+        outPath += expname + "/";
+        new File(outPath).mkdirs();
+        
+        expRootDirectory = outPath;
+        
+        OutFile bigSummary = new OutFile(outPath + expname + "_BIGglobalSummary.csv");
+        OutFile smallSummary = new OutFile(outPath + expname + "_SMALLglobalSummary.csv");
+        
+        String[] cnames = getNames(results);
+        String[] statCliques = new String[statistics.size()];
+        String[] statNames = new String[statistics.size()];
+        
+        for (int i = 0; i < statistics.size(); ++i) {
+            Pair<String, Function<ClassifierResults, Double>> stat = statistics.get(i);
+            
+            String[] summary = null;
+            try { 
+                summary = writeStatisticFiles(outPath, expname, results, stat, cnames, dsets, dsetGroupings);
+            } catch (FileNotFoundException fnf) {
+                System.out.println("Something went wrong, later stages of analysis could not find files that should have been made"
+                        + "internally in earlier stages of the pipeline, FATAL");
+                fnf.printStackTrace();
+                System.exit(0);
+            }
+            
+            
+            bigSummary.writeString(stat.var1+":");
+            bigSummary.writeLine(summary[0]);
+            
+            smallSummary.writeString(stat.var1+":");
+            smallSummary.writeLine(summary[1]);
+            
+            statNames[i] = stat.var1;
+            statCliques[i] = summary[2];
+        }
+        
+        bigSummary.closeFile();
+        smallSummary.closeFile();
+                
+        buildResultsSpreadsheet(outPath, expname, statistics);
+        
+        //the hacky include of buildtime files
+        try { 
+            writeBuildTimeFiles(outPath, expname, results, cnames, dsets, dsetGroupings);
+        } catch (FileNotFoundException fnf) {
+            System.out.println("Buildtime files couldnt be made");
+            fnf.printStackTrace();
+            System.exit(0);
+        }
+        
+        if(buildMatlabDiagrams) {
+            MatlabController proxy = MatlabController.getInstance();
+            proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
+            buildCDDias(expname, statNames, statCliques);
+            buildPairwiseScatterDiagrams(outPath, expname, statNames, dsets);
+        }
+    }
+    
+    /**
+     * Essentially just a wrapper for what writeStatisticOnSplitFiles does, in the simple case that we just have a 3d array of test accs and want summaries for it
+     * Mostly for legacy results not in the classifier results file format 
+     */
+    public static void summariseTestAccuracies(String outPath, String filename, double[][][] testFolds, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
+        writeStatisticOnSplitFiles(outPath, filename, null, testLabel, "ACC", testFolds, cnames, dsets, dsetGroupings);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     protected static void writeTableFile(String filename, String tableName, double[][] accs, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
@@ -590,14 +697,7 @@ public class ClassifierResultsAnalysis {
         
         return groupFoldVals;
     }
-    
-    /**
-     * Essentially just a wrapper for what writeStatisticOnSplitFiles does, in the simple case that we just have a 3d array of test accs and want summaries for it
-     * Mostly for legacy results not in the classifier results file format 
-     */
-    public static void summariseTestAccuracies(String outPath, String filename, double[][][] testFolds, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
-        writeStatisticOnSplitFiles(outPath, filename, null, testLabel, "ACC", testFolds, cnames, dsets, dsetGroupings);
-    }
+
     
     protected static String[] writeStatisticFiles(String outPath, String filename, ArrayList<ClassifierEvaluation> results, Pair<String, Function<ClassifierResults, Double>> evalStatistic, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         String statName = evalStatistic.var1;
@@ -650,78 +750,7 @@ public class ClassifierResultsAnalysis {
         return res;
     }
     
-    /**
-     * for legacy code, will call the overloaded version with acc,balacc,nll,auroc as the default statisitics
-     */
-    public static void writeAllEvaluationFiles(String outPath, String expname, ArrayList<ClassifierEvaluation> results, String[] dsets) {  
-        writeAllEvaluationFiles(outPath, expname, ClassifierResults.getDefaultStatistics(), results, dsets, new HashMap<String, Map<String, String[]>>());
-    }
     
-    public static void writeAllEvaluationFiles(String outPath, String expname, ArrayList<Pair<String,Function<ClassifierResults,Double>>> statistics, ArrayList<ClassifierEvaluation> results, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) {
-        //hacky housekeeping
-        MultipleClassifiersPairwiseTest.beQuiet = true;
-        OneSampleTests.beQuiet = true;
-        
-        outPath = outPath.replace("\\", "/"); 
-        if (!outPath.endsWith("/"))
-            outPath+="/";
-        outPath += expname + "/";
-        new File(outPath).mkdirs();
-        
-        expRootDirectory = outPath;
-        
-        OutFile bigSummary = new OutFile(outPath + expname + "_BIGglobalSummary.csv");
-        OutFile smallSummary = new OutFile(outPath + expname + "_SMALLglobalSummary.csv");
-        
-        String[] cnames = getNames(results);
-        String[] statCliques = new String[statistics.size()];
-        String[] statNames = new String[statistics.size()];
-        
-        for (int i = 0; i < statistics.size(); ++i) {
-            Pair<String, Function<ClassifierResults, Double>> stat = statistics.get(i);
-            
-            String[] summary = null;
-            try { 
-                summary = writeStatisticFiles(outPath, expname, results, stat, cnames, dsets, dsetGroupings);
-            } catch (FileNotFoundException fnf) {
-                System.out.println("Something went wrong, later stages of analysis could not find files that should have been made"
-                        + "internally in earlier stages of the pipeline, FATAL");
-                fnf.printStackTrace();
-                System.exit(0);
-            }
-            
-            
-            bigSummary.writeString(stat.var1+":");
-            bigSummary.writeLine(summary[0]);
-            
-            smallSummary.writeString(stat.var1+":");
-            smallSummary.writeLine(summary[1]);
-            
-            statNames[i] = stat.var1;
-            statCliques[i] = summary[2];
-        }
-        
-        bigSummary.closeFile();
-        smallSummary.closeFile();
-                
-        buildResultsSpreadsheet(outPath, expname, statistics);
-        
-        //the hacky include of buildtime files
-        try { 
-            writeBuildTimeFiles(outPath, expname, results, cnames, dsets, dsetGroupings);
-        } catch (FileNotFoundException fnf) {
-            System.out.println("Buildtime files couldnt be made");
-            fnf.printStackTrace();
-            System.exit(0);
-        }
-        
-        if(buildMatlabDiagrams) {
-            MatlabController proxy = MatlabController.getInstance();
-            proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
-            buildCDDias(expname, statNames, statCliques);
-            buildPairwiseScatterDiagrams(outPath, expname, statNames, dsets);
-        }
-    }
     
     protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, String stat, String cliques) {
         (new File(cdCSVpath)).mkdirs();
