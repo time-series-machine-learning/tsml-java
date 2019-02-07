@@ -603,7 +603,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         
         //to rerun this from a clean slate to check validity, delete any existing 'Example1' folder in here: 
         String folderToWriteAnalysisTo = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
-        String nameOfAnalysisWhichWillBecomeFolderName = "Example3";
+        String nameOfAnalysisWhichWillBecomeFolderName = "Example4";
         int numberOfFoldsAKAResamplesOfEachDataset = 10;
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(folderToWriteAnalysisTo, nameOfAnalysisWhichWillBecomeFolderName, numberOfFoldsAKAResamplesOfEachDataset); //10 folds only to make faster... 
         
