@@ -1415,10 +1415,15 @@ Optional
 //                    testTime=System.nanoTime()-testTime;
                     testResults.finaliseResults(trueClassValues);
 
-                    OutFile memOut=new OutFile(resultsPath+"/testFold"+fold+"mem.csv");
-                    long mem = SizeOf.deepSizeOf(c);
-                    memOut.writeLine(Long.toString(mem));
-                    memOut.closeFile();
+                    try {
+                        OutFile memOut = new OutFile(resultsPath + "/testFold" + fold + "mem.csv");
+                        long mem = SizeOf.deepSizeOf(c);
+                        memOut.writeLine(Long.toString(mem));
+                        memOut.closeFile();
+                    }
+                    catch (Exception e){
+                        System.err.println("Unable to write classifier size.");
+                    }
 
                     //Write results
                     OutFile testOut=new OutFile(resultsPath+testFoldPath);
