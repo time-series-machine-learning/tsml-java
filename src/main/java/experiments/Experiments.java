@@ -17,18 +17,12 @@
  */
 package experiments;
 
-import experiments.ClassifierLists;
-import experiments.CollateResults;
-import experiments.DataSets;
-//import experiments.Experiments;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,7 +48,6 @@ public class Experiments  {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
-    public static boolean testing = true;
     public static boolean debug = false;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
@@ -235,12 +228,7 @@ public class Experiments  {
      * instead of building the String[] args and calling main like a lot of legacy code does.
      * 
      */
-    public static void main(String[] args) throws Exception {
-        if (testing) {
-            test_correctnessTestsComparingOldExpsAndNew();
-            return;
-        }
-        
+    public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
         for (String str : args)
             System.out.println(str);
@@ -407,7 +395,7 @@ public class Experiments  {
      * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
      * values 1 to numUniqueFirstAttValues
      * 
-     * TODO: potentially just move to development.experiments.DataSets once we clean up that
+     * TODO: potentially just move to experiments.DataSets once we clean up that
      * 
      * @return new Instances[] { trainSet, testSet };
      */
@@ -674,98 +662,4 @@ public class Experiments  {
         }
         System.out.println("Finished all threads");            
     }
-   public static void test_correctnessTestsComparingOldExpsAndNew() throws Exception {
-        Experiments.testing = false;
-        
-        String baseResLoc = "C:/Temp/ExpsCorrectnessTests/";
-        
-        String[] classifiers = {
-            "C45", //simple, pure weka
-            "RandF", //untuned tsc wrapper of weka classifier
-            "DTW", //pure tsc
-            "TunedSVMLinear17", // implements TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable
-            "HESCA", // varied ensemble, has plenty of it's own shit going on internally
-        };
-        
-        String separator = "____";
-        
-        String[] datasets = {
-            "Z:/Data/UCIDelgado/"+separator+"hayes-roth", //single file for data
-            "Z:/Data/TSCProblems/"+separator+"ItalyPowerDemand",//fold0 defined
-            "Z:/Data/TSCProblems2017_Folds/"+separator+"SonyAIBORobotSurface1",//all folds predefined
-        };
-        
-        Method[] mains = { 
-            Experiments.class.getMethod("main", String[].class),
-            Experiments.class.getMethod("main", String[].class) 
-        };
-        
-        String[] mainNames = { "ExperimentsClassic", "ExperimentsClean" };
-        
-        
-        //for a bunch of different experimental parameters
-        for (String d : datasets) {
-            String[] split = d.split(separator);
-            String dataLoc = split[0];
-            String dataset = split[1];
-                
-            for (String classifier : classifiers) {
-                for (boolean genTrainFiles : new boolean[] { false, true }) {
-                    for (boolean checkpoint : new boolean[] { false, true }) {
-                        //just doing fold 0 and 1 resample, to test the resampling methods
-                        for (int fold = 1; fold < 3; fold++) {
-                            String[] trainFileNames = new String[mains.length];
-                            String[] testFileNames = new String[mains.length];
-                            String[] trainRes = new String[mains.length];
-                            String[] testRes = new String[mains.length];
-                            
-                            //run the different mains/collect results
-                            for (int mainInd = 0; mainInd < mains.length; mainInd++) {
-                                String resultLoc = baseResLoc + mainNames[mainInd] + "/Train=" + genTrainFiles + "/Checkpoint=" + checkpoint + "/";
-                                System.out.println(mainNames[mainInd]);
-                                mains[mainInd].invoke(null, (Object) new String[] { dataLoc, resultLoc, genTrainFiles+"", classifier, dataset, fold+"", checkpoint+"" });
-                                System.out.println("\n\n");
-                                
-                                if (genTrainFiles) {
-                                    trainFileNames[mainInd] = resultLoc + classifier + "/Predictions/" + dataset + "/trainFold" + (fold-1) + ".csv";
-                                    StringBuilder sb = new StringBuilder();
-                                    Scanner in = new Scanner(new File(trainFileNames[mainInd]));
-                                    while (in.hasNext())
-                                        sb.append(in.next());
-                                    trainRes[mainInd] = sb.toString();
-                                }
-                                
-                                testFileNames[mainInd] = resultLoc + classifier + "/Predictions/" + dataset + "/testFold" + (fold-1) + ".csv";
-                                StringBuilder sb = new StringBuilder();
-                                Scanner in = new Scanner(new File(testFileNames[mainInd]));
-                                while (in.hasNext())
-                                    sb.append(in.next());
-                                testRes[mainInd] = sb.toString();
-                            }
-                            
-                            //compare results for equality
-                            for (int i = 1; i < mains.length; i++) {
-                                //should all be the same, so jsut compare all to the first
-                                if (genTrainFiles && !trainRes[0].equals(testRes[i])) {
-                                    System.out.println("*******Difference in train files:*******");
-                                    System.out.println("\t"+trainFileNames[0]);
-                                    System.out.println("\t"+trainFileNames[i]);
-                                }
-                                else { 
-                                    
-                                }
-                                
-                                if (!testRes[0].equals(testRes[i])) {    
-                                    System.out.println("*******Difference in test files:******");
-                                    System.out.println("\t"+testFileNames[0]);
-                                    System.out.println("\t"+testFileNames[i]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }    
-    
 }
