@@ -45,31 +45,37 @@ public class DataSets {
     
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
-    public static String[] mtscProblems2018={
+    static String[] mtscProblems2018={
         "ArticularyWordRecognition",
-        "AtrialFibrilation",
+        "AtrialFibrillation",
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
         "DuckDuckGeese",
-        "ECGActivities",
-        "EEGFaceDetection",
         "EigenWorms",
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
+        "FaceDetection",
         "FingerMovements",
+        "HandMovementDirection",
         "Handwriting",
-//        "Heartbeat", too easy, everything gets 100%
+        "Heartbeat",
+        "InsectWingbeat",
 //        "KickVsPunch", Poorly formatted and very small train size
+        "JapaneseVowels",
+        "Libras",
+        "LSST",
         "MotorImagery",
         "NATOPS",
+        "PenDigits",
         "PEMS-SF",
         "Phoneme",
         "RacketSports",
         "SelfRegulationSCP1",
         "SelfRegulationSCP2",
         "SpokenArabicDigits",
+        "StandWalkJump",        
         "UWaveGestureLibrary"            
 };    
        //</editor-fold>       
@@ -209,7 +215,17 @@ public class DataSets {
                 };   
       //</editor-fold>    
 
-   String[] variableLength2018Problems={
+   public static String[] variableLength2018Problems={
+        "AllGestureWiimoteX",
+        "AllGestureWiimoteY",
+        "AllGestureWiimoteZ",
+        "PickupGestureWiimoteZ",
+        "PLAID",
+        "ShakeGestureWiimoteZ",
+        "GesturePebbleZ1",
+        "GesturePebbleZ2"
+   };
+   public static String[] newFor2018Problems={
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -237,7 +253,7 @@ public class DataSets {
 			"Car",          // 60,60,577,4
 			"CBF",                      // 30,900,128,3
 			"ChlorineConcentration",    // 467,3840,166,3
-			"CinCECGtorso", // 40,1380,1639,4
+			"CinCECGTorso", // 40,1380,1639,4
 			"Coffee", // 28,28,286,2
 			"Computers", // 250,250,720,2
 			"CricketX", // 390,390,300,12
@@ -335,7 +351,7 @@ public class DataSets {
 			"Car",          // 60,60,577,4
 			"CBF",                      // 30,900,128,3
 			"ChlorineConcentration",    // 467,3840,166,3
-			"CinCECGtorso", // 40,1380,1639,4
+			"CinCECGTorso", // 40,1380,1639,4
 			"Coffee", // 28,28,286,2
 			"Computers", // 250,250,720,2
 			"CricketX", // 390,390,300,12
@@ -415,7 +431,96 @@ public class DataSets {
                 };   
       //</editor-fold>    
 
-    //<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">    
+
+//Bakeoff data sets, expansded in 2018  
+    //<editor-fold defaultstate="collapsed" desc="tscProblems78WithoutPigs:">    
+		public static String[] tscProblems78={	
+                                //Train Size, Test Size, Series Length, Nos Classes
+                                //Train Size, Test Size, Series Length, Nos Classes
+			"Adiac",        // 390,391,176,37
+			"ArrowHead",    // 36,175,251,3
+			"Beef",         // 30,30,470,5
+			"BeetleFly",    // 20,20,512,2
+			"BirdChicken",  // 20,20,512,2
+			"Car",          // 60,60,577,4
+			"CBF",                      // 30,900,128,3
+			"ChlorineConcentration",    // 467,3840,166,3
+			"CinCECGTorso", // 40,1380,1639,4
+			"Coffee", // 28,28,286,2
+			"Computers", // 250,250,720,2
+			"CricketX", // 390,390,300,12
+			"CricketY", // 390,390,300,12
+			"CricketZ", // 390,390,300,12
+			"DiatomSizeReduction", // 16,306,345,4
+			"DistalPhalanxOutlineCorrect", // 600,276,80,2
+			"DistalPhalanxOutlineAgeGroup", // 400,139,80,3
+			"DistalPhalanxTW", // 400,139,80,6
+			"Earthquakes", // 322,139,512,2
+                        "ECG200",   //100, 100, 96
+                        "ECG5000",  //4500, 500,140
+			"ECGFiveDays", // 23,861,136,2
+			"FaceAll", // 560,1690,131,14
+			"FaceFour", // 24,88,350,4
+			"FacesUCR", // 200,2050,131,14
+			"FiftyWords", // 450,455,270,50
+			"Fish", // 175,175,463,7
+			"GunPoint", // 50,150,150,2
+			"Ham",      //105,109,431
+			"Haptics", // 155,308,1092,5
+			"Herring", // 64,64,512,2
+			"InlineSkate", // 100,550,1882,7
+                        "InsectWingbeatSound",//1980,220,256
+			"ItalyPowerDemand", // 67,1029,24,2
+			"LargeKitchenAppliances", // 375,375,720,3
+			"Lightning2", // 60,61,637,2
+			"Lightning7", // 70,73,319,7
+			"Mallat", // 55,2345,1024,8
+			"Meat",//60,60,448
+                        "MedicalImages", // 381,760,99,10
+			"MiddlePhalanxOutlineCorrect", // 600,291,80,2
+			"MiddlePhalanxOutlineAgeGroup", // 400,154,80,3
+			"MiddlePhalanxTW", // 399,154,80,6
+			"MoteStrain", // 20,1252,84,2
+			"OliveOil", // 30,30,570,4
+			"OSULeaf", // 200,242,427,6
+			"PhalangesOutlinesCorrect", // 1800,858,80,2
+                        "Phoneme",//1896,214, 1024
+			"Plane", // 105,105,144,7
+			"ProximalPhalanxOutlineCorrect", // 600,291,80,2
+			"ProximalPhalanxOutlineAgeGroup", // 400,205,80,3
+			"ProximalPhalanxTW", // 400,205,80,6
+			"RefrigerationDevices", // 375,375,720,3
+			"ScreenType", // 375,375,720,3
+			"ShapeletSim", // 20,180,500,2
+			"ShapesAll", // 600,600,512,60
+			"SmallKitchenAppliances", // 375,375,720,3
+			"SonyAIBORobotSurface1", // 20,601,70,2
+			"SonyAIBORobotSurface2", // 27,953,65,2
+			"Strawberry",//370,613,235
+                        "SwedishLeaf", // 500,625,128,15
+			"Symbols", // 25,995,398,6
+			"SyntheticControl", // 300,300,60,6
+			"ToeSegmentation1", // 40,228,277,2
+			"ToeSegmentation2", // 36,130,343,2
+			"Trace", // 100,100,275,4
+			"TwoLeadECG", // 23,1139,82,2
+			"TwoPatterns", // 1000,4000,128,4
+			"UWaveGestureLibraryX", // 896,3582,315,8
+			"UWaveGestureLibraryY", // 896,3582,315,8
+			"UWaveGestureLibraryZ", // 896,3582,315,8
+			"UWaveGestureLibraryAll", // 896,3582,945,8
+			"Wafer", // 1000,6164,152,2
+			"Wine",//54	57	234
+                        "WordSynonyms", // 267,638,270,25
+			"Worms", //77, 181,900,5
+                        "WormsTwoClass",//77, 181,900,5
+                        "Yoga" // 300,3000,426,2
+                };   
+      //</editor-fold>    
+
+                
+
+//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">    
 		public static String[][] fiveSplits={	
       {			"Adiac",        // 390,391,176,37
 			"ArrowHead",    // 36,175,251,3
@@ -425,7 +530,7 @@ public class DataSets {
 			"Car",          // 60,60,577,4
 			"CBF",                      // 30,900,128,3
 			"ChlorineConcentration",    // 467,3840,166,3
-			"CinCECGtorso", // 40,1380,1639,4
+			"CinCECGTorso", // 40,1380,1639,4
 			"Coffee", // 28,28,286,2
 			"Computers", // 250,250,720,2
 			"CricketX", // 390,390,300,12
@@ -523,7 +628,7 @@ public class DataSets {
 			"Car", // 60,60,577,4
 			"CBF", // 30,900,128,3
 			"ChlorineConcentration", // 467,3840,166,3
-			"CinCECGtorso", // 40,1380,1639,4
+			"CinCECGTorso", // 40,1380,1639,4
 			"Coffee", // 28,28,286,2
 			"CricketX", // 390,390,300,12
 			"CricketY", // 390,390,300,12
@@ -930,7 +1035,19 @@ tiianic
         "connect-4","contrac","credit-approval","cylinder-bands","dermatology","echocardiogram","ecoli","energy-y1","energy-y2","fertility","flags","glass","haberman-survival","hayes-roth","heart-cleveland","heart-hungarian","heart-switzerland","heart-va","hepatitis","hill-valley","horse-colic","ilpd-indian-liver","image-segmentation","ionosphere","iris","led-display","lenses","letter","libras","low-res-spect","lung-cancer","lymphography","mammographic",
         "molec-biol-promoter","molec-biol-splice","monks-1","monks-2","monks-3","mushroom","musk-1","musk-2","nursery","oocytes_merluccius_nucleus_4d","oocytes_merluccius_states_2f","oocytes_trisopterus_nucleus_2f","oocytes_trisopterus_states_5b","optical","ozone","page-blocks","parkinsons","pendigits","pima","pittsburg-bridges-MATERIAL","pittsburg-bridges-REL-L","pittsburg-bridges-SPAN","pittsburg-bridges-T-OR-D","pittsburg-bridges-TYPE","planning","plant-margin","plant-shape","plant-texture","post-operative","primary-tumor","ringnorm","seeds","semeion","soybean","spambase","spect","spectf","statlog-australian-credit","statlog-german-credit","statlog-heart","statlog-image","statlog-landsat","statlog-shuttle","statlog-vehicle","steel-plates","synthetic-control","teaching","thyroid","tic-tac-toe","titanic","trains","twonorm","vertebral-column-2clases","vertebral-column-3clases","wall-following","waveform","waveform-noise","wine","wine-quality-red","wine-quality-white","yeast","zoo"};
 
- 
+//Refactor when repo back 
+    public static String[] ReducedUCI={"bank","blood","breast-cancer-wisc-diag",
+        "breast-tissue","cardiotocography-10clases",
+        "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
+        "ecoli","glass","hill-valley",
+        "image-segmentation","ionosphere","iris","libras","magic",
+        "miniboone",
+        "oocytes_merluccius_nucleus_4d","oocytes_trisopterus_states_5b",
+        "optical","ozone","page-blocks","parkinsons","pendigits",
+        "planning","post-operative","ringnorm","seeds","spambase",
+            "statlog-landsat","statlog-shuttle","statlog-vehicle","steel-plates",
+            "synthetic-control","twonorm","vertebral-column-3clases",
+            "wall-following","waveform-noise","wine-quality-white","yeast"};
  
     
     
@@ -1075,8 +1192,8 @@ public static void dataDescription(String[] fileNames){
         nm.addAll(Arrays.asList(notNormalised));     
         f.writeLine("Problem,TrainSize,TestSize,SeriesLength,NumClasses,Normalised,ClassCounts");
                 
-        try{
-            for(int i=0;i<fileNames.length;i++){
+        for(int i=0;i<fileNames.length;i++){
+            try{
                 Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
                 Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");			
                 Instances allData =new Instances(test);
@@ -1095,27 +1212,30 @@ public static void dataDescription(String[] fileNames){
                     classCounts[allData.numClasses()+(int)(ins.classValue())]++;
                 all[i]=new MetaData(fileNames[i],train.numInstances(),test.numInstances(),test.numAttributes()-1,test.numClasses(),classCounts,normalised);
                 f.writeLine(all[i].toString());
+                System.out.println(all[i].toString());
+                }
+            catch(Exception e){
+                System.out.println(" ERRROR"+e);
             }
-        }catch(Exception e){
-            System.out.println(" ERRROR"+e);
         }
+        /*
         Arrays.sort(all);       
-        f=new OutFile(dropboxPath+"DataDimensionsBySeriesLength.csv");
+        f=new OutFile(problemPath+"DataDimensionsBySeriesLength.csv");
         for(MetaData m: all)
             f.writeLine(m.toString());
         Arrays.sort(all, new MetaData.CompareByTrain());       
-        f=new OutFile(dropboxPath+"DataDimensionsByTrainSize.csv");
+        f=new OutFile(problemPath+"DataDimensionsByTrainSize.csv");
         for(MetaData m: all)
             f.writeLine(m.toString());
         Arrays.sort(all, new MetaData.CompareByClasses());       
-        f=new OutFile(dropboxPath+"DataDimensionsByNosClasses.csv");
+        f=new OutFile(problemPath+"DataDimensionsByNosClasses.csv");
         for(MetaData m: all)
             f.writeLine(m.toString());
         Arrays.sort(all, new MetaData.CompareByTotalSize());       
-        f=new OutFile(dropboxPath+"DataDimensionsByTotalSize.csv");
+        f=new OutFile(problemPath+"DataDimensionsByTotalSize.csv");
         for(MetaData m: all)
             f.writeLine(m.toString());
-
+*/
 
 }
 
@@ -1437,16 +1557,38 @@ public static void describeTextFiles(){
 //First_link,Second_link,First_used_TSC,Timestamp,Multivariate Flag, Dimension   
        
    }
+   public static boolean hasMissing(String file){
+       for(String str:variableLength2018Problems)
+           if(str.equals(file)) return true;
+       return false;
+           
+   }
+   public static void makeUpLoadFile(String dest, String source){
+       OutFile of = new OutFile(dest);
+       InFile inf=new InFile(source);
+       String line=inf.readLine();
+       while(line!=null){
+           String[] split=line.split(",");
+           for(int i=0;i<split.length-1;i++)
+               of.writeString("\""+split[i]+"\",");
+           of.writeLine("\""+split[split.length-1]+"\"");         
+           line=inf.readLine();
+       }
+   }
+   
    
 public static void main(String[] args) throws Exception{
-    path="Z:\\Data\\TSCProblems2018\\";
-    problemPath="Z:\\Data\\TSCProblems2018\\";
-    String zipPath="Z:\\Data\\TSCProblems2018_Zips\\";
-    dataDescription(tscProblems2018);
+    problemPath="E:\\Data\\ConcatenatedMTSC\\";
+    dataDescription(mtscProblems2018);
     System.exit(0);
-    OutFile of = new OutFile("C:\\temp\\TSCAll.txt");
-        for(String str:tscProblems2018)
-            of.writeLine(str);
+    path="E:\\Data\\TSCProblems2018\\";
+    makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
+    OutFile of = new OutFile("C:\\temp\\TSCNoMissing.txt");
+        for(String str:tscProblems2018){
+            if(!hasMissing(str))
+                of.writeLine(str);
+        }
+    String zipPath="Z:\\Data\\TSCProblems2018_Zips\\";
     
     
     String[] test={"Adiac"};

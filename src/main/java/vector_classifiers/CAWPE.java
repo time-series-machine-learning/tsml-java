@@ -1374,7 +1374,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      * For inquiries into specific details of reproduction, best bet is to email us
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
-     */
+    
     public static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
         //init, edit the paths for local running ofc
 //        String[] dataHeaders = { "UCI", };
@@ -1442,7 +1442,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //done!
     }
-
+ */
     public static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
         System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
@@ -1454,7 +1454,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
     }
-
+/*
     public static void buildCAWPEPaper_BuildEnsembleFromResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths, String[][] datasetNames,
                                                                 String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
 
@@ -1513,11 +1513,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         }
     }
 
+*/
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
 
-        buildCAWPEPaper_AllResultsForFigure3();
+//        buildCAWPEPaper_AllResultsForFigure3();
 
 //        testBuildingInds(3);
 //        testLoadingInds(2);

@@ -305,10 +305,10 @@ public class EnsembleSelection extends CAWPE {
     }
     
     public static void main(String[] args) throws Exception {
-        tests();
+ //       tests();
 //        ana();
     }
-    
+ /*   
     public static void tests() { 
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
@@ -360,7 +360,8 @@ public class EnsembleSelection extends CAWPE {
             }
         }
     }
-    
+   
+*/
     public static String[] CAWPE_basic = new String[] { 
         "NN",
         "SVML",

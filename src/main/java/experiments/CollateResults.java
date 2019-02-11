@@ -639,19 +639,7 @@ public static void basicSummaryComparisons(){
         basicSummaryComparisons();        
         
     }
-   public static void untunedVsTuned() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "XBBoost", 5);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {"XGBoost"},
-               "E://Results//UCI//Untuned");
-       m.readInClassifiers(new String[] {"TunedXGBoost"}, 
-               "E://Results//UCI//Tuned");
-           m.runComparison(); 
-       
-   }
+ 
 
    public static void collateTuned() throws Exception{
        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
@@ -745,21 +733,18 @@ public static void basicSummaryComparisons(){
        
    }
 
-   public static void tunedVuntuned() throws Exception{
-       String classifier ="SVMRBF";
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", classifier, 30);
-       m.setBuildMatlabDiagrams(true);
+   public static void tunedVuntuned(String classifier) throws Exception{
+       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//RandFvsRotF//", classifier, 30);
+       m.setBuildMatlabDiagrams(false);
        m.setDebugPrinting(true);
        m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousFileNames, 0, 121));
-       m.readInClassifiers(new String[] {classifier},"E://Results//UCI//Untuned");
-       m.readInClassifiers(new String[] {"Tuned"+classifier},"E://Results//UCI//Tuned");
-               
-               
+       m.setDatasets(DataSets.ReducedUCI);
+       m.readInClassifiers(new String[] {classifier},"E://Results//UCI//");
+       m.readInClassifiers(new String[] {"Tuned"+classifier},"E://Results//UCI//");
                
                //"//cmptscsvr.cmp.uea.ac.uk/ueatsc/Results/FinalisedUCIContinuous/");
        m.setTestResultsOnly(true);
-           m.runComparison(); 
+       m.runComparison(); 
        
    }
     public static void collateBags() {
@@ -811,6 +796,7 @@ public static void basicSummaryComparisons(){
 //Next x arguments: x Classifiers to collate    
 //Next x arguments: number of numParas stored for each classifier    
     public static void main(String[] args) throws Exception {
+        tunedVuntuned("RandF");
  //collateRotFSensitivity();
  //collateRotFSensitivity2();
  //System.exit(0);
@@ -832,7 +818,7 @@ public static void basicSummaryComparisons(){
 //Below is using my stats generator not james. To use James put in a static
 //method and exit, as above
 //    String[] classifiers={"BOSS","CAWPE","CAWPE_AS_COTE","ED","RandF","RotF","SLOWDTWCV","ST","TSF","RISE","XGBoost"};
-    String[] classifiers={"TunedSVMQuad"};
+    String[] classifiers={"RandF,TunedRandF"};
     for(String classifier:classifiers){
         String parameters="1";
         if(args.length>1)
