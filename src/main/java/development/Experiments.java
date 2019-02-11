@@ -579,92 +579,109 @@ public class Experiments implements Runnable{
                 break;
             case "RandomBOSS": case "RandomBOSS50": //Default ensemble size 50
                 c=new RandomBOSS();
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSS10":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setEnsembleSize(10);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSS100":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setEnsembleSize(100);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSS175":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setEnsembleSize(175);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSS250":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setEnsembleSize(250);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSSContracted5Minutes":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setMinuteLimit(5);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSSContracted30Minutes":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setMinuteLimit(30);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSSContracted1Hour":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setHourLimit(1);
+                ((RandomBOSS)c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted24Hour":
+                c=new RandomBOSS();
+                ((RandomBOSS)c).setHourLimit(24);
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSSCheckpoint":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setMinuteLimit(5);
                 ((RandomBOSS)c).setSavePath("C:\\UEAMachineLearning\\Projects\\WEASEL");
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "RandomTreeBOSS":
                 c=new RandomTreeBOSS();
                 ((RandomTreeBOSS)c).setEnsembleSize(100);
+                ((RandomTreeBOSS)c).setSeed(fold);
+                break;
+            case "RandomRTreeBOSS":
+                c=new RandomRTreeBOSS();
+                ((RandomRTreeBOSS)c).setEnsembleSize(100);
+                ((RandomRTreeBOSS)c).setSeed(fold);
                 break;
             case "RandomSVMBOSS":
                 c=new RandomSVMBOSS();
                 ((RandomSVMBOSS)c).setEnsembleSize(100);
+                ((RandomSVMBOSS)c).setSeed(fold);
                 break;
             case "RandomCAWPEBOSS":
                 c=new RandomCAWPEBOSS();
                 ((RandomCAWPEBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setSeed(fold);
                 break;
             case "RandomCAWPEBOSS5Folds":
                 c=new RandomCAWPEBOSS();
                 ((RandomCAWPEBOSS)c).setEnsembleSize(100);
                 ((RandomCAWPEBOSS)c).setNumCVFolds(5);
+                ((RandomCAWPEBOSS)c).setSeed(fold);
                 break;
             case "RandomCAWPEBOSS4Folds":
                 c=new RandomCAWPEBOSS();
                 ((RandomCAWPEBOSS)c).setEnsembleSize(100);
                 ((RandomCAWPEBOSS)c).setNumCVFolds(4);
+                ((RandomCAWPEBOSS)c).setSeed(fold);
                 break;
             case "RandomCAWPEBOSS3Folds":
                 c=new RandomCAWPEBOSS();
                 ((RandomCAWPEBOSS)c).setEnsembleSize(100);
                 ((RandomCAWPEBOSS)c).setNumCVFolds(3);
+                ((RandomCAWPEBOSS)c).setSeed(fold);
                 break;
             case "RandomCAWPEBOSS2Folds":
                 c=new RandomCAWPEBOSS();
                 ((RandomCAWPEBOSS)c).setEnsembleSize(100);
                 ((RandomCAWPEBOSS)c).setNumCVFolds(2);
-                break;
-            case "RandomBaggingBOSS":
-                c=new RandomBaggingBOSS();
-                ((RandomBaggingBOSS)c).setEnsembleSize(100);
-                break;
-            case "RandomBaggingTreeBOSS":
-                c=new RandomBaggingTreeBOSS();
-                ((RandomBaggingTreeBOSS)c).setEnsembleSize(100);
+                ((RandomCAWPEBOSS)c).setSeed(fold);
                 break;
             case "RandomBoostedBOSS":
                 c=new RandomBoostedBOSS();
                 ((RandomBoostedBOSS)c).setEnsembleSize(100);
-                break;
-            case "RandomBoostedTreeBOSS":
-                c=new RandomBoostedTreeBOSS();
-                ((RandomBoostedTreeBOSS)c).setEnsembleSize(100);
+                ((RandomBoostedBOSS)c).setSeed(fold);
                 break;
             case "RandomBOSSWhales":
                 c=new RandomBOSS();
-                ((RandomBOSS)c).setEnsembleSize(250);
-                ((RandomBOSS)c).setSavePath("/gpfs/home/pfm15hbu/scratch/Whales/");
+                ((RandomBOSS)c).setEnsembleSize(40);
+                //((RandomBOSS)c).setSavePath("/gpfs/home/pfm15hbu/scratch/Whales/");
+                //((RandomBOSS)c).setSavePath("C:\\UEAMachineLearning\\Projects\\WEASEL\\SingleTests");
+                ((RandomBOSS)c).setSeed(fold);
                 break;
             case "WEASEL":
                 c = new WEASEL();
@@ -1398,10 +1415,10 @@ Optional
 //                    testTime=System.nanoTime()-testTime;
                     testResults.finaliseResults(trueClassValues);
 
-//                    OutFile memOut=new OutFile(resultsPath+"/testFold"+fold+"mem.csv");
-//                    long mem = SizeOf.deepSizeOf(c);
-//                    memOut.writeLine(Long.toString(mem));
-//                    memOut.closeFile();
+                    OutFile memOut=new OutFile(resultsPath+"/testFold"+fold+"mem.csv");
+                    long mem = SizeOf.deepSizeOf(c);
+                    memOut.writeLine(Long.toString(mem));
+                    memOut.closeFile();
 
                     //Write results
                     OutFile testOut=new OutFile(resultsPath+testFoldPath);

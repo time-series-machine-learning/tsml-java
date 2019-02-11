@@ -285,8 +285,8 @@ public class RandomBoostedBOSS extends AbstractClassifierWithTrainingData implem
                 
                 double[] predictions = trainPredictions(data, boss);
                 double error = trainError(data, predictions);
-                
-                double classifierWeight = (1.0/2)*Math.log((1-error)/error);
+
+                double classifierWeight = 0.5*Math.log((1-error+0.0001)/(error+0.00001));
                 classifierWeights.add(classifierWeight);
                 
                 updateWeights(data, predictions, error, classifierWeight);
@@ -336,37 +336,16 @@ public class RandomBoostedBOSS extends AbstractClassifierWithTrainingData implem
     }
     
     private void updateWeights(Instances data, double[] predictions, double error, double classifierWeight){
-        double[] newWeights = new double[data.numInstances()];
-        double sum = 0;
-        
-        //System.out.println(error + " " + classifierWeight);
-        
         double lowerWeight = Math.pow(error, -classifierWeight);
         double raiseWeight = Math.pow(error, classifierWeight);
         
         for (int i = 0; i < data.numInstances(); i++){         
             if (predictions[i] == data.get(i).classValue()){
-                newWeights[i] = data.get(i).weight()*lowerWeight;
+                data.get(i).setWeight(data.get(i).weight()*lowerWeight);
             }
             else {
-                newWeights[i] = data.get(i).weight()*raiseWeight;
+                data.get(i).setWeight(data.get(i).weight()*raiseWeight);
             }
-            
-            //System.out.println(predictions[i] + " " + data.get(i).classValue() + " " +weightChange);
-            
-            sum += newWeights[i];
-        }
-        
-        //sum = sum/data.numInstances();
-        
-//        System.out.println(data.sumOfWeights());
-//        System.out.println(sum);
-//        System.out.println(newWeights[0]);
-//        System.out.println(newWeights[0]/sum);
-//        System.out.println();
-        
-        for (int i = 0; i < data.numInstances(); i++){
-            data.get(i).setWeight(newWeights[i]/sum);
         }
     }
     
@@ -493,22 +472,22 @@ public class RandomBoostedBOSS extends AbstractClassifierWithTrainingData implem
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
         double[] classHist = new double[instance.numClasses()];
-        
+
         //get votes from all windows 
         double sum = 0;
         for (int i = 0; i < classifiers.size(); ++i) {
             double classification = classifiers.get(i).classifyInstance(instance);
             classHist[(int)classification] += classifierWeights.get(i);
-            sum += classHist[(int)classification];
+            sum += classifierWeights.get(i);
         }
-        
+
         //sum = sum/classifiers.size();
         
         if (sum != 0)
             for (int i = 0; i < classHist.length; ++i)
                 classHist[i] /= sum;
-        
-        return classHist;
+
+            return classHist;
     }
 
     @Override

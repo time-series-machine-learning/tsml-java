@@ -122,6 +122,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         if(!(obj instanceof RandomBOSSHeader))
             throw new Exception("The SER file is not an instance of RandomBOSSHeader");
         RandomBOSSHeader saved = ((RandomBOSSHeader)obj);
+        System.out.println("Loading RandomBOSSHeader.ser");
 
         ensembleSize = saved.ensembleSize;
         seed = saved.seed;
@@ -132,18 +133,27 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         contract = saved.contract;
         trainCVPath = saved.trainCVPath;
         trainCV = saved.trainCV;
-        trainResults = saved.trainResults;
+        trainResults.buildTime = saved.buildTime;
 
         classifiers = new LinkedList<BOSSIndividual>();
         for (int i = 0; i < saved.numClassifiers; i++){
+            System.out.println("Loading BOSSindv" + i  + ".ser");
+
             FileInputStream fis = new FileInputStream(saved.serPath + "BOSSindv" + i + ".ser");
             try (ObjectInputStream in = new ObjectInputStream(fis)) {
                 Object indv=in.readObject();
 
-                if(!(indv instanceof BOSSIndividual))
+                if(!(indv instanceof BOSSIndivSer))
                     throw new Exception("The SER file " + i + " is not an instance of BOSSIndividual");
+                BOSSIndivSer ser = ((BOSSIndivSer)indv);
 
-                classifiers.add((BOSSIndividual)indv);
+                BOSSIndividual b = new BOSSIndividual(ser.wordLength, ser.alphabetSize, ser.windowSize, ser.norm);
+                b.bags = ser.bags;
+                b.breakpoints = ser.breakpoints;
+                b.inverseSqrtWindowSize = ser.inverseSqrtWindowSize;
+                b.numerosityReduction = ser.numerosityReduction;
+
+                classifiers.add(b);
             }
         }
     }
@@ -214,7 +224,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         trainResults.buildTime = System.nanoTime();
         
         String relationName = data.relationName();
-        String serPath = checkpointPath + "/" + relationName + "RandomBOSSser/";
+        String serPath = checkpointPath + "/" + relationName + seed + "RandomBOSSser/";
         File f = new File(serPath + "RandomBOSSHeader.ser");
         
         if (checkpoint && f.exists()){
@@ -269,6 +279,8 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 int winSize = minWindow + winInc*rand.nextInt((int)maxWindowSearches+1);
                 boolean normalise = rand.nextBoolean();
 
+                System.out.println(i);
+
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise);
                 boss.buildClassifier(data);
                 classifiers.add(boss);
@@ -299,10 +311,31 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         if(checkpointPath!=null){
             //save the serialised version
             try{
-                File f = new File(checkpointPath);
+                File f = new File(serPath);
                 if(!f.isDirectory())
                     f.mkdirs();
                 checkpointTime = System.nanoTime();
+
+                BOSSIndivSer indivSer = new BOSSIndivSer();
+                BOSSIndividual indiv = classifiers.get(classifiers.size()-1);
+
+                //indivSer.SFAwords = indiv.SFAwords;
+                indivSer.bags = indiv.bags;
+                indivSer.breakpoints = indiv.breakpoints;
+                indivSer.inverseSqrtWindowSize = indiv.inverseSqrtWindowSize;
+                indivSer.windowSize = indiv.windowSize;
+                indivSer.wordLength = indiv.wordLength;
+                indivSer.alphabetSize = indiv.alphabetSize;
+                indivSer.norm = indiv.norm;
+                indivSer.numerosityReduction = indiv.numerosityReduction;
+
+                FileOutputStream fos = new FileOutputStream(serPath + "BOSSindv" + (classifiers.size()-1) + ".ser");
+                try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                    out.writeObject(indivSer);
+                    fos.close();
+                }
+
+                System.out.println("Serialising BOSSindv" + (classifiers.size()-1) + ".ser");
 
                 RandomBOSSHeader header = new RandomBOSSHeader();
                 header.ensembleSize = ensembleSize;
@@ -314,23 +347,26 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 header.contract = contract;
                 header.trainCVPath = trainCVPath;
                 header.trainCV = trainCV;
-                header.trainResults = trainResults;
+                header.buildTime = trainResults.buildTime;
                 header.numClassifiers = classifiers.size();
                 header.serPath = serPath;
 
-                FileOutputStream fos = new FileOutputStream(serPath + "RandomBOSSHeader.ser");
+                fos = new FileOutputStream(serPath + "RandomBOSSHeaderTemp.ser");
                 try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                     out.writeObject(header);
                     fos.close();
                 }
 
-                fos = new FileOutputStream(serPath + "BOSSindv" + (classifiers.size()-1) + ".ser");
-                try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
-                    out.writeObject(classifiers.get(classifiers.size()-1));
-                    fos.close();
+                f = new File(serPath + "RandomBOSSHeader.ser");
+                if (f.exists()){
+                    f.delete();
                 }
+
+                File f2 = new File(serPath + "RandomBOSSHeaderTemp.ser");
+                f2.renameTo(f);
             }
             catch(Exception e){
+                e.printStackTrace();
                 System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSSSer/  FAILED");
             }
         }
@@ -643,6 +679,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
         public static class Bag extends HashMap<BitWord, Integer> {
             double classVal;
+            protected static final long serialVersionUID = 3L;
 
             public Bag() {
                 super();
@@ -1250,7 +1287,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         }
     }
 
-    private class RandomBOSSHeader implements Serializable{
+    private static class RandomBOSSHeader implements Serializable{
         public int ensembleSize;
         public int seed;
         public Random rand;
@@ -1264,10 +1301,31 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         public String trainCVPath;
         public boolean trainCV;
 
-        ClassifierResults trainResults;
+        long buildTime;
         int numClassifiers;
         String serPath;
 
+        protected static final long serialVersionUID = 2L;
+
         public RandomBOSSHeader(){};
+    }
+
+    private static class BOSSIndivSer implements Serializable{
+
+        //protected BitWord [][] SFAwords;
+        public ArrayList<BOSSIndividual.Bag> bags;
+        protected double[][] breakpoints;
+
+        protected double inverseSqrtWindowSize;
+        protected int windowSize;
+        protected int wordLength;
+        protected int alphabetSize;
+        protected boolean norm;
+
+        protected boolean numerosityReduction;
+
+        protected static final long serialVersionUID = 5L;
+
+        public BOSSIndivSer(){}
     }
 }

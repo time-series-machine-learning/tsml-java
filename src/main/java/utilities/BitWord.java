@@ -13,7 +13,9 @@ import java.util.Arrays;
  * 
  * @author James Large
  */
-public class BitWord implements Comparable<BitWord>, Serializable { 
+public class BitWord implements Comparable<BitWord>, Serializable {
+
+    protected static final long serialVersionUID = 4L;
 
     public enum PrintFormat {
         RAW,            //simple decimal integer value
