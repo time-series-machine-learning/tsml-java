@@ -21,14 +21,15 @@ import utilities.generic_storage.Pair;
  * Builds summary stats, sig tests, and optionally matlab dias for the ClassifierResults objects provided/files pointed to on disk. Can optionally use
  * just the test results, if that's all that is available, or both train and test (will also compute the train test diff)
  * 
- * USAGE: Construct object, set any non-default bool options, set any non-default statistics to use, set datasets to compare on, and (rule of thumb) LASTLY add 
- * classifiers/results located in memory or on disk and call runComparison(). 
+ * USAGE: see workingExampleCodeRunnableOnTSCServerMachine() for fleshed out example, in short though:
+ *      Construct object, set any non-default bool options, set any non-default statistics to use, set datasets to compare on, and (rule of thumb) LASTLY add 
+ *      classifiers/results located in memory or on disk and call runComparison(). 
  * 
- * Least-code one-off use case that's good enough for most problems is: 
- *       new MultipleClassifierEvaluation("write/path/", "experimentName", numFolds).
- *          setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
- *          readInClassifiers(new String[] {"NN", "C4.5"}, baseReadingPath).
- *          runComparison();  
+ *      Least-code one-off use case that's good enough for most problems is: 
+ *          new MultipleClassifierEvaluation("write/path/", "experimentName", numFolds).
+ *              setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
+ *              readInClassifiers(new String[] {"NN", "C4.5"}, baseReadingPath).
+ *              runComparison();  
  * 
  * Will call findAllStatsOnce on each of the ClassifierResults (i.e. will do nothing if findAllStats has already been called elsewhere before), 
  * and there's a bool (default true) to set whether to null the instance prediction info after stats are found to save memory. 
@@ -40,8 +41,8 @@ import utilities.generic_storage.Pair;
  * support recent excel default fonts. Just open it and saveas if you want to switch it over. There's a way to globally change font in a workbook 
  * if you want to change it back
  *
- * Future work (here and in ClassifierResultsAnalysis.writeAllEvaluationFiles(...)) when wanted/needed/motivation is available could be to 
- * handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the crap parts of the code
+ * Future work (here and in ClassifierResultsAnalysis.writeAllEvaluationFiles(...)) when wanted/needed could be to 
+ * handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the obviously bad parts of the code
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -101,7 +102,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
         
-        this.statistics = ClassifierResultsAnalysis.getDefaultStatistics();
+        this.statistics = ClassifierResults.getDefaultStatistics();
     }
     
     /**
@@ -335,17 +336,17 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * 4 stats: acc, balanced acc, auroc, nll
      */
     public MultipleClassifierEvaluation setUseDefaultEvaluationStatistics() {
-        statistics = ClassifierResultsAnalysis.getDefaultStatistics();
+        statistics = ClassifierResults.getDefaultStatistics();
         return this;
     }
 
     public MultipleClassifierEvaluation setUseAccuracyOnly() {
-        statistics = ClassifierResultsAnalysis.getAccuracyStatisticOnly();
+        statistics = ClassifierResults.getAccuracyStatistic();
         return this;
     }
     
     public MultipleClassifierEvaluation setUseAllStatistics() {
-        statistics = ClassifierResultsAnalysis.getAllStatistics();
+        statistics = ClassifierResults.getAllStatistics();
         return this;
     }
     
@@ -534,7 +535,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     public void runComparison() {
         ArrayList<ClassifierResultsAnalysis.ClassifierEvaluation> results = new ArrayList<>(classifiersResults.size());
         for (Map.Entry<String, ClassifierResults[][][]> classifier : classifiersResults.entrySet())
-            results.add(new ClassifierResultsAnalysis.ClassifierEvaluation(classifier.getKey(), classifier.getValue()[1], classifier.getValue()[0], null));
+            results.add(new ClassifierResultsAnalysis.ClassifierEvaluation(classifier.getKey(), classifier.getValue()[1], classifier.getValue()[0]));
         
         ClassifierResultsAnalysis.buildMatlabDiagrams = buildMatlabDiagrams;
         ClassifierResultsAnalysis.testResultsOnly = testResultsOnly;
@@ -593,31 +594,31 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
 //            runComparison(); 
 
-        workingExampleCodeHopefullyRunnableEntirelyOnBeast();
+        workingExampleCodeRunnableOnTSCServerMachine();
     }
     
-    public static void workingExampleCodeHopefullyRunnableEntirelyOnBeast() throws FileNotFoundException, Exception {
+    public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {
         //Running from my PC, this code takes 34 seconds to run, despite looking at only 10 folds of 10 datasets. 
-        //The majority of this time is eaten up by reading the results from the beast. If you have results on your local PC, it will be faster. 
+        //The majority of this time is eaten up by reading the results from the server. If you have results on your local PC, this runs in a second.
         
         //to rerun this from a clean slate to check validity, delete any existing 'Example1' folder in here: 
-        String folderToWriteAnalysisTo = "Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
-        String nameOfAnalysisWhichWillBecomeFolderName = "Example2";
+        String folderToWriteAnalysisTo = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
+        String nameOfAnalysisWhichWillBecomeFolderName = "Example4";
         int numberOfFoldsAKAResamplesOfEachDataset = 10;
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(folderToWriteAnalysisTo, nameOfAnalysisWhichWillBecomeFolderName, numberOfFoldsAKAResamplesOfEachDataset); //10 folds only to make faster... 
         
-        String aFileWithListOfDsetsToUse = "Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
+        String aFileWithListOfDsetsToUse = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
         mce.setDatasets(aFileWithListOfDsetsToUse);
         
-        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
-        String andAnother = "Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
+        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
+        String andAnother = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
         mce.addDatasetGroupingFromDirectory(aDirectoryContainingFilesThatDefineDatasetGroupings);
         mce.addDatasetGroupingFromDirectory(andAnother);
         
         mce.setPerformPostHocDsetResultsClustering(true); //will create 3rd data-driven grouping automatically
         
         String[] classifiers = new String[] {"1NN", "C4.5", "NB"};
-        String directoryWithResultsClassifierByClassifier =  "Z:/Results/FinalisedUCIContinuous/";
+        String directoryWithResultsClassifierByClassifier =  "Z:/Results_7_2_19/FinalisedUCIContinuous/";
         mce.readInClassifiers(classifiers, directoryWithResultsClassifierByClassifier);
         
         mce.runComparison(); 

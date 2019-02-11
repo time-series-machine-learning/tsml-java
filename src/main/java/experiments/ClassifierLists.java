@@ -68,46 +68,6 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            case "ContractRotationForest":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setDayLimit(5);
-                ((ContractRotationForest)c).setSeed(fold);
-                
-                break;
-            case "ContractRotationForest1Day":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setHourLimit(24);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
-            case "ContractRotationForest5Minutes":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setMinuteLimit(5);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
-            case "ContractRotationForest30Minutes":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setMinuteLimit(30);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
-            case "ContractRotationForest1Hour":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setHourLimit(1);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
-            case "ContractRotationForest2Hour":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setHourLimit(2);
-                break;
-            case "ContractRotationForest3Hour":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setHourLimit(3);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
-            case "ContractRotationForest12Hour":
-                c= new ContractRotationForest();
-                ((ContractRotationForest)c).setHourLimit(12);
-                ((ContractRotationForest)c).setSeed(fold);
-                break;
             
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -154,16 +114,7 @@ public class ClassifierLists {
                 ((SMO)c).setKernel(poly);
                 ((SMO)c).setRandomSeed(fold);
                 ((SMO)c).setBuildLogisticModels(true);
-
-                
-                /*                svm=new TunedSVM();
-                svm.setKernelType(TunedSVM.KernelType.QUADRATIC);
-                svm.optimiseParas(false);
-                svm.optimiseKernel(false);
-                svm.setBuildLogisticModels(true);
-                svm.setSeed(fold);
-                c= svm;
- */               break;
+               break;
             case "SVMRBF": 
                 c=new SMO();
                 RBFKernel rbf=new RBFKernel();
