@@ -1374,23 +1374,23 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      * For inquiries into specific details of reproduction, best bet is to email us
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
-    
+     */
     public static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
         //init, edit the paths for local running ofc
-//        String[] dataHeaders = { "UCI", };
-//        String[] dataPaths = { "Z:/Data/UCIContinuous/", };
-//        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-//        String writePathBase = "Z:/Results/CAWPEReproducabiltyTest/";
-//        String writePathResults =  writePathBase + "Results/";
-//        String writePathAnalysis =  writePathBase + "Analysis/";
-//        int numFolds = 5;
         String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "Z:/Data/UCIContinuous/", };
-        String[][] datasets = { DataSets.UCIContinuousFileNames, };
-        String writePathBase = "Z:/Results/CAWPEReproducabiltyTest/";
+        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
+        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
-        int numFolds = 30;
+        int numFolds = 5;
+//        String[] dataHeaders = { "UCI", };
+//        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
+//        String[][] datasets = { DataSets.UCIContinuousFileNames, };
+//        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
+//        String writePathResults =  writePathBase + "Results/";
+//        String writePathAnalysis =  writePathBase + "Analysis/";
+//        int numFolds = 30;
 
         //build the base classifiers
         String[] baseClassifiers = { "NN", "C45", "MLP", "Logistic", "SVML" };
@@ -1442,7 +1442,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //done!
     }
- */
+ 
     public static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
         System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
@@ -1454,7 +1454,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
     }
-/*
+
     public static void buildCAWPEPaper_BuildEnsembleFromResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths, String[][] datasetNames,
                                                                 String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
 
@@ -1506,19 +1506,24 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         c.setPerformCV(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
-                        Experiments.singleClassifierAndFoldTrainTestSplit(data[0],data[1],c,fold,predictions);
+                        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                        exp.classifierName = ensembleID;
+                        exp.datasetName = dset;
+                        exp.foldId = fold;
+                        exp.generateErrorEstimateOnTrainSet = true;
+                        Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
                     }
                 }
             }
         }
     }
 
-*/
+
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
 
-//        buildCAWPEPaper_AllResultsForFigure3();
+        buildCAWPEPaper_AllResultsForFigure3();
 
 //        testBuildingInds(3);
 //        testLoadingInds(2);
