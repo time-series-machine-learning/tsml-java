@@ -85,7 +85,7 @@ public class RandomSearcher extends ParameterSearcher {
                 for (int i = 1; i < numParas; i++)
                     set[i] = trng.nextInt(sizes[i]); 
                 
-                isNewSet = vistedParas.add(indsToString(set));
+                isNewSet = vistedParas.add(ParameterSet.toFileNameString(set));
             } 
             while (!isNewSet);
             

@@ -2,6 +2,8 @@ package evaluation.tuning.searchers;
 
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
+import java.io.File;
+import utilities.FileHandlingTools;
 
 /**
  *
@@ -16,16 +18,6 @@ public abstract class ParameterSearcher implements Iterable<ParameterSet> {
         return space;
     }
     
-    protected String indsToString(int[] inds) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(inds[0]);
-
-        for (int i = 1; i < inds.length; i++)
-            sb.append("_").append(inds[i]);
-
-        return sb.toString();
-    }
-
     public void setParameterSpace(ParameterSpace parameterSpace) {
         this.space = parameterSpace;
     }
@@ -40,6 +32,17 @@ public abstract class ParameterSearcher implements Iterable<ParameterSet> {
     
     public String getParameterSavingPath() { 
         return parameterSavingPath;   
+    }
+    
+    protected File[] findSavedParas() { 
+        if (parameterSavingPath == null || parameterSavingPath == "")
+            return new File[] { };
+        
+        return FileHandlingTools.listFilesContaining(parameterSavingPath, "fold" + seed + "_");
+    }
+    
+    protected int findHowManyParasAlreadySaved() { 
+        return findSavedParas().length;
     }
 }
 
