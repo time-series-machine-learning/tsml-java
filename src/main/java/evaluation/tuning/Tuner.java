@@ -7,6 +7,8 @@ import evaluation.tuning.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
+import fileIO.OutFile;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -31,7 +33,10 @@ public class Tuner {
     //Experimental settings.
     private int seed;
     private String parameterSavingPath = null;
-
+    private boolean saveParameters = false;
+    private String classifierName;
+    private String datasetName;
+    
     //for reporting purposes in results files/loggers
     public List<ParameterScorePair> allParasAndScores;
 
@@ -159,6 +164,9 @@ public class Tuner {
     
     
     public ClassifierResults evaluateParameterSetByIndex(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace, int parameterIndex) throws Exception { 
+        classifierName = baseClassifier.getClass().getSimpleName();
+        datasetName = trainSet.relationName();
+        
         searcher.setParameterSpace(parameterSpace);
         Iterator<ParameterSet> iter = searcher.iterator();
         
@@ -183,13 +191,16 @@ public class Tuner {
         String[] options = parameterSet.toOptionsList();
         classifier.setOptions(options);
 
-        return evaluator.evaluate(classifier, trainSet);
+        return evaluator.evaluate(classifier, data);
     }
     
     public ParameterSet tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
-        
 //        System.out.println("Evaluating para space: " + parameterSpace);
         
+        //meta info in case we're saving para files
+        classifierName = baseClassifier.getClass().getSimpleName();
+        datasetName = trainSet.relationName();
+
         //init the space searcher
         searcher.setParameterSpace(parameterSpace);
         Iterator<ParameterSet> iter = searcher.iterator();
@@ -204,13 +215,16 @@ public class Tuner {
         while (iter.hasNext()) {
             ParameterSet pset = iter.next();
             ClassifierResults results = evaluateParameterSet(baseClassifier, trainSet, pset);
-            storeParaResult(pset, results, tiesBestSoFar);
+            
+            if (saveParameters)
+                saveParaResults(pset, results);
+            else 
+                storeParaResult(pset, results, tiesBestSoFar);
                     
 //            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
         }
         
         ParameterSet bestSet = resolveTies(tiesBestSoFar);
-
 //        System.out.println("Best parameter set was: " + bestSet);
         
         return bestSet;
@@ -234,7 +248,16 @@ public class Tuner {
                 tiesBestSoFar.clear();
                 tiesBestSoFar.add(paraScore);
             }
-        } 
+        }
+    }
+    
+    private void saveParaResults(ParameterSet pset, ClassifierResults results) throws IOException {
+        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
+        results.paras += pset.toStringCSV();
+        
+        OutFile out = new OutFile(parameterSavingPath + "fold" + seed + "_" + pset.toStringCSV().replace(",", "_"));
+        out.writeString(results.writeResultsFileToString());
+        out.closeFile();
     }
     
     private ParameterSet resolveTies(List<ParameterScorePair> tiesBestSoFar) {

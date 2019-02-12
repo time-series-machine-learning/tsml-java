@@ -321,7 +321,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
            return "No Instance Prediction Information";
    }
    
-   public String writeResultsFileToString() throws IOException {                
+   public String writeResultsFileToString() {                
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
         st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");

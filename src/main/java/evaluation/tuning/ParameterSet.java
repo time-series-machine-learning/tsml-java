@@ -55,14 +55,12 @@ public class ParameterSet {
         return sb.toString();
     }
     
-//    public String toFileNameString() { 
-//        int[] inds = new int[parameterSet.size()];
-//        
-//        int i = 0;
-//        for (Map.Entry<String, String> para : parameterSet.entrySet()) {
-//            
-//        }
-//        
-//        return toFileNameString(inds);
-//    }
+    public String toStringCSV() {
+        StringBuilder sb = new StringBuilder();
+        
+        for (Map.Entry<String, String> entry : parameterSet.entrySet())
+            sb.append(entry.getKey()).append(",").append(entry.getValue()).append(",");
+        
+        return sb.toString();
+    }
 }
