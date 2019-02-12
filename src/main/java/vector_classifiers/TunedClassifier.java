@@ -96,10 +96,10 @@ public class TunedClassifier extends AbstractClassifier {
         this.tuner = new Tuner(); 
         
         //setup para space 
-        int size = 5;
+        int size = 9;
         double[] cs = new double[size];
         for (int i = 0; i < cs.length; i++)
-            cs[i] = Math.pow(10.0, (i-size/2)*2);
+            cs[i] = Math.pow(10.0, (i-size/2));
         
         this.space = new ParameterSpace();
         space.addParameter("C", cs);
@@ -127,19 +127,31 @@ public class TunedClassifier extends AbstractClassifier {
     }
     
     public static void main(String[] args) throws Exception {
-        String dataset = "bank";
-        
-        Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
-        Instances[] data = InstanceTools.resampleInstances(all, 0, 0.5);
+        String dataset = "hayes-roth";
         
         TunedClassifier tc = new TunedClassifier();
         tc.setupTestTunedClassifier();
+        tc.setCloneClassifierForEachParameterEval(true);
         
         Classifier[] cs = new Classifier[] { new SMO(), tc };
         
+        int numFolds = 10;
+        
         for (Classifier c : cs) {
-            c.buildClassifier(data[0]);
-            System.out.println(ClassifierTools.accuracy(data[1], c));
+            Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+            double mean =.0;
+            
+            for (int f = 0; f < numFolds; f++) {
+                Instances[] data = InstanceTools.resampleInstances(all, f, 0.5);
+                
+                c.buildClassifier(data[0]);
+                double t = ClassifierTools.accuracy(data[1], c);
+                mean += t;
+                System.out.print(t + ", ");
+            }
+            
+            mean /= numFolds;
+            System.out.println("\nmean = " + mean);
         }
         
     }

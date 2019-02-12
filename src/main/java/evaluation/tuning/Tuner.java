@@ -25,8 +25,7 @@ public class Tuner {
     private int seed = 0;
     private ParameterSearcher searcher = new GridSearcher();
     private Evaluator evaluator = new CrossValidationEvaluator();
-    private Function<ClassifierResults, Double> evalMetric = (ClassifierResults cr) -> {return cr.acc;}; 
-    //edit to classifierresults' getters when branchingdone 
+    private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
        
     //for reporting purposes in results files/loggers
     public List<ParameterScorePair> allParasAndScores;
@@ -106,7 +105,7 @@ public class Tuner {
     
     public ParameterSet tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
         
-        System.out.println("Evaluating para space: " + parameterSpace);
+//        System.out.println("Evaluating para space: " + parameterSpace);
         
         //init the space searcher
         searcher = new GridSearcher();
@@ -158,7 +157,7 @@ public class Tuner {
                 }
             } 
             
-            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
+//            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
         }
         
         ParameterSet bestSet = null;
@@ -168,12 +167,12 @@ public class Tuner {
         }
         else { 
             //resolve ties randomly: todo future, maybe allow for some other method of resolving ties, 
-            //e.g choose least complex parameter set of the ties
+            //e.g choose 'least complex' parameter set of the ties
             Random rand = new Random(seed);
             bestSet = tiesBestSoFar.get(rand.nextInt(tiesBestSoFar.size())).paras;
         }
              
-        System.out.println("Best parameter set was: " + bestSet);
+//        System.out.println("Best parameter set was: " + bestSet);
         
         return bestSet;
     }
