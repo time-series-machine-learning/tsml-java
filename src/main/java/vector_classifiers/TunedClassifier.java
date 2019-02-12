@@ -4,6 +4,7 @@ package vector_classifiers;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
+import evaluation.tuning.searchers.RandomSearcher;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.AbstractClassifier;
@@ -30,6 +31,7 @@ import weka.core.Instances;
  */
 public class TunedClassifier extends AbstractClassifier {
 
+    int seed;
     ParameterSpace space = null;
     Tuner tuner = null;
     AbstractClassifier classifier = null;
@@ -48,6 +50,15 @@ public class TunedClassifier extends AbstractClassifier {
         this.classifier = classifier;
         this.space = space;
         this.tuner = tuner;
+    }
+    
+    void setSeed(int seed) { 
+        this.seed = seed;
+        
+        tuner.setSeed(seed);
+        //no setSeed in abstractclassifier. i imagine most define it via setOptions,
+        //so could add it a a parameter with only one possible value, or jsut set the seed
+        //before giving the classifier to this tunedclassifier instance
     }
     
     public boolean getCloneClassifierForEachParameterEval() {
@@ -129,11 +140,17 @@ public class TunedClassifier extends AbstractClassifier {
     public static void main(String[] args) throws Exception {
         String dataset = "hayes-roth";
         
-        TunedClassifier tc = new TunedClassifier();
-        tc.setupTestTunedClassifier();
-        tc.setCloneClassifierForEachParameterEval(true);
+        TunedClassifier tcGrid = new TunedClassifier();
+        tcGrid.setupTestTunedClassifier();
+        tcGrid.setCloneClassifierForEachParameterEval(false);
         
-        Classifier[] cs = new Classifier[] { new SMO(), tc };
+        TunedClassifier tcRand = new TunedClassifier();
+        tcRand.setupTestTunedClassifier();
+        tcRand.getTuner().setSearcher(new RandomSearcher(3));
+        tcRand.setCloneClassifierForEachParameterEval(false);
+        
+        
+        Classifier[] cs = new Classifier[] { tcRand, new SMO(), tcGrid };
         
         int numFolds = 10;
         
@@ -144,6 +161,10 @@ public class TunedClassifier extends AbstractClassifier {
             for (int f = 0; f < numFolds; f++) {
                 Instances[] data = InstanceTools.resampleInstances(all, f, 0.5);
                 
+                try {
+                    ((TunedClassifier)c).setSeed(f);
+                }catch (Exception e){ }
+                     
                 c.buildClassifier(data[0]);
                 double t = ClassifierTools.accuracy(data[1], c);
                 mean += t;

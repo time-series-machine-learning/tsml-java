@@ -22,7 +22,7 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner {
-    private int seed = 0;
+    private int seed;
     private ParameterSearcher searcher = new GridSearcher();
     private Evaluator evaluator = new CrossValidationEvaluator();
     private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
@@ -43,7 +43,7 @@ public class Tuner {
     boolean cloneClassifierForEachParameterEval = false;
     
     public Tuner() { 
-        
+        setSeed(0);
     }
 
     
@@ -61,6 +61,9 @@ public class Tuner {
 
     public void setSeed(int seed) {
         this.seed = seed;
+        
+        searcher.setSeed(seed);
+        evaluator.setSeed(seed);
     }
 
     public ParameterSearcher getSearcher() {
@@ -105,10 +108,9 @@ public class Tuner {
     
     public ParameterSet tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
         
-//        System.out.println("Evaluating para space: " + parameterSpace);
+        System.out.println("Evaluating para space: " + parameterSpace);
         
         //init the space searcher
-        searcher = new GridSearcher();
         searcher.setParameterSpace(parameterSpace);
         Iterator<ParameterSet> iter = searcher.iterator();
         
@@ -157,7 +159,7 @@ public class Tuner {
                 }
             } 
             
-//            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
+            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
         }
         
         ParameterSet bestSet = null;
@@ -172,7 +174,7 @@ public class Tuner {
             bestSet = tiesBestSoFar.get(rand.nextInt(tiesBestSoFar.size())).paras;
         }
              
-//        System.out.println("Best parameter set was: " + bestSet);
+        System.out.println("Best parameter set was: " + bestSet);
         
         return bestSet;
     }

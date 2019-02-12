@@ -22,8 +22,8 @@ public class RandomSearcher extends ParameterSearcher {
     public RandomSearcher() { 
         numParaSetsToSample = 1000;
     }
-    public RandomSearcher(int numParasToSearch) { 
-        this.numParaSetsToSample = numParasToSearch;
+    public RandomSearcher(int numParasToSample) { 
+        this.numParaSetsToSample = numParasToSample;
     }
     
     public int getNumParaSetsToSearch() {
@@ -36,7 +36,7 @@ public class RandomSearcher extends ParameterSearcher {
 
     @Override
     public Iterator<ParameterSet> iterator() {
-        if (numParaSetsToSample > space.numUniqueParameterSets())
+        if (numParaSetsToSample < space.numUniqueParameterSets())
             return new RandomSearchIterator();
         else {
             System.out.println("Warning: tryign to randomly sample a space more times than there are unique values in the space, just using a GridSearch");
@@ -75,16 +75,6 @@ public class RandomSearcher extends ParameterSearcher {
             return numParaSetsSampled < numParaSetsToSample; 
         }
 
-        private String indsToString(int[] inds) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(inds[0]);
-
-            for (int i = 1; i < numParas; i++)
-                sb.append("_").append(inds[i]);
-            
-            return sb.toString();
-        }
-        
         public int[] sampleParas(int secondSeed) {
             Random trng = new Random(secondSeed);
             int[] set = new int[numParas];
@@ -112,6 +102,8 @@ public class RandomSearcher extends ParameterSearcher {
             ParameterSet pset = new ParameterSet();
             for (int i = 0; i < keys.length; i++)
                 pset.parameterSet.put(keys[i], space.parameterLists.get(keys[i]).get(psetInds[i]));
+            
+            numParaSetsSampled++;
             
             return pset;
         }
