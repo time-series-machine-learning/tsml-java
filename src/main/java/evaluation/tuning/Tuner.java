@@ -93,7 +93,7 @@ public class Tuner {
         this.cloneClassifierForEachParameterEval = cloneClassifierForEachParameterEval;
     }
     
-    public AbstractClassifier cloneClassifierIfNeeded(AbstractClassifier classifier) {
+    public AbstractClassifier cloneClassifierIfNeeded(AbstractClassifier classifier) throws Exception {
         if (cloneClassifierForEachParameterEval) {
             //for some reason, the (abstract classifiers)' copy method returns a (classifier interface) reference...
             return (AbstractClassifier)AbstractClassifier.makeCopy(classifier); 
