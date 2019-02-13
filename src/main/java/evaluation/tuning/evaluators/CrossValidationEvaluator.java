@@ -18,9 +18,6 @@ public class CrossValidationEvaluator implements Evaluator {
     public CrossValidationEvaluator() {
         this.numCVFolds = 10;
     }
-    public CrossValidationEvaluator(int numCVFolds) {
-        this.numCVFolds = numCVFolds;
-    }
     
     public int getNumCVFolds() {
         return numCVFolds;
@@ -47,7 +44,7 @@ public class CrossValidationEvaluator implements Evaluator {
         
         
         ClassifierResults res = cv.crossValidateWithStats(classifier, dataset);
-//        res.findAllStatsOnce(); //put back in once cleanup brnach goes through
+        res.findAllStatsOnce();
         return res;
     }
 

@@ -4,6 +4,7 @@ package vector_classifiers;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
+import evaluation.tuning.evaluators.StratifiedResamplesEvaluator;
 import evaluation.tuning.searchers.RandomSearcher;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -147,6 +148,7 @@ public class TunedClassifier extends AbstractClassifier {
         TunedClassifier tcRand = new TunedClassifier();
         tcRand.setupTestTunedClassifier();
         tcRand.getTuner().setSearcher(new RandomSearcher(3));
+        tcRand.getTuner().setEvaluator(new StratifiedResamplesEvaluator());
         tcRand.setCloneClassifierForEachParameterEval(false);
         
         

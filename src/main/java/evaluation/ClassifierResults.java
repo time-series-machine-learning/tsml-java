@@ -414,6 +414,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Sensitivity, Specificity, AUROC, negative log likelihood, MCC
      */   
     public void findAllStats(){
+       if (numInstances == 0)
+           numInstances = predictedClassValues.size();
+        
        confusionMatrix=buildConfusionMatrix();
        
        countPerClass=new double[confusionMatrix.length];
