@@ -23,11 +23,19 @@ import weka.core.Instances;
 /**
  * Given 
  *      1) a tuning method, 
+ *              - DEFAULT: tuner set to gridsearch + 10foldcv 
+ *              - settable via setTuner(...)
  *      2) a base classifier with a well formed setOptions(String[]) method 
  *          (that must extend AbstractClassifier, the Classifier interface 
  *          alone does not provide setOptions()) 
+ *              - DEFAULT: none
+ *              - settable via setClassifier(...)
  *      3) a parameter space expressed as keys (that correspond to flags in the setOptions() method) 
  *          to lists of values that these parameters can take.
+ *              - DEFAULT: none
+ *              - settable via setParameterSpace(...)
+ * 
+ * For a basic example of the above, see setupTestTunedClassifier()
  * 
  * This class will select the best parameter set on the given dataset according to the 
  * selection and evaluation methods described by the tuner, and build the base classifier
@@ -84,7 +92,7 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
         return space;
     }
 
-    public void setSpace(ParameterSpace space) {
+    public void setParameterSpace(ParameterSpace space) {
         this.space = space;
     }
 
@@ -124,7 +132,7 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
             cs[i] = Math.pow(10.0, (i-size/2));
         
         this.space = new ParameterSpace();
-        space.addParameter("C", cs);
+        this.space.addParameter("C", cs);
     }
 
     @Override
