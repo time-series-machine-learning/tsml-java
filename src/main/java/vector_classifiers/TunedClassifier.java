@@ -1,13 +1,18 @@
 
 package vector_classifiers;
 
+import evaluation.ClassifierResults;
+import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import evaluation.tuning.evaluators.StratifiedResamplesEvaluator;
 import evaluation.tuning.searchers.RandomSearcher;
+import timeseriesweka.classifiers.ParameterSplittable;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import utilities.TrainAccuracyEstimate;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.SMO;
@@ -30,13 +35,18 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedClassifier extends AbstractClassifier {
+public class TunedClassifier extends AbstractClassifier implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable {
 
     int seed;
     ParameterSpace space = null;
     Tuner tuner = null;
     AbstractClassifier classifier = null;
 
+    ParameterSet bestParas = null;
+
+    //interface variables
+    ClassifierResults trainResults = null;
+    double trainAcc = 0;
     
     public TunedClassifier() { 
     }
@@ -126,9 +136,12 @@ public class TunedClassifier extends AbstractClassifier {
         if (classifier == null)
             throw new Exception("No classifier specified");
         
-        ParameterSet bestParas = tuner.tune(classifier, data, space);
+        ParameterResults bestParas = tuner.tune(classifier, data, space);
         
-        String[] options = bestParas.toOptionsList();
+        trainResults = bestParas.results;
+        trainAcc = bestParas.results.acc;
+        
+        String[] options = bestParas.paras.toOptionsList();
         classifier.setOptions(options);
         classifier.buildClassifier(data);
     }
@@ -177,5 +190,73 @@ public class TunedClassifier extends AbstractClassifier {
             System.out.println("\nmean = " + mean);
         }
         
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+   
+    
+    
+    
+    
+    
+    
+    // METHODS FOR:               SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable
+    
+    @Override //SaveParameterInfo
+    public String getParameters() {
+        return bestParas.toClassifierResultsParaLine(true);
+    }
+
+    @Override //TrainAccuracyEstimate
+    public void setFindTrainAccuracyEstimate(boolean setCV) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //TrainAccuracyEstimate
+    public void writeCVTrainToFile(String train) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //TrainAccuracyEstimate
+    public ClassifierResults getTrainResults() {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //SaveEachParameter
+    public void setPathToSaveParameters(String r) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //SaveEachParameter
+    public void setSaveEachParaAcc(boolean b) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //ParameterSplittable
+    public void setParamSearch(boolean b) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //ParameterSplittable
+    public void setParametersFromIndex(int x) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //ParameterSplittable
+    public String getParas() {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override //ParameterSplittable
+    public double getAcc() {
+        throw new UnsupportedOperationException("Not supported yet."); 
     }
 }

@@ -39,12 +39,12 @@ public class Tuner {
     private int seed;
     private String parameterSavingPath = null;
     private boolean saveParameters = true;
-    private String classifierName;
-    private String datasetName;
-    
-    //for reporting purposes in results files/loggers
-    public List<ParameterScorePair> allParasAndScores;
 
+    private String classifierName; //interpreted from simpleClassName(), maybe have getter setter later
+    private String datasetName; //interpreted from relationName(), maybe have getter setter later
+    
+    private ParameterResults bestParaSetAndResults = null;
+    
     private boolean includeMarkersInParaLine = true;
     
     /**
@@ -128,6 +128,22 @@ public class Tuner {
         evaluator.setSeed(seed);
     }
 
+    public boolean getSaveParameters() {
+        return saveParameters;
+    }
+
+    public void setSaveParameters(boolean saveParameters) {
+        this.saveParameters = saveParameters;
+    }
+
+    public boolean getIncludeMarkersInParaLine() {
+        return includeMarkersInParaLine;
+    }
+
+    public void setIncludeMarkersInParaLine(boolean includeMarkersInParaLine) {
+        this.includeMarkersInParaLine = includeMarkersInParaLine;
+    }
+    
     public ParameterSearcher getSearcher() {
         return searcher;
     }
@@ -151,23 +167,6 @@ public class Tuner {
     public void setEvalMetric(Function<ClassifierResults, Double> evalMetric) {
         this.evalMetric = evalMetric;
     }
-    
-    
-    public static class ParameterScorePair implements Comparable<ParameterScorePair>{ 
-        public ParameterSet paras;
-        public double score;
-
-        public ParameterScorePair(ParameterSet parameterSet, double score) {
-            this.paras = parameterSet;
-            this.score = score;
-        }
-
-        @Override
-        public int compareTo(ParameterScorePair other) {
-            return Double.compare(this.score, other.score);
-        }
-    }
-    
     
     public ClassifierResults evaluateParameterSetByIndex(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace, int parameterIndex) throws Exception { 
         classifierName = baseClassifier.getClass().getSimpleName();
@@ -204,7 +203,7 @@ public class Tuner {
         return results;
     }
     
-    public ParameterSet tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
+    public ParameterResults tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
 //        System.out.println("Evaluating para space: " + parameterSpace);
         
         //meta info in case we're saving para files
@@ -215,11 +214,8 @@ public class Tuner {
         searcher.setParameterSpace(parameterSpace);
         Iterator<ParameterSet> iter = searcher.iterator();
         
-        //for reporting purposes in results files/loggers
-        allParasAndScores = new ArrayList<>(parameterSpace.numUniqueParameterSets());
-        
         //for resolving ties for the best paraset
-        List<ParameterScorePair> tiesBestSoFar = new ArrayList<>();
+        List<ParameterResults> tiesBestSoFar = new ArrayList<>();
         
         //iterate over the space
         int parameterSetID = -1;
@@ -243,10 +239,10 @@ public class Tuner {
         if (saveParameters)
             tiesBestSoFar = loadBackInSavedParas(parameterSpace.numUniqueParameterSets());
         
-        ParameterSet bestSet = resolveTies(tiesBestSoFar);
+        bestParaSetAndResults = resolveTies(tiesBestSoFar);
 //        System.out.println("Best parameter set was: " + bestSet);
         
-        return bestSet;
+        return bestParaSetAndResults;
     }
     
     private boolean parametersAlreadyEvaluated(int paraID) {
@@ -257,12 +253,11 @@ public class Tuner {
         return "fold" + seed + "_" +paraID + ".csv";
     }
     
-    private void storeParaResult(ParameterSet pset, ClassifierResults results, List<ParameterScorePair> tiesBestSoFar) {
+    private void storeParaResult(ParameterSet pset, ClassifierResults results, List<ParameterResults> tiesBestSoFar) {
         double score = evalMetric.apply(results);
             
-        ParameterScorePair paraScore = new ParameterScorePair(pset, score);
-        allParasAndScores.add(paraScore);
-
+        ParameterResults paraScore = new ParameterResults(pset, results, score);
+        
         if (tiesBestSoFar.isEmpty()) //first time around loop
             tiesBestSoFar.add(paraScore);
         else {
@@ -294,10 +289,8 @@ public class Tuner {
      * Loads all the saved parameter results files, populates the allParasAndScores
      * member variable, populates and returns a list of the ties for best parameter 
      */
-    private List<ParameterScorePair> loadBackInSavedParas(int numParasExpected) throws Exception {
-        
-        allParasAndScores = new ArrayList<>(numParasExpected);
-        List<ParameterScorePair> tiesBestSoFar = new ArrayList<>();
+    private List<ParameterResults> loadBackInSavedParas(int numParasExpected) throws Exception {
+        List<ParameterResults> tiesBestSoFar = new ArrayList<>();
         
         for (int paraID = 0; paraID < numParasExpected; paraID++) {
             String path = parameterSavingPath + buildParaFilename(paraID);
@@ -313,20 +306,18 @@ public class Tuner {
         return tiesBestSoFar;
     }
     
-    private ParameterSet resolveTies(List<ParameterScorePair> tiesBestSoFar) {
+    private ParameterResults resolveTies(List<ParameterResults> tiesBestSoFar) {
         if (tiesBestSoFar.size() == 1) {
             //clear winner
-            return tiesBestSoFar.get(0).paras;
+            return tiesBestSoFar.get(0);
         }
         else { 
             //resolve ties randomly: todo future, maybe allow for some other method of resolving ties, 
             //e.g choose 'least complex' parameter set of the ties
             Random rand = new Random(seed);
-            return tiesBestSoFar.get(rand.nextInt(tiesBestSoFar.size())).paras;
+            return tiesBestSoFar.get(rand.nextInt(tiesBestSoFar.size()));
         }
     }
-    
-    
     
     public static void main(String[] args) throws Exception {
         int seed = 0;
