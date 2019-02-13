@@ -330,7 +330,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         st.append(writeInstancePredictions());
         return st.toString();
     }
-   
+
    public void loadFromFile(String path) throws FileNotFoundException{
         File f=new File(path);
         
@@ -338,7 +338,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw new FileNotFoundException("File "+path+" NOT FOUND");
             
         //file exists
-        Scanner inf = new Scanner(new File(path));
+        Scanner inf = new Scanner(f);
 
         name = inf.nextLine();
         paras= inf.nextLine();
@@ -739,7 +739,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return stats;
     }
     
-       
+    public static boolean exists(File file) {
+       return file.exists() && file.length()>0;
+    }
+    public static boolean exists(String path) {
+        return exists(new File(path));
+    }
+   
     public static void main(String[] args) throws FileNotFoundException {
         
         String path="C:\\JamesLPHD\\testFold1.csv";

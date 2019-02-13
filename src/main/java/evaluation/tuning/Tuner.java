@@ -8,6 +8,7 @@ import evaluation.tuning.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
 import fileIO.OutFile;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,8 +16,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
+import weka.classifiers.functions.SMO;
+import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
 
 /**
@@ -33,13 +38,14 @@ public class Tuner {
     //Experimental settings.
     private int seed;
     private String parameterSavingPath = null;
-    private boolean saveParameters = false;
+    private boolean saveParameters = true;
     private String classifierName;
     private String datasetName;
     
     //for reporting purposes in results files/loggers
     public List<ParameterScorePair> allParasAndScores;
 
+    private boolean includeMarkersInParaLine = true;
     
     /**
      * if true, the base classifier will be cloned in order to evaluate each parameter set 
@@ -191,7 +197,11 @@ public class Tuner {
         String[] options = parameterSet.toOptionsList();
         classifier.setOptions(options);
 
-        return evaluator.evaluate(classifier, data);
+        ClassifierResults results = evaluator.evaluate(classifier, data);
+        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
+        results.paras = parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine);
+        
+        return results;
     }
     
     public ParameterSet tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
@@ -212,22 +222,39 @@ public class Tuner {
         List<ParameterScorePair> tiesBestSoFar = new ArrayList<>();
         
         //iterate over the space
+        int parameterSetID = -1;
         while (iter.hasNext()) {
+            parameterSetID++;
             ParameterSet pset = iter.next();
+            
+            if (saveParameters && parametersAlreadyEvaluated(parameterSetID))
+                continue;
+            
             ClassifierResults results = evaluateParameterSet(baseClassifier, trainSet, pset);
             
             if (saveParameters)
-                saveParaResults(pset, results);
+                saveParaResults(parameterSetID, results);
             else 
                 storeParaResult(pset, results, tiesBestSoFar);
                     
 //            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
         }
         
+        if (saveParameters)
+            tiesBestSoFar = loadBackInSavedParas(parameterSpace.numUniqueParameterSets());
+        
         ParameterSet bestSet = resolveTies(tiesBestSoFar);
 //        System.out.println("Best parameter set was: " + bestSet);
         
         return bestSet;
+    }
+    
+    private boolean parametersAlreadyEvaluated(int paraID) {
+        return ClassifierResults.exists(parameterSavingPath + buildParaFilename(paraID));
+    }   
+    
+    private String buildParaFilename(int paraID) {
+        return "fold" + seed + "_" +paraID + ".csv";
     }
     
     private void storeParaResult(ParameterSet pset, ClassifierResults results, List<ParameterScorePair> tiesBestSoFar) {
@@ -251,13 +278,39 @@ public class Tuner {
         }
     }
     
-    private void saveParaResults(ParameterSet pset, ClassifierResults results) throws IOException {
-        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
-        results.paras += pset.toStringCSV();
+    private void saveParaResults(int paraID, ClassifierResults results) throws IOException {
+        File f = new File(parameterSavingPath);
+        if (!f.exists()){ 
+            System.out.println("Creating directory " + parameterSavingPath);
+            f.mkdirs();
+        }
         
-        OutFile out = new OutFile(parameterSavingPath + "fold" + seed + "_" + pset.toStringCSV().replace(",", "_"));
+        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID));
         out.writeString(results.writeResultsFileToString());
         out.closeFile();
+    }
+    
+    /**
+     * Loads all the saved parameter results files, populates the allParasAndScores
+     * member variable, populates and returns a list of the ties for best parameter 
+     */
+    private List<ParameterScorePair> loadBackInSavedParas(int numParasExpected) throws Exception {
+        
+        allParasAndScores = new ArrayList<>(numParasExpected);
+        List<ParameterScorePair> tiesBestSoFar = new ArrayList<>();
+        
+        for (int paraID = 0; paraID < numParasExpected; paraID++) {
+            String path = parameterSavingPath + buildParaFilename(paraID);
+            
+            if (ClassifierResults.exists(path)) {
+                ClassifierResults tempResults = new ClassifierResults(path);
+                ParameterSet pset = new ParameterSet();
+                pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+                storeParaResult(pset, tempResults, tiesBestSoFar);
+            }
+        }
+        
+        return tiesBestSoFar;
     }
     
     private ParameterSet resolveTies(List<ParameterScorePair> tiesBestSoFar) {
@@ -271,5 +324,35 @@ public class Tuner {
             Random rand = new Random(seed);
             return tiesBestSoFar.get(rand.nextInt(tiesBestSoFar.size())).paras;
         }
+    }
+    
+    
+    
+    public static void main(String[] args) throws Exception {
+        int seed = 0;
+        
+        SMO svm = new SMO();
+        PolyKernel p=new PolyKernel();
+        p.setExponent(2);
+        svm.setKernel(p);
+        svm.setRandomSeed(seed);
+        
+        int size = 5;
+        double[] cs = new double[size];
+        for (int i = 0; i < cs.length; i++)
+            cs[i] = Math.pow(10.0, (i-size/2));
+        
+        ParameterSpace space = new ParameterSpace();
+        space.addParameter("C", cs);
+        
+        Tuner tuner = new Tuner();
+        tuner.setParameterSavingPath("C:/Temp/TunerTests/first/");
+        tuner.setSeed(seed);
+        
+        String dataset = "hayes-roth";
+        Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+        Instances[] data = InstanceTools.resampleInstances(all, seed, 0.5);
+        
+        System.out.println(tuner.tune(svm, data[0], space));
     }
 }

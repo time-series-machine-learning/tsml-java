@@ -7,7 +7,11 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 /**
- *
+ * 
+ * todo when convenient/with public announcement, just move the original cross validator into here 
+ * and merge them, instead of having this as an 'evaluator' that just calls the original 
+ * cross validation object. could would likely touch a lot of files, though
+ * 
  * @author James Large (james.large@uea.ac.uk)
  */
 public class CrossValidationEvaluator implements Evaluator {
