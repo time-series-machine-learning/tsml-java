@@ -137,13 +137,26 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        if (tuner == null)
-            throw new Exception("Tuner not setup");
-        if (space == null)
-            throw new Exception("Parameter space not setup");
-        if (classifier == null)
-            throw new Exception("No classifier specified");
         
+        //check everything's here
+        boolean somethingMissing = false;
+        String msg = "";
+        if (tuner == null) {
+            msg += "Tuner not setup. ";
+            somethingMissing = true;
+        }
+        if (space == null) {
+            msg += "Parameter space not setup. ";
+            somethingMissing = true;
+        }
+        if (classifier == null) {
+            msg += "No classifier specified. ";
+            somethingMissing = true;
+        }
+        if (somethingMissing) 
+            throw new Exception("TunedClassifier: " + msg);
+        
+        //actual work
         ParameterResults bestParas = tuner.tune(classifier, data, space);
         
         trainResults = bestParas.results;
