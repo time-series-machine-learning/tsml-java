@@ -676,6 +676,11 @@ public class Experiments implements Runnable{
                 ((RandomBoostedBOSS)c).setEnsembleSize(100);
                 ((RandomBoostedBOSS)c).setSeed(fold);
                 break;
+            case "RandomBaggingBOSS":
+                c=new RandomBaggingBOSS();
+                ((RandomBaggingBOSS)c).setEnsembleSize(100);
+                ((RandomBaggingBOSS)c).setSeed(fold);
+                break;
             case "RandomBOSSWhales":
                 c=new RandomBOSS();
                 ((RandomBOSS)c).setEnsembleSize(40);
