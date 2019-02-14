@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.TechnicalInformation;
 
 import utilities.generic_storage.ComparablePair;
@@ -30,7 +30,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 
 
 /**

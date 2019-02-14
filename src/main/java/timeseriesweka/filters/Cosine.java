@@ -4,15 +4,10 @@
  * */
 package timeseriesweka.filters;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
-import java.io.FileReader;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import utilities.ClassifierTools;
 import timeseriesweka.classifiers.FastDTW_1NN;
-import weka.classifiers.lazy.kNN;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 

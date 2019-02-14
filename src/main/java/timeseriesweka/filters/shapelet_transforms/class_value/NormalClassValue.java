@@ -6,8 +6,8 @@
 package timeseriesweka.filters.shapelet_transforms.class_value;
 
 import java.io.Serializable;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -18,14 +18,14 @@ import weka.core.Instances;
 public class NormalClassValue implements Serializable{
     
     double shapeletValue;
-    ClassDistribution classDistributions;
+    ClassCounts classDistributions;
     
     public void init(Instances inst)
     {
-        classDistributions = new TreeSetClassDistribution(inst);
+        classDistributions = new TreeSetClassCounts(inst);
     }
     
-    public ClassDistribution getClassDistributions()
+    public ClassCounts getClassDistributions()
     {
         return classDistributions;
     }

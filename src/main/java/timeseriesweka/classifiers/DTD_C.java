@@ -3,9 +3,8 @@ package timeseriesweka.classifiers;
 
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;

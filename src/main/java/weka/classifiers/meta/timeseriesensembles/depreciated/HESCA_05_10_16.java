@@ -7,7 +7,7 @@ for certain types set the parameters through CV.
  */
 package weka.classifiers.meta.timeseriesensembles.depreciated;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -30,7 +30,7 @@ import vector_classifiers.TunedRandomForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.*;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
 /**
  *

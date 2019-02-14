@@ -4,8 +4,8 @@
  * and open the template in the editor.
  */
 package timeseriesweka.filters.shapelet_transforms.quality_measures;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.SimpleClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.SimpleClassCounts;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 
     
@@ -21,7 +21,7 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
          * @param percentage percentage of data required to be processed before
          *                   bounding mechanism is used.
          */
-        protected MoodsMedianBound(ClassDistribution classDist, int percentage){
+        protected MoodsMedianBound(ClassCounts classDist, int percentage){
             initParentFields(classDist, percentage);
         }
                 
@@ -44,8 +44,8 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
             int countAbove = 0;
             int numClasses = parentClassDist.size();
             
-            ClassDistribution classCountsBelowMedian = new SimpleClassDistribution(numClasses);
-            ClassDistribution classCountsAboveMedian = new SimpleClassDistribution(numClasses);
+            ClassCounts classCountsBelowMedian = new SimpleClassCounts(numClasses);
+            ClassCounts classCountsAboveMedian = new SimpleClassCounts(numClasses);
 
             double distance;
             double classVal;

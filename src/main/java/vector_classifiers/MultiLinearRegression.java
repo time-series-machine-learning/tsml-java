@@ -1,9 +1,6 @@
 
 package vector_classifiers;
 
-import development.MultipleClassifierEvaluation;
-import java.util.Arrays;
-import java.util.List;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.AbstractClassifier;
@@ -101,7 +98,7 @@ public class MultiLinearRegression extends AbstractClassifier {
 //        new MultipleClassifierEvaluation(basePath+"XGBoostAnalysis/", dsetGroup+"_testy", 10).
 //            setTestResultsOnly(true).
 ////            setBuildMatlabDiagrams(true).
-//            setDatasets(dsetGroup.equals("UCI") ? development.DataSets.UCIContinuousFileNames : development.DataSets.fileNames).
+//            setDatasets(dsetGroup.equals("UCI") ? development.experiments.DataSets.UCIContinuousFileNames : development.experiments.DataSets.fileNames).
 ////            setDatasets(basePath + dsetGroup + "2.txt").
 //            readInClassifiers(new String[] { "MLR", "1NN", "C4.5", }, basePath+dsetGroup+"Results/").
 ////            readInClassifiers(new String[] { "XGBoost", "XGBoost500Iterations", "RotF", "RandF" }, basePath+dsetGroup+"Results/").

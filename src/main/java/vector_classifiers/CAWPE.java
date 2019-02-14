@@ -1,26 +1,23 @@
 package vector_classifiers;
 
-import development.CollateResults;
-import development.DataSets;
-import development.Experiments;
-import development.MultipleClassifierEvaluation;
-import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
+import experiments.CollateResults;
+import experiments.DataSets;
+import experiments.Experiments;
+import evaluation.MultipleClassifierEvaluation;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAccByClass;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
-import timeseriesweka.classifiers.ensembles.voting.NaiveBayesCombiner;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
-import development.MultipleClassifiersPairwiseTest;
-import fileIO.OutFile;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
+
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import utilities.ClassifierTools;
-import utilities.CrossValidator;
+import evaluation.CrossValidator;
 import utilities.DebugPrinting;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -36,10 +33,10 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.filters.SAX;
@@ -1380,20 +1377,20 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      */
     public static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
         //init, edit the paths for local running ofc
-//        String[] dataHeaders = { "UCI", };
-//        String[] dataPaths = { "Z:/Data/UCIContinuous/", };
-//        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-//        String writePathBase = "Z:/Results/CAWPEReproducabiltyTest/";
-//        String writePathResults =  writePathBase + "Results/";
-//        String writePathAnalysis =  writePathBase + "Analysis/";
-//        int numFolds = 5;
         String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "Z:/Data/UCIContinuous/", };
-        String[][] datasets = { DataSets.UCIContinuousFileNames, };
-        String writePathBase = "Z:/Results/CAWPEReproducabiltyTest/";
+        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
+        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
-        int numFolds = 30;
+        int numFolds = 5;
+//        String[] dataHeaders = { "UCI", };
+//        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
+//        String[][] datasets = { DataSets.UCIContinuousFileNames, };
+//        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
+//        String writePathResults =  writePathBase + "Results/";
+//        String writePathAnalysis =  writePathBase + "Analysis/";
+//        int numFolds = 30;
 
         //build the base classifiers
         String[] baseClassifiers = { "NN", "C45", "MLP", "Logistic", "SVML" };
@@ -1445,7 +1442,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //done!
     }
-
+ 
     public static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
         System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
@@ -1509,12 +1506,18 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         c.setPerformCV(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
-                        Experiments.singleClassifierAndFoldTrainTestSplit(data[0],data[1],c,fold,predictions);
+                        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                        exp.classifierName = ensembleID;
+                        exp.datasetName = dset;
+                        exp.foldId = fold;
+                        exp.generateErrorEstimateOnTrainSet = true;
+                        Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
                     }
                 }
             }
         }
     }
+
 
 
     public static void main(String[] args) throws Exception {
