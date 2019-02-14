@@ -1,36 +1,49 @@
 package timeseriesweka.classifiers;
-/** * Implementation of Deng's Time Series Forest
+/** * Implementation of Time Series Forest
  Time Series Forest (TimeSeriesForest) Deng 2013: 
+* @author ajb
+* @date 7/10/15
+
 @article{deng13forest,
 author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
  title = {A time series forest for classification and feature extraction},
  journal = {Information Sciences},
  volume = {239},
  year = {2013}
+ * buildClassifier
+ * Overview: Input n series length m
+ * for each tree
+ *      sample sqrt(m) intervals
+ *      find three features on each interval: mean, standard deviation and slope
+ *      concatenate to new feature set
+ *      build tree on new feature set
+* classifyInstance
+*   ensemble the trees with majority vote
 
-buildClassifier
-* Overview: Input n series length m
-for each tree
-    sample sqrt(m) intervals
-        find three features on each interval: mean, standard deviation and slope
-        concatenate to new feature set
-    build tree on new feature set
-
-classifyInstance
-* ensemble the trees with majority vote
-
- * @author ajb
- * @date 7/10/15
-
-This implementation may deviate from the original, as it is using the same
-structure as the weka random forest. In the paper the splitting criteria has a tiny refinement. 
-Ties in entropy gain are split with a further stat called margin that measures the 
-distance of the split point to the closest data. So if the split value for feature 
+* This implementation may deviate from the original, as it is using the same
+* structure as the weka random forest. In the paper the splitting criteria has a 
+* tiny refinement. Ties in entropy gain are split with a further stat called margin 
+* that measures the distance of the split point to the closest data. 
+* So if the split value for feature 
 * f=f_1,...f_n is v the margin is defined as
+*   margin= min{ |f_i-v| } 
+* for simplicity of implementation, and for the fact when we did try it, it made 
+* no difference, we have not used this. 
 
-margin= min{ |f_i-v| } 
-
-for simplicity of implementation, we have not used this. 
+ * author ajb
+ * @update 14/2/19
+* A few changes made to enable testing refinements. 
+*1. general basClassifier rather than a hard coded RandomTree. We tested a few 
+*  alternatives, the summary results are available at
+*  http://www.timeseriesclassification.com/Experiments/TSF.xlsx
+*  Summary:
+*  Base Classifier: 
+*       a) C.45 (J48) default settings 
+*       b) CAWPE ....
+*       c) 
+* 2. Added setOptions to allow parameter tuning. Tuning on parameters
+*       #trees, #features 
+* 
 **/ 
 
 import fileIO.OutFile;
@@ -53,10 +66,6 @@ import evaluation.ClassifierResults;
 import weka.classifiers.Classifier;
 import weka.filters.NormalizeCase;
 
-/*
-
-
- */
 public class TSF extends AbstractClassifierWithTrainingData implements SaveParameterInfo, TrainAccuracyEstimate{
     private boolean setSeed=false;
     private int seed=0;
