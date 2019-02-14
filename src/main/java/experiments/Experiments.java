@@ -54,7 +54,7 @@ public class Experiments  {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
-    public static boolean testing = true;
+    public static boolean testing = false;
     public static boolean debug = false;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
@@ -240,6 +240,7 @@ public class Experiments  {
             test_correctnessTestsComparingOldExpsAndNew();
             return;
         }
+     
         
         //even if all else fails, print the args as a sanity check for cluster.
         for (String str : args)
@@ -248,8 +249,36 @@ public class Experiments  {
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+        }else{//Local debug run
+            int folds=10;
+            boolean threaded=true;
+            if(threaded){
+                String[] settings=new String[6];
+                settings[0]="Z:/Data/TSCProblems2018/";
+                settings[1]="Z:/Results/Java/";
+                settings[2]="false";
+                settings[3]="TSFC45";
+                settings[4]="blank";
+                settings[5]="0";
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,30);
+            }else{
+                for(String str: DataSets.tscProblems78){
+                    for(int i=1;i<=folds;i++){
+                        String[] settings=new String[6];
+                        settings[0]="Z:/Data/TSCProblems2018/";
+                        settings[1]="Z:/Results/Java/";
+                        settings[2]="false";
+                        settings[3]="TSFC45";
+                        settings[4]=str;
+        //                for(int j=0;)
+                        settings[5]=i+"";
+                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                        setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+                    }
+                }
+            }
         }
-        
     }
 
     /**

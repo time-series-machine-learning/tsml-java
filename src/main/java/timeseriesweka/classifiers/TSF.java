@@ -51,6 +51,7 @@ import weka.core.TechnicalInformation;
 import utilities.TrainAccuracyEstimate;
 import evaluation.ClassifierResults;
 import weka.classifiers.Classifier;
+import weka.filters.NormalizeCase;
 
 /*
 
@@ -60,8 +61,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     private boolean setSeed=false;
     private int seed=0;
     private int numTrees=500;
-    private Classifier[] trees; 
-    private Classifier baseClassifier= new RandomTree();
+    Classifier[] trees;
+    Classifier base;
     private int numFeatures;
 // for each classifier [i]  nterval j starts at intervals[i][j][0] and ends  intervals[i][j][1]
     private int[][][] intervals;
@@ -72,31 +73,38 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
 /*  If not null, train results are overwritten with each call to buildClassifier
     File opened on this path.   */    
     private String trainCVPath="";
-    private int minIntervalLength=3;
+    private int minIntervalLength=1;
 // voteEnsemble determines whether to aggregate classifications or probabilities when predicting
     private boolean voteEnsemble=true;
-    public void setVoteEnsemble(boolean b){
-        voteEnsemble=b;
-    }
-    
-    
+    private boolean normalise=true;
     public TSF(){
         rand=new Random();
+        base=new RandomTree();
     }
     public TSF(int s){
         rand=new Random();
         seed=s;
         rand.setSeed(seed);
         setSeed=true;
+        base=new RandomTree();
     }
+    public void setBaseClassifier(Classifier c){
+        base=c;
+
+    }
+    public void setVoteEnsemble(boolean b){
+        voteEnsemble=b;
+    }
+    public void setProbabilityEnsemble(boolean b){
+        voteEnsemble=!b;
+    }
+    
+    
     public void setSeed(int s){
         this.setSeed=true;
         seed=s;
         rand=new Random();
         rand.setSeed(seed);
-    }
-    public void setBaseClassifier(Classifier c){
-        baseClassifier =c;
     }
     @Override
     public void writeCVTrainToFile(String train) {
@@ -248,6 +256,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     public void buildClassifier(Instances data) throws Exception {
         long t1=System.currentTimeMillis();
         numFeatures=(int)Math.sqrt(data.numAttributes()-1);
+        
         if(trainCV){
             int numFolds=setNumberOfFolds(data);
             CrossValidator cv = new CrossValidator();
@@ -261,8 +270,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         }
         numFeatures=(int)Math.sqrt(data.numAttributes()-1);
         intervals =new int[numTrees][][];
-        trees=AbstractClassifier.makeCopies(baseClassifier, numTrees);
-        //Set up instances size and format. 
+        trees=new AbstractClassifier[numTrees];        //Set up instances size and format. 
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
         for(int j=0;j<numFeatures*3;j++){
@@ -303,7 +311,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
                    length=minIntervalLength;
                intervals[i][j][1]=intervals[i][j][0]+length;
             }
-        //2. Generate and store random attributes            
+        //2. Generate and store attributes            
             for(int j=0;j<numFeatures;j++){
                 //For each instance
                 for(int k=0;k<data.numInstances();k++){
@@ -320,7 +328,11 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
 /*Create and build tree using all the features. Feature selection
   has already occurred
         */
-//          trees[i].setKValue(numFeatures);
+            trees[i]=AbstractClassifier.makeCopy(base);          
+//Required because the default parameter of log(m)+1 attributes is significantly
+//worse than sqrt(m) attributes
+            if(trees[i] instanceof RandomTree) 
+                ((RandomTree)trees[i]).setKValue(numFeatures);
             trees[i].buildClassifier(result);
         }
         long t2=System.currentTimeMillis();

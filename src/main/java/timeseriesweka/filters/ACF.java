@@ -18,7 +18,7 @@ import weka.core.Instances;
 import weka.filters.*;
 
 /*
- *      * author: Anthony Bagnall
+ *      * author: Anthony Bagnall circa 2008
 
  */
 
