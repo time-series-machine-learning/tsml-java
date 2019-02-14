@@ -29,3 +29,10 @@ hs_err_pid*
 .gradle/
 build/
 gradle/
+/nbproject/private/
+/dist/
+
+# netbeans
+build.xml
+nbproject/
+manifest.mf
