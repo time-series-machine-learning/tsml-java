@@ -21,6 +21,7 @@ import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.ClassifierTools;
+import utilities.FileHandlingTools;
 import utilities.InstanceTools;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.SaveEachParameter;
@@ -224,7 +225,11 @@ public class Tuner
     }
     
     public ParameterResults tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
-//        System.out.println("Evaluating para space: " + parameterSpace);
+        //System.out.println("Evaluating para space: " + parameterSpace);
+        
+        //for contracting
+        long startTime = System.nanoTime();
+        long maxParaEvalTime = 0;
         
         //meta info in case we're saving para files
         classifierName = baseClassifier.getClass().getSimpleName();
@@ -242,27 +247,58 @@ public class Tuner
         while (iter.hasNext()) {
             parameterSetID++;
             ParameterSet pset = iter.next();
-            
+            long thisParaStartTime = System.nanoTime();
             if (saveParameters && parametersAlreadyEvaluated(parameterSetID))
                 continue;
             
+            // THE WORK
             ClassifierResults results = evaluateParameterSet(baseClassifier, trainSet, pset);
             
             if (saveParameters)
                 saveParaResults(parameterSetID, results);
             else 
                 storeParaResult(pset, results, tiesBestSoFar);
-                    
-//            System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
+            
+            if (contracting) {
+                long thisParaTime = System.nanoTime() - thisParaStartTime;
+                if (thisParaTime > maxParaEvalTime) 
+                    maxParaEvalTime = thisParaTime;
+                
+                long totalTimeSoFar = System.nanoTime() - startTime;
+                
+//                int numParasEvald = parameterSetID + 1; 
+//                long avgTimePerPara = totalTimeSoFar / numParasEvald;
+                
+                if (!canWeEvaluateAnotherParaSet(maxParaEvalTime, totalTimeSoFar))
+                    break;
+            }
+            
+            //System.out.println("Score: " + String.format("%5f", score) + "\tParas: " + pset);
         }
         
-        if (saveParameters)
-            tiesBestSoFar = loadBackInSavedParas(parameterSpace.numUniqueParameterSets());
+        
+        if (saveParameters) {
+            // if we're contracting, (but also saving parasets)
+            // we might not have had time to eval ALL the psets, justfind the best so far
+            // if we're contracting but not saving each paraset, we'll have been using 
+            // storeParaResult() and have them in memory currently anyway
+            if (contracting)
+                tiesBestSoFar = loadBestOfSavedParas_SoFar();
+            else
+                tiesBestSoFar = loadBestOfSavedParas_All(parameterSpace.numUniqueParameterSets());
+            //conversely if we're NOT contracting, we have the strict requirement that
+            //the entire space has been evaluated (or at least has been fully iterated over as defined by the 
+            //searcher, e.g RandomSearcher has searched it's full 1000 times etc)
+        }
         
         bestParaSetAndResults = resolveTies(tiesBestSoFar);
-//        System.out.println("Best parameter set was: " + bestSet);
+        //System.out.println("Best parameter set was: " + bestSet);
         
         return bestParaSetAndResults;
+    }
+    
+    private boolean canWeEvaluateAnotherParaSet(long maxParaEvalTime, long totalTimeSoFar) {
+        return contractTimeNanos - totalTimeSoFar > maxParaEvalTime;
     }
     
     private boolean parametersAlreadyEvaluated(int paraID) {
@@ -310,10 +346,12 @@ public class Tuner
     }
     
     /**
-     * Loads all the saved parameter results files, populates the allParasAndScores
-     * member variable, populates and returns a list of the ties for best parameter 
+     * Loads all the saved parameter results files with the expectation that every parameter set 
+     * up to the id# passed has been evaluated (intended usage being that numParasExpected = parameterSpace.numUniqueParameterSets())
+     * 
+     * populates and returns a list of the ties for best parameterSet
      */
-    private List<ParameterResults> loadBackInSavedParas(int numParasExpected) throws Exception {
+    private List<ParameterResults> loadBestOfSavedParas_All(int numParasExpected) throws Exception {
         List<ParameterResults> tiesBestSoFar = new ArrayList<>();
         
         for (int paraID = 0; paraID < numParasExpected; paraID++) {
@@ -324,7 +362,35 @@ public class Tuner
                 ParameterSet pset = new ParameterSet();
                 pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
                 storeParaResult(pset, tempResults, tiesBestSoFar);
+            } else {
+                throw new Exception("Trying to load paras back in, but missing expected parameter set ID: " + paraID + ", numParasExpected: " + numParasExpected);
             }
+        }
+        
+        return tiesBestSoFar;
+    }
+    
+    /**
+     * Loads all the saved parameter results files that have been written 'so far',
+     * using parameterSavingPath as a search term to look for saved files
+     * 
+     * populates and returns a list of the ties for best parameterSet
+     */
+    private List<ParameterResults> loadBestOfSavedParas_SoFar() throws Exception {
+        List<ParameterResults> tiesBestSoFar = new ArrayList<>();
+        
+        //assumption, parameterSavingPath is of form some/long/path/fold[seed]_
+        File f = new File(parameterSavingPath);
+        String filenamePrefix = f.getName(); // fold[seed]_
+        String dir = f.getParent();          // some/long/path/
+        
+        File[] files = FileHandlingTools.listFilesContaining(dir, filenamePrefix);
+        
+        for (File file : files) {
+            ClassifierResults tempResults = new ClassifierResults(file.getAbsolutePath());
+            ParameterSet pset = new ParameterSet();
+            pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+            storeParaResult(pset, tempResults, tiesBestSoFar);
         }
         
         return tiesBestSoFar;

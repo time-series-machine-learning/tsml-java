@@ -150,7 +150,7 @@ public class TunedClassifier extends AbstractClassifier
         this.tuner = new Tuner(); 
         
         //setup para space 
-        int size = 9;
+        int size = 13;
         double[] cs = new double[size];
         for (int i = 0; i < cs.length; i++)
             cs[i] = Math.pow(10.0, (i-size/2));
