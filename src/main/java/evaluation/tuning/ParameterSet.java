@@ -2,9 +2,9 @@
 package evaluation.tuning;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import utilities.generic_storage.Pair;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  *
@@ -15,6 +15,18 @@ public class ParameterSet {
         
     private static String startParaLineDelimiter = "parasStart";
     private static String endParaLineDelimiter = "parasEnd";
+    
+    public int size() {
+        return parameterSet.size();
+    }
+    
+    public boolean contains(String paraName) {
+        return parameterSet.containsKey(paraName); 
+    }
+    
+    public Set<Entry<String,String>> getAllParameters() {
+        return parameterSet.entrySet();
+    }
     
     public String getParameterValue(String paraName) {
         return parameterSet.get(paraName);
@@ -56,7 +68,12 @@ public class ParameterSet {
      * are parameter to be read in (e.g no debug flags)
      */
     public void readOptionsList(String[] options) { 
-        //todo
+        parameterSet = new HashMap<String, String>();
+        
+        for (int i = 0; i < options.length; i+=2)
+            parameterSet.put(options[i], options[i+1]);
+        
+        //todo error checking etc
     }
     
     public static String toFileNameString(int[] inds) {
