@@ -32,9 +32,24 @@ import utilities.generic_storage.Pair;
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
         
-    //classifier meta info, set by user
-    public String name;
-    public String paras;
+    //LINE 1: meta info, set by user
+    private String classifierName = "";
+    private String datasetName = "";
+    private int foldID = -1;
+    private String split = ""; //e.g train or test
+    private String description= ""; //optional extra info if wanted. 
+    
+    //LINE 2: classifier setup/info, parameters. precise format is up to user. 
+    //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
+    //old versions of file format also include build time.
+    public String paras = "No parameter info";
+    
+    //LINE 3: acc, buildTime, testTime, memory
+    //simple summarative performance stats. 
+    public double acc = -1; 
+    public long buildTime = -1; //buildClassifier(Instances) timing. might be cumulative time over many parameter set builds, etc
+    public long testTime = -1; //total testtime for all predictions
+    public long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
     
     //inferred/supplied dataset meta info
     public int numClasses; 
@@ -45,12 +60,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public ArrayList<Double> predictedClassValues;
     public ArrayList<double[]> predictedClassProbabilities;
     public ArrayList<Long> predictionTimes;
-    public long buildTime;
-    public long testTime;
-    public long memory;
     
     //calculated performance metrics
-    public double acc; 
+        //accuracy can be re-calced, as well as stored on line three in files
     public double balancedAcc; 
     public double sensitivity;
     public double specificity;
@@ -144,6 +156,46 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = true;
     }
 
+    public String getClassifierName() {
+        return classifierName;
+    }
+
+    public void setClassifierName(String classifierName) {
+        this.classifierName = classifierName;
+    }
+
+    public String getDatasetName() {
+        return datasetName;
+    }
+
+    public void setDatasetName(String datasetName) {
+        this.datasetName = datasetName;
+    }
+
+    public int getFoldID() {
+        return foldID;
+    }
+
+    public void setFoldID(int foldID) {
+        this.foldID = foldID;
+    }
+
+    public String getSplit() {
+        return split;
+    }
+
+    public void setSplit(String split) {
+        this.split = split;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
     public int getNumClasses() {
         return numClasses;
     }
@@ -158,14 +210,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     public void setNumInstances(int numInstances) {
         this.numInstances = numInstances;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getParas() {
@@ -304,124 +348,216 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        return null;
     }
     
+    /**
+     * returns true if the prediction described by this string was correct 
+     */
+    public boolean instancePredictionFromString(String predLine) { 
+        String[] split=predLine.split(",");
+
+        //collected actual/predicted class
+        double trueClassVal=Double.valueOf(split[0]);
+        double predClassVal=Double.valueOf(split[1]);
+        trueClassValues.add(trueClassVal);
+        predictedClassValues.add(predClassVal);
+        
+        //if probabilities are here, collect those too. VERY old files will not have them
+        if(split.length>3){
+            if(numInstances==0)
+                numClasses=split.length-3;   //Check!
+            double[] probs=new double[numClasses];
+            for(int i=0;i<probs.length;i++)
+                  probs[i]=Double.valueOf(split[3+i].trim());
+            predictedClassProbabilities.add(probs);
+        }
+        
+        //timing
+        
+        return trueClassVal==predClassVal;
+    }
+    
+    public String instancePredictionToString(int i) { 
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append(trueClassValues.get(i).intValue()).append(",");
+        sb.append(predictedClassValues.get(i).intValue()).append(",");
+        double[] probs=predictedClassProbabilities.get(i);
+        for(double d:probs)
+            sb.append(",").append(GenericTools.RESULTS_DECIMAL_FORMAT.format(d));
+        
+        return sb.toString();
+    }
+    
     public String instancePredictionsToString(){
         if(numInstances()>0 &&(predictedClassProbabilities.size()==trueClassValues.size()&& predictedClassProbabilities.size()==predictedClassValues.size())){
-             StringBuilder sb=new StringBuilder("");
+            StringBuilder sb=new StringBuilder("");
+            
             for(int i=0;i<numInstances();i++){
-                sb.append(trueClassValues.get(i).intValue()).append(",");
-                sb.append(predictedClassValues.get(i).intValue()).append(",");
-                double[] probs=predictedClassProbabilities.get(i);
-                for(double d:probs)
-                    sb.append(",").append(GenericTools.RESULTS_DECIMAL_FORMAT.format(d));
+                sb.append(instancePredictionToString(i));
+
                 if(i<numInstances()-1)
                     sb.append("\n");
             }
+            
             return sb.toString();
         }
         else
            return "No Instance Prediction Information";
-   }
+    }
    
-   @Override
-   public String toString() {                
+    @Override
+    public String toString() {                
+        return generateFirstLine();
+    }
+    
+    public String writeResultsFileToString() {                
         StringBuilder st = new StringBuilder();
-        st.append(name).append("\n");
-        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
-        st.append(acc).append("\n");
-  
+        st.append(generateFirstLine()).append("\n");
+        st.append(generateSecondLine()).append("\n");
+        st.append(generateThirdLine()).append("\n");
+//        st.append(name).append("\n");
+//        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
+//        st.append(acc).append("\n");
+
         st.append(instancePredictionsToString());
         return st.toString();
     }
    
     public void writeResultsFile(String path) throws Exception {
-       OutFile out = new OutFile(path);
-       try {
-           out.writeString(this.toString());
-       } catch (Exception e) { 
-            throw new Exception("TODO stop using or update outfile... : "
-                    + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" + e);
-       }
-       out.closeFile();
-   }
+        OutFile out = new OutFile(path);
+        try {
+            out.writeString(writeResultsFileToString());
+        } catch (Exception e) { 
+             throw new Exception("TODO stop using or update outfile... : "
+                     + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" + e);
+        }
+        out.closeFile();
+    }
+    
+    private void parseFirstLine(String line) {
+        String[] parts = line.split(",");
+        datasetName = parts[0];
+        classifierName = parts[1];
+        split = parts[2];
+        foldID = Integer.parseInt(parts[3]);
+        description = parts[4];
 
-
-   public void loadFromFile(String path) throws FileNotFoundException{
-        File f=new File(path);
-        
-        if(!(f.exists() && f.length()>0))
-            throw new FileNotFoundException("File "+path+" NOT FOUND");
-            
-        //file exists
-        Scanner inf = new Scanner(f);
-
-        name = inf.nextLine();
-        paras= inf.nextLine();
-
-        //handle buildtime, taking it out of the generic paras string and putting 
-        //the value into the actual field
+        //in case the description had commas in it? ...
+        for (int i = 5; i < parts.length; i++)
+            description += parts[i];
+    }
+    private String generateFirstLine() { 
+        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + description;
+    }
+   
+    private void parseSecondLine(String line) { 
+        paras = line;
+       
+        //handle buildtime if it's on this line like older files may have, 
+        //taking it out of the generic paras string and putting the value into the actual field
         String[] parts = paras.split(",");
         if (parts.length > 0 && parts[0].contains("BuildTime")) {
             buildTime = (long)Double.parseDouble(parts[1].trim());
-             if (parts.length > 2) { //actual paras too, rebuild this string without buildtime
-                 paras = parts[2];
-                 for (int i = 3; i < parts.length; i++) {
-                     paras += "," + parts[i];
-                 }
-             }
+            
+            if (parts.length > 2) { //this has actual paras too, rebuild this string without buildtime
+                paras = parts[2];
+                for (int i = 3; i < parts.length; i++) {
+                    paras += "," + parts[i];
+                }
+            }
         }
+    }
+    private String generateSecondLine() {
+        //todo decide what to do with this
+        return paras;
+    }
+    
+    /**
+     * Returns the test acc reported on this line, for comparison with acc 
+     * computed later to assert they align. Accuracy has always been reported 
+     * on this line in this file format, so fair to assume if this fails 
+     * then the file is simply malformed
+     */
+    private double parseThirdLine(String line) { 
+        String[] parts = line.split(",");
+        
+        acc = Double.parseDouble(parts[0]);
+       
+        //if buildtime is here, it shouldn't be on the paras line too. 
+        //if it is, likely an old SaveParameterInfo implementation put it there
+        //for now, overwriting that buildtime with this one, but printing warning 
+        if (parts.length > 1)  {
+            if (buildTime != -1)  //the default
+                System.out.println("CLASSIFIERRESULTS READ WARNING: build time reported on both "
+                        + "second and third line. Using the value reported on the third line");
+            
+            buildTime = Long.parseLong(parts[1]); 
+        }
+        if (parts.length > 2) 
+            testTime = Long.parseLong(parts[2]);
+        if (parts.length > 3) 
+            memory = Long.parseLong(parts[3]);
+        
+        return acc;
+    }
+    private String generateThirdLine() {
+        String res = acc+"";
+        
+        if (buildTime != -1)
+            res += "," + buildTime;
+        if (testTime != -1)
+            res += "," + testTime;
+        if (memory != -1)
+            res += "," + memory;
+        return res;
+    }
 
-        double testAcc=Double.parseDouble(inf.nextLine());
-        trueClassValues= new ArrayList<>();
+    public void loadFromFile(String path) throws FileNotFoundException {
+        //init
+        trueClassValues = new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
-        numInstances=0;
-        acc=0;
+        numInstances = 0;
+        acc = -1;
+        buildTime = -1;
+        testTime = -1; 
+        memory = -1;
+
+        //check file exists
+        File f = new File(path);
+        if (!(f.exists() && f.length() > 0)) 
+            throw new FileNotFoundException("File " + path + " NOT FOUND");
+
+        Scanner inf = new Scanner(f);
+
+        //parse first line
+        parseFirstLine(inf.nextLine());
+        parseSecondLine(inf.nextLine());
+        double reportedTestAcc = parseThirdLine(inf.nextLine());
 
         //have all meta info, start reading predictions
-        boolean firstLoop = true;
-        while(inf.hasNext()){
-            String line=inf.nextLine();
-
+        double correct = 0;
+        while (inf.hasNext()) {
+            String line = inf.nextLine();
             //may be trailing empty lines at the end of the file
-            if (line==null || line.equals(""))
+            if (line == null || line.equals(""))
                 break;
-
-            String[] split=line.split(",");
-
-            //collected actual/predicted class
-            double a=Double.valueOf(split[0]);
-            double b=Double.valueOf(split[1]);
-            trueClassValues.add(a);
-            predictedClassValues.add(b);
-            if(a==b)
-                acc++;
-
-            //if probabilities are here, collect those too. VERY old files will not have them
-            if(split.length>3){
-                if(numInstances==0)
-                    numClasses=split.length-3;   //Check!
-                double[] probs=new double[numClasses];
-                for(int i=0;i<probs.length;i++)
-                      probs[i]=Double.valueOf(split[3+i].trim());
-                predictedClassProbabilities.add(probs);
-            }
-            else
-                if (firstLoop)
-                   printlnDebug("WARNING: Results file does not contain probabilities, " + path);
-            firstLoop = false;
-
-            numInstances++; 
+            
+            if (instancePredictionFromString(line))
+                correct++;
+            numInstances++;
         }
-        acc/=numInstances;
 
+        //acts as a basic form of verification
+        acc = correct / numInstances;
         double eps = 1.e-8;
-        if (Math.abs(testAcc - acc) > eps)
-            throw new ArithmeticException("Calculated accuracy ("+acc+") differs from written accuracy ("+testAcc+") "
-                    + "by more than eps ("+eps+")");
+        if (Math.abs(reportedTestAcc - acc) > eps) {
+            throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
+                    + "by more than eps (" + eps + ")");
+        }
 
         finalised = true;
         inf.close();
-   }
+    }
    
     /**
      * Find: Accuracy, Balanced Accuracy, F1 (1 vs All averaged?), 

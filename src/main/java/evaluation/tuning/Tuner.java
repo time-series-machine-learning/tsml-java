@@ -212,7 +212,10 @@ public class Tuner
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);
-        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
+        results.setClassifierName("TunedClassifier:"+classifierName);
+        results.setDatasetName(datasetName);
+        results.setFoldID(seed);
+        results.setSplit("train");
         results.paras = parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine);
         
         return results;

@@ -488,8 +488,14 @@ public class Experiments  {
 
 
             //Write train results
-            if (expSettings.generateErrorEstimateOnTrainSet) 
-                writeTrainEstimate(classifier, trainSet, trainResults, resultsPath + trainFoldFilename, buildTime);
+            if (expSettings.generateErrorEstimateOnTrainSet) {
+                if (!(classifier instanceof TrainAccuracyEstimate)) {
+                    trainResults.buildTime = buildTime;
+                    writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
+                }
+                //else 
+                //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
+            }
             LOGGER.log(Level.INFO, "Train estimate written");
 
 
@@ -502,7 +508,7 @@ public class Experiments  {
                 if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
                     testResults = evaluateClassifier(classifier, testSet);
                     LOGGER.log(Level.INFO, "Testing complete");
-                    writeTestResults(classifier, testSet, testResults, resultsPath + testFoldFilename);
+                    writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
                     LOGGER.log(Level.INFO, "Testing written");
                 } 
                 else {
@@ -568,30 +574,6 @@ public class Experiments  {
         
         return trainResults;
     }
-    
-    public static void writeTrainEstimate(Classifier classifier, Instances train, ClassifierResults results, String fullTrainWritingPath, long buildTime) throws Exception {
-        if (classifier instanceof TrainAccuracyEstimate) {
-            //the classifier will have written it's own train estimate internally
-            return;
-        }
-        else {
-            //Write the results
-            results.name = train.relationName() + "," + classifier.getClass().getName() + ",train";
-            if (classifier instanceof SaveParameterInfo) {
-                results.paras = ((SaveParameterInfo) classifier).getParameters(); //assumes build time is in it's param info, is for tunedsvm
-            } else {
-                results.paras = "BuildTime," + buildTime + ",No Parameter Info";
-            }
-            results.writeResultsFile(fullTrainWritingPath);
-            
-            File f = new File(fullTrainWritingPath);
-            if (f.exists()) {
-                f.setWritable(true, false);
-            }
-
-        }
-    }
-    
     public static ClassifierResults evaluateClassifier(Classifier classifier, Instances testSet) throws Exception {
         ClassifierResults results = new ClassifierResults(testSet.numClasses());
         double[] trueClassValues = testSet.attributeToDoubleArray(testSet.classIndex());
@@ -606,14 +588,15 @@ public class Experiments  {
         return results;
     }
     
-    public static void writeTestResults(Classifier classifier, Instances dataset, ClassifierResults results, String fullTestWritingPath) throws Exception {
-        results.name = dataset.relationName() + "," + classifier.getClass().getName() + ",test";
+    public static void writeResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
+        results.setClassifierName(exp.classifierName);
+        results.setDatasetName(exp.datasetName);
+        results.setFoldID(exp.foldId);
+        results.setSplit(split);
         
-        if (classifier instanceof SaveParameterInfo) {
+        if (classifier instanceof SaveParameterInfo)
             results.paras = ((SaveParameterInfo) classifier).getParameters();
-        } else {
-            results.paras = "No parameter info";
-        }
+
         results.writeResultsFile(fullTestWritingPath);
         
         File f = new File(fullTestWritingPath);

@@ -118,15 +118,15 @@ public class EnsembleSelection extends CAWPE {
         
         //transform data if specified
         if(this.transform==null){
-            this.train = new Instances(data);
+            this.trainInsts = new Instances(data);
         }else{
-            this.train = transform.process(data);
+            this.trainInsts = transform.process(data);
         }
         
         //init
-        this.numTrainInsts = train.numInstances();
-        this.numClasses = train.numClasses();
-        this.numAttributes = train.numAttributes();
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
         
         //set up modules
         initialiseModules();
@@ -250,13 +250,16 @@ public class EnsembleSelection extends CAWPE {
         }
 //END OF THE ACTUAL SELECTION STUFF   
 
-        this.ensembleTrainResults = globalEnsembleResults;
-        this.ensembleTrainResults.setName("EnsembleSelection");
+        ensembleTrainResults = globalEnsembleResults;
+        ensembleTrainResults.setClassifierName("EnsembleSelection");
+        ensembleTrainResults.setDatasetName(datasetName);
+        ensembleTrainResults.setFoldID(seed);
+        ensembleTrainResults.setSplit("train");
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        this.ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
+        ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(train);
+            writeEnsembleCVResults(trainInsts);
         
         this.testInstCounter = 0; //prep for start of testing
     }

@@ -335,7 +335,12 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 model.setC(p1);
                 model.setBuildLogisticModels(true);
                 tempResults=cv.crossValidateWithStats(model,trainCopy);
-                tempResults.setName("TunedSVM"+kernel);
+                
+                tempResults.setClassifierName("TunedSVM"+kernel);
+                tempResults.setDatasetName(train.relationName());
+                tempResults.setFoldID(seed);
+                tempResults.setSplit("train");
+                
                 tempResults.setParas("C,"+p1+",Gamma,"+p2);
 
 //                Evaluation eval=new Evaluation(temp);
@@ -1002,7 +1007,11 @@ this gives the option of finding one using 10xCV
         else
             res.buildTime=System.currentTimeMillis()-t;
         if(trainPath!=null && trainPath!=""){  //Save basic train results
-            res.name = train.relationName()+",TunedSVM"+kernel+",Train";
+            res.setClassifierName("TunedSVM"+kernel);
+            res.setDatasetName(train.relationName());
+            res.setFoldID(seed);
+            res.setSplit("train");
+            
             res.paras = getParameters();
             res.writeResultsFile(trainPath);
             File x=new File(trainPath);

@@ -96,7 +96,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected int seed = 0;
 
     protected SimpleBatchFilter transform;
-    protected Instances train;
+    protected Instances trainInsts;
 
     //TrainAccuracyEstimate
     protected boolean writeEnsembleTrainingFile = false;
@@ -424,15 +424,15 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //transform data if specified
         if(this.transform==null){
-            this.train = new Instances(data);
+            this.trainInsts = new Instances(data);
         }else{
-            this.train = transform.process(data);
+            this.trainInsts = transform.process(data);
         }
 
         //init
-        this.numTrainInsts = train.numInstances();
-        this.numClasses = train.numClasses();
-        this.numAttributes = train.numAttributes();
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
 
         //set up modules
         initialiseModules();
@@ -447,7 +447,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
 
             if (writeEnsembleTrainingFile)
-                writeEnsembleCVResults(train);
+                writeEnsembleCVResults(trainInsts);
         }
 
         this.testInstCounter = 0; //prep for start of testing
@@ -489,7 +489,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             if (setSeed)
                 cv.setSeed(seed);
             cv.setNumFolds(numCVFolds);
-            cv.buildFolds(train);
+            cv.buildFolds(trainInsts);
         }
 
         //currently will only have file reading ON or OFF (not load some files, train the rest)
@@ -527,7 +527,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         for (EnsembleModule module : modules) {
             if (module.getClassifier() instanceof TrainAccuracyEstimate) {
-                module.getClassifier().buildClassifier(train);
+                module.getClassifier().buildClassifier(trainInsts);
 
                 //these train results should also include the buildtime
                 module.trainResults = ((TrainAccuracyEstimate)module.getClassifier()).getTrainResults();
@@ -542,12 +542,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             }
             else {
                 printlnDebug(module.getModuleName() + " performing cv...");
-                module.trainResults = cv.crossValidateWithStats(module.getClassifier(), train);
+                module.trainResults = cv.crossValidateWithStats(module.getClassifier(), trainInsts);
 
                 //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
                 //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
                 long startTime = System.currentTimeMillis();
-                module.getClassifier().buildClassifier(train);
+                module.getClassifier().buildClassifier(trainInsts);
                 module.trainResults.buildTime = System.currentTimeMillis() - startTime;
                 module.setParameters("BuildTime,"+module.trainResults.buildTime+","+module.getParameters());
 
@@ -625,7 +625,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String fullPath = writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
         new File(fullPath).mkdirs();
         
-        results.name = datasetName + "," + ensembleIdentifier + "," + trainOrTest;
+        results.setClassifierName(classifierName);
+        results.setDatasetName(datasetName);
+        results.setFoldID(seed);
+        results.setSplit(trainOrTest);
+        
         results.paras = parameters;
         results.writeResultsFile(fullPath);
     }
