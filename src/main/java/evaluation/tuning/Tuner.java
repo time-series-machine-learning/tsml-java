@@ -16,8 +16,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
+import timeseriesweka.classifiers.CheckpointClassifier;
+import timeseriesweka.classifiers.ContractClassifier;
+import timeseriesweka.classifiers.ParameterSplittable;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import utilities.TrainAccuracyEstimate;
+import vector_classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.SMO;
@@ -28,22 +34,34 @@ import weka.core.Instances;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Tuner {
+public class Tuner 
+        implements SaveEachParameter,CheckpointClassifier,ContractClassifier{
     
     //Main 3 design choices.
     private ParameterSearcher searcher = new GridSearcher();
     private Evaluator evaluator = new CrossValidationEvaluator();
     private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
     
-    //Experimental settings.
+    private ParameterResults bestParaSetAndResults = null;
+    
+    
     private int seed;
-    private String parameterSavingPath = null;
-    private boolean saveParameters = true;
-
     private String classifierName; //interpreted from simpleClassName(), maybe have getter setter later
     private String datasetName; //interpreted from relationName(), maybe have getter setter later
     
-    private ParameterResults bestParaSetAndResults = null;
+    
+    
+    ////////// start interface variables
+    
+    //we're implementing CheckpointClassifier AND SaveEachParameter for now, however for this class checkpointing is 
+    //identical to SaveEachParamter, we just implicitely checkpoint after each parameterSet evaluation
+    private String parameterSavingPath = null; //SaveEachParameter //CheckpointClassifier
+    private boolean saveParameters = true; //SaveEachParameter //CheckpointClassifier
+    
+    long contractTimeNanos; //ContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean contracting = false; //ContractClassifier 
+    
+    ////////// end interface variables
     
     private boolean includeMarkersInParaLine = true;
     
@@ -73,13 +91,15 @@ public class Tuner {
         setSeed(0);
     }
 
-    public String getParameterSavingPath() {
-        return parameterSavingPath;
-    }
-
-    public void setParameterSavingPath(String parameterSavingPath) {
-        this.parameterSavingPath = parameterSavingPath;
-    }
+    
+    //handled by the interface methods now
+//    public String getParameterSavingPath() {
+//        return parameterSavingPath;
+//    }
+//
+//    public void setParameterSavingPath(String parameterSavingPath) {
+//        this.parameterSavingPath = parameterSavingPath;
+//    }
     
     public boolean getCloneTrainSetForEachParameterEval() {
         return cloneTrainSetForEachParameterEval;
@@ -178,9 +198,9 @@ public class Tuner {
         //iterate up to the specified parameter
         int id = 0;
         while (iter.hasNext()) {
+            ParameterSet pset = iter.next();
             if (id++ == parameterIndex) {
                 //para found, evaluate it and return the results
-                ParameterSet pset = iter.next();
                 ClassifierResults results = evaluateParameterSet(baseClassifier, trainSet, pset);
                 return results;
             }
@@ -250,7 +270,9 @@ public class Tuner {
     }   
     
     private String buildParaFilename(int paraID) {
-        return "fold" + seed + "_" +paraID + ".csv";
+//        return "fold" + seed + "_" +paraID + ".csv";
+        //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
+        return paraID + ".csv";
     }
     
     private void storeParaResult(ParameterSet pset, ClassifierResults results, List<ParameterResults> tiesBestSoFar) {
@@ -273,14 +295,16 @@ public class Tuner {
         }
     }
     
-    private void saveParaResults(int paraID, ClassifierResults results) throws IOException {
-        File f = new File(parameterSavingPath);
-        if (!f.exists()){ 
-            System.out.println("Creating directory " + parameterSavingPath);
-            f.mkdirs();
-        }
+    public void saveParaResults(int paraID, ClassifierResults results) throws IOException {
+//        File f = new File(parameterSavingPath);
+//        if (!f.exists()){ 
+//            System.out.println("Creating directory " + parameterSavingPath);
+//            f.mkdirs();
+//        }
+        //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
+        //so no need to make dir, just add on para id and write
         
-        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID));
+        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID)); 
         out.writeString(results.writeResultsFileToString());
         out.closeFile();
     }
@@ -337,7 +361,7 @@ public class Tuner {
         space.addParameter("C", cs);
         
         Tuner tuner = new Tuner();
-        tuner.setParameterSavingPath("C:/Temp/TunerTests/first/");
+        tuner.setPathToSaveParameters("C:/Temp/TunerTests/first/");
         tuner.setSeed(seed);
         
         String dataset = "hayes-roth";
@@ -345,5 +369,64 @@ public class Tuner {
         Instances[] data = InstanceTools.resampleInstances(all, seed, 0.5);
         
         System.out.println(tuner.tune(svm, data[0], space));
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // METHODS FOR:        SaveEachParameter,CheckpointClassifier,ContractClassifier
+    
+
+    @Override //SaveEachParameter
+    public void setPathToSaveParameters(String r) {
+        this.parameterSavingPath = r;
+        this.saveParameters = true; 
+    }
+
+    @Override //SaveEachParameter
+    public void setSaveEachParaAcc(boolean b) {
+        this.saveParameters = b;
+        //does anywhere set this to true but not give the path?. part of interface cleanup tests
+    }
+
+    @Override //CheckpointClassifier
+    public void setSavePath(String path) {
+        this.parameterSavingPath = path;
+        this.saveParameters = true;
+    }
+
+    @Override //CheckpointClassifier
+    public void copyFromSerObject(Object obj) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override //ContractClassifier
+    public void setTimeLimit(long time) {
+        contracting = true;
+        contractTimeNanos = time;
+    }
+
+    @Override //ContractClassifier
+    public void setTimeLimit(TimeLimit time, int amount) {
+        contracting = true;
+        
+        long secToNano = 1000000000L;
+        switch(time){
+            case MINUTE:
+                contractTimeNanos = amount*60*secToNano;
+                break;
+            case HOUR: default:
+                contractTimeNanos= amount*60*60*secToNano;
+                break;
+            case DAY:
+                contractTimeNanos= amount*24*60*60*secToNano; 
+                break;
+        }
     }
 }

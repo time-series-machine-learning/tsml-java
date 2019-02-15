@@ -8,6 +8,10 @@ import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import evaluation.tuning.evaluators.StratifiedResamplesEvaluator;
 import evaluation.tuning.searchers.RandomSearcher;
+import fileIO.OutFile;
+import java.util.function.Function;
+import timeseriesweka.classifiers.CheckpointClassifier;
+import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.ClassifierTools;
@@ -43,7 +47,8 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedClassifier extends AbstractClassifier implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable {
+public class TunedClassifier extends AbstractClassifier 
+        implements SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,ContractClassifier {
 
     int seed;
     ParameterSpace space = null;
@@ -52,9 +57,28 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
 
     ParameterSet bestParas = null;
 
-    //interface variables
-    ClassifierResults trainResults = null;
-    double trainAcc = 0;
+    ////////// start interface variables
+    
+    //we're implementing CheckpointClassifier AND SaveEachParameter for now, however for this classifier checkpointing is 
+    //identical to SaveEachParamter, we just implicitely checkpoint after each parameterSet evaluation
+    
+    String SEP_CP_PS_paraWritePath; //SaveEachParameter //CheckpointClassifier //ParameterSplittable
+    boolean SEP_CP_savingAllParameters = false; //SaveEachParameter //CheckpointClassifier
+    
+    long CC_contractTimeNanos; //ContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean CC_contracting = false; //ContractClassifier 
+    
+    boolean PS_parameterSplitting = false; //ParameterSplittable
+    int PS_paraSetID = -1; //ParameterSplittable
+    
+    //these would refer to the results of the best parameter set
+    boolean TAE_writeTrainAcc = false; //TrainAccuracyEstimate
+    String TAE_trainAccWritePath; //TrainAccuracyEstimate
+    ClassifierResults TAE_trainResults = null; //TrainAccuracyEstimate
+    double TAE_trainAcc = -1; //TrainAccuracyEstimate
+    
+    ////////// end interface variables
+    
     
     public TunedClassifier() { 
     }
@@ -138,14 +162,15 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
     @Override
     public void buildClassifier(Instances data) throws Exception {
         
-        //check everything's here
+        //check everything's here/init
         boolean somethingMissing = false;
         String msg = "";
         if (tuner == null) {
             msg += "Tuner not setup. ";
             somethingMissing = true;
         }
-        if (space == null) {
+        if (space == null) { 
+            //todo if we end up going with some kind of default para space interface, collect paras from that if classifier is instanceof 
             msg += "Parameter space not setup. ";
             somethingMissing = true;
         }
@@ -156,13 +181,28 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
         if (somethingMissing) 
             throw new Exception("TunedClassifier: " + msg);
         
-        //actual work
-        ParameterResults bestParas = tuner.tune(classifier, data, space);
+        applyInterfaceFlagsToTuner(); //apply any interface flags onto the tuner itself
         
-        trainResults = bestParas.results;
-        trainAcc = bestParas.results.acc;
+        //special case: if we've been set up to evaluate a particular parameter set in this execution
+        //instead of search the full space, evaluate that parameter, write it, and quit
+        if (PS_parameterSplitting && PS_paraSetID >= 0) {
+            TAE_trainResults = tuner.evaluateParameterSetByIndex(classifier, data, space, PS_paraSetID);
+            tuner.saveParaResults(PS_paraSetID, TAE_trainResults);
+            return;
+            //todo think that's it?
+        }
         
-        String[] options = bestParas.paras.toOptionsList();
+        //actual work if normal run
+        ParameterResults best = tuner.tune(classifier, data, space);
+        
+        bestParas = best.paras;
+        TAE_trainResults = best.results;
+        TAE_trainAcc = best.results.acc;
+        
+        writeResults();
+        
+        //apply best paras and build final classifier on full train data
+        String[] options = best.paras.toOptionsList();
         classifier.setOptions(options);
         classifier.buildClassifier(data);
     }
@@ -172,45 +212,71 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
         return classifier.distributionForInstance(inst);
     }
     
-    public static void main(String[] args) throws Exception {
-        String dataset = "hayes-roth";
-        
-        TunedClassifier tcGrid = new TunedClassifier();
-        tcGrid.setupTestTunedClassifier();
-        tcGrid.setCloneClassifierForEachParameterEval(false);
-        
-        TunedClassifier tcRand = new TunedClassifier();
-        tcRand.setupTestTunedClassifier();
-        tcRand.getTuner().setSearcher(new RandomSearcher(3));
-        tcRand.getTuner().setEvaluator(new StratifiedResamplesEvaluator());
-        tcRand.setCloneClassifierForEachParameterEval(false);
-        
-        
-        Classifier[] cs = new Classifier[] { tcRand, new SMO(), tcGrid };
-        
-        int numFolds = 10;
-        
-        for (Classifier c : cs) {
-            Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
-            double mean =.0;
-            
-            for (int f = 0; f < numFolds; f++) {
-                Instances[] data = InstanceTools.resampleInstances(all, f, 0.5);
-                
-                try {
-                    ((TunedClassifier)c).setSeed(f);
-                }catch (Exception e){ }
-                     
-                c.buildClassifier(data[0]);
-                double t = ClassifierTools.accuracy(data[1], c);
-                mean += t;
-                System.out.print(t + ", ");
-            }
-            
-            mean /= numFolds;
-            System.out.println("\nmean = " + mean);
+    private void writeResults() {
+        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null) { 
+            //save the results of the best parameter set
+            OutFile f= new OutFile(TAE_trainAccWritePath);
+            f.writeString(TAE_trainResults.writeResultsFileToString());
+            f.closeFile();
         }
+    }
+    
+    static Function<Integer,Integer> numFeatsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+    
+    public static void main(String[] args) throws Exception {
+        int numFeats = numFeatsFinder.apply(10);
         
+//        String dataset = "hayes-roth";
+//        
+//        TunedClassifier tcGrid = new TunedClassifier();
+//        tcGrid.setupTestTunedClassifier();
+//        tcGrid.setCloneClassifierForEachParameterEval(false);
+//        
+//        TunedClassifier tcRand = new TunedClassifier();
+//        tcRand.setupTestTunedClassifier();
+//        tcRand.getTuner().setSearcher(new RandomSearcher(3));
+//        tcRand.getTuner().setEvaluator(new StratifiedResamplesEvaluator());
+//        tcRand.setCloneClassifierForEachParameterEval(false);
+//        
+//        
+//        Classifier[] cs = new Classifier[] { tcRand, new SMO(), tcGrid };
+//        
+//        int numFolds = 10;
+//        
+//        for (Classifier c : cs) {
+//            Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+//            double mean =.0;
+//            
+//            for (int f = 0; f < numFolds; f++) {
+//                Instances[] data = InstanceTools.resampleInstances(all, f, 0.5);
+//                
+//                try {
+//                    ((TunedClassifier)c).setSeed(f);
+//                }catch (Exception e){ }
+//                     
+//                c.buildClassifier(data[0]);
+//                double t = ClassifierTools.accuracy(data[1], c);
+//                mean += t;
+//                System.out.print(t + ", ");
+//            }
+//            
+//            mean /= numFolds;
+//            System.out.println("\nmean = " + mean);
+//        }
+        
+
+        experiments.Experiments.ExperimentalArguments exp = new experiments.Experiments.ExperimentalArguments();
+        exp.checkpointing = true;
+        exp.classifierName = "TunedSMO";
+        exp.datasetName = "hayes-roth";
+        exp.foldId = 1;
+        exp.generateErrorEstimateOnTrainSet = true;
+        exp.dataReadLocation = "Z:\\Data\\UCIDelgado\\";
+        exp.resultsWriteLocation = "C:\\Temp\\TunerTests\\t\\";
+//        
+//        exp.singleParameterID = 1;
+        
+        experiments.Experiments.setupAndRunSingleClassifierAndFoldTrainTestSplit(exp);
     }
 
     
@@ -229,55 +295,111 @@ public class TunedClassifier extends AbstractClassifier implements SaveParameter
     
     
     
-    // METHODS FOR:               SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable
+    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,ContractClassifier
     
     @Override //SaveParameterInfo
     public String getParameters() {
-        return bestParas.toClassifierResultsParaLine(true);
+        return getParas(); 
     }
 
     @Override //TrainAccuracyEstimate
     public void setFindTrainAccuracyEstimate(boolean setCV) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        System.out.println("-------Inside setFindTrainAccuracyEstimate(..), but for TunedClassifier this is redundant");
+        //do nothing
     }
 
     @Override //TrainAccuracyEstimate
     public void writeCVTrainToFile(String train) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        this.TAE_trainAccWritePath = train;
+        this.TAE_writeTrainAcc = true;
     }
 
     @Override //TrainAccuracyEstimate
     public ClassifierResults getTrainResults() {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        return TAE_trainResults;
     }
 
     @Override //SaveEachParameter
     public void setPathToSaveParameters(String r) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        this.SEP_CP_PS_paraWritePath = r;
+        this.SEP_CP_savingAllParameters = true;
     }
 
     @Override //SaveEachParameter
     public void setSaveEachParaAcc(boolean b) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        this.SEP_CP_savingAllParameters = b;
     }
 
     @Override //ParameterSplittable
     public void setParamSearch(boolean b) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        throw new UnsupportedOperationException("-------This was intended to turn off the tuning "
+                + "of parameters while evaluating a particular parameter set in the original tuned classifiers. "
+                + "Now that we're in a general tunedClassifier specifically, this doesnt make sense. Part of the ParameterSplittable interface"); 
     }
 
     @Override //ParameterSplittable
     public void setParametersFromIndex(int x) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        this.PS_paraSetID = x;
+        this.PS_parameterSplitting = true;
     }
 
     @Override //ParameterSplittable
     public String getParas() {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        return bestParas.toClassifierResultsParaLine(true);
     }
 
     @Override //ParameterSplittable
     public double getAcc() {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        throw new UnsupportedOperationException("-------Dont think this is needed anywhere; testing. Part of the ParameterSplittable interface"); 
+    }
+
+    @Override //CheckpointClassifier
+    public void setSavePath(String path) {
+        this.SEP_CP_PS_paraWritePath = path;
+        this.SEP_CP_savingAllParameters = true;
+    }
+
+    @Override //CheckpointClassifier
+    public void copyFromSerObject(Object obj) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override //ContractClassifier
+    public void setTimeLimit(long time) {
+        CC_contracting = true;
+        CC_contractTimeNanos = time;
+    }
+
+    @Override //ContractClassifier
+    public void setTimeLimit(TimeLimit time, int amount) {
+        CC_contracting = true;
+        long secToNano = 1000000000L;
+        
+        switch(time){
+            case MINUTE:
+                CC_contractTimeNanos = amount*60*secToNano;
+                break;
+            case HOUR: default:
+                CC_contractTimeNanos= amount*60*60*secToNano;
+                break;
+            case DAY:
+                CC_contractTimeNanos= amount*24*60*60*secToNano; 
+                break;
+        }
+    }
+    
+    /**
+     * To be called at start of buildClassifier
+     * 
+     * Simple helper method to transfer necessary interface variable changes over to the tuner
+     * in case user e.g sets up interface variables THEN sets a new tuner, or sets a new tuner
+     * (or sticks with default) THEN sets these variables, etc
+     */
+    private void applyInterfaceFlagsToTuner() {
+        if (SEP_CP_savingAllParameters || PS_parameterSplitting)
+            tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
+        
+        if (CC_contracting)
+            tuner.setTimeLimit(this.CC_contractTimeNanos);
     }
 }
