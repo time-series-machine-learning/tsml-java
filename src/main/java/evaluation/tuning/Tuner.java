@@ -325,7 +325,7 @@ public class Tuner
         }
     }
     
-    public void saveParaResults(int paraID, ClassifierResults results) throws IOException {
+    public void saveParaResults(int paraID, ClassifierResults results) throws Exception {
 //        File f = new File(parameterSavingPath);
 //        if (!f.exists()){ 
 //            System.out.println("Creating directory " + parameterSavingPath);
@@ -334,9 +334,7 @@ public class Tuner
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         //so no need to make dir, just add on para id and write
         
-        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID)); 
-        out.writeString(results.writeResultsFileToString());
-        out.closeFile();
+        results.writeResultsFile(parameterSavingPath + buildParaFilename(paraID));
     }
     
     /**

@@ -25,7 +25,7 @@ import utilities.generic_storage.Pair;
  * 
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  * 
- * Also supports the calculation of various evaluative stats based on the results (accuracy, 
+ * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
@@ -36,18 +36,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public String name;
     public String paras;
     
-    //inferred dataset meta info
+    //inferred/supplied dataset meta info
     public int numClasses; 
     public int numInstances;
 
-    //raw prediction info
-    public ArrayList<Double> actualClassValues;
+    //raw performance data
+    private ArrayList<Double> trueClassValues;
     public ArrayList<Double> predictedClassValues;
     public ArrayList<double[]> predictedClassProbabilities;
-    
-    //performance metrics
+    public ArrayList<Long> predictionTimes;
     public long buildTime;
+    public long testTime;
     public long memory;
+    
+    //calculated performance metrics
     public double acc; 
     public double balancedAcc; 
     public double sensitivity;
@@ -82,9 +84,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
     
-    
     public ClassifierResults() {
-        actualClassValues= new ArrayList<>();
+        trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
         
@@ -96,7 +97,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     public ClassifierResults(int numClasses) {
-        actualClassValues= new ArrayList<>();
+        trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
         
@@ -126,7 +127,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
  
         this.numClasses = numClasses;
         for(double d:classVals)
-           actualClassValues.add(d);
+           trueClassValues.add(d);
         this.confusionMatrix = buildConfusionMatrix();
         
         this.stddev = -1; //not defined 
@@ -178,7 +179,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public void cleanPredictionInfo() {
         predictedClassProbabilities = null;
         predictedClassValues = null;
-        actualClassValues = null;
+        trueClassValues = null;
     }
     
     /**
@@ -187,7 +188,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private double[][] buildConfusionMatrix() {
         double[][] matrix = new double[numClasses][numClasses];
         for (int i = 0; i < predictedClassValues.size(); ++i){
-            double actual=actualClassValues.get(i);
+            double actual=trueClassValues.get(i);
             double predicted=predictedClassValues.get(i);
             ++matrix[(int)actual][(int)predicted];
         }
@@ -196,7 +197,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     public void addAllResults(double[] classVals, double[] preds, double[][] distsForInsts, int numClasses){
         //Overwrites previous        
-        actualClassValues= new ArrayList<>();
+        trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
         for(double d:preds)
@@ -207,7 +208,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
  
         this.numClasses = numClasses;
         for(double d:classVals)
-           actualClassValues.add(d);
+           trueClassValues.add(d);
         this.confusionMatrix = buildConfusionMatrix();
         
         this.stddev = -1; //not defined 
@@ -238,7 +239,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             }
         }
         predictedClassValues.add(maxInd);
-        actualClassValues.add(actual);
+        trueClassValues.add(actual);
     }
     
     
@@ -256,7 +257,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw new Exception("finaliseTestResults(): Number of test predictions made and number of test cases do not match");
         
         for(double d:testClassVals)
-            actualClassValues.add(d);
+            trueClassValues.add(d);
         
         
         double correct = .0;
@@ -274,9 +275,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     public double[] getTrueClassVals(){
-        double[] d=new double[actualClassValues.size()];
+        double[] d=new double[trueClassValues.size()];
         int i=0;
-        for(double x:actualClassValues)
+        for(double x:trueClassValues)
             d[i++]=x;
         return d;
     }
@@ -294,7 +295,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     public double getTrueClassValue(int index){
-        return actualClassValues.get(index);
+        return trueClassValues.get(index);
     }
     
     public double[] getDistributionForInstance(int i){
@@ -303,11 +304,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        return null;
     }
     
-    public String writeInstancePredictions(){
-        if(numInstances()>0 &&(predictedClassProbabilities.size()==actualClassValues.size()&& predictedClassProbabilities.size()==predictedClassValues.size())){
+    public String instancePredictionsToString(){
+        if(numInstances()>0 &&(predictedClassProbabilities.size()==trueClassValues.size()&& predictedClassProbabilities.size()==predictedClassValues.size())){
              StringBuilder sb=new StringBuilder("");
             for(int i=0;i<numInstances();i++){
-                sb.append(actualClassValues.get(i).intValue()).append(",");
+                sb.append(trueClassValues.get(i).intValue()).append(",");
                 sb.append(predictedClassValues.get(i).intValue()).append(",");
                 double[] probs=predictedClassProbabilities.get(i);
                 for(double d:probs)
@@ -321,15 +322,28 @@ public class ClassifierResults implements DebugPrinting, Serializable{
            return "No Instance Prediction Information";
    }
    
-   public String writeResultsFileToString() {                
+   @Override
+   public String toString() {                
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
         st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
         st.append(acc).append("\n");
   
-        st.append(writeInstancePredictions());
+        st.append(instancePredictionsToString());
         return st.toString();
     }
+   
+    public void writeResultsFile(String path) throws Exception {
+       OutFile out = new OutFile(path);
+       try {
+           out.writeString(this.toString());
+       } catch (Exception e) { 
+            throw new Exception("TODO stop using or update outfile... : "
+                    + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" + e);
+       }
+       out.closeFile();
+   }
+
 
    public void loadFromFile(String path) throws FileNotFoundException{
         File f=new File(path);
@@ -357,7 +371,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
 
         double testAcc=Double.parseDouble(inf.nextLine());
-        actualClassValues= new ArrayList<>();
+        trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
         numInstances=0;
@@ -377,7 +391,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             //collected actual/predicted class
             double a=Double.valueOf(split[0]);
             double b=Double.valueOf(split[1]);
-            actualClassValues.add(a);
+            trueClassValues.add(a);
             predictedClassValues.add(b);
             if(a==b)
                 acc++;
@@ -420,8 +434,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        confusionMatrix=buildConfusionMatrix();
        
        countPerClass=new double[confusionMatrix.length];
-       for(int i=0;i<actualClassValues.size();i++)
-           countPerClass[actualClassValues.get(i).intValue()]++;
+       for(int i=0;i<trueClassValues.size();i++)
+           countPerClass[trueClassValues.get(i).intValue()]++;
        
        acc=0;
        for(int i=0;i<numClasses;i++)
@@ -453,16 +467,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public double findNLL(){
         double nll=0;
-        for(int i=0;i<actualClassValues.size();i++){
+        for(int i=0;i<trueClassValues.size();i++){
             double[] dist=getDistributionForInstance(i);
-            int trueClass = actualClassValues.get(i).intValue();
+            int trueClass = trueClassValues.get(i).intValue();
             
             if(dist[trueClass]==0)
                 nll+=NLL_PENALTY;
             else
                 nll+=Math.log(dist[trueClass])/Math.log(2);//Log 2
         }
-        return -nll/actualClassValues.size();
+        return -nll/trueClassValues.size();
     }
            
     public double findMeanAUROC(){
@@ -474,7 +488,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
                 a=findAUROC(1);
  */       }
         else{
-            double[] classDist = InstanceTools.findClassDistributions(actualClassValues, numClasses);
+            double[] classDist = InstanceTools.findClassDistributions(trueClassValues, numClasses);
             for(int i=0;i<numClasses;i++){
                 a+=findAUROC(i) * classDist[i];
             }
@@ -557,19 +571,19 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         double f=0;
         if(numClasses==2){
             if(countPerClass[0]<countPerClass[1])
-                f=findConfusionMatrixStats(cm,0,1);
+                f=findConfusionMatrixMetrics(cm,0,1);
             else
-                f=findConfusionMatrixStats(cm,1,1);
+                f=findConfusionMatrixMetrics(cm,1,1);
         }
         else{//Average over all of them
             for(int i=0;i<numClasses;i++)
-                f+=findConfusionMatrixStats(cm,i,1);
+                f+=findConfusionMatrixMetrics(cm,i,1);
             f/=numClasses;
         }
         return f;
     }
    
-    protected double findConfusionMatrixStats(double[][] confMat, int c,double beta) {
+    protected double findConfusionMatrixMetrics(double[][] confMat, int c,double beta) {
         double tp = confMat[c][c]; //[actual class][predicted class]
         //some very small non-zero value, in the extreme case that no cases of 
         //this class were correctly classified
@@ -625,12 +639,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         ArrayList<Pair> p=new ArrayList<>();
         double nosPositive=0,nosNegative;
         for(int i=0;i<numInstances;i++){
-            Pair temp=new Pair(predictedClassProbabilities.get(i)[c],actualClassValues.get(i));
-            if(c==actualClassValues.get(i))
+            Pair temp=new Pair(predictedClassProbabilities.get(i)[c],trueClassValues.get(i));
+            if(c==trueClassValues.get(i))
                 nosPositive++;
             p.add(temp);
         }
-        nosNegative=actualClassValues.size()-nosPositive;
+        nosNegative=trueClassValues.size()-nosPositive;
         Collections.sort(p);
         
         /* http://www.cs.waikato.ac.nz/~remco/roc.pdf
@@ -685,7 +699,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return auroc;
     } 
     
-    public String writeAllStats(){
+    public String allPerformanceMetricsToString(){
         String str="Acc,"+acc+"\n";
         str+="BalancedAcc,"+balancedAcc+"\n"; 
         str+="sensitivity,"+sensitivity+"\n"; 
@@ -748,16 +762,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
    
     public static void main(String[] args) throws FileNotFoundException {
         
-        String path="C:\\JamesLPHD\\testFold1.csv";
-//        String path="C:\\JamesLPHD\\testFold0.csv";
-//        String path="C:/JamesLPHD/TwoClass.csv";
-        ClassifierResults cr= new ClassifierResults();
-        cr.loadFromFile(path);
-        cr.findAllStats();
-        System.out.println("AUROC = "+cr.meanAUROC);
-        System.out.println("FILE TEST =\n"+cr.writeAllStats());
-        OutFile out=new OutFile("C:\\JamesLPHD\\testFold1stats.csv");
-        out.writeLine(cr.writeAllStats());
     }
     
 }

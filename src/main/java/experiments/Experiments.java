@@ -17,7 +17,6 @@
  */
 package experiments;
 
-import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -570,25 +569,20 @@ public class Experiments  {
         return trainResults;
     }
     
-    public static void writeTrainEstimate(Classifier classifier, Instances train, ClassifierResults results, String fullTrainWritingPath, long buildTime) {
+    public static void writeTrainEstimate(Classifier classifier, Instances train, ClassifierResults results, String fullTrainWritingPath, long buildTime) throws Exception {
         if (classifier instanceof TrainAccuracyEstimate) {
             //the classifier will have written it's own train estimate internally
             return;
         }
         else {
             //Write the results
-            OutFile trainOut = new OutFile(fullTrainWritingPath);
-            trainOut.writeLine(train.relationName() + "," + classifier.getClass().getName() + ",train");
+            results.name = train.relationName() + "," + classifier.getClass().getName() + ",train";
             if (classifier instanceof SaveParameterInfo) {
-                trainOut.writeLine(((SaveParameterInfo) classifier).getParameters()); //assumes build time is in it's param info, is for tunedsvm
+                results.paras = ((SaveParameterInfo) classifier).getParameters(); //assumes build time is in it's param info, is for tunedsvm
             } else {
-                trainOut.writeLine("BuildTime," + buildTime + ",No Parameter Info");
+                results.paras = "BuildTime," + buildTime + ",No Parameter Info";
             }
-            trainOut.writeLine(results.acc + "");
-            trainOut.writeLine(results.writeInstancePredictions());
-            //not simply calling trainResults.writeResultsFileToString() since it looks like those that extend SaveParameterInfo will store buildtimes
-            //as part of their params, and so would be written twice
-            trainOut.closeFile();
+            results.writeResultsFile(fullTrainWritingPath);
             
             File f = new File(fullTrainWritingPath);
             if (f.exists()) {
@@ -612,17 +606,16 @@ public class Experiments  {
         return results;
     }
     
-    public static void writeTestResults(Classifier classifier, Instances dataset, ClassifierResults results, String fullTestWritingPath) {
-        OutFile testOut = new OutFile(fullTestWritingPath);
-        testOut.writeLine(dataset.relationName() + "," + classifier.getClass().getName() + ",test");
+    public static void writeTestResults(Classifier classifier, Instances dataset, ClassifierResults results, String fullTestWritingPath) throws Exception {
+        results.name = dataset.relationName() + "," + classifier.getClass().getName() + ",test";
+        
         if (classifier instanceof SaveParameterInfo) {
-            testOut.writeLine(((SaveParameterInfo) classifier).getParameters());
+            results.paras = ((SaveParameterInfo) classifier).getParameters();
         } else {
-            testOut.writeLine("No parameter info");
+            results.paras = "No parameter info";
         }
-        testOut.writeLine(results.acc + "");
-        testOut.writeString(results.writeInstancePredictions());
-        testOut.closeFile();
+        results.writeResultsFile(fullTestWritingPath);
+        
         File f = new File(fullTestWritingPath);
         if (f.exists()) {
             f.setWritable(true, false);

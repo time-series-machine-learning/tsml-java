@@ -621,18 +621,13 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             return file;
     }
 
-    protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws IOException {
-        StringBuilder st = new StringBuilder();
-        st.append(this.datasetName).append(",").append(this.ensembleIdentifier).append(classifierName).append(","+trainOrTest+"\n");
-        st.append(parameters + "\n"); //st.append("internalCAWPE\n");
-        st.append(results.acc).append("\n");
-        st.append(results.writeInstancePredictions());
-
-        String fullPath = this.writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
+    protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws Exception {
+        String fullPath = writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
         new File(fullPath).mkdirs();
-        FileWriter out = new FileWriter(fullPath+"/" + trainOrTest + "Fold"+this.resampleIdentifier+".csv");
-        out.append(st);
-        out.close();
+        
+        results.name = datasetName + "," + ensembleIdentifier + "," + trainOrTest;
+        results.paras = parameters;
+        results.writeResultsFile(fullPath);
     }
 
     /**
@@ -1188,9 +1183,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         StringBuilder sb = new StringBuilder();
 
         if (train) //pred
-            sb.append(modules[0].trainResults.actualClassValues.get(index)).append(",").append(ensembleTrainResults.predictedClassValues.get(index)).append(",");
+            sb.append(modules[0].trainResults.getTrueClassValue(index)).append(",").append(ensembleTrainResults.predictedClassValues.get(index)).append(",");
         else
-            sb.append(modules[0].testResults.actualClassValues.get(index)).append(",").append(ensembleTestResults.predictedClassValues.get(index)).append(",");
+            sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(ensembleTestResults.predictedClassValues.get(index)).append(",");
 
         if (train){ //dist
             double[] pred=ensembleTrainResults.getDistributionForInstance(index);

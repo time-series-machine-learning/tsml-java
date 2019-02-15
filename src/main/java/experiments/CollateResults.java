@@ -290,7 +290,7 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
 //                                caseCount+=temp;
                                 ClassifierResults res=new ClassifierResults();
                                 res.loadFromFile(path+"//testFold"+j+".csv");
-                                mergedResults.writeLine(res.writeInstancePredictions());                                
+                                mergedResults.writeLine(res.instancePredictionsToString());                                
                                 res.findAllStats();
                                 f1Results.writeString(","+res.f1);
                                 BAccResults.writeString(","+res.balancedAcc);

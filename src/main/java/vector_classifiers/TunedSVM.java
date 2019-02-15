@@ -345,9 +345,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 if(debug)
                     System.out.println(" C= "+p1+" Gamma = "+p2+" Acc = "+(1-e));
                 if(saveEachParaAcc){// Save to file and close
-                    temp=new OutFile(resultsPath+count+".csv");
-                    temp.writeLine(tempResults.writeResultsFileToString());
-                    temp.closeFile();
+                    res.writeResultsFile(resultsPath+count+".csv");
                     File f=new File(resultsPath+count+".csv");
                     if(f.exists())
                         f.setWritable(true, false);
@@ -490,9 +488,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     if(debug)
                         System.out.println("C="+p1+",Exp="+p2+",B="+p3+", Acc = "+(1-e));
                     if(saveEachParaAcc){// Save to file and close
-                        temp=new OutFile(resultsPath+count+".csv");
-                        temp.writeLine(tempResults.writeResultsFileToString());
-                        temp.closeFile();
+                        res.writeResultsFile(resultsPath+count+".csv");
                     }                
                     else{
                         if(e<minErr){
@@ -639,9 +635,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
             double e=1-tempResults.acc;
             accuracy.add(tempResults.acc);
             if(saveEachParaAcc){// Save to file and close
-                temp=new OutFile(resultsPath+count+".csv");
-                temp.writeLine(tempResults.writeResultsFileToString());
-                temp.closeFile();
+                res.writeResultsFile(resultsPath+count+".csv");
             }                
             if(e<minErr){
                 minErr=e;
@@ -1008,12 +1002,9 @@ this gives the option of finding one using 10xCV
         else
             res.buildTime=System.currentTimeMillis()-t;
         if(trainPath!=null && trainPath!=""){  //Save basic train results
-            OutFile f= new OutFile(trainPath);
-            f.writeLine(train.relationName()+",TunedSVM"+kernel+",Train");
-            f.writeLine(getParameters());
-            f.writeLine(res.acc+"");
-            f.writeLine(res.writeInstancePredictions());
-            f.closeFile();
+            res.name = train.relationName()+",TunedSVM"+kernel+",Train";
+            res.paras = getParameters();
+            res.writeResultsFile(trainPath);
             File x=new File(trainPath);
             x.setWritable(true, false);
             
