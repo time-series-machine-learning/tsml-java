@@ -435,11 +435,24 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     private void parseFirstLine(String line) {
         String[] parts = line.split(",");
-        datasetName = parts[0];
-        classifierName = parts[1];
-        split = parts[2];
-        foldID = Integer.parseInt(parts[3]);
-        description = parts[4];
+        if (parts.length == 0)
+            return;
+        
+        //old tuned classifiers (and maybe others) just wrote a classifier name identifier
+        //covering for backward compatability, otherwise datasetname is first
+        if (parts.length == 1)
+            classifierName = parts[0];
+        else {
+            datasetName = parts[0];
+            classifierName = parts[1];
+        }
+        
+        if (parts.length > 2)
+            split = parts[2];
+        if (parts.length > 3)
+            foldID = Integer.parseInt(parts[3]);
+        if (parts.length > 4)
+            description = parts[4];
 
         //in case the description had commas in it? ...
         for (int i = 5; i < parts.length; i++)
