@@ -60,8 +60,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private ArrayList<Long> predictionTimes;
     
     //inferred/supplied dataset meta info
-    public int numClasses; 
-    public int numInstances;
+    private int numClasses; 
+    private int numInstances;
     
     //calculated performance metrics
         //accuracy can be re-calced, as well as stored on line three in files
@@ -166,6 +166,43 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     
     
+    /***********************
+     * 
+     *      DATASET META INFO
+     * 
+     * 
+     */
+    
+    public int numClasses() { 
+        if (numClasses <= 0)
+            inferNumClasses();
+        return numClasses; 
+    }
+    public void setNumClasses(int numClasses) { 
+        this.numClasses = numClasses; 
+    }
+    private void inferNumClasses() {
+        if (predictedClassProbabilities.isEmpty())
+            this.numClasses = 0;
+        else
+            this.numClasses = predictedClassProbabilities.get(0).length;
+    }
+    
+    
+    public int numInstances() { 
+        if (numInstances <= 0)
+            inferNumInstances();
+        return numInstances; 
+    }
+    public void setNumInstances(int numInstances) { 
+        this.numInstances = numInstances; 
+    }
+    private void inferNumInstances() {
+        this.numInstances = predictedClassValues.size();
+    }
+    
+    
+    
     
     /***************************
      * 
@@ -193,51 +230,18 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     
     
+    /*****************************
+     * 
+     *     LINE 2 GETS/SETS
+     * 
+     */
+    public String getParas() { return paras; }
+    public void setParas(String paras) { this.paras = paras; }
     
     
-    public int getNumClasses() {
-        return numClasses;
-    }
 
-    public void setNumClasses(int numClasses) {
-        this.numClasses = numClasses;
-    }
 
-    public int getNumInstances() {
-        return numInstances;
-    }
 
-    public void setNumInstances(int numInstances) {
-        this.numInstances = numInstances;
-    }
-
-    public String getParas() {
-        return paras;
-    }
-
-    public void setParas(String paras) {
-        this.paras = paras;
-    }
-    
-    public void cleanPredictionInfo() {
-        predictedClassProbabilities = null;
-        predictedClassValues = null;
-        trueClassValues = null;
-    }
-    
-    /**
-    * @return [actual class][predicted class]
-    */
-    private double[][] buildConfusionMatrix() {
-        double[][] matrix = new double[numClasses][numClasses];
-        for (int i = 0; i < predictedClassValues.size(); ++i){
-            double actual=trueClassValues.get(i);
-            double predicted=predictedClassValues.get(i);
-            ++matrix[(int)actual][(int)predicted];
-        }
-        return matrix;
-    }
-    
     public void addAllResults(double[] classVals, double[] preds, double[][] distsForInsts, int numClasses){
         //Overwrites previous        
         trueClassValues= new ArrayList<>();
@@ -311,10 +315,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         acc = correct/testClassVals.length;
         
         finalised = true;
-    }
-    
-    public int numInstances() { 
-        return predictedClassValues.size();
     }
     
     
@@ -397,7 +397,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return predictionTimes.get(index);
     }
     
-    
+    public void cleanPredictionInfo() {
+        predictedClassProbabilities = null;
+        predictedClassValues = null;
+        trueClassValues = null;
+        predictionTimes = null;
+    }
+        
+        
     
     
     /********************************
@@ -406,6 +413,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     *
     */
     
+    public static boolean exists(File file) {
+       return file.exists() && file.length()>0;
+       //todo and is valid, maybe
+    }
+    public static boolean exists(String path) {
+        return exists(new File(path));
+    }
     
     /**
      * returns true if the prediction described by this string was correct 
@@ -653,8 +667,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Sensitivity, Specificity, AUROC, negative log likelihood, MCC
      */   
     public void findAllStats(){
-       if (numInstances == 0)
-           numInstances = predictedClassValues.size();
+       if (numInstances <= 0)
+           inferNumInstances();
         
        confusionMatrix=buildConfusionMatrix();
        
@@ -687,6 +701,21 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
       
+       
+    /**
+    * @return [actual class][predicted class]
+    */
+    private double[][] buildConfusionMatrix() {
+        double[][] matrix = new double[numClasses][numClasses];
+        for (int i = 0; i < predictedClassValues.size(); ++i){
+            double actual=trueClassValues.get(i);
+            double predicted=predictedClassValues.get(i);
+            ++matrix[(int)actual][(int)predicted];
+        }
+        return matrix;
+    }
+    
+    
     /**
      * uses only the probability of the true class
      */
@@ -978,15 +1007,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return stats;
     }
     
-    public static boolean exists(File file) {
-       return file.exists() && file.length()>0;
-    }
-    public static boolean exists(String path) {
-        return exists(new File(path));
-    }
-   
-    public static void main(String[] args) throws FileNotFoundException {
-        
-    }
+
     
 }
