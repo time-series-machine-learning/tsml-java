@@ -51,15 +51,17 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public long testTime = -1; //total testtime for all predictions
     public long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
     
+
+    //REMAINDER OF THE FILE - 1 prediction per line
+    //raw performance data. currently just four parallel arrays
+    private ArrayList<Double> trueClassValues;
+    private ArrayList<Double> predictedClassValues;
+    private ArrayList<double[]> predictedClassProbabilities;
+    private ArrayList<Long> predictionTimes;
+    
     //inferred/supplied dataset meta info
     public int numClasses; 
     public int numInstances;
-
-    //raw performance data
-    private ArrayList<Double> trueClassValues;
-    public ArrayList<Double> predictedClassValues;
-    public ArrayList<double[]> predictedClassProbabilities;
-    public ArrayList<Long> predictionTimes;
     
     //calculated performance metrics
         //accuracy can be re-calced, as well as stored on line three in files
@@ -95,6 +97,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
+    
+    /*********************************
+     * 
+     *       CONSTRUCTORS
+     * 
+     */
     
     public ClassifierResults() {
         trueClassValues= new ArrayList<>();
@@ -156,45 +164,36 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = true;
     }
 
-    public String getClassifierName() {
-        return classifierName;
-    }
+    
+    
+    
+    /***************************
+     * 
+     *   LINE 1 GETS/SETS
+     *  
+     *  Just basic descriptive stuff, nothing fancy goign on here
+     * 
+     */
+    
+    public String getClassifierName() { return classifierName; }
+    public void setClassifierName(String classifierName) { this.classifierName = classifierName; }
 
-    public void setClassifierName(String classifierName) {
-        this.classifierName = classifierName;
-    }
+    public String getDatasetName() { return datasetName; }
+    public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
 
-    public String getDatasetName() {
-        return datasetName;
-    }
+    public int getFoldID() { return foldID; }
+    public void setFoldID(int foldID) { this.foldID = foldID; }
 
-    public void setDatasetName(String datasetName) {
-        this.datasetName = datasetName;
-    }
+    public String getSplit() { return split; }
+    public void setSplit(String split) { this.split = split; }
 
-    public int getFoldID() {
-        return foldID;
-    }
-
-    public void setFoldID(int foldID) {
-        this.foldID = foldID;
-    }
-
-    public String getSplit() {
-        return split;
-    }
-
-    public void setSplit(String split) {
-        this.split = split;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    
+    
+    
+    
     
     public int getNumClasses() {
         return numClasses;
@@ -318,7 +317,26 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return predictedClassValues.size();
     }
     
-    public double[] getTrueClassVals(){
+    
+    
+    
+    
+    
+    
+    
+    /******************************
+    *
+    *          RAW DATA ACCESSORS
+    * 
+    *     getAsList, getAsArray, and getSingleElement of the four lists describing predictions
+    * 
+    */
+    
+    public ArrayList<Double> getTrueClassVals() {
+        return trueClassValues;
+    }
+    
+    public double[] getTrueClassValsAsArray(){
         double[] d=new double[trueClassValues.size()];
         int i=0;
         for(double x:trueClassValues)
@@ -326,7 +344,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return d;
     }
     
-    public double[] getPredClassVals(){
+    public double getTrueClassValue(int index){
+        return trueClassValues.get(index);
+    }
+    
+    
+    public ArrayList<Double> getPredClassVals(){
+        return predictedClassValues;
+    }
+    
+    public double[] getPredClassValsAsArray(){
         double[] d=new double[predictedClassValues.size()];
         int i=0;
         for(double x:predictedClassValues)
@@ -338,8 +365,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return predictedClassValues.get(index);
     }
     
-    public double getTrueClassValue(int index){
-        return trueClassValues.get(index);
+
+    public ArrayList<double[]> getProbabilityDistributions() { 
+        return predictedClassProbabilities;
+    }
+    
+    public double[][] getProbabilityDistributionsAsArray() { 
+        return predictedClassProbabilities.toArray(new double[][] {});
     }
     
     public double[] getDistributionForInstance(int i){
@@ -347,6 +379,33 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             return predictedClassProbabilities.get(i);
        return null;
     }
+    
+    
+    public ArrayList<Long> getPredictionTimes() {
+        return predictionTimes;
+    }
+    
+    public long[] getPredictionTimesAsArray() {
+        long[] l=new long[predictionTimes.size()];
+        int i=0;
+        for(long x:predictionTimes)
+            l[i++]=x;
+        return l;
+    }
+
+    public long getPredictionTime(int index) {
+        return predictionTimes.get(index);
+    }
+    
+    
+    
+    
+    /********************************
+    *
+    *     FILE READ/WRITING
+    *
+    */
+    
     
     /**
      * returns true if the prediction described by this string was correct 
@@ -572,6 +631,23 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         inf.close();
     }
    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /******************************************
+     * 
+     *   METRIC CALCULATIONS 
+     *
+     */
+    
+    
+    
     /**
      * Find: Accuracy, Balanced Accuracy, F1 (1 vs All averaged?), 
      * Sensitivity, Specificity, AUROC, negative log likelihood, MCC

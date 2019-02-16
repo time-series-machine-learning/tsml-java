@@ -289,9 +289,9 @@ public class EnsembleSelection extends CAWPE {
     public ClassifierResults combinePredictions(final ClassifierResults ensembleSoFarResults, int ensembleSizeSoFar, final ClassifierResults newModelResults) throws Exception {
         ClassifierResults newResults = new ClassifierResults(numClasses);
         
-        for (int inst = 0; inst < ensembleSoFarResults.predictedClassProbabilities.size(); inst++) {
-            double[] ensDist = ensembleSoFarResults.predictedClassProbabilities.get(inst);
-            double[] indDist = newModelResults.predictedClassProbabilities.get(inst);
+        for (int inst = 0; inst < ensembleSoFarResults.getProbabilityDistributions().size(); inst++) {
+            double[] ensDist = ensembleSoFarResults.getDistributionForInstance(inst);
+            double[] indDist = newModelResults.getDistributionForInstance(inst);
             
             assert(ensDist.length == numClasses);
             assert(indDist.length == numClasses);
@@ -303,7 +303,7 @@ public class EnsembleSelection extends CAWPE {
             newResults.storeSingleResult(newDist);
         }
         
-        newResults.finaliseResults(ensembleSoFarResults.getTrueClassVals());
+        newResults.finaliseResults(ensembleSoFarResults.getTrueClassValsAsArray());
         return newResults;
     }
     

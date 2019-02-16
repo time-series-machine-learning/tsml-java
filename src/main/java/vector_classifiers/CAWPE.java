@@ -463,7 +463,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         output.append(data.relationName()).append(",").append(ensembleIdentifier).append(",train\n");
         output.append(this.getParameters()).append("\n");
         output.append(ensembleTrainResults.acc).append("\n");
-        double[] predClassVals=ensembleTrainResults.getPredClassVals();
+        double[] predClassVals=ensembleTrainResults.getPredClassValsAsArray();
         for(int i = 0; i < numTrainInsts; i++){
             //realclassval,predclassval,[empty],probclass1,probclass2,...
             output.append(data.instance(i).classValue()).append(",").append(predClassVals[i]).append(",");
@@ -597,7 +597,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
             if (!trainResultsLoaded)
                 errors.log("\nTRAIN results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "' not found. ");
-            else if (needIndividualTrainPreds() && modules[m].trainResults.predictedClassProbabilities.isEmpty())
+            else if (needIndividualTrainPreds() && modules[m].trainResults.getProbabilityDistributions().isEmpty())
                 errors.log("\nNo pred/distribution for instance data found in TRAIN results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "'. ");
 
             if (!testResultsLoaded)
@@ -809,7 +809,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
     @Override
     public double[] getEnsembleCvPreds() {
-        return ensembleTrainResults.getPredClassVals();
+        return ensembleTrainResults.getPredClassValsAsArray();
     }
 
     @Override
@@ -875,7 +875,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     public double[][] getIndividualCvPredictions() {
         double [][] preds = new double[modules.length][];
         for (int i = 0; i < modules.length; i++)
-            preds[i] = modules[i].trainResults.getPredClassVals();
+            preds[i] = modules[i].trainResults.getPredClassValsAsArray();
         return preds;
     }
 
@@ -1187,9 +1187,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         StringBuilder sb = new StringBuilder();
 
         if (train) //pred
-            sb.append(modules[0].trainResults.getTrueClassValue(index)).append(",").append(ensembleTrainResults.predictedClassValues.get(index)).append(",");
+            sb.append(modules[0].trainResults.getTrueClassValue(index)).append(",").append(ensembleTrainResults.getPredClassValue(index)).append(",");
         else
-            sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(ensembleTestResults.predictedClassValues.get(index)).append(",");
+            sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(ensembleTestResults.getPredClassValue(index)).append(",");
 
         if (train){ //dist
             double[] pred=ensembleTrainResults.getDistributionForInstance(index);

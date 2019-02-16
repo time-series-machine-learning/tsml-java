@@ -366,8 +366,8 @@ public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCo
         of.writeLine(getParameters());
         of.writeLine(trainResults.acc+"");
         double[] trueClassVals,predClassVals;
-        trueClassVals=trainResults.getTrueClassVals();
-        predClassVals=trainResults.getPredClassVals();
+        trueClassVals=trainResults.getTrueClassValsAsArray();
+        predClassVals=trainResults.getPredClassValsAsArray();
         for(int i=0;i<samples.numInstances();i++){
             //Basic sanity check
             if(samples.instance(i).classValue()!=trueClassVals[i]){

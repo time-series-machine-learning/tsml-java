@@ -331,8 +331,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
              of.writeLine(getParameters());
             of.writeLine(trainResults.acc+"");
             double[] trueClassVals,predClassVals;
-            trueClassVals=trainResults.getTrueClassVals();
-            predClassVals=trainResults.getPredClassVals();
+            trueClassVals=trainResults.getTrueClassValsAsArray();
+            predClassVals=trainResults.getPredClassValsAsArray();
             for(int i=0;i<data.numInstances();i++){
                 //Basic sanity check
                 if(data.instance(i).classValue()!=trueClassVals[i]){
