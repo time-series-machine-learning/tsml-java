@@ -1,60 +1,48 @@
-/*
+/**
+ * Class to collate results from any classifier creating standard output 
+ * There are two ways to collate results. 
+ * 1. (Tony Bagnall) The code in this class creates summary info for individual classifiers. 
+ * It does not do comparisons between classifiers, and it will build with incomplete
+ * data, ignoring incomplete data sets. This can be run on the cluster (see below). 
+ * See method individualClassifiersCollate() for example usage
+ * 2 (James Large) Using the MultipleClassifierEvaluation class, detailed  
+ * comparisons between classifier can be conducted. This can create matlab driven
+ * critical difference diagrams
 
-There are two ways to collate results. 
+**On the cluster usage:**
+* Class to collate standard results files over multiple classifiers and problems
+* Usage 
+* (assuming Collate.jar has this as the main class): 
+* java -jar Collate.jar ResultsDirectory/ ProblemDirectory/ NumberOfFolds Classifier1 Classifier2 .... ClassifierN NoParasC1 NoParasC2 .... NoParasCn
+* e.g. java -jar -Xmx6000m Collate.jar Results/ UCIContinuous/ 30 RandF RotF 2 2 
 
-1. (ajb) The code in this class creates summary info for individual classifiers. 
-It does not do comparisons between classifiers, and it will build with incomplete 
-data, ignoring incomplete data sets. This can be run on the cluster (see below). 
-See method individualClassifiersCollate() for example usage
-
-
-2 (jl) Using the MultipleClassifierEvaluation class, detailed comparisons between 
-classifier can 
-
-*On the cluster usage:*
-Class to collate standard results files over multiple classifiers and problems
-Usage 
-(assuming Collate.jar has this as the main class): 
-java -jar Collate.jar ResultsDirectory/ ProblemDirectory/ NumberOfFolds Classifier1 Classifier2 .... ClassifierN NoParasC1 NoParasC2 .... NoParasCn
-e.g. java -jar -Xmx6000m Collate.jar Results/ UCIContinuous/ 30 RandF RotF 2 2 
-
-collates the results for 30 folds for RandF and RotF in the directory for Results 
-on all the problems in UCIContinous (as defined by having a directory in the folder)
-
-Stage 1: take all the single fold files, work out the diagnostics on test data: 
-Accuracy, BalancedAccuracy, NegLogLikelihood, AUROC and F1 and store the TrainCV accuracy. 
-all done by call to collateFolds();
-Combine folds into a single file for each statistic in ResultsDirectory/ClassifierName
-these are
-Counts: counts.csv, number per problem (max number is NumberOfFolds, it does not check for more).
-Diagnostics: TestAcc.csv, TestF1.csv, TestBAcc.csv, TestNLL.csv, TestAUROC.csv, TrainCVAcc.csv
-Timings: Timings.csv
-Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tuning occurs, all tuning values).
-
-Stage 2: 
-Output: Classifier Summary: call to method averageOverFolds() 
-Creates average and standard deviation over all folds based on the files created at stage 1 with the addition of the mean difference
-per fold.
-All put in a single directory.
-
-Stage 3
-Final Comparison Summary: call to method basicSummaryComparisons();        
-a single file in ResultsDirectory directory called summaryTests<ClassifierNames>.csv
-contains pairwise comparisons of all the classifiers. 
-
-1. All Pairwise Comparisons for TestAccDiff, TestAcc, TestBAcc, TestNLL.csv and TestAUROC
-
-1. Wins/Draws/Loses
-2. Mean (and std dev) difference
-3. Two sample tests of the mean values 
-
-
-
-
-
-
-
- */
+* collates the results for 30 folds for RandF and RotF in the directory for Results 
+* on all the problems in UCIContinous (as defined by having a directory in the folder)
+* How it works:
+* 
+* Stage 1: take all the single fold files, work out the diagnostics on test data: 
+* Accuracy, BalancedAccuracy, NegLogLikelihood, AUROC and F1 and store the TrainCV accuracy. 
+* all done by call to collateFolds();
+* Combine folds into a single file for each statistic in ResultsDirectory/ClassifierName
+* these are
+* Counts: counts.csv, number per problem (max number is NumberOfFolds, it does not check for more).
+* Diagnostics: TestAcc.csv, TestF1.csv, TestBAcc.csv, TestNLL.csv, TestAUROC.csv, TrainCVAcc.csv, Timings.csv
+* Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tuning occurs, all tuning values).
+* 
+* Stage 2: 
+* Output: Classifier Summary: call to method averageOverFolds() 
+* Creates average and standard deviation over all folds based on the   
+* created at stage 1 with the addition of the mean difference per fold. All put in a single directory.
+* 
+* Stage 3
+* Final Comparison Summary: call to method basicSummaryComparisons();        
+* a single file in ResultsDirectory directory called summaryTests<ClassifierNames>.csv
+* contains pairwise comparisons of all the classifiers. 
+* 1. All Pairwise Comparisons for TestAccDiff, TestAcc, TestBAcc, TestNLL.csv and TestAUROC
+*   1. Wins/Draws/Loses
+*   2. Mean (and std dev) difference
+*   3. Two sample tests of the mean values 
+**/
 package experiments;
 
 import evaluation.MultipleClassifiersPairwiseTest;
@@ -655,38 +643,15 @@ public static void basicSummaryComparisons(){
         basicSummaryComparisons();        
         
     }
- 
-
-   public static void collateTuned() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
-               "E://Results/UCI/Tuned");
-       
-       
-//       m.readInClassifiers(new String[] {"TunedSVMPolynomial","TunedSVMRBF","TunedXGBoost","TunedMLP","TunedSingleLayerMLP","TunedTWoLayerMLP","TunedRandF","TunedRotF","RotF"}, 
-//               "E://Results//UCI//Tuned");
-       m.runComparison(); 
-
-       
-   }
-
-
-//First argument: String path to results directories
-//Second argument: path to directory with problem allStats to look for
-//Third argument: number of folds    
-//Next x arguments: x Classifiers to collate    
-//Next x arguments: number of numParas stored for each classifier    
-    public static void main(String[] args) throws Exception {
-
-        
-//NOTE TO SELF
-//Below is using my stats generator not james. To use James put in a static
-//method and exit, as above
-//    String[] classifiers={"BOSS","CAWPE","CAWPE_AS_COTE","ED","RandF","RotF","SLOWDTWCV","ST","TSF","RISE","XGBoost"};
+/**
+ * 
+ *First argument: String path to results directories
+ * Second argument: path to directory with problem allStats to look for
+ * Third argument: number of folds    
+ * Next x arguments: x Classifiers to collate    
+ * Next x arguments: number of numParas stored for each classifier    
+   **/
+   public static void exampleCollateResultsMethod1(String[] args) throws Exception{
     String[] classifiers={"TSF"};
     for(String classifier:classifiers){
         String parameters="0";
@@ -698,6 +663,39 @@ public static void basicSummaryComparisons(){
             collate(str);
         }
     }
+
+   }
+
+    
+/**
+ * Usage of MultipleClassifierEvaluation. See the class for more info
+ * @throws Exception 
+ */
+   public static void exampleCollateResultsMethod2(String[] args) throws Exception{
+       if(args.length>0){
+//TO DO           
+       }
+       else{ //Example manual setting
+            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
+            m.setBuildMatlabDiagrams(true);
+            m.setDebugPrinting(true);
+            m.setUseAllStatistics();
+            m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+            m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
+                    "E://Results/UCI/Tuned");
+            m.runComparison(); 
+       }
+   }
+
+
+    public static void main(String[] args) throws Exception {
+        boolean singleClassifierStats=true;
+        if(singleClassifierStats)
+            exampleCollateResultsMethod1(args);
+        else
+            exampleCollateResultsMethod1(args);
+            
+        
 }
     public static void reformatUBMLP()//Insert an extra comma
     {
