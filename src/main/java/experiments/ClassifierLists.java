@@ -240,6 +240,17 @@ public class ClassifierLists {
                 break;
             case "TSF":
                 c=new TSF();
+                ((TSF)c).setSeed(fold);
+                break;
+             case "TSFProb":
+                c=new TSF();
+                ((TSF)c).setSeed(fold);
+                ((TSF)c).setProbabilityEnsemble(true);
+                break;
+             case "TSFC45":
+                c=new TSF();
+                ((TSF)c).setSeed(fold);
+                ((TSF)c).setBaseClassifier(new J48());
                 break;
              case "SAXVSM": case "SAX": 
                 c=new SAXVSM();

@@ -49,7 +49,7 @@ public interface TrainAccuracyEstimate {
     */
     ClassifierResults getTrainResults();    
     default int setNumberOfFolds(Instances data){
-        return 10;
+        return data.numInstances()<10?data.numInstances():10;
     }
 
 
