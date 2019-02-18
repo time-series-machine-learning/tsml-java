@@ -998,12 +998,19 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             throw new Exception("Received more test instances than expected, when loading test results files, found " + numTestInsts + " test cases");
 
         double[] dist;
-        if (readIndividualsResults) //have results loaded from file
+        long startTime = System.currentTimeMillis();
+        long predTime;
+        if (readIndividualsResults) { //have results loaded from file
             dist = votingScheme.distributionForTestInstance(modules, testInstCounter);
-        else //need to classify them normally
+            predTime = System.currentTimeMillis() - startTime; //time for ensemble to form vote
+            for (EnsembleModule module : modules) //            +time for each member's predictions
+                predTime += module.testResults.getPredictionTime(testInstCounter);
+        }
+        else {//need to classify them normally
             dist = votingScheme.distributionForInstance(modules, ins);
-
-        ensembleTestResults.storeSingleResult(dist);
+            predTime = System.currentTimeMillis() - startTime;
+        }
+        ensembleTestResults.storeSingleResult(dist, predTime);
 
         if (prevTestInstance != instance)
             ++testInstCounter;
@@ -1408,7 +1415,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest3/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest6/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1477,7 +1484,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
-            setBuildMatlabDiagrams(true).
+//            setBuildMatlabDiagrams(true).
+            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();

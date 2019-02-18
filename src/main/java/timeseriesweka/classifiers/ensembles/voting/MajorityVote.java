@@ -60,8 +60,11 @@ public class MajorityVote extends ModuleVotingScheme {
         int pred;
         double[] dist;
         for(int m = 0; m < modules.length; m++){
-            dist = modules[m].getClassifier().distributionForInstance(testInstance); 
-            storeModuleTestResult(modules[m], dist);
+            long startTime = System.currentTimeMillis();
+            dist = modules[m].getClassifier().distributionForInstance(testInstance);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

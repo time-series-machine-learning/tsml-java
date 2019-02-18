@@ -330,7 +330,9 @@ public class EnsembleSelection extends CAWPE {
             for (int c = 0; c < numClasses; c++)
                 newDist[c] = ((ensDist[c] * ensembleSizeSoFar) + indDist[c]) / (ensembleSizeSoFar+1); //expand existing average, add in new model, and divide again
             
-            newResults.storeSingleResult(newDist);
+            //todo: exactly how to time train-instance predictions for this classifier is very debatable. going with this for now
+            long predTime = ensembleSoFarResults.getPredictionTime(inst) + newModelResults.getPredictionTime(inst);
+            newResults.storeSingleResult(newDist, predTime);
         }
         
         newResults.finaliseResults(ensembleSoFarResults.getTrueClassValsAsArray());

@@ -618,8 +618,12 @@ public class Experiments  {
 
         for (Instance instance : testSet) {
             instance.setClassMissing(); //just to be sure of no funny business 
+            
+            long startTime = System.currentTimeMillis();
             double[] probs = classifier.distributionForInstance(instance);
-            results.storeSingleResult(probs);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            results.storeSingleResult(probs, predTime);
         }
         
         results.finaliseResults(trueClassValues);

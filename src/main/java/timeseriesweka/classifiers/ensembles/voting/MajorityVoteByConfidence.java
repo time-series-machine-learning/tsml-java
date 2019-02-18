@@ -87,8 +87,11 @@ public class MajorityVoteByConfidence extends ModuleVotingScheme {
         int pred;
         double[] dist;
         for(int m = 0; m < modules.length; m++){
+            long startTime = System.currentTimeMillis();
             dist = modules[m].getClassifier().distributionForInstance(testInstance);
-            storeModuleTestResult(modules[m], dist);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

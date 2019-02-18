@@ -112,8 +112,11 @@ public abstract class AbstractStacking extends ModuleVotingScheme {
         double[][] dists = new double[modules.length][];
         
         for(int m = 0; m < modules.length; m++){
-            dists[m] = modules[m].getClassifier().distributionForInstance(testInstance); 
-            storeModuleTestResult(modules[m], dists[m]);
+            long startTime = System.currentTimeMillis();
+            dists[m] = modules[m].getClassifier().distributionForInstance(testInstance);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dists[m], predTime);
             
             for (int c = 0; c < numClasses; c++) 
                 dists[m][c] *= modules[m].priorWeight * modules[m].posteriorWeights[c];

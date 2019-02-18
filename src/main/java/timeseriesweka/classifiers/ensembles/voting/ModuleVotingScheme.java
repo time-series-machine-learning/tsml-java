@@ -102,11 +102,11 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         return dist;
     }
     
-    public void storeModuleTestResult(EnsembleModule module, double[] dist) {
+    public void storeModuleTestResult(EnsembleModule module, double[] dist, long predTime) {
         if (module.testResults == null)
             module.testResults = new ClassifierResults();
         
-        module.testResults.storeSingleResult(dist);
+        module.testResults.storeSingleResult(dist, predTime);
     }
     
     @Override

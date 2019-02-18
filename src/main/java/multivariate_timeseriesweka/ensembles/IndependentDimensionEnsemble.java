@@ -138,8 +138,11 @@ public class IndependentDimensionEnsemble extends AbstractClassifier{
         int pred;
         double[] dist;
         for(int m = 0; m < numChannels; m++){
-            dist = modules[m].getClassifier().distributionForInstance(testInstance[m]); 
-            vs.storeModuleTestResult(modules[m], dist);
+            long startTime = System.currentTimeMillis();
+            dist = modules[m].getClassifier().distributionForInstance(testInstance[m]);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            vs.storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)vs.indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

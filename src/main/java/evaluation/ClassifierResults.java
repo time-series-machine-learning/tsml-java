@@ -21,8 +21,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import utilities.DebugPrinting;
 import utilities.GenericTools;
@@ -71,7 +75,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> predictedClassValues;
     private ArrayList<double[]> predictedClassProbabilities;
-    private ArrayList<Long> predictionTimes;
+    public ArrayList<Long> predictionTimes;
     
     //inferred/supplied dataset meta info
     private int numClasses; 
@@ -92,10 +96,28 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
     
+    
     //Used to avoid infinite NLL scores when prob of true class =0 or 
     public static double NLL_PENALTY=-6.64; //Log_2(0.01)
     
+    //Consistent time unit assumed across build times, test times, individual prediction times. 
+    //Before considering different timeunits, all timing were in milliseconds, via
+    //System.currentTimeMillis(). Some classifiers on some datasets may run in < 1 millisecond 
+    //however, so sometimes nanseconds is wanted. Conversely, in the case of e.g large 
+    //meta-ensembles on large datasets, the cumulative time may be massive. 
+    TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    
     //self-management flags
+    /**
+     * essentially controls whether a classifierresults object can have finaliseResults(trueClassVals)
+     * called upon it. In theory, every class using the classifierresults object should make new 
+     * instantiations of it each time a set of results is being computed, and so this is not needed
+     * 
+     * this was relevant expecially prior to on-line prediction storage being supported, and effectively
+     * the intention was to turn the results into a const object after all the results were stored
+     * 
+     * todo: verify that this can be removed, or update to be more relevant. 
+     */
     private boolean finalised = false;
     private boolean allStatsFound = false;
     
@@ -122,6 +144,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
+        predictionTimes = new ArrayList<>();
         
         finalised = false;
     }
@@ -134,6 +157,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
+        predictionTimes = new ArrayList<>();
         
         this.numClasses = numClasses;
         finalised = false;
@@ -255,58 +279,90 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
 
 
+    
+    
+    
+    
+    /****************************
+     *   
+     *    PREDICTION STORAGE
+     * 
+     */
+    
+    /**
+     * The true class is missing, however can be added in one go later with the 
+     * method finaliseResults(double[] trueClassVals)
+     */
+    public void storeSingleResult(double[] dist, double predictedClass, long predictionTime) {      
+        
+        predictedClassProbabilities.add(dist);
+        predictedClassValues.add(predictedClass);
+        
+        //allowing 0 in case user was unaware and doesnt care about a classifier taking e.g
+        //0 milliseconds. todo revisit at some point when time units implemented/enforced 
+        if (predictionTime < 0)
+            //add a null placeholder, in case later predictions have timings? todo revisit
+            predictionTimes.add(null);
+        else {
+            predictionTimes.add(predictionTime);
 
-    public void addAllResults(double[] classVals, double[] preds, double[][] distsForInsts, int numClasses){
-        //Overwrites previous        
-        trueClassValues= new ArrayList<>();
-        predictedClassValues = new ArrayList<>();
-        predictedClassProbabilities = new ArrayList<>();
-        for(double d:preds)
-            predictedClassValues.add(d);
-        this.acc = acc;
-        for(double[] d:distsForInsts)
-            predictedClassProbabilities.add(d);
- 
-        this.numClasses = numClasses;
-        for(double d:classVals)
-           trueClassValues.add(d);
-        this.confusionMatrix = buildConfusionMatrix();
-        
-        this.stddev = -1; //not defined 
-        
+            if (testTime == -1)
+                testTime = predictionTime;
+            else 
+                testTime += predictionTime;
+        }
     }
     
-    //Pass the probability estimates for each class, but need the true class too
-    public void storeSingleResult(double[] dist) {        
+    
+    public void storeSingleResult(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
+        storeSingleResult(dist,predictedClass,predictionTime);
+        trueClassValues.add(trueClassVal);
+    }
+    
+    
+    /**
+     * Prediction shall be inferred as the class with the max probability. The true class is 
+     * missing, however can be added in one go later with the method finaliseResults(double[] trueClassVals)
+     * 
+     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
+     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
+     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
+     */
+    public void storeSingleResult(double[] dist, long predictionTime) {        
         double max = dist[0];
         double maxInd = 0;
-        predictedClassProbabilities.add(dist);
         for (int i = 0; i < dist.length; i++) {
             if (dist[i] > max) {
                 max = dist[i];
                 maxInd = i;
             }
         }
-        predictedClassValues.add(maxInd);
-    }
-    public void storeSingleResult(double actual, double[] dist) {        
-        double max = dist[0];
-        double maxInd = 0;
-        predictedClassProbabilities.add(dist);
-        for (int i = 0; i < dist.length; i++) {
-            if (dist[i] > max) {
-                max = dist[i];
-                maxInd = i;
-            }
-        }
-        predictedClassValues.add(maxInd);
-        trueClassValues.add(actual);
+        
+        storeSingleResult(dist, maxInd, predictionTime);
     }
     
-    
+    /**
+     * Prediction shall be inferred as the class with the max probability. 
+     * 
+     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
+     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
+     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
+     */
+    public void storeSingleResult(double trueClassVal, double[] dist, long predictionTime) {        
+        storeSingleResult(dist,predictionTime);
+        trueClassValues.add(trueClassVal);
+    }
+
+        
+    /**
+     * Will perform some basic validation to make sure that everything is here 
+     * that is expected, and compute the accuracy etc ready for file writing. 
+     * 
+     * Typical usage: results.finaliseResults(instances.attributeToDoubleArray(instances.classIndex()))
+     */
     public void finaliseResults(double[] testClassVals) throws Exception {
         if (finalised) {
-            printlnDebug("Results already finalised, skipping re-finalisation");
+            System.out.println("Results already finalised, skipping re-finalisation");
             return;
         }
         
@@ -436,40 +492,79 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     /**
-     * returns true if the prediction described by this string was correct 
+     * reads and STORES the prediction in this clasifierresults object
+     * returns true if the prediction described by this string was correct (i.e. truclass==predclass) 
+     * 
+     * does NOT increment numInstances.
+     * if numClasses is still < 0, WILL set numclasses if distribution info is present. 
      */
-    public boolean instancePredictionFromString(String predLine) { 
+    private boolean instancePredictionFromString(String predLine) { 
         String[] split=predLine.split(",");
 
-        //collected actual/predicted class
-        double trueClassVal=Double.valueOf(split[0]);
-        double predClassVal=Double.valueOf(split[1]);
-        trueClassValues.add(trueClassVal);
-        predictedClassValues.add(predClassVal);
+        //collect actual/predicted class
+        double trueClassVal=Double.valueOf(split[0].trim());
+        double predClassVal=Double.valueOf(split[1].trim());
         
-        //if probabilities are here, collect those too. VERY old files will not have them
-        if(split.length>3){
-            if(numInstances==0)
-                numClasses=split.length-3;   //Check!
-            double[] probs=new double[numClasses];
-            for(int i=0;i<probs.length;i++)
-                  probs[i]=Double.valueOf(split[3+i].trim());
-            predictedClassProbabilities.add(probs);
+        if(split.length==2) //no probabilities, no timing. VERY old files will not have them
+            return true;
+        
+        //split[2] should be empty (if we're still here), separator before probs
+        assert(split[2].equals(""));
+        
+        //collect probabilities
+        double[] dist = null;
+        if (numClasses < 2) {
+            List<Double> distL = new ArrayList<>();
+            for(int i = 3; i < split.length; i++) {
+                if (split[i].equals(""))
+                    break; //we're at the empty-space-separator between probs and timing 
+                else 
+                    distL.add(Double.valueOf(split[i].trim()));
+            }
+                  
+            numClasses = distL.size();
+            assert(numClasses >= 2);
+            
+            dist = new double[numClasses];
+            for (int i = 0; i < numClasses; i++)
+                dist[i] = distL.get(i);
+        }
+        else {
+            //we know how many classes there should be, use this as implicit
+            //file verification
+            dist = new double[numClasses];
+            for (int i = 0; i < numClasses; i++) {
+                //now need to offset by 3.
+                dist[i] = Double.valueOf(split[i+3].trim());
+            }
         }
         
-        //timing
+        //collect timings
+        long predTime = -1;
+        //      act/pred, space, dist, space, *timing*
+        int numParts = 2 + 1 + numClasses + 1 + 1; 
+        if (split.length >= numParts)
+            predTime = Long.parseLong(split[numParts-1].trim());
         
+        storeSingleResult(trueClassVal, dist, predClassVal, predTime);
         return trueClassVal==predClassVal;
     }
     
-    public String instancePredictionToString(int i) { 
+    
+    private String instancePredictionToString(int i) { 
         StringBuilder sb = new StringBuilder();
         
         sb.append(trueClassValues.get(i).intValue()).append(",");
-        sb.append(predictedClassValues.get(i).intValue()).append(",");
+        sb.append(predictedClassValues.get(i).intValue());
+        
+        //probs
+        sb.append(","); //<empty space>
         double[] probs=predictedClassProbabilities.get(i);
         for(double d:probs)
             sb.append(",").append(GenericTools.RESULTS_DECIMAL_FORMAT.format(d));
+        
+        //timing 
+        sb.append(",,").append(predictionTimes.get(i)); //<empty space>, timing
         
         return sb.toString();
     }
@@ -501,9 +596,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         st.append(generateFirstLine()).append("\n");
         st.append(generateSecondLine()).append("\n");
         st.append(generateThirdLine()).append("\n");
-//        st.append(name).append("\n");
-//        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
-//        st.append(acc).append("\n");
 
         st.append(instancePredictionsToString());
         return st.toString();
@@ -600,14 +692,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return acc;
     }
     private String generateThirdLine() {
+        //todo revisit: printing all 4, since e.g what if testTime was calced but not buildtime ?
+        //would have been printed where we're expecting buildtime to be, etc       
         String res = acc+"";
-        
-        if (buildTime != -1)
-            res += "," + buildTime;
-        if (testTime != -1)
-            res += "," + testTime;
-        if (memory != -1)
-            res += "," + memory;
+        res += "," + buildTime;
+        res += "," + testTime;
+        res += "," + memory;
         return res;
     }
 
@@ -616,6 +706,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         trueClassValues = new ArrayList<>();
         predictedClassValues = new ArrayList<>();
         predictedClassProbabilities = new ArrayList<>();
+        predictionTimes = new ArrayList<>();
         numInstances = 0;
         acc = -1;
         buildTime = -1;
@@ -629,7 +720,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
         Scanner inf = new Scanner(f);
 
-        //parse first line
+        //parse meta infos
         parseFirstLine(inf.nextLine());
         parseSecondLine(inf.nextLine());
         double reportedTestAcc = parseThirdLine(inf.nextLine());
@@ -706,8 +797,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
    
     public void findAllStatsOnce(){
-        if (allStatsFound) {
-            printlnDebug("Stats already found, ignoring findAllStatsOnce()");
+        if (finalised && allStatsFound) {
+            System.out.println("Stats already found, ignoring findAllStatsOnce()");
             return;
         } 
         else {
