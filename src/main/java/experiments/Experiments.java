@@ -1,19 +1,16 @@
-/**
- * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
- * setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings)
- * 
- * An execution of this will evaluate a single classifier on a single resample of a single dataset. 
- * 
- * Given an ExperimentalArguments object, which may be parsed from command line arguments
- * or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
- * will load the classifier and dataset specified, prep the location to write results to, 
- * train the classifier - potentially generating an error estimate via cross validation on the train set 
- * as well - and then predict the cases of the test set. 
- * 
- * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
- * (see the class of the same name under utilities). 
- * 
- * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package experiments;
 
@@ -43,6 +40,23 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
+/**
+ * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
+ * setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings)
+ * 
+ * An execution of this will evaluate a single classifier on a single resample of a single dataset. 
+ * 
+ * Given an ExperimentalArguments object, which may be parsed from command line arguments
+ * or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
+ * will load the classifier and dataset specified, prep the location to write results to, 
+ * train the classifier - potentially generating an error estimate via cross validation on the train set 
+ * as well - and then predict the cases of the test set. 
+ * 
+ * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
+ * (see the class of the same name under utilities). 
+ * 
+ * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+ */
 public class Experiments  {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
@@ -480,7 +494,7 @@ public class Experiments  {
      * is Actual Class, Predicted Class, Class probabilities
      * 
      * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
-     * @return the accuracy of c on fold for problem given in train/test
+     * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
     public static double singleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
         

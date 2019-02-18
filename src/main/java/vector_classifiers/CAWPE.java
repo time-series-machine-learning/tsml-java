@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers;
 
 import experiments.CollateResults;
@@ -44,6 +58,8 @@ import utilities.ErrorReport;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
+import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
@@ -86,8 +102,21 @@ import weka.classifiers.functions.MultilayerPerceptron;
  *
  */
 
-public class CAWPE extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, DebugPrinting, TrainAccuracyEstimate {
+public class CAWPE extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, DebugPrinting, TrainAccuracyEstimate, TechnicalInformationHandler {
 
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
+        TechnicalInformation 	result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "J. Large, J. Lines and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.YEAR, "2017");
+        result.setValue(TechnicalInformation.Field.TITLE, "The Heterogeneous Ensembles of Standard Classification Algorithms (HESCA): the Whole is Greater than the Sum of its Parts");
+        result.setValue(TechnicalInformation.Field.PUBLISHER, "arXiv");
+        result.setValue(TechnicalInformation.Field.URL, "https://arxiv.org/abs/1710.09220");
+
+        return result;
+    }
+    
     protected ModuleWeightingScheme weightingScheme = new TrainAcc(4);
     protected ModuleVotingScheme votingScheme = new MajorityConfidence();
     protected EnsembleModule[] modules;

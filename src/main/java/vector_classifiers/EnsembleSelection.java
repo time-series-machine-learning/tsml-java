@@ -1,4 +1,17 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers;
 
 import experiments.CollateResults;
@@ -18,6 +31,8 @@ import experiments.Experiments;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.core.Instances;
+import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * Implementation of ensemble selection
@@ -45,6 +60,21 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class EnsembleSelection extends CAWPE {
+
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
+        TechnicalInformation 	result;
+        result = new TechnicalInformation(TechnicalInformation.Type.INPROCEEDINGS);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "R. Caruana, A. Niculescu-Mizil, G. Crew and A. Ksikes");
+        result.setValue(TechnicalInformation.Field.YEAR, "2004");
+        result.setValue(TechnicalInformation.Field.TITLE, "Ensemble selection from libraries of models");
+        result.setValue(TechnicalInformation.Field.BOOKTITLE, "Proceedings of the twenty-first international conference on Machine learning");
+        result.setValue(TechnicalInformation.Field.PAGES, "18");
+        result.setValue(TechnicalInformation.Field.ORGANIZATION, "ACM");
+
+        return result;
+    }
+    
     
 //    Integer numBags = null; //default 2 * floor(log(sizeOfLibrary)), i.e 22 classifiers gives 8 bags. Paper says 20 bags from 2000 models, so definitely seems fair
     Integer numBags = null; //default 10. Paper says 20 bags from 2000 models, so definitely seems fair
