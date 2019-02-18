@@ -2,6 +2,7 @@
 package evaluation.tuning.evaluators;
 
 import evaluation.ClassifierResults;
+import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -89,7 +90,7 @@ public class SingleTestSetEvaluator implements Evaluator {
             long startTime = System.currentTimeMillis();
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.currentTimeMillis() - startTime;
-            res.storeSingleResult(trueClassVal, dist, predTime);
+            res.storeSingleResult(trueClassVal, dist, indexOfMax(dist), predTime);
         }
 
         res.findAllStatsOnce(); 

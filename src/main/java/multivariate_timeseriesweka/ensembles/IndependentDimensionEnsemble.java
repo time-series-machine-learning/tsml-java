@@ -14,6 +14,7 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
+import static utilities.GenericTools.indexOfMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstanceWithClassVal;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances;
 import weka.classifiers.AbstractClassifier;
@@ -144,7 +145,7 @@ public class IndependentDimensionEnsemble extends AbstractClassifier{
             
             vs.storeModuleTestResult(modules[m], dist, predTime);
             
-            pred = (int)vs.indexOfMax(dist);
+            pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 
                            modules[m].posteriorWeights[pred];
         }

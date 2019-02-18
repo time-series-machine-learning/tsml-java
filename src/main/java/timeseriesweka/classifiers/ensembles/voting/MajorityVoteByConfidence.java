@@ -2,6 +2,7 @@ package timeseriesweka.classifiers.ensembles.voting;
 
 import java.util.Arrays;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
 /**

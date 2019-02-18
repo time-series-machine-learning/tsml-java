@@ -3,6 +3,7 @@ package evaluation.tuning.evaluators;
 
 import evaluation.ClassifierResults;
 import evaluation.CrossValidator;
+import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -102,8 +103,8 @@ public class StratifiedResamplesEvaluator implements Evaluator {
                 long startTime = System.currentTimeMillis();
                 double[] dist = classifier.distributionForInstance(testinst);
                 long predTime = System.currentTimeMillis() - startTime;
-                resultsPerFold[fold].storeSingleResult(testinst.classValue(), dist, predTime);
-                allFoldsResults.storeSingleResult(testinst.classValue(), dist, predTime);
+                resultsPerFold[fold].storeSingleResult(testinst.classValue(), dist, indexOfMax(dist), predTime);
+                allFoldsResults.storeSingleResult(testinst.classValue(), dist, indexOfMax(dist), predTime);
             }
             
             resultsPerFold[fold].findAllStatsOnce(); 

@@ -34,6 +34,7 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.ClassifierResults;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import static utilities.GenericTools.indexOfMax;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
 import weka.core.Attribute;
@@ -623,7 +624,7 @@ public class Experiments  {
             double[] probs = classifier.distributionForInstance(instance);
             long predTime = System.currentTimeMillis() - startTime;
             
-            results.storeSingleResult(probs, predTime);
+            results.storeSingleResult(probs, indexOfMax(probs), predTime);
         }
         
         results.finaliseResults(trueClassValues);

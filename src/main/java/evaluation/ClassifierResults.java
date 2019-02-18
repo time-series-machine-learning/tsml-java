@@ -290,6 +290,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     
     /**
+     * Will update the internal prediction info using the values passed. User must pass the predicted class 
+     * so that they may resolve ties how they want (e.g first, randomly, take modal class, etc). 
+     * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
+     * 
+     * Todo future, maaaybe add enum for tie resolution to handle it here.
+     * 
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
@@ -313,45 +319,51 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
     
-    
+    /**
+     * Will update the internal prediction info using the values passed. User must pass the predicted class 
+     * so that they may resolve ties how they want (e.g first, randomly, take modal class, etc). 
+     * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
+     * 
+     * Todo future, maaaybe add enum for tie resolution to handle it here.
+     */
     public void storeSingleResult(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
         storeSingleResult(dist,predictedClass,predictionTime);
         trueClassValues.add(trueClassVal);
     }
     
-    
-    /**
-     * Prediction shall be inferred as the class with the max probability. The true class is 
-     * missing, however can be added in one go later with the method finaliseResults(double[] trueClassVals)
-     * 
-     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
-     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
-     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
-     */
-    public void storeSingleResult(double[] dist, long predictionTime) {        
-        double max = dist[0];
-        double maxInd = 0;
-        for (int i = 0; i < dist.length; i++) {
-            if (dist[i] > max) {
-                max = dist[i];
-                maxInd = i;
-            }
-        }
-        
-        storeSingleResult(dist, maxInd, predictionTime);
-    }
-    
-    /**
-     * Prediction shall be inferred as the class with the max probability. 
-     * 
-     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
-     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
-     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
-     */
-    public void storeSingleResult(double trueClassVal, double[] dist, long predictionTime) {        
-        storeSingleResult(dist,predictionTime);
-        trueClassValues.add(trueClassVal);
-    }
+//    
+//    /**
+//     * Prediction shall be inferred as the class with the max probability. The true class is 
+//     * missing, however can be added in one go later with the method finaliseResults(double[] trueClassVals)
+//     * 
+//     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
+//     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
+//     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
+//     */
+//    public void storeSingleResult(double[] dist, long predictionTime) {        
+//        double max = dist[0];
+//        double maxInd = 0;
+//        for (int i = 0; i < dist.length; i++) {
+//            if (dist[i] > max) {
+//                max = dist[i];
+//                maxInd = i;
+//            }
+//        }
+//        
+//        storeSingleResult(dist, maxInd, predictionTime);
+//    }
+//    
+//    /**
+//     * Prediction shall be inferred as the class with the max probability. 
+//     * 
+//     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
+//     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
+//     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
+//     */
+//    public void storeSingleResult(double trueClassVal, double[] dist, long predictionTime) {        
+//        storeSingleResult(dist,predictionTime);
+//        trueClassValues.add(trueClassVal);
+//    }
 
         
     /**

@@ -43,6 +43,7 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
 import evaluation.ClassifierResults;
+import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Instances;
@@ -493,7 +494,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                 ((EnhancedBagging)m_bagger).findOOBProbabilities();
                 double[][] OOBPredictions=((EnhancedBagging)m_bagger).OOBProbabilities;
                 for(int i=0;i<data.numInstances();i++)
-                    res.storeSingleResult(data.instance(i).classValue(),OOBPredictions[i], -1);
+                    res.storeSingleResult(data.instance(i).classValue(),OOBPredictions[i],indexOfMax(OOBPredictions[i]), -1);
             }
         }
         

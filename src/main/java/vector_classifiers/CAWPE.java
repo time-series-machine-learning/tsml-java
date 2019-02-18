@@ -55,6 +55,7 @@ import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.filters.SAX;
 import utilities.ErrorReport;
+import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
@@ -1010,7 +1011,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             dist = votingScheme.distributionForInstance(modules, ins);
             predTime = System.currentTimeMillis() - startTime;
         }
-        ensembleTestResults.storeSingleResult(dist, predTime);
+        ensembleTestResults.storeSingleResult(dist, indexOfMax(dist), predTime);
 
         if (prevTestInstance != instance)
             ++testInstCounter;
@@ -1415,7 +1416,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest6/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest7/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;

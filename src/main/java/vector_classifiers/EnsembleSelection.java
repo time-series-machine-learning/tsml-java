@@ -29,6 +29,7 @@ import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.ClassifierResults;
 import experiments.Experiments;
 import utilities.ClassifierTools;
+import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
@@ -332,7 +333,7 @@ public class EnsembleSelection extends CAWPE {
             
             //todo: exactly how to time train-instance predictions for this classifier is very debatable. going with this for now
             long predTime = ensembleSoFarResults.getPredictionTime(inst) + newModelResults.getPredictionTime(inst);
-            newResults.storeSingleResult(newDist, predTime);
+            newResults.storeSingleResult(newDist, indexOfMax(newDist), predTime);
         }
         
         newResults.finaliseResults(ensembleSoFarResults.getTrueClassValsAsArray());
