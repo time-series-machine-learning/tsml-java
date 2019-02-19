@@ -1012,7 +1012,7 @@ this gives the option of finding one using 10xCV
             res.setFoldID(seed);
             res.setSplit("train");
             
-            res.paras = getParameters();
+            res.setParas(getParameters());
             res.writeResultsToFile(trainPath);
             File x=new File(trainPath);
             x.setWritable(true, false);

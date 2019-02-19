@@ -631,7 +631,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         results.setFoldID(seed);
         results.setSplit(trainOrTest);
         
-        results.paras = parameters;
+        results.setParas(parameters);
         results.writeResultsToFile(fullPath);
     }
 

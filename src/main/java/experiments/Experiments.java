@@ -638,7 +638,7 @@ public class Experiments  {
         results.setSplit(split);
         
         if (classifier instanceof SaveParameterInfo)
-            results.paras = ((SaveParameterInfo) classifier).getParameters();
+            results.setParas(((SaveParameterInfo) classifier).getParameters());
 
         results.writeResultsToFile(fullTestWritingPath);
         

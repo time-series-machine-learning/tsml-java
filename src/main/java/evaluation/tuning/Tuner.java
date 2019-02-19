@@ -216,7 +216,7 @@ public class Tuner
         results.setDatasetName(datasetName);
         results.setFoldID(seed);
         results.setSplit("train");
-        results.paras = parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine);
+        results.setParas(parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine));
         
         return results;
     }
@@ -355,7 +355,7 @@ public class Tuner
             if (ClassifierResults.exists(path)) {
                 ClassifierResults tempResults = new ClassifierResults(path);
                 ParameterSet pset = new ParameterSet();
-                pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+                pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
                 storeParaResult(pset, tempResults, tiesBestSoFar);
             } else {
                 throw new Exception("Trying to load paras back in, but missing expected parameter set ID: " + paraID + ", numParasExpected: " + numParasExpected);
@@ -384,7 +384,7 @@ public class Tuner
         for (File file : files) {
             ClassifierResults tempResults = new ClassifierResults(file.getAbsolutePath());
             ParameterSet pset = new ParameterSet();
-            pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+            pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
             storeParaResult(pset, tempResults, tiesBestSoFar);
         }
         

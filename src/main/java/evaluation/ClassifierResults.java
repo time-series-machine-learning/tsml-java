@@ -14,16 +14,12 @@
  */
 package evaluation;
 
-import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -39,39 +35,40 @@ import utilities.generic_storage.Pair;
  * resample of a particular dataset). 
  * 
  * Predictions can be stored via addPrediction(...) or addAllPredictions(...)
- Currently, the information stored about each prediction is: 
-     - The true class value                            (double   getTrueClassValue(index))
-     - The predicted class value                       (double   getPredClassValue(index))
-     - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
-     - The time taken to predict this instance id      (long     getPredictionTime(index))
- 
- The meta info stored is:
-   [LINE 1 OF FILE] 
-     - get/setDatasetName(String)
-     - get/setClassifierName(String)
-     - get/setSplit(String)
-     - get/setFoldId(String)
-     - get/setDescription(String)
-   [LINE 2 OF FILE]
-     - get/setParas(String)
-   [LINE 3 OF FILE]
-     - getAccuracy() (calculated from predictions, not settable)
-     - get/setBuildTime(long)
-     - get/setTestTime(long)
-     - get/setMemory(long)
-   [REMAINING LINES: PREDICTIONS]
-     - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime
- 
- Supports reading/writing of results from/to file, in the 'classifierResults file-format'
-     - loadResultsFromFile(String path)
-     - writeToFile(String path)
- 
- Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
- auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
- findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
- via the appropriate get methods.
+ * Currently, the information stored about each prediction is: 
+ *    - The true class value                            (double   getTrueClassValue(index))
+ *    - The predicted class value                       (double   getPredClassValue(index))
+ *    - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
+ *    - The time taken to predict this instance id      (long     getPredictionTime(index))
+ *
+ * The meta info stored is:
+ *  [LINE 1 OF FILE] 
+ *    - get/setDatasetName(String)
+ *    - get/setClassifierName(String)
+ *    - get/setSplit(String)
+ *    - get/setFoldId(String)
+ *    - get/setDescription(String)
+ *  [LINE 2 OF FILE]
+ *    - get/setParas(String)
+ *  [LINE 3 OF FILE]
+ *    - getAccuracy() (calculated from predictions, not settable)
+ *    - get/setBuildTime(long)
+ *    - get/setTestTime(long)
+ *    - get/setMemory(long)
+ *  [REMAINING LINES: PREDICTIONS]
+ *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime
+ * 
+ * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
+ *    - loadResultsFromFile(String path)
+ *    - writeToFile(String path)
+ *
+ * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
+ * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
+ * findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
+ * via the appropriate get methods.
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
+ * @date 19/02/19
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
         
@@ -85,7 +82,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     //LINE 2: classifier setup/info, parameters. precise format is up to user. 
     //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
     //old versions of file format also include build time.
-    public String paras = "No parameter info";
+    private String paras = "No parameter info";
     
     //LINE 3: acc, buildTime, testTime, memory
     //simple summarative performance stats. 
@@ -138,7 +135,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * called upon it. In theory, every class using the classifierresults object should make new 
      * instantiations of it each time a set of results is being computed, and so this is not needed
      * 
-     * this was relevant expecially prior to on-line prediction storage being supported, and effectively
+     * this was relevant especially prior to on-line prediction storage being supported, and effectively
      * the intention was to turn the results into a const object after all the results were stored
      * 
      * todo: verify that this can be removed, or update to be more relevant. 

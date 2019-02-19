@@ -505,7 +505,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
             res.setFoldID(seed);
             res.setSplit("train");
                     
-            res.paras = getParameters(); 
+            res.setParas(getParameters()); 
             res.writeResultsToFile(trainPath);
         } 
         
