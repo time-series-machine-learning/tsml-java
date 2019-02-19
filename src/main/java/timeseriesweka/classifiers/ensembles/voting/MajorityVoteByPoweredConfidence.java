@@ -57,7 +57,7 @@ public class MajorityVoteByPoweredConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            Math.pow((modules[m].trainResults.getDistributionForInstance(trainInstanceIndex)[pred]), power);
+                            Math.pow((modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex)[pred]), power);
         }
         
         return normalise(preds);
@@ -73,7 +73,7 @@ public class MajorityVoteByPoweredConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            Math.pow((modules[m].testResults.getDistributionForInstance(testInstanceIndex)[pred]), power);
+                            Math.pow((modules[m].testResults.getProbabilityDistribution(testInstanceIndex)[pred]), power);
         }
         
         return normalise(preds);

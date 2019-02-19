@@ -374,7 +374,7 @@ public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCo
                 throw new Exception("ERROR in TSF cross validation, class mismatch!");
             }
             of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-            for(double d:trainResults.getDistributionForInstance(i))
+            for(double d:trainResults.getProbabilityDistribution(i))
                 of.writeString(","+d);
             of.writeString("\n");
         }

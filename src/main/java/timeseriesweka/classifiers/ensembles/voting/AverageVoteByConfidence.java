@@ -34,7 +34,7 @@ public class AverageVoteByConfidence extends ModuleVotingScheme {
         for(int m = 0; m < modules.length; m++){
                 pred = (int) modules[m].trainResults.getPredClassValue(trainInstanceIndex); 
                 ++numPredsForClass[pred];
-                double[] p=modules[m].trainResults.getDistributionForInstance(trainInstanceIndex);
+                double[] p=modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex);
                 preds[pred] += modules[m].priorWeight*modules[m].posteriorWeights[pred]*p[pred];
         }
         
@@ -54,7 +54,7 @@ public class AverageVoteByConfidence extends ModuleVotingScheme {
         for(int m = 0; m < modules.length; m++){
             pred = (int) modules[m].testResults.getPredClassValue(testInstanceIndex); 
             ++numPredsForClass[pred];
-            double[] p=modules[m].testResults.getDistributionForInstance(testInstanceIndex);
+            double[] p=modules[m].testResults.getProbabilityDistribution(testInstanceIndex);
             preds[pred] += modules[m].priorWeight * 
                     modules[m].posteriorWeights[pred] * p[pred];
         }

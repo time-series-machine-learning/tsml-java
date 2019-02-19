@@ -470,7 +470,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return predictedClassProbabilities.toArray(new double[][] {});
     }
     
-    public double[] getDistributionForInstance(int i){
+    public double[] getProbabilityDistribution(int i){
        if(i<predictedClassProbabilities.size())
             return predictedClassProbabilities.get(i);
        return null;
@@ -857,7 +857,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double findNLL(){
         double nll=0;
         for(int i=0;i<trueClassValues.size();i++){
-            double[] dist=getDistributionForInstance(i);
+            double[] dist=getProbabilityDistribution(i);
             int trueClass = trueClassValues.get(i).intValue();
             
             if(dist[trueClass]==0)

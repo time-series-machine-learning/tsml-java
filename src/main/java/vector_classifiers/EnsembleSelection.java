@@ -321,8 +321,8 @@ public class EnsembleSelection extends CAWPE {
         ClassifierResults newResults = new ClassifierResults(numClasses);
         
         for (int inst = 0; inst < ensembleSoFarResults.getProbabilityDistributions().size(); inst++) {
-            double[] ensDist = ensembleSoFarResults.getDistributionForInstance(inst);
-            double[] indDist = newModelResults.getDistributionForInstance(inst);
+            double[] ensDist = ensembleSoFarResults.getProbabilityDistribution(inst);
+            double[] indDist = newModelResults.getProbabilityDistribution(inst);
             
             assert(ensDist.length == numClasses);
             assert(indDist.length == numClasses);

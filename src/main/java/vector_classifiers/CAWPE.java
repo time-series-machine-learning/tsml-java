@@ -1212,12 +1212,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(ensembleTestResults.getPredClassValue(index)).append(",");
 
         if (train){ //dist
-            double[] pred=ensembleTrainResults.getDistributionForInstance(index);
+            double[] pred=ensembleTrainResults.getProbabilityDistribution(index);
             for (int j = 0; j < pred.length; j++)
                 sb.append(",").append(pred[j]);
         }
         else{
-            double[] pred=ensembleTestResults.getDistributionForInstance(index);
+            double[] pred=ensembleTestResults.getProbabilityDistribution(index);
             for (int j = 0; j < pred.length; j++)
                 sb.append(",").append(pred[j]);
         }
