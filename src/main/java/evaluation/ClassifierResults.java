@@ -48,6 +48,7 @@ import utilities.generic_storage.Pair;
  *    - get/setSplit(String)
  *    - get/setFoldId(String)
  *    - get/setDescription(String)
+ *    - get/setTimeUnit(TimeUnit)
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
@@ -61,6 +62,10 @@ import utilities.generic_storage.Pair;
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  *    - loadResultsFromFile(String path)
  *    - writeToFile(String path)
+ * 
+ * Supports recording of timings in different time units, however nano seconds is default and 
+ * typically preferred. Older files that are read in and do not have a time unit specified are 
+ * assumed to be in milliseconds, as that was the old default.
  *
  * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
@@ -97,7 +102,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> predictedClassValues;
     private ArrayList<double[]> predictedClassProbabilities;
-    public ArrayList<Long> predictionTimes;
+    private ArrayList<Long> predictionTimes;
     
     //inferred/supplied dataset meta info
     private int numClasses; 
@@ -119,15 +124,26 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double[] countPerClass;
     
     
-    //Used to avoid infinite NLL scores when prob of true class =0 or 
-    public static double NLL_PENALTY=-6.64; //Log_2(0.01)
+    /**
+     * Used to avoid infinite NLL scores when prob of true class =0 or 
+     */
+    private static double NLL_PENALTY=-6.64; //Log_2(0.01)
     
-    //Consistent time unit assumed across build times, test times, individual prediction times. 
-    //Before considering different timeunits, all timing were in milliseconds, via
-    //System.currentTimeMillis(). Some classifiers on some datasets may run in < 1 millisecond 
-    //however, so sometimes nanseconds is wanted. Conversely, in the case of e.g large 
-    //meta-ensembles on large datasets, the cumulative time may be massive. 
-    TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    /**
+     * Consistent time unit ASSUMED across build times, test times, individual prediction times. 
+     * Before considering different timeunits, all timing were in milliseconds, via
+     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond 
+     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds. 
+     * 
+     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
+     * Could be conceivable that the cumulative time of a large meta ensemble that is run 
+     * multi-threaded on a large dataset might exceed this. 
+     * 
+     * In results files made before 19/2/2019, which only stored build times and 
+     * milliseconds was assumed, there will be no unit of measurement for the time. 
+     */
+    TimeUnit timeUnit = TimeUnit.NANOSECONDS;
+
     
     //self-management flags
     /**
@@ -291,6 +307,48 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public void setSplit(String split) { this.split = split; }
 
+    
+    /**
+     * Consistent time unit ASSUMED across build times, test times, individual prediction times. 
+     * Before considering different timeunits, all timing were in milliseconds, via
+     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond 
+     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds. 
+     * 
+     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
+     * Could be conceivable that the cumulative time of a large meta ensemble that is run 
+     * multi-threaded on a large dataset might exceed this. 
+     * 
+     * In results files made before 19/2/2019, which only stored build times and 
+     * milliseconds was assumed, there will be no unit of measurement for the time. 
+     */
+    public TimeUnit getTimeUnit() {
+        return timeUnit;
+    }
+
+    /**
+     * This will NOT convert any timings already stored in this classifier results object 
+     * to the new time unit. e.g if build time was had already been stored in seconds as 10, THEN
+     * setTimeUnit(TimeUnit.MILLISECONDS) was called, the actual value of build time would still be 10,
+     * but now assumed to mean 10 milliseconds. 
+     * 
+     * Consistent time unit ASSUMED across build times, test times, individual prediction times. 
+     * Before considering different timeunits, all timing were in milliseconds, via
+     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond 
+     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds. 
+     * 
+     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
+     * Could be conceivable that the cumulative time of a large meta ensemble that is run 
+     * multi-threaded on a large dataset might exceed this. 
+     * 
+     * In results files made before 19/2/2019, which only stored build times and 
+     * milliseconds was assumed, there will be no unit of measurement for the time. 
+     */
+    public void setTimeUnit(TimeUnit timeUnit) {
+        this.timeUnit = timeUnit;
+    }
+    
+    
+    
     /**
      * This is a free-form description that can hold any info you want, with the only caveat
      * being that it cannot contain newline characters. Description could be the experiment 
@@ -347,9 +405,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double getAcc() { return acc; }
 
     public long getBuildTime() { return buildTime; }
+    public long getBuildTimeInNanos() { return timeUnit.toNanos(buildTime); }
     public void setBuildTime(long buildTime) { this.buildTime = buildTime; }
 
     public long getTestTime() { return testTime; }
+    public long getTestTimeInNanos() { return timeUnit.toNanos(testTime); }
     public void setTestTime(long testTime) { this.testTime = testTime; }
 
     public long getMemory() { return memory; }
@@ -564,9 +624,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             l[i++]=x;
         return l;
     }
-
+    
     public long getPredictionTime(int index) {
         return predictionTimes.get(index);
+    }
+    
+    public long getPredictionTimeInNanos(int index) { 
+        return timeUnit.toNanos(getPredictionTime(index)); 
     }
     
     public void cleanPredictionInfo() {
@@ -734,17 +798,24 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         if (parts.length > 2)
             split = parts[2];
+        
         if (parts.length > 3)
             foldID = Integer.parseInt(parts[3]);
+        
         if (parts.length > 4)
-            description = parts[4];
+            setTimeUnitFromString(parts[4]);
+        else //time unit is missing, assumed to be older file, which recorded build times in milliseconds by default
+            timeUnit = TimeUnit.MILLISECONDS; 
+        
+        if (parts.length > 5)
+            description = parts[5];
 
         //in case the description had commas in it? ...
         for (int i = 5; i < parts.length; i++)
             description += parts[i];
     }
     private String generateFirstLine() { 
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + description;
+        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + ", "+ description;
     }
    
     private void parseSecondLine(String line) { 
@@ -807,6 +878,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return res;
     }
 
+    private String getTimeUnitAsString() { 
+        return timeUnit.name();
+    }
+    
+    private void setTimeUnitFromString(String str) {
+        timeUnit = TimeUnit.valueOf(str);
+    }
+    
     public void loadResultsFromFile(String path) throws FileNotFoundException {
         //init
         trueClassValues = new ArrayList<>();
@@ -1216,7 +1295,5 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         stats.add(new Pair<>("ACC", GETTER_Accuracy));
         return stats;
     }
-    
-
     
 }
