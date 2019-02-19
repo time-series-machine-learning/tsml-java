@@ -32,7 +32,7 @@ public class FastDTWWrapper extends AbstractClassifier  implements SaveParameter
         res.buildTime=System.currentTimeMillis()-startTime;
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.memory=usedBytes;
+        res.setMemory(usedBytes);
     }
     public double classifyInstance(Instance data) throws Exception {
        return ws.classifyInstance(data);
@@ -41,7 +41,7 @@ public class FastDTWWrapper extends AbstractClassifier  implements SaveParameter
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.memory;
+        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.getMemory();
         result+=",WindowSize,"+ws.getBestWin()+",Score,"+ws.getBestScore();
         return result;
     }

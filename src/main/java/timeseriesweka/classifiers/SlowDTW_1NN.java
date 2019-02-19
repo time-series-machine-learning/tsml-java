@@ -85,7 +85,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     }
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.memory;
+        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.getMemory();
         result+=",BestWarpPercent,"+bestWarp+",AllAccs,";
        for(double d:accuracy)
             result+=","+d;
@@ -139,7 +139,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
         res.buildTime=System.currentTimeMillis()-t;
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.memory=usedBytes;
+        res.setMemory(usedBytes);
         
         
         if(trainPath!=null && trainPath!=""){  //Save basic train results

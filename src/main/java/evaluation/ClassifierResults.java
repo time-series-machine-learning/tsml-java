@@ -86,10 +86,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     //LINE 3: acc, buildTime, testTime, memory
     //simple summarative performance stats. 
-    public double acc = -1; 
+    public double acc = -1; //calculated from the stored predictions, cannot be explicitely set by user
     public long buildTime = -1; //buildClassifier(Instances) timing. might be cumulative time over many parameter set builds, etc
-    public long testTime = -1; //total testtime for all predictions
-    public long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
+    private long testTime = -1; //total testtime for all predictions
+    private long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
     
 
     //REMAINDER OF THE FILE - 1 prediction per line
@@ -322,34 +322,57 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      *     LINE 2 GETS/SETS
      * 
      */
+    
+    /**
+     * For now, user dependent on the formatting of this string, and really, the contents of it. 
+     * It is notionally intended to contain the parameters of the classifier used to produce the 
+     * attached predictions, but could also store other things as well. 
+     */
     public String getParas() { return paras; }
+    /**
+     * For now, user dependent on the formatting of this string, and really, the contents of it. 
+     * It is notionally intended to contain the parameters of the classifier used to produce the 
+     * attached predictions, but could also store other things as well. 
+     */
     public void setParas(String paras) { this.paras = paras; }
-    
-    
 
 
+
+    /*****************************
+     * 
+     *     LINE 3 GETS/SETS
+     * 
+     */    
     
-    
-    
-    
+    public double getAcc() { return acc; }
+
+    public long getBuildTime() { return buildTime; }
+    public void setBuildTime(long buildTime) { this.buildTime = buildTime; }
+
+    public long getTestTime() { return testTime; }
+    public void setTestTime(long testTime) { this.testTime = testTime; }
+
+    public long getMemory() { return memory; }
+    public void setMemory(long memory) {
+        this.memory = memory;
+    }
+
     /****************************
      *   
      *    PREDICTION STORAGE
      * 
      */
-    
     /**
-     * Will update the internal prediction info using the values passed. User must pass the predicted class 
+     * Will update the internal prediction info using the values passed. User must pass the predicted class
      * so that they may resolve ties how they want (e.g first, randomly, take modal class, etc). 
      * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
      * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
-     * 
+     *
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double predictedClass, long predictionTime) {      
-        
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime) {
         predictedClassProbabilities.add(dist);
         predictedClassValues.add(predictedClass);
         
