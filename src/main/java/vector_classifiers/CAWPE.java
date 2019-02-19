@@ -534,7 +534,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
                 //these train results should also include the buildtime
                 module.trainResults = ((TrainAccuracyEstimate)module.getClassifier()).getTrainResults();
-
+                module.trainResults.finaliseResults();
+                
                 if (writeIndividualsResults) { //if we're doing trainFold# file writing
                     String params = module.getParameters();
                     if (module.getClassifier() instanceof SaveParameterInfo)
@@ -546,7 +547,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             else {
                 printlnDebug(module.getModuleName() + " performing cv...");
                 module.trainResults = cv.crossValidateWithStats(module.getClassifier(), trainInsts);
-
+                module.trainResults.finaliseResults();
+                
                 //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
                 //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
                 long startTime = System.currentTimeMillis();
@@ -730,6 +732,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double stddevOverFolds = StatisticalUtilities.standardDeviation(accPerFold, false, acc);
 
         trainResults.stddev = stddevOverFolds;
+        trainResults.finaliseResults();
         
         return trainResults;
     }
@@ -924,10 +927,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     public String getParameters(){
         StringBuilder out = new StringBuilder();
 
-        if (ensembleTrainResults != null) //cv performed
-            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
-        else
-            out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
+//        if (ensembleTrainResults != null) //cv performed
+//            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
+//        else
+//            out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
 
         out.append(weightingScheme.toString()).append(",").append(votingScheme.toString()).append(",");
 
@@ -1396,7 +1399,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest8/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest9/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
