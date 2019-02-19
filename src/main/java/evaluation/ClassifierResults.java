@@ -34,17 +34,42 @@ import utilities.InstanceTools;
 import utilities.generic_storage.Pair;
 
 /**
- * This class has morphed over time. At it's base form, it's a simple container class for the 
- * predictions and results of a classifier on a single set of instances (for example, the test 
- * set of a particular resample of a particular dataset) 
+ * This is a container class for the storage of predictions and meta-info of a 
+ * classifier on a single set of instances (for example, the test set of a particular 
+ * resample of a particular dataset). 
  * 
- * It can be used in batch mode (add all predictions at once) or online (add in one at a time).
- * The former is sensible for storing training set results, the latter for test results.
- * 
- * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
- * 
- * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
- * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline
+ * Predictions can be stored via addPrediction(...) or addAllPredictions(...)
+ Currently, the information stored about each prediction is: 
+     - The true class value                            (double   getTrueClassValue(index))
+     - The predicted class value                       (double   getPredClassValue(index))
+     - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
+     - The time taken to predict this instance id      (long     getPredictionTime(index))
+ 
+ The meta info stored is:
+   [LINE 1 OF FILE] 
+     - get/setDatasetName(String)
+     - get/setClassifierName(String)
+     - get/setSplit(String)
+     - get/setFoldId(String)
+     - get/setDescription(String)
+   [LINE 2 OF FILE]
+     - get/setParas(String)
+   [LINE 3 OF FILE]
+     - getAccuracy() (calculated from predictions, not settable)
+     - get/setBuildTime(long)
+     - get/setTestTime(long)
+     - get/setMemory(long)
+   [REMAINING LINES: PREDICTIONS]
+     - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime
+ 
+ Supports reading/writing of results from/to file, in the 'classifierResults file-format'
+     - loadResultsFromFile(String path)
+     - writeToFile(String path)
+ 
+ Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
+ auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
+ findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
+ via the appropriate get methods.
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  */
@@ -55,7 +80,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
-    private String description= ""; //optional extra info if wanted. 
+    private String description= ""; //human-friendly optional extra info if wanted. 
     
     //LINE 2: classifier setup/info, parameters. precise format is up to user. 
     //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
@@ -159,14 +184,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = false;
     }
     
-    /**
-     * Load a classifierresults object from the file at the specified path
-     */
-    public ClassifierResults(String filePathAndName) throws FileNotFoundException {
-        loadFromFile(filePathAndName);
-    }
-    
-    /**
+        /**
      * Create an empty classifierResults object.
      * 
      * If number of classes is known when making the object, it is safer to use this constructor 
@@ -184,6 +202,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         this.numClasses = numClasses;
         finalised = false;
+    }
+    
+    /**
+     * Load a classifierresults object from the file at the specified path
+     */
+    public ClassifierResults(String filePathAndName) throws FileNotFoundException {
+        loadResultsFromFile(filePathAndName);
     }
     
     /**
@@ -209,6 +234,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      */
     
+    /**
+     * Will return the number of classes if it has been a) explicitely set or b) found via 
+     * the size of the probability distributions attached to predictions that have been 
+     * stored/loaded, otherwise this will return 0.
+     */
     public int numClasses() { 
         if (numClasses <= 0)
             inferNumClasses();
@@ -224,15 +254,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             this.numClasses = predictedClassProbabilities.get(0).length;
     }
     
-    
     public int numInstances() { 
         if (numInstances <= 0)
             inferNumInstances();
         return numInstances; 
     }
-    public void setNumInstances(int numInstances) { 
-        this.numInstances = numInstances; 
-    }
+    
     private void inferNumInstances() {
         this.numInstances = predictedClassValues.size();
     }
@@ -257,11 +284,38 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public int getFoldID() { return foldID; }
     public void setFoldID(int foldID) { this.foldID = foldID; }
 
+    /**
+     * e.g "train", "test", "validation"
+     */
     public String getSplit() { return split; }
+    
+    /**
+     * e.g "train", "test", "validation"
+     */
     public void setSplit(String split) { this.split = split; }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    /**
+     * This is a free-form description that can hold any info you want, with the only caveat
+     * being that it cannot contain newline characters. Description could be the experiment 
+     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely 
+     * up to the user to process if they want to. 
+     * 
+     * By default, it is an empty string.
+     */
+    public String getDescription() { 
+        return description; 
+    }
+    /**
+     * This is a free-form description that can hold any info you want, with the only caveat
+     * being that it cannot contain newline characters. Description could be the experiment 
+     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely 
+     * up to the user to process if they want to. 
+     * 
+     * By default, it is an empty string.
+     */
+    public void setDescription(String description) { 
+        this.description = description; 
+    }
     
     
     
@@ -315,6 +369,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             else 
                 testTime += predictionTime;
         }
+        
+        numInstances++;
     }
     
     /**
@@ -325,7 +381,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
     public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
-        ClassifierResults.this.addPrediction(dist,predictedClass,predictionTime);
+        addPrediction(dist,predictedClass,predictionTime);
         trueClassValues.add(trueClassVal);
     }
     
@@ -629,7 +685,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return st.toString();
     }
    
-    public void writeResultsFile(String path) throws Exception {
+    public void writeResultsToFile(String path) throws Exception {
         OutFile out = new OutFile(path);
         try {
             out.writeString(writeResultsFileToString());
@@ -731,7 +787,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return res;
     }
 
-    public void loadFromFile(String path) throws FileNotFoundException {
+    public void loadResultsFromFile(String path) throws FileNotFoundException {
         //init
         trueClassValues = new ArrayList<>();
         predictedClassValues = new ArrayList<>();
@@ -765,7 +821,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             
             if (instancePredictionFromString(line))
                 correct++;
-            numInstances++;
         }
 
         //acts as a basic form of verification

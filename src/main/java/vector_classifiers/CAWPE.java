@@ -505,12 +505,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         else
             trainModules();
 
-        for (int m = 0; m < modules.length; m++) {
-            modules[m].trainResults.setNumClasses(numClasses);
-            modules[m].trainResults.setNumInstances(numTrainInsts);
-
+        for (int m = 0; m < modules.length; m++)
             modules[m].trainResults.findAllStatsOnce();
-        }
     }
 
     protected boolean willNeedToDoCV() {
@@ -636,7 +632,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         results.setSplit(trainOrTest);
         
         results.paras = parameters;
-        results.writeResultsFile(fullPath);
+        results.writeResultsToFile(fullPath);
     }
 
     /**
@@ -758,8 +754,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      */
     public void finaliseEnsembleTestResults(double[] testSetClassVals) throws Exception {
         this.ensembleTestResults.finaliseResults(testSetClassVals);
-        ensembleTestResults.setNumClasses(numClasses);
-        ensembleTestResults.setNumInstances(numTestInsts);
     }
 
     /**

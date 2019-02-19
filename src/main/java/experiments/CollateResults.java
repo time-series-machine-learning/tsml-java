@@ -294,7 +294,7 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
   //                              System.out.println("Number of items in bag "+(j+1)+" = "+temp);
 //                                caseCount+=temp;
                                 ClassifierResults res=new ClassifierResults();
-                                res.loadFromFile(path+"//testFold"+j+".csv");
+                                res.loadResultsFromFile(path+"//testFold"+j+".csv");
                                 mergedResults.writeLine(res.instancePredictionsToString());                                
                                 res.findAllStats();
                                 f1Results.writeString(","+res.f1);

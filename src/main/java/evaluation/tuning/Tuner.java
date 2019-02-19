@@ -337,7 +337,7 @@ public class Tuner
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         //so no need to make dir, just add on para id and write
         
-        results.writeResultsFile(parameterSavingPath + buildParaFilename(paraID));
+        results.writeResultsToFile(parameterSavingPath + buildParaFilename(paraID));
     }
     
     /**
