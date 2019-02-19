@@ -1,9 +1,8 @@
 
 package vector_classifiers;
 
-import development.CollateResults;
-import development.DataSets;
-import static development.Experiments.singleClassifierAndFoldTrainTestSplit;
+import experiments.CollateResults;
+import experiments.DataSets;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +13,8 @@ import java.util.Random;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
+import experiments.Experiments;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.core.Instances;
@@ -305,10 +305,10 @@ public class EnsembleSelection extends CAWPE {
     }
     
     public static void main(String[] args) throws Exception {
-        tests();
+ //       tests();
 //        ana();
     }
-    
+   
     public static void tests() { 
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
@@ -354,13 +354,19 @@ public class EnsembleSelection extends CAWPE {
                     c.setRandSeed(fold);
                     c.setPerformCV(true);
                     c.setResultsFileWritingLocation(resPath);
-                    
-                    singleClassifierAndFoldTrainTestSplit(data[0],data[1],c,fold,predictions);
+                                        
+                    Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                    exp.classifierName = classifier;
+                    exp.datasetName = dset;
+                    exp.foldId = fold;
+                    exp.generateErrorEstimateOnTrainSet = true;
+                    Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
                 }
             }
         }
     }
-    
+   
+
     public static String[] CAWPE_basic = new String[] { 
         "NN",
         "SVML",

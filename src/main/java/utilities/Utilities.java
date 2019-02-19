@@ -10,7 +10,13 @@ public class Utilities {
         }
         return population;
     }
+/**
 
+* 6/2/19: bug fixed so it properly ignores the class value, only place its used
+* is in measures.DistanceMeasure
+ * @param instance
+ * @return array of doubles with the class value removed
+*/
     public static final double[] extractTimeSeries(Instance instance) {
         if(instance.classIsMissing()) {
             return instance.toDoubleArray();
@@ -19,46 +25,11 @@ public class Utilities {
             for(int i = 0; i < instance.numAttributes(); i++) {
                 if(i < instance.classIndex()) {
                     timeSeries[i] = instance.value(i);
-                } else {
+                } else if (i != instance.classIndex()){
                     timeSeries[i - 1] = instance.value(i);
                 }
             }
             return timeSeries;
-        }
-    }
-
-    public static final void lessThanOrEqualTo(double value, double limit) {
-        if(value > limit) {
-            throw new IllegalArgumentException("Cannot be larger than");
-        }
-    }
-
-    public static final void notNullCheck(Object obj) {
-        if(obj == null) {
-            throw new IllegalArgumentException("Not null!");
-        }
-    }
-
-    public static final void notNullCheck(Object... objs) {
-        for(Object obj : objs) {
-            notNullCheck(obj);
-        }
-    }
-
-    public static final void positiveCheck(double... values) {
-        for(double value : values) {
-            if(value <= 0) {
-                throw new IllegalArgumentException(value + " is not larger than 0");
-            }
-        }
-    }
-
-
-    public static final void positiveCheck(int... values) {
-        for(int value : values) {
-            if(value <= 0) {
-                throw new IllegalArgumentException(value + " is not larger than 0");
-            }
         }
     }
 

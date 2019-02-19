@@ -5,8 +5,8 @@
  */
 package timeseriesweka.filters.shapelet_transforms.class_value;
 
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -17,7 +17,7 @@ import weka.core.Instances;
 public class BinaryClassValue extends NormalClassValue{
 
     
-    ClassDistribution[] binaryClassDistribution;
+    ClassCounts[] binaryClassDistribution;
     
     @Override
     public void init(Instances inst)
@@ -28,7 +28,7 @@ public class BinaryClassValue extends NormalClassValue{
     }
     
     @Override
-    public ClassDistribution getClassDistributions() {
+    public ClassCounts getClassDistributions() {
         return binaryClassDistribution[(int)shapeletValue];        
     }
 
@@ -38,9 +38,9 @@ public class BinaryClassValue extends NormalClassValue{
     }
     
     
-    private ClassDistribution[] createBinaryDistributions()
+    private ClassCounts[] createBinaryDistributions()
     {
-        ClassDistribution[] binaryMapping = new ClassDistribution[classDistributions.size()];
+        ClassCounts[] binaryMapping = new ClassCounts[classDistributions.size()];
         
         //for each classVal build a binary distribution map.
         int i=0;
@@ -51,10 +51,10 @@ public class BinaryClassValue extends NormalClassValue{
         return binaryMapping;
     }
     
-    private ClassDistribution binariseDistributions(double shapeletClassVal)
+    private ClassCounts binariseDistributions(double shapeletClassVal)
     {
         //binary distribution only needs to be size 2.
-        ClassDistribution binaryDistribution = new TreeSetClassDistribution();
+        ClassCounts binaryDistribution = new TreeSetClassCounts();
 
         Integer shapeletClassCount = classDistributions.get(shapeletClassVal);
         binaryDistribution.put(0.0, shapeletClassCount);

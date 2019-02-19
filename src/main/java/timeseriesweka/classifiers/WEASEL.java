@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers;
 
 
+import evaluation.CrossValidator;
+import evaluation.ClassifierResults;
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.cursors.IntIntCursor;

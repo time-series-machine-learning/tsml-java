@@ -1,14 +1,14 @@
 
 package vector_classifiers.weightedvoters;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.FileNotFoundException;
 import timeseriesweka.classifiers.ensembles.voting.BestIndividualTrain;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import utilities.StatisticalUtilities;
 import vector_classifiers.CAWPE;
 import weka.core.Instances;

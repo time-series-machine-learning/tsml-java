@@ -7,7 +7,7 @@ package timeseriesweka.filters.shapelet_transforms.quality_measures;
 
 import java.util.List;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.ClassDistribution;
+import utilities.class_counts.ClassCounts;
 
 /**
  *
@@ -16,7 +16,7 @@ import utilities.class_distributions.ClassDistribution;
     
     public interface ShapeletQualityMeasure 
     {
-        public double calculateQuality(List<OrderLineObj> orderline, ClassDistribution classDistribution);
+        public double calculateQuality(List<OrderLineObj> orderline, ClassCounts classDistribution);
 
         public double calculateSeperationGap(List<OrderLineObj> orderline);
     }

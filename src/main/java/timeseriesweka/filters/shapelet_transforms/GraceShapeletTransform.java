@@ -5,7 +5,7 @@
  */
 package timeseriesweka.filters.shapelet_transforms;
 
-import development.DataSets;
+import experiments.DataSets;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import weka.core.Instances;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 
 /**
  *

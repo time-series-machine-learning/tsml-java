@@ -86,6 +86,30 @@ public class FileHandlingTools {
         });
     }
     
+    /**
+     * List the files contained in the directory given, that match the given regex
+     */
+    public static File[] listFilesMatchingRegex(String baseDirectory, String regex) {
+        return (new File(baseDirectory)).listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                return pathname.isFile() && pathname.getName().matches(regex);
+            }
+        });
+    }
+    
+    /**
+     * List the files contained in the directory given, that contain the given term
+     */
+    public static File[] listFilesContaining(String baseDirectory, String term) {
+        return (new File(baseDirectory)).listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                return pathname.isFile() && pathname.getName().contains(term);
+            }
+        });
+    }
+    
      /**
      * List the files contained in the directory given, that end with the given suffix (file extension, generally)
      */

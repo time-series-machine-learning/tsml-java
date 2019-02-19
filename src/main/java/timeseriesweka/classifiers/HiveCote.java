@@ -17,7 +17,7 @@ import java.util.Scanner;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
-import utilities.ClassifierResults;
+import evaluation.ClassifierResults;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import vector_classifiers.CAWPE;

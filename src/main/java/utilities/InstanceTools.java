@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -153,7 +153,7 @@ public class InstanceTools {
         }
         Instances all = new Instances(train);
         all.addAll(test);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(train);
+        ClassCounts trainDistribution = new TreeSetClassCounts(train);
         
         Map<Double, Instances> classBins = createClassInstancesMap(all);
        
@@ -186,7 +186,7 @@ public class InstanceTools {
  * @return 
  */
     public static Instances[] resampleInstances(Instances all, long seed, double propInTrain){
-        ClassDistribution classDist = new TreeSetClassDistribution(all);
+        ClassCounts classDist = new TreeSetClassCounts(all);
         Map<Double, Instances> classBins = createClassInstancesMap(all);
        
         Random r = new Random(seed);
@@ -495,7 +495,7 @@ public class InstanceTools {
         if(amount < data.numClasses()) System.out.println("Error: too few instances compared to classes.");
 
         Map<Double, Instances> classBins = createClassInstancesMap(data);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         Random r = new Random(seed);
 
@@ -520,7 +520,7 @@ public class InstanceTools {
     
     public static Instances subSampleFixedProportion(Instances data, double proportion, long seed){
         Map<Double, Instances> classBins = createClassInstancesMap(data);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         Random r = new Random(seed);
 
@@ -558,7 +558,7 @@ public class InstanceTools {
  
     
     public static int findSmallestClassAmount(Instances data){
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         //find the smallest represented class.
         Iterator<Double> keys = trainDistribution.keySet().iterator();

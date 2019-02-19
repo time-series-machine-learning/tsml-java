@@ -51,15 +51,13 @@ information.
  */
 package timeseriesweka.classifiers;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.classifiers.TSF.FeatureSet;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import vector_classifiers.TunedRandomForest;
 import weka.classifiers.trees.RandomForest;
