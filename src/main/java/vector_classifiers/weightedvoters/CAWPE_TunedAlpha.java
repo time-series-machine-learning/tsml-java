@@ -92,7 +92,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         ensembleTrainResults.buildTime = buildTime;
             
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(trainInsts);
+            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
         
         this.testInstCounter = 0; //prep for start of testing

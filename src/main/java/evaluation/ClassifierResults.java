@@ -374,27 +374,49 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public void finaliseResults(double[] testClassVals) throws Exception {
         if (finalised) {
-            System.out.println("Results already finalised, skipping re-finalisation");
+            System.out.println("finaliseResults(double[] testClassVals): Results already finalised, skipping re-finalisation");
             return;
         }
+        
+        assert(numInstances() == testClassVals.length);
+        
+        if (testClassVals.length != predictedClassValues.size())
+            throw new Exception("finaliseTestResults(double[] testClassVals): Number of predictions "
+                    + "made and number of true class values passed do not match");
+        
+        for(double d:testClassVals)
+            trueClassValues.add(d);
+        
+        finaliseResults();
+    }
+    
+    
+    /**
+     * Will perform some basic validation to make sure that everything is here 
+     * that is expected, and compute the accuracy etc ready for file writing. 
+     * 
+     * You can use this method, instead of the version that takes the double[] testClassVals
+     * as an argument, if you've been storing predictions via the storeSingleResult overload
+     * that takes the true class value of each prediction.
+     */
+    public void finaliseResults() throws Exception {
+        if (finalised) {
+            printlnDebug("finaliseResults(): Results already finalised, skipping re-finalisation");
+            return;
+        }
+        
+        //todo extra verification 
         
         if (predictedClassProbabilities == null || predictedClassValues == null ||
                 predictedClassProbabilities.isEmpty() || predictedClassValues.isEmpty())
             throw new Exception("finaliseTestResults(): no test predictions stored for this module");
         
-        if (testClassVals.length != predictedClassValues.size())
-            throw new Exception("finaliseTestResults(): Number of test predictions made and number of test cases do not match");
-        
-        for(double d:testClassVals)
-            trueClassValues.add(d);
-        
-        
         double correct = .0;
-        for (int inst = 0; inst < predictedClassValues.size(); inst++) {
-            if (testClassVals[inst] == predictedClassValues.get(inst))
+        for (int inst = 0; inst < predictedClassValues.size(); inst++)
+            if (trueClassValues.get(inst).equals(predictedClassValues.get(inst)))
                 ++correct;
-        }
-        acc = correct/testClassVals.length;
+        
+        acc = correct/trueClassValues.size();
         
         finalised = true;
     }
@@ -603,7 +625,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return generateFirstLine();
     }
     
-    public String writeResultsFileToString() {                
+    public String writeResultsFileToString() throws Exception {         
+        finaliseResults();
+        
         StringBuilder st = new StringBuilder();
         st.append(generateFirstLine()).append("\n");
         st.append(generateSecondLine()).append("\n");
@@ -619,9 +643,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             out.writeString(writeResultsFileToString());
         } catch (Exception e) { 
              throw new Exception("TODO stop using or update outfile... : "
-                     + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" + e);
+                     + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
+                     + "Path: " + path +"\nError: "+ e);
+        } finally {
+            out.closeFile();
         }
-        out.closeFile();
     }
     
     private void parseFirstLine(String line) {

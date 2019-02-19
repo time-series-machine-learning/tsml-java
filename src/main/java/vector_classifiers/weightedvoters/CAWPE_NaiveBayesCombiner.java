@@ -15,7 +15,7 @@ public class CAWPE_NaiveBayesCombiner extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "HESCA_NaiveBayesCombiner"; 
+        ensembleIdentifier = "CAWPE_NaiveBayesCombiner"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new NaiveBayesCombiner();
     }

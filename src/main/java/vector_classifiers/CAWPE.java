@@ -67,10 +67,10 @@ import weka.core.TechnicalInformationHandler;
  * Default settings are equivalent to the CAWPE in the paper.
  See exampleCAWPEUsage() for more detailed options on defining different component sets, ensemble schemes, and file handling
 
- ****************
+
  For examples of file creation and results analysis for reproduction purposes, see
  buildCAWPEPaper_AllResultsForFigure3()
- ****************
+
 
  CLASSIFICATION SETTINGS:
  Default setup is defined by setDefaultCAWPESettings(), i.e:
@@ -78,7 +78,7 @@ import weka.core.TechnicalInformationHandler;
    Weight: TrainAcc(4) (train accuracies to the power 4)
    Vote: MajorityConfidence (summing probability distributions)
 
- For the original settings used in an older version of cote, call setOriginalHESCASettings(), i.e:
+ For the original settings used in an older version of cote, call setOriginalCAWPESettings(), i.e:
    Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
    Weight: TrainAcc
    Vote: MajorityVote
@@ -245,7 +245,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
      *
      * As used originally in ST_HESCA, COTE.
      */
-    public final void setOriginalHESCASettings(){
+    public final void setOriginalCAWPESettings(){
         this.weightingScheme = new TrainAcc();
         this.votingScheme = new MajorityVote();
 
@@ -477,37 +477,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
 
             if (writeEnsembleTrainingFile)
-                writeEnsembleCVResults(trainInsts);
+                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         }
 
         this.testInstCounter = 0; //prep for start of testing
-    }
-
-    /**
-     * this does cv writing for TrainAccuracyEstimate, where the output path (outputEnsembleTrainingPathAndFile, set by 'writeCVTrainToFile(...)')
- may be different to the ensemble write path (readResultsFilesDirectories, set by 'setResultsFileLocationParameters(...))
-     */
-    protected void writeEnsembleCVResults(Instances data) throws IOException {
-        StringBuilder output = new StringBuilder();
-
-        output.append(data.relationName()).append(",").append(ensembleIdentifier).append(",train\n");
-        output.append(this.getParameters()).append("\n");
-        output.append(ensembleTrainResults.acc).append("\n");
-        double[] predClassVals=ensembleTrainResults.getPredClassValsAsArray();
-        for(int i = 0; i < numTrainInsts; i++){
-            //realclassval,predclassval,[empty],probclass1,probclass2,...
-            output.append(data.instance(i).classValue()).append(",").append(predClassVals[i]).append(",");
-            double[] distForInst=ensembleTrainResults.getDistributionForInstance(i);
-            for (int j = 0; j < numClasses; j++)
-                output.append(",").append(distForInst[j]);
-
-            output.append("\n");
-        }
-
-        new File(this.outputEnsembleTrainingPathAndFile).getParentFile().mkdirs();
-        FileWriter fullTrain = new FileWriter(this.outputEnsembleTrainingPathAndFile);
-        fullTrain.append(output);
-        fullTrain.close();
     }
 
     protected void initialiseModules() throws Exception {
@@ -579,7 +552,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 long startTime = System.currentTimeMillis();
                 module.getClassifier().buildClassifier(trainInsts);
                 module.trainResults.buildTime = System.currentTimeMillis() - startTime;
-                module.setParameters("BuildTime,"+module.trainResults.buildTime+","+module.getParameters());
 
                 if (writeIndividualsResults) { //if we're doing trainFold# file writing
                     writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
@@ -654,6 +626,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws Exception {
         String fullPath = writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
         new File(fullPath).mkdirs();
+        fullPath += "/" + trainOrTest + "Fold" + seed + ".csv";
         
         results.setClassifierName(classifierName);
         results.setDatasetName(datasetName);
@@ -722,15 +695,24 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double actual, pred, correct = 0;
         double[] dist;
 
+        ClassifierResults trainResults = new ClassifierResults(data.numClasses());
+        
         //for each train inst
         for (int fold = 0; fold < cv.getNumFolds(); fold++) {
             for (int i = 0; i < cv.getFoldIndices().get(fold).size(); i++) {
                 int instIndex = cv.getFoldIndices().get(fold).get(i);
 
+                long startTime = System.currentTimeMillis();
                 dist = votingScheme.distributionForTrainInstance(modules, instIndex);
-
+                long predTime = System.currentTimeMillis() - startTime; //time for ensemble to form vote
+                for (EnsembleModule module : modules) //                 +time for each member's predictions
+                    predTime += module.testResults.getPredictionTime(instIndex);
+                
                 pred = utilities.GenericTools.indexOfMax(dist);
                 actual = data.instance(instIndex).classValue();
+                
+                trainResults.storeSingleResult(actual, dist, pred, predTime);
+                
                 //and make ensemble prediction
                 if(pred==actual) {
                     correct++;
@@ -747,10 +729,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double acc = correct/numTrainInsts;
         double stddevOverFolds = StatisticalUtilities.standardDeviation(accPerFold, false, acc);
 
-        ClassifierResults trainResults = new ClassifierResults(acc, data.attributeToDoubleArray(data.classIndex()), preds, dists, stddevOverFolds, numClasses);
-        trainResults.setNumClasses(numClasses);
-        trainResults.setNumInstances(numTrainInsts);
-
+        trainResults.stddev = stddevOverFolds;
+        
         return trainResults;
     }
 
@@ -1416,7 +1396,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest7/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest8/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1536,6 +1516,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         //already has the base classifier file reading/writing built in etcetc.
                         CAWPE c = (CAWPE) ensembleClass.getConstructor().newInstance();
 
+                        c.setEnsembleIdentifier(ensembleID);
                         c.setClassifiers(null, baseClassifiers, null);
                         c.setBuildIndividualsFromResultsFiles(true);
                         c.setResultsFileLocationParameters(writePath, dset, fold);

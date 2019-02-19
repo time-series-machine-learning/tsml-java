@@ -290,7 +290,7 @@ public class EnsembleSelection extends CAWPE {
         long buildTime = System.currentTimeMillis() - startTime; 
         ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(trainInsts);
+            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
         this.testInstCounter = 0; //prep for start of testing
     }
