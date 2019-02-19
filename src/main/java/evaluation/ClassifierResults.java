@@ -140,6 +140,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      */
     
+    /**
+     * Create an empty classifierResults object.
+     * 
+     * If number of classes is known when making the object, it is safer to use the constructor 
+     * the takes an int representing numClasses and supply the number of classes directly. 
+     * 
+     * In some extreme use cases, predictions on dataset splits that a particular classifier results represents
+     * may not have examples of each class that actually exists in the full dataset. If it is left 
+     * to infer the number of classes, some may be missing.
+     */
     public ClassifierResults() {
         trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
@@ -149,10 +159,23 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = false;
     }
     
+    /**
+     * Load a classifierresults object from the file at the specified path
+     */
     public ClassifierResults(String filePathAndName) throws FileNotFoundException {
         loadFromFile(filePathAndName);
     }
     
+    /**
+     * Create an empty classifierResults object.
+     * 
+     * If number of classes is known when making the object, it is safer to use this constructor 
+     * and supply the number of classes directly. 
+     * 
+     * In some extreme use cases, predictions on dataset splits that a particular classifier results represents
+     * may not have examples of each class that actually exists in the full dataset. If it is left 
+     * to infer the number of classes, some may be missing.
+     */
     public ClassifierResults(int numClasses) {
         trueClassValues= new ArrayList<>();
         predictedClassValues = new ArrayList<>();
@@ -164,44 +187,18 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     /**
-     * for if we are only storing the cv accuracy in the context of SaveCVAccuracy
-     * 
+     * Create a classifier results object with complete predictions (equivalent to addAllPredictions()). The results are 
+     * finalised after initialisation. Meta info such as classifier name, datasetname... can still be set after construction. 
      */
-    public ClassifierResults(double cvacc, int numClasses) {
-        this();
-        this.acc = cvacc;
-        this.numClasses = numClasses;
-        finalised = false;
-    }
-    
-    public ClassifierResults(double acc, double[] classVals, double[] preds, double[][] distsForInsts, int numClasses) {        
-        this();
-        
-        for(double d:preds)
-            predictedClassValues.add(d);
-        this.acc = acc;
-        for(double[] d:distsForInsts)
-            predictedClassProbabilities.add(d);
- 
-        this.numClasses = numClasses;
-        for(double d:classVals)
-           trueClassValues.add(d);
-        this.confusionMatrix = buildConfusionMatrix();
-        
-        this.stddev = -1; //not defined 
-        finalised = true;
-    }
-    
-    /**
-     * for storing the stddev over cv folds as well 
-     */
-    public ClassifierResults(double acc, double[] classVals, double[] preds, double[][] distsForInsts, double stddev, int numClasses) { 
-        this(acc,classVals,preds,distsForInsts,numClasses);
-        this.stddev = stddev; 
-        
-        finalised = true;
-    }
+    public ClassifierResults(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+        trueClassValues= new ArrayList<>();
+        predictedClassValues = new ArrayList<>();
+        predictedClassProbabilities = new ArrayList<>();
+        predictionTimes = new ArrayList<>();
 
+        addAllPredictions(trueClassVals, predictions, distributions, predTimes);    
+    }
+    
     
     
     /***********************
@@ -331,40 +328,17 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         trueClassValues.add(trueClassVal);
     }
     
-//    
-//    /**
-//     * Prediction shall be inferred as the class with the max probability. The true class is 
-//     * missing, however can be added in one go later with the method finaliseResults(double[] trueClassVals)
-//     * 
-//     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
-//     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
-//     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
-//     */
-//    public void storeSingleResult(double[] dist, long predictionTime) {        
-//        double max = dist[0];
-//        double maxInd = 0;
-//        for (int i = 0; i < dist.length; i++) {
-//            if (dist[i] > max) {
-//                max = dist[i];
-//                maxInd = i;
-//            }
-//        }
-//        
-//        storeSingleResult(dist, maxInd, predictionTime);
-//    }
-//    
-//    /**
-//     * Prediction shall be inferred as the class with the max probability. 
-//     * 
-//     * TIES ARE RESOLVED BY TAKING THE FIRST CLASS WITH THE TIED MAX PROBABILITY FOR REPRODUCABILITY REASONS.  
-//     * IF A DIFFERENT TIE-RESOLVING MECHANISM IS WANTED, USE THE METHOD THAT ALLOWS 
-//     * THE PASSING OF THE PREDICTED CLASS VAL AS WELL (e.g resolve randomly, take modal class)
-//     */
-//    public void storeSingleResult(double trueClassVal, double[] dist, long predictionTime) {        
-//        storeSingleResult(dist,predictionTime);
-//        trueClassValues.add(trueClassVal);
-//    }
 
+    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+        assert(trueClassVals.length == predictions.length);
+        assert(trueClassVals.length == distributions.length);
+        assert(trueClassVals.length == predTimes.length);
+        
+        for (int i = 0; i < trueClassVals.length; i++)
+            storeSingleResult(trueClassVals[i], distributions[i], predictions[i], predTimes[i]);
+        
+        finaliseResults();
+    }
         
     /**
      * Will perform some basic validation to make sure that everything is here 
