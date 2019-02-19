@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package development;
+package timeseriesweka.classifiers;
 
 import fileIO.OutFile;
 import java.io.File;
@@ -27,12 +27,9 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.logging.Logger;
 
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.FFT;
 import utilities.ClassifierTools;
-import utilities.InstanceTools;
 import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -47,18 +44,16 @@ import weka.core.Instances;
  <!-- globalinfo-start -->
  * Variation of Lines' Random Interval Spectral Ensemble
  *
- * This implementation extands the original to include:
- * downsampling
- * stablisation (constraining interval length to within some distance of previous length)
- * checkpointing
+ * This implementation extends the original to include:
+ * down sampling
+ * stabilisation (constraining interval length to within some distance of previous length)
+ * check pointing
  * contracting
- *
-
  *
  * Overview: Input n series length m
  * for each tree
  *      sample interval of random size
- *      tansform interval into PCA and PS features
+ *      transform interval into ACF and PS features
  *      build tree on concatenated features
  * ensemble the trees with majority vote
  <!-- globalinfo-end -->
@@ -163,7 +158,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
      *      width = 7
      *      possibleWidths = 50 < x < 56 (inclusive)
      * Has the effect of constraining the space around the previous interval length, contributing to a more robust
-     * timing model.
+     * timing model via preventing leveraging in large problems.
      * @param width
      */
     public void setStabilise(int width){
