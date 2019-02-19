@@ -188,7 +188,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     /**
      * Create a classifier results object with complete predictions (equivalent to addAllPredictions()). The results are 
-     * finalised after initialisation. Meta info such as classifier name, datasetname... can still be set after construction. 
+     * FINALISED after initialisation. Meta info such as classifier name, datasetname... can still be set after construction. 
      */
     public ClassifierResults(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
         trueClassValues= new ArrayList<>();
@@ -197,6 +197,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predictionTimes = new ArrayList<>();
 
         addAllPredictions(trueClassVals, predictions, distributions, predTimes);    
+        finaliseResults();
     }
     
     
@@ -296,7 +297,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void storeSingleResult(double[] dist, double predictedClass, long predictionTime) {      
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime) {      
         
         predictedClassProbabilities.add(dist);
         predictedClassValues.add(predictedClass);
@@ -323,21 +324,38 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
-    public void storeSingleResult(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
-        storeSingleResult(dist,predictedClass,predictionTime);
+    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
+        ClassifierResults.this.addPrediction(dist,predictedClass,predictionTime);
         trueClassValues.add(trueClassVal);
     }
     
 
+    /**
+     * Adds all the prediction info onto this classifierResults object. Does NOT finalise the results,
+     * such that (e.g) predictions from multiple dataset splits can be added to the same object if wanted
+     */
     public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
         assert(trueClassVals.length == predictions.length);
         assert(trueClassVals.length == distributions.length);
         assert(trueClassVals.length == predTimes.length);
         
         for (int i = 0; i < trueClassVals.length; i++)
-            storeSingleResult(trueClassVals[i], distributions[i], predictions[i], predTimes[i]);
+            addPrediction(trueClassVals[i], distributions[i], predictions[i], predTimes[i]);
+    }
+    
+    /**
+     * Adds all the prediction info onto this classifierResults object. Does NOT finalise the results,
+     * such that (e.g) predictions from multiple dataset splits can be added to the same object if wanted
+     * 
+     * True class values can later be supplied (ALL IN ONE GO, if working to the above example usage..) using 
+     * finaliseResults(double[] testClassVals)
+     */
+    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+        assert(predictions.length == distributions.length);
+        assert(predictions.length == predTimes.length);
         
-        finaliseResults();
+        for (int i = 0; i < predictions.length; i++)
+            addPrediction(distributions[i], predictions[i], predTimes[i]);
     }
         
     /**
@@ -370,7 +388,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * that is expected, and compute the accuracy etc ready for file writing. 
      * 
      * You can use this method, instead of the version that takes the double[] testClassVals
-     * as an argument, if you've been storing predictions via the storeSingleResult overload
+     * as an argument, if you've been storing predictions via the addPrediction overload
      * that takes the true class value of each prediction.
      */
     public void finaliseResults() throws Exception {
@@ -554,7 +572,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         if (split.length >= numParts)
             predTime = Long.parseLong(split[numParts-1].trim());
         
-        storeSingleResult(trueClassVal, dist, predClassVal, predTime);
+        addPrediction(trueClassVal, dist, predClassVal, predTime);
         return trueClassVal==predClassVal;
     }
     

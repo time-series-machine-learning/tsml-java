@@ -333,7 +333,7 @@ public class EnsembleSelection extends CAWPE {
             
             //todo: exactly how to time train-instance predictions for this classifier is very debatable. going with this for now
             long predTime = ensembleSoFarResults.getPredictionTime(inst) + newModelResults.getPredictionTime(inst);
-            newResults.storeSingleResult(newDist, indexOfMax(newDist), predTime);
+            newResults.addPrediction(newDist, indexOfMax(newDist), predTime);
         }
         
         newResults.finaliseResults(ensembleSoFarResults.getTrueClassValsAsArray());

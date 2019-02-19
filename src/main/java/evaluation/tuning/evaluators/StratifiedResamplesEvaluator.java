@@ -103,8 +103,8 @@ public class StratifiedResamplesEvaluator implements Evaluator {
                 long startTime = System.currentTimeMillis();
                 double[] dist = classifier.distributionForInstance(testinst);
                 long predTime = System.currentTimeMillis() - startTime;
-                resultsPerFold[fold].storeSingleResult(testinst.classValue(), dist, indexOfMax(dist), predTime);
-                allFoldsResults.storeSingleResult(testinst.classValue(), dist, indexOfMax(dist), predTime);
+                resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime);
+                allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime);
             }
             
             resultsPerFold[fold].findAllStatsOnce(); 

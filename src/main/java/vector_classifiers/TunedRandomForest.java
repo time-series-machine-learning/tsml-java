@@ -494,7 +494,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                 ((EnhancedBagging)m_bagger).findOOBProbabilities();
                 double[][] OOBPredictions=((EnhancedBagging)m_bagger).OOBProbabilities;
                 for(int i=0;i<data.numInstances();i++)
-                    res.storeSingleResult(data.instance(i).classValue(),OOBPredictions[i],indexOfMax(OOBPredictions[i]), -1);
+                    res.addPrediction(data.instance(i).classValue(),OOBPredictions[i],indexOfMax(OOBPredictions[i]), -1);
             }
         }
         

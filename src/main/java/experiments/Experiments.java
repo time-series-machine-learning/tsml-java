@@ -624,7 +624,7 @@ public class Experiments  {
             double[] probs = classifier.distributionForInstance(instance);
             long predTime = System.currentTimeMillis() - startTime;
             
-            results.storeSingleResult(probs, indexOfMax(probs), predTime);
+            results.addPrediction(probs, indexOfMax(probs), predTime);
         }
         
         results.finaliseResults(trueClassValues);
