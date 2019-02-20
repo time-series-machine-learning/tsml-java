@@ -78,27 +78,65 @@ import utilities.generic_storage.Pair;
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
         
-    //LINE 1: meta info, set by user
+//LINE 1: meta info, set by user
     private String classifierName = "";
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
     private String description= ""; //human-friendly optional extra info if wanted. 
     
-    //LINE 2: classifier setup/info, parameters. precise format is up to user. 
+//LINE 2: classifier setup/info, parameters. precise format is up to user. 
     //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
     //old versions of file format also include build time.
     private String paras = "No parameter info";
     
-    //LINE 3: acc, buildTime, testTime, memory
+//LINE 3: acc, buildTime, testTime, memoryUsage
     //simple summarative performance stats. 
-    public double acc = -1; //calculated from the stored predictions, cannot be explicitly set by user
-    public long buildTime = -1; //buildClassifier(Instances) timing. might be cumulative time over many parameter set builds, etc
-    private long testTime = -1; //total testtime for all predictions
-    private long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
     
-
-    //REMAINDER OF THE FILE - 1 prediction per line
+    /**
+     * Calculated from the stored predictions, cannot be explicitly set by user
+     */
+    public double acc = -1; 
+    
+    /**
+     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
+     * 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * If no benchmark time is supplied, the default value is -1
+     */
+    public long buildTime = -1; 
+    
+    /**
+     * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary 
+     * in case complete prediction information is not stored, and/or for a human reader to quickly compare times. 
+     * 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * If no benchmark time is supplied, the default value is -1
+     */
+    private long testTime = -1; //total testtime for all predictions
+        
+    /**
+     * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise) 
+     * way to measure the general speed of the hardware that these results were made on, such that users 
+     * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
+     * across different results sets. It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. 
+     * 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * If no benchmark time is supplied, the default value is -1
+     */
+    private long benchmarkTime = -1; 
+    
+    /**
+     * It is user dependent on exactly what this field means and how accurate it may be (because of Java's lazy gc). 
+     * Intended purpose would be the size of the model at the end of/after buildClassifier, aka the classifier 
+     * has been trained. 
+     * 
+     * The assumption, for now, is that this is measured in BYTES, but this is not enforced/ensured
+     * If no memoryUsage value is supplied, the default value is -1
+     */
+    private long memoryUsage = -1; 
+ 
+//REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> predClassValues;
@@ -134,7 +172,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * Consistent time unit ASSUMED across build times, test times, individual prediction times. 
      * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond 
+     * System.currentTimeMillis(). Some classifiers on some datasets may train/predict in less than 1 millisecond 
      * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds. 
      * 
      * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
@@ -144,7 +182,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * In results files made before 19/2/2019, which only stored build times and 
      * milliseconds was assumed, there will be no unit of measurement for the time. 
      */
-    TimeUnit timeUnit = TimeUnit.NANOSECONDS;
+    private TimeUnit timeUnit = TimeUnit.NANOSECONDS;
 
     
     //self-management flags
@@ -160,6 +198,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     private boolean finalised = false;
     private boolean allStatsFound = false;
+    private boolean buildTimeDuplicateWarningPrinted = false; //flag such that a warning about build times in parseThirdLine(String) is only printed once, not spammed
     
     //functional getters to retrieve info from a classifierresults object, initialised/stored here for conveniance 
     public static final Function<ClassifierResults, Double> GETTER_Accuracy = (ClassifierResults cr) -> {return cr.acc;};
@@ -414,10 +453,38 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public long getTestTimeInNanos() { return timeUnit.toNanos(testTime); }
     public void setTestTime(long testTime) { this.testTime = testTime; }
 
-    public long getMemory() { return memory; }
+    public long getMemory() { return memoryUsage; }
     public void setMemory(long memory) {
-        this.memory = memory;
+        this.memoryUsage = memory;
     }
+    
+    
+    /**
+     * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise) 
+     * way to measure the general speed of the hardware that these results were made on, such that users 
+     * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
+     * across different results sets. 
+     * 
+     * It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. If no benchmark
+     * time is supplied, the default value is -1
+     */
+    public long getBenchmarkTime() {
+        return benchmarkTime;
+    }
+
+    /**
+     * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise) 
+     * way to measure the general speed of the hardware that these results were made on, such that users 
+     * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
+     * across different results sets. 
+     * 
+     * It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. If no benchmark
+     * time is supplied, the default value is -1
+     */
+    public void setBenchmarkTime(long benchmarkTime) {
+        this.benchmarkTime = benchmarkTime;
+    }
+           
 
     /****************************
      *   
@@ -857,26 +924,30 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         //if it is, likely an old SaveParameterInfo implementation put it there
         //for now, overwriting that buildtime with this one, but printing warning 
         if (parts.length > 1)  {
-            if (buildTime != -1)  //the default
+            if (buildTime != -1 && !buildTimeDuplicateWarningPrinted)  {
                 System.out.println("CLASSIFIERRESULTS READ WARNING: build time reported on both "
                         + "second and third line. Using the value reported on the third line");
+
+                buildTimeDuplicateWarningPrinted = true;
+            }
             
             buildTime = Long.parseLong(parts[1]); 
         }
         if (parts.length > 2) 
             testTime = Long.parseLong(parts[2]);
         if (parts.length > 3) 
-            memory = Long.parseLong(parts[3]);
+            benchmarkTime = Long.parseLong(parts[3]);
+        if (parts.length > 4) 
+            memoryUsage = Long.parseLong(parts[4]);
         
         return acc;
     }
     private String generateThirdLine() {
-        //todo revisit: printing all 4, since e.g what if testTime was calced but not buildtime ?
-        //would have been printed where we're expecting buildtime to be, etc       
-        String res = acc+"";
-        res += "," + buildTime;
-        res += "," + testTime;
-        res += "," + memory;
+        String res = acc
+            + "," + buildTime
+            + "," + testTime
+            + "," + benchmarkTime
+            + "," + memoryUsage;
         return res;
     }
 
@@ -898,7 +969,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         acc = -1;
         buildTime = -1;
         testTime = -1; 
-        memory = -1;
+        memoryUsage = -1;
 
         //check file exists
         File f = new File(path);
