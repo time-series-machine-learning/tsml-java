@@ -465,7 +465,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * This method will print a suitably annoying message when first called, as a reminder
      * until the accuracy is no longer directly set
      * 
-     * if you REALLY dont want this message being printed, since e.g. it messing up your own print formatting,
+     * If you REALLY dont want this message being printed, since e.g. it's messing up your own print formatting,
      * set ClassifierResults.printSetAccWarning to false.
      * 
      * Todo: remove this method, i.e. the possibility to directly set the accuracy instead of 
@@ -476,7 +476,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             System.out.println("*********");
             System.out.println("");
             System.out.println("ClassifierResults.setAcc(double acc) called, friendly reminder to refactor the code that "
-                    + "made this call.");
+                    + "made this call. If you REALLY dont want this message being printed right now, since e.g. it's messing up your "
+                    + "own print formatting, set ClassifierResults.printSetAccWarning to false.");
             System.out.println("");
             System.out.println("*********");
             
