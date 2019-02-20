@@ -134,7 +134,7 @@ public class CrossValidator {
             
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);
-                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i]);
+                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
             }
             results[c].finaliseResults(trueClassVals);
         }

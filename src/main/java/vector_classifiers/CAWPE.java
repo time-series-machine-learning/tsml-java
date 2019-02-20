@@ -709,7 +709,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 pred = utilities.GenericTools.indexOfMax(dist);
                 actual = data.instance(instIndex).classValue();
                 
-                trainResults.addPrediction(actual, dist, pred, predTime);
+                trainResults.addPrediction(actual, dist, pred, predTime, "");
                 
                 //and make ensemble prediction
                 if(pred==actual) {
@@ -988,7 +988,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             dist = votingScheme.distributionForInstance(modules, ins);
             predTime = System.currentTimeMillis() - startTime;
         }
-        ensembleTestResults.addPrediction(dist, indexOfMax(dist), predTime);
+        ensembleTestResults.addPrediction(dist, indexOfMax(dist), predTime, "");
 
         if (prevTestInstance != instance)
             ++testInstCounter;

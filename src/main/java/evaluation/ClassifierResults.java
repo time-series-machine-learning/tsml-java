@@ -234,6 +234,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predClassValues = new ArrayList<>();
         predDistributions = new ArrayList<>();
         predTimes = new ArrayList<>();
+        predDescriptions = new ArrayList<>();
         
         finalised = false;
     }
@@ -253,6 +254,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predClassValues = new ArrayList<>();
         predDistributions = new ArrayList<>();
         predTimes = new ArrayList<>();
+        predDescriptions = new ArrayList<>();
         
         this.numClasses = numClasses;
         finalised = false;
@@ -268,14 +270,19 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * Create a classifier results object with complete predictions (equivalent to addAllPredictions()). The results are 
      * FINALISED after initialisation. Meta info such as classifier name, datasetname... can still be set after construction. 
+     * 
+     * The descriptions array argument may be null, in which case the descriptions are stored as empty strings.
+     * 
+     * All other arguments are required in full, however
      */
-    public ClassifierResults(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+    public ClassifierResults(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws Exception {
         trueClassValues= new ArrayList<>();
         predClassValues = new ArrayList<>();
         predDistributions = new ArrayList<>();
         this.predTimes = new ArrayList<>();
+        predDescriptions = new ArrayList<>();
 
-        addAllPredictions(trueClassVals, predictions, distributions, predTimes);    
+        addAllPredictions(trueClassVals, predictions, distributions, predTimes, descriptions);    
         finaliseResults();
     }
     
@@ -496,20 +503,30 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * so that they may resolve ties how they want (e.g first, randomly, take modal class, etc). 
      * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
      * 
+     * The description argument may be null, however all other arguments are required in full
+     * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      *
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double predictedClass, long predictionTime) {
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) {
         predDistributions.add(dist);
         predClassValues.add(predictedClass);
         
-        //allowing 0 in case user was unaware and doesnt care about a classifier taking e.g
+        if (description == null)
+            predDescriptions.add("");
+        else 
+            predDescriptions.add(description);
+        
+        //allowing 0 in case user was unaware and/or doesnt care about a classifier taking e.g
         //0 milliseconds. todo revisit at some point when time units implemented/enforced 
         if (predictionTime < 0)
-            //add a null placeholder, in case later predictions have timings? todo revisit
+            //adding a null placeholder for now. todo revisit
             predTimes.add(null);
+        
+            //add a zero placeholder, such that the timings can still be summed later, would mess with averages though? todo revisit    
+            //predTimes.add(0L);
         else {
             predTimes.add(predictionTime);
 
@@ -527,10 +544,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * so that they may resolve ties how they want (e.g first, randomly, take modal class, etc). 
      * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
      * 
+     * The description argument may be null, however all other arguments are required in full
+     * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
-    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime) {        
-        addPrediction(dist,predictedClass,predictionTime);
+    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) {        
+        addPrediction(dist,predictedClass,predictionTime,description);
         trueClassValues.add(trueClassVal);
     }
     
@@ -538,14 +557,23 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * Adds all the prediction info onto this classifierResults object. Does NOT finalise the results,
      * such that (e.g) predictions from multiple dataset splits can be added to the same object if wanted
+     * 
+     * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws Exception {
         assert(trueClassVals.length == predictions.length);
         assert(trueClassVals.length == distributions.length);
         assert(trueClassVals.length == predTimes.length);
         
-        for (int i = 0; i < trueClassVals.length; i++)
-            addPrediction(trueClassVals[i], distributions[i], predictions[i], predTimes[i]);
+        if (descriptions != null)
+            assert(trueClassVals.length == descriptions.length);
+        
+        for (int i = 0; i < trueClassVals.length; i++) {
+            if (descriptions == null)
+                addPrediction(trueClassVals[i], distributions[i], predictions[i], predTimes[i], null);
+            else 
+                addPrediction(trueClassVals[i], distributions[i], predictions[i], predTimes[i], descriptions[i]);
+        }
     }
     
     /**
@@ -554,13 +582,22 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * True class values can later be supplied (ALL IN ONE GO, if working to the above example usage..) using 
      * finaliseResults(double[] testClassVals)
+     * 
+     * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
+    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws Exception {
         assert(predictions.length == distributions.length);
         assert(predictions.length == predTimes.length);
         
-        for (int i = 0; i < predictions.length; i++)
-            addPrediction(distributions[i], predictions[i], predTimes[i]);
+        if (descriptions != null)
+            assert(predictions.length == descriptions.length);
+        
+        for (int i = 0; i < predictions.length; i++) {
+            if (descriptions == null)
+                addPrediction(distributions[i], predictions[i], predTimes[i], "");
+            else 
+                addPrediction(distributions[i], predictions[i], predTimes[i], descriptions[i]);
+        }
     }
         
     /**
@@ -570,6 +607,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Typical usage: results.finaliseResults(instances.attributeToDoubleArray(instances.classIndex()))
      */
     public void finaliseResults(double[] testClassVals) throws Exception {
+        
+        //todo extra verification 
+        
         if (finalised) {
             System.out.println("finaliseResults(double[] testClassVals): Results already finalised, skipping re-finalisation");
             return;
@@ -581,6 +621,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw new Exception("finaliseTestResults(double[] testClassVals): Number of predictions "
                     + "made and number of true class values passed do not match");
         
+        trueClassValues = new ArrayList<>();
         for(double d:testClassVals)
             trueClassValues.add(d);
         
@@ -727,11 +768,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     /**
-     * reads and STORES the prediction in this clasifierresults object
+     * Reads and STORES the prediction in this classifierresults object
      * returns true if the prediction described by this string was correct (i.e. truclass==predclass) 
      * 
-     * does NOT increment numInstances.
-     * if numClasses is still < 0, WILL set numclasses if distribution info is present. 
+     * INCREMENTS NUMINSTANCES
+     * 
+     * If numClasses is still less than 0, WILL set numclasses if distribution info is present. 
+     * 
+     * [true],[pred], ,[dist[0]],...,[dist[c]], ,[predTime], ,[description until end of line, may have commas in it]
      */
     private boolean instancePredictionFromString(String predLine) { 
         String[] split=predLine.split(",");
@@ -743,14 +787,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         if(split.length==2) //no probabilities, no timing. VERY old files will not have them
             return true;
         
-        //split[2] should be empty (if we're still here), separator before probs
-        assert(split[2].equals(""));
-        
         //collect probabilities
+        int distStartInd = 3; //actual, predicted, space
         double[] dist = null;
         if (numClasses < 2) {
             List<Double> distL = new ArrayList<>();
-            for(int i = 3; i < split.length; i++) {
+            for(int i = distStartInd; i < split.length; i++) {
                 if (split[i].equals(""))
                     break; //we're at the empty-space-separator between probs and timing 
                 else 
@@ -770,22 +812,38 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             dist = new double[numClasses];
             for (int i = 0; i < numClasses; i++) {
                 //now need to offset by 3.
-                dist[i] = Double.valueOf(split[i+3].trim());
+                dist[i] = Double.valueOf(split[i+distStartInd].trim());
             }
         }
         
         //collect timings
         long predTime = -1;
-        //      act/pred, space, dist, space, *timing*
-        int numParts = 2 + 1 + numClasses + 1 + 1; 
-        if (split.length >= numParts)
-            predTime = Long.parseLong(split[numParts-1].trim());
+        int timingInd = distStartInd + numClasses + 1; //actual, predicted, space, dist, space 
+        if (split.length > timingInd)
+            predTime = Long.parseLong(split[timingInd].trim());
         
-        addPrediction(trueClassVal, dist, predClassVal, predTime);
+        //collect description
+        String description = "";
+        int descriptionInd = timingInd + 1; //actual, predicted, space, dist, space, timing, space
+        if (split.length > descriptionInd) {
+            description = split[descriptionInd];
+            
+            //no reason currently why the description passed cannot have commas in it, 
+            //might be a natural way to separate it in to different parts.
+            //description reall just fills up the remainder of the line.
+            for (int i = descriptionInd+1; i < split.length; i++)
+                description += "," + split[i];
+        }
+            
+        
+        addPrediction(trueClassVal, dist, predClassVal, predTime, description);
         return trueClassVal==predClassVal;
     }
     
     
+    /**
+     * [true],[pred], ,[dist[0]],...,[dist[c]], ,[predTime], ,[description until end of line, may have commas in it]
+     */
     private String instancePredictionToString(int i) { 
         StringBuilder sb = new StringBuilder();
         
@@ -801,10 +859,19 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         //timing 
         sb.append(",,").append(predTimes.get(i)); //<empty space>, timing
         
+        //description 
+        sb.append(",,").append(predDescriptions.get(i)); //<empty space>, description
+        
         return sb.toString();
     }
     
-    public String instancePredictionsToString(){
+    public String instancePredictionsToString() throws Exception{
+        
+        //todo extra verification 
+        
+        if (trueClassValues == null || trueClassValues.size() == 0 || trueClassValues.get(0) == -1)
+            throw new Exception("No true class value stored, call finaliseResults(double[] trueClassVal)");
+        
         if(numInstances()>0 &&(predDistributions.size()==trueClassValues.size()&& predDistributions.size()==predClassValues.size())){
             StringBuilder sb=new StringBuilder("");
             
@@ -817,7 +884,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             
             return sb.toString();
         }
-        else
+        else 
            return "No Instance Prediction Information";
     }
    
@@ -839,11 +906,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
    
     public void writeResultsToFile(String path) throws Exception {
-        OutFile out = new OutFile(path);
+        OutFile out = null;
         try {
+            out = new OutFile(path);
             out.writeString(writeResultsFileToString());
         } catch (Exception e) { 
-             throw new Exception("TODO stop using or update outfile... : "
+             throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
                      + "Path: " + path +"\nError: "+ e);
         } finally {

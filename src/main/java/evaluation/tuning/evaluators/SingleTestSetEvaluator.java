@@ -90,7 +90,7 @@ public class SingleTestSetEvaluator implements Evaluator {
             long startTime = System.currentTimeMillis();
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.currentTimeMillis() - startTime;
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime);
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
 
         res.findAllStatsOnce(); 

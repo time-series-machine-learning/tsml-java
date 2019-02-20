@@ -95,7 +95,7 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         if (module.testResults == null)
             module.testResults = new ClassifierResults();
         
-        module.testResults.addPrediction(dist, indexOfMax(dist), predTime);
+        module.testResults.addPrediction(dist, indexOfMax(dist), predTime, "");
     }
     
     @Override
