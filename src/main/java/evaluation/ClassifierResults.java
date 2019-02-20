@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -748,6 +749,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predClassValues = null;
         trueClassValues = null;
         predTimes = null;
+        predDescriptions = null;
     }
         
         
@@ -788,7 +790,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             return true;
         
         //collect probabilities
-        int distStartInd = 3; //actual, predicted, space
+        int distStartInd = 3; //actual, predicted, space, distStart
         double[] dist = null;
         if (numClasses < 2) {
             List<Double> distL = new ArrayList<>();
@@ -818,13 +820,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         //collect timings
         long predTime = -1;
-        int timingInd = distStartInd + numClasses + 1; //actual, predicted, space, dist, space 
+        int timingInd = distStartInd + (numClasses-1) + 1 + 1; //actual, predicted, space, dist, space, timing
         if (split.length > timingInd)
             predTime = Long.parseLong(split[timingInd].trim());
         
         //collect description
         String description = "";
-        int descriptionInd = timingInd + 1; //actual, predicted, space, dist, space, timing, space
+        int descriptionInd = timingInd + 1 + 1; //actual, predicted, space, dist, space, timing, space, description
         if (split.length > descriptionInd) {
             description = split[descriptionInd];
             
@@ -947,12 +949,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         if (parts.length > 5)
             description = parts[5];
 
-        //in case the description had commas in it? ...
-        for (int i = 5; i < parts.length; i++)
-            description += parts[i];
+        //nothing stopping the description from having its own commas in it, jsut read until end of line
+        for (int i = 6; i < parts.length; i++)
+            description += "," + parts[i];
     }
     private String generateFirstLine() { 
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + ", "+ description;
+        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + ","+ description;
     }
    
     private void parseSecondLine(String line) { 
@@ -1033,6 +1035,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predClassValues = new ArrayList<>();
         predDistributions = new ArrayList<>();
         predTimes = new ArrayList<>();
+        predDescriptions = new ArrayList<>();
         numInstances = 0;
         acc = -1;
         buildTime = -1;
@@ -1437,7 +1440,40 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return stats;
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        readWriteTest();
+    }
+    
+    private static void readWriteTest() throws Exception { 
+        ClassifierResults res = new ClassifierResults();
         
+        res.setClassifierName("testClassifier");
+        res.setDatasetName("testDataset");
+        //empty split
+        //empty foldid
+        res.setDescription("boop, guest");
+        
+        res.setParas("test,west,best");
+        
+        //acc handled internally
+        res.setBuildTime(2);
+        res.setTestTime(1);
+        //empty benchmark
+        //empty memory
+        
+        Random rng = new Random(0);
+        for (int i = 0; i < 10; i++) { //obvs dists dont make much sense, not important here
+            res.addPrediction(rng.nextInt(2), new double[] { rng.nextDouble(), rng.nextDouble()}, rng.nextInt(2), rng.nextInt(5), "test,again");
+        }
+        
+        res.finaliseResults();
+        
+        System.out.println(res.writeResultsFileToString());
+        System.out.println("\n\n");
+        
+        res.writeResultsToFile("test.csv");
+        
+        ClassifierResults res2 = new ClassifierResults("test.csv");
+        System.out.println(res2.writeResultsFileToString());
     }
 }
