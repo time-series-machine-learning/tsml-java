@@ -113,7 +113,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     }
     @Override
     public double getAcc() {
-        return res.acc;
+        return res.getAcc();
     }
     @Override
     public void setParametersFromIndex(int x) {
@@ -161,7 +161,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
 //SaveParameterInfo    
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",";
+        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",";
         result+="MaxDepth,"+this.getMaxDepth()+",NumFeatures,"+this.getNumFeatures()+",NumTrees,"+this.getNumTrees();
         return result;
     }
@@ -299,10 +299,10 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                     
                     tempResults.setParas("maxDepth,"+p1+",numFeatures,"+p2+",numTrees,"+p3);
                     
-                    double e=1-tempResults.acc;
+                    double e=1-tempResults.getAcc();
                     if(m_Debug)
                         System.out.println("Depth="+p1+",Features"+p2+",Trees="+p3+" Acc = "+(1-e));
-                    accuracy.add(tempResults.acc);
+                    accuracy.add(tempResults.getAcc());
                     if(saveEachParaAcc){// Save to file and close
                         tempResults.writeResultsToFile(resultsPath+count+".csv");
                         File f=new File(resultsPath+count+".csv");
@@ -352,8 +352,8 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                             count++;
                             tempResults = new ClassifierResults();
                             tempResults.loadResultsFromFile(resultsPath+count+".csv");
-                            combinedBuildTime+=tempResults.buildTime;
-                            double e=1-tempResults.acc;
+                            combinedBuildTime+=tempResults.getBuildTime();
+                            double e=1-tempResults.getAcc();
                             if(e<minErr){
                                 minErr=e;
                                 ties=new ArrayList<>();//Remove previous ties
@@ -383,7 +383,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                
                 res=best.res;
                 if(m_Debug)
-                    System.out.println("Bestnum levels ="+bestNumLevels+" best num features = "+bestNumFeatures+" best num trees ="+bestNumTrees+" best train acc = "+res.acc);
+                    System.out.println("Bestnum levels ="+bestNumLevels+" best num features = "+bestNumFeatures+" best num trees ="+bestNumTrees+" best train acc = "+res.getAcc());
             }else//Not all present, just ditch
                 System.out.println(resultsPath+" error: missing  ="+missing+" parameter values");
         }
@@ -486,7 +486,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                 }
             }
             else{
-                res.acc=1-this.measureOutOfBagError();
+                res.setAcc(1-this.measureOutOfBagError());
 //Get OOB probabilities. This is not possible with the standard 
 //random forest bagger, hence the use of EnhancedBagger
                 System.out.println("BAGGER CLASS = "+m_bagger.getClass().getName());
@@ -498,7 +498,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
             }
         }
         
-        res.buildTime=System.currentTimeMillis()-startTime;
+        res.setBuildTime(System.currentTimeMillis()-startTime);
         if(trainPath!=""){  //Save basic train results
             res.setClassifierName("TunedRandF");
             res.setDatasetName(data.relationName());
@@ -706,7 +706,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                 Logger.getLogger(TunedRandomForest.class.getName()).log(Level.SEVERE, null, ex);
             }
             
-            trainAccs[r] = ranF.res.acc;
+            trainAccs[r] = ranF.res.getAcc();
             trainAcc+=trainAccs[r];
             
             testAccs[r] = ClassifierTools.accuracy(data[1], ranF);

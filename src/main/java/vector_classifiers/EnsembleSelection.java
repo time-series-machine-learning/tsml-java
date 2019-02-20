@@ -224,7 +224,7 @@ public class EnsembleSelection extends CAWPE {
                     
             //initialisation of subensemble done, start the forward selection
             double accSoFar;
-            double newAcc = subEnsembleResults == null ? .0 : subEnsembleResults.acc;
+            double newAcc = subEnsembleResults == null ? .0 : subEnsembleResults.getAcc();
             boolean finished;
             do {
                 finished = true;
@@ -234,7 +234,7 @@ public class EnsembleSelection extends CAWPE {
                 double[] accs = new double[bagOfModels.size()];
                 for (int modelID = 0; modelID < bagOfModels.size(); modelID++) {
                     candidateResults[modelID] = combinePredictions(subEnsembleResults, subensemble.size(), bagOfModels.get(modelID).trainResults);
-                    accs[modelID] = candidateResults[modelID].acc;
+                    accs[modelID] = candidateResults[modelID].getAcc();
                 }
                 
                 int maxAccInd = (int)utilities.GenericTools.indexOfMax(accs);
@@ -288,7 +288,7 @@ public class EnsembleSelection extends CAWPE {
         ensembleTrainResults.setSplit("train");
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
+        ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
             writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
@@ -313,7 +313,7 @@ public class EnsembleSelection extends CAWPE {
     public static class SortByTrainAcc implements Comparator<EnsembleModule> {
         @Override
         public int compare(EnsembleModule o1, EnsembleModule o2) {
-            return Double.compare(o1.trainResults.acc, o2.trainResults.acc);
+            return Double.compare(o1.trainResults.getAcc(), o2.trainResults.getAcc());
         }
     }
     

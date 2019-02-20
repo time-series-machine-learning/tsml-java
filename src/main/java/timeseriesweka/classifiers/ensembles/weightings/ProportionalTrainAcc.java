@@ -19,7 +19,7 @@ public class ProportionalTrainAcc extends ModuleWeightingScheme {
     
     public void defineWeightings(EnsembleModule[] modules, int numClasses) {
         for (EnsembleModule m : modules) 
-            sumOfTrainAccs += m.trainResults.acc;
+            sumOfTrainAccs += m.trainResults.getAcc();
         
         for (EnsembleModule m : modules) 
             m.posteriorWeights = defineWeighting(m, numClasses);
@@ -27,7 +27,7 @@ public class ProportionalTrainAcc extends ModuleWeightingScheme {
     
     @Override
     public double[] defineWeighting(EnsembleModule module, int numClasses) {
-        return makeUniformWeighting(module.trainResults.acc / sumOfTrainAccs, numClasses);
+        return makeUniformWeighting(module.trainResults.getAcc() / sumOfTrainAccs, numClasses);
     }
     
 }

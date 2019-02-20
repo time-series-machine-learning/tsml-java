@@ -122,7 +122,7 @@ public class RISE extends AbstractClassifierWithTrainingData implements SavePara
          
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
 
 //Estimate Train CV, store CV     
          if(subSample){
@@ -213,7 +213,7 @@ public class RISE extends AbstractClassifierWithTrainingData implements SavePara
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
             baseClassifiers[i].buildClassifier(newTrain);
         }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
     }
 
     @Override

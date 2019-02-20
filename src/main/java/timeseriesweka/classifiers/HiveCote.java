@@ -149,7 +149,7 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
     
     @Override
     public void buildClassifier(Instances train) throws Exception{
-         trainResults.buildTime=System.currentTimeMillis();
+         long startTime=System.currentTimeMillis();
        optionalOutputLine("Start of training");
                 
         modules = new ConstituentHiveEnsemble[classifiers.size()];
@@ -210,7 +210,7 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
 //                        do i even need to write training preds?
 //            }
 //        }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
     }
     
 

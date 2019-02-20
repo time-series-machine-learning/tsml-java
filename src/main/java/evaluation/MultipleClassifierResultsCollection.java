@@ -129,7 +129,7 @@ public class MultipleClassifierResultsCollection implements DebugPrinting {
 
 
     public double[][][][] getAccuracies() {
-        return getInfo((ClassifierResults cr) -> {return cr.acc;});
+        return getInfo((ClassifierResults cr) -> {return cr.getAcc();});
     }
 
     public double[][][][] getInfo(Function<ClassifierResults, Double> getter) {

@@ -33,8 +33,8 @@ public class BestIndividualOracle extends BestIndividual {
         
         double bestAcc = -1;
         for (int m = 0; m < modules.length; ++m) {         
-            if (modules[m].testResults.acc > bestAcc) {
-                bestAcc = modules[m].testResults.acc;
+            if (modules[m].testResults.getAcc() > bestAcc) {
+                bestAcc = modules[m].testResults.getAcc();
                 bestModule = m;
             }
         }

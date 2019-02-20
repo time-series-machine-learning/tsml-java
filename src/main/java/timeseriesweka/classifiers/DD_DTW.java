@@ -203,7 +203,7 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
     
     @Override
     public void buildClassifier(Instances train){
-        res.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         
         if(!paramsSet){
             this.distanceFunction.crossValidateForAandB(train);
@@ -211,11 +211,11 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         }
         this.setDistanceFunction(this.distanceFunction);
         super.buildClassifier(train);
-        res.buildTime=System.currentTimeMillis()-res.buildTime;
+        res.setBuildTime(System.currentTimeMillis()-startTime);
     }
      @Override
     public String getParameters() {
-        return "BuildTime,"+res.buildTime+",a,"+distanceFunction.a+",b,"+distanceFunction.b;
+        return "BuildTime,"+res.getBuildTime()+",a,"+distanceFunction.a+",b,"+distanceFunction.b;
     }
      
    

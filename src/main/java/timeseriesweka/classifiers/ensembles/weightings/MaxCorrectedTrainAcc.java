@@ -39,7 +39,7 @@ public class MaxCorrectedTrainAcc extends ModuleWeightingScheme {
     @Override
     public double[] defineWeighting(EnsembleModule module, int numClasses) {
         //made non zero (effectively 1% accuracy) in weird case that all classifiers get less than expected acc
-        return makeUniformWeighting(Math.max(0.01, module.trainResults.acc - maxClassWeighting), numClasses);
+        return makeUniformWeighting(Math.max(0.01, module.trainResults.getAcc() - maxClassWeighting), numClasses);
     }
     
     @Override

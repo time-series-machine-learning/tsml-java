@@ -77,10 +77,10 @@ public class CAWPE_TunedAlpha extends CAWPE {
         for (int i = 0; i < alphaParaRange.length; i++) {
             initCombinationSchemes(alphaParaRange[i]);
             alphaResults[i] = doEnsembleCV(data); 
-            alphaParaAccs[i] = alphaResults[i].acc;
+            alphaParaAccs[i] = alphaResults[i].getAcc();
             
-            if (alphaResults[i].acc > maxAcc) { 
-                maxAcc = alphaResults[i].acc;
+            if (alphaResults[i].getAcc() > maxAcc) { 
+                maxAcc = alphaResults[i].getAcc();
                 maxAccInd = i;
             }
         }
@@ -89,7 +89,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         ensembleTrainResults = alphaResults[maxAccInd];
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        ensembleTrainResults.buildTime = buildTime;
+        ensembleTrainResults.setBuildTime(buildTime);
             
         if (writeEnsembleTrainingFile)
             writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
@@ -120,7 +120,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         StringBuilder out = new StringBuilder();
         
         if (ensembleTrainResults != null) //cv performed
-            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
+            out.append("BuildTime,").append(ensembleTrainResults.getBuildTime()).append(",Trainacc,").append(ensembleTrainResults.getAcc()).append(",");
         else 
             out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
         

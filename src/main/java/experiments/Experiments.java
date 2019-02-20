@@ -529,7 +529,7 @@ public class Experiments  {
             //Write train results
             if (expSettings.generateErrorEstimateOnTrainSet) {
                 if (!(classifier instanceof TrainAccuracyEstimate)) {
-                    trainResults.buildTime = buildTime;
+                    trainResults.setBuildTime(buildTime);
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
                 //else 
@@ -554,7 +554,7 @@ public class Experiments  {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);
                 }
-                return testResults.acc;
+                return testResults.getAcc();
             } 
             else {
                 return 0; //not error, but we dont have a test acc. just returning 0 for now

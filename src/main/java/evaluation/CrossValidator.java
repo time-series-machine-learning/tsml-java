@@ -130,7 +130,7 @@ public class CrossValidator {
             results[c].setDatasetName(dataset.relationName());
             results[c].setFoldID(seed);
             results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling class will set this to test when needed
-            results[c].buildTime = buildTimes[c];
+            results[c].setBuildTime(buildTimes[c]);
             
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);

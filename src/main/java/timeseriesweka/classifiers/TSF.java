@@ -453,13 +453,13 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         }
         long t2=System.currentTimeMillis();
         //Store build time, this is always recorded
-        trainResults.buildTime=t2-t1;
+        trainResults.setBuildTime(t2-t1);
         //If trainCV ==true and we want to save results, write out object 
         if(trainCV && trainCVPath!=""){
              OutFile of=new OutFile(trainCVPath);
              of.writeLine(data.relationName()+",TSF,train");
              of.writeLine(getParameters());
-            of.writeLine(trainResults.acc+"");
+            of.writeLine(trainResults.getAcc()+"");
             double[] trueClassVals,predClassVals;
             trueClassVals=trainResults.getTrueClassValsAsArray();
             predClassVals=trainResults.getPredClassValsAsArray();

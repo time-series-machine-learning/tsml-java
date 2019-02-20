@@ -43,11 +43,11 @@ public class SAX_1NN extends AbstractClassifierWithTrainingData {
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         
         SAXdata = sax.process(data);
         knn.buildClassifier(SAXdata);
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
     }
 
     @Override

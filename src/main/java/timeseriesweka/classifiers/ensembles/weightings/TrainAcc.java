@@ -36,7 +36,7 @@ public class TrainAcc extends ModuleWeightingScheme {
     
     @Override
     public double[] defineWeighting(EnsembleModule module, int numClasses) {
-        return makeUniformWeighting(Math.pow(module.trainResults.acc, power), numClasses);
+        return makeUniformWeighting(Math.pow(module.trainResults.getAcc(), power), numClasses);
     }
     
     @Override

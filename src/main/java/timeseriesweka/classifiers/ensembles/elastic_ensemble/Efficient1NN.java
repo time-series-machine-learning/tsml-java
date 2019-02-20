@@ -212,7 +212,7 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
     
     @Override
     public String getParameters(){
-        String paras="BuildTime,"+res.buildTime;
+        String paras="BuildTime,"+res.getBuildTime();
         return paras;
         
     }    

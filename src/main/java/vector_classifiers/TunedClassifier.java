@@ -192,7 +192,7 @@ public class TunedClassifier extends AbstractClassifier
         
         bestParas = best.paras;
         TAE_trainResults = best.results;
-        TAE_trainAcc = best.results.acc;
+        TAE_trainAcc = best.results.getAcc();
         
         if (TAE_writeTrainAcc && TAE_trainAccWritePath != null)
             TAE_trainResults.writeResultsToFile(TAE_trainAccWritePath);

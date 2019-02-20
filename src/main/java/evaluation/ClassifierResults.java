@@ -97,7 +97,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * Calculated from the stored predictions, cannot be explicitly set by user
      */
-    public double acc = -1; 
+    private double acc = -1; 
     
     /**
      * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
@@ -105,7 +105,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
      * If no benchmark time is supplied, the default value is -1
      */
-    public long buildTime = -1; 
+    private long buildTime = -1; 
     
     /**
      * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary 
@@ -451,7 +451,61 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      */    
     
-    public double getAcc() { return acc; }
+    /**
+     * This setter exists purely for backwards compatibility, for classifiers that 
+     * for whatever reason do not have per-instance prediction info. 
+     * 
+     * This might be because 
+     *     a) The accuracy is gathered from some internal/weka eval process that we dont
+     *          want to edit, e.g out of bag error in some forests.
+     *     b) The classifier (typically implementing TrainAccuracyEstimate) does not yet 
+     *          save prediction info, simply because it was written before we did that and
+     *          hasnt been updated. These SHOULD be refactored over time. 
+     * 
+     * This method will print a suitably annoying message when first called, as a reminder
+     * until the accuracy is no longer directly set
+     * 
+     * if you REALLY dont want this message being printed, since e.g. it messing up your own print formatting,
+     * set ClassifierResults.printSetAccWarning to false.
+     * 
+     * Todo: remove this method, i.e. the possibility to directly set the accuracy instead of 
+     * have it calculated implicitly, when possible.
+     */
+    public void setAcc(double acc) {
+        if (printSetAccWarning && firstTimeInSetAcc) {
+            System.out.println("*********");
+            System.out.println("");
+            System.out.println("ClassifierResults.setAcc(double acc) called, friendly reminder to refactor the code that "
+                    + "made this call.");
+            System.out.println("");
+            System.out.println("*********");
+            
+            firstTimeInSetAcc = false;
+        }
+        
+        this.acc = acc;
+    }
+    public static boolean printSetAccWarning = true;
+    private boolean firstTimeInSetAcc = true;
+            
+    public double getAcc() { 
+        if (acc < 0)
+            calculateAcc();
+        return acc; 
+    }
+    private void calculateAcc() {
+        if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1)
+            System.out.println("**getAcc():calculateAcc() no true class values suppleid yet, cannot calculate accuracy");
+        
+        int size = predClassValues.size();
+        double correct = .0;
+        for (int i = 0; i < size; i++) {
+            if (predClassValues.get(i) == trueClassValues.get(i))
+                correct++;
+        }
+        
+        acc = correct / size;
+    }
 
     public long getBuildTime() { return buildTime; }
     public long getBuildTimeInNanos() { return timeUnit.toNanos(buildTime); }

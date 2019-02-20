@@ -118,7 +118,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     @Override
     public ClassifierResults getTrainResults(){
 //Temporary : copy stuff into trainResults.acc here
-        trainResults.acc=ensembleCvAcc;
+        trainResults.setAcc(ensembleCvAcc);
 //TO DO: Write the other stats        
         return trainResults;
     }        
@@ -307,7 +307,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime =System.currentTimeMillis();
         this.train=data;
         
         if (data.classIndex() != data.numAttributes()-1)
@@ -429,7 +429,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             }
         }
         
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         if (trainCV) {
             OutFile of=new OutFile(trainCVPath);
             of.writeLine(data.relationName()+",BOSSEnsemble,train");

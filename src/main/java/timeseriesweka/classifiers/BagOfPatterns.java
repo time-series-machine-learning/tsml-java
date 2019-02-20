@@ -157,7 +157,7 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingData{
     
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         if (data.classIndex() != data.numAttributes()-1)
             throw new Exception("LinBoP_BuildClassifier: Class attribute not set as last attribute in dataset");
         
@@ -188,7 +188,7 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingData{
         //real work
         matrix = bop.process(data); //transform
         knn.buildClassifier(matrix); //give to 1nn
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
     }
 
