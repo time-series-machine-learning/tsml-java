@@ -22,11 +22,13 @@ import utilities.BitWord;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.CAWPE;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.ClassifierResults;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
+import static weka.core.Utils.sum;
 
 /**
  * BOSS classifier with parameter search and ensembling, if parameters are known, 
@@ -45,11 +47,10 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     
     private int ensembleSize = 50;
     private int seed = 0;
-    protected int numCAWPEFolds = 10;
+    private int numCAWPEFolds = 10;
     private Random rand;
     private boolean randomEnsembleSelection = false;
     private boolean useCAWPE = false;
-    private boolean useAlternateIndividualClassifier = false;
     private Classifier alternateIndividualClassifier;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
@@ -59,8 +60,8 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     private int currentSeries = 0;
     private boolean isMultivariate = false;
 
-    private transient final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
-    private transient final int alphabetSize = 4;
+    private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
+    private final int alphabetSize = 4;
     private final double correctThreshold = 0.92;
     private int maxEnsembleSize = 500;
      
@@ -69,7 +70,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     private boolean checkpoint = false;
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
-    private boolean cleanupCheckpointFiles = true;
+    private boolean cleanupCheckpointFiles = false;
             
     private long contractTime = 0;
     private boolean contract = false;
@@ -102,7 +103,15 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     @Override
     public Capabilities getCapabilities(){
         Capabilities result = super.getCapabilities();
+        result.disableAll();
+
+        // attributes
         result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+
         return result;
     }
 
@@ -110,6 +119,8 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     public String getParameters() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.getParameters());
+
+        //could be improved for different boss versions, seems low prio though
 
         for (int n = 0; n < numSeries; n++) {
             for (int i = 0; i < numClassifiers[n]; ++i) {
@@ -129,7 +140,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         contract = true;
     }
 
-    //pass in an enum of hour, minut, day, and the amount of them.
+    //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTimeLimit(TimeLimit time, int amount){
         switch (time){
@@ -161,18 +172,31 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         RandomBOSS saved = ((RandomBOSS)obj);
         System.out.println("Loading RandomBOSS.ser");
 
+        //copy over variables from serialised object
         ensembleSize = saved.ensembleSize;
         seed = saved.seed;
+        numCAWPEFolds = saved.numCAWPEFolds;
         rand = saved.rand;
+        randomEnsembleSelection = saved.randomEnsembleSelection;
+        useCAWPE = saved.useCAWPE;
+        alternateIndividualClassifier = saved.alternateIndividualClassifier;
+        cawpe = saved.cawpe;
+        numSeries = saved.numSeries;
+        numClassifiers = saved.numClassifiers;
+        currentSeries = saved.currentSeries;
+        isMultivariate = saved.isMultivariate;
         checkpointTime = saved.checkpointTime;
         checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
         contractTime = saved.contractTime;
         contract = saved.contract;
         trainCVPath = saved.trainCVPath;
         trainCV = saved.trainCV;
         trainResults = saved.trainResults;
-        numSeries = saved.numSeries;
+        ensembleCvAcc = saved.ensembleCvAcc;
+        ensembleCvPreds = saved.ensembleCvPreds;
 
+        //load in each serisalised classifier
         classifiers = new LinkedList[numSeries];
         for (int n = 0; n < numSeries; n++) {
             classifiers[n] = new LinkedList();
@@ -184,7 +208,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                     Object indv = in.readObject();
 
                     if (!(indv instanceof BOSSIndividual))
-                        throw new Exception("The SER file " + i + " is not an instance of BOSSIndividual");
+                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of BOSSIndividual");
                     BOSSIndividual ser = ((BOSSIndividual) indv);
                     classifiers[n].add(ser);
                 }
@@ -234,10 +258,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         useCAWPE = b;
     }
 
-    public void setAlternateIndividualClassifier(Classifier c) {
-        alternateIndividualClassifier = c;
-        useAlternateIndividualClassifier = true;
-    }
+    public void setAlternateIndividualClassifier(Classifier c) { alternateIndividualClassifier = c; }
 
     public void setCleanupCheckpointFiles(boolean b) {
         cleanupCheckpointFiles = b;
@@ -246,14 +267,29 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         trainResults.buildTime = System.nanoTime();
-        
-        String relationName = data.relationName();
-        serPath = checkpointPath + "/" + relationName + seed + "RandomBOSSser/";
-        File f = new File(serPath + "RandomBOSSHeader.ser");
-        
-        if (checkpoint && f.exists()){
-            loadFromFile(serPath + "RandomBOSSHeader.ser");
+
+        //creating path for checkpointing
+        String type = "";
+
+        if (contract){
+            type = "RandomContract" + contractTime;
         }
+        else if (useCAWPE){
+            type = "RandomCAWPE";
+        }
+        else if (randomEnsembleSelection){
+            type = "Random";
+        }
+
+        String relationName = data.relationName();
+        serPath = checkpointPath + "/" + relationName + seed + type + "BOSSser/";
+        File f = new File(serPath + "RandomBOSS.ser");
+
+        //if checkpointing and serialised files exist load said files
+        if (checkpoint && f.exists()){
+            loadFromFile(serPath + "RandomBOSS.ser");
+        }
+        //initialise variables
         else {
             if (data.classIndex() != data.numAttributes()-1)
                 throw new Exception("BOSSEnsemble_BuildClassifier: Class attribute not set as last attribute in dataset");
@@ -283,6 +319,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         
         this.train = data;
 
+        //required to deal with multivariate datasets, each channel is split into its own instances
         Instances[] series;
 
         //Multivariate
@@ -300,14 +337,16 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         int maxWindow = seriesLength;
         
         //whats the max number of window sizes that should be searched through
-        //double maxWindowSearches = Math.min(200, Math.sqrt(seriesLength)); 
         double maxWindowSearches = seriesLength/4.0;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
         //Contracted
         if (contract) {
-            while (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff < contractTime && classifiers[0].size() < maxEnsembleSize) {
+            //continue building classifiers until contract time runs out or max ensemble size is reached
+            //any time between runs using checkpointing is not included
+            while (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
+                //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
                 boolean normalise = rand.nextBoolean();
@@ -318,17 +357,18 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (checkpoint) {
-                    checkpoint(serPath, relationName);
-                }
-
+                int prev = currentSeries;
                 if (isMultivariate){
                     nextSeries();
+                }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
                 }
             }
 
             System.out.println("RBOSS Contract Data: NumClassifiers = " +
-                    classifiers[0].size() + " StartTime = " + trainResults.buildTime + " "
+                    classifiers[numSeries-1].size() + " StartTime = " + trainResults.buildTime + " "
                     + "EndTime = " + System.nanoTime() + " Checkpointed = " + checkpoint + " TotalTime = "
                     + (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff) + " AverageTime = "
                     + (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff) / classifiers[0].size());
@@ -337,25 +377,29 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         else if (useCAWPE){
             cawpe = new CAWPE[numSeries];
 
-            for (int i = 0; i < ensembleSize; i++) {
+            while (sum(numClassifiers) < ensembleSize) {
+                //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
                 boolean normalise = rand.nextBoolean();
 
+                //do not have to build here, CAWPE will build each classifer
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
                 boss.cleanAfterBuild = true;
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (checkpoint) {
-                    checkpoint(serPath, relationName);
-                }
-
+                int prev = currentSeries;
                 if (isMultivariate){
                     nextSeries();
                 }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
+                }
             }
 
+            //build a CAWPE classifier for each channel (1 if univariate)
             for (int i = 0; i < numSeries; i++){
                 cawpe[i] = new CAWPE();
                 cawpe[i].setNumCVFolds(numCAWPEFolds);
@@ -366,23 +410,26 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         }
         //Randomly selected ensemble
         else if (randomEnsembleSelection){
-            for (int i = 0; i < ensembleSize; i++) {
+            //build classifiers up to a set size
+            while (sum(numClassifiers) < ensembleSize) {
+                //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
                 boolean normalise = rand.nextBoolean();
 
-                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
                 boss.cleanAfterBuild = true;
                 boss.buildClassifier(series[currentSeries]);
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (checkpoint) {
-                    checkpoint(serPath, relationName);
-                }
-
+                int prev = currentSeries;
                 if (isMultivariate){
                     nextSeries();
+                }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
                 }
             }
         }
@@ -458,7 +505,10 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             }
         }
 
+        //end train time, converted to milliseconds currently for compatability
         trainResults.buildTime = (long)(System.nanoTime()/1000000) - (long)(trainResults.buildTime/1000000) - (long)(checkpointTimeDiff/1000000);
+
+        //Estimate train accuracy, may be broken for CAWPE/Alternate classifiers (currently untested)
         if (trainCV) {
             OutFile of=new OutFile(trainCVPath);
             of.writeLine(data.relationName()+",BOSSEnsemble,train");
@@ -470,28 +520,46 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             for(int i=1;i<results[0].length;i++)
                 of.writeLine(results[0][i]+","+results[1][i]);
             System.out.println("CV acc ="+results[0][0]);
+            trainCV = false;
         }
-        
+
+        //delete any serialised files and holding folder for checkpointing on completion
+        if (checkpoint && cleanupCheckpointFiles){
+            f = new File(serPath);
+            String[] files = f.list();
+
+            for (String file: files){
+                File f2 = new File(f.getPath() + "\\" + file);
+                f2.delete();
+            }
+
+            f.delete();
+        }
     }
     
-    private void checkpoint(String serPath, String relationName){
+    private void checkpoint(int seriesNo, String relationName){
         if(checkpointPath!=null){
-            //save the serialised version
             try{
                 File f = new File(serPath);
                 if(!f.isDirectory())
                     f.mkdirs();
+                //time the checkpoint occured
                 checkpointTime = System.nanoTime();
 
-                BOSSIndividual indiv = classifiers[currentSeries].get(classifiers[currentSeries].size()-1);
+                //save the last build individual classifier
+                BOSSIndividual indiv = classifiers[seriesNo].get(classifiers[seriesNo].size()-1);
 
-                FileOutputStream fos = new FileOutputStream(serPath + "BOSSIndividual" + currentSeries + "-" + (classifiers[currentSeries].size()-1) + ".ser");
+                FileOutputStream fos = new FileOutputStream(serPath + "BOSSIndividual" + seriesNo + "-" + (classifiers[seriesNo].size()-1) + ".ser");
                 try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                     out.writeObject(indiv);
                     fos.close();
                 }
 
-                saveToFile(serPath + "RandomBOSSHeader.ser");
+                //save this, saved classifiers not included
+                saveToFile(serPath + "RandomBOSS.ser");
+
+                //dont take into account time spent serialising into build time
+                checkpointTimeDiff += System.nanoTime() - checkpointTime;
             }
             catch(Exception e){
                 e.printStackTrace();
@@ -534,7 +602,17 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             currentSeries++;
         }
     }
-    
+
+    //Classifier doesntt have its own way to copy apparently so this is used to create multiple versions of the
+    //alternate classifier
+    public Classifier copyClassifier() throws Exception {
+        if (alternateIndividualClassifier != null){
+            return (Classifier)Class.forName(alternateIndividualClassifier.getClass().getName()).newInstance();
+        }
+        return null;
+    }
+
+    //needs testing for non 1nn stuff
     private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
         
         double[][] results = new double[2+data.numClasses()][data.numInstances() + 1];
@@ -611,14 +689,16 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     public double[] distributionForInstance(int test, int numclasses) throws Exception {
         double[][] classHist = new double[numSeries][numclasses];
 
-        //get votes from all windows
+        //get sum of all channels, votes from each are weighted the same.
         double sum[] = new double[numSeries];
 
         Instance[] series;
 
+        //Multivariate
         if (isMultivariate) {
             series = splitMultivariateInstanceWithClassVal(train.get(test));
         }
+        //Univariate
         else{
             series = new Instance[1];
             series[0] = train.get(test);
@@ -633,6 +713,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 }
             }
         }
+        //Special case for CAWPE
         else {
             for (int n = 0; n < numSeries; n++) {
                 double[] dist = cawpe[n].distributionForInstance(series[n]);
@@ -674,14 +755,17 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     public double[] distributionForInstance(Instance instance) throws Exception {
         double[][] classHist = new double[numSeries][instance.numClasses()];
 
-        //get votes from all windows 
+        //get sum of all channels, votes from each are weighted the same.
         double sum[] = new double[numSeries];
 
         Instance[] series;
 
+        //Multivariate
         if (isMultivariate) {
             series = splitMultivariateInstanceWithClassVal(instance);
-        } else {
+        }
+        //Univariate
+        else {
             series = new Instance[1];
             series[0] = instance;
         }
@@ -695,6 +779,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                 }
             }
         }
+        //Special case for CAWPE
         else {
             for (int n = 0; n < numSeries; n++) {
                 double[] dist = cawpe[n].distributionForInstance(series[n]);
@@ -724,13 +809,91 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         Instances train = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\"+dataset+"\\"+dataset+"_TEST.arff");
 
-        String dataset2 = "FingerMovements";
+        String dataset2 = "NATOPS";
         Instances train2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Multivariate Archive\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
         Instances test2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Multivariate Archive\\"+dataset2+"\\"+dataset2+"_TEST.arff");
 
         Classifier c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).randomEnsembleSelection = true;
+//        ((RandomBOSS) c).setSavePath("D:\\CMP Machine Learning");
         c.buildClassifier(train2);
         double accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((RandomBOSS) c).numSeries);
+        System.out.println(Arrays.toString(((RandomBOSS) c).numClassifiers));
+
+        System.out.println("Random BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).randomEnsembleSelection = true;
+//        ((RandomBOSS) c).setSavePath("D:\\CMP Machine Learning");
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).randomEnsembleSelection = true;
+        ((RandomBOSS) c).setAlternateIndividualClassifier(new RandomTree());
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((RandomBOSS) c).numSeries);
+        System.out.println(Arrays.toString(((RandomBOSS) c).numClassifiers));
+
+        System.out.println("Random Tree BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).randomEnsembleSelection = true;
+        ((RandomBOSS) c).setAlternateIndividualClassifier(new RandomTree());
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Random Tree BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((RandomBOSS) c).numSeries);
+        System.out.println(Arrays.toString(((RandomBOSS) c).numClassifiers));
+
+        System.out.println("Contract BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).useCAWPE = true;
+        c.buildClassifier(train2);
+       accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((RandomBOSS) c).numSeries);
+        System.out.println(Arrays.toString(((RandomBOSS) c).numClassifiers));
+
+        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        ((RandomBOSS) c).ensembleSize = 250;
+        ((RandomBOSS) c).useCAWPE = true;
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new RandomBOSS();
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println(((RandomBOSS) c).numSeries);
         System.out.println(Arrays.toString(((RandomBOSS) c).numClassifiers));
@@ -740,7 +903,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         c = new RandomBOSS();
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
-        
+
         System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
     }
 
@@ -769,7 +932,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
         protected Classifier alternateClassifier;
         ArrayList<BitWord> words;
-        ArrayList<Attribute> atts;
+        Instances test;
 
         protected double inverseSqrtWindowSize;
         protected int windowSize;
@@ -1214,6 +1377,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             SFAwords = new BitWord[data.numInstances()][];
             bags = new ArrayList<>(data.numInstances());
 
+            //1NN BOSS distance
             if (alternateClassifier == null) {
                 for (int inst = 0; inst < data.numInstances(); ++inst) {
                     SFAwords[inst] = createSFAwords(data.get(inst));
@@ -1222,20 +1386,18 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                     bag.setClassVal(data.get(inst).classValue());
                     bags.add(bag);
                 }
-
-                if (cleanAfterBuild) {
-                    clean();
-                }
             }
+            //Alternate classifier
             else{
                 words = new ArrayList();
-                atts = new ArrayList();
+                ArrayList<Attribute> atts = new ArrayList();
 
                 for (int inst = 0; inst < data.numInstances(); ++inst) {
                     SFAwords[inst] = createSFAwords(data.get(inst));
                     Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
                     bags.add(bag);
 
+                    //Save found words for test instnaces
                     for (BitWord word : bag.keySet()){
                         if (!words.contains(word)){
                             words.add(word);
@@ -1243,6 +1405,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                     }
                 }
 
+                //Create Instances object out of histogram
                 for (int n = 0; n < words.size(); n++){
                     atts.add(new Attribute("att" + n));
                 }
@@ -1266,9 +1429,12 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
                 alternateClassifier.buildClassifier(histograms);
 
-                if (cleanAfterBuild) {
-                    clean();
-                }
+                test = new Instances(data.relationName()+"test", atts, 1);
+                test.setClassIndex(test.numAttributes()-1);
+            }
+
+            if (cleanAfterBuild) {
+                clean();
             }
         }
 
@@ -1303,6 +1469,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
             double bestDist = Double.MAX_VALUE;
 
+            //1NN BOSS distance
             if (alternateClassifier == null) {
                 double nn = -1.0;
 
@@ -1318,9 +1485,11 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
                 return nn;
             }
+            //Alternate classifier
             else{
                 double[] values = new double[words.size()];
 
+                //Create histogram of words, not including any not found in training
                 for (Entry<BitWord, Integer> entry : testBag.entrySet()) {
                     int index = words.indexOf(entry.getKey());
                     if (index >= 0){
@@ -1328,12 +1497,11 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                     }
                 }
 
+                //Create Instance object from histogram
                 Instance testHist = new DenseInstance(1, values);
-                Instances test = new Instances(instance.dataset().relationName(), atts, 1);
-                test.setClassIndex(test.numAttributes()-1);
                 test.add(testHist);
 
-                return alternateClassifier.classifyInstance(test.firstInstance());
+                return alternateClassifier.classifyInstance(test.remove(0));
             }
         }
 
@@ -1349,6 +1517,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             double bestDist = Double.MAX_VALUE;
             Bag testBag = bags.get(testIndex);
 
+            //1NN BOSS distance
             if (alternateClassifier == null) {
                 double nn = -1.0;
 
@@ -1366,9 +1535,11 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
                 return nn;
             }
+            //Alternate classifier
             else{
                 double[] values = new double[words.size()];
 
+                //Create histogram of words, not including any not found in training
                 for (Entry<BitWord, Integer> entry : testBag.entrySet()) {
                     int index = words.indexOf(entry.getKey());
                     if (index >= 0){
@@ -1376,12 +1547,11 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
                     }
                 }
 
+                //Create Instance object from histogram
                 Instance testHist = new DenseInstance(1, values);
-                Instances test = new Instances("test", atts, 1);
-                test.setClassIndex(test.numAttributes()-1);
                 test.add(testHist);
 
-                return alternateClassifier.classifyInstance(test.firstInstance());
+                return alternateClassifier.classifyInstance(test.remove(0));
             }
         }
     }
