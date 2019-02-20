@@ -70,16 +70,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private boolean allStatsFound = false;
     
     //functional getters to retrieve info from a classifierresults object, initialised/stored here for conveniance 
-    protected static final Function<ClassifierResults, Double> getAccuracy = (ClassifierResults cr) -> {return cr.acc;};
-    protected static final Function<ClassifierResults, Double> getBalancedAccuracy = (ClassifierResults cr) -> {return cr.balancedAcc;};
-    protected static final Function<ClassifierResults, Double> getAUROC = (ClassifierResults cr) -> {return cr.meanAUROC;};
-    protected static final Function<ClassifierResults, Double> getNLL = (ClassifierResults cr) -> {return cr.nll;};
-    protected static final Function<ClassifierResults, Double> getF1 = (ClassifierResults cr) -> {return cr.f1;};
-    protected static final Function<ClassifierResults, Double> getMCC = (ClassifierResults cr) -> {return cr.mcc;};
-    protected static final Function<ClassifierResults, Double> getPrecision = (ClassifierResults cr) -> {return cr.precision;};
-    protected static final Function<ClassifierResults, Double> getRecall = (ClassifierResults cr) -> {return cr.recall;};
-    protected static final Function<ClassifierResults, Double> getSensitivitie = (ClassifierResults cr) -> {return cr.sensitivity;};
-    protected static final Function<ClassifierResults, Double> getSpecificity = (ClassifierResults cr) -> {return cr.specificity;};
+    public static final Function<ClassifierResults, Double> GETTER_Accuracy = (ClassifierResults cr) -> {return cr.acc;};
+    public static final Function<ClassifierResults, Double> GETTER_BalancedAccuracy = (ClassifierResults cr) -> {return cr.balancedAcc;};
+    public static final Function<ClassifierResults, Double> GETTER_AUROC = (ClassifierResults cr) -> {return cr.meanAUROC;};
+    public static final Function<ClassifierResults, Double> GETTER_NLL = (ClassifierResults cr) -> {return cr.nll;};
+    public static final Function<ClassifierResults, Double> GETTER_F1 = (ClassifierResults cr) -> {return cr.f1;};
+    public static final Function<ClassifierResults, Double> GETTER_MCC = (ClassifierResults cr) -> {return cr.mcc;};
+    public static final Function<ClassifierResults, Double> GETTER_Precision = (ClassifierResults cr) -> {return cr.precision;};
+    public static final Function<ClassifierResults, Double> GETTER_Recall = (ClassifierResults cr) -> {return cr.recall;};
+    public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
+    public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
     
     
@@ -321,7 +321,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
            return "No Instance Prediction Information";
    }
    
-   public String writeResultsFileToString() throws IOException {                
+   public String writeResultsFileToString() {                
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
         st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
@@ -330,7 +330,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         st.append(writeInstancePredictions());
         return st.toString();
     }
-   
+
    public void loadFromFile(String path) throws FileNotFoundException{
         File f=new File(path);
         
@@ -338,7 +338,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw new FileNotFoundException("File "+path+" NOT FOUND");
             
         //file exists
-        Scanner inf = new Scanner(new File(path));
+        Scanner inf = new Scanner(f);
 
         name = inf.nextLine();
         paras= inf.nextLine();
@@ -414,6 +414,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Sensitivity, Specificity, AUROC, negative log likelihood, MCC
      */   
     public void findAllStats(){
+       if (numInstances == 0)
+           numInstances = predictedClassValues.size();
+        
        confusionMatrix=buildConfusionMatrix();
        
        countPerClass=new double[confusionMatrix.length];
@@ -708,35 +711,41 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
         ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccuracy));
-        stats.add(new Pair<>("BALACC", getBalancedAccuracy));
-        stats.add(new Pair<>("AUROC", getAUROC));
-        stats.add(new Pair<>("NLL", getNLL));
+        stats.add(new Pair<>("ACC", GETTER_Accuracy));
+        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
+        stats.add(new Pair<>("AUROC", GETTER_AUROC));
+        stats.add(new Pair<>("NLL", GETTER_NLL));
         return stats;
     }
         
     public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
         ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccuracy));
-        stats.add(new Pair<>("BALACC", getBalancedAccuracy));
-        stats.add(new Pair<>("AUROC", getAUROC));
-        stats.add(new Pair<>("NLL", getNLL));
-        stats.add(new Pair<>("F1", getF1));
-        stats.add(new Pair<>("MCC", getMCC));
-        stats.add(new Pair<>("Prec", getPrecision));
-        stats.add(new Pair<>("Recall", getRecall));
-        stats.add(new Pair<>("Sens", getSensitivitie));
-        stats.add(new Pair<>("Spec", getSpecificity));
+        stats.add(new Pair<>("ACC", GETTER_Accuracy));
+        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
+        stats.add(new Pair<>("AUROC", GETTER_AUROC));
+        stats.add(new Pair<>("NLL", GETTER_NLL));
+        stats.add(new Pair<>("F1", GETTER_F1));
+        stats.add(new Pair<>("MCC", GETTER_MCC));
+        stats.add(new Pair<>("Prec", GETTER_Precision));
+        stats.add(new Pair<>("Recall", GETTER_Recall));
+        stats.add(new Pair<>("Sens", GETTER_Sensitivity));
+        stats.add(new Pair<>("Spec", GETTER_Specificity));
         return stats;
     }
     
     public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatistic() { 
         ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", getAccuracy));
+        stats.add(new Pair<>("ACC", GETTER_Accuracy));
         return stats;
     }
     
-       
+    public static boolean exists(File file) {
+       return file.exists() && file.length()>0;
+    }
+    public static boolean exists(String path) {
+        return exists(new File(path));
+    }
+   
     public static void main(String[] args) throws FileNotFoundException {
         
         String path="C:\\JamesLPHD\\testFold1.csv";
