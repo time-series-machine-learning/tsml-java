@@ -40,6 +40,7 @@ import utilities.generic_storage.Pair;
  *    - The predicted class value                       (double   getPredClassValue(index))
  *    - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
  *    - The time taken to predict this instance id      (long     getPredictionTime(index))
+ *    - An optional description of the prediction       (String   getPredDescription(index))
  *
  * The meta info stored is:
  *  [LINE 1 OF FILE] 
@@ -57,7 +58,7 @@ import utilities.generic_storage.Pair;
  *    - get/setTestTime(long)
  *    - get/setMemory(long)
  *  [REMAINING LINES: PREDICTIONS]
- *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime
+ *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  * 
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  *    - loadResultsFromFile(String path)
@@ -91,7 +92,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     //LINE 3: acc, buildTime, testTime, memory
     //simple summarative performance stats. 
-    public double acc = -1; //calculated from the stored predictions, cannot be explicitely set by user
+    public double acc = -1; //calculated from the stored predictions, cannot be explicitly set by user
     public long buildTime = -1; //buildClassifier(Instances) timing. might be cumulative time over many parameter set builds, etc
     private long testTime = -1; //total testtime for all predictions
     private long memory = -1; //user dependent on exactly what this means, typically mem used classifier is built
@@ -100,9 +101,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     //REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
     private ArrayList<Double> trueClassValues;
-    private ArrayList<Double> predictedClassValues;
-    private ArrayList<double[]> predictedClassProbabilities;
-    private ArrayList<Long> predictionTimes;
+    private ArrayList<Double> predClassValues;
+    private ArrayList<double[]> predDistributions;
+    private ArrayList<Long> predTimes;
+    private ArrayList<String> predDescriptions;
     
     //inferred/supplied dataset meta info
     private int numClasses; 
@@ -190,14 +192,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public ClassifierResults() {
         trueClassValues= new ArrayList<>();
-        predictedClassValues = new ArrayList<>();
-        predictedClassProbabilities = new ArrayList<>();
-        predictionTimes = new ArrayList<>();
+        predClassValues = new ArrayList<>();
+        predDistributions = new ArrayList<>();
+        predTimes = new ArrayList<>();
         
         finalised = false;
     }
     
-        /**
+    /**
      * Create an empty classifierResults object.
      * 
      * If number of classes is known when making the object, it is safer to use this constructor 
@@ -209,9 +211,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public ClassifierResults(int numClasses) {
         trueClassValues= new ArrayList<>();
-        predictedClassValues = new ArrayList<>();
-        predictedClassProbabilities = new ArrayList<>();
-        predictionTimes = new ArrayList<>();
+        predClassValues = new ArrayList<>();
+        predDistributions = new ArrayList<>();
+        predTimes = new ArrayList<>();
         
         this.numClasses = numClasses;
         finalised = false;
@@ -230,9 +232,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public ClassifierResults(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes) throws Exception {
         trueClassValues= new ArrayList<>();
-        predictedClassValues = new ArrayList<>();
-        predictedClassProbabilities = new ArrayList<>();
-        predictionTimes = new ArrayList<>();
+        predClassValues = new ArrayList<>();
+        predDistributions = new ArrayList<>();
+        this.predTimes = new ArrayList<>();
 
         addAllPredictions(trueClassVals, predictions, distributions, predTimes);    
         finaliseResults();
@@ -248,7 +250,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     
     /**
-     * Will return the number of classes if it has been a) explicitely set or b) found via 
+     * Will return the number of classes if it has been a) explicitly set or b) found via 
      * the size of the probability distributions attached to predictions that have been 
      * stored/loaded, otherwise this will return 0.
      */
@@ -261,10 +263,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         this.numClasses = numClasses; 
     }
     private void inferNumClasses() {
-        if (predictedClassProbabilities.isEmpty())
+        if (predDistributions.isEmpty())
             this.numClasses = 0;
         else
-            this.numClasses = predictedClassProbabilities.get(0).length;
+            this.numClasses = predDistributions.get(0).length;
     }
     
     public int numInstances() { 
@@ -274,7 +276,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     private void inferNumInstances() {
-        this.numInstances = predictedClassValues.size();
+        this.numInstances = predClassValues.size();
     }
     
     
@@ -433,16 +435,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * method finaliseResults(double[] trueClassVals)
      */
     public void addPrediction(double[] dist, double predictedClass, long predictionTime) {
-        predictedClassProbabilities.add(dist);
-        predictedClassValues.add(predictedClass);
+        predDistributions.add(dist);
+        predClassValues.add(predictedClass);
         
         //allowing 0 in case user was unaware and doesnt care about a classifier taking e.g
         //0 milliseconds. todo revisit at some point when time units implemented/enforced 
         if (predictionTime < 0)
             //add a null placeholder, in case later predictions have timings? todo revisit
-            predictionTimes.add(null);
+            predTimes.add(null);
         else {
-            predictionTimes.add(predictionTime);
+            predTimes.add(predictionTime);
 
             if (testTime == -1)
                 testTime = predictionTime;
@@ -508,7 +510,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         assert(numInstances() == testClassVals.length);
         
-        if (testClassVals.length != predictedClassValues.size())
+        if (testClassVals.length != predClassValues.size())
             throw new Exception("finaliseTestResults(double[] testClassVals): Number of predictions "
                     + "made and number of true class values passed do not match");
         
@@ -535,13 +537,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         //todo extra verification 
         
-        if (predictedClassProbabilities == null || predictedClassValues == null ||
-                predictedClassProbabilities.isEmpty() || predictedClassValues.isEmpty())
+        if (predDistributions == null || predClassValues == null ||
+                predDistributions.isEmpty() || predClassValues.isEmpty())
             throw new Exception("finaliseTestResults(): no test predictions stored for this module");
         
         double correct = .0;
-        for (int inst = 0; inst < predictedClassValues.size(); inst++)
-            if (trueClassValues.get(inst).equals(predictedClassValues.get(inst)))
+        for (int inst = 0; inst < predClassValues.size(); inst++)
+            if (trueClassValues.get(inst).equals(predClassValues.get(inst)))
                 ++correct;
         
         acc = correct/trueClassValues.size();
@@ -582,51 +584,51 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     
     public ArrayList<Double> getPredClassVals(){
-        return predictedClassValues;
+        return predClassValues;
     }
     
     public double[] getPredClassValsAsArray(){
-        double[] d=new double[predictedClassValues.size()];
+        double[] d=new double[predClassValues.size()];
         int i=0;
-        for(double x:predictedClassValues)
+        for(double x:predClassValues)
             d[i++]=x;
         return d;
     }
     
     public double getPredClassValue(int index){
-        return predictedClassValues.get(index);
+        return predClassValues.get(index);
     }
     
 
     public ArrayList<double[]> getProbabilityDistributions() { 
-        return predictedClassProbabilities;
+        return predDistributions;
     }
     
     public double[][] getProbabilityDistributionsAsArray() { 
-        return predictedClassProbabilities.toArray(new double[][] {});
+        return predDistributions.toArray(new double[][] {});
     }
     
     public double[] getProbabilityDistribution(int i){
-       if(i<predictedClassProbabilities.size())
-            return predictedClassProbabilities.get(i);
+       if(i<predDistributions.size())
+            return predDistributions.get(i);
        return null;
     }
     
     
     public ArrayList<Long> getPredictionTimes() {
-        return predictionTimes;
+        return predTimes;
     }
     
     public long[] getPredictionTimesAsArray() {
-        long[] l=new long[predictionTimes.size()];
+        long[] l=new long[predTimes.size()];
         int i=0;
-        for(long x:predictionTimes)
+        for(long x:predTimes)
             l[i++]=x;
         return l;
     }
     
     public long getPredictionTime(int index) {
-        return predictionTimes.get(index);
+        return predTimes.get(index);
     }
     
     public long getPredictionTimeInNanos(int index) { 
@@ -634,10 +636,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     public void cleanPredictionInfo() {
-        predictedClassProbabilities = null;
-        predictedClassValues = null;
+        predDistributions = null;
+        predClassValues = null;
         trueClassValues = null;
-        predictionTimes = null;
+        predTimes = null;
     }
         
         
@@ -721,22 +723,22 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         StringBuilder sb = new StringBuilder();
         
         sb.append(trueClassValues.get(i).intValue()).append(",");
-        sb.append(predictedClassValues.get(i).intValue());
+        sb.append(predClassValues.get(i).intValue());
         
         //probs
         sb.append(","); //<empty space>
-        double[] probs=predictedClassProbabilities.get(i);
+        double[] probs=predDistributions.get(i);
         for(double d:probs)
             sb.append(",").append(GenericTools.RESULTS_DECIMAL_FORMAT.format(d));
         
         //timing 
-        sb.append(",,").append(predictionTimes.get(i)); //<empty space>, timing
+        sb.append(",,").append(predTimes.get(i)); //<empty space>, timing
         
         return sb.toString();
     }
     
     public String instancePredictionsToString(){
-        if(numInstances()>0 &&(predictedClassProbabilities.size()==trueClassValues.size()&& predictedClassProbabilities.size()==predictedClassValues.size())){
+        if(numInstances()>0 &&(predDistributions.size()==trueClassValues.size()&& predDistributions.size()==predClassValues.size())){
             StringBuilder sb=new StringBuilder("");
             
             for(int i=0;i<numInstances();i++){
@@ -889,9 +891,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public void loadResultsFromFile(String path) throws FileNotFoundException {
         //init
         trueClassValues = new ArrayList<>();
-        predictedClassValues = new ArrayList<>();
-        predictedClassProbabilities = new ArrayList<>();
-        predictionTimes = new ArrayList<>();
+        predClassValues = new ArrayList<>();
+        predDistributions = new ArrayList<>();
+        predTimes = new ArrayList<>();
         numInstances = 0;
         acc = -1;
         buildTime = -1;
@@ -996,9 +998,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     */
     private double[][] buildConfusionMatrix() {
         double[][] matrix = new double[numClasses][numClasses];
-        for (int i = 0; i < predictedClassValues.size(); ++i){
+        for (int i = 0; i < predClassValues.size(); ++i){
             double actual=trueClassValues.get(i);
-            double predicted=predictedClassValues.get(i);
+            double predicted=predClassValues.get(i);
             ++matrix[(int)actual][(int)predicted];
         }
         return matrix;
@@ -1182,7 +1184,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         ArrayList<Pair> p=new ArrayList<>();
         double nosPositive=0,nosNegative;
         for(int i=0;i<numInstances;i++){
-            Pair temp=new Pair(predictedClassProbabilities.get(i)[c],trueClassValues.get(i));
+            Pair temp=new Pair(predDistributions.get(i)[c],trueClassValues.get(i));
             if(c==trueClassValues.get(i))
                 nosPositive++;
             p.add(temp);
@@ -1296,4 +1298,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return stats;
     }
     
+    public static void main(String[] args) {
+        
+    }
 }
