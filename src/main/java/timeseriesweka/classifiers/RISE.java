@@ -25,6 +25,7 @@ import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
 import utilities.TrainAccuracyEstimate;
 import evaluation.ClassifierResults;
+import java.util.ArrayList;
 
 /*
 
@@ -162,17 +163,17 @@ public class RISE extends AbstractClassifierWithTrainingData implements SavePara
 //Set up train instances and save format for testing. 
             int numFeatures=endPoints[i]-startPoints[i]+1;
             String name;
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             for(int j=0;j<numFeatures;j++){
                     name = "F"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             //Get the class values as a fast vector			
             Attribute target =data.attribute(data.classIndex());
             FastVector vals=new FastVector(target.numValues());
             for(int j=0;j<target.numValues();j++)
                     vals.addElement(target.value(j));
-            atts.addElement(new Attribute(data.attribute(data.classIndex()).name(),vals));
+            atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));
     //create blank instances with the correct class value                
             Instances result = new Instances("Tree",atts,data.numInstances());
             result.setClassIndex(result.numAttributes()-1);
