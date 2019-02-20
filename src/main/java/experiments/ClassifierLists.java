@@ -30,6 +30,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.randomboss.RandomBOSS;
 import vector_classifiers.CAWPE;
 import vector_classifiers.ContractRotationForest;
 import weka.classifiers.Classifier;
@@ -234,6 +235,9 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
+            case "BOSSMV":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).setSeed(fold);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
