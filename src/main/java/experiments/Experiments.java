@@ -13,7 +13,7 @@
  * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
  * (see the class of the same name under utilities). 
  * 
- * @author ajb (anthony.bagnall@uea.ac.uk), james (james.large@uea.ac.uk)
+ * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
  */
 package experiments;
 
@@ -236,8 +236,32 @@ public class Experiments  {
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+        }else{
+            int folds=10;
+            boolean threaded=true;
+            if(threaded){
+                String[] settings=new String[6];
+                settings[0]="Z:/Data/TSCProblems2018/";
+                settings[1]="Z:/Results/Java/";
+                settings[2]="false";
+                settings[3]="TSFC45";
+                settings[4]="blank";
+                settings[5]="0";
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
+            }else{//Local run without args, mainly for debugging
+                String[] settings=new String[6];
+//Location of data set                        
+                settings[0]="Z:/Data/TSCProblems2018/";//Where to put results                
+                settings[1]="Z:/Results/";//Where to write results                
+                settings[2]="false"; //Whether to generate train files or not               
+                settings[3]="TSFC45"; //Classifier name               
+                settings[4]="ItalyPowerDemand"; //Problem file   
+                settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+            }
         }
-        
     }
 
     /**
