@@ -138,7 +138,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     boolean trainCV=false;  
     private String trainCVPath="";
     
-    /** voteEnsemble determines whether to aggregate classifications or probabilities when predicting */
+    /** voteEnsemble determines whether to aggregate classifications or
+     * probabilities when predicting */
     private boolean voteEnsemble=true;
 
 
@@ -160,7 +161,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     }
 
 /**
- * ok, these two methods are a bit pointless, experimenting with ensemble method
+ * ok,  two methods are a bit pointless, experimenting with ensemble method
  * @param b 
  */    
     public void setVoteEnsemble(boolean b){
@@ -220,7 +221,11 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
  */
     @Override
     public String getParameters() {
-        return super.getParameters()+",numTrees,"+numClassifiers+",numFeatures,"+numIntervals;
+        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName();
+        if(base instanceof RandomTree)
+           temp+=",k,"+((RandomTree)base).getKValue();
+        return temp;
+
     }
     public void setNumTrees(int t){
         numClassifiers=t;
@@ -373,7 +378,6 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
-        
         long t1=System.currentTimeMillis();
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
     //Estimate train accuracy here if required
@@ -395,8 +399,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
         for(int j=0;j<numIntervals*3;j++){
-                name = "F"+j;
-                atts.add(new Attribute(name));
+            name = "F"+j;
+            atts.add(new Attribute(name));
         }
         //Get the class values as an array list		
         Attribute target =data.attribute(data.classIndex());
@@ -416,6 +420,14 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         testHolder =new Instances(result,0);       
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
+//Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
+        if(base instanceof RandomTree){
+            ((RandomTree) base).setKValue(result.numAttributes()-1);
+//            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
+            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
+        }        
+        
+        
         /** For each base classifier 
          *      generate random intervals
          *      do the transfrorms
@@ -448,7 +460,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
                 }
             }
         //3. Create and build tree using all the features. Feature selection
-            trees[i]=AbstractClassifier.makeCopy(base);          
+            trees[i]=AbstractClassifier.makeCopy(base); 
             trees[i].buildClassifier(result);
         }
         long t2=System.currentTimeMillis();
@@ -513,7 +525,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         return d;
     }
 /**
- * 
+ * What about  
  * @param ins
  * @return
  * @throws Exception 
