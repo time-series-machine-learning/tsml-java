@@ -146,7 +146,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
     }
     
-    public static void buildParaAnalysisFiles() throws FileNotFoundException {
+    public static void buildParaAnalysisFiles() throws FileNotFoundException, Exception {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         

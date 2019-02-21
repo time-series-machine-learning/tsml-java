@@ -15,7 +15,6 @@
 package vector_classifiers;
 
 import experiments.CollateResults;
-import experiments.DataSets;
 import experiments.Experiments;
 import evaluation.MultipleClassifierEvaluation;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
@@ -25,8 +24,6 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Arrays;
 
 import timeseriesweka.classifiers.cote.HiveCoteModule;
@@ -51,6 +48,7 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
 import evaluation.ClassifierResults;
+import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.filters.SAX;
@@ -137,6 +135,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected ClassifierResults ensembleTrainResults = null;//data generated during buildclassifier if above = true
     protected ClassifierResults ensembleTestResults = null;//data generated during testing
 
+    //saved after building so that it can be added to our test results, even if for some reason 
+    //we're not building/writing train results
+    protected long buildTime = -1; 
+    
     //data info
     protected int numTrainInsts;
     protected int numAttributes;
@@ -438,7 +440,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     @Override
     public void buildClassifier(Instances data) throws Exception {
         printlnDebug("**CAWPE TRAIN**");
-
+        
+        long startTime = System.nanoTime();
 
         //housekeeping
         if (resultsFilesParametersInitialised) {
@@ -450,8 +453,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
 
-        long startTime = System.nanoTime();
-
+        
+        //init
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
+        
         //transform data if specified
         if(this.transform==null){
             this.trainInsts = new Instances(data);
@@ -459,22 +466,33 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             this.trainInsts = transform.process(data);
         }
 
-        //init
-        this.numTrainInsts = trainInsts.numInstances();
-        this.numClasses = trainInsts.numClasses();
-        this.numAttributes = trainInsts.numAttributes();
-
         //set up modules
         initialiseModules();
+        
+        //if modules' results are being read in from file, ignore the i/o overhead 
+        //of loading the results, we'll sum the actual buildtimes of each module as 
+        //reported in the files
+        if (readIndividualsResults)
+            startTime = System.nanoTime();
+        
+        //set up ensemble
         weightingScheme.defineWeightings(modules, numClasses);
         votingScheme.trainVotingScheme(modules, numClasses);
 
+        buildTime = System.nanoTime() - startTime;
+        if (readIndividualsResults) {
+            //we need to sum the modules' reported build time as well as the weight
+            //and voting definition time
+            for (EnsembleModule module : modules)
+                buildTime += module.testResults.getPredictionTimeInNanos(testInstCounter);
+        }
+        
         if(this.performEnsembleCV) {
-            //buildTime does not include the ensemble's cv, only the work required to be ready for testing
-            long buildTime = System.nanoTime() - startTime;
-
             ensembleTrainResults = doEnsembleCV(data); //combine modules to find overall ensemble trainpreds
-            ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
+            
+            //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
+            //time unit has been set in doEnsembleCV(data);
+            ensembleTrainResults.setBuildTime(buildTime);
 
             if (writeEnsembleTrainingFile)
                 writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
@@ -547,9 +565,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 
                 //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
                 //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
-                long startTime = System.currentTimeMillis();
+                long startTime = System.nanoTime();
                 module.getClassifier().buildClassifier(trainInsts);
-                module.trainResults.setBuildTime(System.currentTimeMillis() - startTime);
+                module.trainResults.setBuildTime(System.nanoTime() - startTime);
+                module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
 
                 if (writeIndividualsResults) { //if we're doing trainFold# file writing
                     writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
@@ -576,9 +595,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             if (moduleTrainResultsFile != null) {
                 printlnDebug(modules[m].getModuleName() + " train loading... " + moduleTrainResultsFile.getAbsolutePath());
 
-//                modules[m].trainResults = loadResultsFile(moduleTrainResultsFile, numClasses);
                 modules[m].trainResults = new ClassifierResults(moduleTrainResultsFile.getAbsolutePath());
-
                 trainResultsLoaded = true;
             }
 
@@ -589,7 +606,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 printlnDebug(modules[m].getModuleName() + " test loading..." + moduleTestResultsFile.getAbsolutePath());
 
                 modules[m].testResults = new ClassifierResults(moduleTestResultsFile.getAbsolutePath());
-//                modules[m].testResults = loadResultsFile(moduleTestResultsFile, numClasses);
 
                 numTestInsts = modules[m].testResults.numInstances();
                 testResultsLoaded = true;
@@ -694,15 +710,16 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double[] dist;
 
         ClassifierResults trainResults = new ClassifierResults(data.numClasses());
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
         //for each train inst
         for (int fold = 0; fold < cv.getNumFolds(); fold++) {
             for (int i = 0; i < cv.getFoldIndices().get(fold).size(); i++) {
                 int instIndex = cv.getFoldIndices().get(fold).get(i);
 
-                long startTime = System.currentTimeMillis();
+                long startTime = System.nanoTime();
                 dist = votingScheme.distributionForTrainInstance(modules, instIndex);
-                long predTime = System.currentTimeMillis() - startTime; //time for ensemble to form vote
+                long predTime = System.nanoTime()- startTime; //time for ensemble to form vote
                 for (EnsembleModule module : modules) //                 +time for each member's predictions
                     predTime += module.testResults.getPredictionTime(instIndex);
                 
@@ -970,23 +987,25 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             printlnDebug("\n**TEST**");
 
             ensembleTestResults = new ClassifierResults(numClasses);
+            ensembleTestResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            ensembleTestResults.setBuildTime(buildTime);
         }
 
         if (readIndividualsResults && testInstCounter >= numTestInsts) //if no test files loaded, numTestInsts == -1
             throw new Exception("Received more test instances than expected, when loading test results files, found " + numTestInsts + " test cases");
 
         double[] dist;
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         long predTime;
         if (readIndividualsResults) { //have results loaded from file
             dist = votingScheme.distributionForTestInstance(modules, testInstCounter);
-            predTime = System.currentTimeMillis() - startTime; //time for ensemble to form vote
+            predTime = System.nanoTime() - startTime; //time for ensemble to form vote
             for (EnsembleModule module : modules) //            +time for each member's predictions
                 predTime += module.testResults.getPredictionTime(testInstCounter);
         }
         else {//need to classify them normally
             dist = votingScheme.distributionForInstance(modules, ins);
-            predTime = System.currentTimeMillis() - startTime;
+            predTime = System.nanoTime() - startTime;
         }
         ensembleTestResults.addPrediction(dist, indexOfMax(dist), predTime, "");
 
@@ -1393,7 +1412,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest9/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest10/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;

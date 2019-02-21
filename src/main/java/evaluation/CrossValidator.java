@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import utilities.ClassifierTools;
 import utilities.StatisticalUtilities;
 import weka.classifiers.Classifier;
@@ -100,7 +101,7 @@ public class CrossValidator {
 
             //for each classifier in ensemble
             for (int c = 0; c < classifiers.length; ++c) {
-                long t1 = System.currentTimeMillis();
+                long t1 = System.nanoTime();
                 
                 classifiers[c].buildClassifier(trainTest[0]);
 
@@ -109,15 +110,15 @@ public class CrossValidator {
                     int instIndex = getOriginalInstIndex(testFold, i);
                     
                     //classify and store prediction
-                    long startTime = System.currentTimeMillis();
+                    long startTime = System.nanoTime();
                     double[] dist = classifiers[c].distributionForInstance(trainTest[1].instance(i));
-                    long predTime = System.currentTimeMillis() - startTime;
+                    long predTime = System.nanoTime()- startTime;
                     
                     distsForInsts[c][instIndex] = dist;
                     predTimes[c][instIndex] = predTime;
                 }    
                 
-                buildTimes[c] += System.currentTimeMillis() - t1;
+                buildTimes[c] += System.nanoTime() - t1;
             }
         }
         
@@ -126,6 +127,7 @@ public class CrossValidator {
         ClassifierResults[] results = new ClassifierResults[classifiers.length];
         for (int c = 0; c < classifiers.length; c++) {
             results[c] = new ClassifierResults(dataset.numClasses());
+            results[c].setTimeUnit(TimeUnit.NANOSECONDS);
             results[c].setClassifierName(classifiers[c].getClass().getSimpleName());
             results[c].setDatasetName(dataset.relationName());
             results[c].setFoldID(seed);
@@ -134,7 +136,15 @@ public class CrossValidator {
             
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);
-                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
+                
+                try {
+                    results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
+                } catch (Exception e) {
+                    System.out.println(e);
+                    System.out.println("");
+                    results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
+                }
+                
             }
             results[c].finaliseResults(trueClassVals);
         }

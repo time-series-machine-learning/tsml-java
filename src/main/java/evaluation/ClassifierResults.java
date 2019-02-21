@@ -1693,7 +1693,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         Random rng = new Random(0);
         for (int i = 0; i < 10; i++) { //obvs dists dont make much sense, not important here
-            res.addPrediction(rng.nextInt(2), new double[] { rng.nextDouble(), rng.nextDouble()}, rng.nextInt(2), rng.nextInt(5), "test,again");
+            res.addPrediction(rng.nextInt(2), new double[] { rng.nextDouble(), rng.nextDouble()}, rng.nextInt(2), rng.nextInt(5)+1, "test,again");
         }
         
         res.finaliseResults();

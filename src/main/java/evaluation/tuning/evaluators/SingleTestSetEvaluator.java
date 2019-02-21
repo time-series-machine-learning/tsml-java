@@ -2,6 +2,7 @@
 package evaluation.tuning.evaluators;
 
 import evaluation.ClassifierResults;
+import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -81,15 +82,16 @@ public class SingleTestSetEvaluator implements Evaluator {
             insts = dataset;
         
         ClassifierResults res = new ClassifierResults(insts.numClasses());
-            
+        res.setTimeUnit(TimeUnit.NANOSECONDS);
+        
         for (Instance testinst : insts) {
             double trueClassVal = testinst.classValue();
             if (setClassMissing)
                 testinst.setClassMissing();
             
-            long startTime = System.currentTimeMillis();
+            long startTime = System.nanoTime();
             double[] dist = classifier.distributionForInstance(testinst);
-            long predTime = System.currentTimeMillis() - startTime;
+            long predTime = System.nanoTime() - startTime;
             res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
 
