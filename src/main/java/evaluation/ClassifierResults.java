@@ -295,7 +295,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * Load a classifierresults object from the file at the specified path
      */
-    public ClassifierResults(String filePathAndName) throws FileNotFoundException {
+    public ClassifierResults(String filePathAndName) throws FileNotFoundException, Exception {
         loadResultsFromFile(filePathAndName);
     }
     
@@ -541,11 +541,27 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     public long getBuildTime() { return buildTime; }
     public long getBuildTimeInNanos() { return timeUnit.toNanos(buildTime); }
-    public void setBuildTime(long buildTime) { this.buildTime = buildTime; }
+    /**
+     * @throws Exception if buildTime is less than 1
+     */
+    public void setBuildTime(long buildTime) throws Exception { 
+        if (buildTime < 1)
+            throw new Exception("Build time passed has invalid value, " + buildTime + ". If greater resolution is needed, "
+                        + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
+        this.buildTime = buildTime; 
+    }
 
     public long getTestTime() { return testTime; }
     public long getTestTimeInNanos() { return timeUnit.toNanos(testTime); }
-    public void setTestTime(long testTime) { this.testTime = testTime; }
+    /**
+     * @throws Exception if testTime is less than 1
+     */
+    public void setTestTime(long testTime) throws Exception { 
+        if (testTime < 1)
+            throw new Exception("Test time passed has invalid value, " + testTime + ". If greater resolution is needed, "
+                        + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
+        this.testTime = testTime; 
+    }
 
     public long getMemory() { return memoryUsage; }
     public void setMemory(long memory) {
@@ -597,7 +613,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) {
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) throws Exception {
         predDistributions.add(dist);
         predClassValues.add(predictedClass);
         
@@ -606,14 +622,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         else 
             predDescriptions.add(description);
         
-        //allowing 0 in case user was unaware and/or doesnt care about a classifier taking e.g
-        //0 milliseconds. todo revisit at some point when time units implemented/enforced 
-        if (predictionTime < 0)
-            //adding a null placeholder for now. todo revisit
-            predTimes.add(null);
         
-            //add a zero placeholder, such that the timings can still be summed later, would mess with averages though? todo revisit    
-            //predTimes.add(0L);
+        if (predictionTime < 1)
+            throw new Exception("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
+                    + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
         else {
             predTimes.add(predictionTime);
 
@@ -635,7 +647,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
-    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) {        
+    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) throws Exception {        
         addPrediction(dist,predictedClass,predictionTime,description);
         trueClassValues.add(trueClassVal);
     }
@@ -865,7 +877,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * [true],[pred], ,[dist[0]],...,[dist[c]], ,[predTime], ,[description until end of line, may have commas in it]
      */
-    private boolean instancePredictionFromString(String predLine) { 
+    private boolean instancePredictionFromString(String predLine) throws Exception { 
         String[] split=predLine.split(",");
 
         //collect actual/predicted class
@@ -928,7 +940,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return trueClassVal==predClassVal;
     }
     
-    private void instancePredictionsFromScanner(Scanner in) { 
+    private void instancePredictionsFromScanner(Scanner in) throws Exception { 
         double correct = 0;
         while (in.hasNext()) {
             String line = in.nextLine();
@@ -1205,7 +1217,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         timeUnit = TimeUnit.valueOf(str);
     }
     
-    public void loadResultsFromFile(String path) throws FileNotFoundException {
+    public void loadResultsFromFile(String path) throws FileNotFoundException, Exception {
         //init
         trueClassValues = new ArrayList<>();
         predClassValues = new ArrayList<>();
