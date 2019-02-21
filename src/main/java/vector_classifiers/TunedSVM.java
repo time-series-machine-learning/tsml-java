@@ -350,7 +350,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 if(debug)
                     System.out.println(" C= "+p1+" Gamma = "+p2+" Acc = "+(1-e));
                 if(saveEachParaAcc){// Save to file and close
-                    res.writeResultsToFile(resultsPath+count+".csv");
+                    res.writeFullResultsToFile(resultsPath+count+".csv");
                     File f=new File(resultsPath+count+".csv");
                     if(f.exists())
                         f.setWritable(true, false);
@@ -493,7 +493,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     if(debug)
                         System.out.println("C="+p1+",Exp="+p2+",B="+p3+", Acc = "+(1-e));
                     if(saveEachParaAcc){// Save to file and close
-                        res.writeResultsToFile(resultsPath+count+".csv");
+                        res.writeFullResultsToFile(resultsPath+count+".csv");
                     }                
                     else{
                         if(e<minErr){
@@ -640,7 +640,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
             double e=1-tempResults.getAcc();
             accuracy.add(tempResults.getAcc());
             if(saveEachParaAcc){// Save to file and close
-                res.writeResultsToFile(resultsPath+count+".csv");
+                res.writeFullResultsToFile(resultsPath+count+".csv");
             }                
             if(e<minErr){
                 minErr=e;
@@ -1013,7 +1013,7 @@ this gives the option of finding one using 10xCV
             res.setSplit("train");
             
             res.setParas(getParameters());
-            res.writeResultsToFile(trainPath);
+            res.writeFullResultsToFile(trainPath);
             File x=new File(trainPath);
             x.setWritable(true, false);
             

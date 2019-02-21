@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -84,6 +85,34 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
+    
+    
+    private enum FileType { 
+        /**
+         * Writes/loads the first 3 lines, and all prediction info on the remaining numInstances lines
+         * 
+         * Usable in all evaluations and post-processed ensembles etc. 
+         */
+        PREDICTIONS, 
+        
+        /**
+         * Writes/can only be guaranteed to contain the first 3 lines, and the summative metrics, NOT 
+         * full prediction info
+         * 
+         * Usable in evaluations that are restricted to the metrics described in this file, 
+         * but not post-processed ensembles 
+         */
+        METRICS, 
+        
+        /**
+         * To be defined more precisely at later date. Intended use would be a classifiers' internal 
+         * storage, perhaps for checkpointing etc if full writing/reading would simply take up too much space 
+         * and IO compute overhead. Goastler to define
+         */
+        COMPACT 
+    };
+    private FileType fileType = FileType.PREDICTIONS;
+    
     private String description= ""; //human-friendly optional extra info if wanted. 
     
 //LINE 2: classifier setup/info, parameters. precise format is up to user. 
@@ -174,7 +203,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * Consistent time unit ASSUMED across build times, test times, individual prediction times. 
      * Before considering different timeunits, all timing were in milliseconds, via
      * System.currentTimeMillis(). Some classifiers on some datasets may train/predict in less than 1 millisecond 
-     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds. 
+     * however. The default timeunit will still be milliseconds, however if any time passed has a value of 0, 
+     * an exception will be thrown. This is in part to convince people using/owning older code and writing 
+     * new code to switch to nanoseconds where it may be clearly needed. 
      * 
      * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
      * Could be conceivable that the cumulative time of a large meta ensemble that is run 
@@ -183,7 +214,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * In results files made before 19/2/2019, which only stored build times and 
      * milliseconds was assumed, there will be no unit of measurement for the time. 
      */
-    private TimeUnit timeUnit = TimeUnit.NANOSECONDS;
+    private TimeUnit timeUnit = TimeUnit.MILLISECONDS;
 
     
     //self-management flags
@@ -897,6 +928,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return trueClassVal==predClassVal;
     }
     
+    private void instancePredictionsFromScanner(Scanner in) { 
+        double correct = 0;
+        while (in.hasNext()) {
+            String line = in.nextLine();
+            //may be trailing empty lines at the end of the file
+            if (line == null || line.equals(""))
+                break;
+            
+            if (instancePredictionFromString(line))
+                correct++;
+        }
+
+        acc = correct / numInstances;
+    }
     
     /**
      * [true],[pred], ,[dist[0]],...,[dist[c]], ,[predTime], ,[description until end of line, may have commas in it]
@@ -950,8 +995,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return generateFirstLine();
     }
     
-    public String writeResultsFileToString() throws Exception {         
+    public String writeFullResultsFileToString() throws Exception {         
         finaliseResults();
+        fileType = FileType.PREDICTIONS;
         
         StringBuilder st = new StringBuilder();
         st.append(generateFirstLine()).append("\n");
@@ -962,17 +1008,89 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return st.toString();
     }
    
-    public void writeResultsToFile(String path) throws Exception {
+    public void writeFullResultsToFile(String path) throws Exception {
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeResultsFileToString());
+            out.writeString(writeFullResultsFileToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
                      + "Path: " + path +"\nError: "+ e);
         } finally {
-            out.closeFile();
+            if (out != null)
+                out.closeFile();
+        }
+    }
+    
+    public String writeCompactResultsFileToString() throws Exception {         
+        finaliseResults();
+        fileType = FileType.COMPACT;
+        
+        StringBuilder st = new StringBuilder();
+        
+        throw new UnsupportedOperationException("COMPACT file writing not yet supported ");
+        
+//        return st.toString();
+    }
+   
+    public void writeCompactResultsToFile(String path) throws Exception {
+        OutFile out = null;
+        try {
+            out = new OutFile(path);
+            out.writeString(writeFullResultsFileToString());
+        } catch (Exception e) { 
+             throw new Exception("Error writing results file.\n"
+                     + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
+                     + "Path: " + path +"\nError: "+ e);
+        } finally {
+            if (out != null)
+                out.closeFile();
+        }
+    }
+    
+    /**
+     * Writes the first three meta-data lines of the file as normal, but INSTEAD OF 
+     * writing predictions, writes the evaluative metrics produced by allPerformanceMetricsToString()
+     * to fill the rest of the file. This is intended to save disk space and/or memory where 
+     * full prediction info is not needed, only the summative information. Results files 
+     * written using this method would not be used to train a post-processed ensemble at a 
+     * later date, forexample, but could still be used as part of a comparative evaluation
+     */
+    public String writeSummaryResultsFileToString() throws Exception {         
+        finaliseResults();
+        findAllStatsOnce();
+        fileType = FileType.METRICS;
+        
+        StringBuilder st = new StringBuilder();
+        st.append(generateFirstLine()).append("\n");
+        st.append(generateSecondLine()).append("\n");
+        st.append(generateThirdLine()).append("\n");
+
+        st.append(allPerformanceMetricsToString());
+        return st.toString();
+    }
+    
+    /**
+     * Writes the first three meta-data lines of the file as normal, but INSTEAD OF 
+     * writing predictions, writes the evaluative metrics produced by allPerformanceMetricsToString()
+     * to fill the rest of the file. This is intended to save disk space and/or memory where 
+     * full prediction info is not needed, only the summative information. Results files 
+     * written using this method would not be used to train a post-processed ensemble at a 
+     * later date, forexample, but could still be used as part of a comparative evaluation
+     */
+    public void writeSummaryResultsToFile(String path) throws Exception {
+        OutFile out = null;
+        try {
+            out = new OutFile(path);
+            out.writeString(writeSummaryResultsFileToString());
+        } catch (Exception e) { 
+             throw new Exception("Error writing results file.\n"
+                     + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
+                     + "Path: " + path +"\nError: "+ e);
+        } finally {
+            if (out != null)
+                out.closeFile();
         }
     }
     
@@ -1002,14 +1120,17 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             timeUnit = TimeUnit.MILLISECONDS; 
         
         if (parts.length > 5)
-            description = parts[5];
+            fileType = FileType.valueOf(parts[5]);
+        
+        if (parts.length > 6)
+            description = parts[6];
 
         //nothing stopping the description from having its own commas in it, jsut read until end of line
         for (int i = 6; i < parts.length; i++)
             description += "," + parts[i];
     }
     private String generateFirstLine() { 
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + ","+ description;
+        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + ", "+ description;
     }
    
     private void parseSecondLine(String line) { 
@@ -1109,26 +1230,28 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         parseSecondLine(inf.nextLine());
         double reportedTestAcc = parseThirdLine(inf.nextLine());
 
-        //have all meta info, start reading predictions
-        double correct = 0;
-        while (inf.hasNext()) {
-            String line = inf.nextLine();
-            //may be trailing empty lines at the end of the file
-            if (line == null || line.equals(""))
+        //fileType was read in from first line.
+        switch (fileType) {
+            case PREDICTIONS: {
+                //have all meta info, start reading predictions or metrics
+                instancePredictionsFromScanner(inf);
+
+                //acts as a basic form of verification, does the acc reported on line 3 align with 
+                //the acc calculated while reading predictions
+                double eps = 1.e-8;
+                if (Math.abs(reportedTestAcc - acc) > eps) {
+                    throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
+                            + "by more than eps (" + eps + ")");
+                }
                 break;
-            
-            if (instancePredictionFromString(line))
-                correct++;
+            }
+            case METRICS:
+                allPerformanceMetricsFromScanner(inf);
+                break;
+            case COMPACT:
+                throw new UnsupportedOperationException("COMPACT file reading not yet supported");
         }
-
-        //acts as a basic form of verification
-        acc = correct / numInstances;
-        double eps = 1.e-8;
-        if (Math.abs(reportedTestAcc - acc) > eps) {
-            throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
-                    + "by more than eps (" + eps + ")");
-        }
-
+        
         finalised = true;
         inf.close();
     }
@@ -1441,9 +1564,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return auroc;
     } 
     
-    public String allPerformanceMetricsToString(){
-        String str="Acc,"+acc+"\n";
-        str+="BalancedAcc,"+balancedAcc+"\n"; 
+    public String allPerformanceMetricsToString() {
+        
+        String str="numClasses,"+numClasses+"\n";
+        str+="numInstances,"+numInstances+"\n"; 
+        str+="acc,"+acc+"\n";
+        str+="balancedAcc,"+balancedAcc+"\n"; 
         str+="sensitivity,"+sensitivity+"\n"; 
         str+="precision,"+precision+"\n"; 
         str+="recall,"+recall+"\n"; 
@@ -1453,16 +1579,53 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         str+="nll,"+nll+"\n"; 
         str+="meanAUROC,"+meanAUROC+"\n"; 
         str+="stddev,"+stddev+"\n"; 
-        str+="Count per class:\n";
+        str+="countPerClass:\n";
         for(int i=0;i<countPerClass.length;i++)
             str+="Class "+i+","+countPerClass[i]+"\n";
-        str+="Confusion Matrix:\n";
+        str+="confusionMatrix:\n";
         for(int i=0;i<confusionMatrix.length;i++){
             for(int j=0;j<confusionMatrix[i].length;j++)
                 str+=confusionMatrix[i][j]+",";
             str+="\n";
         }
         return str;
+    }
+    public void allPerformanceMetricsFromScanner(Scanner scan) throws NoSuchElementException, NumberFormatException {      
+        
+        try {
+            numClasses =    Integer.parseInt(scan.nextLine().split(",")[1]);
+            numInstances =  Integer.parseInt(scan.nextLine().split(",")[1]);
+            acc =           Double.parseDouble(scan.nextLine().split(",")[1]);
+            balancedAcc =   Double.parseDouble(scan.nextLine().split(",")[1]);
+            sensitivity =   Double.parseDouble(scan.nextLine().split(",")[1]);
+            precision =     Double.parseDouble(scan.nextLine().split(",")[1]);
+            recall =        Double.parseDouble(scan.nextLine().split(",")[1]);
+            specificity =   Double.parseDouble(scan.nextLine().split(",")[1]);
+            f1 =            Double.parseDouble(scan.nextLine().split(",")[1]);
+            mcc =           Double.parseDouble(scan.nextLine().split(",")[1]);
+            nll =           Double.parseDouble(scan.nextLine().split(",")[1]);
+            meanAUROC =     Double.parseDouble(scan.nextLine().split(",")[1]);
+            stddev =        Double.parseDouble(scan.nextLine().split(",")[1]);
+            
+            assert(scan.nextLine() == "countPerClass");//todo change to if not throws 
+            countPerClass = new double[numClasses];
+            for (int i = 0; i < numClasses; i++)
+                countPerClass[i] = Double.parseDouble(scan.nextLine().split(",")[1]);
+            
+            assert(scan.nextLine() == "confusionMatrix"); //todo change to if not throws 
+            confusionMatrix = new double[numClasses][numClasses];
+            for (int i = 0; i < numClasses; i++) {
+                String[] vals = scan.nextLine().split(",");
+                for (int j = 0; j < numClasses; j++) 
+                    confusionMatrix[i][j] = Double.parseDouble(vals[j]);
+            }
+        } catch (NoSuchElementException e) {
+            System.err.println("Error reading metrics in allPerformanceMetricsFromString(str), scanner reached end prematurely");
+            throw e;
+        } catch (NumberFormatException e) {
+            System.err.println("Error reading metrics in allPerformanceMetricsFromString(str), parsing metric value failed");
+            throw e;
+        }
     }
 
     public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
@@ -1523,12 +1686,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         res.finaliseResults();
         
-        System.out.println(res.writeResultsFileToString());
+        System.out.println(res.writeFullResultsFileToString());
         System.out.println("\n\n");
         
-        res.writeResultsToFile("test.csv");
+        res.writeFullResultsToFile("test.csv");
         
         ClassifierResults res2 = new ClassifierResults("test.csv");
-        System.out.println(res2.writeResultsFileToString());
+        System.out.println(res2.writeFullResultsFileToString());
     }
 }

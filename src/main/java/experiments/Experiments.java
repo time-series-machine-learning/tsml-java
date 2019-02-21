@@ -640,7 +640,7 @@ public class Experiments  {
         if (classifier instanceof SaveParameterInfo)
             results.setParas(((SaveParameterInfo) classifier).getParameters());
 
-        results.writeResultsToFile(fullTestWritingPath);
+        results.writeFullResultsToFile(fullTestWritingPath);
         
         File f = new File(fullTestWritingPath);
         if (f.exists()) {

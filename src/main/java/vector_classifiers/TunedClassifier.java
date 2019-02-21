@@ -195,7 +195,7 @@ public class TunedClassifier extends AbstractClassifier
         TAE_trainAcc = best.results.getAcc();
         
         if (TAE_writeTrainAcc && TAE_trainAccWritePath != null)
-            TAE_trainResults.writeResultsToFile(TAE_trainAccWritePath);
+            TAE_trainResults.writeFullResultsToFile(TAE_trainAccWritePath);
         
         //apply best paras and build final classifier on full train data
         String[] options = best.paras.toOptionsList();

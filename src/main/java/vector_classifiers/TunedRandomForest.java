@@ -304,7 +304,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                         System.out.println("Depth="+p1+",Features"+p2+",Trees="+p3+" Acc = "+(1-e));
                     accuracy.add(tempResults.getAcc());
                     if(saveEachParaAcc){// Save to file and close
-                        tempResults.writeResultsToFile(resultsPath+count+".csv");
+                        tempResults.writeFullResultsToFile(resultsPath+count+".csv");
                         File f=new File(resultsPath+count+".csv");
                         if(f.exists())
                             f.setWritable(true, false);
@@ -506,7 +506,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
             res.setSplit("train");
                     
             res.setParas(getParameters()); 
-            res.writeResultsToFile(trainPath);
+            res.writeFullResultsToFile(trainPath);
         } 
         
     }
