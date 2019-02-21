@@ -91,7 +91,7 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         return dist;
     }
     
-    public void storeModuleTestResult(EnsembleModule module, double[] dist, long predTime) {
+    public void storeModuleTestResult(EnsembleModule module, double[] dist, long predTime) throws Exception {
         if (module.testResults == null)
             module.testResults = new ClassifierResults();
         

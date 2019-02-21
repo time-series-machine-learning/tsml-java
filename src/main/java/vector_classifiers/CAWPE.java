@@ -452,19 +452,19 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             if (writeResultsFilesDirectory == null)
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
-
         
+        //transform data if specified
+        if(this.transform==null){
+            this.trainInsts = data;
+//            this.trainInsts = new Instances(data);
+        }else{
+            this.trainInsts = transform.process(data);
+        }
+          
         //init
         this.numTrainInsts = trainInsts.numInstances();
         this.numClasses = trainInsts.numClasses();
         this.numAttributes = trainInsts.numAttributes();
-        
-        //transform data if specified
-        if(this.transform==null){
-            this.trainInsts = new Instances(data);
-        }else{
-            this.trainInsts = transform.process(data);
-        }
 
         //set up modules
         initialiseModules();
@@ -492,7 +492,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             
             //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
             //time unit has been set in doEnsembleCV(data);
+            ensembleTrainResults.turnOffZeroTimingsErrors();
             ensembleTrainResults.setBuildTime(buildTime);
+            ensembleTrainResults.turnOnZeroTimingsErrors();
 
             if (writeEnsembleTrainingFile)
                 writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
@@ -726,7 +728,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 pred = utilities.GenericTools.indexOfMax(dist);
                 actual = data.instance(instIndex).classValue();
                 
+                trainResults.turnOffZeroTimingsErrors();
                 trainResults.addPrediction(actual, dist, pred, predTime, "");
+                trainResults.turnOnZeroTimingsErrors();
                 
                 //and make ensemble prediction
                 if(pred==actual) {
@@ -1007,8 +1011,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             dist = votingScheme.distributionForInstance(modules, ins);
             predTime = System.nanoTime() - startTime;
         }
+        
+        ensembleTestResults.turnOffZeroTimingsErrors();
         ensembleTestResults.addPrediction(dist, indexOfMax(dist), predTime, "");
-
+        ensembleTestResults.turnOnZeroTimingsErrors();
+        
         if (prevTestInstance != instance)
             ++testInstCounter;
         prevTestInstance = instance;

@@ -232,6 +232,31 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private boolean allStatsFound = false;
     private boolean buildTimeDuplicateWarningPrinted = false; //flag such that a warning about build times in parseThirdLine(String) is only printed once, not spammed
     
+    
+    /**
+     * System.nanoTime() can STILL return zero on some tiny datasets with simple classifiers, 
+     * because it does not have enough precision. This flag, if true, will allow timings 
+     * of zero, under the partial assumption/understanding from the user that times under 
+     * ~200 nanoseconds can be equated to 0.
+     * 
+     * The flag defaults to false, however. Correct usage of this flag would be 
+     * to set it to true in circumstances where you, the coder supplying some kind of 
+     * timing, KNOW that you are measuring in millis, AND the classifierResults object's 
+     * timeunit is in millis, AND you reset the flag to false again immediately after
+     * adding the potentially offending time, such that the flag is not mistakenly left 
+     * on for genuinely erroneous timing additions later on.
+     * 
+     * This is in effect a double check that you the user know what you are doing, and old 
+     * code that sets (buildtimes in millis, mostly) times can be caught and updated if they cause
+     * problems
+     * 
+     * E.g 
+     * results.turnOffZeroTimingsErrorSuppression();
+     * results.setBuildTime(time);        // or e.g results.addPrediction(...., time, ...)
+     * results.turnOnZeroTimingsErrorSuppression();
+     */
+    private boolean errorOnTimingOfZero = false;
+    
     //functional getters to retrieve info from a classifierresults object, initialised/stored here for conveniance 
     public static final Function<ClassifierResults, Double> GETTER_Accuracy = (ClassifierResults cr) -> {return cr.acc;};
     public static final Function<ClassifierResults, Double> GETTER_BalancedAccuracy = (ClassifierResults cr) -> {return cr.balancedAcc;};
@@ -318,6 +343,56 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finaliseResults();
     }
     
+    /**
+     * System.nanoTime() can STILL return zero on some tiny datasets with simple classifiers, 
+     * because it does not have enough precision. This flag, if true, will allow timings 
+     * of zero, under the partial assumption/understanding from the user that times under 
+     * ~200 nanoseconds can be equated to 0.
+     * 
+     * The flag defaults to false, however. Correct usage of this flag would be 
+     * to set it to true in circumstances where you, the coder supplying some kind of 
+     * timing, KNOW that you are measuring in nanos, AND the classifierResults object's 
+     * timeunit is in nanos, AND you reset the flag to false again immediately after
+     * adding the potentially offending time, such that the flag is not mistakenly left 
+     * on for genuinely erroneous timing additions later on.
+     * 
+     * This is in effect a double check that you the user know what you are doing, and old 
+     * code that sets (buildtimes in millis, mostly) times can be caught and updated if they cause
+     * problems
+     * 
+     * E.g 
+     * results.turnOffZeroTimingsErrorSuppression();
+     * results.setBuildTime(time);        // or e.g results.addPrediction(...., time, ...)
+     * results.turnOnZeroTimingsErrorSuppression();
+     */
+    public void turnOffZeroTimingsErrors() {
+        errorOnTimingOfZero = false;
+    }
+    /**
+     * System.nanoTime() can STILL return zero on some tiny datasets with simple classifiers, 
+     * because it does not have enough precision. This flag, if true, will allow timings 
+     * of zero, under the partial assumption/understanding from the user that times under 
+     * ~200 nanoseconds can be equated to 0.
+     * 
+     * The flag defaults to false, however. Correct usage of this flag would be 
+     * to set it to true in circumstances where you, the coder supplying some kind of 
+     * timing, KNOW that you are measuring in millis, AND the classifierResults object's 
+     * timeunit is in millis, AND you reset the flag to false again immediately after
+     * adding the potentially offending time, such that the flag is not mistakenly left 
+     * on for genuinely erroneous timing additions later on.
+     * 
+     * This is in effect a double check that you the user know what you are doing, and old 
+     * code that sets (buildtimes in millis, mostly) times can be caught and updated if they cause
+     * problems
+     * 
+     * E.g 
+     * results.turnOffZeroTimingsErrorSuppression();
+     * results.setBuildTime(time);        // or e.g results.addPrediction(...., time, ...)
+     * results.turnOnZeroTimingsErrorSuppression();
+     */
+    public void turnOnZeroTimingsErrors() {
+        errorOnTimingOfZero = true;
+    }
     
     
     /***********************
@@ -545,9 +620,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * @throws Exception if buildTime is less than 1
      */
     public void setBuildTime(long buildTime) throws Exception { 
-        if (buildTime < 1)
+        if (errorOnTimingOfZero && buildTime < 1)
             throw new Exception("Build time passed has invalid value, " + buildTime + ". If greater resolution is needed, "
-                        + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
+                        + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
+                    + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
+                    + "for this call"); 
         this.buildTime = buildTime; 
     }
 
@@ -557,9 +634,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * @throws Exception if testTime is less than 1
      */
     public void setTestTime(long testTime) throws Exception { 
-        if (testTime < 1)
+        if (errorOnTimingOfZero && testTime < 1)
             throw new Exception("Test time passed has invalid value, " + testTime + ". If greater resolution is needed, "
-                        + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
+                    + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
+                    + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
+                    + "for this call"); 
         this.testTime = testTime; 
     }
 
@@ -623,9 +702,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             predDescriptions.add(description);
         
         
-        if (predictionTime < 1)
+        if (errorOnTimingOfZero && predictionTime < 1)
             throw new Exception("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
-                    + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds"); 
+                    + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
+                    + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
+                    + "for this call");  
         else {
             predTimes.add(predictionTime);
 

@@ -84,6 +84,7 @@ public class SingleTestSetEvaluator implements Evaluator {
         ClassifierResults res = new ClassifierResults(insts.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
         
+        res.turnOffZeroTimingsErrors();
         for (Instance testinst : insts) {
             double trueClassVal = testinst.classValue();
             if (setClassMissing)
@@ -94,7 +95,8 @@ public class SingleTestSetEvaluator implements Evaluator {
             long predTime = System.nanoTime() - startTime;
             res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
-
+        res.turnOnZeroTimingsErrors();
+        
         res.findAllStatsOnce(); 
         return res;
     }

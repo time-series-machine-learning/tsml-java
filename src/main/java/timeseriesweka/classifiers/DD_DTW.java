@@ -211,7 +211,12 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         }
         this.setDistanceFunction(this.distanceFunction);
         super.buildClassifier(train);
-        res.setBuildTime(System.currentTimeMillis()-startTime);
+        try {
+            res.setBuildTime(System.currentTimeMillis()-startTime);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
     }
      @Override
     public String getParameters() {

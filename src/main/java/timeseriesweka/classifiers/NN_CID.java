@@ -179,7 +179,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         this.setDistanceFunction(cid);
 //        cid.setInstances(train);
         super.buildClassifier(train);
-        res.setBuildTime(System.currentTimeMillis()-startTime);
+        try {
+            res.setBuildTime(System.currentTimeMillis()-startTime);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
         
     }
     public static class CIDDistance extends EuclideanDistance {

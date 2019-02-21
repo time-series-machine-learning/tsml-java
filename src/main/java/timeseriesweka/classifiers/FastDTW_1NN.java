@@ -189,7 +189,12 @@ public class FastDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             dtw.setR(maxR/100.0);
             res.setAcc(maxAcc);
         }
-        res.setBuildTime(System.currentTimeMillis()-t);
+        try {
+            res.setBuildTime(System.currentTimeMillis()-t);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
         res.setMemory(usedBytes);

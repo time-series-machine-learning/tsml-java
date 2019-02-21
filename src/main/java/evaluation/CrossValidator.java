@@ -131,21 +131,16 @@ public class CrossValidator {
             results[c].setClassifierName(classifiers[c].getClass().getSimpleName());
             results[c].setDatasetName(dataset.relationName());
             results[c].setFoldID(seed);
-            results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling class will set this to test when needed
-            results[c].setBuildTime(buildTimes[c]);
+            results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
             
+            results[c].turnOffZeroTimingsErrors();
+            results[c].setBuildTime(buildTimes[c]);
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);
-                
-                try {
-                    results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
-                } catch (Exception e) {
-                    System.out.println(e);
-                    System.out.println("");
-                    results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
-                }
-                
+                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
             }
+            results[c].turnOnZeroTimingsErrors();
+            
             results[c].finaliseResults(trueClassVals);
         }
 

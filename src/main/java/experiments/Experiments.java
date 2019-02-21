@@ -532,6 +532,7 @@ public class Experiments  {
             if (expSettings.generateErrorEstimateOnTrainSet) {
                 if (!(classifier instanceof TrainAccuracyEstimate)) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
+                    trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
@@ -548,7 +549,13 @@ public class Experiments  {
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
+                    long testBenchmark = findBenchmarkTime();
+                    
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
+                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+                    
+                    testResults.turnOffZeroTimingsErrors();
+                    testResults.setBenchmarkTime(testBenchmark);
                     testResults.setBuildTime(buildTime);
                     LOGGER.log(Level.INFO, "Testing complete");
                     writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
@@ -608,11 +615,14 @@ public class Experiments  {
                 f.setWritable(true, false);
         } 
         else { 
+            long trainBenchmark = findBenchmarkTime();
+            
             CrossValidator cv = new CrossValidator();
             cv.setSeed(fold);
             int numFolds = Math.min(train.numInstances(), numCVFolds);
             cv.setNumFolds(numFolds);
             trainResults = cv.crossValidateWithStats(classifier, train);
+            trainResults.setBenchmarkTime(trainBenchmark);
         }
         
         return trainResults;
@@ -627,22 +637,19 @@ public class Experiments  {
         eval.setSeed(exp.foldId);
         
         return eval.evaluate(classifier, testSet);
-
-//        ClassifierResults results = new ClassifierResults(testSet.numClasses());
-//        double[] trueClassValues = testSet.attributeToDoubleArray(testSet.classIndex());
-//
-//        for (Instance instance : testSet) {
-//            instance.setClassMissing(); //just to be sure of no funny business 
-//            
-//            long startTime = System.currentTimeMillis();
-//            double[] probs = classifier.distributionForInstance(instance);
-//            long predTime = System.currentTimeMillis() - startTime;
-//            
-//            results.addPrediction(probs, indexOfMax(probs), predTime, "");
-//        }
-//        
-//        results.finaliseResults(trueClassValues);
-//        return results;
+    }
+    
+    /**
+     * todo not implemented yet, returns default. To be decided in group, most likely 
+     * add a flag to the experimental arguments to set whether to do this or not
+     * 
+     * If running many very short experiments, adding e.g 5 seconds onto each to provide 
+     * benchmark timings would a) be unreliable anyway (since the timing of the short experiment 
+     * itself would perhaps be imprecise) and b) increase the total time for the set of experiments
+     * massively
+     */
+    public static long findBenchmarkTime() {
+        return -1; //the default in classifierresults, i.e no benchmark
     }
     
     public static void writeResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {

@@ -768,7 +768,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
 
 //TO DO: add the option to build from an incomplete parameter set, 
 //    without deleting
-    public void buildFromFile() throws FileNotFoundException{
+    public void buildFromFile() throws FileNotFoundException, Exception{
         combinedBuildTime=0;
         int count=0;
         ArrayList<ResultsHolder> ties=new ArrayList<>();

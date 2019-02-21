@@ -576,7 +576,12 @@ public TechnicalInformation getTechnicalInformation() {
             for(int k=0;k<numClasses;k++)
                classProbs[i][k]/=numSubSeries; 
         }
-        trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
+        try {
+            trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
     }
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
