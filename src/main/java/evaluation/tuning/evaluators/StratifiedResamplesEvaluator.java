@@ -91,25 +91,29 @@ public class StratifiedResamplesEvaluator implements Evaluator {
         
         resultsPerFold = new ClassifierResults[numFolds]; 
         ClassifierResults allFoldsResults = new ClassifierResults(dataset.numClasses());
-        
+        allFoldsResults.turnOffZeroTimingsErrors();
+                
         for (int fold = 0; fold < numFolds; fold++) {
             Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
             
             classifier.buildClassifier(resampledData[0]);
             resultsPerFold[fold] = new ClassifierResults(dataset.numClasses());
+            resultsPerFold[fold].turnOffZeroTimingsErrors();
             
             //todo, implement this loop via SingleTestSetEvluator            
             for (Instance testinst : resampledData[1]) {
-                long startTime = System.currentTimeMillis();
+                long startTime = System.nanoTime();
                 double[] dist = classifier.distributionForInstance(testinst);
-                long predTime = System.currentTimeMillis() - startTime;
+                long predTime = System.nanoTime()- startTime;
                 resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
                 allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
             }
             
+            resultsPerFold[fold].turnOnZeroTimingsErrors();
             resultsPerFold[fold].findAllStatsOnce(); 
         }
    
+        allFoldsResults.turnOnZeroTimingsErrors();
         allFoldsResults.findAllStatsOnce(); 
         return allFoldsResults;
     }

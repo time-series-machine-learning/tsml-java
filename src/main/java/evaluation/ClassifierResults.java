@@ -66,9 +66,17 @@ import utilities.generic_storage.Pair;
  *    - loadResultsFromFile(String path)
  *    - writeToFile(String path)
  * 
- * Supports recording of timings in different time units, however nano seconds is default and 
- * typically preferred. Older files that are read in and do not have a time unit specified are 
- * assumed to be in milliseconds, as that was the old default.
+ * Supports recording of timings in different time units. Milliseconds is the default for 
+ * backwards compatability, however nano seconds is generally preferred.
+ * Older files that are read in and do not have a time unit specified are assumed to be in milliseconds.
+ * 
+ * WARNING: The timeunit does not enforce/convert any already-stored times to the new time unit from the old. 
+ * If e.g build time is set to 10 (intended to mean 10 milliseconds, as would be default), but then time 
+ * unit was changed to e.g seconds, the value stored as the build time is still 10. User must make sure 
+ * to either perform conversions themselves or be consistent in their timing units
+ *      long buildTimeInSecs = //some process
+ *      long buildTimeInResultsUnit = results.getTimeUnit().convert(builtTimeInSecs, TimeUnit.SECONDS);
+ *      results.setBuildTime(buildTimeInResultsUnit)
  *
  * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
@@ -314,7 +322,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         predDescriptions = new ArrayList<>();
         
         this.numClasses = numClasses;
-        finalised = false;
+        finalised = false; 
     }
     
     /**
