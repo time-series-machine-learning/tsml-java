@@ -26,7 +26,6 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.RandomBOSS;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
