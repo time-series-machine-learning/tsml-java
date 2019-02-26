@@ -253,14 +253,14 @@ public class Experiments  {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
         }else{
-            int folds=10;
-            boolean threaded=true;
+            int folds=1;
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
-                settings[0]="Z:/Data/TSCProblems2018/";
-                settings[1]="Z:/Results/Java/";
+                settings[0]="E:/Data/TSCProblems2018/";
+                settings[1]="E:/Results/Java/";
                 settings[2]="false";
-                settings[3]="TSFC45";
+                settings[3]="TSF";
                 settings[4]="blank";
                 settings[5]="0";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
@@ -268,14 +268,16 @@ public class Experiments  {
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set                        
-                settings[0]="Z:/Data/TSCProblems2018/";//Where to put results                
-                settings[1]="Z:/Results/";//Where to write results                
+                settings[0]="Z:/Data/TSCProblems2018/";//Where to get data                
+                settings[1]="E:/Results/";//Where to write results                
                 settings[2]="false"; //Whether to generate train files or not               
-                settings[3]="TSFC45"; //Classifier name               
-                settings[4]="ItalyPowerDemand"; //Problem file   
-                settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+                settings[3]="TSF"; //Classifier name
+                for(String str:DataSets.tscProblems78){
+                    settings[4]=str; //Problem file   
+                    settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
+                    ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                    setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+                }
             }
         }
     }
