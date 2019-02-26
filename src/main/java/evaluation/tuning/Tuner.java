@@ -1,14 +1,12 @@
 
 package evaluation.tuning;
 
-import evaluation.ClassifierResults;
-import evaluation.tuning.evaluators.CrossValidationEvaluator;
-import evaluation.tuning.evaluators.Evaluator;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
+import evaluation.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
-import fileIO.OutFile;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

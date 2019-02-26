@@ -1,5 +1,6 @@
 package evaluation;
 
+import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import java.io.File;
 import java.io.FileNotFoundException;

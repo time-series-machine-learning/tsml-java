@@ -1,6 +1,6 @@
-package evaluation;
+package evaluation.storage;
 
-import evaluation.ClassifierResultsCollection;
+import evaluation.storage.ClassifierResultsCollection;
 import experiments.DataSets;
 import evaluation.MultipleClassifierEvaluation;
 import java.io.File;

@@ -27,13 +27,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
-import evaluation.ClassifierResults;
-import evaluation.tuning.evaluators.SingleTestSetEvaluator;
+import evaluation.storage.ClassifierResults;
+import evaluation.evaluators.SingleTestSetEvaluator;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
@@ -619,7 +619,7 @@ public class Experiments  {
         else { 
             long trainBenchmark = findBenchmarkTime();
             
-            CrossValidator cv = new CrossValidator();
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
             cv.setSeed(fold);
             int numFolds = Math.min(train.numInstances(), numCVFolds);
             cv.setNumFolds(numFolds);
@@ -635,8 +635,7 @@ public class Experiments  {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(false , true);
-        eval.setSeed(exp.foldId);
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
         
         return eval.evaluate(classifier, testSet);
     }

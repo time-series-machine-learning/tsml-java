@@ -1,7 +1,7 @@
 
 package evaluation.tuning;
 
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 
 /**
  * Simple container class for a parameter set and accompanying classifierResults, 

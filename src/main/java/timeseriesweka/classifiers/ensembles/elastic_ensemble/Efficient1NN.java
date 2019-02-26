@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.Scanner;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;

@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import weka.classifiers.Classifier;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka.core.Attribute;

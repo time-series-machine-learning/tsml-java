@@ -1,8 +1,8 @@
 
-package evaluation.tuning.evaluators;
+package evaluation.evaluators;
 
-import evaluation.ClassifierResults;
-import evaluation.CrossValidator;
+import evaluation.evaluators.Evaluator;
+import evaluation.storage.ClassifierResults;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -13,15 +13,22 @@ import weka.core.Instances;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class StratifiedResamplesEvaluator implements Evaluator {
+public class StratifiedResamplesEvaluator extends Evaluator {
     int numFolds;
     double propInstancesInTrain;
 
-    int seed = 0;
-    
     private ClassifierResults[] resultsPerFold;
     
     public StratifiedResamplesEvaluator() {
+        super(0,false,false);
+        
+        this.numFolds = 5;
+        this.propInstancesInTrain = 0.5;
+    }
+    
+    public StratifiedResamplesEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
+        super(seed,cloneData,setClassMissing);
+        
         this.numFolds = 5;
         this.propInstancesInTrain = 0.5;
     }
@@ -116,11 +123,6 @@ public class StratifiedResamplesEvaluator implements Evaluator {
         allFoldsResults.turnOnZeroTimingsErrors();
         allFoldsResults.findAllStatsOnce(); 
         return allFoldsResults;
-    }
-
-    @Override
-    public void setSeed(int seed) {
-        this.seed = seed;
     }
 }
 

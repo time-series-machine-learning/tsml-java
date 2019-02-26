@@ -1,6 +1,7 @@
 
 package evaluation;
 
+import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;

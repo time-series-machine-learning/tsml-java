@@ -29,7 +29,7 @@ package timeseriesweka.classifiers;
 import experiments.DataSets;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;

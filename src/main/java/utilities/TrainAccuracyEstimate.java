@@ -1,6 +1,6 @@
 package utilities;
 
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.Instances;
 
 /**

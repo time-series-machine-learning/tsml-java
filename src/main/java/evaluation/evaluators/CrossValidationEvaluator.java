@@ -1,7 +1,8 @@
 
-package evaluation;
+package evaluation.evaluators;
 
-import evaluation.ClassifierResults;
+import evaluation.evaluators.Evaluator;
+import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,29 +23,29 @@ import weka.core.Instances;
  * 
  * @author James 
  */
-public class CrossValidator {
+public class CrossValidationEvaluator extends Evaluator {
             
-    private Integer seed = null;
     private int numFolds;
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
 
-    public CrossValidator() {
-        this.seed = null;
+    public CrossValidationEvaluator() {
+        super(0,false,false);
+        
+        this.folds = null;
+        this.foldIndexing = null;
+        this.numFolds = 10;
+    }
+    
+    public CrossValidationEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
+        super(seed,cloneData,setClassMissing);
+        
         this.folds = null;
         this.foldIndexing = null;
         this.numFolds = 10;
     }
 
     public ArrayList<ArrayList<Integer>> getFoldIndices() { return foldIndexing; }
-    
-    public Integer getSeed() {
-        return seed;
-    }
-
-    public void setSeed(Integer seed) {
-        this.seed = seed;
-    }
 
     public int getNumFolds() {
         return numFolds;
@@ -61,7 +62,18 @@ public class CrossValidator {
         return foldIndexing.get(fold).get(indexInFold);
     }
 
+    private void checkNumCVFolds(int numInstances) { 
+        if (numInstances < numFolds)
+            numFolds = numInstances;
+    }
 
+    @Override
+    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+        ClassifierResults res = crossValidateWithStats(classifier, dataset);
+        res.findAllStatsOnce();
+        return res;
+    }
+    
     public ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
         return crossValidateWithStats(new Classifier[] { classifier }, dataset)[0];
     }
@@ -147,46 +159,6 @@ public class CrossValidator {
         return results;
     }
     
-    public double[] crossValidate(Classifier classifier, Instances dataset) throws Exception{
-        return crossValidate(new Classifier[] { classifier }, dataset)[0];
-    }
-
-    /**
-     * Performs simple crossvalidation (i.e only returns preds) on all classifiers provided 
-     * using the same fold split for all
-     * i.e for each prediction, all classifiers will have trained on the exact same
-     * subset data to have made that classification
-     * 
-     * If folds have already been defined (by a call to buildFolds()), will use those,
-     * else will create them internally 
-     * 
-     * @return double[classifier][prediction]
-     */
-    public double[][] crossValidate(Classifier[] classifiers, Instances dataset) throws Exception{
-        if (folds == null)
-            buildFolds(dataset);
-
-        double pred;
-        double[][] predictions = new double[classifiers.length][dataset.numInstances()];
-
-        //for each fold as test
-        for(int testFold = 0; testFold < numFolds; testFold++){
-            Instances[] trainTest = buildTrainTestSet(testFold);
-
-            //for each classifier in ensemble
-            for (int c = 0; c < classifiers.length; ++c) {
-                classifiers[c].buildClassifier(trainTest[0]);
-
-                //for each test instance on this fold
-                for(int i = 0; i < trainTest[1].numInstances(); i++){
-                    //classify and store prediction
-                    pred = classifiers[c].classifyInstance(trainTest[1].instance(i));
-                    predictions[c][getOriginalInstIndex(testFold, i)] = pred;
-                }    
-            }
-        }
-        return predictions;
-    }
 
     /**
      * @return [0] = new train set, [1] = test(validation) set
@@ -215,12 +187,8 @@ public class CrossValidator {
     public void buildFolds(Instances dataset) throws Exception {
         dataset = new Instances(dataset); //make copy
         
-        Random r = null;
-        if(seed != null){
-            r = new Random(seed);
-        }else{
-            r = new Random();
-        }
+        checkNumCVFolds(dataset.numInstances());
+        Random r = new Random(seed);
         
         folds = new ArrayList<Instances>();
         foldIndexing = new ArrayList<ArrayList<Integer>>();
@@ -293,29 +261,10 @@ public class CrossValidator {
     
     public static void main(String[] args) throws Exception {
         buildFoldsTest(); 
-//        CrossValidator cv = new CrossValidator();
-//        cv.setNumFolds(10);
-//        cv.setSeed(0);
-//        
-//        Classifier c = new kNN();
-//        Instances insts = ClassifierTools.loadData("C:/TSC Problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-//        
-//        double[] preds = cv.crossValidate(c, insts);
-//        
-//        double acc = 0.0;
-//        System.out.println("Pred | Actual");
-//        for (int i = 0; i < preds.length; i++) {
-//            System.out.printf("%4d | %d\n", (int)preds[i], (int)insts.get(i).classValue());
-//            if (preds[i] == insts.get(i).classValue())
-//                ++acc;
-//        }
-//        
-//        acc /= preds.length;
-//        System.out.println("\n Acc: " + acc);
     }
     
     public static void buildFoldsTest() throws Exception {
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         cv.setNumFolds(3);
         cv.setSeed(0);
         
