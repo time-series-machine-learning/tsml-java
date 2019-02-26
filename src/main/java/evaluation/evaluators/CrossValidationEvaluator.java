@@ -26,6 +26,7 @@ import utilities.ClassifierTools;
 import utilities.StatisticalUtilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.kNN;
+import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -111,6 +112,10 @@ public class CrossValidationEvaluator extends Evaluator {
         if (folds == null)
             buildFolds(dataset);
         
+        //store for later storage of results, in case we want to set the class values missing
+        //on each instance at predict time
+        double[] trueClassVals = dataset.attributeToDoubleArray(dataset.classIndex());
+        
         //these will store dists and preds for instance AS THEY ARE ORDERED IN THE DATASET GIVEN
         //as opposed to instances in the order that they are predicted, after having been split into the k folds.
         //storing them here in order, then adding into the classifierresults objects in order after the actual 
@@ -134,9 +139,13 @@ public class CrossValidationEvaluator extends Evaluator {
                 for(int i = 0; i < trainTest[1].numInstances(); i++){
                     int instIndex = getOriginalInstIndex(testFold, i);
                     
+                    Instance testInst = trainTest[1].instance(i);
+                    if (setClassMissing)
+                        testInst.setClassMissing();
+                    
                     //classify and store prediction
                     long startTime = System.nanoTime();
-                    double[] dist = classifiers[c].distributionForInstance(trainTest[1].instance(i));
+                    double[] dist = classifiers[c].distributionForInstance(testInst);
                     long predTime = System.nanoTime()- startTime;
                     
                     distsForInsts[c][instIndex] = dist;
@@ -148,7 +157,6 @@ public class CrossValidationEvaluator extends Evaluator {
         }
         
         //shove data into ClassifierResults objects 
-        double[] trueClassVals = dataset.attributeToDoubleArray(dataset.classIndex());
         ClassifierResults[] results = new ClassifierResults[classifiers.length];
         for (int c = 0; c < classifiers.length; c++) {
             results[c] = new ClassifierResults(dataset.numClasses());
@@ -198,7 +206,8 @@ public class CrossValidationEvaluator extends Evaluator {
     }
 
     public void buildFolds(Instances dataset) throws Exception {
-        dataset = new Instances(dataset); //make copy
+        if (cloneData)
+            dataset = new Instances(dataset); //make copy
         
         checkNumCVFolds(dataset.numInstances());
         Random r = new Random(seed);

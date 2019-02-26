@@ -16,6 +16,7 @@ package evaluation.evaluators;
 
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
+import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -63,7 +64,7 @@ public class StratifiedResamplesEvaluator extends Evaluator {
     }
     
     private ClassifierResults performLOOCVInstead(Classifier classifier, Instances dataset) throws Exception { 
-        CrossValidationEvaluator cv = new CrossValidationEvaluator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed,cloneData,setClassMissing);
         return cv.evaluate(classifier, dataset);
     }
     
@@ -109,8 +110,12 @@ public class StratifiedResamplesEvaluator extends Evaluator {
 //            return performLOOCVInstead(classifier, dataset);
 //        }
         
+        if (cloneData)
+            dataset = new Instances(dataset);
+
         resultsPerFold = new ClassifierResults[numFolds]; 
         ClassifierResults allFoldsResults = new ClassifierResults(dataset.numClasses());
+        allFoldsResults.setTimeUnit(TimeUnit.NANOSECONDS);
         allFoldsResults.turnOffZeroTimingsErrors();
                 
         for (int fold = 0; fold < numFolds; fold++) {
@@ -118,13 +123,18 @@ public class StratifiedResamplesEvaluator extends Evaluator {
             
             classifier.buildClassifier(resampledData[0]);
             resultsPerFold[fold] = new ClassifierResults(dataset.numClasses());
+            resultsPerFold[fold].setTimeUnit(TimeUnit.NANOSECONDS);
             resultsPerFold[fold].turnOffZeroTimingsErrors();
             
             //todo, implement this loop via SingleTestSetEvluator            
             for (Instance testinst : resampledData[1]) {
+                if (setClassMissing)
+                    testinst.setClassMissing();
+                
                 long startTime = System.nanoTime();
                 double[] dist = classifier.distributionForInstance(testinst);
                 long predTime = System.nanoTime()- startTime;
+                
                 resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
                 allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
             }
