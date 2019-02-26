@@ -1,23 +1,16 @@
 /*
-     * copyright: Anthony Bagnall
- * A filter for using the shapelet transform with hierarchical
- * clustering of shapelets.
- * 
- * Recommended usage: Build the shapelet transform outside of this class and pass in. 
- * 
- * FullShapeletTransform shape=new  FullShapeletTransform();
- * //Build and use shape here
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
  *
- * int nosClusters=10;
- * ClusteredShapeletTransform cShape=new ClusteredShapeletTransform(shape,nosClusters);
- * 
- * it will work like this with any of the numerous constructors
-  * ClusteredShapeletTransform cShape=new ClusteredShapeletTransform();
-  * Instances c=cShape.process(data)
-  * 
-  * 
- 
- 
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.filters.shapelet_transforms;
 
@@ -35,7 +28,24 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.distance_functions.OnlineSubSeqDistance;
 
 /**
+ *      * copyright: Anthony Bagnall
+ * A filter for using the shapelet transform with hierarchical
+ * clustering of shapelets.
+ * 
+ * Recommended usage: Build the shapelet transform outside of this class and pass in. 
+ * 
+ * FullShapeletTransform shape=new  FullShapeletTransform();
+ * //Build and use shape here
  *
+ * int nosClusters=10;
+ * ClusteredShapeletTransform cShape=new ClusteredShapeletTransform(shape,nosClusters);
+ * 
+ * it will work like this with any of the numerous constructors
+  * ClusteredShapeletTransform cShape=new ClusteredShapeletTransform();
+  * Instances c=cShape.process(data)
+  * 
+  * 
+ 
  * @author Jon Hills - j.hills@uea.ac.uk
  */
 public class ClusteredShapeletTransform extends SimpleBatchFilter{

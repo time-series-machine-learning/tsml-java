@@ -1,6 +1,24 @@
 /*
-@author: ajb
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package timeseriesweka.classifiers;
 
+import weka.classifiers.AbstractClassifier;
+import evaluation.storage.ClassifierResults;
+
+/**
+ *
 Extends the AbstractClassifier to store information about the training phase of 
 the classifier. The minimium any classifier that extends this should store
 is the build time in buildClassifier, through calls to System.currentTimeMillis()  
@@ -28,16 +46,7 @@ Instances train=//Get train
 
 AbstractClassifierWithTrainingData c= //Get classifier
 c.buildClassifier(train)    //ALL STATS SET HERE
-
-
- */
-package timeseriesweka.classifiers;
-
-import weka.classifiers.AbstractClassifier;
-import evaluation.storage.ClassifierResults;
-
-/**
- *
+* 
  * @author ajb
  */
 abstract public class AbstractClassifierWithTrainingData extends AbstractClassifier implements SaveParameterInfo{
