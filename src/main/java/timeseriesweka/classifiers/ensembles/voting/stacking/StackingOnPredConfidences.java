@@ -2,6 +2,7 @@ package timeseriesweka.classifiers.ensembles.voting.stacking;
 
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 

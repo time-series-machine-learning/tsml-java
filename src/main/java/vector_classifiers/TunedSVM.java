@@ -128,7 +128,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
     }     
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc;
+        String result="BuildTime,"+res.getBuildTimeInNanos()+",CVAcc,"+res.getAcc();
         result+=",C,"+paras[0];
         if(paras.length>1){
             if(kernel==KernelType.RBF)
@@ -202,7 +202,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
 
     @Override
     public double getAcc() {
-        return res.acc;
+        return res.getAcc();
     }
     public enum KernelType {LINEAR,QUADRATIC,POLYNOMIAL,RBF};
     KernelType kernel;
@@ -335,19 +335,22 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 model.setC(p1);
                 model.setBuildLogisticModels(true);
                 tempResults=cv.crossValidateWithStats(model,trainCopy);
-                tempResults.setName("TunedSVM"+kernel);
+                
+                tempResults.setClassifierName("TunedSVM"+kernel);
+                tempResults.setDatasetName(train.relationName());
+                tempResults.setFoldID(seed);
+                tempResults.setSplit("train");
+                
                 tempResults.setParas("C,"+p1+",Gamma,"+p2);
 
 //                Evaluation eval=new Evaluation(temp);
 //                eval.crossValidateModel(model, temp, folds, rng);
-                double e=1-tempResults.acc;
-                accuracy.add(tempResults.acc);
+                double e=1-tempResults.getAcc();
+                accuracy.add(tempResults.getAcc());
                 if(debug)
                     System.out.println(" C= "+p1+" Gamma = "+p2+" Acc = "+(1-e));
                 if(saveEachParaAcc){// Save to file and close
-                    temp=new OutFile(resultsPath+count+".csv");
-                    temp.writeLine(tempResults.writeResultsFileToString());
-                    temp.closeFile();
+                    res.writeFullResultsToFile(resultsPath+count+".csv");
                     File f=new File(resultsPath+count+".csv");
                     if(f.exists())
                         f.setWritable(true, false);
@@ -389,9 +392,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     for(double p2:paraSpace1){
                         count++;
                         tempResults = new ClassifierResults();
-                        tempResults.loadFromFile(resultsPath+count+".csv");
-                        combinedBuildTime+=tempResults.buildTime;
-                        double e=1-tempResults.acc;
+                        tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                        combinedBuildTime+=tempResults.getBuildTime();
+                        double e=1-tempResults.getAcc();
                         if(e<minErr){
                             minErr=e;
                             ties=new ArrayList<>();//Remove previous ties
@@ -416,7 +419,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 paras[1]=bestSigma;
                 res=best.res;
                 if(debug)
-                    System.out.println("Best C ="+bestC+" best Gamma = "+bestSigma+" best train acc = "+res.acc);
+                    System.out.println("Best C ="+bestC+" best Gamma = "+bestSigma+" best train acc = "+res.getAcc());
             }else//Not all present, just ditch
                 System.out.println(resultsPath+" error: missing  ="+missing+" parameter values");
         }
@@ -485,14 +488,12 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
 
     //                Evaluation eval=new Evaluation(temp);
     //                eval.crossValidateModel(model, temp, folds, rng);
-                    double e=1-tempResults.acc;
-                    accuracy.add(tempResults.acc);
+                    double e=1-tempResults.getAcc();
+                    accuracy.add(tempResults.getAcc());
                     if(debug)
                         System.out.println("C="+p1+",Exp="+p2+",B="+p3+", Acc = "+(1-e));
                     if(saveEachParaAcc){// Save to file and close
-                        temp=new OutFile(resultsPath+count+".csv");
-                        temp.writeLine(tempResults.writeResultsFileToString());
-                        temp.closeFile();
+                        res.writeFullResultsToFile(resultsPath+count+".csv");
                     }                
                     else{
                         if(e<minErr){
@@ -535,9 +536,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                         for(double p3:paraSpace3){//B
                             count++;
                             tempResults = new ClassifierResults();
-                            tempResults.loadFromFile(resultsPath+count+".csv");
-                            combinedBuildTime+=tempResults.buildTime;
-                            double e=1-tempResults.acc;
+                            tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                            combinedBuildTime+=tempResults.getBuildTime();
+                            double e=1-tempResults.getAcc();
                             if(e<minErr){
                                 minErr=e;
                                 ties=new ArrayList<>();//Remove previous ties
@@ -569,7 +570,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 
                 res=best.res;
                 if(debug)
-                    System.out.println("Best C ="+bestC+" best Gamma = "+bestExponent+" best train acc = "+res.acc);
+                    System.out.println("Best C ="+bestC+" best Gamma = "+bestExponent+" best train acc = "+res.getAcc());
             }else//Not all present, just ditch
                 System.out.println(resultsPath+" error: missing  ="+missing+" parameter values");
         }
@@ -636,12 +637,10 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
             tempResults=cv.crossValidateWithStats(model,trainCopy);
 //                Evaluation eval=new Evaluation(temp);
 //                eval.crossValidateModel(model, temp, folds, rng);
-            double e=1-tempResults.acc;
-            accuracy.add(tempResults.acc);
+            double e=1-tempResults.getAcc();
+            accuracy.add(tempResults.getAcc());
             if(saveEachParaAcc){// Save to file and close
-                temp=new OutFile(resultsPath+count+".csv");
-                temp.writeLine(tempResults.writeResultsFileToString());
-                temp.closeFile();
+                res.writeFullResultsToFile(resultsPath+count+".csv");
             }                
             if(e<minErr){
                 minErr=e;
@@ -666,9 +665,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 for(double p1:paraSpace1){
                     count++;
                     tempResults = new ClassifierResults();
-                    tempResults.loadFromFile(resultsPath+count+".csv");
-                    combinedBuildTime+=tempResults.buildTime;
-                    double e=1-tempResults.acc;
+                    tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                    combinedBuildTime+=tempResults.getBuildTime();
+                    double e=1-tempResults.getAcc();
                     if(e<minErr){
                         minErr=e;
                         ties=new ArrayList<>();//Remove previous ties
@@ -717,7 +716,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     temp.setKernel(p);
                     temp.setStandardParaSearchSpace();
                     temp.tuneCForFixedPolynomial(train);
-                    linearCVAcc=temp.res.acc;
+                    linearCVAcc=temp.res.getAcc();
                     linearBestC=temp.getC();
                 break;
                 case QUADRATIC:
@@ -726,7 +725,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     temp.setKernel(p2);
                     temp.setStandardParaSearchSpace();
                     temp.tuneCForFixedPolynomial(train);
-                    quadraticCVAcc=temp.res.acc;
+                    quadraticCVAcc=temp.res.getAcc();
                     quadraticBestC=temp.getC();
                 break;
                 case RBF:
@@ -734,7 +733,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     temp.setKernel(kernel2);
                     temp.setStandardParaSearchSpace();
                     temp.tuneRBF(train);
-                    rbfCVAcc=temp.res.acc;
+                    rbfCVAcc=temp.res.getAcc();
                     rbfParas[0]=temp.getC();
                     rbfParas[1]=((RBFKernel)temp.m_kernel).getGamma();
                     break;
@@ -748,7 +747,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
             setC(linearBestC);
             paras=new double[1];
             paras[0]=linearBestC;
-            res.acc=linearCVAcc;
+            res.setAcc(linearCVAcc);
         }else if(quadraticCVAcc> linearCVAcc && quadraticCVAcc> rbfCVAcc){ //Quad best
             PolyKernel p=new PolyKernel();
             p.setExponent(2);
@@ -756,20 +755,20 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
             setC(quadraticBestC);
             paras=new double[1];
             paras[0]=quadraticBestC;
-            res.acc=quadraticCVAcc;
+            res.setAcc(quadraticCVAcc);
         }else{   //RBF
             RBFKernel kernel = new RBFKernel();
             kernel.setGamma(rbfParas[1]);
             setKernel(kernel);
             setC(rbfParas[0]);
             paras=rbfParas;
-            res.acc=rbfCVAcc;
+            res.setAcc(rbfCVAcc);
         }
     }
 
 //TO DO: add the option to build from an incomplete parameter set, 
 //    without deleting
-    public void buildFromFile() throws FileNotFoundException{
+    public void buildFromFile() throws FileNotFoundException, Exception{
         combinedBuildTime=0;
         int count=0;
         ArrayList<ResultsHolder> ties=new ArrayList<>();
@@ -781,9 +780,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 tempResults = new ClassifierResults();
                 File f= new File(resultsPath+count+".csv");
                 if(f.exists() && f.length()>0){
-                    tempResults.loadFromFile(resultsPath+count+".csv");
-                    combinedBuildTime+=tempResults.buildTime;
-                    double e=1-tempResults.acc;
+                    tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                    combinedBuildTime+=tempResults.getBuildTime();
+                    double e=1-tempResults.getAcc();
                     if(e<minErr){
                         minErr=e;
                         ties=new ArrayList<>();//Remove previous ties
@@ -801,9 +800,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     tempResults = new ClassifierResults();
                     File f= new File(resultsPath+count+".csv");
                     if(f.exists() && f.length()>0){
-                        tempResults.loadFromFile(resultsPath+count+".csv");
-                        combinedBuildTime+=tempResults.buildTime;
-                        double e=1-tempResults.acc;
+                        tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                        combinedBuildTime+=tempResults.getBuildTime();
+                        double e=1-tempResults.getAcc();
                         if(e<minErr){
                             minErr=e;
                             ties=new ArrayList<>();//Remove previous ties
@@ -823,9 +822,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                         tempResults = new ClassifierResults();
                         File f= new File(resultsPath+count+".csv");
                         if(f.exists() && f.length()>0){
-                            tempResults.loadFromFile(resultsPath+count+".csv");
-                            combinedBuildTime+=tempResults.buildTime;
-                            double e=1-tempResults.acc;
+                            tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                            combinedBuildTime+=tempResults.getBuildTime();
+                            double e=1-tempResults.getAcc();
                             if(e<minErr){
                                 minErr=e;
                                 ties=new ArrayList<>();//Remove previous ties
@@ -866,9 +865,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                 count++;
                 if(new File(resultsPath+count+".csv").exists()){
                     present++;
-                    tempResults.loadFromFile(resultsPath+count+".csv");
-                    combinedBuildTime+=tempResults.buildTime;
-                    double e=1-tempResults.acc;
+                    tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                    combinedBuildTime+=tempResults.getBuildTime();
+                    double e=1-tempResults.getAcc();
                     if(e<minErr){
                         minErr=e;
                         ties=new ArrayList<>();//Remove previous ties
@@ -913,9 +912,9 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
                     count++;
                     if(new File(resultsPath+count+".csv").exists()){
                         present++;
-                        tempResults.loadFromFile(resultsPath+count+".csv");
-                        combinedBuildTime+=tempResults.buildTime;
-                        double e=1-tempResults.acc;
+                        tempResults.loadResultsFromFile(resultsPath+count+".csv");
+                        combinedBuildTime+=tempResults.getBuildTime();
+                        double e=1-tempResults.getAcc();
                         if(e<minErr){
                             minErr=e;
                             ties=new ArrayList<>();//Remove previous ties
@@ -1004,16 +1003,17 @@ this gives the option of finding one using 10xCV
         super.buildClassifier(train);
         
         if(saveEachParaAcc)
-            res.buildTime=combinedBuildTime;
+            res.setBuildTime(combinedBuildTime);
         else
-            res.buildTime=System.currentTimeMillis()-t;
+            res.setBuildTime(System.currentTimeMillis()-t);
         if(trainPath!=null && trainPath!=""){  //Save basic train results
-            OutFile f= new OutFile(trainPath);
-            f.writeLine(train.relationName()+",TunedSVM"+kernel+",Train");
-            f.writeLine(getParameters());
-            f.writeLine(res.acc+"");
-            f.writeLine(res.writeInstancePredictions());
-            f.closeFile();
+            res.setClassifierName("TunedSVM"+kernel);
+            res.setDatasetName(train.relationName());
+            res.setFoldID(seed);
+            res.setSplit("train");
+            
+            res.setParas(getParameters());
+            res.writeFullResultsToFile(trainPath);
             File x=new File(trainPath);
             x.setWritable(true, false);
             
@@ -1058,7 +1058,7 @@ this gives the option of finding one using 10xCV
                 System.out.println("\n\nTSVM_L:");
                 svml.buildClassifier(train);
                 System.out.println("C ="+svml.getC());
-                System.out.println("Train: " + svml.res.acc + " " + svml.res.stddev);
+                System.out.println("Train: " + svml.res.getAcc() + " " + svml.res.stddev);
                 double accL=ClassifierTools.accuracy(test, svml);
                 System.out.println("Test: " + accL);
     //

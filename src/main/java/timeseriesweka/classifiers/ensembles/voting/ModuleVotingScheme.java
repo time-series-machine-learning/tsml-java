@@ -6,6 +6,7 @@ import java.util.Random;
 import utilities.DebugPrinting;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import evaluation.ClassifierResults;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
 /**
@@ -43,18 +44,6 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         return indexOfMax(dist);
     }
     
-    public double indexOfMax(double[] dist) {
-        double max = dist[0];
-        double maxInd = 0;
-        
-        for (int i = 1; i < dist.length; ++i) {
-            if (dist[i] > max) {
-                max = dist[i];
-                maxInd = i;
-            }
-        }
-        return maxInd;
-    }
     
 //    protected static double indexOfMax(double[] dist) throws Exception {  
 //        double  bsfWeight = -(Double.MAX_VALUE);
@@ -102,11 +91,11 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         return dist;
     }
     
-    public void storeModuleTestResult(EnsembleModule module, double[] dist) {
+    public void storeModuleTestResult(EnsembleModule module, double[] dist, long predTime) throws Exception {
         if (module.testResults == null)
             module.testResults = new ClassifierResults();
         
-        module.testResults.storeSingleResult(dist);
+        module.testResults.addPrediction(dist, indexOfMax(dist), predTime, "");
     }
     
     @Override

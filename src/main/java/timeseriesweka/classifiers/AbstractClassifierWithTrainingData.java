@@ -46,14 +46,14 @@ abstract public class AbstractClassifierWithTrainingData extends AbstractClassif
    
      @Override
     public String getParameters() {
-        return "BuildTime,"+trainResults.buildTime;
+        return "BuildTime,"+trainResults.getBuildTime();
     }
      
     public String getTrainData() {
         StringBuilder sb=new StringBuilder("AccEstimateFromTrain,");
-        sb.append(trainResults.acc).append(",");
+        sb.append(trainResults.getAcc()).append(",");
         
-        return "BuildTime,"+trainResults.buildTime;
+        return "BuildTime,"+trainResults.getBuildTime();
     }
      
 }

@@ -169,17 +169,22 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
     
     @Override
     public String getParameters() {
-        return "BuildTime,"+res.buildTime;
+        return "BuildTime,"+res.getBuildTime();
     }
     
     
     @Override
     public void buildClassifier(Instances train){      
-        res.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         this.setDistanceFunction(cid);
 //        cid.setInstances(train);
         super.buildClassifier(train);
-        res.buildTime=System.currentTimeMillis()-res.buildTime;
+        try {
+            res.setBuildTime(System.currentTimeMillis()-startTime);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
         
     }
     public static class CIDDistance extends EuclideanDistance {

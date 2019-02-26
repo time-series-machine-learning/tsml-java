@@ -22,7 +22,7 @@ public class ParameterResults implements Comparable<ParameterResults> {
     public ParameterResults(ParameterSet parameterSet, ClassifierResults results) {
         this.paras = parameterSet;
         this.results = results;
-        this.score = results.acc;
+        this.score = results.getAcc();
     }
     
     public ParameterResults(ParameterSet parameterSet, ClassifierResults results, double score) {

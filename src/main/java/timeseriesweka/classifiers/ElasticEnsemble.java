@@ -274,7 +274,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingData implemen
     @Override
     public ClassifierResults getTrainResults(){
 //Temporary : copy stuff into trainResults.acc here
-        trainResults.acc=ensembleCvAcc;
+        trainResults.setAcc(ensembleCvAcc);
 //TO DO: Write the other stats        
         return trainResults;
     }        
@@ -286,7 +286,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingData implemen
      */
     @Override
     public void buildClassifier(Instances train) throws Exception{
-        trainResults.buildTime=System.currentTimeMillis();
+        trainResults.setBuildTime(System.currentTimeMillis());
         this.train = train;
         this.derTrain = null;
         usesDer = false;
@@ -377,7 +377,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingData implemen
                 fullTrain.close();
             }
         }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
         
     }
     

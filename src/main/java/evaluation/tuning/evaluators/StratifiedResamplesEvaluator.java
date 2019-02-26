@@ -3,6 +3,7 @@ package evaluation.tuning.evaluators;
 
 import evaluation.ClassifierResults;
 import evaluation.CrossValidator;
+import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -80,30 +81,39 @@ public class StratifiedResamplesEvaluator implements Evaluator {
      */
     @Override
     public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
-        if (dataset.numInstances() <= numFolds) {
-            System.out.println("Warning, num resamples requested is less than the number of samples, "
-                    + "performing a leave-one-out cross validation instead");
-            return performLOOCVInstead(classifier, dataset);
-        }
+        
+        //todo revisit, suppose numFolds = 30, propInTrain = 0.5, numInstances = 20, 20 choose 10 = 184756 >>>>> 30...
+//        if (dataset.numInstances() <= numFolds) {
+//            System.out.println("Warning, num resamples requested is greater than the number of instances, "
+//                    + "performing a leave-one-out cross validation instead");
+//            return performLOOCVInstead(classifier, dataset);
+//        }
         
         resultsPerFold = new ClassifierResults[numFolds]; 
         ClassifierResults allFoldsResults = new ClassifierResults(dataset.numClasses());
-        
+        allFoldsResults.turnOffZeroTimingsErrors();
+                
         for (int fold = 0; fold < numFolds; fold++) {
             Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
             
             classifier.buildClassifier(resampledData[0]);
             resultsPerFold[fold] = new ClassifierResults(dataset.numClasses());
+            resultsPerFold[fold].turnOffZeroTimingsErrors();
             
+            //todo, implement this loop via SingleTestSetEvluator            
             for (Instance testinst : resampledData[1]) {
+                long startTime = System.nanoTime();
                 double[] dist = classifier.distributionForInstance(testinst);
-                resultsPerFold[fold].storeSingleResult(testinst.classValue(), dist);
-                allFoldsResults.storeSingleResult(testinst.classValue(), dist);
+                long predTime = System.nanoTime()- startTime;
+                resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
+                allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
             }
             
+            resultsPerFold[fold].turnOnZeroTimingsErrors();
             resultsPerFold[fold].findAllStatsOnce(); 
         }
    
+        allFoldsResults.turnOnZeroTimingsErrors();
         allFoldsResults.findAllStatsOnce(); 
         return allFoldsResults;
     }
@@ -112,6 +122,5 @@ public class StratifiedResamplesEvaluator implements Evaluator {
     public void setSeed(int seed) {
         this.seed = seed;
     }
-
 }
 

@@ -34,7 +34,7 @@ public class TrainAccOrMCC extends ModuleWeightingScheme {
     
     @Override
     public void defineWeightings(EnsembleModule[] modules, int numClasses) {            
-        double[] dist = classDistribution(modules[0].trainResults.getTrueClassVals(), numClasses);
+        double[] dist = classDistribution(modules[0].trainResults.getTrueClassValsAsArray(), numClasses);
         
         double max = dist[0], min = dist[0];
         for (int c = 1; c < dist.length; c++) {

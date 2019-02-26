@@ -53,15 +53,15 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
         //transform data if specified
         if(this.transform==null){
-            this.train = new Instances(data);
+            this.trainInsts = new Instances(data);
         }else{
-            this.train = transform.process(data);
+            this.trainInsts = transform.process(data);
         }
         
         //init
-        this.numTrainInsts = train.numInstances();
-        this.numClasses = train.numClasses();
-        this.numAttributes = train.numAttributes();
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
         
         //set up modules
         initialiseModules();
@@ -77,10 +77,10 @@ public class CAWPE_TunedAlpha extends CAWPE {
         for (int i = 0; i < alphaParaRange.length; i++) {
             initCombinationSchemes(alphaParaRange[i]);
             alphaResults[i] = doEnsembleCV(data); 
-            alphaParaAccs[i] = alphaResults[i].acc;
+            alphaParaAccs[i] = alphaResults[i].getAcc();
             
-            if (alphaResults[i].acc > maxAcc) { 
-                maxAcc = alphaResults[i].acc;
+            if (alphaResults[i].getAcc() > maxAcc) { 
+                maxAcc = alphaResults[i].getAcc();
                 maxAccInd = i;
             }
         }
@@ -89,10 +89,10 @@ public class CAWPE_TunedAlpha extends CAWPE {
         ensembleTrainResults = alphaResults[maxAccInd];
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        ensembleTrainResults.buildTime = buildTime;
+        ensembleTrainResults.setBuildTime(buildTime);
             
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(train);
+            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
         
         this.testInstCounter = 0; //prep for start of testing
@@ -120,7 +120,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         StringBuilder out = new StringBuilder();
         
         if (ensembleTrainResults != null) //cv performed
-            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
+            out.append("BuildTime,").append(ensembleTrainResults.getBuildTime()).append(",Trainacc,").append(ensembleTrainResults.getAcc()).append(",");
         else 
             out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
         
@@ -146,7 +146,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
     }
     
-    public static void buildParaAnalysisFiles() throws FileNotFoundException {
+    public static void buildParaAnalysisFiles() throws FileNotFoundException, Exception {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         

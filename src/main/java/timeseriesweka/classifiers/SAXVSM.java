@@ -153,7 +153,7 @@ public class SAXVSM extends AbstractClassifierWithTrainingData {
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         
         if (data.classIndex() != data.numAttributes()-1)
             throw new Exception("SAXVSM_BuildClassifier: Class attribute not set as last attribute in dataset");
@@ -182,7 +182,7 @@ public class SAXVSM extends AbstractClassifierWithTrainingData {
         transformedData = bop.process(data);
         
         corpus = tfxidf(transformedData);
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
     }
     
     /**

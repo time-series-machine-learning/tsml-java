@@ -465,23 +465,23 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         }
         long t2=System.currentTimeMillis();
         //Store build time, this is always recorded
-        trainResults.buildTime=t2-t1;
+        trainResults.setBuildTime(t2-t1);
         //If trainCV ==true and we want to save results, write out object 
         if(trainCV && trainCVPath!=""){
              OutFile of=new OutFile(trainCVPath);
              of.writeLine(data.relationName()+",TSF,train");
              of.writeLine(getParameters());
-            of.writeLine(trainResults.acc+"");
+            of.writeLine(trainResults.getAcc()+"");
             double[] trueClassVals,predClassVals;
-            trueClassVals=trainResults.getTrueClassVals();
-            predClassVals=trainResults.getPredClassVals();
+            trueClassVals=trainResults.getTrueClassValsAsArray();
+            predClassVals=trainResults.getPredClassValsAsArray();
             for(int i=0;i<data.numInstances();i++){
                 //Basic sanity check
                 if(data.instance(i).classValue()!=trueClassVals[i]){
                     throw new Exception("ERROR in TSF cross validation, class mismatch!");
                 }
                 of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-                for(double d:trainResults.getDistributionForInstance(i))
+                for(double d:trainResults.getProbabilityDistribution(i))
                     of.writeString(","+d);
                 of.writeString("\n");
             }

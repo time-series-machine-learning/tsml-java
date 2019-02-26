@@ -358,23 +358,23 @@ public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCo
     }
     
     long t2=System.currentTimeMillis();
-    trainResults.buildTime=t2-t1;
+    trainResults.setBuildTime(t2-t1);
     
     if(trainCVPath!=""){
         OutFile of=new OutFile(trainCVPath);
         of.writeLine(samples.relationName()+",TSF,train");
         of.writeLine(getParameters());
-        of.writeLine(trainResults.acc+"");
+        of.writeLine(trainResults.getAcc()+"");
         double[] trueClassVals,predClassVals;
-        trueClassVals=trainResults.getTrueClassVals();
-        predClassVals=trainResults.getPredClassVals();
+        trueClassVals=trainResults.getTrueClassValsAsArray();
+        predClassVals=trainResults.getPredClassValsAsArray();
         for(int i=0;i<samples.numInstances();i++){
             //Basic sanity check
             if(samples.instance(i).classValue()!=trueClassVals[i]){
                 throw new Exception("ERROR in TSF cross validation, class mismatch!");
             }
             of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-            for(double d:trainResults.getDistributionForInstance(i))
+            for(double d:trainResults.getProbabilityDistribution(i))
                 of.writeString(","+d);
             of.writeString("\n");
         }

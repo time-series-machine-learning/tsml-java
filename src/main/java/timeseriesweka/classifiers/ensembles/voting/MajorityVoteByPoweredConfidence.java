@@ -2,6 +2,7 @@ package timeseriesweka.classifiers.ensembles.voting;
 
 import java.util.Arrays;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
 /**
@@ -56,7 +57,7 @@ public class MajorityVoteByPoweredConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            Math.pow((modules[m].trainResults.getDistributionForInstance(trainInstanceIndex)[pred]), power);
+                            Math.pow((modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex)[pred]), power);
         }
         
         return normalise(preds);
@@ -72,7 +73,7 @@ public class MajorityVoteByPoweredConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            Math.pow((modules[m].testResults.getDistributionForInstance(testInstanceIndex)[pred]), power);
+                            Math.pow((modules[m].testResults.getProbabilityDistribution(testInstanceIndex)[pred]), power);
         }
         
         return normalise(preds);
@@ -85,8 +86,11 @@ public class MajorityVoteByPoweredConfidence extends ModuleVotingScheme {
         int pred;
         double[] dist;
         for(int m = 0; m < modules.length; m++){
+            long startTime = System.currentTimeMillis();
             dist = modules[m].getClassifier().distributionForInstance(testInstance);
-            storeModuleTestResult(modules[m], dist);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

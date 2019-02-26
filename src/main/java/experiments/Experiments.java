@@ -1,23 +1,19 @@
-/**
- * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
- * setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings)
- * 
- * An execution of this will evaluate a single classifier on a single resample of a single dataset. 
- * 
- * Given an ExperimentalArguments object, which may be parsed from command line arguments
- * or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
- * will load the classifier and dataset specified, prep the location to write results to, 
- * train the classifier - potentially generating an error estimate via cross validation on the train set 
- * as well - and then predict the cases of the test set. 
- * 
- * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
- * (see the class of the same name under utilities). 
- * 
- * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package experiments;
 
-import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,13 +33,33 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.ClassifierResults;
+import evaluation.tuning.evaluators.SingleTestSetEvaluator;
+import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import static utilities.GenericTools.indexOfMax;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
+/**
+ * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
+ * setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings)
+ * 
+ * An execution of this will evaluate a single classifier on a single resample of a single dataset. 
+ * 
+ * Given an ExperimentalArguments object, which may be parsed from command line arguments
+ * or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
+ * will load the classifier and dataset specified, prep the location to write results to, 
+ * train the classifier - potentially generating an error estimate via cross validation on the train set 
+ * as well - and then predict the cases of the test set. 
+ * 
+ * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
+ * (see the class of the same name under utilities). 
+ * 
+ * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+ */
 public class Experiments  {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
@@ -483,7 +499,7 @@ public class Experiments  {
      * is Actual Class, Predicted Class, Class probabilities
      * 
      * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
-     * @return the accuracy of c on fold for problem given in train/test
+     * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
     public static double singleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
         
@@ -508,15 +524,23 @@ public class Experiments  {
 
 
             //Build on the full train data here
-            long buildTime = System.currentTimeMillis();
+            long buildTime = System.nanoTime();
             classifier.buildClassifier(trainSet);
-            buildTime = System.currentTimeMillis() - buildTime;
+            buildTime = System.nanoTime() - buildTime;
             LOGGER.log(Level.INFO, "Training complete");
 
 
             //Write train results
-            if (expSettings.generateErrorEstimateOnTrainSet) 
-                writeTrainEstimate(classifier, trainSet, trainResults, resultsPath + trainFoldFilename, buildTime);
+            if (expSettings.generateErrorEstimateOnTrainSet) {
+                if (!(classifier instanceof TrainAccuracyEstimate)) {
+                    assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
+                    trainResults.turnOffZeroTimingsErrors();
+                    trainResults.setBuildTime(buildTime);
+                    writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
+                }
+                //else 
+                //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
+            }
             LOGGER.log(Level.INFO, "Train estimate written");
 
 
@@ -525,18 +549,25 @@ public class Experiments  {
                 //This is checked before the buildClassifier also, but 
                 //a) another process may have been doign the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
-                //No harm in checking again!
+                //no reason not to check again
                 if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    testResults = evaluateClassifier(classifier, testSet);
+                    long testBenchmark = findBenchmarkTime();
+                    
+                    testResults = evaluateClassifier(expSettings, classifier, testSet);
+                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+                    
+                    testResults.turnOffZeroTimingsErrors();
+                    testResults.setBenchmarkTime(testBenchmark);
+                    testResults.setBuildTime(buildTime);
                     LOGGER.log(Level.INFO, "Testing complete");
-                    writeTestResults(classifier, testSet, testResults, resultsPath + testFoldFilename);
+                    writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
                     LOGGER.log(Level.INFO, "Testing written");
                 } 
                 else {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);
                 }
-                return testResults.acc;
+                return testResults.getAcc();
             } 
             else {
                 return 0; //not error, but we dont have a test acc. just returning 0 for now
@@ -586,69 +617,55 @@ public class Experiments  {
                 f.setWritable(true, false);
         } 
         else { 
+            long trainBenchmark = findBenchmarkTime();
+            
             CrossValidator cv = new CrossValidator();
             cv.setSeed(fold);
             int numFolds = Math.min(train.numInstances(), numCVFolds);
             cv.setNumFolds(numFolds);
             trainResults = cv.crossValidateWithStats(classifier, train);
+            trainResults.setBenchmarkTime(trainBenchmark);
         }
         
         return trainResults;
     }
     
-    public static void writeTrainEstimate(Classifier classifier, Instances train, ClassifierResults results, String fullTrainWritingPath, long buildTime) {
-        if (classifier instanceof TrainAccuracyEstimate) {
-            //the classifier will have written it's own train estimate internally
-            return;
-        }
-        else {
-            //Write the results
-            OutFile trainOut = new OutFile(fullTrainWritingPath);
-            trainOut.writeLine(train.relationName() + "," + classifier.getClass().getName() + ",train");
-            if (classifier instanceof SaveParameterInfo) {
-                trainOut.writeLine(((SaveParameterInfo) classifier).getParameters()); //assumes build time is in it's param info, is for tunedsvm
-            } else {
-                trainOut.writeLine("BuildTime," + buildTime + ",No Parameter Info");
-            }
-            trainOut.writeLine(results.acc + "");
-            trainOut.writeLine(results.writeInstancePredictions());
-            //not simply calling trainResults.writeResultsFileToString() since it looks like those that extend SaveParameterInfo will store buildtimes
-            //as part of their params, and so would be written twice
-            trainOut.closeFile();
-            
-            File f = new File(fullTrainWritingPath);
-            if (f.exists()) {
-                f.setWritable(true, false);
-            }
-
-        }
-    }
-    
-    public static ClassifierResults evaluateClassifier(Classifier classifier, Instances testSet) throws Exception {
-        ClassifierResults results = new ClassifierResults(testSet.numClasses());
-        double[] trueClassValues = testSet.attributeToDoubleArray(testSet.classIndex());
-
-        for (Instance instance : testSet) {
-            instance.setClassMissing(); //just to be sure of no funny business 
-            double[] probs = classifier.distributionForInstance(instance);
-            results.storeSingleResult(probs);
-        }
+    /**
+     * Meta info shall be set by writeResults(...), just generating the prediction info and 
+     * any info directly calculable from that here
+     */
+    public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(false , true);
+        eval.setSeed(exp.foldId);
         
-        results.finaliseResults(trueClassValues);
-        return results;
+        return eval.evaluate(classifier, testSet);
     }
     
-    public static void writeTestResults(Classifier classifier, Instances dataset, ClassifierResults results, String fullTestWritingPath) {
-        OutFile testOut = new OutFile(fullTestWritingPath);
-        testOut.writeLine(dataset.relationName() + "," + classifier.getClass().getName() + ",test");
-        if (classifier instanceof SaveParameterInfo) {
-            testOut.writeLine(((SaveParameterInfo) classifier).getParameters());
-        } else {
-            testOut.writeLine("No parameter info");
-        }
-        testOut.writeLine(results.acc + "");
-        testOut.writeString(results.writeInstancePredictions());
-        testOut.closeFile();
+    /**
+     * todo not implemented yet, returns default. To be decided in group, most likely 
+     * add a flag to the experimental arguments to set whether to do this or not
+     * 
+     * If running many very short experiments, adding e.g 5 seconds onto each to provide 
+     * benchmark timings would a) be unreliable anyway (since the timing of the short experiment 
+     * itself would perhaps be imprecise) and b) increase the total time for the set of experiments
+     * massively
+     */
+    public static long findBenchmarkTime() {
+        return -1; //the default in classifierresults, i.e no benchmark
+    }
+    
+    public static void writeResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
+        results.setClassifierName(exp.classifierName);
+        results.setDatasetName(exp.datasetName);
+        results.setFoldID(exp.foldId);
+        results.setSplit(split);
+        results.setDescription("Generated by Experiments.java");
+        
+        if (classifier instanceof SaveParameterInfo)
+            results.setParas(((SaveParameterInfo) classifier).getParameters());
+
+        results.writeFullResultsToFile(fullTestWritingPath);
+        
         File f = new File(fullTestWritingPath);
         if (f.exists()) {
             f.setWritable(true, false);

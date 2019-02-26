@@ -31,7 +31,7 @@ public class MajorityConfidence extends ModuleVotingScheme {
         double[] preds = new double[numClasses];
         
         for(int m = 0; m < modules.length; m++){
-            double[] p=modules[m].trainResults.getDistributionForInstance(trainInstanceIndex);
+            double[] p=modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex);
             for (int c = 0; c < numClasses; c++) {
                 preds[c] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[c] * p[c];
@@ -46,7 +46,7 @@ public class MajorityConfidence extends ModuleVotingScheme {
         double[] preds = new double[numClasses];
         
         for(int m = 0; m < modules.length; m++){
-            double[] p=modules[m].testResults.getDistributionForInstance(testInstanceIndex);
+            double[] p=modules[m].testResults.getProbabilityDistribution(testInstanceIndex);
             for (int c = 0; c < numClasses; c++) {
                 preds[c] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[c] * p[c];
@@ -62,8 +62,11 @@ public class MajorityConfidence extends ModuleVotingScheme {
         
         double[] dist;
         for(int m = 0; m < modules.length; m++){
+            long startTime = System.currentTimeMillis();
             dist = modules[m].getClassifier().distributionForInstance(testInstance);
-            storeModuleTestResult(modules[m], dist);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dist, predTime);
             
             for (int c = 0; c < numClasses; c++) {
                 preds[c] += modules[m].priorWeight * 

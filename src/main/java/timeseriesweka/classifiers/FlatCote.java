@@ -76,7 +76,7 @@ public class FlatCote extends AbstractClassifierWithTrainingData{
     
     @Override
     public void buildClassifier(Instances train) throws Exception{
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         this.train = train;
         
         ee = new ElasticEnsemble();
@@ -109,7 +109,7 @@ public class FlatCote extends AbstractClassifierWithTrainingData{
                 cvSum+=cvAccs[e][c];
             }
         }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
 
     }
     

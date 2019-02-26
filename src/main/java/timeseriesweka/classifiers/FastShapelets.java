@@ -87,9 +87,9 @@ public class FastShapelets extends AbstractClassifierWithTrainingData {
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long start=System.currentTimeMillis();
         train(data, 10, 10);
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-start);
     }
     @Override
     public String getParameters() {
