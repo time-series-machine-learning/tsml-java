@@ -32,7 +32,7 @@ import timeseriesweka.classifiers.cote.HiveCoteModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;

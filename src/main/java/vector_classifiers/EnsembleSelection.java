@@ -26,7 +26,7 @@ import java.util.Random;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import utilities.ClassifierTools;
 import static utilities.GenericTools.indexOfMax;

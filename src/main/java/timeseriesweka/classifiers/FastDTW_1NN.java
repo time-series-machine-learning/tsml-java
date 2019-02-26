@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.SaveEachParameter;

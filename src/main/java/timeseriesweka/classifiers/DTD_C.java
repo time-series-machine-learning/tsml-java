@@ -4,7 +4,7 @@ package timeseriesweka.classifiers;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;

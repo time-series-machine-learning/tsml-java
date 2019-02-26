@@ -21,7 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
@@ -29,7 +29,7 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.*;
 
 /**
@@ -304,7 +304,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -451,7 +451,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -607,7 +607,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -989,7 +989,7 @@ this gives the option of finding one using 10xCV
             model.setC(this.getC());
             model.setBuildLogisticModels(true);
             model.setRandomSeed(seed);
-            CrossValidator cv = new CrossValidator();
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
             cv.setSeed(seed); //trying to mimick old seeding behaviour below
             cv.setNumFolds(folds);
             cv.buildFolds(train);

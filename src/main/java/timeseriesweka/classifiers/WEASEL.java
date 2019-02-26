@@ -1,8 +1,8 @@
 package timeseriesweka.classifiers;
 
 
-import evaluation.CrossValidator;
-import evaluation.ClassifierResults;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
@@ -290,7 +290,7 @@ public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCo
     
     if(trainCV){
         int numFolds=setNumberOfFolds(samples);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(numFolds);

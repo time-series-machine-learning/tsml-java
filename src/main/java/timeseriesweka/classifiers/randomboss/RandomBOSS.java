@@ -25,7 +25,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 import weka.classifiers.Classifier;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;

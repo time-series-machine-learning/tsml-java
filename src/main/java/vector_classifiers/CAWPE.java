@@ -28,7 +28,7 @@ import java.util.Arrays;
 
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.DebugPrinting;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -47,7 +47,7 @@ import weka.filters.SimpleBatchFilter;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
@@ -131,7 +131,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected String outputEnsembleTrainingPathAndFile;
 
     protected boolean performEnsembleCV = true;
-    protected CrossValidator cv = null;
+    protected CrossValidationEvaluator cv = null;
     protected ClassifierResults ensembleTrainResults = null;//data generated during buildclassifier if above = true
     protected ClassifierResults ensembleTestResults = null;//data generated during testing
 
@@ -508,7 +508,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if (willNeedToDoCV()) {
             //int numFolds = setNumberOfFolds(train); //through TrainAccuracyEstimate interface
 
-            cv = new CrossValidator();
+            cv = new CrossValidationEvaluator();
             if (setSeed)
                 cv.setSeed(seed);
             cv.setNumFolds(numCVFolds);
@@ -824,7 +824,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         return modules;
     }
 
-    public CrossValidator getCrossValidator() {
+    public CrossValidationEvaluator getCrossValidator() {
         return cv;
     }
 
@@ -1419,7 +1419,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest10/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest12/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;

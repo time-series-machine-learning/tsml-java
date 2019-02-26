@@ -56,7 +56,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import statistics.distributions.BinomialDistribution;
 import statistics.tests.OneSampleTests;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 
 /**
  *

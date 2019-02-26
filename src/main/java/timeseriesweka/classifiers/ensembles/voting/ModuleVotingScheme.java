@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import utilities.DebugPrinting;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 

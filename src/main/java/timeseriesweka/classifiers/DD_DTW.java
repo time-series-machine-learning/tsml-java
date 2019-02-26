@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.lazy.kNN;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;

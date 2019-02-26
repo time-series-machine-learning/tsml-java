@@ -1,7 +1,7 @@
 
 package vector_classifiers;
 
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;

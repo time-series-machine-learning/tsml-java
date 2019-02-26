@@ -30,7 +30,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 
 
 /**

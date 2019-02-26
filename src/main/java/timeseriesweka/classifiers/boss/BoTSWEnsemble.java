@@ -19,7 +19,7 @@ import utilities.Timer;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.Capabilities;

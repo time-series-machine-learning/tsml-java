@@ -5,8 +5,8 @@
 package utilities;
 
 
-import evaluation.ClassifierResults;
-import evaluation.tuning.evaluators.SingleTestSetEvaluator;
+import evaluation.storage.ClassifierResults;
+import evaluation.evaluators.SingleTestSetEvaluator;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Random;
