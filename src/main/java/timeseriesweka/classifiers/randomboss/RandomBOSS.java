@@ -233,7 +233,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     @Override
     public ClassifierResults getTrainResults(){
 //Temporary : copy stuff into trainResults.acc here
-        trainResults.acc=ensembleCvAcc;
+        trainResults.setAcc(ensembleCvAcc);
 //TO DO: Write the other stats
         return trainResults;
     }
@@ -266,7 +266,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.buildTime = System.nanoTime();
+        trainResults.setBuildTime(System.nanoTime());
 
         //creating path for checkpointing
         String type = "";
@@ -345,7 +345,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         if (contract) {
             //continue building classifiers until contract time runs out or max ensemble size is reached
             //any time between runs using checkpointing is not included
-            while (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
+            while (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
                 //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
@@ -368,10 +368,10 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
             }
 
             System.out.println("RBOSS Contract Data: NumClassifiers = " +
-                    classifiers[numSeries-1].size() + " StartTime = " + trainResults.buildTime + " "
+                    classifiers[numSeries-1].size() + " StartTime = " + trainResults.getBuildTime() + " "
                     + "EndTime = " + System.nanoTime() + " Checkpointed = " + checkpoint + " TotalTime = "
-                    + (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff) + " AverageTime = "
-                    + (System.nanoTime() - trainResults.buildTime - checkpointTimeDiff) / classifiers[0].size());
+                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) + " AverageTime = "
+                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) / classifiers[0].size());
         }
         //Randomly selected ensemble with CAWPE weighting
         else if (useCAWPE){
@@ -506,7 +506,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         }
 
         //end train time, converted to milliseconds currently for compatability
-        trainResults.buildTime = (long)(System.nanoTime()/1000000) - (long)(trainResults.buildTime/1000000) - (long)(checkpointTimeDiff/1000000);
+        trainResults.setBuildTime((long)(System.nanoTime()/1000000) - (long)(trainResults.getBuildTime()/1000000) - (long)(checkpointTimeDiff/1000000));
 
         //Estimate train accuracy, may be broken for CAWPE/Alternate classifiers (currently untested)
         if (trainCV) {

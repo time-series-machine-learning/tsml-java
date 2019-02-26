@@ -212,8 +212,11 @@ public class Tuner
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);
-        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
-        results.paras = parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine);
+        results.setClassifierName("TunedClassifier:"+classifierName);
+        results.setDatasetName(datasetName);
+        results.setFoldID(seed);
+        results.setSplit("train");
+        results.setParas(parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine));
         
         return results;
     }
@@ -325,7 +328,7 @@ public class Tuner
         }
     }
     
-    public void saveParaResults(int paraID, ClassifierResults results) throws IOException {
+    public void saveParaResults(int paraID, ClassifierResults results) throws Exception {
 //        File f = new File(parameterSavingPath);
 //        if (!f.exists()){ 
 //            System.out.println("Creating directory " + parameterSavingPath);
@@ -334,9 +337,7 @@ public class Tuner
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         //so no need to make dir, just add on para id and write
         
-        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID)); 
-        out.writeString(results.writeResultsFileToString());
-        out.closeFile();
+        results.writeFullResultsToFile(parameterSavingPath + buildParaFilename(paraID));
     }
     
     /**
@@ -354,7 +355,7 @@ public class Tuner
             if (ClassifierResults.exists(path)) {
                 ClassifierResults tempResults = new ClassifierResults(path);
                 ParameterSet pset = new ParameterSet();
-                pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+                pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
                 storeParaResult(pset, tempResults, tiesBestSoFar);
             } else {
                 throw new Exception("Trying to load paras back in, but missing expected parameter set ID: " + paraID + ", numParasExpected: " + numParasExpected);
@@ -383,7 +384,7 @@ public class Tuner
         for (File file : files) {
             ClassifierResults tempResults = new ClassifierResults(file.getAbsolutePath());
             ParameterSet pset = new ParameterSet();
-            pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+            pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
             storeParaResult(pset, tempResults, tiesBestSoFar);
         }
         

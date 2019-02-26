@@ -21,8 +21,8 @@ public class MaxCorrectedTrainAcc extends ModuleWeightingScheme {
     
     public void defineWeightings(EnsembleModule[] modules, int numClasses) {
         double[] classDist = new double[numClasses];
-        for (int i = 0; i < modules[0].trainResults.getTrueClassVals().length; i++)
-            classDist[(int)modules[0].trainResults.getTrueClassVals()[i]]++;
+        for (int i = 0; i < modules[0].trainResults.getTrueClassValsAsArray().length; i++)
+            classDist[(int)modules[0].trainResults.getTrueClassValsAsArray()[i]]++;
         
         maxClassWeighting = classDist[0];
         for (int i = 1; i < classDist.length; i++) 
@@ -39,7 +39,7 @@ public class MaxCorrectedTrainAcc extends ModuleWeightingScheme {
     @Override
     public double[] defineWeighting(EnsembleModule module, int numClasses) {
         //made non zero (effectively 1% accuracy) in weird case that all classifiers get less than expected acc
-        return makeUniformWeighting(Math.max(0.01, module.trainResults.acc - maxClassWeighting), numClasses);
+        return makeUniformWeighting(Math.max(0.01, module.trainResults.getAcc() - maxClassWeighting), numClasses);
     }
     
     @Override

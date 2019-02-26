@@ -192,9 +192,10 @@ public class TunedClassifier extends AbstractClassifier
         
         bestParas = best.paras;
         TAE_trainResults = best.results;
-        TAE_trainAcc = best.results.acc;
+        TAE_trainAcc = best.results.getAcc();
         
-        writeResults();
+        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null)
+            TAE_trainResults.writeFullResultsToFile(TAE_trainAccWritePath);
         
         //apply best paras and build final classifier on full train data
         String[] options = best.paras.toOptionsList();
@@ -207,19 +208,7 @@ public class TunedClassifier extends AbstractClassifier
         return classifier.distributionForInstance(inst);
     }
     
-    private void writeResults() {
-        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null) { 
-            //save the results of the best parameter set
-            OutFile f= new OutFile(TAE_trainAccWritePath);
-            f.writeString(TAE_trainResults.writeResultsFileToString());
-            f.closeFile();
-        }
-    }
-    
-    static Function<Integer,Integer> numFeatsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
-    
     public static void main(String[] args) throws Exception {
-        int numFeats = numFeatsFinder.apply(10);
         
 //        String dataset = "hayes-roth";
 //        

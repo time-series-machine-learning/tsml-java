@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ensembles.voting;
 
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
 /**
@@ -121,8 +122,11 @@ public class NaiveBayesCombiner extends ModuleVotingScheme {
         int pred;
         double[] mdist;
         for (int m = 0; m < modules.length; m++) {
-            mdist = modules[m].getClassifier().distributionForInstance(testInstance); 
-            storeModuleTestResult(modules[m], mdist);
+            long startTime = System.currentTimeMillis();
+            mdist = modules[m].getClassifier().distributionForInstance(testInstance);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], mdist, predTime);
             
             pred = (int)indexOfMax(mdist);
             for (int ac = 0; ac < numClasses; ac++) {

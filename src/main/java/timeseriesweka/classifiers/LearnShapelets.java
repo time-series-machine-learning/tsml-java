@@ -498,7 +498,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingData implement
    
     // build a classifier using cross-validation to tune hyper-parameters
     public void buildClassifier(Instances trainData) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         
         if(paraSearch){
             double[] paramsLambdaW;
@@ -593,7 +593,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingData implement
         
         train(trainData);
         
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
     }
     

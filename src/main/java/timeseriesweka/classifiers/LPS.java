@@ -306,7 +306,7 @@ public class LPS extends AbstractClassifierWithTrainingData implements Parameter
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-         trainResults.buildTime=System.currentTimeMillis();
+         long startTime=System.currentTimeMillis();
         
 //determine minimum and maximum possible segment length
         if(paramSearch){
@@ -429,7 +429,7 @@ public class LPS extends AbstractClassifierWithTrainingData implements Parameter
         }
   */      
         sequences=null;
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
         System.gc();
      }

@@ -72,7 +72,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
 
     @Override
     public double getAcc() {
-        return res.acc;
+        return res.getAcc();
     }  
 
     public SlowDTW_1NN(){
@@ -85,7 +85,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     }
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.memory;
+        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",Memory,"+res.getMemory();
         result+=",BestWarpPercent,"+bestWarp+",AllAccs,";
        for(double d:accuracy)
             result+=","+d;
@@ -134,12 +134,17 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             System.out.println("OPTIMAL WINDOW ="+maxR+" % which gives a warp of"+bestWarp+" data");
   //          dtw=new DTW();
             dtw.setR(maxR/100.0);
-            res.acc=maxAcc;
+            res.setAcc(maxAcc);
         }
-        res.buildTime=System.currentTimeMillis()-t;
+        try {
+            res.setBuildTime(System.currentTimeMillis()-t);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.memory=usedBytes;
+        res.setMemory(usedBytes);
         
         
         if(trainPath!=null && trainPath!=""){  //Save basic train results
@@ -148,7 +153,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             OutFile f= new OutFile(trainPath);
             f.writeLine(train.relationName()+",FastDTW_1NN,Train");
             f.writeLine(getParameters());
-            f.writeLine(res.acc+"");
+            f.writeLine(res.getAcc()+"");
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);
                 int pred=(int)classifyInstance(test);

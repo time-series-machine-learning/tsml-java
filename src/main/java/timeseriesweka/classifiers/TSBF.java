@@ -409,7 +409,7 @@ public TechnicalInformation getTechnicalInformation() {
     }
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
@@ -576,7 +576,12 @@ public TechnicalInformation getTechnicalInformation() {
             for(int k=0;k<numClasses;k++)
                classProbs[i][k]/=numSubSeries; 
         }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        try {
+            trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
     }
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception{

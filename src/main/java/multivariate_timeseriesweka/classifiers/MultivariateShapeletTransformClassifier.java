@@ -135,7 +135,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     public String getParameters(){
         String paras=transform.getParameters();
         String ensemble=this.ensemble.getParameters();
-        return "BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
+        return "BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
     }
     
     @Override
@@ -198,7 +198,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
 
             ensemble.buildClassifier(format);
             format=new Instances(data,0);
-            res.buildTime=System.currentTimeMillis()-startTime;
+            res.setBuildTime(System.currentTimeMillis()-startTime);
         }
     }
     private void  buildCheckpointClassifier(Instances data) throws Exception {   
