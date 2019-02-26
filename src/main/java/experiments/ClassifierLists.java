@@ -1,4 +1,17 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package experiments;
 
 
@@ -7,32 +20,14 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
 import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.BOSS;
-import timeseriesweka.classifiers.BagOfPatterns;
-import timeseriesweka.classifiers.DD_DTW;
-import timeseriesweka.classifiers.DTD_C;
-import timeseriesweka.classifiers.ElasticEnsemble;
-import timeseriesweka.classifiers.FastShapelets;
+import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
-import timeseriesweka.classifiers.FlatCote;
-import timeseriesweka.classifiers.HiveCote;
-import timeseriesweka.classifiers.LPS;
-import timeseriesweka.classifiers.LearnShapelets;
-import timeseriesweka.classifiers.NN_CID;
-import timeseriesweka.classifiers.RISE;
-import timeseriesweka.classifiers.SAXVSM;
-import timeseriesweka.classifiers.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.SlowDTW_1NN;
-import timeseriesweka.classifiers.TSBF;
-import timeseriesweka.classifiers.TSF;
-import timeseriesweka.classifiers.WEASEL;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.randomboss.RandomBOSS;
+import timeseriesweka.classifiers.RandomBOSS;
 import vector_classifiers.CAWPE;
-import vector_classifiers.ContractRotationForest;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -44,7 +39,6 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
-import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
@@ -238,6 +232,40 @@ public class ClassifierLists {
             case "BOSSMV":
                 c = new RandomBOSS();
                 ((RandomBOSS) c).setSeed(fold);
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                break;
+            case "RBOSSMV":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).setRandomEnsembleSelection(true);
+                ((RandomBOSS) c).setEnsembleSize(100);
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((RandomBOSS) c).setSeed(fold);
+                break;
+            case "RCBOSSMV":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).useCAWPE(true);
+                ((RandomBOSS) c).setEnsembleSize(100);
+                ((RandomBOSS) c).setNumCAWPEFolds(2);
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((RandomBOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted1Hour":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((RandomBOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted24Hour":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((RandomBOSS) c).setSeed(fold);
+                break;
+            case "RandomRTreeBOSS":
+                c = new RandomBOSS();
+                ((RandomBOSS) c).setAlternateIndividualClassifier(new RandomTree());
+                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((RandomBOSS) c).setSeed(fold);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
@@ -281,5 +309,9 @@ public class ClassifierLists {
         }
         return c;
     }
-    
+
+    public static void main(String[] args) throws Exception {
+        System.out.println(setClassifierClassic("RCBOSSMV", 0));
+        System.out.println(setClassifierClassic("RBOSSMV", 0));
+    }
 }

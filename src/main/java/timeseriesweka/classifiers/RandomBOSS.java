@@ -1,4 +1,18 @@
-package timeseriesweka.classifiers.randomboss;
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package timeseriesweka.classifiers;
 
 import fileIO.OutFile;
 
@@ -12,10 +26,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Map.Entry;
-
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingData;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
 
 import utilities.ClassifierTools;
 import utilities.BitWord;
@@ -31,15 +41,16 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
 /**
- * BOSS classifier with parameter search and ensembling, if parameters are known, 
- * use the nested class BOSSIndividual and directly provide them.
+ * BOSS classifier with parameter search and ensembling for univariate and
+ * multivariate time series classification.
+ * If parameters are known, use the nested class BOSSIndividual and directly provide them.
  * 
- * Intended use is with the default constructor, however can force the normalisation 
- * parameter to true/false by passing a boolean, e.g c = new BOSSEnsemble(true)
+ * Options to change the method of ensembling to randomly select parameters instead of searching.
+ * Has the capability to contract train time and checkpoint when using a random ensemble.
  * 
- * Alphabetsize fixed to four
+ * Alphabetsize fixed to four and maximum wordLength of 16.
  * 
- * @author James Large
+ * @author James Large, updated by Matthew Middlehurst
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
@@ -806,17 +817,17 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "Adiac";
-        Instances train = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
         String dataset2 = "NATOPS";
-        Instances train2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Multivariate Archive\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Multivariate Archive\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
 
         Classifier c = new RandomBOSS();
         ((RandomBOSS) c).ensembleSize = 250;
         ((RandomBOSS) c).randomEnsembleSelection = true;
-//        ((RandomBOSS) c).setSavePath("D:\\CMP Machine Learning");
+        ((RandomBOSS) c).setSavePath("C:\\UEAMachineLearning");
         c.buildClassifier(train2);
         double accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -828,7 +839,7 @@ public class RandomBOSS extends AbstractClassifierWithTrainingData implements Hi
         c = new RandomBOSS();
         ((RandomBOSS) c).ensembleSize = 250;
         ((RandomBOSS) c).randomEnsembleSelection = true;
-//        ((RandomBOSS) c).setSavePath("D:\\CMP Machine Learning");
+//        ((RandomBOSS) c).setSavePath("C:\UEAMachineLearning");
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
