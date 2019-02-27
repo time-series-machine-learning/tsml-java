@@ -746,13 +746,7 @@ public class ClassifierResultsAnalysis {
         
         return eval_metricOnSplit(outPath, filename, null, testLabel, statName, testFolds, cnames, dsets, dsetGroupings);
     }
-    
-    /**
-     * TODO this is a quick edit in to get some buildtime info out, needs to be merged in properly 
-     * part of problem is that we want to do this *iff* train data is available
-     * other part is that buildtimes are in longs, converting to doubles can be a pain as described above
-     * at the lambda definition
-     */
+
     protected static String[/*{train,test}*/][] eval_timings(String outPath, String filename, ArrayList<ClassifierEvaluation> results, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         if (results.get(0).testResults[0][0].getBuildTime() <= 0) { //is not present. TODO god forbid naive bayes on balloons takes less than a millisecond...
             System.out.println("Warning: No buildTimes found, or buildtimes == 0");
