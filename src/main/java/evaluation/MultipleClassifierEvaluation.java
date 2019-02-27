@@ -162,37 +162,6 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
-    //START TIMING HACKS
-    //This facilitates the hacks to get collation of train and test timings going,
-    //essentially up to the user to know what the units of the timings in the results files are (until cleaned up...)
-    //Using this enum/these methods you can convert to e.g seconds for human readability, or more importantly,
-    //if you're timing in nano seconds (especially) and the build time is a reaonable length of time, a simple conversion
-    //to double wont keep precision at all. So use the conversion to a larger unit (millis or seconds) to get the number 
-    //closer to zero and potentially maintain more precision
-    public enum BuildTimeConversion {
-       NO_CONVERSION(ClassifierResultsAnalysis.TIMING_NO_CONVERSION), //aka, millis to millis
-       MILLIS_TO_SECONDS(ClassifierResultsAnalysis.TIMING_MILLIS_TO_SECONDS),
-       NANO_TO_MILLIS(ClassifierResultsAnalysis.TIMING_NANO_TO_MILLIS),
-       NANO_TO_SECONDS(ClassifierResultsAnalysis.TIMING_NANO_TO_SECONDS);
-       
-       public final int divisor; 
-       BuildTimeConversion(int divisor) {
-           this.divisor = divisor;
-       }
-    }
-    public int getBuildTimeConversionDivisor() {
-        return ClassifierResultsAnalysis.TIMING_CONVERSION;
-    }
-    public MultipleClassifierEvaluation setBuildTimeConversion(int divisor) {
-        ClassifierResultsAnalysis.TIMING_CONVERSION = divisor;
-        return this;
-    }
-    public MultipleClassifierEvaluation setBuildTimeConversion(BuildTimeConversion conversion) {
-        ClassifierResultsAnalysis.TIMING_CONVERSION = conversion.divisor;
-        return this;
-    }
-    //END TIMING HACKS
-    
     /**
      * @param datasetListFilename the path and name of a file containing a list of datasets, one per line
      * @throws FileNotFoundException 

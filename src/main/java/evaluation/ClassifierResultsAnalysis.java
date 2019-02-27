@@ -100,42 +100,6 @@ public class ClassifierResultsAnalysis {
     //making those files, thisll be cleaned up with time
    
     
-    //START TIMING TEMPORARY FIXES
-//    //NOTE TODO BUG CHECK: due to double precision, this cast (long to double) may end up causing problems in the future. 
-//    //if we were assume for now buildtime is no longer than a week, this won't cause problems
-//    //some post processed ensembles (e.g HIVE COTE) might break this assumption though
-//    //if the builtimes of it's members are summed
-    
-    //the fix for now, needed since i started using nanoseconds for part of hesca timings
-    public static final int TIMING_NO_CONVERSION = 1; //aka, millis to millis
-    public static final int TIMING_MILLIS_TO_SECONDS = 1000;
-    public static final int TIMING_NANO_TO_MILLIS = 1000000;
-    public static final int TIMING_NANO_TO_SECONDS = 1000000000;
-    public static int TIMING_CONVERSION = TIMING_NO_CONVERSION;
-    
-    
-    //todo revisit this at some point, since these are done via static variables, need a way to 
-    //'remake' the func after TIMING_CONVERSION is set to a different value, since it would otherwise 
-    //use the default it had to work with during its own initialisation (TIMING_NO_CONVERSION)
-    public static Function<ClassifierResults, Double> initBuildTimesGetter() {
-        return (ClassifierResults cr) -> {
-            if (TIMING_CONVERSION == TIMING_NO_CONVERSION) {
-                return (double)cr.getBuildTime();
-            }
-            else {
-                //since doubles have better precision closer to zero, knock off a bunch of the lower sig values,
-                //convert those to double, then add as after the decimal to get the full number expressed as a lower base
-                long rawBuildTime = cr.getBuildTime();
-                long pre = rawBuildTime / TIMING_CONVERSION;
-                long post = rawBuildTime % TIMING_CONVERSION;
-                double convertedPost = (double)post / TIMING_CONVERSION;
-                return pre + convertedPost;
-            }
-        };
-    }
-    //END TIMING TEMPORARY FIXES
-
-    
     public static class ClassifierEvaluation  {
         public String classifierName;
         public ClassifierResults[][] testResults; //[dataset][fold]
@@ -147,7 +111,6 @@ public class ClassifierResultsAnalysis {
             this.trainResults = trainResults;
         }
     }
-    
     
     //THESE ARE THE METHODS YOU'D ACTUALLY USE, the public 'actually do stuff' methods'
     
@@ -333,7 +296,18 @@ public class ClassifierResultsAnalysis {
             cliques = MultipleClassifiersPairwiseTest.printCliques();
             out.writeLine("\n\n" + cliques);
         } catch (Exception e) {
+            System.err.println("\n\n");
+            System.err.println("*****".replace("*", "*****"));
+            
+            System.err.println("MultipleClassifiersPairwiseTest.runTests() failed. Almost certainly this is because there were"
+                    + "too many ties/duplicates within one of the pairwise tests and then an index out of bounds error was thrown. "
+                    + "This will be fixed at some point. The analysis will CARRY ON, and everything that is successfully printed out "
+                    + "IS CORRECT, however whatever particular table that test would have been summarised as is missing from your files.");
+            System.err.println("filename="+outPath+filename+"_"+statName+".csv");
             e.printStackTrace();
+            
+            System.err.println("*****".replace("*", "*****"));
+            System.err.println("\n\n");
         }
         
         out.closeFile();
@@ -750,9 +724,9 @@ public class ClassifierResultsAnalysis {
         //future proofing the spaghetti, if dostats was already false becuase of something else
         //we can leave it as it was.
         boolean prevStateOfDoStats = doStats;
-        doStats = false; 
+//        doStats = false; 
         
-        Function<ClassifierResults, Double> stat = initBuildTimesGetter();
+        Function<ClassifierResults, Double> stat = ClassifierResults.GETTER_buildTimeDoubleMillis;
         String statName = "BuildTimes";
         outPath += statName + "/";
         new File(outPath).mkdirs();        

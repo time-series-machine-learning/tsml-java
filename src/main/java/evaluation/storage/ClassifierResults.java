@@ -277,6 +277,36 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
+    //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
+    //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
+    //      a double's mantissa = 52bits, 2^52 / 1000000000 / 60 / 60 / 24 / 7 = 7.something weeks
+    //so, will assume the usage/requirement for milliseconds in the stats pipeline, to avoid the potential future problem 
+    //of meta-ensembles taking more than a week, etc. (or even just summing e.g 30 large times to be averaged)
+    //it is still preferable of course to store any timings in nano's in the classifierresults object since they'll
+    //store them as longs. 
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_testTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
+    
+    private static double toDoubleMillis(long time, TimeUnit unit) {
+        if (unit.equals(TimeUnit.MICROSECONDS)) {
+            long pre = time / 1000;  //integer division for pre - decimal point
+            long post = time % 1000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else if (unit.equals(TimeUnit.NANOSECONDS)) {
+            long pre = time / 1000000;  //integer division for pre - decimal point
+            long post = time % 1000000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else {
+            //not higher resolution than millis, no special conversion needed just cast to double
+            return (double)unit.toMillis(time); 
+        }
+    }
     
     /*********************************
      * 
