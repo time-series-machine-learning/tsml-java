@@ -180,7 +180,7 @@ public class ClassifierResultsAnalysis {
             System.exit(0);
         }
         
-        String[] timeLabels = { "TRAINTIMES", "TESTTIMES" };
+        String[] timeLabels = { PerformanceMetric.buildTime.name, PerformanceMetric.testTime.name };
         for (int j = 0; j < timeLabels.length; j++) {
             if (trainTestTimingSummary[0] != null) {
                 bigSummary.writeString(timeLabels[j] + ":");
@@ -189,7 +189,7 @@ public class ClassifierResultsAnalysis {
                 smallSummary.writeString(timeLabels[j] + ":");
                 smallSummary.writeLine(trainTestTimingSummary[j][1]);
 
-                statNamesForDias.add(timeLabels[j] + ":");
+                statNamesForDias.add(timeLabels[j]);
                 statCliquesForCDDias.add(trainTestTimingSummary[j][2]);
             } 
             else {
@@ -369,7 +369,7 @@ public class ClassifierResultsAnalysis {
         stddevsFoldVals = util_order(stddevsFoldVals, ordering);
         
         if (performDeepAnalysis) {
-            if (evalSet.equalsIgnoreCase("TEST")) {
+            if (evalSet.equalsIgnoreCase("TEST") || metric.equals(PerformanceMetric.buildTime)) {
                 //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
                 String cdFolder = expRootDirectory + cdDiaPath;
                 (new File(cdFolder)).mkdirs();

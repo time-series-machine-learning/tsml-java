@@ -1413,7 +1413,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest18/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest19/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1482,8 +1482,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
-//            setBuildMatlabDiagrams(true).
-            setBuildMatlabDiagrams(false).
+            setBuildMatlabDiagrams(true).
+//            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
