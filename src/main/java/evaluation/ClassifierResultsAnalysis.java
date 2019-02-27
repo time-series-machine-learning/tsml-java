@@ -351,11 +351,9 @@ public class ClassifierResultsAnalysis {
         //BEFORE ordering, write the individual folds files
         eval_perFoldFiles(outPath+evalSet+"FOLD"+metric+"S/", foldVals, cnames, dsets, evalSet);
         
-        double[][] dsetVals = findAvgsOverFolds(foldVals);
+        double[][] dsetVals = findAvgsOverFolds(foldVals, metric.takeMean);
         double[][] stddevsFoldVals = findStddevsOverFolds(foldVals);
-        double[][] ranks = null;
-        
-        ranks = findRanks(dsetVals, metric.maximise); //we want to minimise
+        double[][] ranks = findRanks(dsetVals, metric.maximise);
         
         int[] ordering = ordering = findOrdering(ranks); 
         //ordering is now an array of value referring to the rank-order of the element at each index
@@ -881,11 +879,19 @@ public class ClassifierResultsAnalysis {
         return diffs;
     }
         
-    protected static double[][] findAvgsOverFolds(double[][][] foldaccs) {
+    /**
+     * todo maybe enum for mode etc
+     * 
+     * @param takeMean if true, will average by taking mean, else will take median
+     */
+    protected static double[][] findAvgsOverFolds(double[][][] foldaccs, boolean takeMean) {
         double[][] accs = new double[foldaccs.length][foldaccs[0].length];
         for (int i = 0; i < accs.length; i++)
             for (int j = 0; j < accs[i].length; j++)
-                accs[i][j] = StatisticalUtilities.mean(foldaccs[i][j], false);
+                if (takeMean)
+                    accs[i][j] = StatisticalUtilities.mean(foldaccs[i][j], false);
+                else 
+                    accs[i][j] = StatisticalUtilities.median(foldaccs[i][j]);
         
         return accs;
     }

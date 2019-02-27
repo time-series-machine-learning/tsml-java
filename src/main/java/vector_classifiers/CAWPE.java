@@ -704,8 +704,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     protected ClassifierResults doEnsembleCV(Instances data) throws Exception {
-        double[] preds = new double[numTrainInsts];
-        double[][] dists = new double[numTrainInsts][];
         double[] accPerFold = new double[cv.getNumFolds()]; //for variance
 
         double actual, pred, correct = 0;
@@ -732,14 +730,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 trainResults.addPrediction(actual, dist, pred, predTime, "");
                 trainResults.turnOnZeroTimingsErrors();
                 
-                //and make ensemble prediction
                 if(pred==actual) {
                     correct++;
                     accPerFold[fold]++;
                 }
-
-                preds[instIndex] = pred;
-                dists[instIndex] = dist;
             }
 
             accPerFold[fold] /= cv.getFoldIndices().get(fold).size();
