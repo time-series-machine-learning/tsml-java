@@ -723,7 +723,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 dist = votingScheme.distributionForTrainInstance(modules, instIndex);
                 long predTime = System.nanoTime()- startTime; //time for ensemble to form vote
                 for (EnsembleModule module : modules) //                 +time for each member's predictions
-                    predTime += module.testResults.getPredictionTime(instIndex);
+                    predTime += module.trainResults.getPredictionTime(instIndex);
                 
                 pred = utilities.GenericTools.indexOfMax(dist);
                 actual = data.instance(instIndex).classValue();
