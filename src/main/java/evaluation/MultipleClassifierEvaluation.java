@@ -31,7 +31,7 @@ import utilities.ErrorReport;
 import utilities.generic_storage.Pair;
 
 /**
- * This essentially just wraps ClassifierResultsAnalysis.writeAllEvaluationFiles(...) in a nicer to use way. Will be updated over time
+ * This essentially just wraps ClassifierResultsAnalysis.performFullEvaluation(...) in a nicer to use way. Will be updated over time
  * 
  * Builds summary stats, sig tests, and optionally matlab dias for the ClassifierResults objects provided/files pointed to on disk. Can optionally use
  * just the test results, if that's all that is available, or both train and test (will also compute the train test diff)
@@ -50,14 +50,14 @@ import utilities.generic_storage.Pair;
  * and there's a bool (default true) to set whether to null the instance prediction info after stats are found to save memory. 
  * If some custom analysis method not defined natively in classifierresults that uses the individual prediction info, 
  * (defined using addEvaluationStatistic(String statName, Function<ClassifierResults, Double> classifierResultsManipulatorFunction))
- * will need to keep the info, but that can get problematic depending on how many classifiers/datasets/folds there are
- * 
- * For some reason, the first excel workbook writer library i found/used makes xls files (instead of xlsx) and doesn't 
- * support recent excel default fonts. Just open it and saveas if you want to switch it over. There's a way to globally change font in a workbook 
- * if you want to change it back
- *
- * Future work (here and in ClassifierResultsAnalysis.writeAllEvaluationFiles(...)) when wanted/needed could be to 
- * handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the obviously bad parts of the code
+ will need to keep the info, but that can get problematic depending on how many classifiers/datasets/folds there are
+ 
+ For some reason, the first excel workbook writer library i found/used makes xls files (instead of xlsx) and doesn't 
+ support recent excel default fonts. Just open it and saveas if you want to switch it over. There's a way to globally change font in a workbook 
+ if you want to change it back
+
+ Future work (here and in ClassifierResultsAnalysis.performFullEvaluation(...)) when wanted/needed could be to 
+ handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the obviously bad parts of the code
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -89,14 +89,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
-     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the mean for that dataset
-     *      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
-     * 
-     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
-     * 
-     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
-     * 
-     * 4) perform the normal grouping analysis based on those clusters
+     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
+      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+ 
+ 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+ 
+ 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+ 
+ 4) perform the normal grouping analysis based on those clusters
      */
     private boolean performPostHocDsetResultsClustering;
     
@@ -148,14 +148,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
-     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the mean for that dataset
-     *      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
-     * 
-     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
-     * 
-     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
-     * 
-     * 4) perform the normal grouping analysis based on those clusters
+     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
+      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+ 
+ 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+ 
+ 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+ 
+ 4) perform the normal grouping analysis based on those clusters
      */
     public MultipleClassifierEvaluation setPerformPostHocDsetResultsClustering(boolean b) {
         performPostHocDsetResultsClustering = b;
@@ -529,7 +529,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             datasetGroupings.put(ClassifierResultsAnalysis.clusterGroupingIdentifier, null); 
         
         printlnDebug("Writing started");
-        ClassifierResultsAnalysis.writeAllEvaluationFiles(writePath, experimentName, statistics, results, datasets.toArray(new String[] { }), datasetGroupings);
+        ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, statistics, results, datasets.toArray(new String[] { }), datasetGroupings);
         printlnDebug("Writing finished");
         
         if (buildMatlabDiagrams)

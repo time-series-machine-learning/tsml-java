@@ -288,6 +288,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_testTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
     
     private static double toDoubleMillis(long time, TimeUnit unit) {
+        if (time < 0)
+            return -1;
+        if (time == 0)
+            return 0;
+        
         if (unit.equals(TimeUnit.MICROSECONDS)) {
             long pre = time / 1000;  //integer division for pre - decimal point
             long post = time % 1000;  //the remainder that needs to be converted to post decimal point, some value < 1000
