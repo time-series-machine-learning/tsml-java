@@ -39,13 +39,13 @@ import java.util.function.Function;
  */
 public class PerformanceMetric {
 
-    public String metricName;
+    public String name;
     public Function<ClassifierResults, Double> getter;
     public boolean takeMean;
     public boolean maximised;
     
     public PerformanceMetric(String metricName, Function<ClassifierResults, Double> getScore, boolean takeMean, boolean maximised) {
-        this.metricName = metricName;
+        this.name = metricName;
         this.getter = getScore;
         this.takeMean = takeMean;
         this.maximised = maximised;
@@ -55,19 +55,29 @@ public class PerformanceMetric {
         return getter.apply(res);
     }
     
-    public static PerformanceMetric acc             = new PerformanceMetric("ACC", ClassifierResults.GETTER_Accuracy, true, true);
-    public static PerformanceMetric balacc          = new PerformanceMetric("BALACC", ClassifierResults.GETTER_BalancedAccuracy, true, true);
-    public static PerformanceMetric AUROC           = new PerformanceMetric("AUROC", ClassifierResults.GETTER_AUROC, true, true);
-    public static PerformanceMetric NLL             = new PerformanceMetric("NLL", ClassifierResults.GETTER_NLL, true, true);
-    public static PerformanceMetric F1              = new PerformanceMetric("F1", ClassifierResults.GETTER_F1, true, true);
-    public static PerformanceMetric MCC             = new PerformanceMetric("MCC", ClassifierResults.GETTER_MCC, true, true);
-    public static PerformanceMetric precision       = new PerformanceMetric("Prec", ClassifierResults.GETTER_Precision, true, true);
-    public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall, true, true);
-    public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity, true, true);
-    public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity, true, true);
-    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTime", ClassifierResults.GETTER_buildTimeDoubleMillis, true, true);
-    public static PerformanceMetric testTime        = new PerformanceMetric("TestTime", ClassifierResults.GETTER_testTimeDoubleMillis, true, true);
     
+    private static final boolean min = false, max = true;
+    private static final boolean median = false, mean = true;
+    
+    public static PerformanceMetric acc             = new PerformanceMetric("ACC", ClassifierResults.GETTER_Accuracy,                    mean, max);
+    public static PerformanceMetric balacc          = new PerformanceMetric("BALACC", ClassifierResults.GETTER_BalancedAccuracy,         mean, max);
+    public static PerformanceMetric AUROC           = new PerformanceMetric("AUROC", ClassifierResults.GETTER_AUROC,                     mean, max);
+    public static PerformanceMetric NLL             = new PerformanceMetric("NLL", ClassifierResults.GETTER_NLL,                         mean, min);
+    public static PerformanceMetric F1              = new PerformanceMetric("F1", ClassifierResults.GETTER_F1,                           mean, max);
+    public static PerformanceMetric MCC             = new PerformanceMetric("MCC", ClassifierResults.GETTER_MCC,                         mean, max);
+    public static PerformanceMetric precision       = new PerformanceMetric("Prec", ClassifierResults.GETTER_Precision,                  mean, max);
+    public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall,                   mean, max);
+    public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity,                mean, max);
+    public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity,                mean, max);
+    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTime", ClassifierResults.GETTER_buildTimeDoubleMillis, median, min);
+    public static PerformanceMetric testTime        = new PerformanceMetric("TestTime", ClassifierResults.GETTER_testTimeDoubleMillis,   median, min);
+    
+    
+    public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
+        ArrayList<PerformanceMetric> stats = new ArrayList<>();
+        stats.add(acc);
+        return stats;
+    }
     
     public static ArrayList<PerformanceMetric> getDefaultStatistics() { 
         ArrayList<PerformanceMetric> stats = new ArrayList<>();

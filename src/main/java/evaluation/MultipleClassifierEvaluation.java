@@ -68,7 +68,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private Map<String, Map<String, String[]>> datasetGroupings; // Map<GroupingMethodTitle(e.g "ByNumAtts"), Map<GroupTitle(e.g "<100"), dsetsInGroup(must be subset of datasets)>>
     private Map<String, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults; 
     private int numFolds;
-    private ArrayList<Pair<String, Function<ClassifierResults, Double>>> statistics;
+    private ArrayList<PerformanceMetric> metrics;
     
     /**
      * if true, the relevant .m files must be located in the netbeans project directory
@@ -117,7 +117,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
         
-        this.statistics = ClassifierResults.getDefaultStatistics();
+        this.metrics = PerformanceMetric.getDefaultStatistics();
     }
     
     /**
@@ -320,34 +320,34 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * 4 stats: acc, balanced acc, auroc, nll
      */
     public MultipleClassifierEvaluation setUseDefaultEvaluationStatistics() {
-        statistics = ClassifierResults.getDefaultStatistics();
+        metrics = PerformanceMetric.getDefaultStatistics();
         return this;
     }
 
     public MultipleClassifierEvaluation setUseAccuracyOnly() {
-        statistics = ClassifierResults.getAccuracyStatistic();
+        metrics = PerformanceMetric.getAccuracyStatistic();
         return this;
     }
     
     public MultipleClassifierEvaluation setUseAllStatistics() {
-        statistics = ClassifierResults.getAllStatistics();
+        metrics = PerformanceMetric.getAllStatistics();
         return this;
     }
     
-    public MultipleClassifierEvaluation addEvaluationStatistic(String statName, Function<ClassifierResults, Double> classifierResultsManipulatorFunction) {
-        statistics.add(new Pair<>(statName, classifierResultsManipulatorFunction));
+    public MultipleClassifierEvaluation addEvaluationStatistic(PerformanceMetric metric) {
+        metrics.add(metric);
         return this;
     }
     
-    public MultipleClassifierEvaluation removeEvaluationStatistic(String statName) {
-        for (Pair<String, Function<ClassifierResults, Double>> statistic : statistics)
-            if (statistic.var1.equalsIgnoreCase(statName))
-                statistics.remove(statistic);
+    public MultipleClassifierEvaluation removeEvaluationStatistic(String name) {
+        for (PerformanceMetric metric : metrics)
+            if (metric.name.equalsIgnoreCase(name))
+                metrics.remove(metric);
         return this;
     }
     
     public MultipleClassifierEvaluation clearEvaluationStatistics(String statName) {
-        statistics.clear();
+        metrics.clear();
         return this;
     }
     
@@ -425,8 +425,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         //or ESPECIALLY because we're using old results files that dont have probabilities in them),
         //then use this flag to determine whether to find the full stats or not
         boolean onlyAccsWanted = true;
-        for (Pair<String, Function<ClassifierResults, Double>> statistic : statistics) {
-            if (!statistic.var1.equals("ACC")) {
+        for (PerformanceMetric metric : metrics) {
+            if (!metric.equals(PerformanceMetric.acc)) {
                 onlyAccsWanted = false;
                 break;
             }
@@ -529,7 +529,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             datasetGroupings.put(ClassifierResultsAnalysis.clusterGroupingIdentifier, null); 
         
         printlnDebug("Writing started");
-        ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, statistics, results, datasets.toArray(new String[] { }), datasetGroupings);
+        ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, metrics, results, datasets.toArray(new String[] { }), datasetGroupings);
         printlnDebug("Writing finished");
         
         if (buildMatlabDiagrams)

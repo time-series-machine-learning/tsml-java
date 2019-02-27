@@ -117,7 +117,7 @@ public class ClassifierResultsAnalysis {
     public static void performFullEvaluation(
             String outPath, 
             String expname, 
-            ArrayList<Pair<String,Function<ClassifierResults,Double>>> statistics, 
+            ArrayList<PerformanceMetric> metrics, 
             ArrayList<ClassifierEvaluation> results, 
             String[] dsets, 
             Map<String, Map<String, String[]>> dsetGroupings) 
@@ -142,27 +142,27 @@ public class ClassifierResultsAnalysis {
         ArrayList<String> statNamesForDias = new ArrayList<>();
         
         // START USER DEFINED STATS
-        for (Pair<String, Function<ClassifierResults, Double>> stat : statistics) {
+        for (PerformanceMetric metric : metrics) {
             
             String[] summary = null;
             try { 
-                summary = eval_metric(outPath, expname, results, stat, cnames, dsets, dsetGroupings);
+                summary = eval_metric(outPath, expname, results, metric, cnames, dsets, dsetGroupings);
             } catch (FileNotFoundException fnf) {
-                System.out.println("Something went wrong while writing " + stat + "files, likely later stages of analysis could "
+                System.out.println("Something went wrong while writing " + metric + "files, likely later stages of analysis could "
                         + "not find files that should have been made "
                         + "internally in earlier stages of the pipeline, FATAL");
                 fnf.printStackTrace();
                 System.exit(0);
             }
             
-            bigSummary.writeString(stat.var1+":");
+            bigSummary.writeString(metric.name+":");
             bigSummary.writeLine(summary[0]);
             
-            smallSummary.writeString(stat.var1+":");
+            smallSummary.writeString(metric.name+":");
             smallSummary.writeLine(summary[1]);
             
             if (summary[2] != null) {
-                statNamesForDias.add(stat.var1);
+                statNamesForDias.add(metric.name);
                 statCliquesForCDDias.add(summary[2]);
             }
         }
@@ -203,7 +203,7 @@ public class ClassifierResultsAnalysis {
         bigSummary.closeFile();
         smallSummary.closeFile();
         
-        jxl_buildResultsSpreadsheet(outPath, expname, statistics);
+        jxl_buildResultsSpreadsheet(outPath, expname, metrics);
      
         String[] statNamesForDiasArr = statNamesForDias.toArray(new String[] { });
         String[] statCliquesForCDDiasArr = statCliquesForCDDias.toArray(new String[] { });
@@ -730,15 +730,15 @@ public class ClassifierResultsAnalysis {
     }
 
     
-    protected static String[] eval_metric(String outPath, String filename, ArrayList<ClassifierEvaluation> results, Pair<String, Function<ClassifierResults, Double>> evalStatistic, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
-        String statName = evalStatistic.var1;
+    protected static String[] eval_metric(String outPath, String filename, ArrayList<ClassifierEvaluation> results, PerformanceMetric metric, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
+        String statName = metric.name;
         outPath += statName + "/";
         new File(outPath).mkdirs();        
         
-        double[][][] testFolds = getInfo(results, evalStatistic.var2, testLabel);
+        double[][][] testFolds = getInfo(results, metric.getter, testLabel);
         
         if (!testResultsOnly) {
-            double[][][] trainFolds = getInfo(results, evalStatistic.var2, trainLabel);
+            double[][][] trainFolds = getInfo(results, metric.getter, trainLabel);
             double[][][] trainTestDiffsFolds = findTrainTestDiffs(trainFolds, testFolds);
             eval_metricOnSplit(outPath, filename, null, trainLabel, statName, trainFolds, cnames, dsets, dsetGroupings); 
             eval_metricOnSplit(outPath, filename, null, trainTestDiffLabel, statName, trainTestDiffsFolds, cnames, dsets, dsetGroupings);
@@ -1308,7 +1308,7 @@ public class ClassifierResultsAnalysis {
         return names;
     }
     
-    protected static void jxl_buildResultsSpreadsheet(String basePath, String expName, ArrayList<Pair<String,Function<ClassifierResults,Double>>> statistics) {        
+    protected static void jxl_buildResultsSpreadsheet(String basePath, String expName, ArrayList<PerformanceMetric> metrics) {        
         WritableWorkbook wb = null;
         WorkbookSettings wbs = new WorkbookSettings();
         wbs.setLocale(new Locale("en", "EN"));
@@ -1325,8 +1325,8 @@ public class ClassifierResultsAnalysis {
         String summaryCSV = basePath + expName + "_SMALLglobalSummary.csv";
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
         
-        for (int i = 0; i < statistics.size(); i++) {
-            String statName = statistics.get(i).var1;
+        for (int i = 0; i < metrics.size(); i++) {
+            String statName = metrics.get(i).name;
             String path = basePath + statName + "/";
             jxl_buildStatSheets(wb, expName, path, statName, i);
         }

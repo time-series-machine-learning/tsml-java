@@ -1763,36 +1763,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw e;
         }
     }
-
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        return stats;
-    }
-        
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        stats.add(new Pair<>("F1", GETTER_F1));
-        stats.add(new Pair<>("MCC", GETTER_MCC));
-        stats.add(new Pair<>("Prec", GETTER_Precision));
-        stats.add(new Pair<>("Recall", GETTER_Recall));
-        stats.add(new Pair<>("Sens", GETTER_Sensitivity));
-        stats.add(new Pair<>("Spec", GETTER_Specificity));
-        return stats;
-    }
-    
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatistic() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        return stats;
-    }
     
     public static void main(String[] args) throws Exception {
         readWriteTest();
