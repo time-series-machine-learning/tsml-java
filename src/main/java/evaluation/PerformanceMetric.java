@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2019 xmw13bzu
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -26,14 +24,14 @@ import java.util.function.Function;
  * with this being an abstract base class etc. 
  * 
  * For now, this is a container class for metrics and meta info about them. It contains
- *     - The name of this metric for printouts
- *     - A function to get this metric's score fro ma classifier results object (in future, perhaps calculate them here instead, etc)
- *     - A flag for whether this metric wants to be maximised or minimised
- *     - A flag to _suggest_ how this metric should be summarised/averaged 
- *                - for now, mean vs median for e.g accs vs timings. For timings we would want to 
- *                  use median instead of mean to reduce effect of outliers
- *                - in future, probably just define a comparator
- *     - Maybe more in the future     
+     - The name of this metric for printouts
+     - A function to get this metric's score fro ma classifier results object (in future, perhaps calculate them here instead, etc)
+     - A flag for whether this metric wants to be maximise or minimised
+     - A flag to _suggest_ how this metric should be summarised/averaged 
+                - for now, mean vs median for e.g accs vs timings. For timings we would want to 
+                  use median instead of mean to reduce effect of outliers
+                - in future, probably just define a comparator
+     - Maybe more in the future     
  *
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -42,19 +40,22 @@ public class PerformanceMetric {
     public String name;
     public Function<ClassifierResults, Double> getter;
     public boolean takeMean;
-    public boolean maximised;
+    public boolean maximise;
     
     public PerformanceMetric(String metricName, Function<ClassifierResults, Double> getScore, boolean takeMean, boolean maximised) {
         this.name = metricName;
         this.getter = getScore;
         this.takeMean = takeMean;
-        this.maximised = maximised;
+        this.maximise = maximised;
     }
     
     public double getScore(ClassifierResults res) {
         return getter.apply(res);
     }
     
+    public String toString() { 
+        return name;
+    }
     
     private static final boolean min = false, max = true;
     private static final boolean median = false, mean = true;

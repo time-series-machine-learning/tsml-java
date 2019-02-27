@@ -221,7 +221,7 @@ public class ClassifierResultsAnalysis {
  Mostly for legacy results not in the classifier results file format 
      */
     public static void performTestAccEvalOnly(String outPath, String filename, double[][][] testFolds, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
-        eval_metricOnSplit(outPath, filename, null, testLabel, "ACC", testFolds, cnames, dsets, dsetGroupings);
+        eval_metricOnSplit(outPath, filename, null, testLabel, PerformanceMetric.acc, testFolds, cnames, dsets, dsetGroupings);
     }
     
     
@@ -343,30 +343,19 @@ public class ClassifierResultsAnalysis {
         return "pws_"+c1+"VS"+c2+"_"+statistic+"S";
     }
     
-    protected static String[] eval_metricOnSplit(String outPath, String filename, String groupingName, String evalSet, String statName, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
+    protected static String[] eval_metricOnSplit(String outPath, String filename, String groupingName, String evalSet, PerformanceMetric metric, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         outPath += evalSet + "/";
         if (groupingName != null && !groupingName.equals(""))
             outPath += groupingName + "/";
         
         //BEFORE ordering, write the individual folds files
-        eval_perFoldFiles(outPath+evalSet+"FOLD"+statName+"S/", foldVals, cnames, dsets, evalSet);
+        eval_perFoldFiles(outPath+evalSet+"FOLD"+metric+"S/", foldVals, cnames, dsets, evalSet);
         
         double[][] dsetVals = findAvgsOverFolds(foldVals);
         double[][] stddevsFoldVals = findStddevsOverFolds(foldVals);
         double[][] ranks = null;
         
-        //todo, refactor such that the stat, statname pair becomes a triple that contains 
-        //a comparator too. will be easier if/when the metrics are separated out of 
-        //classifierreuslts into their own package
-        if (       statName.toLowerCase().contains("nll") 
-                || statName.toLowerCase().contains("timings") 
-                || statName.toLowerCase().contains("time")
-                ) {
-            ranks = findRanks(dsetVals, false); //we want to minimise
-        }
-        else {
-            ranks = findRanks(dsetVals, true); //we want to maximise
-        }
+        ranks = findRanks(dsetVals, metric.maximise); //we want to minimise
         
         int[] ordering = ordering = findOrdering(ranks); 
         //ordering is now an array of value referring to the rank-order of the element at each index
@@ -392,14 +381,11 @@ public class ClassifierResultsAnalysis {
                 out.closeFile();
                 for (String subFolder : new String[] { pairwiseCDDiaDirectoryName, friedmanCDDiaDirectoryName }) {
                     (new File(cdFolder+subFolder+"/")).mkdirs();
-                    String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,statName)+".csv";
+                    String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,metric.name)+".csv";
                     
                     //meta hack for qol, negate the nll (sigh...) for correct ordering on dia
                     //ALSO now negating the timings, smaller = better
-                    if (statName.toLowerCase().contains("nll") 
-                            || statName.toLowerCase().contains("buildtime") 
-                            || statName.toLowerCase().contains("testtime")) {
-                        
+                    if (!metric.maximise) {
                         double[][] negatedDsetVals = new double[dsetVals.length][dsetVals[0].length];
                         for (int i = 0; i < dsetVals.length; i++) {
                             for (int j = 0; j < dsetVals[i].length; j++) {
@@ -415,29 +401,29 @@ public class ClassifierResultsAnalysis {
                 //qol for pairwisescatter dia creation, make a copy of the test stat files 
                 String pwsFolder = expRootDirectory + pairwiseScatterDiaPath;
                 (new File(pwsFolder)).mkdirs();
-                String pwsName = pwsFolder+fileNameBuild_pws(filename,statName)+".csv";
+                String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name)+".csv";
                 writeTableFileRaw(pwsName, dsetVals, cnames);
                 //end pairwisescatter qol
             }
         }
         
-        writeTableFile(outPath+filename+"_"+evalSet+statName+"RANKS.csv", evalSet+statName+"RANKS", ranks, cnames, dsets);
-        writeTableFile(outPath+filename+"_"+evalSet+statName+".csv", evalSet+statName, dsetVals, cnames, dsets);
-        writeTableFileRaw(outPath+filename+"_"+evalSet+statName+"RAW.csv", dsetVals, cnames); //for matlab stuff
-        writeTableFile(outPath+filename+"_"+evalSet+statName+"STDDEVS.csv", evalSet+statName+"STDDEVS", stddevsFoldVals, cnames, dsets);
+        writeTableFile(outPath+filename+"_"+evalSet+metric+"RANKS.csv", evalSet+metric+"RANKS", ranks, cnames, dsets);
+        writeTableFile(outPath+filename+"_"+evalSet+metric+".csv", evalSet+metric, dsetVals, cnames, dsets);
+        writeTableFileRaw(outPath+filename+"_"+evalSet+metric+"RAW.csv", dsetVals, cnames); //for matlab stuff
+        writeTableFile(outPath+filename+"_"+evalSet+metric+"STDDEVS.csv", evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
         
         String[] groupingSummary = { "" };
         if (performDeepAnalysis)
             if (dsetGroupings != null && dsetGroupings.size() != 0)
-                groupingSummary = eval_metricDsetGroups(outPath, filename, evalSet, statName, foldVals, cnames, dsets, dsetGroupings);
+                groupingSummary = eval_metricDsetGroups(outPath, filename, evalSet, metric, foldVals, cnames, dsets, dsetGroupings);
         
         
         String[] summaryStrings = {};
         if (performDeepAnalysis) {
-            summaryStrings = eval_metricOnSplitStatsFile(outPath, filename, evalSet+statName, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets); 
+            summaryStrings = eval_metricOnSplitStatsFile(outPath, filename, evalSet+metric, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets); 
 
             //write these even if not actually making the dias this execution
-            writeCliqueHelperFiles(expRootDirectory + cdDiaPath + pairwiseCDDiaDirectoryName, filename, statName, summaryStrings[2]); 
+            writeCliqueHelperFiles(expRootDirectory + cdDiaPath + pairwiseCDDiaDirectoryName, filename, metric, summaryStrings[2]); 
         }
         
         //this really needs cleaning up at some point... jsut make it a list and stop circlejerking to arrays
@@ -451,7 +437,7 @@ public class ClassifierResultsAnalysis {
         return summaryStrings2;
     }
     
-    public static String[] eval_metricDsetGroups(String outPathBase, String filename, String evalSet, String statName, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
+    public static String[] eval_metricDsetGroups(String outPathBase, String filename, String evalSet, PerformanceMetric metric, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         String outPath = expRootDirectory + "DatasetGroupings/";
 //        String outPath = outPathBase + "DatasetGroupings/";
         (new File(outPath)).mkdir();
@@ -460,7 +446,7 @@ public class ClassifierResultsAnalysis {
         for (Map.Entry<String, Map<String, String[]>> dsetGroupingMethodEntry : dsetGroupings.entrySet()) {
             String groupingMethodName = dsetGroupingMethodEntry.getKey();
             String groupingMethodPath = outPath + groupingMethodName + "/";
-            (new File(groupingMethodPath+statName+"/"+evalSet+"/")).mkdirs();
+            (new File(groupingMethodPath+metric.name+"/"+evalSet+"/")).mkdirs();
             
             Map<String, String[]> dsetGroupingMethod = dsetGroupingMethodEntry.getValue();
             
@@ -497,7 +483,7 @@ public class ClassifierResultsAnalysis {
                 }
             
                 //writing all the clusters to one file start here
-                OutFile allDsetsOut = new OutFile(groupingMethodPath+statName+"/"+evalSet+"/" + "clusters.csv");
+                OutFile allDsetsOut = new OutFile(groupingMethodPath+metric.name+"/"+evalSet+"/" + "clusters.csv");
                 
                 for (int cluster = 0; cluster < numClusters; cluster++)
                     allDsetsOut.writeString(clusterNames[cluster] + ",");
@@ -521,7 +507,7 @@ public class ClassifierResultsAnalysis {
                 allDsetsOut.closeFile();
                 //writing all the clusters to one file end here
             
-                String clusterGroupsPath = groupingMethodPath+statName+"/"+evalSet+"/" + "DsetClustersTxtFiles/";
+                String clusterGroupsPath = groupingMethodPath+metric+"/"+evalSet+"/" + "DsetClustersTxtFiles/";
                 (new File(clusterGroupsPath)).mkdir();
             
                 //writing each individual clsuter file start here
@@ -561,7 +547,7 @@ public class ClassifierResultsAnalysis {
                 double[][][] groupFoldVals = dsetGroups_collectDsetVals(foldVals, dsets, groupDsets);
                 String groupFileName = filename + "-" + groupName + "-";
 //                String[] groupSummaryFileStrings = eval_metricOnSplit(groupPath+statName+"/", groupFileName, groupName, evalSet, statName, groupFoldVals, cnames, groupDsets, null);
-                String[] groupSummaryFileStrings = eval_metricOnSplit(groupingMethodPath+statName+"/", groupFileName, groupName, evalSet, statName, groupFoldVals, cnames, groupDsets, null);
+                String[] groupSummaryFileStrings = eval_metricOnSplit(groupingMethodPath+metric+"/", groupFileName, groupName, evalSet, metric, groupFoldVals, cnames, groupDsets, null);
                 
                 //collect the accuracies for the dataset group 
                 String[] classifierNamesLine = groupSummaryFileStrings[1].split("\n")[0].split(",");
@@ -574,7 +560,7 @@ public class ClassifierResultsAnalysis {
                 }
                 
                 //collect the wins for the group
-                Scanner ranksFileIn = new Scanner(new File(groupingMethodPath+statName+"/"+evalSet+"/"+groupName+"/"+groupFileName+"_"+evalSet+statName+"RANKS.csv"));      
+                Scanner ranksFileIn = new Scanner(new File(groupingMethodPath+metric+"/"+evalSet+"/"+groupName+"/"+groupFileName+"_"+evalSet+metric+"RANKS.csv"));      
                 classifierNamesLine = ranksFileIn.nextLine().split(",");
                 double[] winCounts = new double[classifierNamesLine.length];
                 while (ranksFileIn.hasNextLine()) {
@@ -612,7 +598,7 @@ public class ClassifierResultsAnalysis {
                 groupIndex++;
             }
             
-            String groupMethodSummaryFilename = groupingMethodPath + filename + "_" + groupingMethodName + "_" + evalSet + statName + ".csv";
+            String groupMethodSummaryFilename = groupingMethodPath + filename + "_" + groupingMethodName + "_" + evalSet + metric + ".csv";
             dsetGroups_writeGroupingMethodSummaryFile(groupMethodSummaryFilename, groupSummaryStringBuilders, cnames, groupNames, groupWins, groupAccs);
         }
         
@@ -740,11 +726,11 @@ public class ClassifierResultsAnalysis {
         if (!testResultsOnly) {
             double[][][] trainFolds = getInfo(results, metric.getter, trainLabel);
             double[][][] trainTestDiffsFolds = findTrainTestDiffs(trainFolds, testFolds);
-            eval_metricOnSplit(outPath, filename, null, trainLabel, statName, trainFolds, cnames, dsets, dsetGroupings); 
-            eval_metricOnSplit(outPath, filename, null, trainTestDiffLabel, statName, trainTestDiffsFolds, cnames, dsets, dsetGroupings);
+            eval_metricOnSplit(outPath, filename, null, trainLabel, metric, trainFolds, cnames, dsets, dsetGroupings); 
+            eval_metricOnSplit(outPath, filename, null, trainTestDiffLabel, metric, trainTestDiffsFolds, cnames, dsets, dsetGroupings);
         }
         
-        return eval_metricOnSplit(outPath, filename, null, testLabel, statName, testFolds, cnames, dsets, dsetGroupings);
+        return eval_metricOnSplit(outPath, filename, null, testLabel, metric, testFolds, cnames, dsets, dsetGroupings);
     }
 
     protected static String[/*{train,test}*/][] eval_timings(String outPath, String filename, ArrayList<ClassifierEvaluation> results, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
@@ -760,30 +746,31 @@ public class ClassifierResultsAnalysis {
         //since timings are now handled semi-reasonably, there shouldnt be too many problems
         //with perform pairwise tests and making dias of timings now. 
         
-        Function<ClassifierResults, Double> stat = ClassifierResults.GETTER_buildTimeDoubleMillis;
-        String statName = "Timings";
-        outPath += statName + "/";
+        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
+        PerformanceMetric testTimeMetric = PerformanceMetric.testTime;
+        
+        outPath += "Timings/"; //special case for timings
         new File(outPath).mkdirs();        
         
-        double[][][] trainTimes = getTimingsIfAllArePresent(results, ClassifierResults.GETTER_buildTimeDoubleMillis);
+        double[][][] trainTimes = getTimingsIfAllArePresent(results, trainTimeMetric.getter);
         String[] trainResStr = null;
         if (trainTimes != null)
-            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, statName, trainTimes, cnames, dsets, dsetGroupings); 
+            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings); 
            
-        double[][][] testTimes = getTimingsIfAllArePresent(results, ClassifierResults.GETTER_testTimeDoubleMillis);
+        double[][][] testTimes = getTimingsIfAllArePresent(results, testTimeMetric.getter);
         String[] testResStr = null;
         if (testTimes != null)
-            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, statName, testTimes, cnames, dsets, dsetGroupings);
+            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
   
         performDeepAnalysis = prevStateOfDoStats;
         return new String[][] { trainResStr, testResStr };
     }
 
-    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, String stat, String cliques) {
+    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques) {
         (new File(cdCSVpath)).mkdirs();
         
         //temp workaround, just write the cliques and readin again from matlab for ease of checking/editing for pairwise edge cases
-        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, stat) + "_cliques.txt");
+        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, metric.name) + "_cliques.txt");
         out.writeString(cliques);
         out.closeFile();
     }
