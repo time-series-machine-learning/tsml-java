@@ -348,30 +348,33 @@ public class ClassifierResultsAnalysis {
         if (groupingName != null && !groupingName.equals(""))
             outPath += groupingName + "/";
         
-        double[][] dsetVals = findAvgsOverFolds(foldVals);
-        double[][] stddevsFoldVals = findStddevsOverFolds(foldVals);
-        double[][] ranks = findRanks(dsetVals);
-        
         //BEFORE ordering, write the individual folds files
         eval_perFoldFiles(outPath+evalSet+"FOLD"+statName+"S/", foldVals, cnames, dsets, evalSet);
         
-        int[] ordering = null; 
+        double[][] dsetVals = findAvgsOverFolds(foldVals);
+        double[][] stddevsFoldVals = findStddevsOverFolds(foldVals);
+        double[][] ranks = null;
+        
         //todo, refactor such that the stat, statname pair becomes a triple that contains 
         //a comparator too. will be easier if/when the metrics are separated out of 
         //classifierreuslts into their own package
         if (       statName.toLowerCase().contains("nll") 
-                || statName.toLowerCase().contains("buildtime") 
-                || statName.toLowerCase().contains("testtime")
+                || statName.toLowerCase().contains("timings") 
+                || statName.toLowerCase().contains("time")
                 ) {
-            ordering = findOrdering(ranks);
-        } 
-        else {
-            ordering = findReverseOrdering(ranks);
+            ranks = findRanks(dsetVals, false); //we want to minimise
         }
-        //ordering is now an array of value referring to the rank-util_order of the element at each index
-        //e.g [1, 4, 2, 3] means that the zeroth classifier is best, second is next, then third, then first
+        else {
+            ranks = findRanks(dsetVals, true); //we want to maximise
+        }
         
-        //now util_order all the info (essentially in parallel arrays) we've collected by the classifier's ranks
+        int[] ordering = ordering = findOrdering(ranks); 
+        //ordering is now an array of value referring to the rank-order of the element at each index
+        //e.g [1, 4, 2, 3] means that the first (in index 0) classifier is best, third is next, then fourth, then second
+        
+        //now order all the info (essentially in parallel arrays) we've collected by the classifier's ranks
+        //such that e.g the data referring to the first classifier is still in index 0, the data referring to
+        //the second classifier is moved to index 1, etc
         ranks = util_order(ranks, ordering);
         cnames = util_order(cnames, ordering);
         foldVals = util_order(foldVals, ordering);
@@ -776,7 +779,7 @@ public class ClassifierResultsAnalysis {
         double[][][] testTimes = getTimingsIfAllArePresent(results, ClassifierResults.GETTER_testTimeDoubleMillis);
         String[] testResStr = null;
         if (testTimes != null)
-            testResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, statName, testTimes, cnames, dsets, dsetGroupings);
+            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, statName, testTimes, cnames, dsets, dsetGroupings);
   
         performDeepAnalysis = prevStateOfDoStats;
         return new String[][] { trainResStr, testResStr };
@@ -1018,9 +1021,10 @@ public class ClassifierResultsAnalysis {
     
     /**
      * @param accs [classifiers][acc on datasets]
+     * @param higherIsBetter if true, larger values will receive a better (i.e. lower) rank, false vice versa. e.g want to maximise acc, but want to minimise time
      * @return [classifiers][rank on dataset]
      */
-    protected static double[][] findRanks(double[][] accs) {
+    protected static double[][] findRanks(double[][] accs, boolean higherIsBetter) {
         double[][] ranks = new double[accs.length][accs[0].length];
         
         for (int d = 0; d < accs[0].length; d++) {
@@ -1028,13 +1032,16 @@ public class ClassifierResultsAnalysis {
             for (int c = 0; c < accs.length; c++) 
                 orderedAccs[c] = accs[c][d];
             
-            Arrays.sort(orderedAccs, Collections.reverseOrder());
+            if (higherIsBetter)
+                Arrays.sort(orderedAccs, Collections.reverseOrder());
+            else 
+                Arrays.sort(orderedAccs);
             
 //            //README - REDACTED, this problem is currently just being ignored, since it makes so many headaches and is so insignificant anyway
 //            //to create parity between this and the matlab critical difference diagram code,
 //            //rounding the *accuracies used to calculate ranks* to 15 digits (after the decimal) 
 //            //this affects the average rank summary statistic, but not e.g the average accuracy statistic
-//            //matlab has a util_max default precision of 16. in a tiny number of cases, there are differences 
+//            //matlab has a max default precision of 16. in a tiny number of cases, there are differences 
 //            //in accuracy that are smaller than this maximum precision, which were being taken into
 //            //acount here (by declaring one as havign a higher rank than the other), but not being 
 //            //taken into account in matlab (which considered them a tie). 
@@ -1512,7 +1519,7 @@ public class ClassifierResultsAnalysis {
         try {
             xmeans.buildClusterer(new Instances(clusterData)); 
             //pass copy, just in case xmeans does any kind of reordering of 
-            //instances. we want to maintain util_order of dsets/instances for indexing purposes
+            //instances. we want to maintain order of dsets/instances for indexing purposes
         } catch (Exception e) {
             System.out.println("Problem building clusterer for post hoc dataset groupings\n" + e);
         }
