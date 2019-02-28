@@ -31,6 +31,7 @@ import java.util.function.Function;
                 - for now, mean vs median for e.g accs vs timings. For timings we would want to 
                   use median instead of mean to reduce effect of outliers
                 - in future, probably just define a comparator
+     - A descriptor for use in images when comparing classifiers with this metric, e.g better/worse/slower
      - Maybe more in the future     
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -42,11 +43,19 @@ public class PerformanceMetric {
     public boolean takeMean;
     public boolean maximise;
     
-    public PerformanceMetric(String metricName, Function<ClassifierResults, Double> getScore, boolean takeMean, boolean maximised) {
+    /**
+     * currently only used for the pairwise scatter diagrams in the pipeline, 
+     * this refers to the descriptor for comparing the scores of a metric between 
+     * classifiers. e.g 'this is {better,worse,slower} than that' 
+     */
+    public String comparisonDescriptor;
+    
+    public PerformanceMetric(String metricName, Function<ClassifierResults, Double> getScore, boolean takeMean, boolean maximised, String comparisonDescriptor) {
         this.name = metricName;
         this.getter = getScore;
         this.takeMean = takeMean;
         this.maximise = maximised;
+        this.comparisonDescriptor = comparisonDescriptor;
     }
     
     public double getScore(ClassifierResults res) {
@@ -59,19 +68,20 @@ public class PerformanceMetric {
     
     private static final boolean min = false, max = true;
     private static final boolean median = false, mean = true;
+    private static final String better = "better", worse = "worse", slower = "slower", faster = "faster";
     
-    public static PerformanceMetric acc             = new PerformanceMetric("ACC", ClassifierResults.GETTER_Accuracy,                    mean, max);
-    public static PerformanceMetric balacc          = new PerformanceMetric("BALACC", ClassifierResults.GETTER_BalancedAccuracy,         mean, max);
-    public static PerformanceMetric AUROC           = new PerformanceMetric("AUROC", ClassifierResults.GETTER_AUROC,                     mean, max);
-    public static PerformanceMetric NLL             = new PerformanceMetric("NLL", ClassifierResults.GETTER_NLL,                         mean, min);
-    public static PerformanceMetric F1              = new PerformanceMetric("F1", ClassifierResults.GETTER_F1,                           mean, max);
-    public static PerformanceMetric MCC             = new PerformanceMetric("MCC", ClassifierResults.GETTER_MCC,                         mean, max);
-    public static PerformanceMetric precision       = new PerformanceMetric("Prec", ClassifierResults.GETTER_Precision,                  mean, max);
-    public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall,                   mean, max);
-    public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity,                mean, max);
-    public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity,                mean, max);
-    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTime", ClassifierResults.GETTER_buildTimeDoubleMillis, median, min);
-    public static PerformanceMetric testTime        = new PerformanceMetric("TestTime", ClassifierResults.GETTER_testTimeDoubleMillis,   median, min);
+    public static PerformanceMetric acc             = new PerformanceMetric("ACC", ClassifierResults.GETTER_Accuracy,                    mean, max,   better);
+    public static PerformanceMetric balacc          = new PerformanceMetric("BALACC", ClassifierResults.GETTER_BalancedAccuracy,         mean, max,   better);
+    public static PerformanceMetric AUROC           = new PerformanceMetric("AUROC", ClassifierResults.GETTER_AUROC,                     mean, max,   better);
+    public static PerformanceMetric NLL             = new PerformanceMetric("NLL", ClassifierResults.GETTER_NLL,                         mean, min,   worse);
+    public static PerformanceMetric F1              = new PerformanceMetric("F1", ClassifierResults.GETTER_F1,                           mean, max,   better);
+    public static PerformanceMetric MCC             = new PerformanceMetric("MCC", ClassifierResults.GETTER_MCC,                         mean, max,   better);
+    public static PerformanceMetric precision       = new PerformanceMetric("Prec", ClassifierResults.GETTER_Precision,                  mean, max,   better);
+    public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall,                   mean, max,   better);
+    public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity,                mean, max,   better);
+    public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity,                mean, max,   better);
+    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric testTime        = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_testTimeDoubleMillis,   median, min, slower);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 

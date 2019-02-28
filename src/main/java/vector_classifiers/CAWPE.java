@@ -1413,7 +1413,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest20/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest21/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
