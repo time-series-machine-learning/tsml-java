@@ -255,50 +255,55 @@ public class ClassifierResultsAnalysis {
     /**
      * also writes separate win/draw/loss files now
      */
-    protected static String[] eval_metricOnSplitStatsFile(String outPath, String filename, String statName, double[][][] statPerFold, double[][] statPerDset, double[][] ranks, double[][] stddevsFoldAccs, String[] cnames, String[] dsets) {   
+    protected static String[] eval_metricOnSplitStatsFile(String outPath, String evalSet, PerformanceMetric metric, double[][][] statPerFold, double[][] statPerDset, double[][] ranks, double[][] stddevsFoldAccs, String[] cnames, String[] dsets) {   
+        String splitMetricLabel = evalSet + metric.toString();
+        
         StringBuilder shortSummaryStats = new StringBuilder();
         shortSummaryStats.append(fileHelper_header(cnames)).append("\n");
-        shortSummaryStats.append("Avg"+statName+":").append(util_mean(statPerDset)).append("\n");
-        shortSummaryStats.append("Avg"+statName+"_RANK:").append(util_mean(ranks)).append("\n");
+        shortSummaryStats.append("Avg"+splitMetricLabel+":").append(util_mean(statPerDset)).append("\n");
+        shortSummaryStats.append("Avg"+splitMetricLabel+"_RANK:").append(util_mean(ranks)).append("\n");
         
         StringBuilder longSummaryStats = new StringBuilder();
-        
-        longSummaryStats.append(statName).append(fileHelper_header(cnames)).append("\n");
-        longSummaryStats.append("Avg"+statName+"OverDsets:").append(util_mean(statPerDset)).append("\n");
-        longSummaryStats.append("Avg"+statName+"RankOverDsets:").append(util_mean(ranks)).append("\n");
-        longSummaryStats.append("StddevOf"+statName+"OverDsets:").append(util_stddev(statPerDset)).append("\n");
-        longSummaryStats.append("AvgOfStddevsOf"+statName+"OverDsetFolds:").append(util_mean(stddevsFoldAccs)).append("\n");
-        longSummaryStats.append("StddevsOf"+statName+"RanksOverDsets:").append(util_stddev(ranks)).append("\n");
+        longSummaryStats.append(splitMetricLabel).append(fileHelper_header(cnames)).append("\n");
+        longSummaryStats.append("Avg"+splitMetricLabel+"OverDsets:").append(util_mean(statPerDset)).append("\n");
+        longSummaryStats.append("Avg"+splitMetricLabel+"RankOverDsets:").append(util_mean(ranks)).append("\n");
+        longSummaryStats.append("StddevOf"+splitMetricLabel+"OverDsets:").append(util_stddev(statPerDset)).append("\n");
+        longSummaryStats.append("AvgOfStddevsOf"+splitMetricLabel+"OverDsetFolds:").append(util_mean(stddevsFoldAccs)).append("\n");
+        longSummaryStats.append("StddevsOf"+splitMetricLabel+"RanksOverDsets:").append(util_stddev(ranks)).append("\n");
 
         String[] wdl =      eval_winsDrawsLosses(statPerDset, cnames, dsets);
         String[] sig01wdl = eval_sigWinsDrawsLosses(0.01, statPerDset, statPerFold, cnames, dsets);
         String[] sig05wdl = eval_sigWinsDrawsLosses(0.05, statPerDset, statPerFold, cnames, dsets);
         
-        (new File(outPath+"/WinsDrawsLosses/")).mkdir();
-        OutFile outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_listWDLFLAT_"+statName+".csv");
+        
+        
+        String wdlDir = outPath+"/WinsDrawsLosses/";
+        (new File(wdlDir)).mkdir();
+        OutFile outwdl = null;
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_LIST.csv");
         outwdl.writeLine(wdl[1]);
         outwdl.closeFile();
-        outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_listWDLSig01_"+statName+".csv");
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_LIST_Sig01.csv");
         outwdl.writeLine(sig01wdl[1]);
         outwdl.closeFile();
-        outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_listWDLSig05_"+statName+".csv");
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_LIST_Sig05.csv");
         outwdl.writeLine(sig05wdl[1]);
         outwdl.closeFile();
         
-        outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_tableWDLFLAT_"+statName+".csv");
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_TABLE.csv");
         outwdl.writeLine(wdl[2]);
         outwdl.closeFile();
-        outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_tableWDLSig01_"+statName+".csv");
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_TABLE_Sig01.csv");
         outwdl.writeLine(sig01wdl[2]);
         outwdl.closeFile();
-        outwdl = new OutFile(outPath+"/WinsDrawsLosses/" + filename + "_tableWDLSig05_"+statName+".csv");
+        outwdl = new OutFile(wdlDir + splitMetricLabel + "WinDrawLoss_TABLE_Sig05.csv");
         outwdl.writeLine(sig05wdl[2]);
         outwdl.closeFile();
         
-        OutFile out=new OutFile(outPath+filename+"_"+statName+"_SUMMARY.csv");
+        String summaryFname = fileNameBuild_summaryFile(outPath,evalSet,metric);
+        OutFile out=new OutFile(summaryFname);
         
         out.writeLine(longSummaryStats.toString());
-        
         out.writeLine(wdl[0]);
         out.writeLine("\n");
         out.writeLine(sig01wdl[0]);
@@ -307,8 +312,10 @@ public class ClassifierResultsAnalysis {
         out.writeLine("\n");
         
         String cliques = "";
+        String avgsFile = fileNameBuild_avgsFile(outPath, evalSet, metric);
         try {
-            out.writeLine(MultipleClassifiersPairwiseTest.runTests(outPath+filename+"_"+statName+".csv").toString());       
+            out.writeLine(MultipleClassifiersPairwiseTest.runTests(avgsFile).toString());       
+//            out.writeLine(MultipleClassifiersPairwiseTest.runTests(outPath+filename+"_"+splitMetricLabal+".csv").toString());       
             cliques = MultipleClassifiersPairwiseTest.printCliques();
             out.writeLine("\n\n" + cliques);
         } catch (Exception e) {
@@ -319,7 +326,7 @@ public class ClassifierResultsAnalysis {
                     + "too many ties/duplicates within one of the pairwise tests and then an index out of bounds error was thrown. "
                     + "This will be fixed at some point. The analysis will CARRY ON, and everything that is successfully printed out "
                     + "IS CORRECT, however whatever particular table that test would have been summarised as is missing from your files.");
-            System.err.println("filename="+outPath+filename+"_"+statName+".csv");
+            System.err.println("avgs filename = "+avgsFile);
             e.printStackTrace();
             
             System.err.println("*****".replace("*", "*****"));
@@ -334,13 +341,29 @@ public class ClassifierResultsAnalysis {
     protected static String fileNameBuild_cd(String filename, String statistic) {
         return "cd_"+filename+"_"+statistic+"S";
     }
-    
     protected static String fileNameBuild_pws(String filename, String statistic) {
         return "pws_"+filename+"_"+statistic+"S";
     }
-    
     protected static String fileNameBuild_pwsInd(String c1, String c2, String statistic) {
         return "pws_"+c1+"VS"+c2+"_"+statistic+"S";
+    }
+    protected static String fileNameBuild_avgsFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_"+(metric.takeMean?"MEANS":"MEDIANS")+".csv";
+    }
+    protected static String fileNameBuild_ranksFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_RANKS.csv";
+    }
+    protected static String fileNameBuild_stddevFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_STDDEV.csv";
+    }
+    protected static String fileNameBuild_rawAvgsFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_RAW.csv";
+    }
+    protected static String fileNameBuild_summaryFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_SUMMARY.csv";
+    }
+    protected static String fileNameBuild_wdlFile(String dir, String evalSet, PerformanceMetric metric) {
+        return dir+     evalSet+metric+"_SUMMARY.csv";
     }
     
     protected static String[] eval_metricOnSplit(String outPath, String filename, String groupingName, String evalSet, PerformanceMetric metric, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
@@ -405,10 +428,10 @@ public class ClassifierResultsAnalysis {
             }
         }
         
-        writeTableFile(outPath+filename+"_"+evalSet+metric+"RANKS.csv", evalSet+metric+"RANKS", ranks, cnames, dsets);
-        writeTableFile(outPath+filename+"_"+evalSet+metric+".csv", evalSet+metric, dsetVals, cnames, dsets);
-        writeTableFileRaw(outPath+filename+"_"+evalSet+metric+"RAW.csv", dsetVals, cnames); //for matlab stuff
-        writeTableFile(outPath+filename+"_"+evalSet+metric+"STDDEVS.csv", evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
+        writeTableFile(fileNameBuild_ranksFile(outPath, evalSet, metric), evalSet+metric+"RANKS", ranks, cnames, dsets);
+        writeTableFile(fileNameBuild_avgsFile(outPath, evalSet, metric), evalSet+metric, dsetVals, cnames, dsets);
+        writeTableFileRaw(fileNameBuild_rawAvgsFile(outPath, evalSet, metric), dsetVals, cnames); //for matlab stuff
+        writeTableFile(fileNameBuild_stddevFile(outPath, evalSet, metric), evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
         
         String[] groupingSummary = { "" };
         if (performDeepAnalysis)
@@ -418,7 +441,7 @@ public class ClassifierResultsAnalysis {
         
         String[] summaryStrings = {};
         if (performDeepAnalysis) {
-            summaryStrings = eval_metricOnSplitStatsFile(outPath, filename, evalSet+metric, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets); 
+            summaryStrings = eval_metricOnSplitStatsFile(outPath, evalSet, metric, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets); 
 
             //write these even if not actually making the dias this execution
             writeCliqueHelperFiles(expRootDirectory + cdDiaPath + pairwiseCDDiaDirectoryName, filename, metric, summaryStrings[2]); 
@@ -1319,9 +1342,7 @@ public class ClassifierResultsAnalysis {
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
         
         for (int i = 0; i < metrics.size(); i++) {
-            String statName = metrics.get(i).name;
-            String path = basePath + statName + "/";
-            jxl_buildStatSheets(wb, expName, path, statName, i);
+            jxl_buildStatSheets(wb, basePath, metrics.get(i), i);
         }
         
         try {
@@ -1334,37 +1355,40 @@ public class ClassifierResultsAnalysis {
         }
     }
     
-    protected static void jxl_buildStatSheets(WritableWorkbook wb, String expName, String filenameprefix, String statName, int statIndex) {
+    protected static void jxl_buildStatSheets(WritableWorkbook wb, String basePath, PerformanceMetric metric, int statIndex) {
         final int initialSummarySheetOffset = 1;
         int numSubStats = 3;    
         int testOffset = 0;
+        
+        String metricPath = basePath + metric + "/";
+        String trainMetricPath = metricPath + trainLabel + "/";
+        String trainTestDiffMetricPath = metricPath + trainTestDiffLabel + "/";
+        String testMetricPath = metricPath + testLabel + "/";
         
         if (!testResultsOnly) {
             numSubStats = 5; 
             testOffset = 2;
             
-            WritableSheet trainSheet = wb.createSheet(statName+"Train", initialSummarySheetOffset+statIndex*numSubStats+0);
-            String trainCSV = filenameprefix + trainLabel + "/" + expName + "_" +trainLabel+statName+".csv";
+            WritableSheet trainSheet = wb.createSheet(metric+"Train", initialSummarySheetOffset+statIndex*numSubStats+0);
+            String trainCSV = fileNameBuild_avgsFile(trainMetricPath, trainLabel, metric);
             jxl_copyCSVIntoSheet(trainSheet, trainCSV);
 
-            WritableSheet trainTestDiffSheet = wb.createSheet(statName+"TrainTestDiffs", initialSummarySheetOffset+statIndex*numSubStats+1);
-            String trainTestDiffCSV = filenameprefix + trainTestDiffLabel + "/" + expName + "_" +trainTestDiffLabel+statName+".csv";
+            WritableSheet trainTestDiffSheet = wb.createSheet(metric+"TrainTestDiffs", initialSummarySheetOffset+statIndex*numSubStats+1);
+            String trainTestDiffCSV = fileNameBuild_avgsFile(trainTestDiffMetricPath, trainTestDiffLabel, metric);
             jxl_copyCSVIntoSheet(trainTestDiffSheet, trainTestDiffCSV);
         }
         
-        WritableSheet testSheet = wb.createSheet(statName+"Test", initialSummarySheetOffset+statIndex*numSubStats+0+testOffset);
-        String testCSV = filenameprefix + testLabel + "/" + expName + "_" +testLabel+statName+".csv";
+        WritableSheet testSheet = wb.createSheet(metric+"Test", initialSummarySheetOffset+statIndex*numSubStats+0+testOffset);
+        String testCSV = fileNameBuild_avgsFile(testMetricPath, testLabel, metric);
         jxl_copyCSVIntoSheet(testSheet, testCSV);
         
-        WritableSheet rankSheet = wb.createSheet(statName+"TestRanks", initialSummarySheetOffset+statIndex*numSubStats+1+testOffset);
-        String rankCSV = filenameprefix + testLabel + "/" + expName + "_" +testLabel+statName+"RANKS.csv";
+        WritableSheet rankSheet = wb.createSheet(metric+"TestRanks", initialSummarySheetOffset+statIndex*numSubStats+1+testOffset);
+        String rankCSV = fileNameBuild_ranksFile(testMetricPath, testLabel, metric);
         jxl_copyCSVIntoSheet(rankSheet, rankCSV);
         
-        WritableSheet summarySheet = wb.createSheet(statName+"TestSigDiffs", initialSummarySheetOffset+statIndex*numSubStats+2+testOffset);
-        String summaryCSV = filenameprefix + testLabel + "/" + expName + "_" +testLabel+statName+"_SUMMARY.csv";
+        WritableSheet summarySheet = wb.createSheet(metric+"TestSigDiffs", initialSummarySheetOffset+statIndex*numSubStats+2+testOffset);
+        String summaryCSV = fileNameBuild_summaryFile(testMetricPath, testLabel, metric);
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
-        
-        
     }
     
     protected static void jxl_copyCSVIntoSheet(WritableSheet sheet, String csvFile) {
