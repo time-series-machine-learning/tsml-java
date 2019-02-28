@@ -379,6 +379,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
                 boolean normalise = rand.nextBoolean();
 
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
@@ -411,6 +412,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
                 boolean normalise = rand.nextBoolean();
 
                 //do not have to build here, CAWPE will build each classifer
@@ -450,6 +452,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 //randomly select parameters except for alphabetSize
                 int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
                 int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
                 boolean normalise = rand.nextBoolean();
 
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
@@ -851,33 +854,12 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
-        String dataset2 = "NATOPS";
+        String dataset2 = "PenDigits";
         Instances train2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
         Instances test2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
 
         Classifier c;
         double accuracy;
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).useCAWPE = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).useCAWPE = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
         c = new BOSS();
         ((BOSS) c).ensembleSize = 250;
@@ -899,6 +881,27 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).useCAWPE = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).useCAWPE = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
         c = new BOSS();
         ((BOSS) c).ensembleSize = 250;
