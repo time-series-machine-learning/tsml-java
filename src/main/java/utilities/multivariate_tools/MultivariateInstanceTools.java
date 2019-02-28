@@ -172,7 +172,7 @@ public class MultivariateInstanceTools {
         
         Instance firstInst = instances[0].firstInstance();
         int numAttsInChannel = instances[0].numAttributes()-1;
-        
+
 
         FastVector attributes = new FastVector();
         
@@ -298,7 +298,9 @@ public class MultivariateInstanceTools {
         
         Instances[] output = new Instances[2];
         output[0] = mergeToMultivariateInstances(resample_train_channels);
+        output[0].setRelationName(train.relationName());
         output[1] = mergeToMultivariateInstances(resample_test_channels);
+        output[1].setRelationName(test.relationName());
         
         return output;
     }
