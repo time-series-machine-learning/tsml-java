@@ -229,42 +229,63 @@ public class ClassifierLists {
                 c=new BOSS();
                 break;
             case "BOSSMV":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).setSeed(fold);
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                c = new BOSS();
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
                 break;
             case "RBOSSMV":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).setRandomEnsembleSelection(true);
-                ((RandomBOSS) c).setEnsembleSize(100);
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((RandomBOSS) c).setSeed(fold);
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RBOSSMV250":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RCBOSSMV":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).useCAWPE(true);
-                ((RandomBOSS) c).setEnsembleSize(100);
-                ((RandomBOSS) c).setNumCAWPEFolds(2);
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((RandomBOSS) c).setSeed(fold);
+                c = new BOSS();
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setNumCAWPEFolds(2);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RCBOSSMV250":
+                c = new BOSS();
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setNumCAWPEFolds(2);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RandomBOSSContracted1Hour":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((RandomBOSS) c).setSeed(fold);
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RandomBOSSContracted24Hour":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((RandomBOSS) c).setSeed(fold);
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted1HourMV":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RandomRTreeBOSS":
-                c = new RandomBOSS();
-                ((RandomBOSS) c).setAlternateIndividualClassifier(new RandomTree());
-                ((RandomBOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((RandomBOSS) c).setSeed(fold);
+                c = new BOSS();
+                ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
