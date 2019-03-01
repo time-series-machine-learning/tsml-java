@@ -29,7 +29,6 @@ import java.util.function.Function;
 import utilities.DebugPrinting;
 import utilities.GenericTools;
 import utilities.InstanceTools;
-import utilities.generic_storage.Pair;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a 
@@ -64,7 +63,7 @@ import utilities.generic_storage.Pair;
  * 
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  *    - loadResultsFromFile(String path)
- *    - writeToFile(String path)
+ *    - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
  * 
  * Supports recording of timings in different time units. Milliseconds is the default for 
  * backwards compatability, however nano seconds is generally preferred.
@@ -78,10 +77,11 @@ import utilities.generic_storage.Pair;
  *      long buildTimeInResultsUnit = results.getTimeUnit().convert(builtTimeInSecs, TimeUnit.SECONDS);
  *      results.setBuildTime(buildTimeInResultsUnit)
  *
- * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
+ * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
- * via the appropriate get methods.
+ * via directly via the public variables. In the future, these metrics will likely be separated out 
+ * into their own package
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
