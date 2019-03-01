@@ -11,7 +11,7 @@ import weka.core.Instances;
  *
  * @author ajb
  */
-public class SimulateDictionaryData {
+public class SimulateDictionaryData extends DataSimulator{
     static int[] shapeletsPerClass={5,20};//Also defines the num classes by length
     static int shapeLength=11;
 //Store a global copy purely to be able to recover the latest metadata
