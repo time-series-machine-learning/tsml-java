@@ -166,6 +166,7 @@ public class Experiments  {
 
             classifierName = args[3];
             datasetName = args[4];
+            ClassifierLists.nastyGlobalDatasetName = args[4];
             foldId = Integer.parseInt(args[5]) - 1;
 
             //OPTIONAL ARGUMENTS
@@ -238,7 +239,7 @@ public class Experiments  {
             setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
         }else{
             int folds=10;
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="Z:/Data/TSCProblems2018/";
@@ -253,9 +254,9 @@ public class Experiments  {
                 String[] settings=new String[6];
 //Location of data set                        
                 settings[0]="Z:/Data/TSCProblems2018/";//Where to put results                
-                settings[1]="Z:/Results/";//Where to write results                
+                settings[1]="C:/PhD/Results/";//Where to write results
                 settings[2]="false"; //Whether to generate train files or not               
-                settings[3]="TSFC45"; //Classifier name               
+                settings[3]="cRISE_PS_NOSTBLS_1MIN"; //Classifier name
                 settings[4]="ItalyPowerDemand"; //Problem file   
                 settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);

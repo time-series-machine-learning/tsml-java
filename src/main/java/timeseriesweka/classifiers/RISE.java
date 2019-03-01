@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers;
 
 import fileIO.FullAccessOutFile;
-import fileIO.OutFile;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -79,7 +79,7 @@ import weka.core.Instances;
  * @date 19/02/19
  **/
 
-public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier, CheckpointClassifier{
+public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, CheckpointClassifier{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 2;
@@ -107,16 +107,22 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
      * Constructor
      * @param seed
      */
-    public cRISE(long seed){
+    public RISE(long seed){
         this.seed = seed;
         random = new Random(seed);
+        timer = new Timer();
+    }
+
+    private void RISE(){
+        this.seed = 0;
+        random = new Random(0);
         timer = new Timer();
     }
 
     /**
      * Function used to reset internal state of classifier.
      * Is called at beginning of buildClassifier.
-     * Can subsequently call buildClassifier multiple times per instance of cRISE.
+     * Can subsequently call buildClassifier multiple times per instance of RISE.
      */
     private void initialise(){
         timer.reset();
@@ -128,6 +134,11 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
         treeCount = 0;
     }
 
+    public void setSeed(long seed){
+        this.seed = seed;
+        random = new Random(seed);
+    }
+
     /**
      * Sets number of trees.
      * @param numTrees
@@ -137,7 +148,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
     }
 
     /**
-     * Sets minimum number of trees cRISE will build if contracted.
+     * Sets minimum number of trees RISE will build if contracted.
      * @param minNumTrees
      */
     public void setMinNumTrees(int minNumTrees){
@@ -193,7 +204,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
     }
 
     /**
-     * cRISE will attempt to load serialisation file on method call using the seed set on instantiation as file
+     * RISE will attempt to load serialisation file on method call using the seed set on instantiation as file
      * identifier.
      * If successful this object is returned to state in which it was at creation of serialisation file.
      * @param serializePath Path to folder in which to save serialisation files.
@@ -206,7 +217,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
                 + "\\SERIALISE_cRISE_"
                 + seed
                 + ".txt");
-        cRISE temp = readSerialise(seed);
+        RISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
 
@@ -447,9 +458,9 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
         }
     }
 
-    private cRISE readSerialise(long seed){
+    private RISE readSerialise(long seed){
         ObjectInputStream oi = null;
-        cRISE temp = null;
+        RISE temp = null;
         try {
             FileInputStream fi = new FileInputStream(new File(
                     serialisePath
@@ -457,10 +468,10 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
                             + seed
                             + ".txt"));
             oi = new ObjectInputStream(fi);
-            temp = (cRISE)oi.readObject();
+            temp = (RISE)oi.readObject();
             oi.close();
             fi.close();
-            System.out.println("File load successful: " + ((cRISE)temp).treeCount + " trees.");
+            System.out.println("File load successful: " + ((RISE)temp).treeCount + " trees.");
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("File load: failed.");
         }
@@ -471,23 +482,23 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
     public void copyFromSerObject(Object temp){
 
         try{
-            this.baseClassifiers = ((cRISE)temp).baseClassifiers;
-            this.classifier = ((cRISE)temp).classifier;
-            this.data = ((cRISE)temp).data;
-            this.downSample = ((cRISE)temp).downSample;
-            this.fft = ((cRISE)temp).fft;
-            this.intervalsAttIndexes = ((cRISE)temp).intervalsAttIndexes;
-            this.intervalsInfo = ((cRISE)temp).intervalsInfo;
-            this.maxIntervalLength = ((cRISE)temp).maxIntervalLength;
-            this.minIntervalLength = ((cRISE)temp).minIntervalLength;
-            this.numTrees = ((cRISE)temp).numTrees;
-            this.random = ((cRISE)temp).random;
-            this.rawIntervalIndexes = ((cRISE)temp).rawIntervalIndexes;
-            this.serialisePath = ((cRISE)temp).serialisePath;
-            this.stabilise = ((cRISE)temp).stabilise;
-            this.timer = ((cRISE)temp).timer;
-            this.transformType = ((cRISE)temp).transformType;
-            this.treeCount = ((cRISE)temp).treeCount;
+            this.baseClassifiers = ((RISE)temp).baseClassifiers;
+            this.classifier = ((RISE)temp).classifier;
+            this.data = ((RISE)temp).data;
+            this.downSample = ((RISE)temp).downSample;
+            this.fft = ((RISE)temp).fft;
+            this.intervalsAttIndexes = ((RISE)temp).intervalsAttIndexes;
+            this.intervalsInfo = ((RISE)temp).intervalsInfo;
+            this.maxIntervalLength = ((RISE)temp).maxIntervalLength;
+            this.minIntervalLength = ((RISE)temp).minIntervalLength;
+            this.numTrees = ((RISE)temp).numTrees;
+            this.random = ((RISE)temp).random;
+            this.rawIntervalIndexes = ((RISE)temp).rawIntervalIndexes;
+            this.serialisePath = ((RISE)temp).serialisePath;
+            this.stabilise = ((RISE)temp).stabilise;
+            this.timer = ((RISE)temp).timer;
+            this.transformType = ((RISE)temp).transformType;
+            this.treeCount = ((RISE)temp).treeCount;
             this.loadedFromFile = true;
             System.out.println("Varible assignment: successful.");
         }catch(Exception ex){
@@ -710,7 +721,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
 
     /**
      * Private inner class containing all logic pertaining to timing.
-     * cRISE is contracted via updating a linear regression model (y = a * x^2 + b * x + c) in which the dependant
+     * RISE is contracted via updating a linear regression model (y = a * x^2 + b * x + c) in which the dependant
      * variable (y) is time taken and the independent variable (x) is interval length.
      * The equation is then reordered to solve for positive x, providing the upper bound on the interval space.
      * Dividing this by minNumtrees - treeCount gives the maximum space such that in the worse case the contract is met.
@@ -736,7 +747,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
         protected String modelOutPath = null;
 
         /**
-         * Called in cRISE.initialise in order to reset timer.
+         * Called in RISE.initialise in order to reset timer.
          */
         protected void reset(){
             independantVariables = new ArrayList<>();
@@ -875,7 +886,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
         double acc = 0.0;
         double classification = 0.0;
 
-        cRISE c = new cRISE(0);
+        RISE c = new RISE(0);
         c.setDownSample(true);
         c.setTransformType("PS");
         //c.setStabilise(3);
