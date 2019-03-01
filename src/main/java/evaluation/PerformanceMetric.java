@@ -80,8 +80,9 @@ public class PerformanceMetric {
     public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall,                   mean, max,   better);
     public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity,                mean, max,   better);
     public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity,                mean, max,   better);
-    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis, median, min, slower);
-    public static PerformanceMetric testTime        = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_testTimeDoubleMillis,   median, min, slower);
+    public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis,         median, min, slower);
+    public static PerformanceMetric totalTestTime   = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_totalTestTimeDoubleMillis,      median, min, slower);
+    public static PerformanceMetric avgTestPredTime = new PerformanceMetric("AvgPredTimes", ClassifierResults.GETTER_avgTestPredTimeDoubleMillis, median, min, slower);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 

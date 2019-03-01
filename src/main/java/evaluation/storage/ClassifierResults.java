@@ -198,6 +198,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double nll; 
     public double meanAUROC;
     public double stddev; //across cv folds, where applicable
+    public long medianPredTime;
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
     
@@ -285,7 +286,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     //it is still preferable of course to store any timings in nano's in the classifierresults object since they'll
     //store them as longs. 
     public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_testTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.medianPredTime, cr.timeUnit);};
     
     private static double toDoubleMillis(long time, TimeUnit unit) {
         if (time < 0)
@@ -312,6 +314,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             return (double)unit.toMillis(time); 
         }
     }
+    
+
     
     /*********************************
      * 
@@ -1435,6 +1439,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        
        f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
        
+       medianPredTime=findMedianPredTime();
+       
        allStatsFound = true;
     }
    
@@ -1622,6 +1628,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return (1+beta*beta) * (precision*recall) / ((beta*beta)*precision + recall);
     }
     
+    /**
+     * Makes copy of pred times to easily maintain original ordering
+     */
+    protected long findMedianPredTime() {
+        List<Long> copy = new ArrayList<>(predTimes);
+        Collections.sort(copy);
+        
+        int mid = copy.size()/2;
+        if (copy.size() % 2 == 0)
+            return (copy.get(mid) + copy.get(mid+1)) / 2;
+        else 
+            return copy.get(mid);
+    }
+    
     protected double findAUROC(int c){
         class Pair implements Comparable<Pair>{
             Double x;
@@ -1715,6 +1735,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         str+="nll,"+nll+"\n"; 
         str+="meanAUROC,"+meanAUROC+"\n"; 
         str+="stddev,"+stddev+"\n"; 
+        str+="medianPredTime,"+medianPredTime+"\n"; 
         str+="countPerClass:\n";
         for(int i=0;i<countPerClass.length;i++)
             str+="Class "+i+","+countPerClass[i]+"\n";
@@ -1742,6 +1763,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             nll =           Double.parseDouble(scan.nextLine().split(",")[1]);
             meanAUROC =     Double.parseDouble(scan.nextLine().split(",")[1]);
             stddev =        Double.parseDouble(scan.nextLine().split(",")[1]);
+            medianPredTime= Long.parseLong(scan.nextLine().split(",")[1]);
             
             assert(scan.nextLine() == "countPerClass");//todo change to if not throws 
             countPerClass = new double[numClasses];

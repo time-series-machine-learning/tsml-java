@@ -81,6 +81,8 @@ public class ClassifierResultsAnalysis {
     public static boolean buildMatlabDiagrams = false;
     public static boolean testResultsOnly = false;
     
+//    PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+    public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
     
     //final id's and path suffixes
     protected static final String matlabFilePath = "src/main/matlab/";
@@ -194,7 +196,7 @@ public class ClassifierResultsAnalysis {
         }
         
         //using the presence of summaries for train and test timings as an indicator that they are present 
-        List<PerformanceMetric> timeMetrics = Arrays.asList(PerformanceMetric.buildTime, PerformanceMetric.testTime);
+        List<PerformanceMetric> timeMetrics = Arrays.asList(PerformanceMetric.buildTime, testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
         for (int j = 0; j < timeMetrics.size(); j++) {
             String label = timeMetrics.get(j).name;
             if (trainTestTimingSummary[0] != null) {
@@ -445,7 +447,7 @@ public class ClassifierResultsAnalysis {
             //end pairwisescatter qol
             
             //qol for timing dia creation, make a copy of the avgs files with headers
-            if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.testTime)) {
+            if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.totalTestTime) || metric.equals(PerformanceMetric.avgTestPredTime)) {
                 String timingDir = expRootDirectory+timingDiaFolderName+"/";
                 (new File(timingDir)).mkdirs();
                 String fname = timingDir+fileNameBuild_avgsFile(evalSet,metric);
@@ -785,7 +787,7 @@ public class ClassifierResultsAnalysis {
         }
         
         PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
-        PerformanceMetric testTimeMetric = PerformanceMetric.testTime;
+//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
         
         outPath += "Timings/"; //special case for timings
         new File(outPath).mkdirs();        
@@ -832,7 +834,7 @@ public class ClassifierResultsAnalysis {
         
         String diaFolder = expRootDirectory+"/"+timingDiaFolderName+"/";
         for (PerformanceMetric metric : metrics) {
-            String evalSet = metric.equals(PerformanceMetric.testTime) ? testLabel : trainLabel;
+            String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ? testLabel : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
             proxy.eval("timingsLinePlot('"+diaFolder+filenameNoExtension+"', '"+evalSet.toLowerCase()+"');");   
         }
@@ -1378,7 +1380,7 @@ public class ClassifierResultsAnalysis {
         for (int i = 0; i < metrics.size(); i++) {
             if (metrics.get(i).equals(PerformanceMetric.buildTime))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel);
-            else if (metrics.get(i).equals(PerformanceMetric.testTime))
+            else if (metrics.get(i).equals(PerformanceMetric.totalTestTime) || metrics.get(i).equals(testTimeMetric))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel);
             else 
                 jxl_buildStatSheets(wb, basePath, metrics.get(i), i);
@@ -1586,7 +1588,7 @@ public class ClassifierResultsAnalysis {
     public static void main(String[] args) throws Exception {
         String[] settings=new String[6];
         settings[0]="Z:/Data/UCIDelgado/";
-        settings[1]="Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Results/";
+        settings[1]="Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Results/";
         settings[2]="false";
         settings[3]="a";
         settings[4]="a";
@@ -1606,7 +1608,7 @@ public class ClassifierResultsAnalysis {
 //        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
 //        
         
-        new MultipleClassifierEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Analysis", "timingsDiaTest", 3).
+        new MultipleClassifierEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Analysis", "timingsDiaTest", 3).
             setTestResultsOnly(true).
 //            setTestResultsOnly(false).
             setBuildMatlabDiagrams(true).
