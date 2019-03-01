@@ -1,8 +1,23 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package evaluation.evaluators;
 
-package evaluation.tuning.evaluators;
-
-import evaluation.ClassifierResults;
-import evaluation.CrossValidator;
+import evaluation.evaluators.Evaluator;
+import evaluation.storage.ClassifierResults;
+import java.util.concurrent.TimeUnit;
+import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -12,15 +27,22 @@ import weka.core.Instances;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class StratifiedResamplesEvaluator implements Evaluator {
+public class StratifiedResamplesEvaluator extends Evaluator {
     int numFolds;
     double propInstancesInTrain;
 
-    int seed = 0;
-    
     private ClassifierResults[] resultsPerFold;
     
     public StratifiedResamplesEvaluator() {
+        super(0,false,false);
+        
+        this.numFolds = 5;
+        this.propInstancesInTrain = 0.5;
+    }
+    
+    public StratifiedResamplesEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
+        super(seed,cloneData,setClassMissing);
+        
         this.numFolds = 5;
         this.propInstancesInTrain = 0.5;
     }
@@ -42,7 +64,7 @@ public class StratifiedResamplesEvaluator implements Evaluator {
     }
     
     private ClassifierResults performLOOCVInstead(Classifier classifier, Instances dataset) throws Exception { 
-        CrossValidationEvaluator cv = new CrossValidationEvaluator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed,cloneData,setClassMissing);
         return cv.evaluate(classifier, dataset);
     }
     
@@ -80,38 +102,50 @@ public class StratifiedResamplesEvaluator implements Evaluator {
      */
     @Override
     public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
-        if (dataset.numInstances() <= numFolds) {
-            System.out.println("Warning, num resamples requested is less than the number of samples, "
-                    + "performing a leave-one-out cross validation instead");
-            return performLOOCVInstead(classifier, dataset);
-        }
         
+        //todo revisit, suppose numFolds = 30, propInTrain = 0.5, numInstances = 20, 20 choose 10 = 184756 >>>>> 30...
+//        if (dataset.numInstances() <= numFolds) {
+//            System.out.println("Warning, num resamples requested is greater than the number of instances, "
+//                    + "performing a leave-one-out cross validation instead");
+//            return performLOOCVInstead(classifier, dataset);
+//        }
+        
+        if (cloneData)
+            dataset = new Instances(dataset);
+
         resultsPerFold = new ClassifierResults[numFolds]; 
         ClassifierResults allFoldsResults = new ClassifierResults(dataset.numClasses());
-        
+        allFoldsResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        allFoldsResults.turnOffZeroTimingsErrors();
+                
         for (int fold = 0; fold < numFolds; fold++) {
             Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
             
             classifier.buildClassifier(resampledData[0]);
             resultsPerFold[fold] = new ClassifierResults(dataset.numClasses());
+            resultsPerFold[fold].setTimeUnit(TimeUnit.NANOSECONDS);
+            resultsPerFold[fold].turnOffZeroTimingsErrors();
             
+            //todo, implement this loop via SingleTestSetEvluator            
             for (Instance testinst : resampledData[1]) {
+                if (setClassMissing)
+                    testinst.setClassMissing();
+                
+                long startTime = System.nanoTime();
                 double[] dist = classifier.distributionForInstance(testinst);
-                resultsPerFold[fold].storeSingleResult(testinst.classValue(), dist);
-                allFoldsResults.storeSingleResult(testinst.classValue(), dist);
+                long predTime = System.nanoTime()- startTime;
+                
+                resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
+                allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
             }
             
+            resultsPerFold[fold].turnOnZeroTimingsErrors();
             resultsPerFold[fold].findAllStatsOnce(); 
         }
    
+        allFoldsResults.turnOnZeroTimingsErrors();
         allFoldsResults.findAllStatsOnce(); 
         return allFoldsResults;
     }
-
-    @Override
-    public void setSeed(int seed) {
-        this.seed = seed;
-    }
-
 }
 

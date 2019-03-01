@@ -1,3 +1,32 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package experiments;
+
+import evaluation.MultipleClassifiersPairwiseTest;
+import evaluation.MultipleClassifierEvaluation;
+import fileIO.InFile;
+import fileIO.OutFile;
+import java.io.File;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import statistics.distributions.BinomialDistribution;
+import statistics.tests.OneSampleTests;
+import evaluation.storage.ClassifierResults;
+
 /**
  * Class to collate results from any classifier creating standard output 
  * There are two ways to collate results. 
@@ -42,26 +71,9 @@
 *   1. Wins/Draws/Loses
 *   2. Mean (and std dev) difference
 *   3. Two sample tests of the mean values 
+*
+* @author ajb
 **/
-package experiments;
-
-import evaluation.MultipleClassifiersPairwiseTest;
-import evaluation.MultipleClassifierEvaluation;
-import fileIO.InFile;
-import fileIO.OutFile;
-import java.io.File;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import statistics.distributions.BinomialDistribution;
-import statistics.tests.OneSampleTests;
-import evaluation.ClassifierResults;
-
-/**
- *
- * @author ajb
- */
 public class CollateResults {
     public static File[] dir;
     static String basePath;
@@ -294,8 +306,8 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
   //                              System.out.println("Number of items in bag "+(j+1)+" = "+temp);
 //                                caseCount+=temp;
                                 ClassifierResults res=new ClassifierResults();
-                                res.loadFromFile(path+"//testFold"+j+".csv");
-                                mergedResults.writeLine(res.writeInstancePredictions());                                
+                                res.loadResultsFromFile(path+"//testFold"+j+".csv");
+                                mergedResults.writeLine(res.instancePredictionsToString());                                
                                 res.findAllStats();
                                 f1Results.writeString(","+res.f1);
                                 BAccResults.writeString(","+res.balancedAcc);

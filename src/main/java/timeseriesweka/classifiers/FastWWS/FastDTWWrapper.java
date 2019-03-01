@@ -6,7 +6,7 @@ package timeseriesweka.classifiers.FastWWS;
 
 import java.util.ArrayList;
 import timeseriesweka.classifiers.FastWWS.windowSearcher.*;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
@@ -29,10 +29,10 @@ public class FastDTWWrapper extends AbstractClassifier  implements SaveParameter
     public void buildClassifier(Instances data) throws Exception {
         long startTime=System.currentTimeMillis(); 
         ws.buildClassifier(data);
-        res.buildTime=System.currentTimeMillis()-startTime;
+        res.setBuildTime(System.currentTimeMillis()-startTime);
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.memory=usedBytes;
+        res.setMemory(usedBytes);
     }
     public double classifyInstance(Instance data) throws Exception {
        return ws.classifyInstance(data);
@@ -41,7 +41,7 @@ public class FastDTWWrapper extends AbstractClassifier  implements SaveParameter
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.memory;
+        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",Memory,"+res.getMemory();
         result+=",WindowSize,"+ws.getBestWin()+",Score,"+ws.getBestScore();
         return result;
     }

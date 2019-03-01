@@ -1,14 +1,25 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package evaluation.tuning;
 
-import evaluation.ClassifierResults;
-import evaluation.tuning.evaluators.CrossValidationEvaluator;
-import evaluation.tuning.evaluators.Evaluator;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
+import evaluation.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
-import fileIO.OutFile;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -212,8 +223,11 @@ public class Tuner
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);
-        results.name = "TunedClassifier:"+classifierName+","+datasetName+",train";
-        results.paras = parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine);
+        results.setClassifierName("TunedClassifier:"+classifierName);
+        results.setDatasetName(datasetName);
+        results.setFoldID(seed);
+        results.setSplit("train");
+        results.setParas(parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine));
         
         return results;
     }
@@ -325,7 +339,7 @@ public class Tuner
         }
     }
     
-    public void saveParaResults(int paraID, ClassifierResults results) throws IOException {
+    public void saveParaResults(int paraID, ClassifierResults results) throws Exception {
 //        File f = new File(parameterSavingPath);
 //        if (!f.exists()){ 
 //            System.out.println("Creating directory " + parameterSavingPath);
@@ -334,9 +348,7 @@ public class Tuner
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         //so no need to make dir, just add on para id and write
         
-        OutFile out = new OutFile(parameterSavingPath + buildParaFilename(paraID)); 
-        out.writeString(results.writeResultsFileToString());
-        out.closeFile();
+        results.writeFullResultsToFile(parameterSavingPath + buildParaFilename(paraID));
     }
     
     /**
@@ -354,7 +366,7 @@ public class Tuner
             if (ClassifierResults.exists(path)) {
                 ClassifierResults tempResults = new ClassifierResults(path);
                 ParameterSet pset = new ParameterSet();
-                pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+                pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
                 storeParaResult(pset, tempResults, tiesBestSoFar);
             } else {
                 throw new Exception("Trying to load paras back in, but missing expected parameter set ID: " + paraID + ", numParasExpected: " + numParasExpected);
@@ -383,7 +395,7 @@ public class Tuner
         for (File file : files) {
             ClassifierResults tempResults = new ClassifierResults(file.getAbsolutePath());
             ParameterSet pset = new ParameterSet();
-            pset.readClassifierResultsParaLine(tempResults.paras, includeMarkersInParaLine);
+            pset.readClassifierResultsParaLine(tempResults.getParas(), includeMarkersInParaLine);
             storeParaResult(pset, tempResults, tiesBestSoFar);
         }
         

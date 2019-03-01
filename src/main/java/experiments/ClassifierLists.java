@@ -1,4 +1,17 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package experiments;
 
 
@@ -25,6 +38,7 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
 /**
@@ -214,6 +228,64 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
+            case "BOSSMV":
+                c = new BOSS();
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                break;
+            case "RBOSSMV":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RBOSSMV250":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RCBOSSMV":
+                c = new BOSS();
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setNumCAWPEFolds(2);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RCBOSSMV250":
+                c = new BOSS();
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setNumCAWPEFolds(2);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted1Hour":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted24Hour":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSContracted1HourMV":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomRTreeBOSS":
+                c = new BOSS();
+                ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
@@ -448,5 +520,9 @@ public class ClassifierLists {
         }
         return c;
     }
-    
+
+    public static void main(String[] args) throws Exception {
+        System.out.println(setClassifierClassic("RCBOSSMV", 0));
+        System.out.println(setClassifierClassic("RBOSSMV", 0));
+    }
 }

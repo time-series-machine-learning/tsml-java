@@ -1,16 +1,32 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package evaluation.evaluators;
 
-package evaluation;
-
-import evaluation.ClassifierResults;
+import evaluation.evaluators.Evaluator;
+import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import utilities.ClassifierTools;
 import utilities.StatisticalUtilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.kNN;
+import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -19,31 +35,31 @@ import weka.core.Instances;
  * 
  * Initial push uses Jay's stratified folding code from HESCA
  * 
- * @author James 
+ * @author James Large (james.large@uea.ac.uk)
  */
-public class CrossValidator {
+public class CrossValidationEvaluator extends Evaluator {
             
-    private Integer seed = null;
     private int numFolds;
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
 
-    public CrossValidator() {
-        this.seed = null;
+    public CrossValidationEvaluator() {
+        super(0,false,false);
+        
+        this.folds = null;
+        this.foldIndexing = null;
+        this.numFolds = 10;
+    }
+    
+    public CrossValidationEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
+        super(seed,cloneData,setClassMissing);
+        
         this.folds = null;
         this.foldIndexing = null;
         this.numFolds = 10;
     }
 
     public ArrayList<ArrayList<Integer>> getFoldIndices() { return foldIndexing; }
-    
-    public Integer getSeed() {
-        return seed;
-    }
-
-    public void setSeed(Integer seed) {
-        this.seed = seed;
-    }
 
     public int getNumFolds() {
         return numFolds;
@@ -60,9 +76,20 @@ public class CrossValidator {
         return foldIndexing.get(fold).get(indexInFold);
     }
 
+    private void checkNumCVFolds(int numInstances) { 
+        if (numInstances < numFolds)
+            numFolds = numInstances;
+    }
 
-    public ClassifierResults crossValidateWithStats(Classifier classifier, Instances train) throws Exception {
-        return crossValidateWithStats(new Classifier[] { classifier }, train)[0];
+    @Override
+    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+        ClassifierResults res = crossValidateWithStats(classifier, dataset);
+        res.findAllStatsOnce();
+        return res;
+    }
+    
+    public ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
+        return crossValidateWithStats(new Classifier[] { classifier }, dataset)[0];
     }
     
     /**
@@ -80,100 +107,79 @@ public class CrossValidator {
      * 
      * @return double[classifier][prediction]
      */
-    public ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances train) throws Exception {
-        long time=System.currentTimeMillis();
-        if (folds == null)
-            buildFolds(train);
-
-        double[][] predictions = new double[classifiers.length][train.numInstances()];
-        double[][][] distsForInsts = new double[classifiers.length][train.numInstances()][];
-        double[][] foldaccs = new double[classifiers.length][numFolds];
-        double[] classifierAccs = new double[classifiers.length];
+    public ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
         
-        double pred;
-        double[] dist;
+        if (folds == null)
+            buildFolds(dataset);
+        
+        //store for later storage of results, in case we want to set the class values missing
+        //on each instance at predict time
+        double[] trueClassVals = dataset.attributeToDoubleArray(dataset.classIndex());
+        
+        //these will store dists and preds for instance AS THEY ARE ORDERED IN THE DATASET GIVEN
+        //as opposed to instances in the order that they are predicted, after having been split into the k folds.
+        //storing them here in order, then adding into the classifierresults objects in order after the actual 
+        //cv has finished
+        double[][][] distsForInsts = new double[classifiers.length][dataset.numInstances()][];
+        long[][] predTimes = new long[classifiers.length][dataset.numInstances()];
+        
+        long[] buildTimes = new long[classifiers.length];
+        
         //for each fold as test
         for(int testFold = 0; testFold < numFolds; testFold++){
             Instances[] trainTest = buildTrainTestSet(testFold);
 
             //for each classifier in ensemble
             for (int c = 0; c < classifiers.length; ++c) {
+                long t1 = System.nanoTime();
+                
                 classifiers[c].buildClassifier(trainTest[0]);
 
                 //for each test instance on this fold
                 for(int i = 0; i < trainTest[1].numInstances(); i++){
                     int instIndex = getOriginalInstIndex(testFold, i);
                     
+                    Instance testInst = trainTest[1].instance(i);
+                    if (setClassMissing)
+                        testInst.setClassMissing();
+                    
                     //classify and store prediction
-                    dist = classifiers[c].distributionForInstance(trainTest[1].instance(i));
-                    pred = indexOfMax(dist);
+                    long startTime = System.nanoTime();
+                    double[] dist = classifiers[c].distributionForInstance(testInst);
+                    long predTime = System.nanoTime()- startTime;
                     
                     distsForInsts[c][instIndex] = dist;
-                    predictions[c][instIndex] = pred;
-                    
-                    if (pred == trainTest[1].instance(i).classValue()) {
-                        ++foldaccs[c][testFold];
-                        ++classifierAccs[c];
-                    }
+                    predTimes[c][instIndex] = predTime;
                 }    
                 
-                foldaccs[c][testFold] /= trainTest[1].numInstances();
+                buildTimes[c] += System.nanoTime() - t1;
             }
         }
         
-        //shove data into moduleresults objects 
+        //shove data into ClassifierResults objects 
         ClassifierResults[] results = new ClassifierResults[classifiers.length];
-        double[] classVals = train.attributeToDoubleArray(train.classIndex());
-        long t2=System.currentTimeMillis();
-        for (int c = 0; c < classifiers.length; c++) {  
-            classifierAccs[c] /= predictions[c].length;
-            double stddevOverFolds = StatisticalUtilities.standardDeviation(foldaccs[c], false, classifierAccs[c]);
-            results[c] = new ClassifierResults(classifierAccs[c], classVals, predictions[c], distsForInsts[c], stddevOverFolds, train.numClasses());
-            results[c].buildTime=t2-time;
+        for (int c = 0; c < classifiers.length; c++) {
+            results[c] = new ClassifierResults(dataset.numClasses());
+            results[c].setTimeUnit(TimeUnit.NANOSECONDS);
+            results[c].setClassifierName(classifiers[c].getClass().getSimpleName());
+            results[c].setDatasetName(dataset.relationName());
+            results[c].setFoldID(seed);
+            results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
+            
+            results[c].turnOffZeroTimingsErrors();
+            results[c].setBuildTime(buildTimes[c]);
+            for (int i = 0; i < dataset.numInstances(); i++) {
+                double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);
+                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
+            }
+            results[c].turnOnZeroTimingsErrors();
+            
+            results[c].finaliseResults(trueClassVals);
         }
+
         return results;
     }
     
-    public double[] crossValidate(Classifier classifier, Instances train) throws Exception{
-        return crossValidate(new Classifier[] { classifier }, train)[0];
-    }
-
-    /**
-     * Performs simple crossvalidation (i.e only returns preds) on all classifiers provided 
-     * using the same fold split for all
-     * i.e for each prediction, all classifiers will have trained on the exact same
-     * subset data to have made that classification
-     * 
-     * If folds have already been defined (by a call to buildFolds()), will use those,
-     * else will create them internally 
-     * 
-     * @return double[classifier][prediction]
-     */
-    public double[][] crossValidate(Classifier[] classifiers, Instances train) throws Exception{
-        if (folds == null)
-            buildFolds(train);
-
-        double pred;
-        double[][] predictions = new double[classifiers.length][train.numInstances()];
-
-        //for each fold as test
-        for(int testFold = 0; testFold < numFolds; testFold++){
-            Instances[] trainTest = buildTrainTestSet(testFold);
-
-            //for each classifier in ensemble
-            for (int c = 0; c < classifiers.length; ++c) {
-                classifiers[c].buildClassifier(trainTest[0]);
-
-                //for each test instance on this fold
-                for(int i = 0; i < trainTest[1].numInstances(); i++){
-                    //classify and store prediction
-                    pred = classifiers[c].classifyInstance(trainTest[1].instance(i));
-                    predictions[c][getOriginalInstIndex(testFold, i)] = pred;
-                }    
-            }
-        }
-        return predictions;
-    }
 
     /**
      * @return [0] = new train set, [1] = test(validation) set
@@ -199,53 +205,50 @@ public class CrossValidator {
         return trainTest;
     }
 
-    public void buildFolds(Instances train) throws Exception {
-        train = new Instances(train); //make copy
+    public void buildFolds(Instances dataset) throws Exception {
+        if (cloneData)
+            dataset = new Instances(dataset); //make copy
         
-        Random r = null;
-        if(seed != null){
-            r = new Random(seed);
-        }else{
-            r = new Random();
-        }
+        checkNumCVFolds(dataset.numInstances());
+        Random r = new Random(seed);
         
         folds = new ArrayList<Instances>();
         foldIndexing = new ArrayList<ArrayList<Integer>>();
 
         for(int i = 0; i < numFolds; i++){
-            folds.add(new Instances(train,0));
+            folds.add(new Instances(dataset,0));
             foldIndexing.add(new ArrayList<>());
         }
         
         ArrayList<Integer> instanceIds = new ArrayList<>();
-        for(int i = 0; i < train.numInstances(); i++)
+        for(int i = 0; i < dataset.numInstances(); i++)
             instanceIds.add(i);
         Collections.shuffle(instanceIds, r);//only use of random is here
         
         //distribute insts into class groups, recording their original index
         ArrayList<Instances> byClass = new ArrayList<>();
         ArrayList<ArrayList<Integer>> byClassIndices = new ArrayList<>();
-        for(int i = 0; i < train.numClasses(); i++){
-            byClass.add(new Instances(train,0));
+        for(int i = 0; i < dataset.numClasses(); i++){
+            byClass.add(new Instances(dataset,0));
             byClassIndices.add(new ArrayList<>());
         }
         for (int i = 0; i < instanceIds.size(); ++i) {
             int instIndex = instanceIds.get(i);
-            int instClassVal = (int)train.instance(instIndex).classValue();
-            byClass.get(instClassVal).add(train.instance(instIndex));
+            int instClassVal = (int)dataset.instance(instIndex).classValue();
+            byClass.get(instClassVal).add(dataset.instance(instIndex));
             byClassIndices.get(instClassVal).add(instIndex);
         }
         
         //and get them back out, so now in class order but randomized within each each
         ArrayList<Integer> sortedByClassInstanceIds = new ArrayList<>();
-        for (int c = 0; c < train.numClasses(); c++) 
+        for (int c = 0; c < dataset.numClasses(); c++) 
             sortedByClassInstanceIds.addAll(byClassIndices.get(c));
         
         int start = 0;
         for(int fold = 0; fold < numFolds; fold++) { 
             int i = start;
-            while (i < train.numInstances()) {
-                folds.get(fold).add(train.instance(sortedByClassInstanceIds.get(i)));
+            while (i < dataset.numInstances()) {
+                folds.get(fold).add(dataset.instance(sortedByClassInstanceIds.get(i)));
                 foldIndexing.get(fold).add(sortedByClassInstanceIds.get(i));
                 i += numFolds;
             }
@@ -280,29 +283,10 @@ public class CrossValidator {
     
     public static void main(String[] args) throws Exception {
         buildFoldsTest(); 
-//        CrossValidator cv = new CrossValidator();
-//        cv.setNumFolds(10);
-//        cv.setSeed(0);
-//        
-//        Classifier c = new kNN();
-//        Instances insts = ClassifierTools.loadData("C:/TSC Problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-//        
-//        double[] preds = cv.crossValidate(c, insts);
-//        
-//        double acc = 0.0;
-//        System.out.println("Pred | Actual");
-//        for (int i = 0; i < preds.length; i++) {
-//            System.out.printf("%4d | %d\n", (int)preds[i], (int)insts.get(i).classValue());
-//            if (preds[i] == insts.get(i).classValue())
-//                ++acc;
-//        }
-//        
-//        acc /= preds.length;
-//        System.out.println("\n Acc: " + acc);
     }
     
     public static void buildFoldsTest() throws Exception {
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         cv.setNumFolds(3);
         cv.setSeed(0);
         

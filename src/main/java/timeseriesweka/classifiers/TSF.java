@@ -18,7 +18,7 @@ import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Random;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
@@ -27,7 +27,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import utilities.TrainAccuracyEstimate;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.util.function.Function;
 import weka.classifiers.Classifier;
@@ -138,7 +138,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     boolean trainCV=false;  
     private String trainCVPath="";
     
-    /** voteEnsemble determines whether to aggregate classifications or probabilities when predicting */
+    /** voteEnsemble determines whether to aggregate classifications or
+     * probabilities when predicting */
     private boolean voteEnsemble=true;
 
 
@@ -160,7 +161,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     }
 
 /**
- * ok, these two methods are a bit pointless, experimenting with ensemble method
+ * ok,  two methods are a bit pointless, experimenting with ensemble method
  * @param b 
  */    
     public void setVoteEnsemble(boolean b){
@@ -220,7 +221,11 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
  */
     @Override
     public String getParameters() {
-        return super.getParameters()+",numTrees,"+numClassifiers+",numFeatures,"+numIntervals;
+        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName();
+        if(base instanceof RandomTree)
+           temp+=",k,"+((RandomTree)base).getKValue();
+        return temp;
+
     }
     public void setNumTrees(int t){
         numClassifiers=t;
@@ -373,7 +378,6 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
-        
         long t1=System.currentTimeMillis();
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
     //Estimate train accuracy here if required
@@ -382,7 +386,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
             int numFolds=setNumberOfFolds(data);
-            CrossValidator cv = new CrossValidator();
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (setSeed)
               cv.setSeed(seed);
             cv.setNumFolds(numFolds);
@@ -395,8 +399,8 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
         for(int j=0;j<numIntervals*3;j++){
-                name = "F"+j;
-                atts.add(new Attribute(name));
+            name = "F"+j;
+            atts.add(new Attribute(name));
         }
         //Get the class values as an array list		
         Attribute target =data.attribute(data.classIndex());
@@ -416,6 +420,14 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         testHolder =new Instances(result,0);       
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
+//Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
+        if(base instanceof RandomTree){
+            ((RandomTree) base).setKValue(result.numAttributes()-1);
+//            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
+            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
+        }        
+        
+        
         /** For each base classifier 
          *      generate random intervals
          *      do the transfrorms
@@ -448,28 +460,28 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
                 }
             }
         //3. Create and build tree using all the features. Feature selection
-            trees[i]=AbstractClassifier.makeCopy(base);          
+            trees[i]=AbstractClassifier.makeCopy(base); 
             trees[i].buildClassifier(result);
         }
         long t2=System.currentTimeMillis();
         //Store build time, this is always recorded
-        trainResults.buildTime=t2-t1;
+        trainResults.setBuildTime(t2-t1);
         //If trainCV ==true and we want to save results, write out object 
         if(trainCV && trainCVPath!=""){
              OutFile of=new OutFile(trainCVPath);
              of.writeLine(data.relationName()+",TSF,train");
              of.writeLine(getParameters());
-            of.writeLine(trainResults.acc+"");
+            of.writeLine(trainResults.getAcc()+"");
             double[] trueClassVals,predClassVals;
-            trueClassVals=trainResults.getTrueClassVals();
-            predClassVals=trainResults.getPredClassVals();
+            trueClassVals=trainResults.getTrueClassValsAsArray();
+            predClassVals=trainResults.getPredClassValsAsArray();
             for(int i=0;i<data.numInstances();i++){
                 //Basic sanity check
                 if(data.instance(i).classValue()!=trueClassVals[i]){
                     throw new Exception("ERROR in TSF cross validation, class mismatch!");
                 }
                 of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-                for(double d:trainResults.getDistributionForInstance(i))
+                for(double d:trainResults.getProbabilityDistribution(i))
                     of.writeString(","+d);
                 of.writeString("\n");
             }
@@ -513,7 +525,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         return d;
     }
 /**
- * 
+ * What about  
  * @param ins
  * @return
  * @throws Exception 

@@ -1,12 +1,26 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
@@ -72,7 +86,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
 
     @Override
     public double getAcc() {
-        return res.acc;
+        return res.getAcc();
     }  
 
     public SlowDTW_1NN(){
@@ -85,7 +99,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     }
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",Memory,"+res.memory;
+        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",Memory,"+res.getMemory();
         result+=",BestWarpPercent,"+bestWarp+",AllAccs,";
        for(double d:accuracy)
             result+=","+d;
@@ -134,12 +148,17 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             System.out.println("OPTIMAL WINDOW ="+maxR+" % which gives a warp of"+bestWarp+" data");
   //          dtw=new DTW();
             dtw.setR(maxR/100.0);
-            res.acc=maxAcc;
+            res.setAcc(maxAcc);
         }
-        res.buildTime=System.currentTimeMillis()-t;
+        try {
+            res.setBuildTime(System.currentTimeMillis()-t);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.memory=usedBytes;
+        res.setMemory(usedBytes);
         
         
         if(trainPath!=null && trainPath!=""){  //Save basic train results
@@ -148,7 +167,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             OutFile f= new OutFile(trainPath);
             f.writeLine(train.relationName()+",FastDTW_1NN,Train");
             f.writeLine(getParameters());
-            f.writeLine(res.acc+"");
+            f.writeLine(res.getAcc()+"");
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);
                 int pred=(int)classifyInstance(test);

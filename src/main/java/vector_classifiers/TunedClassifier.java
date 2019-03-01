@@ -1,7 +1,20 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers;
 
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -192,9 +205,10 @@ public class TunedClassifier extends AbstractClassifier
         
         bestParas = best.paras;
         TAE_trainResults = best.results;
-        TAE_trainAcc = best.results.acc;
+        TAE_trainAcc = best.results.getAcc();
         
-        writeResults();
+        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null)
+            TAE_trainResults.writeFullResultsToFile(TAE_trainAccWritePath);
         
         //apply best paras and build final classifier on full train data
         String[] options = best.paras.toOptionsList();
@@ -207,19 +221,7 @@ public class TunedClassifier extends AbstractClassifier
         return classifier.distributionForInstance(inst);
     }
     
-    private void writeResults() {
-        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null) { 
-            //save the results of the best parameter set
-            OutFile f= new OutFile(TAE_trainAccWritePath);
-            f.writeString(TAE_trainResults.writeResultsFileToString());
-            f.closeFile();
-        }
-    }
-    
-    static Function<Integer,Integer> numFeatsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
-    
     public static void main(String[] args) throws Exception {
-        int numFeats = numFeatsFinder.apply(10);
         
 //        String dataset = "hayes-roth";
 //        

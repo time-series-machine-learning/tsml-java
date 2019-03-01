@@ -1,6 +1,20 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package evaluation;
 
+import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
@@ -106,12 +120,12 @@ public class ClassifierResultsAnalysis {
     public static Function<ClassifierResults, Double> initBuildTimesGetter() {
         return (ClassifierResults cr) -> {
             if (TIMING_CONVERSION == TIMING_NO_CONVERSION) {
-                return (double)cr.buildTime;
+                return (double)cr.getBuildTime();
             }
             else {
                 //since doubles have better precision closer to zero, knock off a bunch of the lower sig values,
                 //convert those to double, then add as after the decimal to get the full number expressed as a lower base
-                long rawBuildTime = cr.buildTime;
+                long rawBuildTime = cr.getBuildTime();
                 long pre = rawBuildTime / TIMING_CONVERSION;
                 long post = rawBuildTime % TIMING_CONVERSION;
                 double convertedPost = (double)post / TIMING_CONVERSION;
@@ -728,7 +742,7 @@ public class ClassifierResultsAnalysis {
      * at the lambda definition
      */
     protected static String[] writeBuildTimeFiles(String outPath, String filename, ArrayList<ClassifierEvaluation> results, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
-        if (results.get(0).testResults[0][0].buildTime <= 0) { //is not present. TODO god forbid naive bayes on balloons takes less than a millisecond...
+        if (results.get(0).testResults[0][0].getBuildTime() <= 0) { //is not present. TODO god forbid naive bayes on balloons takes less than a millisecond...
             System.out.println("Warning: No buildTimes found, or buildtimes == 0");
             return null;
         }

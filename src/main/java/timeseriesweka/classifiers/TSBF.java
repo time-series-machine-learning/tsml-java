@@ -1,5 +1,39 @@
 /*
-Time Series Bag of Features (TSBF): Baydogan
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package timeseriesweka.classifiers;
+
+import experiments.DataSets;
+import fileIO.OutFile;
+import java.text.DecimalFormat;
+import java.util.Random;
+import timeseriesweka.classifiers.TSF.FeatureSet;
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
+import weka.classifiers.Classifier;
+import vector_classifiers.TunedRandomForest;
+import weka.classifiers.trees.RandomForest;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.TechnicalInformation;
+
+/**
+ *
+ * Time Series Bag of Features (TSBF): Baydogan
 
 Time series classification with a bag-of-features (TSBF) algorithm.
 series length =m, num series =n
@@ -48,28 +82,7 @@ information.
 5. Global features are added. 
 
 6. A final classifier is then trained on the new representation to assign each time series.
- */
-package timeseriesweka.classifiers;
-
-import experiments.DataSets;
-import fileIO.OutFile;
-import java.text.DecimalFormat;
-import java.util.Random;
-import timeseriesweka.classifiers.TSF.FeatureSet;
-import utilities.ClassifierTools;
-import utilities.InstanceTools;
-import weka.classifiers.Classifier;
-import vector_classifiers.TunedRandomForest;
-import weka.classifiers.trees.RandomForest;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
-
-/**
- *
+ * 
  * @author ajb
  * 
  * PARAMETERS:
@@ -409,7 +422,7 @@ public TechnicalInformation getTechnicalInformation() {
     }
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
@@ -576,7 +589,12 @@ public TechnicalInformation getTechnicalInformation() {
             for(int k=0;k<numClasses;k++)
                classProbs[i][k]/=numSubSeries; 
         }
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        try {
+            trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
     }
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception{

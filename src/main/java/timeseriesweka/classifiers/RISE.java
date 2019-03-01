@@ -15,19 +15,6 @@
 package timeseriesweka.classifiers;
 
 import fileIO.FullAccessOutFile;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-import java.util.logging.Logger;
-
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.FFT;
 import utilities.ClassifierTools;
@@ -35,11 +22,13 @@ import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
-import weka.core.Attribute;
-import weka.core.Capabilities;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+import java.util.logging.Logger;
 
 /**
  <!-- globalinfo-start -->
