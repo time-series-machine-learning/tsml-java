@@ -31,7 +31,7 @@ classifiers = headers(1,2:size(headers,2));
 
 
 % start drawing
-f = figure('Name', filename);%, 'visible', 'off');
+f = figure('Name', filename, 'visible', 'off');
 
 if (max(max(timings)) / min(min(timings)) > 100) %if timings span at least two orders of magnitude
     semilogy(x,timings, 'LineWidth',2); % plot on log scale

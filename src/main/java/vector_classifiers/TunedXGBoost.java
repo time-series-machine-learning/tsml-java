@@ -36,8 +36,8 @@ import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
-import utilities.SaveParameterInfo;
 
 /**
  * Original code repo, around which this class wraps: https://github.com/dmlc/xgboost
@@ -55,7 +55,6 @@ import utilities.SaveParameterInfo;
  * as an option. Would search over the learning rate, num iterations, max tree depth, and min child weighting.
  * 
  * TODOS:
- * - Sort out any extra licensing/citations needed
  * - Thorough testing of the tuning checkpointing/para splitting for evaluation
  * - Potentially tweaking the para spaces depending on observed behaviour
  * - Any extra software engineering-type things required

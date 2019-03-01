@@ -419,18 +419,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         ClassifierResults[][][] results = new ClassifierResults[2][datasets.size()][numFolds];
         if (testResultsOnly)
             results[0]=null; //crappy but w/e
-        
-        
-        //semi-hack, if only accuracies wanted (either because that's all we care about for a quick and dirty comparison, 
-        //or ESPECIALLY because we're using old results files that dont have probabilities in them),
-        //then use this flag to determine whether to find the full stats or not
-        boolean onlyAccsWanted = true;
-        for (PerformanceMetric metric : metrics) {
-            if (!metric.equals(PerformanceMetric.acc)) {
-                onlyAccsWanted = false;
-                break;
-            }
-        }
+     
         
         for (int d = 0; d < datasets.size(); d++) {
             for (int f = 0; f < numFolds; f++) {
@@ -439,8 +428,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     String trainFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/trainFold" + f + ".csv";
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
-                        if (!onlyAccsWanted)
-                            results[0][d][f].findAllStatsOnce();
+                        results[0][d][f].findAllStatsOnce();
                         if (cleanResults)
                             results[0][d][f].cleanPredictionInfo();
                     } catch (FileNotFoundException ex) {
@@ -452,8 +440,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                 String testFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/testFold" + f + ".csv";
                 try {
                     results[1][d][f] = new ClassifierResults(testFile);
-                    if (!onlyAccsWanted)
-                        results[1][d][f].findAllStatsOnce();
+                    results[1][d][f].findAllStatsOnce();
                     if (cleanResults)
                         results[1][d][f].cleanPredictionInfo();
                 } catch (FileNotFoundException ex) {
