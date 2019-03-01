@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers;
 
+import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileInputStream;
@@ -427,10 +428,14 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
     private void saveToFile(long seed){
         try{
             System.out.println("Serialising classifier.");
-            FileOutputStream f = new FileOutputStream(new File(serialisePath
+            File file = new File(serialisePath
                     + (serialisePath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
                     + seed
-                    + ".txt"));
+                    + ".txt");
+            file.setWritable(true, false);
+            file.setExecutable(true, false);
+            file.setReadable(true, false);
+            FileOutputStream f = new FileOutputStream(file);
             ObjectOutputStream o = new ObjectOutputStream(f);
             this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
             o.writeObject(this);
@@ -834,7 +839,7 @@ public class cRISE implements Classifier, SaveParameterInfo, ContractClassifier,
 
         protected void saveModelToCSV(String problemName){
             try{
-                OutFile outFile = new OutFile((modelOutPath.isEmpty() ? "timingModel" + (int) seed + ".csv" : modelOutPath + "/" + problemName + "/" + "/timingModel" + (int) seed + ".csv"));
+                FullAccessOutFile outFile = new FullAccessOutFile((modelOutPath.isEmpty() ? "timingModel" + (int) seed + ".csv" : modelOutPath + "/" + problemName + "/" + "/timingModel" + (int) seed + ".csv"));
                 for (int i = 0; i < independantVariables.size(); i++) {
                     outFile.writeLine(Double.toString(independantVariables.get(i)) + ","
                             + Double.toString(dependantVariables.get(i)) + ","
