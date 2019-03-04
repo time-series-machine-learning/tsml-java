@@ -14,6 +14,9 @@
  */
 package experiments;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,17 +77,78 @@ public class Experiments  {
     /**
      * TODO Eventually, this should be replaced/fed with something like argparse4j. This will do for now,
      * avoids adding a new dependence until we really want it
+     * 
+     * @Parameters(separators = "=") todo find place to put this. maybe put this into own class instead of nested 
+     * @Parameter(names={"-gtf","--genTrainFiles"}, description = "")
      */
     public static class ExperimentalArguments implements Runnable {
+        
+    //REQUIRED PARAMETERS
+        @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
+                + "[dataPath]/[datasetName]/[datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
+        
+        @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The directory to write the results of the evaluation to, in the form "
+                + "[resultsPath]/[classifierName]/Predictions/[datasetName]/...")
         public String resultsWriteLocation = null;
-        public boolean generateErrorEstimateOnTrainSet = false;
+        
+        @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
         public String classifierName = null;
+        
+        @Parameter(names={"-dn","--datasetName"}, required=true, order=3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
+                + "[dataPath]/[datasetName]/[datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
         public String datasetName = null;
+        
+        @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed.")
         public int foldId = 0;
+        
+    //OPTIONAL PARAMETERS
+        //todo separate verbosity into it own thing
+        @Parameter(names={"-d","--debug"}, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
+        public boolean debug = false;
+        
+        @Parameter(names={"-gtf","--genTrainFiles"}, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
+                + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
+        public boolean generateErrorEstimateOnTrainSet = false;
+        
+        @Parameter(names={"-cp","--checkpointing"}, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
+                + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
         public boolean checkpointing = false;
+        
+        //todo generalise to include e.g parameter splitting files 'supportingFilePath' ? or separate them out explicitely, e.g { Predictions/ Checkpoints/ Parameters/ ... } 
+        @Parameter(names={"-cpp","--checkpointPath"}, description = "(String) Specifies the directory to write any checkpointing-related files to. By default, chackpointing files are written to the --resultsPath. "
+                + "If --checkpointing is set to false (as default), this option does nothing.")
+        public String checkpointPath = null;
+        
+        @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(int) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
+                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the classifier space is up to the classifier.")
         public Integer singleParameterID = null;
 
+        @Parameter(names={"-tb","--timingBenchmark"}, description = "(boolean) Turns on the computation of a standard operation (tbd) to act as a simple benchmark for the speed of computation on this hardware, which may "
+                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is tbd. For experiments that are likely to be very "
+                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all you experiments by a great deal, and for short evaluation time the proportional affect of "
+                + "any processing noise may make any benchamrk normalisation process unreliable anyway.")
+        public boolean performTimingBenchmark = false;
+        
+        //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge 
+        //of here, the ifs will call the wrong things. decide on the design of this 
+        @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 liens of meta information "
+                + "as well as the full prediction information, and requires the most disk space. 1 writes the first 3 lines and a list of the performance metrics calculated from the prediction info. 2 writes the first 3 lines only, and"
+                + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
+        public int classifierResultsFileFormat = 0;
+        
+        @Parameter(names={"-ctn","--contractTimeNanos"}, description = "(long) Defines a time limit, in nanoseconds, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+        public long contractTimeNanos = 0;
+        
+        @Parameter(names={"-ctm","--contractTimeMinutes"}, description = "(long) Defines a time limit, in minutes, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+        public long contractTimeMinutes = 0;
+        
+        @Parameter(names={"-cth","--contractTimeHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+        public long contractTimeHours = 0;
+                
         public ExperimentalArguments() {
             
         }
@@ -167,35 +231,10 @@ public class Experiments  {
          * args[7]: (Integer) If present and not null, defines a specific unique parameter id for a parameter search to evaluate (null indicates ignore this) 
          */
         private void parseArguments(String[] args) throws Exception {
-            //REQUIRED ARGUMENTS
-            dataReadLocation = args[0]; // Arg0: where's the datasetName? 
-            resultsWriteLocation = args[1]; // Arg1: where are we writing results to? 
-            //todo, format file separators into os-independent format and add a final "/" if there isnt one
-            
-            generateErrorEstimateOnTrainSet = Boolean.parseBoolean(args[2]); // Arg2: shall we perform cross validation on the train set to get an error estimate? 
-            
-            File f = new File(resultsWriteLocation);
-            if (!f.isDirectory()) {
-                f.mkdirs();
-                f.setWritable(true, false);
-            }
-
-            classifierName = args[3];
-            datasetName = args[4];
-            ClassifierLists.nastyGlobalDatasetName = args[4];
-            foldId = Integer.parseInt(args[5]) - 1;
-
-            //OPTIONAL ARGUMENTS
-            //  Arg 7:  whether to checkpoint        
-            checkpointing = false;
-            if (args.length >= 7)
-                checkpointing = Boolean.parseBoolean(args[6]);
-            
-            //Arg 8: if present, do a single parameter split
-            if (args.length >= 8)
-                singleParameterID = Integer.parseInt(args[7]);
-            else 
-                singleParameterID = null;
+            JCommander.newBuilder()
+                .addObject(this)
+                .build()
+                .parse(args);
         }
         
         public String toShortString() { 
