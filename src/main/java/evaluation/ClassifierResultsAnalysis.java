@@ -86,11 +86,11 @@ public class ClassifierResultsAnalysis {
     
     //final id's and path suffixes
     protected static final String matlabFilePath = "src/main/matlab/";
-    protected static final String pairwiseScatterDiaPath = "PairwiseScatterDias/";
-    protected static final String cdDiaFolderName = "cddias/";
+    protected static final String pairwiseScatterDiaPath = "dias_PairwiseScatter/";
+    protected static final String cdDiaFolderName = "dias_CriticalDifference/";
     protected static final String pairwiseCDDiaDirName = "pairwise/";
     protected static final String friedmanCDDiaDirName = "friedman/";
-    protected static final String timingDiaFolderName = "TimingDias/";
+    protected static final String timingDiaFolderName = "dias_Timing/";
     public static final double FRIEDMANCDDIA_PVAL = 0.05;
     private static final String testLabel = "TEST";
     private static final String trainLabel = "TRAIN";
