@@ -15,7 +15,9 @@
 package experiments;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +39,8 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
@@ -74,14 +78,10 @@ public class Experiments  {
     public static int numCVFolds = 10;
     public static double proportionKeptForTraining = 0.5;
 
-    /**
-     * TODO Eventually, this should be replaced/fed with something like argparse4j. This will do for now,
-     * avoids adding a new dependence until we really want it
-     * 
-     * @Parameters(separators = "=") todo find place to put this. maybe put this into own class instead of nested 
-     * @Parameter(names={"-gtf","--genTrainFiles"}, description = "")
-     */
+    @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
+        
+        
         
     //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
@@ -103,6 +103,9 @@ public class Experiments  {
         public int foldId = 0;
         
     //OPTIONAL PARAMETERS
+        @Parameter(names={"--help"}, hidden=true) //hidden from usage() printout
+        private boolean help = false;
+        
         //todo separate verbosity into it own thing
         @Parameter(names={"-d","--debug"}, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
         public boolean debug = false;
@@ -120,14 +123,14 @@ public class Experiments  {
                 + "If --checkpointing is set to false (as default), this option does nothing.")
         public String checkpointPath = null;
         
-        @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(int) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
-                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the classifier space is up to the classifier.")
+        @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(Integer) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
+                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
         public Integer singleParameterID = null;
 
-        @Parameter(names={"-tb","--timingBenchmark"}, description = "(boolean) Turns on the computation of a standard operation (tbd) to act as a simple benchmark for the speed of computation on this hardware, which may "
-                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is tbd. For experiments that are likely to be very "
+        @Parameter(names={"-tb","--timingBenchmark"}, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
+                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
                 + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all you experiments by a great deal, and for short evaluation time the proportional affect of "
-                + "any processing noise may make any benchamrk normalisation process unreliable anyway.")
+                + "any processing noise may make any benchmark normalisation process unreliable anyway.")
         public boolean performTimingBenchmark = false;
         
         //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge 
@@ -149,6 +152,10 @@ public class Experiments  {
                 + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
         public long contractTimeHours = 0;
                 
+        
+        
+        
+        
         public ExperimentalArguments() {
             
         }
@@ -157,7 +164,7 @@ public class Experiments  {
             parseArguments(args);
         }
         
-        @Override
+        @Override //Runnable
         public void run() {
             try {
                 setupAndRunSingleClassifierAndFoldTrainTestSplit(this);
@@ -210,31 +217,41 @@ public class Experiments  {
             return exps;
         }
         
-        
-        /**      
-         * If on cluster (or generally from the command line), the arguments are: 
-         * 
-         * REQUIRED ARGUMENTS:
-         * args[0]: (String)  Directory containing datasets
-         *              such that args[0] + "/" + args[4] + "/" + args[4] is an arff file (see sampleDataset(...) for precise arff formats readable).
-         * args[1]: (String)  Directory to write results to
-         *              such that train and/or testFoldX.csv are written to args[1] + "/" + args[3] + "/Predictions/" + args[4] + "/"
-         * args[2]: (boolean) Defines whether to CV on the train set to generate trainFoldX.csv files (true/false)
-         * args[3]: (String)  Name of the classifier, defined in ClassifierLists
-         * args[4]: (String)  Name of the dataset 
-         *              such that args[0] + "/" + args[4] + "/" + args[4] is an arff file (see sampleDataset(...) for precise arff formats readable).
-         * args[5]: (int)     Fold number used for resampling and rng seeds
-         *              INDEXED FROM ONE, to conform to cluster job indexing. i.e foldId = Integer.parseInt(args[5]) - 1;
-         * 
-         * OPTIONAL ARGUMENTS:
-         * args[6]: (boolean) Defines whether to checkpoint a parameter search for relevant classifiers  (true/false)
-         * args[7]: (Integer) If present and not null, defines a specific unique parameter id for a parameter search to evaluate (null indicates ignore this) 
-         */
         private void parseArguments(String[] args) throws Exception {
-            JCommander.newBuilder()
-                .addObject(this)
-                .build()
-                .parse(args);
+            Builder b = JCommander.newBuilder();
+            b.addObject(this);
+            JCommander jc = b.build();
+            jc.setProgramName("Experiments.java");  //todo maybe add copyright etcetc
+            try {
+                jc.parse(args);
+            } catch (Exception e) {
+                if (!help) {
+                    //we actually errored, instead of the program simply being called with the --help flag
+                    System.err.println("Parsing of arguments failed, parameter information follows. Parameters that require values should have the flag and value separated by '='.");
+                    System.err.println("For example: java -jar TimeSeriesClassification.jar -dp=data/path/ -rp=results/path/ -cn=someClassifier -dn=someDataset -f=0");
+                    System.err.println("Parameters prefixed by a * are REQUIRED. These are the first five parameters, which are needed to run a basic experiment.");
+                }
+                jc.usage();
+//                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
+//                System.exit(1);
+            }
+            
+            Experiments.debug = this.debug;
+            
+            //populating the contract times if present
+            //todo refactor to timeunits
+            if (contractTimeNanos > 0) {
+                contractTimeMinutes = contractTimeNanos / 1000000000 / 60;
+                contractTimeHours = contractTimeNanos / 1000000000 / 60 / 60;
+            }
+            else if (contractTimeMinutes > 0) {
+                contractTimeNanos = contractTimeMinutes * 1000000000 * 60;
+                contractTimeHours = contractTimeMinutes / 60;
+            }
+            else if (contractTimeHours > 0) {
+                contractTimeNanos = contractTimeHours * 1000000000 * 60 * 60;
+                contractTimeMinutes = contractTimeHours * 60;
+            }
         }
         
         public String toShortString() { 
@@ -288,6 +305,7 @@ public class Experiments  {
         //even if all else fails, print the args as a sanity check for cluster.
         for (String str : args)
             System.out.println(str);
+        System.out.println("");
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
@@ -559,7 +577,7 @@ public class Experiments  {
         try {
             //Setup train results
             if (expSettings.generateErrorEstimateOnTrainSet) 
-                trainResults = findOrSetUpTrainEstimate(classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);
+                trainResults = findOrSetUpTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);
             LOGGER.log(Level.INFO, "Train estimate ready.");
 
 
@@ -591,7 +609,7 @@ public class Experiments  {
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    long testBenchmark = findBenchmarkTime();
+                    long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
                     assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
@@ -646,7 +664,7 @@ public class Experiments  {
         return parameterFileName;
     }
     
-    private static ClassifierResults findOrSetUpTrainEstimate(Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
+    private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
         ClassifierResults trainResults = null;
         
         if (classifier instanceof TrainAccuracyEstimate) { 
@@ -657,7 +675,7 @@ public class Experiments  {
                 f.setWritable(true, false);
         } 
         else { 
-            long trainBenchmark = findBenchmarkTime();
+            long trainBenchmark = findBenchmarkTime(exp);
             
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
             cv.setSeed(fold);
@@ -681,16 +699,68 @@ public class Experiments  {
     }
     
     /**
-     * todo not implemented yet, returns default. To be decided in group, most likely 
-     * add a flag to the experimental arguments to set whether to do this or not
+     * If exp.performTimingBenchmark = true, this will return the total time to 
+     * sort 1,000 arrays of size 10,000
      * 
-     * If running many very short experiments, adding e.g 5 seconds onto each to provide 
-     * benchmark timings would a) be unreliable anyway (since the timing of the short experiment 
-     * itself would perhaps be imprecise) and b) increase the total time for the set of experiments
-     * massively
+     * Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds
+     * 
+     * This can still anecdotally vary between 0.75 to 1.05 on my windows machine, however. 
      */
-    public static long findBenchmarkTime() {
-        return -1; //the default in classifierresults, i.e no benchmark
+    public static long findBenchmarkTime(ExperimentalArguments exp) {
+        if (!exp.performTimingBenchmark)
+            return -1; //the default in classifierresults, i.e no benchmark
+        
+        // else calc benchmark
+        
+        int arrSize = 10000;
+        int repeats = 1000;
+        long[] times = new long[repeats];
+        long total = 0L;
+        for (int i = 0; i < repeats; i++) {
+            times[i] = atomicBenchmark(arrSize);
+            total+=times[i];
+        }
+
+        if (debug) { 
+            long mean = 0L, max = Long.MIN_VALUE, min = Long.MAX_VALUE;
+            for (long time : times) { 
+                mean += time;
+                if (time < min)
+                    min = time;
+                if (time > max)
+                    max = time;
+            }
+            mean/=repeats;
+            
+            int halfR = repeats/2;
+            long median = repeats % 2 == 0 ? 
+                (times[halfR] + times[halfR+1]) / 2 :
+                times[halfR];
+
+            double d = 1000000000;
+            StringBuilder sb = new StringBuilder("BENCHMARK TIMINGS, summary of times to "
+                    + "sort "+repeats+" random int arrays of size "+arrSize+" - in seconds\n");
+            sb.append("total = ").append(total/d).append("\n");
+            sb.append("min = ").append(min/d).append("\n");
+            sb.append("max = ").append(max/d).append("\n");
+            sb.append("mean = ").append(mean/d).append("\n");
+            sb.append("median = ").append(median/d).append("\n");
+            
+            LOGGER.log(Level.FINE, sb.toString());
+        }
+
+        return total;
+    }
+    
+    private static long atomicBenchmark(int arrSize) {
+        long startTime = System.nanoTime();
+        int[] arr = new int[arrSize];
+        Random rng = new Random(0);
+        for (int j = 0; j < arrSize; j++)
+            arr[j] = rng.nextInt();
+
+        Arrays.sort(arr);
+        return System.nanoTime() - startTime;
     }
     
     public static void writeResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {

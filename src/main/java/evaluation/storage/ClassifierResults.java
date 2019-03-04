@@ -609,8 +609,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return acc; 
     }
     private void calculateAcc() {
-        if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1)
+        if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1) {
             System.out.println("**getAcc():calculateAcc() no true class values suppleid yet, cannot calculate accuracy");
+            return;
+        }
         
         int size = predClassValues.size();
         double correct = .0;
