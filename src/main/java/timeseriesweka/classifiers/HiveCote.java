@@ -136,8 +136,8 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
         h.setTransform(st);
         
         classifiers.add(h); // to get around the issue of needing training data 
-        RISE rise = new RISE();
-        rise.setTransformType(RISE.Filter.PS_ACF);
+        RISE rise = new RISE(0);
+        rise.setTransformType("BOTH");
         classifiers.add(rise);
         classifiers.add(new BOSS());
         classifiers.add(new TSF());

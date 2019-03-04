@@ -15,52 +15,89 @@
 package timeseriesweka.classifiers;
 
 import fileIO.OutFile;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
-import utilities.InstanceTools;
 
+import java.util.*;
+
+import timeseriesweka.classifiers.cote.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map.Entry;
 
 import utilities.ClassifierTools;
 import utilities.BitWord;
 import utilities.TrainAccuracyEstimate;
-import weka.core.Capabilities;
-import weka.core.Instance;
-import weka.core.Instances;
+import vector_classifiers.CAWPE;
+import weka.classifiers.AbstractClassifier;
+import weka.classifiers.trees.RandomTree;
+import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
-import weka.core.TechnicalInformation;
+
+import static utilities.multivariate_tools.MultivariateInstanceTools.*;
+import static weka.core.Utils.sum;
 
 /**
- * BOSS classifier with parameter search and ensembling, if parameters are known, 
- * use the nested class BOSSIndividual and directly provide them.
+ * BOSS classifier with parameter search and ensembling for univariate and
+ * multivariate time series classification.
+ * If parameters are known, use the nested class BOSSIndividual and directly provide them.
  * 
- * Intended use is with the default constructor, however can force the normalisation 
- * parameter to true/false by passing a boolean, e.g c = new BOSSEnsemble(true)
+ * Options to change the method of ensembling to randomly select parameters instead of searching.
+ * Has the capability to contract train time and checkpoint when using a random ensemble.
  * 
- * Alphabetsize fixed to four
+ * Alphabetsize fixed to four and maximum wordLength of 16.
  * 
- * @author James Large
+ * @author James Large, updated by Matthew Middlehurst
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingData implements HiveCoteModule, TrainAccuracyEstimate {
-  
+public class BOSS extends AbstractClassifierWithTrainingData implements HiveCoteModule, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier {
+    
+    private int ensembleSize = 50;
+    private int seed = 0;
+    private int numCAWPEFolds = 10;
+    private int ensembleSizePerChannel = -1;
+    private Random rand;
+    private boolean randomEnsembleSelection = false;
+    private boolean useCAWPE = false;
+    private Classifier alternateIndividualClassifier;
+
+    private transient LinkedList<BOSSIndividual>[] classifiers;
+    private CAWPE[] cawpe;
+    private int numSeries;
+    private int numClassifiers[];
+    private int currentSeries = 0;
+    private boolean isMultivariate = false;
+
+    private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
+    private final int alphabetSize = 4;
+    private final double correctThreshold = 0.92;
+    private int maxEnsembleSize = 500;
+     
+    private String checkpointPath;
+    private String serPath;
+    private boolean checkpoint = false;
+    private long checkpointTime = 0;
+    private long checkpointTimeDiff = 0;
+    private boolean cleanupCheckpointFiles = true;
+            
+    private long contractTime = 0;
+    private boolean contract = false;
+    
+    private String trainCVPath;
+    private boolean trainCV = false;
+
+    private transient Instances train;
+    private double ensembleCvAcc = -1;
+    private double[] ensembleCvPreds = null;
+
+    protected static final long serialVersionUID = 22554L;
+
+    public BOSS() {}
+
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -74,374 +111,442 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         return result;
     }
-    
-    private List<BOSSWindow> classifiers; 
-    
-    private final double correctThreshold = 0.92;
-    private int maxEnsembleSize = Integer.MAX_VALUE;
-    
-    private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
-    private final int alphabetSize = 4;
-    
-    private boolean loadFeatureSets = false;
-    private int fold = 0;
-  
-    public enum SerialiseOptions { 
-        //dont do any seriealising, run as normal
-        NONE, 
-        
-        //serialise the final boss classifiers which made it into ensemble (does not serialise the entire BOSSEnsemble object)
-        //slight runtime cost 
-        STORE, 
-        
-        //serialise the final boss classifiers, and delete from main memory. reload each from ser file when needed in classification. 
-        //the most memory used at any one time is therefore ~2 individual boss classifiers during training. 
-        //massive runtime cost, order of magnitude 
-        STORE_LOAD 
-    };
-    
-    
-    private SerialiseOptions serOption = SerialiseOptions.NONE;
-    private static String serFileLoc = "BOSSWindowSers\\";
-    private static String featureFileLoc = "C:/JamesLPHD/featuresets/BOSSEnsemble/";
-     
-    private boolean[] normOptions;
-    
-    private String trainCVPath;
-    private boolean trainCV=false;
 
-    private Instances train;
-    private double ensembleCvAcc = -1;
-    private double[] ensembleCvPreds = null;
+    @Override
+    public Capabilities getCapabilities(){
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+
+        // attributes
+        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+
+        return result;
+    }
+
+    @Override
+    public String getParameters() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(super.getParameters());
+
+        //could be improved for different boss versions, seems low prio though
+
+        for (int n = 0; n < numSeries; n++) {
+            for (int i = 0; i < numClassifiers[n]; ++i) {
+                BOSSIndividual boss = classifiers[n].get(i);
+                sb.append(",windowSize,").append(boss.getWindowSize()).append(",wordLength,").append(boss.getWordLength());
+                sb.append(",alphabetSize,").append(boss.getAlphabetSize()).append(",norm,").append(boss.isNorm());
+            }
+        }
+
+        return sb.toString();
+    }
+
+    //set any value in nanoseconds you like.
+    @Override
+    public void setTimeLimit(long time){
+        contractTime = time;
+        contract = true;
+    }
+
+    //pass in an enum of hour, minute, day, and the amount of them.
+    @Override
+    public void setTimeLimit(TimeLimit time, int amount){
+        switch (time){
+            case DAY:
+                contractTime = (long)(8.64e+13)*amount;
+                break;
+            case HOUR:
+                contractTime = (long)(3.6e+12)*amount;
+                break;
+            case MINUTE:
+                contractTime = (long)(6e+10)*amount;
+                break;
+        }
+        contract = true;
+    }
+    
+    //Set the path where checkpointed versions will be stored
+    @Override
+    public void setSavePath(String path){
+        checkpointPath = path;
+        checkpoint = true;
+    }
+    
+    //Define how to copy from a loaded object to this object
+    @Override
+    public void copyFromSerObject(Object obj) throws Exception{
+        if(!(obj instanceof BOSS))
+            throw new Exception("The SER file is not an instance of BOSS");
+        BOSS saved = ((BOSS)obj);
+        System.out.println("Loading BOSS.ser");
+
+        //copy over variables from serialised object
+        ensembleSize = saved.ensembleSize;
+        seed = saved.seed;
+        numCAWPEFolds = saved.numCAWPEFolds;
+        ensembleSizePerChannel = saved.ensembleSizePerChannel;
+        rand = saved.rand;
+        randomEnsembleSelection = saved.randomEnsembleSelection;
+        useCAWPE = saved.useCAWPE;
+        alternateIndividualClassifier = saved.alternateIndividualClassifier;
+        cawpe = saved.cawpe;
+        numSeries = saved.numSeries;
+        numClassifiers = saved.numClassifiers;
+        currentSeries = saved.currentSeries;
+        isMultivariate = saved.isMultivariate;
+        checkpointTime = saved.checkpointTime;
+        checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
+        contractTime = saved.contractTime;
+        contract = saved.contract;
+        trainCVPath = saved.trainCVPath;
+        trainCV = saved.trainCV;
+        trainResults = saved.trainResults;
+        ensembleCvAcc = saved.ensembleCvAcc;
+        ensembleCvPreds = saved.ensembleCvPreds;
+
+        //load in each serisalised classifier
+        classifiers = new LinkedList[numSeries];
+        for (int n = 0; n < numSeries; n++) {
+            classifiers[n] = new LinkedList();
+            for (int i = 0; i < saved.numClassifiers[n]; i++) {
+                System.out.println("Loading BOSSIndividual" + n + "-" + i + ".ser");
+
+                FileInputStream fis = new FileInputStream(serPath + "BOSSIndividual" + n + "-" + i + ".ser");
+                try (ObjectInputStream in = new ObjectInputStream(fis)) {
+                    Object indv = in.readObject();
+
+                    if (!(indv instanceof BOSSIndividual))
+                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of BOSSIndividual");
+                    BOSSIndividual ser = ((BOSSIndividual) indv);
+                    classifiers[n].add(ser);
+                }
+            }
+        }
+    }
 
     @Override
     public void writeCVTrainToFile(String outputPathAndName){
         trainCVPath=outputPathAndName;
         trainCV=true;
     }
+
     @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){
         trainCV=setCV;
     }
-    
+
     @Override
     public boolean findsTrainAccuracyEstimate(){ return trainCV;}
-    
+
     @Override
     public ClassifierResults getTrainResults(){
 //Temporary : copy stuff into trainResults.acc here
         trainResults.setAcc(ensembleCvAcc);
-//TO DO: Write the other stats        
+//TO DO: Write the other stats
         return trainResults;
-    }        
-    
-    
-    /**
-     * Providing a particular value for normalisation will force that option, if 
-     * whether to normalise should be a parameter to be searched, use default constructor
-     * 
-     * @param normalise whether or not to normalise by dropping the first Fourier coefficient
-     */
-    public BOSS(boolean normalise) {
-        normOptions = new boolean[] { normalise };
     }
     
-    /**
-     * During buildClassifier(...), will search through normalisation as well as 
-     * window size and word length if no particular normalisation option is provided
-     */
-    public BOSS() {
-        normOptions = new boolean[] { true, false };
-    }  
+    public void setEnsembleSize(int size) {
+        ensembleSize = size;
+    }
+    
+    public void setSeed(int i) {
+        seed = i;
+    }
 
-    public static class BOSSWindow implements Comparable<BOSSWindow>, Serializable { 
-        private BOSSIndividual classifier;
-        public double accuracy;
-        public String filename;
-        
-        private static final long serialVersionUID = 2L;
+    public void setNumCAWPEFolds(int i){
+        numCAWPEFolds = i;
+    }
 
-        public BOSSWindow(String filename) {
-            this.filename = filename;
-        }
-        
-        public BOSSWindow(BOSSIndividual classifer, double accuracy, String dataset) {
-            this.classifier = classifer;
-            this.accuracy = accuracy;
-            buildFileName(dataset);
-        }
+    public void setRandomEnsembleSelection(boolean b){
+        randomEnsembleSelection = b;
+    }
 
-        public double classifyInstance(Instance inst) throws Exception { 
-            return classifier.classifyInstance(inst); 
-        }
-        
-        public double classifyInstance(int test) throws Exception { 
-            return classifier.classifyInstance(test); 
-        }
-        
-        private void buildFileName(String dataset) {
-            filename = serFileLoc + dataset + "_" + classifier.windowSize + "_" + 
-                    classifier.wordLength + "_" + classifier.alphabetSize + "_" + classifier.norm + ".ser";
-        }
-        
-        public boolean storeAndClearClassifier() {
-            try {
-                ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
-                out.writeObject(this);
-                out.close();   
-                clearClassifier();
-                return true;
-            }catch(IOException e) {
-                System.out.print("Error serialising to " + filename);
-                e.printStackTrace();
-                return false;
-            }
-        }
-        
-        public boolean store() {
-            try {
-                ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
-                out.writeObject(this);
-                out.close();         
-                return true;
-            }catch(IOException e) {
-                System.out.print("Error serialiszing to " + filename);
-                e.printStackTrace();
-                return false;
-            }
-        }
-        
-        public void clearClassifier() {
-            classifier = null;
-        }
-        
-        public boolean load() {
-            BOSSWindow bw = null;
-            try {
-                ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename));
-                bw = (BOSSWindow) in.readObject();
-                in.close();
-                this.accuracy = bw.accuracy;
-                this.classifier = bw.classifier;
-                return true;
-            }catch(IOException i) {
-                System.out.print("Error deserialiszing from " + filename);
-                i.printStackTrace();
-                return false;
-            }catch(ClassNotFoundException c) {
-                System.out.println("BOSSWindow class not found");
-                c.printStackTrace();
-                return false;
-            }
-        }
-        
-        public boolean deleteSerFile() {
-            try {
-                File f = new File(filename);
-                return f.delete();
-            } catch(SecurityException s) {
-                System.out.println("Unable to delete, access denied: " + filename);
-                s.printStackTrace();
-                return false;
-            }
-        }
-        
-        /**
-         * @return { numIntervals(word length), alphabetSize, slidingWindowSize } 
-         */
-        public int[] getParameters() { return classifier.getParameters();  }
-        public int getWindowSize()   { return classifier.getWindowSize();  }
-        public int getWordLength()   { return classifier.getWordLength();  }
-        public int getAlphabetSize() { return classifier.getAlphabetSize(); }
-        public boolean isNorm()      { return classifier.isNorm(); }
-        
-        @Override
-        public int compareTo(BOSSWindow other) {
-            if (this.accuracy > other.accuracy) 
-                return 1;
-            if (this.accuracy == other.accuracy) 
-                return 0;
-            return -1;
-        }
+    public void useCAWPE(boolean b) {
+        useCAWPE = b;
     }
-    
- 
-    @Override
-    public String getParameters() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(super.getParameters());
-        BOSSWindow first = classifiers.get(0);
-        sb.append(",windowSize,").append(first.getWindowSize()).append(",wordLength,").append(first.getWordLength());
-        sb.append(",alphabetSize,").append(first.getAlphabetSize()).append(",norm,").append(first.isNorm());
-            
-        for (int i = 1; i < classifiers.size(); ++i) {
-            BOSSWindow boss = classifiers.get(i);
-            sb.append(",windowSize,").append(boss.getWindowSize()).append(",wordLength,").append(boss.getWordLength());
-            sb.append(",alphabetSize,").append(boss.getAlphabetSize()).append(",norm,").append(boss.isNorm());
-        }
-        
-        return sb.toString();
+
+    public void setAlternateIndividualClassifier(Classifier c) { alternateIndividualClassifier = c; }
+
+    public void setCleanupCheckpointFiles(boolean b) {
+        cleanupCheckpointFiles = b;
     }
-    
-    
-     /**
-     * @return { numIntervals(word length), alphabetSize, slidingWindowSize } for each BOSSWindow in this *built* classifier
-     */
-    public int[][] getParametersValues() {
-        int[][] params = new int[classifiers.size()][];
-        int i = 0;
-        for (BOSSWindow boss : classifiers) 
-            params[i++] = boss.getParameters();
-         
-        return params;
-    }
-    
-    public void setSerOption(SerialiseOptions option) { 
-        serOption = option;
-    }
-    
-    public void setSerFileLoc(String path) {
-        serFileLoc = path;
-    }
-    
-    public void setFeatureFileLoc(String path) {
-        featureFileLoc = path;
-    }
-    
-    public void setMaxEnsembleSize(int max) {
-        maxEnsembleSize = max;
-    }
-    
-    public void setLoadFeatures(boolean load, int fold) {
-        this.loadFeatureSets = load;
-        this.fold = fold;
-    }
-    
+
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        long startTime =System.currentTimeMillis();
-        this.train=data;
-        
-        if (data.classIndex() != data.numAttributes()-1)
-            throw new Exception("BOSSEnsemble_BuildClassifier: Class attribute not set as last attribute in dataset");
- 
-        if (serOption == SerialiseOptions.STORE || serOption == SerialiseOptions.STORE_LOAD) {
-            DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-            Date date = new Date();
-            serFileLoc += data.relationName() + "_" + dateFormat.format(date) + "\\";
-            File f = new File(serFileLoc);
-            if (!f.isDirectory())
-                f.mkdirs();
+        trainResults.setBuildTime(System.nanoTime());
+
+        if(data.checkForAttributeType(Attribute.RELATIONAL)){
+            isMultivariate = true;
+        }
+
+        //creating path for checkpointing
+        String type = "";
+
+        if (contract){
+            type = "RandomContract" + contractTime;
+        }
+        else if (useCAWPE){
+            if (isMultivariate && ensembleSizePerChannel > 0){
+                type = "RandomCAWPE" + (ensembleSizePerChannel*numSeries);
+            }
+            else {
+                type = "RandomCAWPE" + ensembleSize;
+            }
+        }
+        else if (randomEnsembleSelection){
+            if (isMultivariate && ensembleSizePerChannel > 0){
+                type = "Random" + (ensembleSizePerChannel*numSeries);
+            }
+            else {
+                type = "Random" + ensembleSize;
+            }
+        }
+
+        String relationName = data.relationName();
+        serPath = checkpointPath + "/" + relationName + seed + type + "BOSSser/";
+        File f = new File(serPath + "BOSS.ser");
+
+        //if checkpointing and serialised files exist load said files
+        if (checkpoint && f.exists()){
+            loadFromFile(serPath + "BOSS.ser");
+        }
+        //initialise variables
+        else {
+            if (data.classIndex() != data.numAttributes()-1)
+                throw new Exception("BOSSEnsemble_BuildClassifier: Class attribute not set as last attribute in dataset");
+
+            //Multivariate
+            if (isMultivariate) {
+                numSeries = numChannels(data);
+                classifiers = new LinkedList[numSeries];
+
+                for (int n = 0; n < numSeries; n++){
+                    classifiers[n] = new LinkedList<>();
+                }
+
+                numClassifiers = new int[numSeries];
+
+                if (ensembleSizePerChannel > 0){
+                    ensembleSize = ensembleSizePerChannel*numSeries;
+                }
+            }
+            //Univariate
+            else{
+                numSeries = 1;
+                classifiers = new LinkedList[1];
+                classifiers[0] = new LinkedList<>();
+                numClassifiers = new int[1];
+            }
+
+            rand = new Random(seed);
         }
         
-        classifiers = new LinkedList<BOSSWindow>();
-        
-        
-        int numSeries = data.numInstances();
-        
-        int seriesLength = data.numAttributes()-1; //minus class attribute
-        int minWindow = 10;
-        int maxWindow = seriesLength; 
+        this.train = data;
 
-        //int winInc = 1; //check every window size in range
+        //required to deal with multivariate datasets, each channel is split into its own instances
+        Instances[] series;
+
+        //Multivariate
+        if (isMultivariate) {
+            series = splitMultivariateInstances(data);
+        }
+        //Univariate
+        else{
+            series = new Instances[1];
+            series[0] = data;
+        }
+
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength;
         
         //whats the max number of window sizes that should be searched through
-        //double maxWindowSearches = Math.min(200, Math.sqrt(seriesLength)); 
         double maxWindowSearches = seriesLength/4.0;
-        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches); 
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
-        
-        
-        //keep track of current max window size accuracy, constantly check for correctthreshold to discard to save space
-        double maxAcc = -1.0;
-        
-        //the acc of the worst member to make it into the final ensemble as it stands
-        double minMaxAcc = -1.0; 
-        
-        for (boolean normalise : normOptions) {
-            for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {          
-                BOSSIndividual boss = null;
-                
-                //for feature saving/loading, one set per windowsize (with wordLengths[0]) is saved
-                //since shortening words to form histograms of different lengths is fast enough
-                //and saving EVERY feature set would very quickly eat up a disk
-                if (loadFeatureSets) {
-                    try {
-                        boss = BOSSIndividual.loadFeatureSet(featureFileLoc, data.relationName(), fold, "BOSS", 
-                                winSize, wordLengths[0], alphabetSize, normalise);
-                    } catch (Exception e){
-                        //dont already exist or not found, so make them as usual and serialise them after
-                        //todo print to a log file in case of genuine error
-                        boss = new BOSSIndividual(wordLengths[0], alphabetSize, winSize, normalise);  
-                        boss.buildClassifier(data); //initial setup for this windowsize, with max word length 
-                        BOSSIndividual.serialiseFeatureSet(boss, featureFileLoc, data.relationName(), fold);
-                    }
-                } else {
-                    boss = new BOSSIndividual(wordLengths[0], alphabetSize, winSize, normalise);  
-                    boss.buildClassifier(data); //initial setup for this windowsize, with max word length     
-                }
-                
-                BOSSIndividual bestClassifierForWinSize = null; 
-                double bestAccForWinSize = -1.0;
 
-                //find best word length for this window size
-                for (Integer wordLen : wordLengths) {            
-                    boss = boss.buildShortenedBags(wordLen); //in first iteration, same lengths (wordLengths[0]), will do nothing
-                    
-                    int correct = 0; 
-                    for (int i = 0; i < numSeries; ++i) {
-                        double c = boss.classifyInstance(i); //classify series i, while ignoring its corresponding histogram i
-                        if (c == data.get(i).classValue())
-                            ++correct;
-                    }
+        //Contracted
+        if (contract) {
+            //continue building classifiers until contract time runs out or max ensemble size is reached
+            //any time between runs using checkpointing is not included
+            while (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
+                //randomly select parameters except for alphabetSize
+                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
+                boolean normalise = rand.nextBoolean();
 
-                    double acc = (double)correct/(double)numSeries;     
-                    if (acc >= bestAccForWinSize) {
-                        bestAccForWinSize = acc;
-                        bestClassifierForWinSize = boss;
-                    }
+                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+                boss.cleanAfterBuild = true;
+                boss.buildClassifier(series[currentSeries]);
+                classifiers[currentSeries].add(boss);
+                numClassifiers[currentSeries]++;
+
+                int prev = currentSeries;
+                if (isMultivariate){
+                    nextSeries();
                 }
 
-                //if this window size's accuracy is not good enough to make it into the ensemble, dont bother storing at all
-                if (makesItIntoEnsemble(bestAccForWinSize, maxAcc, minMaxAcc, classifiers.size())) {
-                    BOSSWindow bw = new BOSSWindow(bestClassifierForWinSize, bestAccForWinSize, data.relationName());
-                    bw.classifier.clean();
-                    
-                    if (serOption == SerialiseOptions.STORE)
-                        bw.store();
-                    else if (serOption == SerialiseOptions.STORE_LOAD)
-                        bw.storeAndClearClassifier();
-                        
-                    classifiers.add(bw);
-                    
-                    if (bestAccForWinSize > maxAcc) {
-                        maxAcc = bestAccForWinSize;       
-                        //get rid of any extras that dont fall within the new max threshold
-                        Iterator<BOSSWindow> it = classifiers.iterator();
-                        while (it.hasNext()) {
-                            BOSSWindow b = it.next();
-                            if (b.accuracy < maxAcc * correctThreshold) {
-                                if (serOption == SerialiseOptions.STORE || serOption == SerialiseOptions.STORE_LOAD)
-                                    b.deleteSerFile();
-                                it.remove();
-                            }
-                        }
-                    }
-                    
-                    while (classifiers.size() > maxEnsembleSize) {
-                        //cull the 'worst of the best' until back under the max size
-                        int minAccInd = (int)findMinEnsembleAcc()[0];
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
+                }
+            }
 
-                        if (serOption == SerialiseOptions.STORE || serOption == SerialiseOptions.STORE_LOAD)
-                            classifiers.get(minAccInd).deleteSerFile();
-                        classifiers.remove(minAccInd);
-                    }
-                    minMaxAcc = findMinEnsembleAcc()[1]; //new 'worst of the best' acc
+            System.out.println("RBOSS Contract Data: NumClassifiers = " +
+                    classifiers[numSeries-1].size() + " StartTime = " + trainResults.getBuildTime() + " "
+                    + "EndTime = " + System.nanoTime() + " Checkpointed = " + checkpoint + " TotalTime = "
+                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) + " AverageTime = "
+                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) / classifiers[0].size());
+        }
+        //Randomly selected ensemble with CAWPE weighting
+        else if (useCAWPE){
+            cawpe = new CAWPE[numSeries];
+
+            while (sum(numClassifiers) < ensembleSize) {
+                //randomly select parameters except for alphabetSize
+                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
+                boolean normalise = rand.nextBoolean();
+
+                //do not have to build here, CAWPE will build each classifer
+                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+                boss.cleanAfterBuild = true;
+                classifiers[currentSeries].add(boss);
+                numClassifiers[currentSeries]++;
+
+                int prev = currentSeries;
+                if (isMultivariate){
+                    nextSeries();
+                }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
+                }
+            }
+
+            //build a CAWPE classifier for each channel (1 if univariate)
+            for (int i = 0; i < numSeries; i++){
+                cawpe[i] = new CAWPE();
+                cawpe[i].setNumCVFolds(numCAWPEFolds);
+                BOSSIndividual[] boss = classifiers[i].toArray(new BOSSIndividual[numClassifiers[i]]);
+                cawpe[i].setClassifiers(boss, null, null);
+                cawpe[i].buildClassifier(series[i]);
+
+                //cant serialise cawpe
+                //if (checkpoint) {
+                    //checkpoint(-1, relationName);
+                //}
+            }
+        }
+        //Randomly selected ensemble
+        else if (randomEnsembleSelection){
+            //build classifiers up to a set size
+            while (sum(numClassifiers) < ensembleSize) {
+                //randomly select parameters except for alphabetSize
+                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+                if(winSize > maxWindow) winSize = maxWindow;
+                boolean normalise = rand.nextBoolean();
+
+                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
+                boss.cleanAfterBuild = true;
+                boss.buildClassifier(series[currentSeries]);
+                classifiers[currentSeries].add(boss);
+                numClassifiers[currentSeries]++;
+
+                int prev = currentSeries;
+                if (isMultivariate){
+                    nextSeries();
+                }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
                 }
             }
         }
-        
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+        //Original BOSS/Accuracy cutoff ensemble
+        else{
+            for (int n = 0; n < numSeries; n++) {
+                currentSeries = n;
+                int numInst = series[n].numInstances();
+                double maxAcc = -1.0;
+
+                //the acc of the worst member to make it into the final ensemble as it stands
+                double minMaxAcc = -1.0;
+
+                boolean[] normOptions = {true, false};
+
+                for (boolean normalise : normOptions) {
+                    for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
+                        BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize, winSize, normalise, alternateIndividualClassifier);
+                        boss.buildClassifier(series[n]); //initial setup for this windowsize, with max word length
+
+                        BOSSIndividual bestClassifierForWinSize = null;
+                        double bestAccForWinSize = -1.0;
+
+                        //find best word length for this window size
+                        for (Integer wordLen : wordLengths) {
+                            boss = boss.buildShortenedBags(wordLen); //in first iteration, same lengths (wordLengths[0]), will do nothing
+
+                            int correct = 0;
+                            for (int i = 0; i < numInst; ++i) {
+                                double c = boss.classifyInstance(i); //classify series i, while ignoring its corresponding histogram i
+                                if (c == data.get(i).classValue())
+                                    ++correct;
+                            }
+
+                            double acc = (double) correct / (double) numInst;
+                            if (acc >= bestAccForWinSize) {
+                                bestAccForWinSize = acc;
+                                bestClassifierForWinSize = boss;
+                            }
+                        }
+
+                        //if this window size's accuracy is not good enough to make it into the ensemble, dont bother storing at all
+                        if (makesItIntoEnsemble(bestAccForWinSize, maxAcc, minMaxAcc, classifiers[n].size())) {
+                            bestClassifierForWinSize.clean();
+                            bestClassifierForWinSize.accuracy = bestAccForWinSize;
+                            classifiers[n].add(bestClassifierForWinSize);
+
+                            if (bestAccForWinSize > maxAcc) {
+                                maxAcc = bestAccForWinSize;
+                                //get rid of any extras that dont fall within the new max threshold
+                                Iterator<BOSSIndividual> it = classifiers[n].iterator();
+                                while (it.hasNext()) {
+                                    BOSSIndividual b = it.next();
+                                    if (b.accuracy < maxAcc * correctThreshold) {
+                                        it.remove();
+                                    }
+                                }
+                            }
+
+                            while (classifiers[n].size() > maxEnsembleSize) {
+                                //cull the 'worst of the best' until back under the max size
+                                int minAccInd = (int) findMinEnsembleAcc()[0];
+
+                                classifiers[n].remove(minAccInd);
+                            }
+
+                            minMaxAcc = findMinEnsembleAcc()[1]; //new 'worst of the best' acc
+                        }
+
+                        numClassifiers[n] = classifiers[n].size();
+                    }
+                }
+            }
+        }
+
+        //end train time, converted to milliseconds currently for compatability
+        trainResults.setBuildTime((long)(System.nanoTime()/1000000) - (long)(trainResults.getBuildTime()/1000000) - (long)(checkpointTimeDiff/1000000));
+
+        //Estimate train accuracy, may be broken for CAWPE/Alternate classifiers (currently untested)
         if (trainCV) {
             OutFile of=new OutFile(trainCVPath);
             of.writeLine(data.relationName()+",BOSSEnsemble,train");
@@ -450,44 +555,109 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             of.writeLine(getParameters());
             of.writeLine(results[0][0]+"");
             ensembleCvAcc = results[0][0];
-            for(int i=1;i<results[0].length;i++){
-                of.writeString((int)results[0][i]+","+(int)results[1][i]+",");
-                for(int j=2;j<results.length;j++)
-                    of.writeString(","+results[j][i]);
-                of.writeString("\n");
-                
-            }
+            for(int i=1;i<results[0].length;i++)
+                of.writeLine(results[0][i]+","+results[1][i]);
             System.out.println("CV acc ="+results[0][0]);
+            trainCV = false;
         }
-        
+
+        //delete any serialised files and holding folder for checkpointing on completion
+        if (checkpoint && cleanupCheckpointFiles){
+            f = new File(serPath);
+            String[] files = f.list();
+
+            for (String file: files){
+                File f2 = new File(f.getPath() + "\\" + file);
+                f2.delete();
+            }
+
+            f.delete();
+        }
+    }
+    
+    private void checkpoint(int seriesNo, String relationName){
+        if(checkpointPath!=null){
+            try{
+                File f = new File(serPath);
+                if(!f.isDirectory())
+                    f.mkdirs();
+                //time the checkpoint occured
+                checkpointTime = System.nanoTime();
+
+                if (seriesNo >= 0) {
+                    //save the last build individual classifier
+                    BOSSIndividual indiv = classifiers[seriesNo].get(classifiers[seriesNo].size() - 1);
+
+                    FileOutputStream fos = new FileOutputStream(serPath + "BOSSIndividual" + seriesNo + "-" + (classifiers[seriesNo].size() - 1) + ".ser");
+                    try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                        out.writeObject(indiv);
+                        fos.close();
+                    }
+                }
+
+                //save this, saved classifiers not included
+                saveToFile(serPath + "RandomBOSStemp.ser");
+
+                File file = new File(serPath + "RandomBOSStemp.ser");
+                File file2 = new File(serPath + "BOSS.ser");
+                file2.delete();
+                file.renameTo(file2);
+
+                //dont take into account time spent serialising into build time
+                checkpointTimeDiff += System.nanoTime() - checkpointTime;
+            }
+            catch(Exception e){
+                e.printStackTrace();
+                System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSSSer/  FAILED");
+            }
+        }
     }
 
     //[0] = index, [1] = acc
     private double[] findMinEnsembleAcc() {
         double minAcc = Double.MIN_VALUE;
         int minAccInd = 0;
-        for (int i = 0; i < classifiers.size(); ++i) {
-            double curacc = classifiers.get(i).accuracy;
+        for (int i = 0; i < classifiers[currentSeries].size(); ++i) {
+            double curacc = classifiers[currentSeries].get(i).accuracy;
             if (curacc < minAcc) {
                 minAcc = curacc;
                 minAccInd = i;
             }
         }
-        
+
         return new double[] { minAccInd, minAcc };
     }
-    
+
     private boolean makesItIntoEnsemble(double acc, double maxAcc, double minMaxAcc, int curEnsembleSize) {
         if (acc >= maxAcc * correctThreshold) {
             if (curEnsembleSize >= maxEnsembleSize)
                 return acc > minMaxAcc;
-            else 
+            else
                 return true;
         }
-        
+
         return false;
     }
-    
+
+    public void nextSeries(){
+        if (currentSeries == numSeries-1){
+            currentSeries = 0;
+        }
+        else{
+            currentSeries++;
+        }
+    }
+
+    //Classifier doesntt have its own way to copy apparently so this is used to create multiple versions of the
+    //alternate classifier
+    public Classifier copyClassifier() throws Exception {
+        if (alternateIndividualClassifier != null){
+            return (Classifier)Class.forName(alternateIndividualClassifier.getClass().getName()).newInstance();
+        }
+        return null;
+    }
+
+    //needs testing for non 1nn stuff
     private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
         
         double[][] results = new double[2+data.numClasses()][data.numInstances() + 1];
@@ -497,6 +667,8 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         double correct = 0; 
         for (int i = 0; i < data.numInstances(); ++i) {
             double[] probs=distributionForInstance(i, data.numClasses());
+
+
             double c = 0;
             for(int j=1;j<probs.length;j++)
                 if(probs[j]>probs[(int)c])
@@ -541,8 +713,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         
         return this.ensembleCvPreds;
     }
-    
-    
+
     /**
      * Classify the train instance at index 'test', whilst ignoring the corresponding bags 
      * in each of the members of the ensemble, for use in CV of BOSSEnsemble
@@ -561,25 +732,54 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     public double[] distributionForInstance(int test, int numclasses) throws Exception {
-        double[] classHist = new double[numclasses];
-        
-        //get votes from all windows 
-        double sum = 0;
-        for (BOSSWindow classifier : classifiers) {
-            if (serOption == SerialiseOptions.STORE_LOAD)
-                classifier.load();
-            double classification = classifier.classifyInstance(test);
-            if (serOption == SerialiseOptions.STORE_LOAD)
-                classifier.clearClassifier();
-            classHist[(int)classification]++;
-            sum++;
+        double[][] classHist = new double[numSeries][numclasses];
+
+        //get sum of all channels, votes from each are weighted the same.
+        double sum[] = new double[numSeries];
+
+        Instance[] series;
+
+        //Multivariate
+        if (isMultivariate) {
+            series = splitMultivariateInstanceWithClassVal(train.get(test));
         }
-        
-        if (sum != 0)
-            for (int i = 0; i < classHist.length; ++i)
-                classHist[i] /= sum;
-        
-        return classHist;
+        //Univariate
+        else{
+            series = new Instance[1];
+            series[0] = train.get(test);
+        }
+
+        if (cawpe == null) {
+            for (int n = 0; n < numSeries; n++) {
+                for (BOSSIndividual classifier : classifiers[n]) {
+                    double classification = classifier.classifyInstance(test);
+                    classHist[n][(int) classification]++;
+                    sum[n]++;
+                }
+            }
+        }
+        //Special case for CAWPE
+        else {
+            for (int n = 0; n < numSeries; n++) {
+                double[] dist = cawpe[n].distributionForInstance(series[n]);
+
+                for (int i = 0; i < dist.length; i++) {
+                    classHist[n][i] += dist[i];
+                }
+
+                sum[n]++;
+            }
+        }
+
+        double[] distributions = new double[numclasses];
+
+        for (int n = 0; n < numSeries; n++){
+            if (sum[n] != 0)
+                for (int i = 0; i < classHist[n].length; ++i)
+                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+        }
+
+        return distributions;
     }
     
     @Override
@@ -598,124 +798,164 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        double[] classHist = new double[instance.numClasses()];
-        
-        //get votes from all windows 
-        double sum = 0;
-        for (BOSSWindow classifier : classifiers) {
-            if (serOption == SerialiseOptions.STORE_LOAD)
-                classifier.load();
-            double classification = classifier.classifyInstance(instance);
-            if (serOption == SerialiseOptions.STORE_LOAD)
-                classifier.clearClassifier();
-            classHist[(int)classification]++;
-            sum++;
-        }
-        
-        if (sum != 0)
-            for (int i = 0; i < classHist.length; ++i)
-                classHist[i] /= sum;
-        
-        return classHist;
-    }
+        double[][] classHist = new double[numSeries][instance.numClasses()];
 
-    @Override
-    public Capabilities getCapabilities() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        //get sum of all channels, votes from each are weighted the same.
+        double sum[] = new double[numSeries];
+
+        Instance[] series;
+
+        //Multivariate
+        if (isMultivariate) {
+            series = splitMultivariateInstanceWithClassVal(instance);
+        }
+        //Univariate
+        else {
+            series = new Instance[1];
+            series[0] = instance;
+        }
+
+        if (cawpe == null) {
+            for (int n = 0; n < numSeries; n++) {
+                for (BOSSIndividual classifier : classifiers[n]) {
+                    double classification = classifier.classifyInstance(series[n]);
+                    classHist[n][(int) classification]++;
+                    sum[n]++;
+                }
+            }
+        }
+        //Special case for CAWPE
+        else {
+            for (int n = 0; n < numSeries; n++) {
+                double[] dist = cawpe[n].distributionForInstance(series[n]);
+
+                for (int i = 0; i < dist.length; i++) {
+                    classHist[n][i] += dist[i];
+                }
+
+                sum[n]++;
+            }
+        }
+
+        double[] distributions = new double[instance.numClasses()];
+
+        for (int n = 0; n < numSeries; n++){
+            if (sum[n] != 0)
+                for (int i = 0; i < classHist[n].length; ++i)
+                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+        }
+
+        return distributions;
     }
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
-        
-        Classifier c = new BOSS();
+        String dataset = "Adiac";
+        Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+
+        String dataset2 = "PenDigits";
+        Instances train2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+
+        Classifier c;
+        double accuracy;
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).randomEnsembleSelection = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("Random BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).randomEnsembleSelection = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
         c.buildClassifier(train);
-        double accuracy = ClassifierTools.accuracy(test, c);
-        
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).useCAWPE = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).useCAWPE = true;
+        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).randomEnsembleSelection = true;
+        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("Random Tree BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).randomEnsembleSelection = true;
+        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Random Tree BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("Contract BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println(((BOSS) c).numSeries);
+        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+
+        System.out.println("BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+
+        c = new BOSS();
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
         System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-        
-        //Other examples/tests
-//        detailedFold0Test(dataset);
-//        resampleTest(dataset, 100);
     }
-    
-    public static void detailedFold0Test(String dset) {
-        System.out.println("BOSS DetailedTest\n");
-        try {
-            Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
-            System.out.println(train.relationName());
-            
-            BOSS boss = new BOSS();
-            
-            //TRAINING
-            System.out.println("Training starting");
-            long start = System.nanoTime();
-            boss.buildClassifier(train);
-            double trainTime = (System.nanoTime() - start) / 1000000000.0; //seconds
-            System.out.println("Training done (" + trainTime + "s)");
-            
-            //RESULTS OF TRAINING
-            System.out.println("Ensemble Size: " + boss.classifiers.size());
-            System.out.println("Param sets: ");
-            int[][] params = boss.getParametersValues();
-            for (int i = 0; i < params.length; ++i)
-                System.out.println(i + ": " + params[i][0] + " " + params[i][1] + " " + params[i][2] + " " + 
-                        boss.classifiers.get(i).isNorm() + " " + boss.classifiers.get(i).accuracy);
-            
-            //TESTING
-            System.out.println("\nTesting starting");
-            start = System.nanoTime();
-            double acc = ClassifierTools.accuracy(test, boss);
-            double testTime = (System.nanoTime() - start) / 1000000000.0; //seconds
-            System.out.println("Testing done (" + testTime + "s)");
-            
-            System.out.println("\nACC: " + acc);
-        }
-        catch (Exception e) {
-            System.out.println(e);
-            e.printStackTrace();
-        }
-    }
-        
-    public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
-         
-        System.out.println(dset);
-        
-        Classifier c = new BOSS();
-         
-        //c.setCVPath("C:\\tempproject\\BOSSEnsembleCVtest.csv");
-         
-        double [] accs = new double[resamples];
-         
-        for(int i=0;i<resamples;i++){
-            Instances[] data=InstanceTools.resampleTrainAndTestInstances(train, test, i);
-            
-            c.buildClassifier(data[0]);
-            accs[i]= ClassifierTools.accuracy(data[1], c);
-            
-            if (i==0)
-                System.out.print(accs[i]);
-            else 
-                System.out.print("," + accs[i]);
-        }
-         
-        double mean = 0;
-        for(int i=0;i<resamples;i++)
-            mean += accs[i];
-        mean/=resamples;
-         
-        System.out.println("\n\nBOSSEnsemble mean acc over " + resamples + " resamples: " + mean);
-    }
-    
-
-
-
-
 
     /**
      * BOSS classifier to be used with known parameters, for boss with parameter search, use BOSSEnsemble.
@@ -729,10 +969,10 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
      * 
      * Implementation based on the algorithm described in getTechnicalInformation()
      */
-    public static class BOSSIndividual implements Classifier, Serializable {
+    public static class BOSSIndividual extends AbstractClassifier implements Serializable {
 
         //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
-        protected BitWord [/*instance*/][/*windowindex*/] SFAwords; 
+        protected BitWord [/*instance*/][/*windowindex*/] SFAwords;
 
         //histograms of words of the current wordlength with numerosity reduction applied (if selected)
         public ArrayList<Bag> bags; 
@@ -740,7 +980,9 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         //breakpoints to be found by MCB
         protected double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
-        public static String classifierName = "BOSS"; //for feature serialistion
+        protected Classifier alternateClassifier;
+        ArrayList<BitWord> words;
+        Instances test;
 
         protected double inverseSqrtWindowSize;
         protected int windowSize;
@@ -748,9 +990,12 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         protected int alphabetSize;
         protected boolean norm;
 
-        protected boolean numerosityReduction = true; 
+        protected boolean numerosityReduction = true;
+        protected boolean cleanAfterBuild = false;
 
-        protected static final long serialVersionUID = 1L;
+        protected double accuracy;
+
+        protected static final long serialVersionUID = 22551L;
 
         public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise) {
             this.wordLength = wordLength;
@@ -758,12 +1003,20 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             this.windowSize = windowSize;
             this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
             this.norm = normalise;
+            this.alternateClassifier = null;
+        }
 
-            //generateAlphabet();
+        public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise, Classifier alternateIndividualClassifier) {
+            this.wordLength = wordLength;
+            this.alphabetSize = alphabetSize;
+            this.windowSize = windowSize;
+            this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
+            this.norm = normalise;
+            this.alternateClassifier = alternateIndividualClassifier;
         }
 
         /**
-         * Used when shortening histograms, copies 'meta' data over, but with shorter 
+         * Used when shortening histograms, copies 'meta' data over, but with shorter
          * word length, actual shortening happens separately
          */
         public BOSSIndividual(BOSSIndividual boss, int wordLength) {
@@ -773,36 +1026,19 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             this.inverseSqrtWindowSize = boss.inverseSqrtWindowSize;
             this.alphabetSize = boss.alphabetSize;
             this.norm = boss.norm;
-            this.numerosityReduction = boss.numerosityReduction; 
-            //this.alphabet = boss.alphabet;
+            this.numerosityReduction = boss.numerosityReduction;
 
             this.SFAwords = boss.SFAwords;
             this.breakpoints = boss.breakpoints;
 
-            bags = new ArrayList<>(boss.bags.size());
-        }
+            this.bags = new ArrayList<>(boss.bags.size());
 
-        /**
-         * Make a complete copy of the passed instance
-         * @param boss 
-         */
-        private BOSSIndividual(BOSSIndividual boss) {
-            this.wordLength = boss.wordLength;
-            this.windowSize = boss.windowSize;
-            this.inverseSqrtWindowSize = boss.inverseSqrtWindowSize;
-            this.alphabetSize = boss.alphabetSize;
-            this.norm = boss.norm;
-            this.numerosityReduction = boss.numerosityReduction; 
-            //this.alphabet = boss.alphabet;
-
-            this.SFAwords = boss.SFAwords;
-            this.breakpoints = boss.breakpoints;
-
-            this.bags = boss.bags;
+            this.alternateClassifier = boss.alternateClassifier;
         }
 
         public static class Bag extends HashMap<BitWord, Integer> {
             double classVal;
+            protected static final long serialVersionUID = 22552L;
 
             public Bag() {
                 super();
@@ -831,59 +1067,9 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         public void clean() {
             SFAwords = null;
-        }
-
-        public static boolean serialiseFeatureSet(BOSSIndividual boss, String path, String dsetName, int fold) {
-            path += boss.classifierName+"/"+dsetName+"/"+"fold"+fold+"/";
-            File f = new File(path);
-            if (!f.exists()) 
-                f.mkdirs();
-
-            String filename = boss.classifierName+"_"+dsetName+"_"+fold+"_"+boss.windowSize+"_"+boss.wordLength+"_"+boss.alphabetSize+"_"+boss.norm;
-
-            try {
-                ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(path + filename));
-                out.writeObject(boss);
-                out.close();         
-                return true;
-            }catch(IOException e) {
-                System.out.print("Error serialiszing to " + filename);
-                e.printStackTrace();
-                return false;
+            if (alternateClassifier != null){
+                bags = null;
             }
-        }
-
-        public static BOSSIndividual loadFeatureSet(String path, String dsetName, int fold, String name, 
-                int windowSize, int wordLength, int alphabetSize, boolean norm) throws IOException, ClassNotFoundException {
-            path += name+"/"+dsetName+"/"+"fold"+fold+"/";
-
-            String filename = name+"_"+dsetName+"_"+fold+"_"+windowSize+"_"+wordLength+"_"+alphabetSize+"_"+norm;
-            BOSSIndividual boss = null;
-            try {
-                ObjectInputStream in = new ObjectInputStream(new FileInputStream(path + filename));
-                boss = (BOSSIndividual) in.readObject();
-                in.close();
-                return boss;
-            }catch(IOException i) {
-                //System.out.print("Error deserialiszing from " + filename);
-                throw i;
-            }catch(ClassNotFoundException c) {
-                System.out.println("BOSSWindow class not found");
-                throw c;
-            }
-        }
-
-        protected double[][] slidingWindow(double[] data) {
-            int numWindows = data.length-windowSize+1;
-            double[][] subSequences = new double[numWindows][windowSize];
-
-            for (int windowStart = 0; windowStart < numWindows; ++windowStart) { 
-                //copy the elements windowStart to windowStart+windowSize from data into 
-                //the subsequence matrix at row windowStart
-                System.arraycopy(data,windowStart,subSequences[windowStart],0,windowSize);
-            }
-
-            return subSequences;
         }
 
         protected double[][] performDFT(double[][] windows) {
@@ -1015,6 +1201,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             }
             return transformed;
         }
+
         private void calcIncrementalMeanStddev(int windowLength, double[] series, double[] means, double[] stds) {
             double sum = 0;
             double squareSum = 0;
@@ -1178,7 +1365,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         /**
          * Shortens all bags in this BOSS instance (histograms) to the newWordLength, if wordlengths
          * are same, instance is UNCHANGED
-         * 
+         *
          * @param newWordLength wordLength to shorten it to
          * @return new boss classifier with newWordLength, or passed in classifier if wordlengths are same
          */
@@ -1194,7 +1381,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
             //build hists with new word length from SFA words, and copy over the class values of original insts
             for (int i = 0; i < bags.size(); ++i) {
-                Bag newBag = createBagFromWords(newWordLength, SFAwords[i]);   
+                Bag newBag = createBagFromWords(newWordLength, SFAwords[i]);
                 newBag.setClassVal(bags.get(i).getClassVal());
                 newBoss.bags.add(newBag);
             }
@@ -1230,7 +1417,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             return bag;
         }
 
-        protected BitWord[] createSFAwords(Instance inst) throws Exception {            
+        protected BitWord[] createSFAwords(Instance inst) {
             double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation     
             BitWord[] words = new BitWord[dfts.length];
             for (int window = 0; window < dfts.length; ++window) 
@@ -1246,37 +1433,68 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
             breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
-
             SFAwords = new BitWord[data.numInstances()][];
             bags = new ArrayList<>(data.numInstances());
 
-            for (int inst = 0; inst < data.numInstances(); ++inst) {
-                SFAwords[inst] = createSFAwords(data.get(inst));
+            //1NN BOSS distance
+            if (alternateClassifier == null) {
+                for (int inst = 0; inst < data.numInstances(); ++inst) {
+                    SFAwords[inst] = createSFAwords(data.get(inst));
 
-                Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
-                bag.setClassVal(data.get(inst).classValue());
-                bags.add(bag);
+                    Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
+                    bag.setClassVal(data.get(inst).classValue());
+                    bags.add(bag);
+                }
             }
-            
-        }
+            //Alternate classifier
+            else{
+                words = new ArrayList();
+                ArrayList<Attribute> atts = new ArrayList();
 
-        /**
-         * Computes BOSS distance between two bags d(test, train), is NON-SYMETRIC operation, ie d(a,b) != d(b,a)
-         * @return squared distance FROM instA TO instB
-         */
-        public double BOSSdistance(Bag instA, Bag instB) {
-            double dist = 0.0;
+                for (int inst = 0; inst < data.numInstances(); ++inst) {
+                    SFAwords[inst] = createSFAwords(data.get(inst));
+                    Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
+                    bags.add(bag);
 
-            //find dist only from values in instA
-            for (Entry<BitWord, Integer> entry : instA.entrySet()) {
-                Integer valA = entry.getValue();
-                Integer valB = instB.get(entry.getKey());
-                if (valB == null)
-                    valB = 0;
-                dist += (valA-valB)*(valA-valB);
+                    //Save found words for test instnaces
+                    for (BitWord word : bag.keySet()){
+                        if (!words.contains(word)){
+                            words.add(word);
+                        }
+                    }
+                }
+
+                //Create Instances object out of histogram
+                for (int n = 0; n < words.size(); n++){
+                    atts.add(new Attribute("att" + n));
+                }
+                atts.add(data.classAttribute());
+
+                Instances histograms = new Instances("Histogram", atts, 0);
+
+                for (int inst = 0; inst < data.numInstances(); ++inst) {
+                    Bag bag = bags.get(inst);
+                    double[] values = new double[words.size()+1];
+
+                    for (Entry<BitWord, Integer> entry : bag.entrySet()) {
+                        values[words.indexOf(entry.getKey())] = entry.getValue();
+                    }
+                    values[words.size()] = data.get(inst).classValue();
+
+                    histograms.add(new DenseInstance(1, values));
+                }
+
+                histograms.setClassIndex(histograms.numAttributes()-1);
+
+                alternateClassifier.buildClassifier(histograms);
+
+                test = new Instances(data.relationName()+"test", atts, 1);
+                test.setClassIndex(test.numAttributes()-1);
             }
 
-            return dist;
+            if (cleanAfterBuild) {
+                clean();
+            }
         }
 
         /**
@@ -1309,19 +1527,41 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             Bag testBag = BOSSTransform(instance);
 
             double bestDist = Double.MAX_VALUE;
-            double nn = -1.0;
 
-            //find dist FROM testBag TO all trainBags
-            for (int i = 0; i < bags.size(); ++i) {
-                double dist = BOSSdistance(testBag, bags.get(i), bestDist); 
+            //1NN BOSS distance
+            if (alternateClassifier == null) {
+                double nn = -1.0;
 
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    nn = bags.get(i).getClassVal();
+                //find dist FROM testBag TO all trainBags
+                for (int i = 0; i < bags.size(); ++i) {
+                    double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        nn = bags.get(i).getClassVal();
+                    }
                 }
-            }
 
-            return nn;
+                return nn;
+            }
+            //Alternate classifier
+            else{
+                double[] values = new double[words.size()];
+
+                //Create histogram of words, not including any not found in training
+                for (Entry<BitWord, Integer> entry : testBag.entrySet()) {
+                    int index = words.indexOf(entry.getKey());
+                    if (index >= 0){
+                        values[index] = entry.getValue();
+                    }
+                }
+
+                //Create Instance object from histogram
+                Instance testHist = new DenseInstance(1, values);
+                test.add(testHist);
+
+                return alternateClassifier.classifyInstance(test.remove(0));
+            }
         }
 
         /**
@@ -1329,85 +1569,49 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
          * the classifier every time (since the n histograms would be identical each time anyway), therefore this classifies 
          * the instance at the index passed while ignoring its own corresponding histogram 
          * 
-         * @param test index of instance to classify
+         * @param testIndex index of instance to classify
          * @return classification
          */
-        public double classifyInstance(int test) {
-
+        public double classifyInstance(int testIndex) throws Exception {
             double bestDist = Double.MAX_VALUE;
-            double nn = -1.0;
+            Bag testBag = bags.get(testIndex);
 
-            Bag testBag = bags.get(test);
+            //1NN BOSS distance
+            if (alternateClassifier == null) {
+                double nn = -1.0;
 
-            for (int i = 0; i < bags.size(); ++i) {
-                if (i == test) //skip 'this' one, leave-one-out
-                    continue;
+                for (int i = 0; i < bags.size(); ++i) {
+                    if (i == testIndex) //skip 'this' one, leave-one-out
+                        continue;
 
-                double dist = BOSSdistance(testBag, bags.get(i), bestDist); 
+                    double dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    nn = bags.get(i).getClassVal();
-                }
-            }
-
-            return nn;
-        }
-
-        @Override
-        public double[] distributionForInstance(Instance instance) throws Exception {
-            //TODO implement
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
-        public Capabilities getCapabilities() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        public static void detailedFold0Test(String dset) {
-            System.out.println("BOSSIndividual DetailedTest\n");
-            try {
-                Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-                Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
-                System.out.println(train.relationName());
-
-                int windowSize = 10; 
-                int alphabetSize = 4;
-                int wordLength = 43;
-                boolean norm = true;
-
-                BOSSIndividual boss = new BOSSIndividual(windowSize, alphabetSize, wordLength, norm);
-                System.out.println(boss.getWordLength() + " " + boss.getAlphabetSize() + " " + boss.getWindowSize() + " " + boss.isNorm());
-
-                System.out.println("Training starting");
-                long start = System.nanoTime();
-                boss.buildClassifier(train);
-                double trainTime = (System.nanoTime() - start) / 1000000000.0; //seconds
-                System.out.println("Training done (" + trainTime + "s)");
-
-                System.out.println("Breakpoints: ");
-                for (int i = 0; i < boss.breakpoints.length; i++) {
-                    System.out.print("Letter "  + i + ": ");
-                    for (int j = 0; j < boss.breakpoints[i].length; j++) {
-                        System.out.print(boss.breakpoints[i][j] + " ");
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        nn = bags.get(i).getClassVal();
                     }
-                    System.out.println("");
                 }
 
-                System.out.println("\nTesting starting");
-                start = System.nanoTime();
-                double acc = ClassifierTools.accuracy(test, boss);
-                double testTime = (System.nanoTime() - start) / 1000000000.0; //seconds
-                System.out.println("Testing done (" + testTime + "s)");
-
-                System.out.println("\nACC: " + acc);
+                return nn;
             }
-            catch (Exception e) {
-                System.out.println(e);
-                e.printStackTrace();
+            //Alternate classifier
+            else{
+                double[] values = new double[words.size()];
+
+                //Create histogram of words, not including any not found in training
+                for (Entry<BitWord, Integer> entry : testBag.entrySet()) {
+                    int index = words.indexOf(entry.getKey());
+                    if (index >= 0){
+                        values[index] = entry.getValue();
+                    }
+                }
+
+                //Create Instance object from histogram
+                Instance testHist = new DenseInstance(1, values);
+                test.add(testHist);
+
+                return alternateClassifier.classifyInstance(test.remove(0));
             }
         }
     }
-
 }

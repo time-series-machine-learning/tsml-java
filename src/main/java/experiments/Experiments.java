@@ -182,6 +182,7 @@ public class Experiments  {
 
             classifierName = args[3];
             datasetName = args[4];
+            ClassifierLists.nastyGlobalDatasetName = args[4];
             foldId = Integer.parseInt(args[5]) - 1;
 
             //OPTIONAL ARGUMENTS
@@ -267,7 +268,7 @@ public class Experiments  {
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
-//Location of data set                        
+//Location of data set
                 settings[0]="Z:/Data/TSCProblems2018/";//Where to get data                
                 settings[1]="E:/Results/";//Where to write results                
                 settings[2]="false"; //Whether to generate train files or not               
