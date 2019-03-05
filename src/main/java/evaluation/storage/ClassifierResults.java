@@ -55,7 +55,7 @@ import utilities.generic_storage.Pair;
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
- *    - getAccuracy() (calculated from predictions, not settable)
+ *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
  *    - get/setBuildTime(long)
  *    - get/setTestTime(long)
  *    - get/setMemory(long)
@@ -82,6 +82,45 @@ import utilities.generic_storage.Pair;
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
  * via the appropriate get methods.
+ * 
+ * 
+ * EXAMPLE USAGE: 
+ *          ClassifierResults res = new ClassifierResults();
+ *          //set a particular timeunit, if using something other than millis, nanos recommended
+ *          //set any meta info you want to keep, e.g classifiername, datasetname...
+ * 
+ *          for (Instance inst : test) {
+ *              long startTime = //time
+ *              double[] dist = classifier.distributionForInstance(inst);
+ *              long predTime = //time - startTime
+ *  
+ *              double pred = max(dist); //with some particular tie breaking scheme built in. 
+ *                              //easiest is utilities.GenericTools.indexOfMax(double[])
+ * 
+ *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //desription is optional
+ *          }
+ * 
+ *          res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
+ * 
+ *          //can now find summary scores for these predictions
+ *          //stats stored in simple public members for now
+ *          res.findAllStats(); 
+ * 
+ *          //and/or save to file
+ *          res.writeFullResultsToFile(path);
+ * 
+ *          //and could then load them back in
+ *          ClassifierResults res2 = new ClassifierResults(path);
+ * 
+ *          //the are automatically finalised, however the stats are not automatically found          
+ *          res2.findAllStats();
+ * 
+ * TODOS: 
+ *      - Move metric/scores/stats into their own packge, and rename consistently to scores OR metrics. 
+ *      - Rename finaliseResults to finalisePredictions, and add in the extra validation
+ *      - Consult with group and implement writeCompactResultsTo...(...) as wanted 
+ *      - Maybe break down the object into different parts to reduce the get/set bloat. This 
+ *           is a very large and needlessly complex object. Predictions object, ExpInfo (line1) object, etcetc
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
@@ -580,7 +619,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * until the accuracy is no longer directly set
      * 
      * If you REALLY dont want this message being printed, since e.g. it's messing up your own print formatting,
-     * set ClassifierResults.printSetAccWarning to false.
+     * set ClassifierResults.printSetAccWarning to false. This also acts a way of ensuring that you've read this 
+     * message...
      * 
      * Todo: remove this method, i.e. the possibility to directly set the accuracy instead of 
      * have it calculated implicitly, when possible.
@@ -805,8 +845,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             return;
         }
         
-        assert(numInstances() == testClassVals.length);
-        
         if (testClassVals.length != predClassValues.size())
             throw new Exception("finaliseTestResults(double[] testClassVals): Number of predictions "
                     + "made and number of true class values passed do not match");
@@ -832,6 +870,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             printlnDebug("finaliseResults(): Results already finalised, skipping re-finalisation");
             return;
         }
+        
+       if (numInstances <= 0)
+           inferNumInstances();
+       if (numClasses <= 0)
+           inferNumClasses();
         
         //todo extra verification 
         
@@ -1098,7 +1141,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return generateFirstLine();
     }
     
-    public String writeFullResultsFileToString() throws Exception {         
+    public String writeFullResultsToString() throws Exception {         
         finaliseResults();
         fileType = FileType.PREDICTIONS;
         
@@ -1115,7 +1158,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeFullResultsFileToString());
+            out.writeString(writeFullResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1126,7 +1169,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
     
-    public String writeCompactResultsFileToString() throws Exception {         
+    public String writeCompactResultsToString() throws Exception {         
         finaliseResults();
         fileType = FileType.COMPACT;
         
@@ -1141,7 +1184,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeFullResultsFileToString());
+            out.writeString(writeFullResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1160,7 +1203,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * written using this method would not be used to train a post-processed ensemble at a 
      * later date, forexample, but could still be used as part of a comparative evaluation
      */
-    public String writeSummaryResultsFileToString() throws Exception {         
+    public String writeSummaryResultsToString() throws Exception {         
         finaliseResults();
         findAllStatsOnce();
         fileType = FileType.METRICS;
@@ -1186,7 +1229,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeSummaryResultsFileToString());
+            out.writeString(writeSummaryResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1377,12 +1420,19 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     
     /**
-     * Find: Accuracy, Balanced Accuracy, F1 (1 vs All averaged?), 
-     * Sensitivity, Specificity, AUROC, negative log likelihood, MCC
+     * Will calculate all the metrics that can be found from the prediction information
+     * stored in this object. Will NOT call finaliseResults(..), and finaliseResults(..) 
+     * not have been called elsewhere, however if it has not been called then true 
+     * class values must have been supplied while storing predictions. 
+     * 
+     * This is to allow iterative calculation of the metrics (in e.g. batches 
+     * of added predictions)
      */   
     public void findAllStats(){
        if (numInstances <= 0)
            inferNumInstances();
+       if (numClasses <= 0)
+           inferNumClasses();
         
        confusionMatrix=buildConfusionMatrix();
        
@@ -1405,6 +1455,15 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        allStatsFound = true;
     }
    
+    
+    /**
+     * Will calculate all the metrics that can be found from the prediction information
+     * stored in this object, UNLESS this object has been finalised (finaliseResults(..)) AND 
+     * has already had it's stats found (findAllStats()), e.g. if it has already been called 
+     * by another process. 
+     * 
+     * In this latter case, this method does nothing.
+     */
     public void findAllStatsOnce(){
         if (finalised && allStatsFound) {
             System.out.println("Stats already found, ignoring findAllStatsOnce()");
@@ -1789,12 +1848,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         res.finaliseResults();
         
-        System.out.println(res.writeFullResultsFileToString());
+        System.out.println(res.writeFullResultsToString());
         System.out.println("\n\n");
         
         res.writeFullResultsToFile("test.csv");
         
         ClassifierResults res2 = new ClassifierResults("test.csv");
-        System.out.println(res2.writeFullResultsFileToString());
+        System.out.println(res2.writeFullResultsToString());
     }
 }
