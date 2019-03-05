@@ -563,15 +563,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         //delete any serialised files and holding folder for checkpointing on completion
         if (checkpoint && cleanupCheckpointFiles){
-            f = new File(serPath);
-            String[] files = f.list();
-
-            for (String file: files){
-                File f2 = new File(f.getPath() + "\\" + file);
-                f2.delete();
-            }
-
-            f.delete();
+            checkpointCleanup();
         }
     }
     
@@ -591,6 +583,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                     FileOutputStream fos = new FileOutputStream(serPath + "BOSSIndividual" + seriesNo + "-" + (classifiers[seriesNo].size() - 1) + ".ser");
                     try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                         out.writeObject(indiv);
+                        out.close();
                         fos.close();
                     }
                 }
@@ -611,6 +604,19 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSSSer/  FAILED");
             }
         }
+    }
+
+    public void checkpointCleanup(){
+        File f = new File(serPath);
+        String[] files = f.list();
+
+        for (String file: files){
+            File f2 = new File(f.getPath() + "\\" + file);
+            boolean b = f2.delete();
+            System.out.println(file + " " + b);
+        }
+
+        f.delete();
     }
 
     //[0] = index, [1] = acc
@@ -850,7 +856,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "Adiac";
+        String dataset = "ArrowHead";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
@@ -861,94 +867,94 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         Classifier c;
         double accuracy;
 
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).randomEnsembleSelection = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("Random BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).randomEnsembleSelection = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).useCAWPE = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).useCAWPE = true;
-        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).randomEnsembleSelection = true;
-        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("Random Tree BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).randomEnsembleSelection = true;
-        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Random Tree BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("Contract BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-
-        c = new BOSS();
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println(((BOSS) c).numSeries);
-        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-
-        System.out.println("BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).randomEnsembleSelection = true;
+//        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//
+//        System.out.println("Random BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).randomEnsembleSelection = true;
+//        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).useCAWPE = true;
+//        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//
+//        System.out.println("CAWPE BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).useCAWPE = true;
+//        ((BOSS) c).setSavePath("C:\\UEAMachineLearning");
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).randomEnsembleSelection = true;
+//        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//
+//        System.out.println("Random Tree BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).randomEnsembleSelection = true;
+//        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Random Tree BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//
+//        System.out.println("Contract BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//
+//        c = new BOSS();
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//
+//        System.out.println("BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
 
         c = new BOSS();
         c.buildClassifier(train);

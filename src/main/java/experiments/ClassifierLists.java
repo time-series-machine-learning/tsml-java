@@ -26,6 +26,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.RandomBaggingBOSS;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -263,6 +264,12 @@ public class ClassifierLists {
                 ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
                 ((BOSS) c).setSeed(fold);
                 break;
+            case "RandomBOSSContracted10Mins":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 10);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
             case "RandomBOSSContracted1Hour":
                 c = new BOSS();
                 ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
@@ -286,6 +293,53 @@ public class ClassifierLists {
                 ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
                 ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
                 ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBoostedBOSS":
+                c = new RandomBoostedBOSS();
+                ((RandomBoostedBOSS) c).setSeed(fold);
+                break;
+            case "RandomBaggingBOSS":
+                c = new RandomBaggingBOSS();
+                ((RandomBaggingBOSS) c).setSeed(fold);
+                break;
+            case "RandomTreeBOSS":
+                c = new BOSS();
+                ((BOSS) c).setAlternateIndividualClassifier(new J48());
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomSVMBOSS":
+                c = new BOSS();
+                ((BOSS) c).setAlternateIndividualClassifier(new SMO());
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSWhales50":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(50);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSWhales100":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(50);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSWhalesContracted10Mins":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 10);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSWhalesContracted1Hour":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
+                ((BOSS) c).setSeed(fold);
+                break;
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);

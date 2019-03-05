@@ -48,8 +48,8 @@ public interface CheckpointClassifier extends Serializable{
         new FileOutputStream(filename);
         try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            fos.close();
             out.close();
+            fos.close();
         }
     }
     public default void loadFromFile(String filename) throws Exception{
