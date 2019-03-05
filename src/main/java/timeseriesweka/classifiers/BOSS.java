@@ -62,6 +62,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private int ensembleSizePerChannel = -1;
     private Random rand;
     private boolean randomEnsembleSelection = false;
+    private boolean randomEnsembleSelectionUnique = false;
     private boolean useCAWPE = false;
     private Classifier alternateIndividualClassifier;
 
@@ -191,6 +192,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         ensembleSizePerChannel = saved.ensembleSizePerChannel;
         rand = saved.rand;
         randomEnsembleSelection = saved.randomEnsembleSelection;
+        randomEnsembleSelectionUnique = saved.randomEnsembleSelectionUnique;
         useCAWPE = saved.useCAWPE;
         alternateIndividualClassifier = saved.alternateIndividualClassifier;
         cawpe = saved.cawpe;
@@ -265,6 +267,10 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public void setRandomEnsembleSelection(boolean b){
         randomEnsembleSelection = b;
+    }
+
+    public void setRandomEnsembleSelectionUnique(boolean b){
+        randomEnsembleSelectionUnique = b;
     }
 
     public void useCAWPE(boolean b) {
@@ -456,6 +462,42 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 boolean normalise = rand.nextBoolean();
 
                 BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
+                boss.cleanAfterBuild = true;
+                boss.buildClassifier(series[currentSeries]);
+                classifiers[currentSeries].add(boss);
+                numClassifiers[currentSeries]++;
+
+                int prev = currentSeries;
+                if (isMultivariate){
+                    nextSeries();
+                }
+
+                if (checkpoint) {
+                    checkpoint(prev, relationName);
+                }
+            }
+        }
+        else if (randomEnsembleSelectionUnique){
+            ArrayList<int[]>[] possibleParameters = new ArrayList[numSeries];
+
+            for (int n = 0; n < numSeries; n++) {
+                possibleParameters[n] = new ArrayList<>();
+
+                for (int normalise = 0; normalise < 2; normalise++) {
+                    for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
+                        for (Integer wordLen : wordLengths) {
+                            int[] parameters = {wordLen, winSize, normalise};
+                            possibleParameters[n].add(parameters);
+                        }
+                    }
+                }
+            }
+
+            while (sum(numClassifiers) < ensembleSize && possibleParameters[numSeries-1].size() > 0) {
+                //randomly select parameters except for alphabetSize
+                int[] parameters = possibleParameters[currentSeries].remove(rand.nextInt(possibleParameters[currentSeries].size()));
+
+                BOSSIndividual boss = new BOSSIndividual(parameters[0], alphabetSize, parameters[1], parameters[2] == 0, copyClassifier());
                 boss.cleanAfterBuild = true;
                 boss.buildClassifier(series[currentSeries]);
                 classifiers[currentSeries].add(boss);
