@@ -46,14 +46,33 @@ import weka.core.EuclideanDistance;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ClassifierLists {
+    //leaving in for now, in case particular classifiers require it.
+    //eventually should be removed in favour of using the info in the experimental settings passed 
+    //in the newer setClassifier
     public static String horribleGlobalPath="";
-    public static String nastyGlobalDatasetName=""; //leaving in for now
+    public static String nastyGlobalDatasetName="";  
 
-    public String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
-    public String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
+    public static String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
+    public static String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
     
     /**
-     * This is the method exactly as it was in experiments. 
+     * This method is currently a placeholder that simply call setClassifierClassic(classifierName, fold),
+     * exactly where to take this newer method is still up for debate
+     * 
+     * This shall be the start of the newer setClassifier, which take the experimental 
+     * arguments themselves and therefore the classifiers can take from them whatever they 
+     * need, e.g the dataset name, the fold id, separate checkpoint paths, etc. 
+     * 
+     * To take this idea further, to be honest each of the TSC-specific classifiers
+     * could/should have a constructor and/or factory that builds the classifier
+     * from the experimental args. 
+     */
+    public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
+        return setClassifierClassic(exp.classifierName, exp.foldId);
+    }
+    
+    /**
+     * This is the method exactly as it was in old experiments.java. 
      * 
      * @param classifier
      * @param fold

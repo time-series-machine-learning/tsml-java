@@ -83,7 +83,7 @@ public class Experiments  {
         
     //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
-                + "[dataPath]/[datasetName]/[datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
+                + "[dataPath]/[datasetName]/[datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
         
         @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The directory to write the results of the evaluation to, in the form "
@@ -127,14 +127,14 @@ public class Experiments  {
 
         @Parameter(names={"-tb","--timingBenchmark"}, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
                 + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
-                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all you experiments by a great deal, and for short evaluation time the proportional affect of "
+                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
                 + "any processing noise may make any benchmark normalisation process unreliable anyway.")
         public boolean performTimingBenchmark = false;
         
         //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge 
         //of here, the ifs will call the wrong things. decide on the design of this 
-        @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 liens of meta information "
-                + "as well as the full prediction information, and requires the most disk space. 1 writes the first 3 lines and a list of the performance metrics calculated from the prediction info. 2 writes the first 3 lines only, and"
+        @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 lines of meta information "
+                + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
                 + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
         public int classifierResultsFileFormat = 0;
         
@@ -206,6 +206,13 @@ public class Experiments  {
                         exp.generateErrorEstimateOnTrainSet = this.generateErrorEstimateOnTrainSet;
                         exp.checkpointing = this.checkpointing;
                         exp.singleParameterID = this.singleParameterID;
+                        exp.contractTimeNanos = this.contractTimeNanos;
+                        exp.contractTimeMinutes = this.contractTimeMinutes;
+                        exp.contractTimeHours = this.contractTimeHours;
+                        exp.performTimingBenchmark = this.performTimingBenchmark;
+                        exp.checkpointPath = this.checkpointPath;
+                        exp.debug = this.debug;
+                        exp.classifierResultsFileFormat = this.classifierResultsFileFormat;
                         
                         exps.add(exp);
                     }
@@ -225,9 +232,10 @@ public class Experiments  {
             } catch (Exception e) {
                 if (!help) {
                     //we actually errored, instead of the program simply being called with the --help flag
-                    System.err.println("Parsing of arguments failed, parameter information follows. Parameters that require values should have the flag and value separated by '='.");
+                    System.err.println("Parsing of arguments failed, parameter information follows after the error. Parameters that require values should have the flag and value separated by '='.");
                     System.err.println("For example: java -jar TimeSeriesClassification.jar -dp=data/path/ -rp=results/path/ -cn=someClassifier -dn=someDataset -f=0");
                     System.err.println("Parameters prefixed by a * are REQUIRED. These are the first five parameters, which are needed to run a basic experiment.");
+                    System.err.println("Error: \n\t"+e+"\n\n");
                 }
                 jc.usage();
 //                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
@@ -263,12 +271,17 @@ public class Experiments  {
             sb.append("EXPERIMENT SETTINGS "+ this.toShortString());
             sb.append("\ndataReadLocation: ").append(dataReadLocation);
             sb.append("\nresultsWriteLocation: ").append(resultsWriteLocation);
-            sb.append("\ngenerateErrorEstimateOnTrainSet: ").append(generateErrorEstimateOnTrainSet);
             sb.append("\nclassifierName: ").append(classifierName);
             sb.append("\ndatasetName: ").append(datasetName);
             sb.append("\nfoldId: ").append(foldId);
+            sb.append("\ngenerateErrorEstimateOnTrainSet: ").append(generateErrorEstimateOnTrainSet);
             sb.append("\ncheckpoint: ").append(checkpointing);
             sb.append("\nsingleParameterID: ").append(singleParameterID);
+            sb.append("\ncheckpointPath: ").append(checkpointPath);
+            sb.append("\ncontractTimeMinutes: ").append(contractTimeMinutes);
+            sb.append("\nclassifierResultsFileFormat: ").append(classifierResultsFileFormat);
+            sb.append("\nperformTimingBenchmark: ").append(performTimingBenchmark);
+            sb.append("\ndebug: ").append(debug);
             
             return sb.toString();
         }        
@@ -376,11 +389,12 @@ public class Experiments  {
         
         //Check whether fold already exists, if so, dont do it, just quit
         if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
+            LOGGER.log(Level.SEVERE, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
         else {           
-            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
+//            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
+            Classifier classifier = ClassifierLists.setClassifier(expSettings);
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
             
             //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.

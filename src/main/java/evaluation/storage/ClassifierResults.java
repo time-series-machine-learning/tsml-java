@@ -816,6 +816,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The description argument may be null, however all other arguments are required in full
      */
     public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws Exception {
+        
+        //todo replace asserts with actual exceptions
         assert(predictions.length == distributions.length);
         assert(predictions.length == predTimes.length);
         
