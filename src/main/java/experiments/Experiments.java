@@ -65,6 +65,23 @@ import weka.core.Instances;
  * The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
  * (see the class of the same name under utilities). 
  * 
+ * main(String[] args) info: 
+ *      Parses args into an ExperimentalArguments object, then calls setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings).
+ *      Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
+ * 
+ *      Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are: 
+ *          Para name (short/long)  |    Example                           
+ *          -dp --dataPath          |    --dataPath=C:/Datasets/             
+ *          -rp --resultsPath       |    --resultsPath=C:/Results/
+ *          -cn --classifierName    |    --classifierName=RandF
+ *          -dn --datasetName       |    --datasetName=ItalyPowerDemand
+ *          -f  --fold              |    --fold=1 
+ * 
+ *      Use --help to see all the optional parameters, and more information about each of them.
+ * 
+ *      If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunSingleClassifierAndFoldTrainTestSplit(...)
+ *      directly, instead of building the String[] args and calling main like a lot of legacy code does.   
+ * 
  * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
  */
 public class Experiments  {
@@ -118,7 +135,8 @@ public class Experiments  {
         
         //todo generalise to include e.g parameter splitting files 'supportingFilePath' ? or separate them out explicitely, e.g { Predictions/ Checkpoints/ Parameters/ ... } 
         @Parameter(names={"-cpp","--checkpointPath"}, description = "(String) Specifies the directory to write any checkpointing-related files to. By default, chackpointing files are written to the --resultsPath. "
-                + "If --checkpointing is set to false (as default), this option does nothing.")
+                + "If --checkpointing is set to false (as default), this option does nothing."
+                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public String checkpointPath = null;
         
         @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(Integer) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
@@ -139,15 +157,18 @@ public class Experiments  {
         public int classifierResultsFileFormat = 0;
         
         @Parameter(names={"-ctn","--contractTimeNanos"}, description = "(long) Defines a time limit, in nanoseconds, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
-                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference."
+                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTimeNanos = 0;
         
         @Parameter(names={"-ctm","--contractTimeMinutes"}, description = "(long) Defines a time limit, in minutes, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
-                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference."
+                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTimeMinutes = 0;
         
         @Parameter(names={"-cth","--contractTimeHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
-                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference.")
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If multiple are supplied, nanos > minutes > hours takes preference."
+                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTimeHours = 0;
                 
         
@@ -288,29 +309,21 @@ public class Experiments  {
     }
     
     /** 
-     * Parses args into an ExperimentalArguments object, then calls setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings)
+     * Parses args into an ExperimentalArguments object, then calls setupAndRunSingleClassifierAndFoldTrainTestSplit(ExperimentalArguments expSettings).
+     * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
      * 
-     * If on cluster (or generally from the command line), the arguments are: 
+     * Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are: 
+     *     Para name (short/long)  |    Example                           
+     *     -dp --dataPath          |    --dataPath=C:/Datasets/             
+     *     -rp --resultsPath       |    --resultsPath=C:/Results/
+     *     -cn --classifierName    |    --classifierName=RandF
+     *     -dn --datasetName       |    --datasetName=ItalyPowerDemand
+     *     -f  --fold              |    --fold=1 
      * 
-     * REQUIRED ARGUMENTS:
-     * args[0]: (String)  Directory containing datasets
-     *              such that args[0] + "/" + args[4] + "/" + args[4] is an arff file (see sampleDataset(...) for precise arff formats readable).
-     * args[1]: (String)  Directory to write results to
-     *              such that train and/or testFoldX.csv are written to args[1] + "/" + args[3] + "/Predictions/" + args[4] + "/"
-     * args[2]: (boolean) Defines whether to CV on the train set to generate trainFoldX.csv files (true/false)
-     * args[3]: (String)  Name of the classifier, defined in ClassifierLists
-     * args[4]: (String)  Name of the dataset 
-     *              such that args[0] + "/" + args[4] + "/" + args[4] is an arff file (see sampleDataset(...) for precise arff formats readable).
-     * args[5]: (int)     Fold number used for resampling and rng seeds
-     *              INDEXED FROM ONE, to conform to cluster job indexing. i.e foldId = Integer.parseInt(args[5]) - 1;
+     * Use --help to see all the optional parameters, and more information about each of them.
      * 
-     * OPTIONAL ARGUMENTS:
-     * args[6]: (boolean) Defines whether to checkpoint a parameter search for relevant classifiers  (true/false)
-     * args[7]: (Integer) If present and not null, defines a specific unique parameter id for a parameter search to evaluate (null indicates ignore this) 
-     * 
-     * If running locally, easier to build the ExperimentalArguments object yourself and call the above method, 
-     * instead of building the String[] args and calling main like a lot of legacy code does.
-     * 
+     * If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunSingleClassifierAndFoldTrainTestSplit(...)
+     * directly, instead of building the String[] args and calling main like a lot of legacy code does.
      */
     public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
@@ -785,7 +798,24 @@ public class Experiments  {
         if (classifier instanceof SaveParameterInfo)
             results.setParas(((SaveParameterInfo) classifier).getParameters());
 
-        results.writeFullResultsToFile(fullTestWritingPath);
+        //todo, need to make design decisions with the classifierresults enum to clean this switch up
+        switch (exp.classifierResultsFileFormat) {
+            case 0: //PREDICTIONS
+                results.writeFullResultsToFile(fullTestWritingPath);
+                break;
+            case 1: //METRICS
+                results.writeSummaryResultsToFile(fullTestWritingPath);
+                break;
+            case 2: //COMPACT
+                results.writeCompactResultsToFile(fullTestWritingPath);
+                break;
+            default: {
+                System.err.println("Classifier Results file writing format not recognised, "+exp.classifierResultsFileFormat+", just writing the full predictions.");
+                results.writeFullResultsToFile(fullTestWritingPath);
+                break;
+            }
+                
+        }
         
         File f = new File(fullTestWritingPath);
         if (f.exists()) {
