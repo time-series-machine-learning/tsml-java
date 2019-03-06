@@ -1552,7 +1552,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
-                        Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                     }
                 }
             }

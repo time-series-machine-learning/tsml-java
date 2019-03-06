@@ -273,7 +273,7 @@ public class TunedClassifier extends AbstractClassifier
 //        
 //        exp.singleParameterID = 1;
         
-        experiments.Experiments.setupAndRunSingleClassifierAndFoldTrainTestSplit(exp);
+        experiments.Experiments.setupAndRunExperiment(exp);
     }
 
     

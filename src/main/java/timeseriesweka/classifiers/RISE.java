@@ -18,7 +18,6 @@ import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.FFT;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
