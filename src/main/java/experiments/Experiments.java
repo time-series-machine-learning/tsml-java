@@ -122,14 +122,14 @@ public class Experiments  {
         private boolean help = false;
         
         //todo separate verbosity into it own thing
-        @Parameter(names={"-d","--debug"}, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
+        @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
         public boolean debug = false;
         
-        @Parameter(names={"-gtf","--genTrainFiles"}, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
+        @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
                 + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
         
-        @Parameter(names={"-cp","--checkpointing"}, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
+        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
                 + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
         public boolean checkpointing = false;
         
@@ -143,7 +143,7 @@ public class Experiments  {
                 + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
         public Integer singleParameterID = null;
 
-        @Parameter(names={"-tb","--timingBenchmark"}, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
+        @Parameter(names={"-tb","--timingBenchmark"}, arity=1, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
                 + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
                 + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
                 + "any processing noise may make any benchmark normalisation process unreliable anyway.")
@@ -327,8 +327,9 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
+        System.out.println("Raw args:");
         for (String str : args)
-            System.out.println(str);
+            System.out.println("\t"+str);
         System.out.println("");
         
         if (args.length > 0) {
