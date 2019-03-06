@@ -119,7 +119,8 @@ public class Experiments  {
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
         public String datasetName = null;
         
-        @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed.")
+        @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
+                + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
         public int foldId = 0;
         
     //OPTIONAL PARAMETERS
@@ -181,7 +182,7 @@ public class Experiments  {
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractPredTimeSeconds= 0;
         
-        @Parameter(names={"-sm","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
+        @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
         
@@ -279,6 +280,7 @@ public class Experiments  {
 //                System.exit(1);
             }
             
+            foldId -= 1; //go from one-indexed to zero-indexed
             Experiments.debug = this.debug;
             
             //populating the contract times if present
@@ -292,6 +294,8 @@ public class Experiments  {
                 contractPredTimeSeconds = contractPredTimeMillis / 1000; 
             else if (contractPredTimeSeconds > 0)
                 contractPredTimeMillis = contractPredTimeSeconds * 1000;
+            
+            //supporting file path generated in setupAndRunExperiment(...), if not explicitly passed
         }
         
         public String toShortString() { 
