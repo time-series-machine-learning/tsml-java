@@ -87,8 +87,8 @@ public class ACF extends SimpleBatchFilter {
         if(inputFormat.classIndex()>=0)
             seriesLength--;
 //Cannot include the final endTerms correlations, since they are based on too little data and hence unreliable.
-        if(maxLag>inputFormat.numAttributes()-endTerms)
-            maxLag=inputFormat.numAttributes()-endTerms;
+        if(maxLag>seriesLength-endTerms)
+            maxLag=seriesLength-endTerms;
         if(maxLag<0)
             maxLag=inputFormat.numAttributes()-1;
         //Set up instances size and format. 
@@ -515,17 +515,24 @@ public class ACF extends SimpleBatchFilter {
         }
     }
 
-    public static void main(String[] args){
-        testTransform();
-        testTrunctate();
-        Instances train =ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ElectricDevices\\ElectricDevices_TRAIN");
-        Instances test =ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ElectricDevices\\ElectricDevices_TEST");
+    public static void main(String[] args) {
+        String problemPath = "E:/TSCProblems/";
+        String resultsPath="E:/Temp/";
+        String datasetName="ItalyPowerDemand";
+        Instances train =ClassifierTools.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         ACF acf= new ACF();
-        Instances f;
         try {
-            f = acf.process(train);
-//                System.out.println(f.toString());
-            f=InstanceTools.subSample(f, f.numInstances()/100, 0);
+            Instances trans=acf.process(train);
+            OutFile out = new OutFile(resultsPath+datasetName+"ACF_JAVA.csv");
+            out.writeLine(datasetName);
+            for(Instance ins: trans){
+                double[] d=ins.toDoubleArray();
+                for(int j=0;j<d.length;j++){
+                    if(j!=trans.classIndex())
+                        out.writeString(d[j]+",");
+                }
+                out.writeString("\n");
+            }
         } catch (Exception ex) {
             Logger.getLogger(ACF.class.getName()).log(Level.SEVERE, null, ex);
         }
