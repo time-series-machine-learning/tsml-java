@@ -405,7 +405,7 @@ public class Experiments  {
             LOGGER.setLevel(Level.FINEST);
         else 
             LOGGER.setLevel(Level.INFO);
-        LOGGER.log(Level.INFO, expSettings.toString());
+        LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
         //paths. would rather just use the expSettings to do it all though 

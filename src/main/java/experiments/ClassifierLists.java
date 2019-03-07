@@ -38,6 +38,7 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
@@ -102,7 +103,21 @@ public class ClassifierLists {
                 c=new NN_DTW_A();
                 break;
 //TIME DOMAIN CLASSIFIERS   
-            
+            case "RandF": 
+                RandomForest r=new RandomForest();
+                r.setNumTrees(500);
+                r.setSeed(fold);
+                c = r;
+                break;
+            case "RotF":
+                RotationForest rf=new RotationForest();
+                rf.setNumIterations(50);
+                rf.setSeed(fold);
+                c = rf;
+                break;
+            case "bayesNet": 
+                c = new BayesNet();
+                break;
             case "ED":
                 c=new ED1NN();
                 break;
