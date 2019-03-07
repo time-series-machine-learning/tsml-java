@@ -1,12 +1,16 @@
 /*
-Tony's attempt to see the effect of parameter setting on SVM.
-
-Two parameters: 
-kernel para: for polynomial this is the weighting given to lower order terms
-    k(x,x')=(<x'.x>+b)^d
-regularisation parameter, used in the SMO 
-
-m_C
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package vector_classifiers;
 
@@ -21,7 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
@@ -29,8 +33,19 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.*;
+
+/*
+Tony's attempt to see the effect of parameter setting on SVM.
+
+Two parameters: 
+kernel para: for polynomial this is the weighting given to lower order terms
+    k(x,x')=(<x'.x>+b)^d
+regularisation parameter, used in the SMO 
+
+m_C
+ */
 
 /**
  *
@@ -304,7 +319,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -451,7 +466,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -607,7 +622,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         this.setSeed(rng.nextInt());
         
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(folds);
@@ -989,7 +1004,7 @@ this gives the option of finding one using 10xCV
             model.setC(this.getC());
             model.setBuildLogisticModels(true);
             model.setRandomSeed(seed);
-            CrossValidator cv = new CrossValidator();
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
             cv.setSeed(seed); //trying to mimick old seeding behaviour below
             cv.setNumFolds(folds);
             cv.buildFolds(train);

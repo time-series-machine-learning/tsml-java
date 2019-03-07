@@ -18,7 +18,7 @@ import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Random;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
@@ -27,7 +27,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import utilities.TrainAccuracyEstimate;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.util.function.Function;
 import weka.classifiers.Classifier;
@@ -386,7 +386,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
             int numFolds=setNumberOfFolds(data);
-            CrossValidator cv = new CrossValidator();
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (setSeed)
               cv.setSeed(seed);
             cv.setNumFolds(numFolds);

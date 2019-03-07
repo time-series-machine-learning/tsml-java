@@ -1,27 +1,16 @@
 /*
-This classifier is enhanced so that classifier builds a random forest with the 
-facility to build by forward selection addition of trees to minimize OOB error, 
-by far the fastest way.    
-
-As far as tuning are concerned, RandomForest has three parameters
-
-m_MaxDepth: defaults to 0 (no limit on depth)
-m_numFeatures: defaults to log(m)+1 (not sqrt(m) as most implementations do
-m_numTrees: defaults to 10 
-
-
-Further enhanced to allow for selection through OOB error estimates and predictions
-
-Further changes: 
-1. set number of trees (m_numTrees) via grid search on a range (using OOB) that
-defaults to 
-{10 [Weka Default],100,200,.., 500 [R default],...,1000} (11 values)
-2. set number of features  (max value m==numAttributes without class)
-per tree (m_numFeatures) and m_numTrees through grid
-search on a range 
-1, 10, sqrt(m) [R default], log_2(m)+1 [Weka default], m [full set]}
-(4 values)+add an option to choose randomly for each tree?
-grid search is then just 55 values and because it uses OOB no CV is required
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package vector_classifiers;
 
@@ -37,12 +26,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
-import evaluation.CrossValidator;
+import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
@@ -50,7 +39,29 @@ import weka.core.Instances;
 import weka.core.Utils;
 
 /**
- *
+ *This classifier is enhanced so that classifier builds a random forest with the 
+    facility to build by forward selection addition of trees to minimize OOB error, 
+    by far the fastest way.    
+
+    As far as tuning are concerned, RandomForest has three parameters
+
+    m_MaxDepth: defaults to 0 (no limit on depth)
+    m_numFeatures: defaults to log(m)+1 (not sqrt(m) as most implementations do
+    m_numTrees: defaults to 10 
+
+
+    Further enhanced to allow for selection through OOB error estimates and predictions
+
+    Further changes: 
+    1. set number of trees (m_numTrees) via grid search on a range (using OOB) that
+    defaults to 
+    {10 [Weka Default],100,200,.., 500 [R default],...,1000} (11 values)
+    2. set number of features  (max value m==numAttributes without class)
+    per tree (m_numFeatures) and m_numTrees through grid
+    search on a range 
+    1, 10, sqrt(m) [R default], log_2(m)+1 [Weka default], m [full set]}
+    (4 values)+add an option to choose randomly for each tree?
+    grid search is then just 55 values and because it uses OOB no CV is required 
  * @author aj
  */
 public class TunedRandomForest extends RandomForest implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable{
@@ -261,7 +272,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         double minErr=1;
         this.setSeed(rng.nextInt());
         Instances trainCopy=new Instances(train);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         cv.setSeed(seed);
         cv.setNumFolds(folds);
         cv.buildFolds(trainCopy);
@@ -475,7 +486,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                 t.setNumFeatures(this.getNumFeatures());
                 t.setNumTrees(this.getNumTrees());
                 t.setSeed(seed);
-                CrossValidator cv = new CrossValidator();
+                CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 cv.setSeed(seed); 
                 cv.setNumFolds(folds);
                 cv.buildFolds(data);

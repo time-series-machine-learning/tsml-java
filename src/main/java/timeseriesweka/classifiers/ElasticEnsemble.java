@@ -1,15 +1,16 @@
 /*
- * A new Elastic Ensemble for sharing with others
-@article{lines15elastic,
-  title={Time Series Classification with Ensembles of Elastic Distance Measures},
-  author={J. Lines and A. Bagnall},
-  journal={Data Mining and Knowledge Discovery},
-  volume={29},
-  issue={3},
-  pages={565--592},
-  year={2015}
-}
-
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers;
 
@@ -35,11 +36,21 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.TechnicalInformation;
 
 /**
- *
+ * A new Elastic Ensemble for sharing with others
+@article{lines15elastic,
+  title={Time Series Classification with Ensembles of Elastic Distance Measures},
+  author={J. Lines and A. Bagnall},
+  journal={Data Mining and Knowledge Discovery},
+  volume={29},
+  issue={3},
+  pages={565--592},
+  year={2015}
+}
+
  * @author sjx07ngu
  */
 public class ElasticEnsemble extends AbstractClassifierWithTrainingData implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate{

@@ -1,8 +1,22 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 
 
-import evaluation.CrossValidator;
-import evaluation.ClassifierResults;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
@@ -290,7 +304,7 @@ public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCo
     
     if(trainCV){
         int numFolds=setNumberOfFolds(samples);
-        CrossValidator cv = new CrossValidator();
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (setSeed)
             cv.setSeed(seed);
         cv.setNumFolds(numFolds);

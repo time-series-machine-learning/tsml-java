@@ -1,35 +1,23 @@
 /*
-Implementation of the algorithm described in 
-
-@inproceedings{batista11cid,
-author="G. Batista and X. Wang and E. Keogh ",
-title="A Complexity-Invariant Distance Measure for Time Series",
-booktitle    ="Proceedings of the 11th {SIAM} International Conference on Data Mining (SDM)",
-year="2011"
-}
-and 
-@inproceedings{batista14cid,
-author="G. Batista and E. Keogh and O. Tataw and X. Wang  ",
-title="{CID}: an efficient complexity-invariant distance for time series",
-  journal={Data Mining and Knowledge Discovery},
-  volume={28},
-  pages="634--669",
-  year={2014}
-}
-
-The distance measure CID(Q,C)=ED(Q,C) × CF(Q,C), 
-where ED is the Eucidean distance and
-CF(Q,C) = max (CE(Q),CE(C))
-          min (CE(Q),CE(C)) 
-ie the ratio of complexities. In the paper, 
-
-*/
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 
 import experiments.DataSets;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -38,7 +26,30 @@ import timeseriesweka.elastic_distance_measures.DTW;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
- *
+ *Implementation of the algorithm described in 
+ * 
+    @inproceedings{batista11cid,
+    author="G. Batista and X. Wang and E. Keogh ",
+    title="A Complexity-Invariant Distance Measure for Time Series",
+    booktitle    ="Proceedings of the 11th {SIAM} International Conference on Data Mining (SDM)",
+    year="2011"
+    }
+    and 
+    @inproceedings{batista14cid,
+    author="G. Batista and E. Keogh and O. Tataw and X. Wang  ",
+    title="{CID}: an efficient complexity-invariant distance for time series",
+      journal={Data Mining and Knowledge Discovery},
+      volume={28},
+      pages="634--669",
+      year={2014}
+    }
+
+    The distance measure CID(Q,C)=ED(Q,C) × CF(Q,C), 
+    where ED is the Eucidean distance and
+    CF(Q,C) = max (CE(Q),CE(C))
+              min (CE(Q),CE(C)) 
+    ie the ratio of complexities. In the paper, 
+    * 
  * @author ajb
  */
 public class NN_CID  extends kNN implements SaveParameterInfo{

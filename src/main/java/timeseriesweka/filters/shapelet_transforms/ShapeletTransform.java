@@ -1,13 +1,17 @@
 /*
- * copyright: Anthony Bagnall
- * NOTE: As shapelet extraction can be time consuming, there is an option to output shapelets
- * to a text file (Default location is in the root dir of the project, file name "defaultShapeletOutput.txt").
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
  *
- * Default settings are TO NOT PRODUCE OUTPUT FILE - unless file name is changed, each successive filter will
- * overwrite the output (see "setLogOutputFile(String fileName)" to change file dir and name).
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
  *
- * To reconstruct a filter from this output, please see the method "createFilterFromFile(String fileName)".
- */
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */   
 package timeseriesweka.filters.shapelet_transforms;
 
 import java.io.BufferedWriter;
@@ -48,6 +52,17 @@ import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDista
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
 
 /**
+ * copyright: Anthony Bagnall
+ * NOTE: As shapelet extraction can be time consuming, there is an option to output shapelets
+ * to a text file (Default location is in the root dir of the project, file name "defaultShapeletOutput.txt").
+ *
+ * Default settings are TO NOT PRODUCE OUTPUT FILE - unless file name is changed, each successive filter will
+ * overwrite the output (see "setLogOutputFile(String fileName)" to change file dir and name).
+ *
+ * To reconstruct a filter from this output, please see the method "createFilterFromFile(String fileName)".
+ * 
+ * 
+ * 
  * A filter to transform a dataset by k shapelets. Once built on a training set,
  * the filter can be used to transform subsequent datasets using the extracted
  * shapelets.

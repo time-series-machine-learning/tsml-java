@@ -1,10 +1,17 @@
-/**
- * NOTE: consider this code experimental. This is a first pass and may not be final; 
- * it has been informally tested but awaiting rigorous testing before being signed off.
- * Also note that file writing/reading from file is not currently supported (will be added soon)
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 package timeseriesweka.classifiers;
 
 
@@ -17,13 +24,18 @@ import java.util.Scanner;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
-import evaluation.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import vector_classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+/**
+ * NOTE: consider this code experimental. This is a first pass and may not be final; 
+ * it has been informally tested but awaiting rigorous testing before being signed off.
+ * Also note that file writing/reading from file is not currently supported (will be added soon)
+ */
 
 /**
  *
@@ -124,8 +136,8 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
         h.setTransform(st);
         
         classifiers.add(h); // to get around the issue of needing training data 
-        RISE rise = new RISE();
-        rise.setTransformType(RISE.Filter.PS_ACF);
+        RISE rise = new RISE(0);
+        rise.setTransformType("BOTH");
         classifiers.add(rise);
         classifiers.add(new BOSS());
         classifiers.add(new TSF());
