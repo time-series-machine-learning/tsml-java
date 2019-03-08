@@ -18,7 +18,7 @@ import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.FFT;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -102,9 +102,8 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
         timer = new Timer();
     }
 
-    private void RISE(){
-        this.seed = 0;
-        random = new Random(0);
+    public void RISE(){
+        random = new Random();
         timer = new Timer();
     }
 
