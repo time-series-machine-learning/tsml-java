@@ -145,12 +145,12 @@ public class SimulationExperiments {
                 break;
             case "RISE":
                 c=new RISE(0);
-                ((RISE)c).setTransformType("PS_ACF");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setNumTrees(500);
                 break;
             case "RISE_HESCA":
                 c=new RISE(0);
-                ((RISE)c).setTransformType("PS_ACF");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 Classifier base=new CAWPE();
                 ((RISE)c).setBaseClassifier(base);
                 ((RISE)c).setNumTrees(20);
@@ -371,7 +371,7 @@ public class SimulationExperiments {
                         break;
                     case "RISE":
                         c=new RISE(0);
-                        ((RISE)c).setTransformType("PS_ACF");
+                        ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                         ((RISE)c).setNumTrees(500);
                         break;
                     default:

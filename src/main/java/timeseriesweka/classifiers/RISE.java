@@ -16,9 +16,9 @@ package timeseriesweka.classifiers;
 
 import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
+import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.FFT;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -79,6 +79,8 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
     private boolean loadedFromFile = false;
     private int stabilise = 0;
     private long seed = 0;
+    private final int DEFAULT_MAXLAG = 100;
+    private final int DEFAULT_MINLAG = 1;
 
     private Timer timer = null;
     private Random random = null;
@@ -88,7 +90,7 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
     private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
     private ArrayList<Integer> rawIntervalIndexes = null;
     private FFT fft;
-    private String transformType = null;
+    private TransformType transformType = TransformType.ACF_PS;
     private String serialisePath = null;
     private Instances data = null;
 
@@ -102,11 +104,13 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
         timer = new Timer();
     }
 
-    private void RISE(){
+    public void RISE(){
         this.seed = 0;
         random = new Random(0);
         timer = new Timer();
     }
+
+    public enum TransformType {ACF, PS, ACF_PS, ACF_PS_AR}
 
     /**
      * Function used to reset internal state of classifier.
@@ -178,10 +182,8 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
      * Default transform combined ACF+PS
      * @param transformType
      */
-    public void setTransformType(String transformType){
-        if (!transformType.isEmpty()) {
-            this.transformType = transformType.toUpperCase();
-        }
+    public void setTransformType(TransformType transformType){
+        this.transformType = transformType;
     }
 
     /**
@@ -208,6 +210,15 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
                 + ".txt");
         RISE temp = readSerialise(seed);
         copyFromSerObject(temp);
+    }
+
+    public int getMaxLag(Instances instances){
+        int maxLag = (instances.numAttributes()-1)/4;
+        if(maxLag > DEFAULT_MAXLAG)
+            maxLag = DEFAULT_MAXLAG;
+        if(maxLag < DEFAULT_MINLAG)
+            maxLag = (instances.numAttributes()-1);
+        return maxLag;
     }
 
     /**
@@ -386,14 +397,21 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
      * @param instances
      * @return transformed instances.
      */
-    private Instances transformInstances(Instances instances){
+    private Instances transformInstances(Instances instances, TransformType transformType){
         Instances temp = null;
 
         switch(transformType){
-            case "ACF":
-                temp = ACF.formChangeCombo(instances);
+            case ACF:
+                ACF acf=new ACF();
+                acf.setMaxLag(getMaxLag(instances));
+                acf.setNormalized(false);
+                try {
+                    temp =acf.process(instances);
+                } catch (Exception e) {
+                    System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
+                }
                 break;
-            case "PS":
+            case PS:
                 try {
                     fft.useFFT();
                     temp = fft.process(instances);
@@ -401,28 +419,32 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
                     System.out.println("FFT failed (could be build or classify) \n" + ex);
                 }
                 break;
-            default:
-                temp = combinedPSACF(instances);
+            case ACF_PS:
+                temp = transformInstances(instances, TransformType.ACF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case ACF_PS_AR:
+                temp = transformInstances(instances, TransformType.ACF_PS);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+
+                ARMA arma=new ARMA();
+                arma.setMaxLag(getMaxLag(instances));
+                arma.setUseAIC(false);
+                Instances arData = null;
+                try {
+                    arData = arma.process(instances);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                temp = Instances.mergeInstances(temp, arData);
+                temp.setClassIndex(temp.numAttributes()-1);
                 break;
         }
         return temp;
-    }
-
-    private Instances combinedPSACF(Instances instances){
-
-        Instances combo=ACF.formChangeCombo(instances);
-        Instances temp = null;
-        try {
-            temp = fft.process(instances);
-        } catch (Exception ex) {
-            Logger.getLogger("Combined PS-ACF failed (could be build or classify) \n" + ex);
-        }
-        combo.setClassIndex(-1);
-        combo.deleteAttributeAt(combo.numAttributes()-1);
-        combo = Instances.mergeInstances(combo, temp);
-        combo.setClassIndex(combo.numAttributes()-1);
-
-        return combo;
     }
 
     private void saveToFile(long seed){
@@ -555,7 +577,7 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
 
             //Transform instances.
             if (transformType != null) {
-                intervalInstances = transformInstances(intervalInstances);
+                intervalInstances = transformInstances(intervalInstances, transformType);
             }
 
             //Add independent variable to model (length of interval).
@@ -570,10 +592,10 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
             timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
 
             //Serialise every 100 trees (if path has been set).
-            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
-                saveToFile(seed);
-                System.out.print("");
-            }
+//            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
+//                saveToFile(seed);
+//                System.out.print("");
+//            }
         }
         if (serialisePath != null) {
             saveToFile(seed);
@@ -623,11 +645,11 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
             Instances instances = new Instances("relationName", attributes, 1);
             Instance intervalInstance = produceIntervalInstance(testInstance, i);
             instances.add(intervalInstance);
-            instances.setClassIndex(instances.numAttributes() - 1);
+            instances.setClassIndex(intervalInstance.numAttributes() - 1);
 
-            //Transform interval instance into PS, ACF or ACF+PS
+            //Transform interval instance into PS, ACF, ACF_PS or ACF_PS_AR
             if (transformType != null) {
-                intervalInstance = transformInstances(instances).firstInstance();
+                intervalInstance = transformInstances(instances, transformType).firstInstance();
             }
 
             double[] temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
@@ -876,12 +898,12 @@ public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, 
         double classification = 0.0;
 
         RISE c = new RISE(0);
-        c.setDownSample(true);
-        c.setTransformType("PS");
+        //c.setDownSample(true);
+        c.setTransformType(TransformType.ACF_PS);
         //c.setStabilise(3);
         c.setModelOutPath("");
         c.setSavePath("");
-        c.setTimeLimit(TimeLimit.MINUTE,5);
+        //c.setTimeLimit(TimeLimit.MINUTE,5);
 
         //Train
         try {
