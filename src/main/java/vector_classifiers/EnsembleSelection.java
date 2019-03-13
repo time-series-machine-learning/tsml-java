@@ -145,7 +145,7 @@ public class EnsembleSelection extends CAWPE {
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         
         //transform data if specified
         if(this.transform==null){
@@ -287,7 +287,7 @@ public class EnsembleSelection extends CAWPE {
         ensembleTrainResults.setFoldID(seed);
         ensembleTrainResults.setSplit("train");
         
-        long buildTime = System.currentTimeMillis() - startTime; 
+        long buildTime = System.nanoTime() - startTime; 
         ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
             writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
@@ -319,6 +319,8 @@ public class EnsembleSelection extends CAWPE {
     
     public ClassifierResults combinePredictions(final ClassifierResults ensembleSoFarResults, int ensembleSizeSoFar, final ClassifierResults newModelResults) throws Exception {
         ClassifierResults newResults = new ClassifierResults(numClasses);
+        assert(ensembleSoFarResults.getTimeUnit().equals(newModelResults.getTimeUnit()));
+        newResults.setTimeUnit(ensembleSoFarResults.getTimeUnit());
         
         for (int inst = 0; inst < ensembleSoFarResults.getProbabilityDistributions().size(); inst++) {
             double[] ensDist = ensembleSoFarResults.getProbabilityDistribution(inst);
@@ -396,7 +398,7 @@ public class EnsembleSelection extends CAWPE {
                     exp.datasetName = dset;
                     exp.foldId = fold;
                     exp.generateErrorEstimateOnTrainSet = true;
-                    Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
+                    Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                 }
             }
         }

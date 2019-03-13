@@ -265,7 +265,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         classifierNames[1] = "NB";
 
         classifiers[2] = new J48();
-        classifierNames[2] = "C4.5";
+        classifierNames[2] = "C45";
 
         SMO svml = new SMO();
         svml.turnChecksOff();
@@ -704,8 +704,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     protected ClassifierResults doEnsembleCV(Instances data) throws Exception {
-        double[] preds = new double[numTrainInsts];
-        double[][] dists = new double[numTrainInsts][];
         double[] accPerFold = new double[cv.getNumFolds()]; //for variance
 
         double actual, pred, correct = 0;
@@ -732,14 +730,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 trainResults.addPrediction(actual, dist, pred, predTime, "");
                 trainResults.turnOnZeroTimingsErrors();
                 
-                //and make ensemble prediction
                 if(pred==actual) {
                     correct++;
                     accPerFold[fold]++;
                 }
-
-                preds[instIndex] = pred;
-                dists[instIndex] = dist;
             }
 
             accPerFold[fold] /= cv.getFoldIndices().get(fold).size();
@@ -1419,7 +1413,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest12/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest24/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1488,8 +1482,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
-//            setBuildMatlabDiagrams(true).
-            setBuildMatlabDiagrams(false).
+            setBuildMatlabDiagrams(true).
+//            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
@@ -1552,7 +1546,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
-                        Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                     }
                 }
             }
