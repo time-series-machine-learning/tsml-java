@@ -29,7 +29,6 @@ import java.util.function.Function;
 import utilities.DebugPrinting;
 import utilities.GenericTools;
 import utilities.InstanceTools;
-import utilities.generic_storage.Pair;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a 
@@ -64,7 +63,7 @@ import utilities.generic_storage.Pair;
  * 
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  *    - loadResultsFromFile(String path)
- *    - writeToFile(String path)
+ *    - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
  * 
  * Supports recording of timings in different time units. Milliseconds is the default for 
  * backwards compatability, however nano seconds is generally preferred.
@@ -78,10 +77,11 @@ import utilities.generic_storage.Pair;
  *      long buildTimeInResultsUnit = results.getTimeUnit().convert(builtTimeInSecs, TimeUnit.SECONDS);
  *      results.setBuildTime(buildTimeInResultsUnit)
  *
- * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
+ * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
- * via the appropriate get methods.
+ * via directly via the public variables. In the future, these metrics will likely be separated out 
+ * into their own package
  * 
  * 
  * EXAMPLE USAGE: 
@@ -237,6 +237,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double nll; 
     public double meanAUROC;
     public double stddev; //across cv folds, where applicable
+    public long medianPredTime;
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
     
@@ -316,6 +317,44 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
+    //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
+    //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
+    //      a double's mantissa = 52bits, 2^52 / 1000000000 / 60 / 60 / 24 / 7 = 7.something weeks
+    //so, will assume the usage/requirement for milliseconds in the stats pipeline, to avoid the potential future problem 
+    //of meta-ensembles taking more than a week, etc. (or even just summing e.g 30 large times to be averaged)
+    //it is still preferable of course to store any timings in nano's in the classifierresults object since they'll
+    //store them as longs. 
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.medianPredTime, cr.timeUnit);};
+    
+    private static double toDoubleMillis(long time, TimeUnit unit) {
+        if (time < 0)
+            return -1;
+        if (time == 0)
+            return 0;
+        
+        if (unit.equals(TimeUnit.MICROSECONDS)) {
+            long pre = time / 1000;  //integer division for pre - decimal point
+            long post = time % 1000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else if (unit.equals(TimeUnit.NANOSECONDS)) {
+            long pre = time / 1000000;  //integer division for pre - decimal point
+            long post = time % 1000000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else {
+            //not higher resolution than millis, no special conversion needed just cast to double
+            return (double)unit.toMillis(time); 
+        }
+    }
+    
+
     
     /*********************************
      * 
@@ -1454,6 +1493,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
        
        f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
        
+       medianPredTime=findMedianPredTime();
+       
        allStatsFound = true;
     }
    
@@ -1650,6 +1691,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return (1+beta*beta) * (precision*recall) / ((beta*beta)*precision + recall);
     }
     
+    /**
+     * Makes copy of pred times to easily maintain original ordering
+     */
+    protected long findMedianPredTime() {
+        List<Long> copy = new ArrayList<>(predTimes);
+        Collections.sort(copy);
+        
+        int mid = copy.size()/2;
+        if (copy.size() % 2 == 0)
+            return (copy.get(mid) + copy.get(mid+1)) / 2;
+        else 
+            return copy.get(mid);
+    }
+    
     protected double findAUROC(int c){
         class Pair implements Comparable<Pair>{
             Double x;
@@ -1743,6 +1798,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         str+="nll,"+nll+"\n"; 
         str+="meanAUROC,"+meanAUROC+"\n"; 
         str+="stddev,"+stddev+"\n"; 
+        str+="medianPredTime,"+medianPredTime+"\n"; 
         str+="countPerClass:\n";
         for(int i=0;i<countPerClass.length;i++)
             str+="Class "+i+","+countPerClass[i]+"\n";
@@ -1770,6 +1826,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             nll =           Double.parseDouble(scan.nextLine().split(",")[1]);
             meanAUROC =     Double.parseDouble(scan.nextLine().split(",")[1]);
             stddev =        Double.parseDouble(scan.nextLine().split(",")[1]);
+            medianPredTime= Long.parseLong(scan.nextLine().split(",")[1]);
             
             assert(scan.nextLine() == "countPerClass");//todo change to if not throws 
             countPerClass = new double[numClasses];
@@ -1790,36 +1847,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             System.err.println("Error reading metrics in allPerformanceMetricsFromString(str), parsing metric value failed");
             throw e;
         }
-    }
-
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        return stats;
-    }
-        
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        stats.add(new Pair<>("F1", GETTER_F1));
-        stats.add(new Pair<>("MCC", GETTER_MCC));
-        stats.add(new Pair<>("Prec", GETTER_Precision));
-        stats.add(new Pair<>("Recall", GETTER_Recall));
-        stats.add(new Pair<>("Sens", GETTER_Sensitivity));
-        stats.add(new Pair<>("Spec", GETTER_Specificity));
-        return stats;
-    }
-    
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatistic() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        return stats;
     }
     
     public static void main(String[] args) throws Exception {

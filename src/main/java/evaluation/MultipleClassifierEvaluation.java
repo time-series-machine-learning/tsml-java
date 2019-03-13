@@ -31,7 +31,7 @@ import utilities.ErrorReport;
 import utilities.generic_storage.Pair;
 
 /**
- * This essentially just wraps ClassifierResultsAnalysis.writeAllEvaluationFiles(...) in a nicer to use way. Will be updated over time
+ * This essentially just wraps ClassifierResultsAnalysis.performFullEvaluation(...) in a nicer to use way. Will be updated over time
  * 
  * Builds summary stats, sig tests, and optionally matlab dias for the ClassifierResults objects provided/files pointed to on disk. Can optionally use
  * just the test results, if that's all that is available, or both train and test (will also compute the train test diff)
@@ -50,14 +50,14 @@ import utilities.generic_storage.Pair;
  * and there's a bool (default true) to set whether to null the instance prediction info after stats are found to save memory. 
  * If some custom analysis method not defined natively in classifierresults that uses the individual prediction info, 
  * (defined using addEvaluationStatistic(String statName, Function<ClassifierResults, Double> classifierResultsManipulatorFunction))
- * will need to keep the info, but that can get problematic depending on how many classifiers/datasets/folds there are
- * 
- * For some reason, the first excel workbook writer library i found/used makes xls files (instead of xlsx) and doesn't 
- * support recent excel default fonts. Just open it and saveas if you want to switch it over. There's a way to globally change font in a workbook 
- * if you want to change it back
- *
- * Future work (here and in ClassifierResultsAnalysis.writeAllEvaluationFiles(...)) when wanted/needed could be to 
- * handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the obviously bad parts of the code
+ will need to keep the info, but that can get problematic depending on how many classifiers/datasets/folds there are
+ 
+ For some reason, the first excel workbook writer library i found/used makes xls files (instead of xlsx) and doesn't 
+ support recent excel default fonts. Just open it and saveas if you want to switch it over. There's a way to globally change font in a workbook 
+ if you want to change it back
+
+ Future work (here and in ClassifierResultsAnalysis.performFullEvaluation(...)) when wanted/needed could be to 
+ handle incomplete results (e.g random folds missing), more matlab figures over time, and more refactoring of the obviously bad parts of the code
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -68,7 +68,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private Map<String, Map<String, String[]>> datasetGroupings; // Map<GroupingMethodTitle(e.g "ByNumAtts"), Map<GroupTitle(e.g "<100"), dsetsInGroup(must be subset of datasets)>>
     private Map<String, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults; 
     private int numFolds;
-    private ArrayList<Pair<String, Function<ClassifierResults, Double>>> statistics;
+    private ArrayList<PerformanceMetric> metrics;
     
     /**
      * if true, the relevant .m files must be located in the netbeans project directory
@@ -89,14 +89,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
-     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the mean for that dataset
-     *      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
-     * 
-     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
-     * 
-     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
-     * 
-     * 4) perform the normal grouping analysis based on those clusters
+     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
+      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+ 
+ 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+ 
+ 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+ 
+ 4) perform the normal grouping analysis based on those clusters
      */
     private boolean performPostHocDsetResultsClustering;
     
@@ -117,7 +117,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
         
-        this.statistics = ClassifierResults.getDefaultStatistics();
+        this.metrics = PerformanceMetric.getDefaultStatistics();
     }
     
     /**
@@ -148,50 +148,19 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
-     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the mean for that dataset
-     *      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
-     * 
-     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
-     * 
-     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
-     * 
-     * 4) perform the normal grouping analysis based on those clusters
+     * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
+      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+ 
+ 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+ 
+ 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+ 
+ 4) perform the normal grouping analysis based on those clusters
      */
     public MultipleClassifierEvaluation setPerformPostHocDsetResultsClustering(boolean b) {
         performPostHocDsetResultsClustering = b;
         return this;
     }
-    
-    //START TIMING HACKS
-    //This facilitates the hacks to get collation of train and test timings going,
-    //essentially up to the user to know what the units of the timings in the results files are (until cleaned up...)
-    //Using this enum/these methods you can convert to e.g seconds for human readability, or more importantly,
-    //if you're timing in nano seconds (especially) and the build time is a reaonable length of time, a simple conversion
-    //to double wont keep precision at all. So use the conversion to a larger unit (millis or seconds) to get the number 
-    //closer to zero and potentially maintain more precision
-    public enum BuildTimeConversion {
-       NO_CONVERSION(ClassifierResultsAnalysis.TIMING_NO_CONVERSION), //aka, millis to millis
-       MILLIS_TO_SECONDS(ClassifierResultsAnalysis.TIMING_MILLIS_TO_SECONDS),
-       NANO_TO_MILLIS(ClassifierResultsAnalysis.TIMING_NANO_TO_MILLIS),
-       NANO_TO_SECONDS(ClassifierResultsAnalysis.TIMING_NANO_TO_SECONDS);
-       
-       public final int divisor; 
-       BuildTimeConversion(int divisor) {
-           this.divisor = divisor;
-       }
-    }
-    public int getBuildTimeConversionDivisor() {
-        return ClassifierResultsAnalysis.TIMING_CONVERSION;
-    }
-    public MultipleClassifierEvaluation setBuildTimeConversion(int divisor) {
-        ClassifierResultsAnalysis.TIMING_CONVERSION = divisor;
-        return this;
-    }
-    public MultipleClassifierEvaluation setBuildTimeConversion(BuildTimeConversion conversion) {
-        ClassifierResultsAnalysis.TIMING_CONVERSION = conversion.divisor;
-        return this;
-    }
-    //END TIMING HACKS
     
     /**
      * @param datasetListFilename the path and name of a file containing a list of datasets, one per line
@@ -351,34 +320,34 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * 4 stats: acc, balanced acc, auroc, nll
      */
     public MultipleClassifierEvaluation setUseDefaultEvaluationStatistics() {
-        statistics = ClassifierResults.getDefaultStatistics();
+        metrics = PerformanceMetric.getDefaultStatistics();
         return this;
     }
 
     public MultipleClassifierEvaluation setUseAccuracyOnly() {
-        statistics = ClassifierResults.getAccuracyStatistic();
+        metrics = PerformanceMetric.getAccuracyStatistic();
         return this;
     }
     
     public MultipleClassifierEvaluation setUseAllStatistics() {
-        statistics = ClassifierResults.getAllStatistics();
+        metrics = PerformanceMetric.getAllStatistics();
         return this;
     }
     
-    public MultipleClassifierEvaluation addEvaluationStatistic(String statName, Function<ClassifierResults, Double> classifierResultsManipulatorFunction) {
-        statistics.add(new Pair<>(statName, classifierResultsManipulatorFunction));
+    public MultipleClassifierEvaluation addEvaluationStatistic(PerformanceMetric metric) {
+        metrics.add(metric);
         return this;
     }
     
-    public MultipleClassifierEvaluation removeEvaluationStatistic(String statName) {
-        for (Pair<String, Function<ClassifierResults, Double>> statistic : statistics)
-            if (statistic.var1.equalsIgnoreCase(statName))
-                statistics.remove(statistic);
+    public MultipleClassifierEvaluation removeEvaluationStatistic(String name) {
+        for (PerformanceMetric metric : metrics)
+            if (metric.name.equalsIgnoreCase(name))
+                metrics.remove(metric);
         return this;
     }
     
     public MultipleClassifierEvaluation clearEvaluationStatistics(String statName) {
-        statistics.clear();
+        metrics.clear();
         return this;
     }
     
@@ -450,18 +419,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         ClassifierResults[][][] results = new ClassifierResults[2][datasets.size()][numFolds];
         if (testResultsOnly)
             results[0]=null; //crappy but w/e
-        
-        
-        //semi-hack, if only accuracies wanted (either because that's all we care about for a quick and dirty comparison, 
-        //or ESPECIALLY because we're using old results files that dont have probabilities in them),
-        //then use this flag to determine whether to find the full stats or not
-        boolean onlyAccsWanted = true;
-        for (Pair<String, Function<ClassifierResults, Double>> statistic : statistics) {
-            if (!statistic.var1.equals("ACC")) {
-                onlyAccsWanted = false;
-                break;
-            }
-        }
+     
         
         for (int d = 0; d < datasets.size(); d++) {
             for (int f = 0; f < numFolds; f++) {
@@ -470,8 +428,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     String trainFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/trainFold" + f + ".csv";
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
-                        if (!onlyAccsWanted)
-                            results[0][d][f].findAllStatsOnce();
+                        results[0][d][f].findAllStatsOnce();
                         if (cleanResults)
                             results[0][d][f].cleanPredictionInfo();
                     } catch (FileNotFoundException ex) {
@@ -483,8 +440,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                 String testFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/testFold" + f + ".csv";
                 try {
                     results[1][d][f] = new ClassifierResults(testFile);
-                    if (!onlyAccsWanted)
-                        results[1][d][f].findAllStatsOnce();
+                    results[1][d][f].findAllStatsOnce();
                     if (cleanResults)
                         results[1][d][f].cleanPredictionInfo();
                 } catch (FileNotFoundException ex) {
@@ -560,7 +516,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             datasetGroupings.put(ClassifierResultsAnalysis.clusterGroupingIdentifier, null); 
         
         printlnDebug("Writing started");
-        ClassifierResultsAnalysis.writeAllEvaluationFiles(writePath, experimentName, statistics, results, datasets.toArray(new String[] { }), datasetGroupings);
+        ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, metrics, results, datasets.toArray(new String[] { }), datasetGroupings);
         printlnDebug("Writing finished");
         
         if (buildMatlabDiagrams)
