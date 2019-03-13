@@ -398,7 +398,7 @@ public class EnsembleSelection extends CAWPE {
                     exp.datasetName = dset;
                     exp.foldId = fold;
                     exp.generateErrorEstimateOnTrainSet = true;
-                    Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
+                    Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                 }
             }
         }

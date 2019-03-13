@@ -265,7 +265,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         classifierNames[1] = "NB";
 
         classifiers[2] = new J48();
-        classifierNames[2] = "C4.5";
+        classifierNames[2] = "C45";
 
         SMO svml = new SMO();
         svml.turnChecksOff();
@@ -1546,7 +1546,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
-                        Experiments.singleClassifierAndFoldTrainTestSplit(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                     }
                 }
             }
