@@ -559,7 +559,22 @@ public class Experiments  {
                     
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
-                    testResults.setBuildTime(buildTime);
+                    
+                    if (classifier instanceof TrainAccuracyEstimate) {
+                        //if this classifier is recording it's own results, use the build time it found
+                        //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
+                        //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
+                        //schemes. that is more accurate than what experiments would measure, which would in fact be 
+                        //the i/o time for reading in the modules' results, + the ensemble scheme time
+                        //therefore the general assumption here is that the classifier knows its own buildtime 
+                        //better than we do here
+                        testResults.setBuildTime(((TrainAccuracyEstimate)classifier).getTrainResults().getBuildTime());
+                    }
+                    else {
+                        //else use the buildtime calculated here in experiments
+                        testResults.setBuildTime(buildTime);
+                    }
+                    
                     LOGGER.log(Level.INFO, "Testing complete");
                     writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
                     LOGGER.log(Level.INFO, "Testing written");
