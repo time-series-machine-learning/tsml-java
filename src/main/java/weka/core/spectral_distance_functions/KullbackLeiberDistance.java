@@ -20,7 +20,7 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 
 /**
  *

@@ -25,7 +25,7 @@ import timeseriesweka.classifiers.FastDTW_1NN;
 import weka.classifiers.lazy.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.NormalizeAttribute;
+import timeseriesweka.filters.NormalizeAttribute;
 import weka.filters.SimpleBatchFilter;
 
 public class TransformEnsembles extends AbstractClassifier{
