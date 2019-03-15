@@ -234,7 +234,12 @@ public class ACF extends SimpleBatchFilter {
                 a[i-1]/=(data.length-i);
                 v1=ss1/(data.length-i)-s1*s1;
                 v2=ss2/(data.length-i)-s2*s2;
-                a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
+                if(v1==0 && v2==0)//Both zero variance, both must be 100% corr
+                    a[i-1]=1;
+                else if(v1==0 || (v2==0))//One zero variance the other not
+                    a[i-1]=0;
+                else
+                    a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
             }
         }
         else{
