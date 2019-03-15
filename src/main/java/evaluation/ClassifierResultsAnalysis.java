@@ -184,7 +184,7 @@ public class ClassifierResultsAnalysis {
         // START TIMINGS 
         //timings will attempt to always be summarised if they are present, so handle them here as a special case
         //and add them onto the list of metrics
-        String[][] trainTestTimingSummary = null;
+        String[][] trainTestTimingSummary = new String[][] { };
         try { 
             trainTestTimingSummary = eval_timings(outPath, expname, results, cnames, dsets, null); //dont bother with groupings for timings
         } catch (FileNotFoundException fnf) {
@@ -193,13 +193,18 @@ public class ClassifierResultsAnalysis {
                     + "internally in earlier stages of the pipeline, FATAL");
             fnf.printStackTrace();
             System.exit(0);
+        } catch (Exception ex) {
+            System.out.println("Something went wrong while writing timing files. But NOT "
+                    + "a filenotfound error. Either timings werent found, some NaN erros occurred,"
+                    + " etc. Todo look into cases of this as they crop up.\n"
+                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the timings");
         }
         
         //using the presence of summaries for train and test timings as an indicator that they are present 
         List<PerformanceMetric> timeMetrics = Arrays.asList(PerformanceMetric.buildTime, testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
-        for (int j = 0; j < timeMetrics.size(); j++) {
+        for (int j = 0; j < trainTestTimingSummary.length; j++) {
             String label = timeMetrics.get(j).name;
-            if (trainTestTimingSummary[0] != null) {
+            if (trainTestTimingSummary[j] != null) {
                 //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
                 metrics.add(timeMetrics.get(j));
                 
