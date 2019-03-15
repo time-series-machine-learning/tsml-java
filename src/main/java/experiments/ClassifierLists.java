@@ -38,6 +38,7 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
@@ -46,14 +47,33 @@ import weka.core.EuclideanDistance;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ClassifierLists {
+    //leaving in for now, in case particular classifiers require it.
+    //eventually should be removed in favour of using the info in the experimental settings passed 
+    //in the newer setClassifier
     public static String horribleGlobalPath="";
-    public static String nastyGlobalDatasetName=""; //leaving in for now
+    public static String nastyGlobalDatasetName="";  
 
-    public String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
-    public String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
+    public static String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
+    public static String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
     
     /**
-     * This is the method exactly as it was in experiments. 
+     * This method is currently a placeholder that simply call setClassifierClassic(classifierName, fold),
+     * exactly where to take this newer method is still up for debate
+     * 
+     * This shall be the start of the newer setClassifier, which take the experimental 
+     * arguments themselves and therefore the classifiers can take from them whatever they 
+     * need, e.g the dataset name, the fold id, separate checkpoint paths, etc. 
+     * 
+     * To take this idea further, to be honest each of the TSC-specific classifiers
+     * could/should have a constructor and/or factory that builds the classifier
+     * from the experimental args. 
+     */
+    public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
+        return setClassifierClassic(exp.classifierName, exp.foldId);
+    }
+    
+    /**
+     * This is the method exactly as it was in old experiments.java. 
      * 
      * @param classifier
      * @param fold
@@ -83,7 +103,21 @@ public class ClassifierLists {
                 c=new NN_DTW_A();
                 break;
 //TIME DOMAIN CLASSIFIERS   
-            
+            case "RandF": 
+                RandomForest r=new RandomForest();
+                r.setNumTrees(500);
+                r.setSeed(fold);
+                c = r;
+                break;
+            case "RotF":
+                RotationForest rf=new RotationForest();
+                rf.setNumIterations(50);
+                rf.setSeed(fold);
+                c = rf;
+                break;
+            case "bayesNet": 
+                c = new BayesNet();
+                break;
             case "ED":
                 c=new ED1NN();
                 break;
@@ -325,7 +359,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -333,11 +367,11 @@ public class ClassifierLists {
                 ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
                 ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
                 break;
-            case "cRISE_PS_NOSTBLS_1MIN":
+            case "cRISE_PS_NOSTBLS":
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -349,7 +383,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -361,7 +395,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -373,7 +407,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -385,7 +419,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -397,7 +431,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -409,7 +443,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -421,7 +455,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
+                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -433,7 +467,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -445,7 +479,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -457,7 +491,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -469,7 +503,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -481,7 +515,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -493,7 +527,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
@@ -505,7 +539,7 @@ public class ClassifierLists {
                 c = new RISE((long)fold);
                 //Classieir settings.
                 ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
+                ((RISE)c).setTransformType(RISE.TransformType.PS);
                 ((RISE)c).setMinNumTrees(200);
                 //((RISE)c).setStabilise(5);
                 //Timer settings.
