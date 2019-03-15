@@ -54,7 +54,7 @@ import static weka.core.Utils.sum;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingData implements HiveCoteModule, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier {
     
     private int ensembleSize = 50;
     private int seed = 0;

@@ -4,6 +4,7 @@
 
 
 package statistics.simulators;
+import timeseriesweka.filters.NormalizeCase;
 import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;

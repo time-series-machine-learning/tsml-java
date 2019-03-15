@@ -705,51 +705,7 @@ public static void basicSummaryComparisons(){
         if(singleClassifierStats)
             exampleCollateResultsMethod1(args);
         else
-            exampleCollateResultsMethod1(args);
-            
+            exampleCollateResultsMethod2(args);
+    }            
         
-}
-    public static void reformatUBMLP()//Insert an extra comma
-    {
-        int folds=30;
-        String source="E:\\Results\\UCI\\Untuned\\UBMLP_OLD\\Predictions";
-        String dest="E:\\Results\\UCI\\Untuned\\UBMLP\\Predictions";
-        
-        for(String str: DataSets.UCIContinuousFileNames){
-            for(int i=0;i<folds;i++){
-                System.out.println("Formatting "+str+" fold "+i);
-                InFile infTest=new InFile(source+"/"+str+"/testFold"+i+".csv");
-                InFile infTrain=new InFile(source+"/"+str+"/trainFold"+i+".csv");
-                File out=new File(dest+"/"+str);
-                if(!out.isDirectory())
-                    out.mkdirs();
-                OutFile outfTest=new OutFile(dest+"/"+str+"/testFold"+i+".csv");
-                OutFile outfTrain=new OutFile(dest+"/"+str+"/trainFold"+i+".csv");
-                for(int j=0;j<3;j++){
-                    outfTest.writeLine(infTest.readLine());
-                    outfTrain.writeLine(infTrain.readLine());
-                }
-                String line = infTest.readLine();
-                while(line!=null){
-                    String[] split=line.split(",");
-                    outfTest.writeString(split[0]+","+split[1]+",");
-                    for(int j=2;j<split.length;j++)
-                        outfTest.writeString(","+split[j]);
-                    outfTest.writeString("\n");
-                    line = infTest.readLine();
-                }
-                 line = infTrain.readLine();
-                while(line!=null){
-                    String[] split=line.split(",");
-                    outfTrain.writeString(split[0]+","+split[1]+",");
-                    for(int j=2;j<split.length;j++)
-                        outfTrain.writeString(","+split[j]);
-                    outfTrain.writeString("\n");
-                    line = infTrain.readLine();
-                }
-            }
-                    
-        }
-        
-    }    
 }

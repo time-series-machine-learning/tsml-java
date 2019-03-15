@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingData implements HiveCoteModule, TrainAccuracyEstimate {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate {
 
   public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;

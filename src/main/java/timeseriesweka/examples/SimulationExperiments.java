@@ -144,16 +144,9 @@ public class SimulationExperiments {
                 c=new HiveCote();
                 break;
             case "RISE":
-                c=new RISE(0);
+                c=new RISE();
                 ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                ((RISE)c).setNumTrees(500);
-                break;
-            case "RISE_HESCA":
-                c=new RISE(0);
-                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                Classifier base=new CAWPE();
-                ((RISE)c).setBaseClassifier(base);
-                ((RISE)c).setNumTrees(20);
+                ((RISE)c).setNumClassifiers(500);
                 break;
             default:
                 throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
@@ -370,9 +363,9 @@ public class SimulationExperiments {
                         c=new FlatCote();
                         break;
                     case "RISE":
-                        c=new RISE(0);
+                        c=new RISE();
                         ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                        ((RISE)c).setNumTrees(500);
+                        ((RISE)c).setNumClassifiers(500);
                         break;
                     default:
                         throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
