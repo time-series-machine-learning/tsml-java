@@ -57,6 +57,7 @@ import utilities.InstanceTools;
  *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
  *    - get/setBuildTime(long)
  *    - get/setTestTime(long)
+ *    - get/setBenchmarkTime(long)
  *    - get/setMemory(long)
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
@@ -86,7 +87,7 @@ import utilities.InstanceTools;
  * 
  * EXAMPLE USAGE: 
  *          ClassifierResults res = new ClassifierResults();
- *          //set a particular timeunit, if using something other than millis, nanos recommended
+ *          //set a particular timeunit, if using something other than millis. Nanos recommended
  *          //set any meta info you want to keep, e.g classifiername, datasetname...
  * 
  *          for (Instance inst : test) {
@@ -178,7 +179,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long buildTime = -1; 
@@ -187,7 +188,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary 
      * in case complete prediction information is not stored, and/or for a human reader to quickly compare times. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long testTime = -1; //total testtime for all predictions
@@ -198,7 +199,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
      * across different results sets. It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long benchmarkTime = -1; 
