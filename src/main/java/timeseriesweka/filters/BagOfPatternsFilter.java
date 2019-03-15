@@ -25,7 +25,6 @@ import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
-import weka.filters.NormalizeCase;
 import weka.filters.SimpleBatchFilter;
 
 /**

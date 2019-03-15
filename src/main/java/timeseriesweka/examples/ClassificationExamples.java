@@ -163,7 +163,7 @@ public class ClassificationExamples {
                 c=new TSF();
                 break;
             case "RISE":
-                c=new RISE(0);
+                c=new RISE();
                 break;
             case "TSBF":
                 c=new TSBF();

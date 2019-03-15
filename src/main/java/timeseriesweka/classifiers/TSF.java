@@ -101,7 +101,7 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingData implements SaveParameterInfo, TrainAccuracyEstimate{
+public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -354,6 +354,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
    * data must be numeric, with no missing and a nominal class
    * @return the capabilities of this classifier
 **/    
+    @Override
   public Capabilities getCapabilities() {
     Capabilities result = super.getCapabilities();
     result.disableAll();
@@ -404,7 +405,7 @@ public class TSF extends AbstractClassifierWithTrainingData implements SaveParam
         }
         //Get the class values as an array list		
         Attribute target =data.attribute(data.classIndex());
-        ArrayList<String> vals=new ArrayList<String>(target.numValues());
+        ArrayList<String> vals=new ArrayList<>(target.numValues());
         for(int j=0;j<target.numValues();j++)
             vals.add(target.value(j));
         atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));

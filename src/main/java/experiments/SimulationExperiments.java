@@ -58,7 +58,7 @@ import weka.core.Instances;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
 import weka.core.Instance;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 /*
 
 Class to run one of various simulations.  
@@ -215,18 +215,6 @@ public class SimulationExperiments {
             case "HIVECOTE":
                 c=new HiveCote();
 //                ((HiveCote)c).setNosHours(2);
-                break;
-            case "RISE":
-                c=new RISE(0);
-                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                ((RISE)c).setNumTrees(500);
-                break;
-            case "RISE_HESCA":
-                c=new RISE(0);
-                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                Classifier base=new CAWPE();
-                ((RISE)c).setBaseClassifier(base);
-                ((RISE)c).setNumTrees(20);
                 break;
             default:
                 throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
@@ -521,7 +509,7 @@ public class SimulationExperiments {
         seriesLength=300;
         casesPerClass=new int[]{50,50};
         String[] classifiers={"RotF","DTW","FastShapelets","ST","BOSS"};
-//            "EE","CAWPE","TSF","TSBF","FastShapelets","ST","LearnShapelets","BOP","BOSS","RISE","COTE"};
+//            "EE","CAWPE","TSF","TSBF","FastShapelets","ST","LearnShapelets","BOP","BOSS","C_RISE","COTE"};
         OutFile of=new OutFile("C:\\Temp\\ShapeletSimExperiment.csv");
         setStandardGlobalParameters("Shapelet");
         of.writeLine("Shapelet Sim, series length= "+seriesLength+" cases class 0 ="+casesPerClass[0]+" class 1"+casesPerClass[0]+" train proportion = "+trainProp);
@@ -573,11 +561,6 @@ public class SimulationExperiments {
                         break;
                     case "COTE":
                         c=new FlatCote();
-                        break;
-                    case "RISE":
-                        c=new RISE(0);
-                        ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                        ((RISE)c).setNumTrees(500);
                         break;
                     default:
                         throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);

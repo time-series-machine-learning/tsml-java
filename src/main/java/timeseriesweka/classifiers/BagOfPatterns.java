@@ -33,7 +33,7 @@ import timeseriesweka.filters.SAX;
  * 
  * @author James
  */
-public class BagOfPatterns extends AbstractClassifierWithTrainingData{
+public class BagOfPatterns extends AbstractClassifierWithTrainingInfo{
 
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;

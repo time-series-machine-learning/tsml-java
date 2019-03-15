@@ -63,7 +63,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingData implements ParameterSplittable{
+public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;

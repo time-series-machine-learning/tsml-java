@@ -9,7 +9,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.lazy.kNN;
 import weka.core.Instances;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 
 /**
  *

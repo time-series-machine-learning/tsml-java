@@ -39,7 +39,7 @@ year="2013"
 
  * @author James
  */
-public class SAXVSM extends AbstractClassifierWithTrainingData {
+public class SAXVSM extends AbstractClassifierWithTrainingInfo {
 
     Instances transformedData;
     Instances corpus;
