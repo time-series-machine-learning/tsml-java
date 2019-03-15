@@ -687,9 +687,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             calculateAcc();
         return acc; 
     }
+    public boolean isAccSet(){
+        return acc<0 ? false: true; 
+    }
     private void calculateAcc() {
         if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1) {
-            System.out.println("**getAcc():calculateAcc() no true class values suppleid yet, cannot calculate accuracy");
+            System.out.println("**getAcc():calculateAcc() no true class values supplied yet, cannot calculate accuracy");
             return;
         }
         

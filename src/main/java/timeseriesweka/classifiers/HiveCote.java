@@ -67,7 +67,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingData implements ContractClassifier{
+public class HiveCote extends AbstractClassifierWithTrainingInfo implements ContractClassifier{
 
 
     private ArrayList<Classifier> classifiers;

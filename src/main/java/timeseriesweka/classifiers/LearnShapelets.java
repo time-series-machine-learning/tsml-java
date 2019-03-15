@@ -38,7 +38,7 @@ import weka.core.TechnicalInformation;
  * 
  */
 
-public class LearnShapelets extends AbstractClassifierWithTrainingData implements ParameterSplittable{
+public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
 
   
     public TechnicalInformation getTechnicalInformation() {

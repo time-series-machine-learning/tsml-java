@@ -91,7 +91,7 @@ information.
  * ARGUMENTS
  * 
  */
-public class TSBF extends AbstractClassifierWithTrainingData implements ParameterSplittable{
+public class TSBF extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
 //Paras
     
 //<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper">        

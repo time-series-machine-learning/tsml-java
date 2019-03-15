@@ -40,7 +40,7 @@ year="2013"
 * 
  * @author raj09hxu
  */
-public class FastShapelets extends AbstractClassifierWithTrainingData {
+public class FastShapelets extends AbstractClassifierWithTrainingInfo {
 
       
     public TechnicalInformation getTechnicalInformation() {

@@ -29,7 +29,7 @@ import weka.filters.unsupervised.instance.Randomize;
  *
  * @author James
  */
-public class SAX_1NN extends AbstractClassifierWithTrainingData {
+public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
 
     public Instances SAXdata;
     private kNN knn;

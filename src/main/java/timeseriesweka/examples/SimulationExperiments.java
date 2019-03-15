@@ -146,7 +146,7 @@ public class SimulationExperiments {
             case "RISE":
                 c=new RISE();
                 ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                ((RISE)c).setNumTrees(500);
+                ((RISE)c).setNumClassifiers(500);
                 break;
             default:
                 throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
@@ -365,7 +365,7 @@ public class SimulationExperiments {
                     case "RISE":
                         c=new RISE();
                         ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
-                        ((RISE)c).setNumTrees(500);
+                        ((RISE)c).setNumClassifiers(500);
                         break;
                     default:
                         throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
