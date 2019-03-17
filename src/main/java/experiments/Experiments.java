@@ -14,7 +14,9 @@
  */
 package experiments;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -270,14 +272,21 @@ public class Experiments  {
                 String[] settings=new String[6];
 //Location of data set
                 settings[0]="Z:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="E:/Results/";//Where to write results                
+                settings[1]="C:/Users/pfm15hbu/Dropbox/PythonBOSS/Results/";//Where to write results
                 settings[2]="false"; //Whether to generate train files or not               
-                settings[3]="TSF"; //Classifier name
-                for(String str:DataSets.tscProblems78){
-                    settings[4]=str; //Problem file   
-                    settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
+                settings[3]="BOSS"; //Classifier name
+
+                BufferedReader reader;
+                reader = new BufferedReader(new FileReader("C:/Users/pfm15hbu/Dropbox/PythonBOSS/datasetsJava.txt"));
+                String line = reader.readLine();
+
+                while (line != null) {
+                    settings[4]=line; //Problem file
+                    settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                     ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                     setupAndRunSingleClassifierAndFoldTrainTestSplit(expSettings);
+
+                    line = reader.readLine();
                 }
             }
         }

@@ -32,6 +32,7 @@ import utilities.BitWord;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.CAWPE;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.functions.Logistic;
 import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 import weka.classifiers.Classifier;
@@ -370,7 +371,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = seriesLength;
+        int maxWindow = seriesLength/2;
         
         //whats the max number of window sizes that should be searched through
         double maxWindowSearches = seriesLength/4.0;
@@ -515,6 +516,15 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         }
         //Original BOSS/Accuracy cutoff ensemble
         else{
+            if(alternateIndividualClassifier != null){
+                throw new Exception("Original BOSS does not currently support alternate classifiers");
+            }
+
+            //Original max window size
+            maxWindow = seriesLength;
+            winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+            if (winInc < 1) winInc = 1;
+
             for (int n = 0; n < numSeries; n++) {
                 currentSeries = n;
                 int numInst = series[n].numInstances();
@@ -655,7 +665,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         for (String file: files){
             File f2 = new File(f.getPath() + "\\" + file);
             boolean b = f2.delete();
-            System.out.println(file + " " + b);
         }
 
         f.delete();
@@ -898,7 +907,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "ArrowHead";
+        String dataset = "ItalyPowerDemand";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
@@ -1497,7 +1506,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             //Alternate classifier
             else{
                 words = new ArrayList();
-                ArrayList<Attribute> atts = new ArrayList();
 
                 for (int inst = 0; inst < data.numInstances(); ++inst) {
                     SFAwords[inst] = createSFAwords(data.get(inst));
@@ -1511,6 +1519,8 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                         }
                     }
                 }
+
+                ArrayList<Attribute> atts = new ArrayList();
 
                 //Create Instances object out of histogram
                 for (int n = 0; n < words.size(); n++){
