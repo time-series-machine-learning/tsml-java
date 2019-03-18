@@ -39,6 +39,7 @@ import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
 import timeseriesweka.classifiers.SubSampleTrain;
 import weka.core.Capabilities;
+import weka.core.Randomizable;
 
 /**
  <!-- globalinfo-start -->
@@ -191,6 +192,11 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         rand.setSeed(seed);
         
     }
+    public void setSeed(int s){
+        rand=new Random();
+        this.seed=seed;
+        rand.setSeed(seed);
+    }
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -317,6 +323,9 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             }
             else
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
+            //if(baseClassifiers[i] instanceof Randomisable)
+            if(baseClassifiers[i] instanceof Randomizable)
+                ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
         trainResults.setBuildTime(System.currentTimeMillis()-start);

@@ -441,20 +441,22 @@ public class ACF extends SimpleBatchFilter {
             maxLag=(d.numAttributes()-1);
 
         try{
-       //1. ACF
+            //1. ACF
             ACF acf=new ACF();
             acf.setMaxLag(maxLag);
             acf.setNormalized(false);
             Instances acfData=acf.process(d);
-      //2. ARMA 
+            //2. ARMA 
             ARMA arma=new ARMA();                        
             arma.setMaxLag(maxLag);
             arma.setUseAIC(false);
             Instances arData=arma.process(d);
-      //3. PACF Full
+            //3. PACF Full
             PACF pacf=new PACF();
             pacf.setMaxLag(maxLag);
             Instances pacfData=pacf.process(d);
+            
+            //4. Merge them all together
             Instances combo=new Instances(acfData);
             combo.setClassIndex(-1);
             combo.deleteAttributeAt(combo.numAttributes()-1); 
