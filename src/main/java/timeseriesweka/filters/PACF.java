@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import java.util.ArrayList;
 import weka.filters.*;
 
 import weka.core.Attribute;
@@ -21,56 +22,70 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Utils;
+/** 
+  <!-- globalinfo-start -->
+* Implementation of partial autocorrelation function as a Weka SimpleBatchFilter
+* Series to series transform independent of class value
+*  <!-- globalinfo-end -->
+<!-- options-start -->
+ * Valid options are: <p/>
+ * 
+ * <pre> -L
+ *  set the max lag.</pre>
+ <!-- options-end -->
+ *
+ * 
+ * author: Anthony Bagnall circa 2008.
+ * Reviewed and tidied up 2019
+ * This should not really be a batch filter, as it is series to series, but
+ * it makes the use case simpler. 
+ */
 
-
-/*
-     * copyright: Anthony Bagnall
- * */
 public class PACF extends SimpleBatchFilter {
-//Max number of AR terms to consider. 	
-    public static int globalMaxLag=25;
+
+    public static final int DEFAULT_MAXLAG=100;
     private double[] autos;
     private double[][] partials;
 
 //Defaults to 1/4 length of series
-    public int maxLag=globalMaxLag;
+    public int maxLag=DEFAULT_MAXLAG;
 
     public void setMaxLag(int a){maxLag=a;}
 
     @Override
     protected Instances determineOutputFormat(Instances inputFormat)
                     throws Exception {
-            //Check all attributes are real valued, otherwise throw exception
-            for(int i=0;i<inputFormat.numAttributes();i++)
-                    if(inputFormat.classIndex()!=i)
-                            if(!inputFormat.attribute(i).isNumeric())
-                                    throw new Exception("Non numeric attribute not allowed in ACF");
+        //Check all attributes are real valued, otherwise throw exception
+        for(int i=0;i<inputFormat.numAttributes();i++)
+                if(inputFormat.classIndex()!=i)
+                        if(!inputFormat.attribute(i).isNumeric())
+                                throw new Exception("Non numeric attribute not allowed in ACF");
 
-            if(inputFormat.classIndex()>=0)	//Classification set, dont transform the target class!
-                    maxLag=(inputFormat.numAttributes()-1>maxLag)?maxLag:inputFormat.numAttributes()-1;
-            else
-                    maxLag=(inputFormat.numAttributes()>maxLag)?maxLag:inputFormat.numAttributes();
-            //Set up instances size and format. 
-            FastVector atts=new FastVector();
-            String name;
-            for(int i=0;i<maxLag;i++){
-                    name = "PACF_"+i;
-                    atts.addElement(new Attribute(name));
-            }
-            if(inputFormat.classIndex()>=0){	//Classification set, set class 
-//Get the class values as a fast vector			
-                    Attribute target =inputFormat.attribute(inputFormat.classIndex());
-
-                    FastVector vals=new FastVector(target.numValues());
-                    for(int i=0;i<target.numValues();i++)
-                            vals.addElement(target.value(i));
-                    atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
-
-            }	
-            Instances result = new Instances("PACF"+inputFormat.relationName(),atts,inputFormat.numInstances());
-            if(inputFormat.classIndex()>=0)
-                    result.setClassIndex(result.numAttributes()-1);
-            return result;	}
+        if(inputFormat.classIndex()>=0)	//Classification set, dont transform the target class!
+                maxLag=(inputFormat.numAttributes()-1>maxLag)?maxLag:inputFormat.numAttributes()-1;
+        else
+                maxLag=(inputFormat.numAttributes()>maxLag)?maxLag:inputFormat.numAttributes();
+        //Set up instances size and format. 
+        ArrayList<Attribute> atts=new ArrayList<>();
+        String name;
+        for(int i=0;i<maxLag;i++){
+            name = "PACF_"+i;
+            atts.add(new Attribute(name));
+        }
+        if(inputFormat.classIndex()>=0){	//Classification set, set class 
+//Get the class values 		
+            Attribute target =inputFormat.attribute(inputFormat.classIndex());
+            ArrayList<String> vals=new ArrayList<>(target.numValues());
+            for(int i=0;i<target.numValues();i++)
+                vals.add(target.value(i));
+            atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+        }	
+        Instances result = new Instances("PACF"+inputFormat.relationName(),atts,inputFormat.numInstances());
+        if(inputFormat.classIndex()>=0)
+            result.setClassIndex(result.numAttributes()-1);
+        return result;	
+    }
 
     @Override
     public Instances process(Instances inst) throws Exception {
@@ -171,6 +186,13 @@ public class PACF extends SimpleBatchFilter {
     }
     public String getRevision() {
             return null;
+    }
+    public void setOptions(String[] options) throws Exception {
+        String maxLagString=Utils.getOption('L', options);
+        if (maxLagString.length() != 0)
+            this.maxLag = Integer.parseInt(maxLagString);
+        else
+            this.maxLag = DEFAULT_MAXLAG;
     }
 
     public static void main(String[] args){

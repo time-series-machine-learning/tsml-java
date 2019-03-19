@@ -34,15 +34,22 @@ import weka.core.Capabilities;
 import weka.core.Randomizable;
 import weka.core.Utils;
 import weka.filters.Filter;
+import weka.filters.SimpleFilter;
 
 /**
  * Development code for RISE
  * 1. set number of trees to max(500,m)
  * 2. Set the first tree to the full interval
- * 2. Randomly select the interval length and start point for each other tree *
- * 3. Find the PS, ACF, PACF and AR features
- * 3. Build each tree.
+ * 3. Randomly select the interval length and start point for each other tree *
+ * 4. Find the PS, ACF, PACF and AR features
+ * 5. Build each base classifier (default RandomTree).
 
+* 19/3/19: TO DO
+* 1. Check correctness of new structure vs other data
+* 2. Test whether we need all four components, particularly AR and PACF!
+* 3. Implement speed up to avoid recalculating ACF each time
+* 4. Compare to python version
+* 
  <!-- globalinfo-start -->
  * Random Interval Spectral Ensemble
  *
@@ -102,7 +109,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     private Random rand;
     private int seed=0;
     private boolean setSeed=false;
-    Filter[] filters;
+    SimpleFilter[] filters;
     /** Power Spectrum transformer, probably dont need to store this here  */   
 //    private PowerSpectrum ps=new PowerSpectrum();
     
@@ -111,10 +118,14 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     private boolean subSample=false;
     private double sampleProp=1;
     public RISE(){
-        filters=new Filter[4];
-        filters[0]=new ACF();
-        filters[1]=new PACF();
-        filters[2]=new ARMA();
+        filters=new SimpleFilter[4];
+        ACF acf= new ACF();
+        acf.setNormalized(false);
+        filters[0]=acf;
+        ARMA arma=new ARMA();                        
+        arma.setUseAIC(false);
+        filters[1]=arma;
+        filters[2]=new PACF();
         filters[3]=new PowerSpectrum();
     }
     public RISE(int s){
@@ -136,7 +147,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 
 
     public void setTransforms(String ... trans){
-        filters=new Filter[trans.length];
+        filters=new SimpleFilter[trans.length];
         int count=0;
         for(String s:trans){
             switch(s){
@@ -159,21 +170,13 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             count++;
         }
         if(count<filters.length){
-            Filter[] temp=new Filter[count];
+            SimpleFilter[] temp=new SimpleFilter[count];
             for(int i=0;i<count;i++)
                 temp[i]=filters[i];
             filters=temp;
         }
     }
     
-    /**
-     * Transform Type: 
-     * PS: just use power spectrum. 
-     * ACF: just use autocorrelation
-     * FFT: use the complex FFT terms
-     * ACF_PS: Use the lot: ACF, PACF, AR and PS
-    public enum TransformType{PS,ACF,FFT,ACF_PS};
-    TransformType transform=TransformType.ACF_PS;
     /**
     * Changes the base classifier,
     * @param c new base classifier
@@ -257,7 +260,11 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 
     @Override
     public String getParameters(){
-        return super.getParameters()+",numTrees,"+numBaseClassifiers+","+"MinInterval,"+minInterval;
+        String str=super.getParameters()+",numClassifiers,"+numBaseClassifiers+","+"MinInterval,"+minInterval;
+        for(int i=0;i<filters.length;i++)
+            str+=",Filter"+i+","+filters[i].getClass().getSimpleName();
+        return str;
+        
     }
     /**
        * Returns default capabilities of the classifier. These are that the 
@@ -347,27 +354,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             DenseInstance in=new DenseInstance(result.numAttributes());
             testHolders[i].add(in);
             //Perform the transform
-            Instances newTrain=result;
-            for(Filter f:filters){
-                Instances ins=Filter.useFilter(result, f);
-            }
-            
-            
-/*            
-            //THIS NEEDS TIDYING UP    
-            switch(transform){
-                case ACF:
-                    ACF acf = new ACF();
-                    newTrain=formChangeCombo(result);
-                    break;
-                case PS: 
-                    newTrain=ps.process(result);
-                    break;
-                case ACF_PS: default:
-                    newTrain=combinedPSACF(result);
-                    break;
-            }             
-*/            
+            Instances newTrain=filterData(result);
+
 //Build Classifier: Defaults to a RandomTree, but WHY ALL THE ATTS?
             if(baseClassifierTemplate instanceof RandomTree){
                 baseClassifiers[i]=new RandomTree();   
@@ -382,7 +370,30 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         }
         trainResults.setBuildTime(System.currentTimeMillis()-start);
     }
-
+    private Instances filterData(Instances result) throws Exception{
+            int maxLag=(result.numAttributes()-1)/4;
+            if(maxLag>ACF.DEFAULT_MAXLAG)
+                maxLag=ACF.DEFAULT_MAXLAG;
+            Instances[] t=new Instances[filters.length];
+            for(int j=0;j<filters.length;j++){
+// Im not sure this a sensible or robust way of doing this
+//What if L meant something else to the SimpleFilter? 
+//Can you use a whole string, e.g. MAXLAG?
+                filters[j].setOptions(new String[]{"L",maxLag+""});
+                t[j]=Filter.useFilter(result, filters[j]);
+            }
+            //4. Merge them all together
+            Instances combo=new Instances(t[0]);
+            combo.setClassIndex(-1);
+            combo.deleteAttributeAt(combo.numAttributes()-1); 
+            for(int j=1;j<filters.length-1;j++){
+                combo=Instances.mergeInstances(combo, t[j]);
+                combo.deleteAttributeAt(combo.numAttributes()-1); 
+            }
+            combo=Instances.mergeInstances(combo, t[t.length-1]);
+            combo.setClassIndex(combo.numAttributes()-1);
+            return combo;
+    }
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] votes=new double[ins.numClasses()];
@@ -395,21 +406,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                 testHolders[i].instance(0).setValue(j, ins.value(j+startPoints[i]));
             }
 //Do the transform
-            Instances temp=null;
-/*            
-            switch(transform){
-                case ACF:
-                    temp=formChangeCombo(testHolders[i]);
-                    break;
-                case PS: 
-                    temp=ps.process(testHolders[i]);
-                    break;
-                case ACF_PS: 
-                    temp=combinedPSACF(testHolders[i]);
-//Merge newTrain and newTrain2                    
-                    break;
-            }            
-*/            
+            Instances temp=filterData(testHolders[i]);
             int c=(int)baseClassifiers[i].classifyInstance(temp.instance(0));
             votes[c]++;
             
@@ -418,62 +415,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             votes[i]/=baseClassifiers.length;
         return votes;
     }
-   private Instances combinedPSACF(Instances data)throws Exception {
-        Instances combo=formChangeCombo(data);
-//        Instances temp2=ps.process(data);
-        combo.setClassIndex(-1);
-        combo.deleteAttributeAt(combo.numAttributes()-1); 
-  //      combo=Instances.mergeInstances(combo, temp2);
-        combo.setClassIndex(combo.numAttributes()-1);
-        return combo;        
-
-    }
    
-    public Instances formChangeCombo(Instances d){
-        int maxLag=(d.numAttributes()-1)/4;
-        if(maxLag>ACF.DEFAULT_MAXLAG)
-            maxLag=ACF.DEFAULT_MAXLAG;
-
-        try{
-            //1. ACF
-            ACF acf=new ACF();
-            acf.setMaxLag(maxLag);
-            acf.setNormalized(false);
-            Instances acfData=acf.process(d);
-            //2. ARMA 
-            ARMA arma=new ARMA();                        
-            arma.setMaxLag(maxLag);
-            arma.setUseAIC(false);
-            Instances arData=arma.process(d);
-            //3. PACF Full. Surely ARMA finds PACF too?!?
-            PACF pacf=new PACF();
-            pacf.setMaxLag(maxLag);
-            Instances pacfData=pacf.process(d);
-            
-            //4. Merge them all together
-            Instances combo=new Instances(acfData);
-            combo.setClassIndex(-1);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, pacfData);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, arData);
-            combo.setClassIndex(combo.numAttributes()-1);
-            return combo;
-
-       }catch(Exception e){
-//FIX THIS           
-            System.out.println(" Exception in Combo="+e+" max lag ="+maxLag);
-            e.printStackTrace();
-            System.exit(1);
-       }
-       return null;
-    }
-    
-   
-    
     public static void main(String[] arg) throws Exception{
-        
-        
         Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
         Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
         RISE rif = new RISE();

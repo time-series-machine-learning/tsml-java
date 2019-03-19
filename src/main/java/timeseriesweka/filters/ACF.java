@@ -41,17 +41,15 @@ import weka.filters.*;
 <!-- options-start -->
  * Valid options are: <p/>
  * 
- * <pre> -T
- *  set number of trees.</pre>
- * 
- * <pre> -F
- *  set number of features.</pre>
+ * <pre> -L
+ *  set the max lag.</pre>
  <!-- options-end -->
  *
  * 
  * author: Anthony Bagnall circa 2008.
  * Reviewed and tidied up 2019
- * This should not really be a batch filter. 
+ * This should not really be a batch filter, as it is series to series, but
+ * it makes the use case simpler. 
  */
 
 public class ACF extends SimpleBatchFilter {
