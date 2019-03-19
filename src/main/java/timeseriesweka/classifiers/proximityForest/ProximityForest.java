@@ -15,17 +15,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.proximityForest;
 
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
 
 /**
  * 
- * An in-progress wrapper class for the java Proximity Forest implementation: 
+ * An in-progress wrapper/conversion class for the java Proximity Forest implementation.
+ * 
+ * We want to get individual prediction info and distributions (instead of single classifications), and therefore
+ * have decided to take individual files and and play around with them instead of make calls to the 
+ * packaged jar. 
  *  
  * Github code:   https://github.com/fpetitjean/ProximityForest
  * 
@@ -55,6 +57,24 @@ import weka.core.TechnicalInformationHandler;
  */
 public class ProximityForest extends AbstractClassifier {
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+//    private Dataset toPFDataset(Instances insts) {
+//        
+//    }
+//    
+//    private Instances toInstances(Dataset pfDset) {
+//        
+//    }
+    
     @Override
     public void buildClassifier(Instances data) throws Exception {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
