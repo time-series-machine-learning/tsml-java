@@ -26,6 +26,7 @@ import weka.filters.SimpleBatchFilter;
 import timeseriesweka.filters.Cosine;
 import timeseriesweka.filters.Sine;
 import timeseriesweka.filters.Hilbert;
+import weka.filters.Filter;
 
 /**
  *
@@ -263,13 +264,13 @@ public class DTD_C extends DD_DTW{
             try{
                 switch(this.transformType){
                     case COS:
-                        temp = new Cosine().process(temp);
+                        temp = Filter.useFilter(temp,new Cosine());
                         break;
                     case SIN:
-                        temp = new Sine().process(temp);
+                        temp = Filter.useFilter(temp,new Sine());
                         break;
                     case HIL:
-                        temp = new Hilbert().process(temp);
+                        temp = Filter.useFilter(temp,new Hilbert());
                         break;
                 }
             }catch(Exception e){
@@ -306,8 +307,8 @@ public class DTD_C extends DD_DTW{
             
             // DTW on only the transformed data first
             for(SimpleBatchFilter transform:transforms){
-                transTrain = transform.process(train);
-                transTest = transform.process(test);
+                transTrain = Filter.useFilter(train,transform);
+                transTest = Filter.useFilter(test,transform);
                 dtw = new DTW_DistanceBasic();
                 knn = new kNN();
                 knn.setDistanceFunction(dtw);

@@ -50,7 +50,8 @@ import weka.filters.*;
  *
  * 
  * author: Anthony Bagnall circa 2008.
- Reviewed and tidied up 2019
+ * Reviewed and tidied up 2019
+ * This should not really be a batch filter. 
  */
 
 public class ACF extends SimpleBatchFilter {
@@ -65,7 +66,7 @@ public class ACF extends SimpleBatchFilter {
     
 /** The maximum number of ACF terms considered. It must be less than seriesLength-endTerms
  * (checked in process() */    
-    static final int DEFAULT_MAXLAG=100;
+    public static final int DEFAULT_MAXLAG=100;
     int maxLag=DEFAULT_MAXLAG;
 /** Currently assumed constant for all series. Have to, using instances* */   
     int seriesLength;
@@ -428,53 +429,6 @@ public class ACF extends SimpleBatchFilter {
                 ins.setValue(i, 0);
         }
     }
-/**
- * This forms the concatenated Instances used by RISE. Should really be there!
- * @param d
- * @return 
- */
-    public static Instances formChangeCombo(Instances d){
-        int maxLag=(d.numAttributes()-1)/4;
-        if(maxLag>DEFAULT_MAXLAG)
-            maxLag=DEFAULT_MAXLAG;
-        if(maxLag<10)
-            maxLag=(d.numAttributes()-1);
-
-        try{
-            //1. ACF
-            ACF acf=new ACF();
-            acf.setMaxLag(maxLag);
-            acf.setNormalized(false);
-            Instances acfData=acf.process(d);
-            //2. ARMA 
-            ARMA arma=new ARMA();                        
-            arma.setMaxLag(maxLag);
-            arma.setUseAIC(false);
-            Instances arData=arma.process(d);
-            //3. PACF Full
-            PACF pacf=new PACF();
-            pacf.setMaxLag(maxLag);
-            Instances pacfData=pacf.process(d);
-            
-            //4. Merge them all together
-            Instances combo=new Instances(acfData);
-            combo.setClassIndex(-1);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, pacfData);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, arData);
-            combo.setClassIndex(combo.numAttributes()-1);
-            return combo;
-
-       }catch(Exception e){
-//FIX THIS           
-            System.out.println(" Exception in Combo="+e+" max lag ="+maxLag);
-            e.printStackTrace();
-            System.exit(1);
-       }
-       return null;
-    }
-    
 /**
 /**Debug code to test ACF generation: 
  */

@@ -59,6 +59,7 @@ import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import weka.filters.Filter;
 
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
@@ -458,7 +459,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             this.trainInsts = data;
 //            this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = transform.process(data);
+            this.trainInsts = Filter.useFilter(data,transform);
         }
           
         //init
@@ -977,7 +978,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
@@ -1031,7 +1032,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
@@ -1051,7 +1052,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
