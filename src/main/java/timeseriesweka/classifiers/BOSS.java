@@ -292,31 +292,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             isMultivariate = true;
         }
 
-        //creating path for checkpointing
-        String type = "";
-
-        if (contract){
-            type = "RandomContract" + contractTime;
-        }
-        else if (useCAWPE){
-            if (isMultivariate && ensembleSizePerChannel > 0){
-                type = "RandomCAWPE" + (ensembleSizePerChannel*numSeries);
-            }
-            else {
-                type = "RandomCAWPE" + ensembleSize;
-            }
-        }
-        else if (randomEnsembleSelection){
-            if (isMultivariate && ensembleSizePerChannel > 0){
-                type = "Random" + (ensembleSizePerChannel*numSeries);
-            }
-            else {
-                type = "Random" + ensembleSize;
-            }
-        }
-
-        String relationName = data.relationName();
-        serPath = checkpointPath + "/" + relationName + seed + type + "BOSSser/";
+        serPath = checkpointPath + "/" + data.relationName() + seed + checkpointName() + "BOSSser/";
         File f = new File(serPath + "BOSS.ser");
 
         //if checkpointing and serialised files exist load said files
@@ -369,230 +345,24 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             series[0] = data;
         }
 
-        int seriesLength = series[0].numAttributes()-1; //minus class attribute
-        int minWindow = 10;
-        int maxWindow = seriesLength/2;
-        
-        //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
-        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
-        if (winInc < 1) winInc = 1;
-
         //Contracted
         if (contract) {
-            //continue building classifiers until contract time runs out or max ensemble size is reached
-            //any time between runs using checkpointing is not included
-            while (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
-                //randomly select parameters except for alphabetSize
-                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
-                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
-                if(winSize > maxWindow) winSize = maxWindow;
-                boolean normalise = rand.nextBoolean();
-
-                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
-                boss.cleanAfterBuild = true;
-                boss.buildClassifier(series[currentSeries]);
-                classifiers[currentSeries].add(boss);
-                numClassifiers[currentSeries]++;
-
-                int prev = currentSeries;
-                if (isMultivariate){
-                    nextSeries();
-                }
-
-                if (checkpoint) {
-                    checkpoint(prev, relationName);
-                }
-            }
-
-            System.out.println("RBOSS Contract Data: NumClassifiers = " +
-                    classifiers[numSeries-1].size() + " StartTime = " + trainResults.getBuildTime() + " "
-                    + "EndTime = " + System.nanoTime() + " Checkpointed = " + checkpoint + " TotalTime = "
-                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) + " AverageTime = "
-                    + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) / classifiers[0].size());
+            buildContractedBOSS(series);
         }
         //Randomly selected ensemble with CAWPE weighting
         else if (useCAWPE){
-            cawpe = new CAWPE[numSeries];
-
-            while (sum(numClassifiers) < ensembleSize) {
-                //randomly select parameters except for alphabetSize
-                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
-                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
-                if(winSize > maxWindow) winSize = maxWindow;
-                boolean normalise = rand.nextBoolean();
-
-                //do not have to build here, CAWPE will build each classifer
-                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
-                boss.cleanAfterBuild = true;
-                classifiers[currentSeries].add(boss);
-                numClassifiers[currentSeries]++;
-
-                int prev = currentSeries;
-                if (isMultivariate){
-                    nextSeries();
-                }
-
-                if (checkpoint) {
-                    checkpoint(prev, relationName);
-                }
-            }
-
-            //build a CAWPE classifier for each channel (1 if univariate)
-            for (int i = 0; i < numSeries; i++){
-                cawpe[i] = new CAWPE();
-                cawpe[i].setNumCVFolds(numCAWPEFolds);
-                BOSSIndividual[] boss = classifiers[i].toArray(new BOSSIndividual[numClassifiers[i]]);
-                cawpe[i].setClassifiers(boss, null, null);
-                cawpe[i].buildClassifier(series[i]);
-
-                //cant serialise cawpe
-                //if (checkpoint) {
-                    //checkpoint(-1, relationName);
-                //}
-            }
+            buildRandomCAWPEBOSS(series);
         }
         //Randomly selected ensemble
         else if (randomEnsembleSelection){
-            //build classifiers up to a set size
-            while (sum(numClassifiers) < ensembleSize) {
-                //randomly select parameters except for alphabetSize
-                int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
-                int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
-                if(winSize > maxWindow) winSize = maxWindow;
-                boolean normalise = rand.nextBoolean();
-
-                BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
-                boss.cleanAfterBuild = true;
-                boss.buildClassifier(series[currentSeries]);
-                classifiers[currentSeries].add(boss);
-                numClassifiers[currentSeries]++;
-
-                int prev = currentSeries;
-                if (isMultivariate){
-                    nextSeries();
-                }
-
-                if (checkpoint) {
-                    checkpoint(prev, relationName);
-                }
-            }
+            buildRandomBOSS(series);
         }
         else if (randomEnsembleSelectionUnique){
-            ArrayList<int[]>[] possibleParameters = new ArrayList[numSeries];
-
-            for (int n = 0; n < numSeries; n++) {
-                possibleParameters[n] = new ArrayList<>();
-
-                for (int normalise = 0; normalise < 2; normalise++) {
-                    for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
-                        for (Integer wordLen : wordLengths) {
-                            int[] parameters = {wordLen, winSize, normalise};
-                            possibleParameters[n].add(parameters);
-                        }
-                    }
-                }
-            }
-
-            while (sum(numClassifiers) < ensembleSize && possibleParameters[numSeries-1].size() > 0) {
-                //randomly select parameters except for alphabetSize
-                int[] parameters = possibleParameters[currentSeries].remove(rand.nextInt(possibleParameters[currentSeries].size()));
-
-                BOSSIndividual boss = new BOSSIndividual(parameters[0], alphabetSize, parameters[1], parameters[2] == 0, copyClassifier());
-                boss.cleanAfterBuild = true;
-                boss.buildClassifier(series[currentSeries]);
-                classifiers[currentSeries].add(boss);
-                numClassifiers[currentSeries]++;
-
-                int prev = currentSeries;
-                if (isMultivariate){
-                    nextSeries();
-                }
-
-                if (checkpoint) {
-                    checkpoint(prev, relationName);
-                }
-            }
+            buildRandomBOSSUnique(series);
         }
         //Original BOSS/Accuracy cutoff ensemble
         else{
-            if(alternateIndividualClassifier != null){
-                throw new Exception("Original BOSS does not currently support alternate classifiers");
-            }
-
-            //Original max window size
-            maxWindow = seriesLength;
-            winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
-            if (winInc < 1) winInc = 1;
-
-            for (int n = 0; n < numSeries; n++) {
-                currentSeries = n;
-                int numInst = series[n].numInstances();
-                double maxAcc = -1.0;
-
-                //the acc of the worst member to make it into the final ensemble as it stands
-                double minMaxAcc = -1.0;
-
-                boolean[] normOptions = {true, false};
-
-                for (boolean normalise : normOptions) {
-                    for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
-                        BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize, winSize, normalise, alternateIndividualClassifier);
-                        boss.buildClassifier(series[n]); //initial setup for this windowsize, with max word length
-
-                        BOSSIndividual bestClassifierForWinSize = null;
-                        double bestAccForWinSize = -1.0;
-
-                        //find best word length for this window size
-                        for (Integer wordLen : wordLengths) {
-                            boss = boss.buildShortenedBags(wordLen); //in first iteration, same lengths (wordLengths[0]), will do nothing
-
-                            int correct = 0;
-                            for (int i = 0; i < numInst; ++i) {
-                                double c = boss.classifyInstance(i); //classify series i, while ignoring its corresponding histogram i
-                                if (c == data.get(i).classValue())
-                                    ++correct;
-                            }
-
-                            double acc = (double) correct / (double) numInst;
-                            if (acc >= bestAccForWinSize) {
-                                bestAccForWinSize = acc;
-                                bestClassifierForWinSize = boss;
-                            }
-                        }
-
-                        //if this window size's accuracy is not good enough to make it into the ensemble, dont bother storing at all
-                        if (makesItIntoEnsemble(bestAccForWinSize, maxAcc, minMaxAcc, classifiers[n].size())) {
-                            bestClassifierForWinSize.clean();
-                            bestClassifierForWinSize.accuracy = bestAccForWinSize;
-                            classifiers[n].add(bestClassifierForWinSize);
-
-                            if (bestAccForWinSize > maxAcc) {
-                                maxAcc = bestAccForWinSize;
-                                //get rid of any extras that dont fall within the new max threshold
-                                Iterator<BOSSIndividual> it = classifiers[n].iterator();
-                                while (it.hasNext()) {
-                                    BOSSIndividual b = it.next();
-                                    if (b.accuracy < maxAcc * correctThreshold) {
-                                        it.remove();
-                                    }
-                                }
-                            }
-
-                            while (classifiers[n].size() > maxEnsembleSize) {
-                                //cull the 'worst of the best' until back under the max size
-                                int minAccInd = (int) findMinEnsembleAcc()[0];
-
-                                classifiers[n].remove(minAccInd);
-                            }
-
-                            minMaxAcc = findMinEnsembleAcc()[1]; //new 'worst of the best' acc
-                        }
-
-                        numClassifiers[n] = classifiers[n].size();
-                    }
-                }
-            }
+            buildBOSS(series);
         }
 
         //end train time, converted to milliseconds currently for compatability
@@ -618,8 +388,264 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             checkpointCleanup();
         }
     }
+
+    private void buildContractedBOSS(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength/4.0;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        //continue building classifiers until contract time runs out or max ensemble size is reached
+        //any time between runs using checkpointing is not included
+        while (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime && classifiers[numSeries-1].size() < maxEnsembleSize) {
+            //randomly select parameters except for alphabetSize
+            int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+            int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+            if(winSize > maxWindow) winSize = maxWindow;
+            boolean normalise = rand.nextBoolean();
+
+            BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+            boss.cleanAfterBuild = true;
+            boss.buildClassifier(series[currentSeries]);
+            classifiers[currentSeries].add(boss);
+            numClassifiers[currentSeries]++;
+
+            int prev = currentSeries;
+            if (isMultivariate){
+                nextSeries();
+            }
+
+            if (checkpoint) {
+                checkpoint(prev);
+            }
+        }
+
+        System.out.println("RBOSS Contract Data: NumClassifiers = " +
+                classifiers[numSeries-1].size() + " StartTime = " + trainResults.getBuildTime() + " "
+                + "EndTime = " + System.nanoTime() + " Checkpointed = " + checkpoint + " TotalTime = "
+                + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) + " AverageTime = "
+                + (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff) / classifiers[0].size());
+    }
+
+    private void buildRandomCAWPEBOSS(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength/4.0;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        cawpe = new CAWPE[numSeries];
+
+        while (sum(numClassifiers) < ensembleSize) {
+            //randomly select parameters except for alphabetSize
+            int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+            int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+            if(winSize > maxWindow) winSize = maxWindow;
+            boolean normalise = rand.nextBoolean();
+
+            //do not have to build here, CAWPE will build each classifer
+            BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+            boss.cleanAfterBuild = true;
+            classifiers[currentSeries].add(boss);
+            numClassifiers[currentSeries]++;
+
+            int prev = currentSeries;
+            if (isMultivariate){
+                nextSeries();
+            }
+
+            if (checkpoint) {
+                checkpoint(prev);
+            }
+        }
+
+        //build a CAWPE classifier for each channel (1 if univariate)
+        for (int i = 0; i < numSeries; i++){
+            cawpe[i] = new CAWPE();
+            cawpe[i].setNumCVFolds(numCAWPEFolds);
+            BOSSIndividual[] boss = classifiers[i].toArray(new BOSSIndividual[numClassifiers[i]]);
+            cawpe[i].setClassifiers(boss, null, null);
+            cawpe[i].buildClassifier(series[i]);
+
+            //cant serialise cawpe
+            //if (checkpoint) {
+            //checkpoint(-1, relationName);
+            //}
+        }
+    }
+
+    private void buildRandomBOSS(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength/4.0;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        //build classifiers up to a set size
+        while (sum(numClassifiers) < ensembleSize) {
+            //randomly select parameters except for alphabetSize
+            int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+            int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+            if(winSize > maxWindow) winSize = maxWindow;
+            boolean normalise = rand.nextBoolean();
+
+            BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, copyClassifier());
+            boss.cleanAfterBuild = true;
+            boss.buildClassifier(series[currentSeries]);
+            classifiers[currentSeries].add(boss);
+            numClassifiers[currentSeries]++;
+
+            int prev = currentSeries;
+            if (isMultivariate){
+                nextSeries();
+            }
+
+            if (checkpoint) {
+                checkpoint(prev);
+            }
+        }
+    }
+
+    private void buildRandomBOSSUnique(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength/4.0;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        ArrayList<int[]>[] possibleParameters = new ArrayList[numSeries];
+
+        for (int n = 0; n < numSeries; n++) {
+            possibleParameters[n] = new ArrayList<>();
+
+            for (int normalise = 0; normalise < 2; normalise++) {
+                for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
+                    for (Integer wordLen : wordLengths) {
+                        int[] parameters = {wordLen, winSize, normalise};
+                        possibleParameters[n].add(parameters);
+                    }
+                }
+            }
+        }
+
+        while (sum(numClassifiers) < ensembleSize && possibleParameters[numSeries-1].size() > 0) {
+            //randomly select parameters except for alphabetSize
+            int[] parameters = possibleParameters[currentSeries].remove(rand.nextInt(possibleParameters[currentSeries].size()));
+
+            BOSSIndividual boss = new BOSSIndividual(parameters[0], alphabetSize, parameters[1], parameters[2] == 0, copyClassifier());
+            boss.cleanAfterBuild = true;
+            boss.buildClassifier(series[currentSeries]);
+            classifiers[currentSeries].add(boss);
+            numClassifiers[currentSeries]++;
+
+            int prev = currentSeries;
+            if (isMultivariate){
+                nextSeries();
+            }
+
+            if (checkpoint) {
+                checkpoint(prev);
+            }
+        }
+    }
+
+    private void buildBOSS(Instances[] series) throws Exception {
+        if(alternateIndividualClassifier != null){
+            throw new Exception("Original BOSS does not currently support alternate classifiers");
+        }
+
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        double maxWindowSearches = seriesLength/4.0;
+
+        int maxWindow = seriesLength;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        for (int n = 0; n < numSeries; n++) {
+            currentSeries = n;
+            int numInst = series[n].numInstances();
+            double maxAcc = -1.0;
+
+            //the acc of the worst member to make it into the final ensemble as it stands
+            double minMaxAcc = -1.0;
+
+            boolean[] normOptions = {true, false};
+
+            for (boolean normalise : normOptions) {
+                for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
+                    BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize, winSize, normalise, alternateIndividualClassifier);
+                    boss.buildClassifier(series[n]); //initial setup for this windowsize, with max word length
+
+                    BOSSIndividual bestClassifierForWinSize = null;
+                    double bestAccForWinSize = -1.0;
+
+                    //find best word length for this window size
+                    for (Integer wordLen : wordLengths) {
+                        boss = boss.buildShortenedBags(wordLen); //in first iteration, same lengths (wordLengths[0]), will do nothing
+
+                        int correct = 0;
+                        for (int i = 0; i < numInst; ++i) {
+                            double c = boss.classifyInstance(i); //classify series i, while ignoring its corresponding histogram i
+                            if (c == series[0].get(i).classValue())
+                                ++correct;
+                        }
+
+                        double acc = (double) correct / (double) numInst;
+                        if (acc >= bestAccForWinSize) {
+                            bestAccForWinSize = acc;
+                            bestClassifierForWinSize = boss;
+                        }
+                    }
+
+                    //if this window size's accuracy is not good enough to make it into the ensemble, dont bother storing at all
+                    if (makesItIntoEnsemble(bestAccForWinSize, maxAcc, minMaxAcc, classifiers[n].size())) {
+                        bestClassifierForWinSize.clean();
+                        bestClassifierForWinSize.accuracy = bestAccForWinSize;
+                        classifiers[n].add(bestClassifierForWinSize);
+
+                        if (bestAccForWinSize > maxAcc) {
+                            maxAcc = bestAccForWinSize;
+                            //get rid of any extras that dont fall within the new max threshold
+                            Iterator<BOSSIndividual> it = classifiers[n].iterator();
+                            while (it.hasNext()) {
+                                BOSSIndividual b = it.next();
+                                if (b.accuracy < maxAcc * correctThreshold) {
+                                    it.remove();
+                                }
+                            }
+                        }
+
+                        while (classifiers[n].size() > maxEnsembleSize) {
+                            //cull the 'worst of the best' until back under the max size
+                            int minAccInd = (int) findMinEnsembleAcc()[0];
+
+                            classifiers[n].remove(minAccInd);
+                        }
+
+                        minMaxAcc = findMinEnsembleAcc()[1]; //new 'worst of the best' acc
+                    }
+
+                    numClassifiers[n] = classifiers[n].size();
+                }
+            }
+        }
+    }
     
-    private void checkpoint(int seriesNo, String relationName){
+    private void checkpoint(int seriesNo){
         if(checkpointPath!=null){
             try{
                 File f = new File(serPath);
@@ -653,7 +679,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             }
             catch(Exception e){
                 e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+"/"+relationName+"RandomBOSSSer/  FAILED");
+                System.out.println("Serialisation to "+serPath+" FAILED");
             }
         }
     }
@@ -668,6 +694,30 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         }
 
         f.delete();
+    }
+
+    public String checkpointName(){
+        if (contract){
+            return "RandomContract" + contractTime;
+        }
+        else if (useCAWPE){
+            if (isMultivariate && ensembleSizePerChannel > 0){
+                return "RandomCAWPE" + (ensembleSizePerChannel*numSeries);
+            }
+            else {
+                return "RandomCAWPE" + ensembleSize;
+            }
+        }
+        else if (randomEnsembleSelection){
+            if (isMultivariate && ensembleSizePerChannel > 0){
+                return "Random" + (ensembleSizePerChannel*numSeries);
+            }
+            else {
+                return "Random" + ensembleSize;
+            }
+        }
+
+        return "";
     }
 
     //[0] = index, [1] = acc
