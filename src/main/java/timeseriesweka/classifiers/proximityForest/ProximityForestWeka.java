@@ -17,13 +17,20 @@
 
 package timeseriesweka.classifiers.proximityForest;
 
+import core.AppContext;
 import core.contracts.Dataset;
+import datasets.ListDataset;
 import evaluation.storage.ClassifierResults;
+import experiments.ClassifierLists;
+import experiments.Experiments;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import trees.ProximityForest;
+import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -31,11 +38,16 @@ import weka.core.Instances;
  * 
  * An in-progress wrapper/conversion class for the java Proximity Forest implementation.
  * 
- * We want to get individual prediction info and distributions (instead of single classifications), and therefore
- have decided to take individual files and and play around with them instead of make calls to the 
- packaged jar. 
-  
- Github code:   https://github.com/fpetitjean/ProximityForestWeka
+ * The code as-is on the github page does not return distributions when predicting. Therefore
+ * in our version of the jar I have added a predict_proba() to be used here instead of predict().
+ * Existing proximity code is UNEDITED, and predict_proba simply returns the distribution of 
+ * the num_votes class member instead of resolving ties internally and returning a single 
+ * class value. NOTE: we are by-passing the test method which is ultimately foreach inst { predict() },
+ * and so proximity forest's internal results object is empty. This has no other sides effects 
+ * for our own intention, however
+ * 
+ * 
+ * Github code:   https://github.com/fpetitjean/ProximityForestWeka
  * 
  * @article{DBLP:journals/corr/abs-1808-10594,
  *   author    = {Benjamin Lucas and
@@ -63,34 +75,90 @@ import weka.core.Instances;
  */
 public class ProximityForestWeka extends AbstractClassifier {
 
-    //taken from appcontext, actual parameters
-    public static int num_trees = 1;
-    public static int num_candidates_per_split = 1;
-    public static boolean random_dm_per_node = true;
+    //taken from appcontext, actual tunable parameters
+    private int num_trees = 1;                  //500? look at paper 
+    private int num_candidates_per_split = 1;   //5
+    private boolean random_dm_per_node = true;  //leave as true
     
+    private int numClasses;
     public ProximityForest pf;
     
     public ProximityForestWeka() { 
-        
+        pf = new ProximityForest(0);
+    }
+
+    public int getNum_trees() {
+        return num_trees;
+    }
+
+    public void setNum_trees(int num_trees) {
+        this.num_trees = num_trees;
+    }
+
+    public int getNum_candidates_per_split() {
+        return num_candidates_per_split;
+    }
+
+    public void setNum_candidates_per_split(int num_candidates_per_split) {
+        this.num_candidates_per_split = num_candidates_per_split;
+    }
+
+    public boolean isRandom_dm_per_node() {
+        return random_dm_per_node;
+    }
+
+    public void setRandom_dm_per_node(boolean random_dm_per_node) {
+        this.random_dm_per_node = random_dm_per_node;
     }
         
-//    private Dataset toPFDataset(Instances insts) {
-//        
-//    }
-//    
-//    private Instances toInstances(Dataset pfDset) {
-//        
-//    }
+    public void setSeed(int seed) { 
+        AppContext.rand_seed = seed;
+        AppContext.rand = new Random(seed);        
+    }
+    
+    public int getSeed() { 
+        return (int)AppContext.rand_seed;
+    }
+    
+    private Dataset toPFDataset(Instances insts) {
+        Dataset dset = new ListDataset(insts.numInstances());
+        
+        for (Instance inst : insts)
+            dset.add((int)inst.classValue(), getSeries(inst));
+        
+        return dset;
+    }
+    
+    private double[] getSeries(Instance inst) {
+        double[] d = new double[inst.numAttributes()-1];
+        for (int i = 0; i < d.length; i++)
+            d[i] = inst.value(i);
+        return d;
+    }
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-//        Dataset pfdata = toPFDataset(data);
-        
-        
+        numClasses = data.numClasses();
+        Dataset pfdata = toPFDataset(data);
+        pf.train(pfdata);
     }
     
     @Override
-    public double[] distributionForInstance(Instance inst) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public double[] distributionForInstance(Instance inst) throws Exception {
+        return pf.predict_proba(getSeries(inst), numClasses);
+    }
+    
+    
+    
+    public static void main(String[] args) throws Exception {
+        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+
+        exp.dataReadLocation = "Z:\\Data\\TSCProblems2018\\";
+        exp.resultsWriteLocation = "C:\\Temp\\ProximityForestWekaTest\\";
+        exp.classifierName = "ProximityForest";
+        exp.datasetName = "BeetleFly";
+        exp.foldId = 0;
+        
+        Experiments.setupAndRunExperiment(exp);
     }
 }
