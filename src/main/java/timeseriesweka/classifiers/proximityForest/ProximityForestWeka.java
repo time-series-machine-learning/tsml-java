@@ -17,6 +17,12 @@
 
 package timeseriesweka.classifiers.proximityForest;
 
+import core.contracts.Dataset;
+import evaluation.storage.ClassifierResults;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import trees.ProximityForest;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -26,10 +32,10 @@ import weka.core.Instances;
  * An in-progress wrapper/conversion class for the java Proximity Forest implementation.
  * 
  * We want to get individual prediction info and distributions (instead of single classifications), and therefore
- * have decided to take individual files and and play around with them instead of make calls to the 
- * packaged jar. 
- *  
- * Github code:   https://github.com/fpetitjean/ProximityForest
+ have decided to take individual files and and play around with them instead of make calls to the 
+ packaged jar. 
+  
+ Github code:   https://github.com/fpetitjean/ProximityForestWeka
  * 
  * @article{DBLP:journals/corr/abs-1808-10594,
  *   author    = {Benjamin Lucas and
@@ -55,18 +61,19 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ProximityForest extends AbstractClassifier {
+public class ProximityForestWeka extends AbstractClassifier {
 
+    //taken from appcontext, actual parameters
+    public static int num_trees = 1;
+    public static int num_candidates_per_split = 1;
+    public static boolean random_dm_per_node = true;
     
+    public ProximityForest pf;
     
-    
-    
-    
-    
-    
-    
-    
-    
+    public ProximityForestWeka() { 
+        
+    }
+        
 //    private Dataset toPFDataset(Instances insts) {
 //        
 //    }
@@ -77,7 +84,9 @@ public class ProximityForest extends AbstractClassifier {
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//        Dataset pfdata = toPFDataset(data);
+        
+        
     }
     
     @Override
