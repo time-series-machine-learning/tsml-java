@@ -200,9 +200,15 @@ public class ClassifierResultsAnalysis {
                     + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the timings");
         }
         
+        //TODO clean all of this timing stuff up, it's jsut another layer of hacky nonsense. 
+        //just need a CLEAN break of 'does everything have timings? do all the timing analysis. 
+        //does ANYTHING not have timings? do NONE of the timing analysis
+        
         //using the presence of summaries for train and test timings as an indicator that they are present 
-        List<PerformanceMetric> timeMetrics = Arrays.asList(PerformanceMetric.buildTime, testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
-        for (int j = 0; j < trainTestTimingSummary.length; j++) {
+        List<PerformanceMetric> timeMetrics = new ArrayList<>();
+        timeMetrics.add(PerformanceMetric.buildTime);
+        timeMetrics.add(testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
+        for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
             String label = timeMetrics.get(j).name;
             if (trainTestTimingSummary[j] != null) {
                 //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
