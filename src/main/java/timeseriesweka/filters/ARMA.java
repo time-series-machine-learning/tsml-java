@@ -131,7 +131,7 @@ public class ARMA extends SimpleBatchFilter {
             double[] pi= new double[maxLag];
             for(int k=0;k<best;k++)
                     pi[k]=partials[k][best-1];
-    //6. Stuff back into new Instances. NEED TO CLONE IT
+    //6. Stuff back into new Instances. 
             Instance in= new DenseInstance(output.numAttributes());
             //Set class value.
             int cls=output.classIndex();

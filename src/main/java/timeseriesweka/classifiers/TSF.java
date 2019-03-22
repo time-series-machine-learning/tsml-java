@@ -33,6 +33,7 @@ import java.util.function.Function;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
+import weka.core.Randomizable;
 import weka.core.Utils;
 
 /** 
@@ -127,7 +128,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
     /**Holding variable for test classification in order to retain the header info*/     
     private Instances testHolder;
 
-    /**Can seed for reproducability*/
+    /**Can seed for reproducibility*/
     private Random rand;
     private boolean setSeed=false;
     private int seed=0;
@@ -172,7 +173,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
     }
     
 /**
- * Seed experiments for reproducability with the resample number
+ * Seed experiments for reproducibility with the resample number
  * @param s 
  */    
     public void setSeed(int s){
@@ -425,10 +426,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         if(base instanceof RandomTree){
             ((RandomTree) base).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
+//            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
         }        
-        
-        
         /** For each base classifier 
          *      generate random intervals
          *      do the transfrorms
@@ -462,6 +461,9 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             }
         //3. Create and build tree using all the features. Feature selection
             trees[i]=AbstractClassifier.makeCopy(base); 
+            if(trees[i] instanceof Randomizable){
+                 ((Randomizable)trees[i]).setSeed(seed*(i+1));
+            }
             trees[i].buildClassifier(result);
         }
         long t2=System.currentTimeMillis();

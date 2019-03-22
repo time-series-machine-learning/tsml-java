@@ -89,62 +89,53 @@ public class PACF extends SimpleBatchFilter {
 
     @Override
     public Instances process(Instances inst) throws Exception {
-            Instances output=determineOutputFormat(inst);
-
-            //For each data, first extract the relevan
-            int seriesLength=inst.numAttributes();
-            int acfLength=output.numAttributes();
-            if(inst.classIndex()>=0){
-                    seriesLength--;
-                    acfLength--;
-            }
-            double[] d;
-            for(int i=0;i<inst.numInstances();i++){
-            //1. Get series
-                    d=inst.instance(i).toDoubleArray();
-                    //Need to remove the class
-                    int c=inst.classIndex();
-                    if(c>=0){
-                            double[] temp=new double[d.length-1];
-                            int count=0;
+        Instances output=determineOutputFormat(inst);
+        double[] d;
+        for(int i=0;i<inst.numInstances();i++){
+        //1. Get series
+            d=inst.instance(i).toDoubleArray();
+            //Need to remove the class
+            int c=inst.classIndex();
+            if(c>=0){
+                double[] temp=new double[d.length-1];
+                int count=0;
 //Arraycopy more efficient, dont really trust it
-                            for(int k=0;k<d.length;k++){
-                                    if(k!=c){
-                                            temp[count]=d[k];
-                                            count++;
-                                    }
-                            }
-                            d=temp;
+                for(int k=0;k<d.length;k++){
+                    if(k!=c){
+                        temp[count]=d[k];
+                        count++;
                     }
-            //2. Fit Autocorrelations
-                    autos=ACF.fitAutoCorrelations(d,maxLag);
-            //3. Form Partials	
-                    partials=formPartials(autos);
-            //5. Find parameters
-                    double[] pi= new double[maxLag];
-                    for(int k=0;k<maxLag;k++){  //Set NANs to zero
-                        if(Double.isNaN(partials[k][k]) || Double.isInfinite(partials[k][k])){
-                            pi[k]=0;
-                        }
-                        else
-                            pi[k]=partials[k][k];
-                    }
-            //6. Stuff back into new Instances.
-                    Instance in= new DenseInstance(output.numAttributes());
-                    //Set class value.
-                    int cls=output.classIndex();
-                    if(cls>=0)
-                            in.setValue(cls, inst.instance(i).classValue());
-                    int count=0;
-                    //Allows for a class index not at the end, or should do so.
-                    for(int k=0;k<pi.length;k++){
-                            if(k!=cls){
-                                    in.setValue(count, pi[k]);
-                                    count++;
-                            }
-                    }
-                    output.add(in);
-
+                }
+                d=temp;
+            }
+        //2. Fit Autocorrelations
+            autos=ACF.fitAutoCorrelations(d,maxLag);
+        //3. Form Partials	
+            partials=formPartials(autos);
+        //5. Find parameters
+            double[] pi= new double[maxLag];
+            for(int k=0;k<maxLag;k++){  //Set NANs to zero
+                if(Double.isNaN(partials[k][k]) || Double.isInfinite(partials[k][k])){
+                    pi[k]=0;
+                }
+                else
+                    pi[k]=partials[k][k];
+            }
+        //6. Stuff back into new Instances.
+            Instance in= new DenseInstance(output.numAttributes());
+            //Set class value.
+            int cls=output.classIndex();
+            if(cls>=0)
+                in.setValue(cls, inst.instance(i).classValue());
+            int count=0;
+            //Allows for a class index not at the end, or should do so.
+            for(int k=0;k<pi.length;k++){
+                if(k!=cls){
+                    in.setValue(count, pi[k]);
+                    count++;
+                }
+            }
+            output.add(in);
             }
             return output;
     }

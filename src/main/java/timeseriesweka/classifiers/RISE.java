@@ -280,6 +280,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
         // class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
+        //Just to make sure
+        result.disable(Capabilities.Capability.MISSING_VALUES);
         // instances
         result.setMinimumNumberInstances(0);
 
@@ -380,6 +382,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 //What if L meant something else to the SimpleFilter? 
 //Can you use a whole string, e.g. MAXLAG?
                 filters[j].setOptions(new String[]{"L",maxLag+""});
+                filters[j].setInputFormat(result);
                 t[j]=Filter.useFilter(result, filters[j]);
             }
             //4. Merge them all together

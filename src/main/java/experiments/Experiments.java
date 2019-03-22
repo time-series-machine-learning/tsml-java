@@ -362,7 +362,7 @@ public class Experiments  {
                 settings[0]="E:/Data/TSCProblems2018/";
                 settings[1]="E:/Results/Java/";
                 settings[2]="false";
-                settings[3]="TSF";
+                settings[3]="RISE";
                 settings[4]="blank";
                 settings[5]="0";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
@@ -370,10 +370,10 @@ public class Experiments  {
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
-                settings[0]="Z:/Data/TSCProblems2018/";//Where to get data                
+                settings[0]="E:/Data/TSCProblems2018/";//Where to get data                
                 settings[1]="E:/Results/";//Where to write results                
                 settings[2]="false"; //Whether to generate train files or not               
-                settings[3]="TSF"; //Classifier name
+                settings[3]="RISE"; //Classifier name
                 for(String str:DataSets.tscProblems78){
                     settings[4]=str; //Problem file   
                     settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
