@@ -1432,7 +1432,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
                 double eps = 1.e-8;
                 if (Math.abs(reportedTestAcc - acc) > eps) {
                     throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
-                            + "by more than eps (" + eps + ")");
+                            + "by more than eps (" + eps + "). File = " + path + ". numinstances = " + numInstances + ". numClasses = " + numClasses);
                 }
                 break;
             }
