@@ -57,6 +57,7 @@ import utilities.InstanceTools;
  *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
  *    - get/setBuildTime(long)
  *    - get/setTestTime(long)
+ *    - get/setBenchmarkTime(long)
  *    - get/setMemory(long)
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
@@ -86,7 +87,7 @@ import utilities.InstanceTools;
  * 
  * EXAMPLE USAGE: 
  *          ClassifierResults res = new ClassifierResults();
- *          //set a particular timeunit, if using something other than millis, nanos recommended
+ *          //set a particular timeunit, if using something other than millis. Nanos recommended
  *          //set any meta info you want to keep, e.g classifiername, datasetname...
  * 
  *          for (Instance inst : test) {
@@ -178,7 +179,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long buildTime = -1; 
@@ -187,7 +188,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary 
      * in case complete prediction information is not stored, and/or for a human reader to quickly compare times. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long testTime = -1; //total testtime for all predictions
@@ -198,7 +199,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
      * across different results sets. It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long benchmarkTime = -1; 
@@ -779,7 +780,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      * 
-     * Todo future, maaaybe add enum for tie resolution to handle it here.
+     * Todo future, maaaybe add enum/functor arg for tie resolution to handle it here.
      *
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
@@ -1045,6 +1046,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return exists(new File(path));
     }
     
+    private boolean firstTimeDistMissing = true;
+    public static boolean printDistMissingWarning = true;
     /**
      * Reads and STORES the prediction in this classifierresults object
      * returns true if the prediction described by this string was correct (i.e. truclass==predclass) 
@@ -1062,11 +1065,25 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         double trueClassVal=Double.valueOf(split[0].trim());
         double predClassVal=Double.valueOf(split[1].trim());
         
-        if(split.length==2) //no probabilities, no timing. VERY old files will not have them
-            return true;
-        
+        if(split.length<3) { //no probabilities, no timing. VERY old files will not have them
+            if (printDistMissingWarning && firstTimeDistMissing) {
+                System.out.println("*********");
+                System.out.println("");
+                System.out.println("Probability distribution information missing in file. Be aware that certain stats cannot be computed, usability will be diminished. "
+                        + "If you know this and dont want this message being printed right now, since e.g. it's messing up your "
+                        + "own print formatting, set ClassifierResults.printDistMissingWarning to false.");
+                System.out.println("");
+                System.out.println("*********");
+
+                firstTimeDistMissing = false;
+            }
+            
+            addPrediction(trueClassVal, null, predClassVal, -1, "");
+            return trueClassVal==predClassVal;
+        }
+        //else 
         //collect probabilities
-        int distStartInd = 3; //actual, predicted, space, distStart
+        final int distStartInd = 3; //actual, predicted, space, distStart
         double[] dist = null;
         if (numClasses < 2) {
             List<Double> distL = new ArrayList<>();
@@ -1096,13 +1113,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         //collect timings
         long predTime = -1;
-        int timingInd = distStartInd + (numClasses-1) + 1 + 1; //actual, predicted, space, dist, space, timing
+        final int timingInd = distStartInd + (numClasses-1) + 1 + 1; //actual, predicted, space, dist, space, timing
         if (split.length > timingInd)
             predTime = Long.parseLong(split[timingInd].trim());
         
         //collect description
         String description = "";
-        int descriptionInd = timingInd + 1 + 1; //actual, predicted, space, dist, space, timing, space, description
+        final int descriptionInd = timingInd + 1 + 1; //actual, predicted, space, dist, space, timing, space, description
         if (split.length > descriptionInd) {
             description = split[descriptionInd];
             
@@ -1431,8 +1448,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
                 double eps = 1.e-8;
                 if (Math.abs(reportedTestAcc - acc) > eps) {
                     throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
-                            + "by more than eps (" + eps + ")");
+                            + "by more than eps (" + eps + "). File = " + path + ". numinstances = " + numInstances + ". numClasses = " + numClasses);
                 }
+                
+                if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
+                    if (printDistMissingWarning)
+                        System.out.println("Probabiltiy distributions missing from file: " + path);
+                }
+                
                 break;
             }
             case METRICS:
@@ -1473,32 +1496,36 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * of added predictions)
      */   
     public void findAllStats(){
-       if (numInstances <= 0)
-           inferNumInstances();
-       if (numClasses <= 0)
-           inferNumClasses();
         
-       confusionMatrix=buildConfusionMatrix();
-       
-       countPerClass=new double[confusionMatrix.length];
-       for(int i=0;i<trueClassValues.size();i++)
-           countPerClass[trueClassValues.get(i).intValue()]++;
-       
-       acc=0;
-       for(int i=0;i<numClasses;i++)
-           acc+=confusionMatrix[i][i];
-       acc/=numInstances;
-       
-       balancedAcc=findBalancedAcc(confusionMatrix);
-       nll=findNLL();
-       meanAUROC=findMeanAUROC();
-       mcc = computeMCC(confusionMatrix);
-       
-       f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
-       
-       medianPredTime=findMedianPredTime();
-       
-       allStatsFound = true;
+        //meta info
+        if (numInstances <= 0)
+            inferNumInstances();
+        if (numClasses <= 0)
+            inferNumClasses();
+        
+        //predictions-only 
+        confusionMatrix=buildConfusionMatrix();
+
+        countPerClass=new double[confusionMatrix.length];
+        for(int i=0;i<trueClassValues.size();i++)
+            countPerClass[trueClassValues.get(i).intValue()]++;
+
+        calculateAcc();
+        balancedAcc=findBalancedAcc(confusionMatrix);
+        
+        mcc = computeMCC(confusionMatrix);
+        f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
+
+        //need probabilities. very old files that have been read in may not have them.
+        if (predDistributions != null && !predDistributions.isEmpty() && predDistributions.get(0) != null ) {
+            nll=findNLL();
+            meanAUROC=findMeanAUROC();
+        }
+
+        //timing 
+        medianPredTime=findMedianPredTime();
+
+        allStatsFound = true;
     }
    
     
