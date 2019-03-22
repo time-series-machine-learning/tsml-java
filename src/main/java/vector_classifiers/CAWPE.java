@@ -525,8 +525,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         else
             trainModules();
 
-        for (int m = 0; m < modules.length; m++)
+        for (int m = 0; m < modules.length; m++) { 
+            //in case train results didnt have probability distributions, hack for old hive cote results tony todo clean
+            modules[m].trainResults.setNumClasses(trainInsts.numClasses());
             modules[m].trainResults.findAllStatsOnce();
+        }
     }
 
     protected boolean willNeedToDoCV() {
