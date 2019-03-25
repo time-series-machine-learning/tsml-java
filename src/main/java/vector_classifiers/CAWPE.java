@@ -459,7 +459,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             this.trainInsts = data;
 //            this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = Filter.useFilter(data,transform);
+           transform.setInputFormat(data);
+           this.trainInsts = Filter.useFilter(data,transform);
         }
           
         //init
@@ -978,6 +979,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
+            transform.setInputFormat(rawContainer);
             Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
@@ -1032,6 +1034,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
+            transform.setInputFormat(rawContainer);
             Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
@@ -1052,6 +1055,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
+            transform.setInputFormat(rawContainer);
             Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }

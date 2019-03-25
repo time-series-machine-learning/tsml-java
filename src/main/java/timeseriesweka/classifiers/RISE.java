@@ -28,6 +28,7 @@ import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
 import timeseriesweka.classifiers.SubSampleTrain;
+import timeseriesweka.filters.ACF_PACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;
 import weka.core.Capabilities;
@@ -44,11 +45,11 @@ import weka.filters.SimpleFilter;
  * 4. Find the PS, ACF, PACF and AR features
  * 5. Build each base classifier (default RandomTree).
 
-* 19/3/19: TO DO
-* 1. Check correctness of new structure vs other data
-* 2. Test whether we need all four components, particularly AR and PACF!
-* 3. Implement speed up to avoid recalculating ACF each time
-* 4. Compare to python version
+* 19/3/19: DONE
+* A1. Restructure
+* A2. Test whether we need all four components, particularly AR and PACF!
+* A3. Implement speed up to avoid recalculating ACF each time
+* A4. Compare to python version
 * 
  <!-- globalinfo-start -->
  * Random Interval Spectral Ensemble
@@ -90,7 +91,7 @@ import weka.filters.SimpleFilter;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain{
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */    
@@ -118,19 +119,21 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     private boolean subSample=false;
     private double sampleProp=1;
     public RISE(){
-        filters=new SimpleFilter[4];
+        filters=new SimpleFilter[3];
         ACF acf= new ACF();
         acf.setNormalized(false);
         filters[0]=acf;
-        ARMA arma=new ARMA();                        
-        arma.setUseAIC(false);
-        filters[1]=arma;
-        filters[2]=new PACF();
-        filters[3]=new PowerSpectrum();
+        PACF pacf=new PACF();
+        filters[1]=pacf;
+        filters[2]=new PowerSpectrum();
+        rand=new Random();
     }
     public RISE(int s){
         this();
         seed=s;
+        setSeed=true;
+        rand.setSeed(seed);
+        
     }
     /**
      * This interface is not formalised and needs to be considered in the next
@@ -162,6 +165,9 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                     break;
                 case "PS": case "PowerSpectrum":
                     filters[count]= new PowerSpectrum();
+                    break;
+                case "ACF_PACF": case "PACF_ACF":
+                    filters[count]= new ACF_PACF();
                     break;
                 default:
                     System.out.println("Unknown tranform "+s);
@@ -366,7 +372,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             else
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
             //if(baseClassifiers[i] instanceof Randomisable)
-            if(baseClassifiers[i] instanceof Randomizable)
+            if(baseClassifiers[i] instanceof Randomizable && setSeed)
                 ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
@@ -456,5 +462,12 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         System.out.println("Train size "+result.numInstances());
         System.out.println("Test size "+testHolder.numInstances());
 */
+    }
+
+    @Override
+    public int getSeed() {
+        if(setSeed)
+            return seed;
+        throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
     }
 }

@@ -262,17 +262,20 @@ public class DTD_C extends DD_DTW{
             temp.add(first);
             temp.add(second);
             try{
+                SimpleBatchFilter bf=null;
                 switch(this.transformType){
                     case COS:
-                        temp = Filter.useFilter(temp,new Cosine());
+                        bf=new Cosine();
                         break;
                     case SIN:
-                        temp = Filter.useFilter(temp,new Sine());
+                        bf=new Sine();
                         break;
-                    case HIL:
-                        temp = Filter.useFilter(temp,new Hilbert());
+                    case HIL: default:
+                         bf=new Hilbert();
                         break;
                 }
+                bf.setInputFormat(temp);
+                temp = Filter.useFilter(temp,bf);    
             }catch(Exception e){
                 e.printStackTrace();
                 return null;

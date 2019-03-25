@@ -253,6 +253,24 @@ public class ClassifierLists {
             case "RISE":
                 c=new RISE(fold);
                 break;
+            case "RISE_A1":
+                c=new RISE();
+                ((RISE) c).setSeed(fold);
+                ((RISE) c).setTransforms("PS","ACF","PACF","AR");
+//              ((RISE)c).setNumClassifiers(500);
+                break;
+            case "RISE_A2":
+                c=new RISE();
+                ((RISE) c).setSeed(fold);
+                ((RISE) c).setTransforms("PS","ACF","PACF");
+//              ((RISE)c).setNumClassifiers(500);
+                break;
+            case "RISE_A3":
+                c=new RISE();
+                ((RISE) c).setSeed(fold);
+                ((RISE) c).setTransforms("PS","ACF_PACF");
+//              ((RISE)c).setNumClassifiers(500);
+                break;
             case "TSBF":
                 c=new TSBF();
                 break;

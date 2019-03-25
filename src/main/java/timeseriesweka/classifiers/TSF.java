@@ -102,7 +102,7 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate{
+public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -176,6 +176,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
  * Seed experiments for reproducibility with the resample number
  * @param s 
  */    
+    @Override
     public void setSeed(int s){
         this.setSeed=true;
         seed=s;
@@ -426,8 +427,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         if(base instanceof RandomTree){
             ((RandomTree) base).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-//            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
+            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
         }        
+        
+        
         /** For each base classifier 
          *      generate random intervals
          *      do the transfrorms
@@ -461,9 +464,9 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             }
         //3. Create and build tree using all the features. Feature selection
             trees[i]=AbstractClassifier.makeCopy(base); 
-            if(trees[i] instanceof Randomizable){
-                 ((Randomizable)trees[i]).setSeed(seed*(i+1));
-            }
+            if(setSeed && trees[i] instanceof Randomizable)
+                ((Randomizable)trees[i]).setSeed(seed*(i+1));
+            
             trees[i].buildClassifier(result);
         }
         long t2=System.currentTimeMillis();
@@ -585,6 +588,11 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             System.err.print("Value"+numIntervalsFinder+" Permissable values: sqrt, log, or a double range 0...1");
             numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
         }
+    }
+
+    @Override
+    public int getSeed() {
+        return seed;
     }
 
 //Nested class to store three simple summary features used to construct train data
