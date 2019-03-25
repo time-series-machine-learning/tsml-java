@@ -49,8 +49,9 @@ import utilities.InstanceTools;
  *    - get/setClassifierName(String)
  *    - get/setSplit(String)
  *    - get/setFoldId(String)
- *    - get/setDescription(String)
  *    - get/setTimeUnit(TimeUnit)
+ *    - FileType, set implicitly via the write...() method used 
+ *    - get/setDescription(String)
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
@@ -59,6 +60,7 @@ import utilities.InstanceTools;
  *    - get/setTestTime(long)
  *    - get/setBenchmarkTime(long)
  *    - get/setMemory(long)
+ *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  * 
@@ -1392,6 +1394,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4) 
             memoryUsage = Long.parseLong(parts[4]);
+        if (parts.length > 5) 
+            numClasses = Integer.parseInt(parts[5]);
         
         return acc;
     }
@@ -1400,7 +1404,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + buildTime
             + "," + testTime
             + "," + benchmarkTime
-            + "," + memoryUsage;
+            + "," + memoryUsage
+            + "," + numClasses();
         return res;
     }
 
