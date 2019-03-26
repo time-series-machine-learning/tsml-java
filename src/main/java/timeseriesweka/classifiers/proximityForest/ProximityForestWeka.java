@@ -18,22 +18,13 @@
 package timeseriesweka.classifiers.proximityForest;
 
 import core.AppContext;
-import core.ProximityForestResult;
 import core.contracts.Dataset;
 import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
-import evaluation.storage.ClassifierResults;
-import experiments.ClassifierLists;
-import experiments.DataSets;
 import experiments.Experiments;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import trees.ProximityForest;
-import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -44,8 +35,13 @@ import weka.core.Instances;
  * The code as-is on the github page does not return distributions when predicting. Therefore
  * in our version of the jar I have added a predict_proba() to be used here instead of predict().
  * Existing proximity code is UNEDITED, and predict_proba simply returns the distribution of 
- * the num_votes class member instead of resolving ties internally and returning a single 
- * class value. 
+ * the num_votes class member instead of resolving ties internally and returning the single,
+ * majority voted for, class value. As such, metrics that do not consider probabilistic performance 
+ * (accuracy, most importantly) should be identical when training and testing on identical data
+ * with identical seeds. The only part where this falls down is in tie resolution for 
+ * the majority class, todo. 
+ * 
+ * tl;dr, performance on average should be significantly the same towards vanishing p values
  * 
  * NOTE1: we are by-passing the test method which is ultimately foreach inst { predict() },
  * and so proximity forest's internal results object is empty. This has no other sides effects for 
@@ -53,6 +49,10 @@ import weka.core.Instances;
  * 
  * NOTE2: because of the static AppContext holding e.g random seeds etc, do not run multiple 
  * experiments using ProximityForest in parallel, i.e with Experiments.setupAndRunMultipleExperimentsThreaded(...)
+ * 
+ * TODO: weka/tsc interface implementations etc, currently this is simply in a runnable state 
+ * for basic experimental runs to compare against. Need: TechnicalInformationHandler, need to do the get/setOptions, 
+ * could do parameter searches if wanted, etcetc.
  * 
  * 
  * Github code:   https://github.com/fpetitjean/ProximityForestWeka
