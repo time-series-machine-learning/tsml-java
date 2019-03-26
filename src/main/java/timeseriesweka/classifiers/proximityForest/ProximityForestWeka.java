@@ -201,32 +201,31 @@ public class ProximityForestWeka extends AbstractClassifier {
 
         
         String[] classifiers = { "ProximityForest" };
-//        String[] datasets = { "ItalyPowerDemand", "Beetlefly", "Car", "Adiac", "SyntheticControl", "ToeSegmentation1", "Wine" };
+        
         String[] datasets = {
-//            "Beef", // 30,30,470,5
-//            "Car", // 60,60,577,4
-//            "Coffee", // 28,28,286,2
-//            "CricketX", // 390,390,300,12
-//            "CricketY", // 390,390,300,12
-//            "CricketZ", // 390,390,300,12
+            "Beef", // 30,30,470,5
+            "Car", // 60,60,577,4
+            "Coffee", // 28,28,286,2
+            "CricketX", // 390,390,300,12
+            "CricketY", // 390,390,300,12
+            "CricketZ", // 390,390,300,12
             "DiatomSizeReduction", // 16,306,345,4
             "fish", // 175,175,463,7
             "GunPoint", // 50,150,150,2
             "ItalyPowerDemand", // 67,1029,24,2
-//            "MoteStrain", // 20,1252,84,2
-//            "OliveOil", // 30,30,570,4
-//            "Plane", // 105,105,144,7
-//            "SonyAIBORobotSurface1", // 20,601,70,2
-//            "SonyAIBORobotSurface2", // 27,953,65,2
-//            "SyntheticControl", // 300,300,60,6
-//            "Trace", // 100,100,275,4
-//            "TwoLeadECG", // 23,1139,82,2  
+            "MoteStrain", // 20,1252,84,2
+            "OliveOil", // 30,30,570,4
+            "Plane", // 105,105,144,7
+            "SonyAIBORobotSurface1", // 20,601,70,2
+            "SonyAIBORobotSurface2", // 27,953,65,2
+            "SyntheticControl", // 300,300,60,6
+            "Trace", // 100,100,275,4
+            "TwoLeadECG", // 23,1139,82,2  
         };
         int numFolds = 30;
 
-        //Because of the static app context, this is a bad idea, stick to single threaded
-//        Experiments.c(exp, classifiers, datasets, 0, numFolds, -1);
         
+        //Because of the static app context, best not run multithreaded, stick to single threaded
         for (String dataset : datasets) {
             for (int f = 0; f < numFolds; f++) {
                 exp.datasetName = dataset;
@@ -236,13 +235,13 @@ public class ProximityForestWeka extends AbstractClassifier {
         }
         
         
-//        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(exp.resultsWriteLocation +"ANA/", "sanityCheck", numFolds);
-//        mce.setBuildMatlabDiagrams(false);
-//        mce.setTestResultsOnly(true);
-//        mce.setDatasets(datasets);
-//        mce.readInClassifier(exp.classifierName, exp.resultsWriteLocation);
-////        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/");
-//        mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
-//        mce.runComparison();
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(exp.resultsWriteLocation +"ANA/", "sanityCheck", numFolds);
+        mce.setBuildMatlabDiagrams(false);
+        mce.setTestResultsOnly(true);
+        mce.setDatasets(datasets);
+        mce.readInClassifier(exp.classifierName, exp.resultsWriteLocation);
+//        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
+        mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
+        mce.runComparison();
     }
 }
