@@ -140,7 +140,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         //could be improved for different boss versions, seems low prio though
 
+        sb.append(",numSeries,").append(numSeries);
+
         for (int n = 0; n < numSeries; n++) {
+            sb.append(",numclassifiers").append(n).append(",").append(numClassifiers[n]);
+
             for (int i = 0; i < numClassifiers[n]; ++i) {
                 BOSSIndividual boss = classifiers[n].get(i);
                 sb.append(",windowSize,").append(boss.getWindowSize()).append(",wordLength,").append(boss.getWordLength());
