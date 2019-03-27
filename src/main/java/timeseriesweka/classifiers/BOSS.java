@@ -30,10 +30,8 @@ import java.util.Map.Entry;
 import utilities.ClassifierTools;
 import utilities.BitWord;
 import utilities.TrainAccuracyEstimate;
-import vector_classifiers.CAWPE;
+import vector_classifiers.HomogeneousContractCAWPE;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.functions.Logistic;
-import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
@@ -72,7 +70,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     public boolean loadAndFinish = false;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
-    private CAWPE[] cawpe;
+    private HomogeneousContractCAWPE[] cawpe;
     private int numSeries;
     private int numClassifiers[];
     private int currentSeries = 0;
@@ -458,53 +456,53 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     private void buildRandomCAWPEBOSS(Instances[] series) throws Exception {
-        int seriesLength = series[0].numAttributes()-1; //minus class attribute
-        int minWindow = 10;
-        int maxWindow = seriesLength/2;
-
-        //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
-        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
-        if (winInc < 1) winInc = 1;
-
-        cawpe = new CAWPE[numSeries];
-
-        while (sum(numClassifiers) < ensembleSize) {
-            //randomly select parameters except for alphabetSize
-            int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
-            int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
-            if(winSize > maxWindow) winSize = maxWindow;
-            boolean normalise = rand.nextBoolean();
-
-            //do not have to build here, CAWPE will build each classifer
-            BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
-            boss.cleanAfterBuild = true;
-            classifiers[currentSeries].add(boss);
-            numClassifiers[currentSeries]++;
-
-            int prev = currentSeries;
-            if (isMultivariate){
-                nextSeries();
-            }
-
-            if (checkpoint) {
-                checkpoint(prev);
-            }
-        }
-
-        //build a CAWPE classifier for each channel (1 if univariate)
-        for (int i = 0; i < numSeries; i++){
-            cawpe[i] = new CAWPE();
-            cawpe[i].setNumCVFolds(numCAWPEFolds);
-            BOSSIndividual[] boss = classifiers[i].toArray(new BOSSIndividual[numClassifiers[i]]);
-            cawpe[i].setClassifiers(boss, null, null);
-            cawpe[i].buildClassifier(series[i]);
-
-            //cant serialise cawpe
-            //if (checkpoint) {
-            //checkpoint(-1, relationName);
-            //}
-        }
+//        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+//        int minWindow = 10;
+//        int maxWindow = seriesLength/2;
+//
+//        //whats the max number of window sizes that should be searched through
+//        double maxWindowSearches = seriesLength/4.0;
+//        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+//        if (winInc < 1) winInc = 1;
+//
+//        cawpe = new CAWPE[numSeries];
+//
+//        while (sum(numClassifiers) < ensembleSize) {
+//            //randomly select parameters except for alphabetSize
+//            int wordLength = wordLengths[rand.nextInt(wordLengths.length)];
+//            int winSize = minWindow + winInc * rand.nextInt((int) maxWindowSearches + 1);
+//            if(winSize > maxWindow) winSize = maxWindow;
+//            boolean normalise = rand.nextBoolean();
+//
+//            //do not have to build here, CAWPE will build each classifer
+//            BOSSIndividual boss = new BOSSIndividual(wordLength, alphabetSize, winSize, normalise, alternateIndividualClassifier);
+//            boss.cleanAfterBuild = true;
+//            classifiers[currentSeries].add(boss);
+//            numClassifiers[currentSeries]++;
+//
+//            int prev = currentSeries;
+//            if (isMultivariate){
+//                nextSeries();
+//            }
+//
+//            if (checkpoint) {
+//                checkpoint(prev);
+//            }
+//        }
+//
+//        //build a CAWPE classifier for each channel (1 if univariate)
+//        for (int i = 0; i < numSeries; i++){
+//            cawpe[i] = new CAWPE();
+//            cawpe[i].setNumCVFolds(numCAWPEFolds);
+//            BOSSIndividual[] boss = classifiers[i].toArray(new BOSSIndividual[numClassifiers[i]]);
+//            cawpe[i].setClassifiers(boss, null, null);
+//            cawpe[i].buildClassifier(series[i]);
+//
+//            //cant serialise cawpe
+//            //if (checkpoint) {
+//            //checkpoint(-1, relationName);
+//            //}
+//        }
     }
 
     private void buildRandomBOSS(Instances[] series) throws Exception {
@@ -751,6 +749,55 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             }
         }
     }
+
+    private void buildBagCAWPEBOSS(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = seriesLength/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength/4.0;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        ArrayList<int[]>[] possibleParameters = new ArrayList[numSeries];
+
+        for (int n = 0; n < numSeries; n++) {
+            cawpe = new HomogeneousContractCAWPE[numSeries];
+            cawpe[n].buildClassifier(series[n]);
+            possibleParameters[n] = new ArrayList<>();
+
+            for (int normalise = 0; normalise < 2; normalise++) {
+                for (int i = 0; i <= maxWindowSearches; i++) {
+                    for (Integer wordLen : wordLengths) {
+                        int[] parameters = {wordLen, minWindow + winInc * i, normalise};
+                        possibleParameters[n].add(parameters);
+                    }
+                }
+            }
+        }
+
+        while (sum(numClassifiers) < ensembleSize) {
+            int[] parameters = possibleParameters[currentSeries].remove(rand.nextInt(possibleParameters[currentSeries].size()));
+
+            BOSSIndividual boss = new BOSSIndividual(parameters[0], alphabetSize, parameters[1], parameters[2] == 0, copyClassifier());
+            boss.cleanAfterBuild = true;
+            boss.buildClassifier(series[currentSeries]);
+            numClassifiers[currentSeries]++;
+
+            double[] classVals = series[currentSeries].attributeToDoubleArray(series[currentSeries].classIndex());
+            cawpe[currentSeries].addToEnsemble(boss, ,classVals);
+
+            int prev = currentSeries;
+            if (isMultivariate){
+                nextSeries();
+            }
+
+            if (checkpoint) {
+                checkpoint(prev);
+            }
+        }
+    }
     
     private void checkpoint(int seriesNo){
         if(checkpointPath!=null){
@@ -775,6 +822,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
                 //dont take into account time spent serialising into build time
                 checkpointTimeDiff += System.nanoTime() - checkpointTime;
+                checkpointTime = System.nanoTime();
 
                 //save this, saved classifiers not included
                 saveToFile(serPath + "RandomBOSStemp.ser");
@@ -875,7 +923,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         }
     }
 
-    //Classifier doesntt have its own way to copy apparently so this is used to create multiple versions of the
+    //Classifier doesnt have its own way to copy apparently so this is used to create multiple versions of the
     //alternate classifier
     public Classifier copyClassifier() throws Exception {
         if (alternateIndividualClassifier != null){
