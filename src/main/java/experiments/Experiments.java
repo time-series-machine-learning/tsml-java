@@ -361,7 +361,7 @@ public class Experiments  {
                 String[] settings=new String[6];
                 settings[0]="E:/Data/TSCProblems2018/";
                 settings[1]="E:/Results/";
-                settings[2]="false";
+                settings[2]="true";
                 settings[3]="RISE";
                 settings[4]="Adiac";
                 settings[5]="1";
@@ -372,7 +372,7 @@ public class Experiments  {
 //Location of data set
                 settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
                 settings[1]="-rp=E:/Results/";//Where to write results                
-                settings[2]="-gtf=false"; //Whether to generate train files or not               
+                settings[2]="-gtf=true"; //Whether to generate train files or not               
                 settings[3]="-cn=RISE"; //Classifier name
 //                for(String str:DataSets.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   

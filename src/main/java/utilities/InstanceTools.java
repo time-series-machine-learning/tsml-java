@@ -405,14 +405,23 @@ public class InstanceTools {
         }       
     }
 
-    
+/**
+ * 
+ * @param ins Instances object
+ * @return true if there are any missing values (including class value)
+ */    
     public static boolean hasMissing(Instances ins){
         for(Instance in:ins)
             if(in.hasMissingValue())
                 return true;
        return false;
     }
-     //Deletes the attributes by *shifted* index
+/**
+ * Deletes the attributes by *shifted* index, i.e. the positions are *not* the 
+ * original positions in the data
+ * @param test
+ * @param features 
+ */
     public static void removeConstantAttributes(Instances test, int[] features){
         for(int del:features)
             test.deleteAttributeAt(del);

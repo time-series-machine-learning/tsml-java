@@ -230,13 +230,32 @@ public class DataSets {
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
+        "GestureMidAirD1",
+        "GestureMidAirD2",
+        "GestureMidAirD3",        
+        "GesturePebbleZ1",
+        "GesturePebbleZ2",
         "PickupGestureWiimoteZ",
         "PLAID",
-        "ShakeGestureWiimoteZ",
-        "GesturePebbleZ1",
-        "GesturePebbleZ2"
+        "ShakeGestureWiimoteZ"
    };
+   
+   
    public static String[] missingValue2018Problems={
+        "AllGestureWiimoteX",
+        "AllGestureWiimoteY",
+        "AllGestureWiimoteZ",
+        "DodgerLoopDay",
+        "DodgerLoopGame",
+        "DodgerLoopWeekend",
+        "GestureMidAirD1",
+        "GestureMidAirD2",
+        "GestureMidAirD3",
+        "GesturePebbleZ1",
+        "GesturePebbleZ2",
+        "PickupGestureWiimoteZ",
+        "PLAID",
+        "ShakeGestureWiimoteZ"
    };
    
    

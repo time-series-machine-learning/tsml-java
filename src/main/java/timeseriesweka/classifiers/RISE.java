@@ -21,13 +21,11 @@ import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
-import timeseriesweka.classifiers.SubSampleTrain;
 import timeseriesweka.filters.ACF_PACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;
@@ -272,28 +270,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         return str;
         
     }
-    /**
-       * Returns default capabilities of the classifier. These are that the 
-       * data must be numeric, with no missing and a nominal class
-       * @return the capabilities of this classifier
-    **/    
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        //Just to make sure
-        result.disable(Capabilities.Capability.MISSING_VALUES);
-        // instances
-        result.setMinimumNumberInstances(0);
-
-        return result;
-    }
-         
+  
     @Override
     public void buildClassifier(Instances data) throws Exception {
         // can classifier handle the data?
