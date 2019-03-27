@@ -954,6 +954,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     * 
     */
     
+    /**
+     * 
+     */
     public ArrayList<Double> getTrueClassVals() {
         return trueClassValues;
     }
