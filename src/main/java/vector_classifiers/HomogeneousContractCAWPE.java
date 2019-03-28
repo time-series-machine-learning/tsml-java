@@ -7,11 +7,20 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
+import java.util.Random;
+
+import static utilities.Utilities.argMax;
 
 public class HomogeneousContractCAWPE extends CAWPE {
 
+    Random rand = new Random();
+
+    public void setRandom(Random rand){
+        this.rand = rand;
+    }
+
     public void addToEnsemble(Classifier c, double[][] probs, double[] classVals) throws Exception {
-        Arrays.copyOf(modules,modules.length+1);
+        modules = Arrays.copyOf(modules, modules.length + 1);
         int idx = modules.length-1;
         modules[idx] = new EnsembleModule(c.getClass().getSimpleName(), c, "");
 
@@ -22,14 +31,14 @@ public class HomogeneousContractCAWPE extends CAWPE {
         modules[idx].trainResults.setSplit("train");
 
         for (int i = 0; i < probs.length; i++){
-            double pred = 1;
+            double pred = argMax(probs[i], rand);
             modules[idx].trainResults.addPrediction(probs[i], pred, -1, "");
         }
 
         modules[idx].trainResults.finaliseResults(classVals);
 
         if (weightingScheme instanceof TrainAcc){
-            ((TrainAcc)weightingScheme).defineWeighting(modules[idx], numClasses);
+            modules[idx].posteriorWeights = ((TrainAcc)weightingScheme).defineWeighting(modules[idx], numClasses);
             votingScheme.trainVotingScheme(modules, numClasses);
         }
         else{
