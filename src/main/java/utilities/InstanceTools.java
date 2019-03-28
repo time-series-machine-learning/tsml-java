@@ -218,6 +218,30 @@ public class InstanceTools {
 
         return new Instances[]{outputTrain,outputTest};
     }
+
+    public static Instances[] resampleInstances(Instances all, Random r, double propInTrain){
+        ClassCounts classDist = new TreeSetClassCounts(all);
+        Map<Double, Instances> classBins = createClassInstancesMap(all);
+
+        //empty instances.
+        Instances outputTrain = new Instances(all, 0);
+        Instances outputTest = new Instances(all, 0);
+
+        Iterator<Double> keys = classBins.keySet().iterator();
+        while(keys.hasNext()){  //For each class value
+            double classVal = keys.next();
+            //Get the number of this class to put in train and test
+            int classCount = classDist.get(classVal);
+            int occurences=(int)(classCount*propInTrain);
+            Instances bin = classBins.get(classVal);
+            bin.randomize(r); //randomise the instances in this class.
+
+            outputTrain.addAll(bin.subList(0,occurences));//copy the first portion of the bin into the train set
+            outputTest.addAll(bin.subList(occurences, bin.size()));//copy the remaining portion of the bin into the test set.
+        }
+
+        return new Instances[]{outputTrain,outputTest};
+    }
     
     
     //converts a 2d array into a weka Instances.
