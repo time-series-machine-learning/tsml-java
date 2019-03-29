@@ -1,14 +1,4 @@
 package timeseriesweka.classifiers;
-/**
- * Development code for RISE
- * 1. set number of trees to max(500,m)
- * 2. Set the first tree to the full interval
- * 2. Randomly select the interval length and start point for each other tree *
- * 3. Find the PS, ACF, PACF and AR features
- * 3. Build each tree.
-
- **/ 
-
 /*
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -31,16 +21,34 @@ import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
-import timeseriesweka.classifiers.SubSampleTrain;
+import timeseriesweka.filters.ACF_PACF;
+import timeseriesweka.filters.ARMA;
+import timeseriesweka.filters.PACF;
 import weka.core.Capabilities;
+import weka.core.Randomizable;
+import weka.core.Utils;
+import weka.filters.Filter;
+import weka.filters.SimpleFilter;
 
 /**
+ * Development code for RISE
+ * 1. set number of trees to max(500,m)
+ * 2. Set the first tree to the full interval
+ * 3. Randomly select the interval length and start point for each other tree *
+ * 4. Find the PS, ACF, PACF and AR features
+ * 5. Build each base classifier (default RandomTree).
+
+* 19/3/19: DONE
+* A1. Restructure
+* A2. Test whether we need all four components, particularly AR and PACF!
+* A3. Implement speed up to avoid recalculating ACF each time
+* A4. Compare to python version
+* 
  <!-- globalinfo-start -->
  * Random Interval Spectral Ensemble
  *
@@ -81,31 +89,50 @@ import weka.core.Capabilities;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain{
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable{
     /** Default to a random tree */
-    Classifier baseClassifierTemplate=new RandomTree();
+    private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */    
-    Classifier[] baseClassifiers;
+    private Classifier[] baseClassifiers;
     /** Ensemble size */    
-    int numBaseClassifiers=500;
+    private static int DEFAULT_NUM_CLASSIFIERS=500;
+    private int numBaseClassifiers=DEFAULT_NUM_CLASSIFIERS;
     /** Random Intervals for the transform. INTERVAL BOUNDS ARE INCLUSIVE  */  
-    int[] startPoints;
-    int[] endPoints;
-    /** Minimum sizer of all intervals */    
-    private int minInterval=16;
+    private int[] startPoints;
+    private int[] endPoints;
+    /** Minimum size of all intervals */    
+    private static int DEFAULT_MIN_INTERVAL=16;
+    private int minInterval=DEFAULT_MIN_INTERVAL;
     
-    /** Power Spectrum transformer, probably dont need to store this here  */   
-    private PowerSpectrum ps=new PowerSpectrum();
     /**Can seed for reproducibility */
     private Random rand;
     private int seed=0;
     private boolean setSeed=false;
+    SimpleFilter[] filters;
+    /** Power Spectrum transformer, probably dont need to store this here  */   
+//    private PowerSpectrum ps=new PowerSpectrum();
     
     /** If we are estimating the CV, it is possible to sample fewer elements. **/
     //Really should try bagging this!    
     private boolean subSample=false;
     private double sampleProp=1;
-    
+    public RISE(){
+        filters=new SimpleFilter[3];
+        ACF acf= new ACF();
+        acf.setNormalized(false);
+        filters[0]=acf;
+        PACF pacf=new PACF();
+        filters[1]=pacf;
+        filters[2]=new PowerSpectrum();
+        rand=new Random();
+    }
+    public RISE(int s){
+        this();
+        seed=s;
+        setSeed=true;
+        rand.setSeed(seed);
+        
+    }
     /**
      * This interface is not formalised and needs to be considered in the next
      * review
@@ -118,15 +145,42 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         sampleProp=prop;
         seed=s;
     }
-    /**
-     * Transform Type: 
-     * PS: just use power spectrum. 
-     * ACF: just use autocorrelation
-     * FFT: use the complex FFT terms
-     * ACF_PS: Use the lot: ACF, PACF, AR and PS
-     */
-    public enum TransformType{PS,ACF,FFT,ACF_PS};
-    TransformType transform=TransformType.ACF_PS;
+
+
+    public void setTransforms(String ... trans){
+        filters=new SimpleFilter[trans.length];
+        int count=0;
+        for(String s:trans){
+            switch(s){
+                case "ACF": case "Autocorrelation":
+                    filters[count]= new ACF();
+                    break;
+                case "PACF": case "PartialAutocorrelation":
+                    filters[count]= new PACF();
+                    break;
+                case "AR": case "AutoRegressive":
+                    filters[count]= new ARMA();
+                    break;
+                case "PS": case "PowerSpectrum":
+                    filters[count]= new PowerSpectrum();
+                    break;
+                case "ACF_PACF": case "PACF_ACF":
+                    filters[count]= new ACF_PACF();
+                    break;
+                default:
+                    System.out.println("Unknown tranform "+s);
+                    continue;
+            }
+            count++;
+        }
+        if(count<filters.length){
+            SimpleFilter[] temp=new SimpleFilter[count];
+            for(int i=0;i<count;i++)
+                temp[i]=filters[i];
+            filters=temp;
+        }
+    }
+    
     /**
     * Changes the base classifier,
     * @param c new base classifier
@@ -140,36 +194,6 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
      */
     public void setNumClassifiers(int k){
         numBaseClassifiers=k;
-        
-    }
-    /**
-    * 
-    * @param filter one of the four transform types
-    */    
-    public void setTransformType(TransformType filter){
-        transform=filter;
-    }
-    /**
-     * 
-     * @param s String indicating transform type
-     */   
-    public void setTransformType(String s){
-        String str=s.toUpperCase();
-        switch(str){
-            case "FFT": case "DFT": case "FOURIER":
-              transform=TransformType.FFT;
-                break;
-            case "ACF": case "AFC": case "AUTOCORRELATION":
-              transform=TransformType.ACF;                
-                break;
-            case "PS": case "POWERSPECTRUM":
-              transform=TransformType.PS;
-                break;
-            case "PS_ACF": case "ACF_PS": case "BOTH":
-              transform=TransformType.ACF_PS;
-                break;
-                
-        }
     }
     /**
      * 
@@ -182,14 +206,10 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
      * Holders for the headers of each transform. 
      */    
     Instances[] testHolders;
-    public RISE(){
-        rand=new Random();
-    }
-    public RISE(int seed){
+    public void setSeed(int s){
         rand=new Random();
         this.seed=seed;
         rand.setSeed(seed);
-        
     }
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
@@ -204,35 +224,60 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     
     return result;
   }
+  /**
+   * Parses a given list of options to set the parameters of the classifier.
+   * We use this for the tuning mechanism, setting parameters through setOptions 
+   <!-- options-start -->
+   * Valid options are: <p/>
+   * <pre> -K
+   * Number of base classifiers.
+   * </pre>
+   * <pre> -I
+   * min Interval, integer, should be in range 3 to m-MINa check in build classifier is made to see if if.
+   * </pre>
+   * <pre> -T
+        transforms, a space separated list.
+   * </pre>
+   * 
+   <!-- options-end -->
+   *
+   * @param options the list of options as an array of strings
+   * @throws Exception if an option is not supported
+   */
+    @Override
+    public void setOptions(String[] options) throws Exception{
+        String numCls=Utils.getOption('K', options);
+        if (numCls.length() != 0)
+            numBaseClassifiers = Integer.parseInt(numCls);
+        else
+            numBaseClassifiers = DEFAULT_NUM_CLASSIFIERS;
+    /** Minimum sizer of all intervals */    
+        String minInt=Utils.getOption('I', options);
+        if (minInt.length() != 0)
+            minInterval=Integer.parseInt(minInt);
+    /** Transforms to use */    
+        String trans=Utils.getOption('T', options);
+        String[] t= trans.split(" ");
+//NEED TO CHECK THIS WORKS        
+        setTransforms(t);
+    }
 
     @Override
     public String getParameters(){
-        return super.getParameters()+",numTrees,"+numBaseClassifiers+","+"MinInterval,"+minInterval;
+        String str=super.getParameters()+",numClassifiers,"+numBaseClassifiers+","+"MinInterval,"+minInterval;
+        for(int i=0;i<filters.length;i++)
+            str+=",Filter"+i+","+filters[i].getClass().getSimpleName();
+        return str;
+        
     }
-    /**
-       * Returns default capabilities of the classifier. These are that the 
-       * data must be numeric, with no missing and a nominal class
-       * @return the capabilities of this classifier
-    **/    
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        // instances
-        result.setMinimumNumberInstances(0);
-
-        return result;
-    }
-         
+  
     @Override
     public void buildClassifier(Instances data) throws Exception {
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
+        int m=data.numAttributes()-1;
+        startPoints =new int[numBaseClassifiers];
+        endPoints =new int[numBaseClassifiers];
 //      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         long start=System.currentTimeMillis();
         //Option to sub sample for training        
@@ -240,11 +285,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             data=subSample(data,sampleProp,seed);
             System.out.println(" TRAIN SET SIZE NOW "+data.numInstances());
         }
+         
         //Initialise the memory 
-        int m=data.numAttributes()-1;
-        startPoints =new int[numBaseClassifiers];
-        endPoints =new int[numBaseClassifiers];
- 
         baseClassifiers=new Classifier[numBaseClassifiers];
         testHolders=new Instances[numBaseClassifiers];
         //Select random intervals for each tree
@@ -267,7 +309,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                     endPoints[i]+=startPoints[i];
                 }
             }
-            //Set up train instances and save format for testing. 
+            //Set up train instances prior to trainsform.
             int numFeatures=endPoints[i]-startPoints[i]+1;
             String name;
             ArrayList<Attribute> atts=new ArrayList();
@@ -297,19 +339,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             DenseInstance in=new DenseInstance(result.numAttributes());
             testHolders[i].add(in);
             //Perform the transform
-            Instances newTrain=result;
-            //THIS NEEDS TIDYING UP    
-            switch(transform){
-                case ACF:
-                    newTrain=ACF.formChangeCombo(result);
-                    break;
-                case PS: 
-                    newTrain=ps.process(result);
-                    break;
-                case ACF_PS: default:
-                    newTrain=combinedPSACF(result);
-                    break;
-            }             
+            Instances newTrain=filterData(result);
+
 //Build Classifier: Defaults to a RandomTree, but WHY ALL THE ATTS?
             if(baseClassifierTemplate instanceof RandomTree){
                 baseClassifiers[i]=new RandomTree();   
@@ -317,11 +348,38 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             }
             else
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
+            //if(baseClassifiers[i] instanceof Randomisable)
+            if(baseClassifiers[i] instanceof Randomizable && setSeed)
+                ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
         trainResults.setBuildTime(System.currentTimeMillis()-start);
     }
-
+    private Instances filterData(Instances result) throws Exception{
+            int maxLag=(result.numAttributes()-1)/4;
+            if(maxLag>ACF.DEFAULT_MAXLAG)
+                maxLag=ACF.DEFAULT_MAXLAG;
+            Instances[] t=new Instances[filters.length];
+            for(int j=0;j<filters.length;j++){
+// Im not sure this a sensible or robust way of doing this
+//What if L meant something else to the SimpleFilter? 
+//Can you use a whole string, e.g. MAXLAG?
+                filters[j].setOptions(new String[]{"L",maxLag+""});
+                filters[j].setInputFormat(result);
+                t[j]=Filter.useFilter(result, filters[j]);
+            }
+            //4. Merge them all together
+            Instances combo=new Instances(t[0]);
+            combo.setClassIndex(-1);
+            combo.deleteAttributeAt(combo.numAttributes()-1); 
+            for(int j=1;j<filters.length-1;j++){
+                combo=Instances.mergeInstances(combo, t[j]);
+                combo.deleteAttributeAt(combo.numAttributes()-1); 
+            }
+            combo=Instances.mergeInstances(combo, t[t.length-1]);
+            combo.setClassIndex(combo.numAttributes()-1);
+            return combo;
+    }
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] votes=new double[ins.numClasses()];
@@ -334,19 +392,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                 testHolders[i].instance(0).setValue(j, ins.value(j+startPoints[i]));
             }
 //Do the transform
-            Instances temp=null;
-            switch(transform){
-                case ACF:
-                    temp=ACF.formChangeCombo(testHolders[i]);
-                    break;
-                case PS: 
-                    temp=ps.process(testHolders[i]);
-                    break;
-                case ACF_PS: 
-                    temp=combinedPSACF(testHolders[i]);
-//Merge newTrain and newTrain2                    
-                    break;
-            }             
+            Instances temp=filterData(testHolders[i]);
             int c=(int)baseClassifiers[i].classifyInstance(temp.instance(0));
             votes[c]++;
             
@@ -355,23 +401,19 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             votes[i]/=baseClassifiers.length;
         return votes;
     }
-   private Instances combinedPSACF(Instances data)throws Exception {
-        Instances combo=ACF.formChangeCombo(data);
-        Instances temp2=ps.process(data);
-        combo.setClassIndex(-1);
-        combo.deleteAttributeAt(combo.numAttributes()-1); 
-        combo=Instances.mergeInstances(combo, temp2);
-        combo.setClassIndex(combo.numAttributes()-1);
-        return combo;        
-
-    }    
-    
+   
     public static void main(String[] arg) throws Exception{
-        
         Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
         Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
         RISE rif = new RISE();
-
+        rif.setTransforms("ACF","AR","AFC");
+        for(Filter f: rif.filters)
+            System.out.println(f);
+        String[] temp={"PS","Autocorellation","BOB","PACF"};
+        rif.setTransforms(temp);
+        for(Filter f: rif.filters)
+            System.out.println(f);
+        System.exit(0);
         
         rif.buildClassifier(train);
         System.out.println("build ok:");
@@ -397,5 +439,12 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         System.out.println("Train size "+result.numInstances());
         System.out.println("Test size "+testHolder.numInstances());
 */
+    }
+
+    @Override
+    public int getSeed() {
+        if(setSeed)
+            return seed;
+        throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
     }
 }

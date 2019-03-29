@@ -702,7 +702,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         int size = predClassValues.size();
         double correct = .0;
         for (int i = 0; i < size; i++) {
-            if (predClassValues.get(i) == trueClassValues.get(i))
+            if (predClassValues.get(i).equals(trueClassValues.get(i)))
                 correct++;
         }
         
