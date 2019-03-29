@@ -29,6 +29,7 @@ import weka.core.TechnicalInformation;
 import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.Bagging;
@@ -233,9 +234,9 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
  */
     @Override
     public String getParameters() {
-        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName();
+        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
         if(base instanceof RandomTree)
-           temp+=",k,"+((RandomTree)base).getKValue();
+           temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
         return temp;
 
     }
@@ -371,7 +372,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
-        long t1=System.currentTimeMillis();
+        long t1=System.nanoTime();
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
     //Estimate train accuracy here if required and not using bagging
 //Set up instances size and format. 
@@ -409,7 +410,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         /** Set up for Bagging **/
         if(bagging){
            inBag=new boolean[numClassifiers][];
-           trainDistributions= new double[data.numInstances()][];
+           trainDistributions= new double[data.numInstances()][data.numClasses()];
            oobCounts=new int[data.numInstances()];
         }
         
@@ -458,12 +459,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
                             continue;
                         double[] newProbs = trees[i].distributionForInstance(result.instance(j));
                         oobCounts[j]++;
-                        if(i==0)
-                            trainDistributions[j]=newProbs;
-                        else{
-                            for(int k=0;k<newProbs.length;k++)
-                                trainDistributions[j][k]+=newProbs[j];
-                        }
+                        for(int k=0;k<newProbs.length;k++)
+                            trainDistributions[j][k]+=newProbs[k];
                         
                     }
                 }
@@ -472,7 +469,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
                 trees[i].buildClassifier(result);
         }
         
-        long t2=System.currentTimeMillis();
+        long t2=System.nanoTime();
         //Store build time, this is always recorded
         trainResults.setBuildTime(t2-t1);
         //If trainAccuracyEst ==true and we want to save results, write out object 
@@ -501,6 +498,12 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
                 }
                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
                 trainResults.addAllPredictions(preds, trainDistributions, predTimes, null);
+                trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+                trainResults.setClassifierName("TSFBagging");
+                trainResults.setDatasetName(data.relationName());
+                trainResults.setSplit("train");
+                trainResults.setFoldID(seed);
+                trainResults.setParas(getParameters());
                 trainResults.finaliseResults(actuals);
              }
             if(trainCVPath!=""){

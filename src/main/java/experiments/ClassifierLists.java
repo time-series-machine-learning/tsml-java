@@ -15,6 +15,7 @@
 package experiments;
 
 
+import java.io.File;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -247,9 +248,20 @@ public class ClassifierLists {
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
-                ((ShapeletTransformClassifier)c).setOneDayLimit();
+//                ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
+            case "ST_Save":
+                c=new ShapeletTransformClassifier();
+                String path=horribleGlobalPath+"/ST_Save/Transforms/"+nastyGlobalDatasetName+"/";
+                File f= new File(path);
+                f.mkdirs();
+                ((ShapeletTransformClassifier)c).saveShapelets(path);
+//Default to 4 day max run: this can be overrriden by the input arguments
+                ((ShapeletTransformClassifier)c).setDayLimit(4);
+                ((ShapeletTransformClassifier)c).setSeed(fold);
+                break;
+                
             case "TSBF":
                 c=new TSBF();
                 break;
@@ -347,6 +359,11 @@ public class ClassifierLists {
             case "TSF":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
+                break;
+            case "TSFBagging":
+                c=new TSF();
+                ((TSF)c).setSeed(fold);
+                ((TSF)c).setBagging(true);
                 break;
 
            default:

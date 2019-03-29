@@ -352,7 +352,12 @@ public class Experiments  {
         System.out.println("");
         
         if (args.length > 0) {
+            
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
+            
+            ClassifierLists.horribleGlobalPath=expSettings.resultsWriteLocation;
+            ClassifierLists.nastyGlobalDatasetName=expSettings.datasetName;
+            
             setupAndRunExperiment(expSettings);
         }else{
             int folds=1;
@@ -371,9 +376,9 @@ public class Experiments  {
                 String[] settings=new String[6];
 //Location of data set
                 settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="-rp=E:/Results/";//Where to write results                
+                settings[1]="-rp=E:/Results/UCR Debug/";//Where to write results                
                 settings[2]="-gtf=true"; //Whether to generate train files or not               
-                settings[3]="-cn=RISE"; //Classifier name
+                settings[3]="-cn=TSFBagging"; //Classifier name
 //                for(String str:DataSets.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                     settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
