@@ -16,6 +16,7 @@ package timeseriesweka.classifiers;
 
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+import weka.core.Capabilities;
 
 /**
  *
@@ -55,11 +56,29 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
    
      @Override
     public String getParameters() {
-        return "BuildTime,"+trainResults.getBuildTime();
+        return "FullyNestedEstimates,"+fullyNestedEstimates;
     }
      
     public String getTrainInfo() {
         return getParameters();
     }
+/**
+   * Returns default capabilities of the classifier. These are that the 
+   * data must be numeric, with no missing and a nominal class
+   * @return the capabilities of this classifier
+**/    
+    @Override
+  public Capabilities getCapabilities() {
+    Capabilities result = super.getCapabilities();
+    result.disableAll();
+    // attributes must be numeric
+    // Here add in relational when ready
+    result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+    // class
+    result.enable(Capabilities.Capability.NOMINAL_CLASS);
+    // instances
+    result.setMinimumNumberInstances(0);   
+    return result;
+  }
      
 }

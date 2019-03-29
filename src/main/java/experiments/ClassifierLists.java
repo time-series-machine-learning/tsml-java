@@ -258,9 +258,6 @@ public class ClassifierLists {
                 ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
-            case "RISE":
-                c=new RISE(fold);
-                break;
             case "TSBF":
                 c=new TSBF();
                 break;
@@ -332,15 +329,6 @@ public class ClassifierLists {
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
                 break;
-            case "TSF":
-                c=new TSF();
-                ((TSF)c).setSeed(fold);
-                break;
-             case "TSFProb":
-                c=new TSF();
-                ((TSF)c).setSeed(fold);
-                ((TSF)c).setProbabilityEnsemble(true);
-                break;
              case "TSFC45":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
@@ -359,202 +347,16 @@ public class ClassifierLists {
                 c=new HiveCote();
                 ((HiveCote)c).setContract(24);
                 break; 
-            case "RotFDefault":
-                c = new RotationForest();
-                ((RotationForest)c).setSeed(fold);
+            case "RISE":
+                c=new RISE();
+                ((RISE) c).setSeed(fold);
+                ((RISE) c).setTransforms("PS","ACF");
                 break;
-            case "cRISE_BOTH_NOSTBLS":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                //((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 1);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
+            case "TSF":
+                c=new TSF();
+                ((TSF)c).setSeed(fold);
                 break;
-            case "cRISE_PS_NOSTBLS":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 1);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_24HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_48HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 48);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_72HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 72);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_96HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 96);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_120HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 120);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_144HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 144);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_168HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.ACF_PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 168);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_24HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_48HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 48);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_72HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 72);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_96HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 96);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_120HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 120);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_144HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 144);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_168HR":
-                c = new CRISE((long)fold);
-                //Classieir settings.
-                ((CRISE)c).setDownSample(false);
-                ((CRISE)c).setTransformType(CRISE.TransformType.PS);
-                ((CRISE)c).setMinNumTrees(200);
-                //((CRISE)c).setStabilise(5);
-                //Timer settings.
-                ((CRISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 168);
-                ((CRISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((CRISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
+
            default:
                 System.out.println("UNKNOWN CLASSIFIER "+classifier);
                 System.exit(0);

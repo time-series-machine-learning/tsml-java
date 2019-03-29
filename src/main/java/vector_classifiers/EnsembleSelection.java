@@ -34,6 +34,7 @@ import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import weka.filters.Filter;
 
 /**
  * Implementation of ensemble selection
@@ -151,7 +152,7 @@ public class EnsembleSelection extends CAWPE {
         if(this.transform==null){
             this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = transform.process(data);
+            this.trainInsts = Filter.useFilter(data,transform);
         }
         
         //init

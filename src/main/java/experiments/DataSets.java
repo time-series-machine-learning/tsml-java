@@ -40,7 +40,7 @@ import java.util.zip.ZipOutputStream;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.IBk;
 /**
- * Class containing data sets used in various TSC papers
+ * Class containing lists of data sets in the UCR and UEA archive. 
  * @author ajb
  */
 public class DataSets {
@@ -230,21 +230,36 @@ public class DataSets {
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
+        "GestureMidAirD1",
+        "GestureMidAirD2",
+        "GestureMidAirD3",        
+        "GesturePebbleZ1",
+        "GesturePebbleZ2",
         "PickupGestureWiimoteZ",
         "PLAID",
-        "ShakeGestureWiimoteZ",
-        "GesturePebbleZ1",
-        "GesturePebbleZ2"
+        "ShakeGestureWiimoteZ"
    };
-   public static String[] newFor2018Problems={
+   
+   
+   public static String[] missingValue2018Problems={
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
+        "DodgerLoopDay",
+        "DodgerLoopGame",
+        "DodgerLoopWeekend",
+        "GestureMidAirD1",
+        "GestureMidAirD2",
+        "GestureMidAirD3",
+        "GesturePebbleZ1",
+        "GesturePebbleZ2",
         "PickupGestureWiimoteZ",
         "PLAID",
-        "ShakeGestureWiimoteZ",
-        "GesturePebbleZ1",
-        "GesturePebbleZ2"
+        "ShakeGestureWiimoteZ"
+   };
+   
+   
+   public static String[] newFor2018Problems={
    };
                 
 

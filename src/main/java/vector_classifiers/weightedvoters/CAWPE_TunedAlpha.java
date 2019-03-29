@@ -25,6 +25,7 @@ import evaluation.storage.ClassifierResults;
 import utilities.StatisticalUtilities;
 import vector_classifiers.CAWPE;
 import weka.core.Instances;
+import weka.filters.Filter;
 
 /**
  * Tunes the value of alpha for a given dataset. Not much slower than normal hesca
@@ -68,7 +69,8 @@ public class CAWPE_TunedAlpha extends CAWPE {
         if(this.transform==null){
             this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = transform.process(data);
+            transform.setInputFormat(data);
+            this.trainInsts  = Filter.useFilter(data,transform);
         }
         
         //init

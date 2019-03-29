@@ -59,6 +59,7 @@ import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import weka.filters.Filter;
 
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
@@ -201,7 +202,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     public void setClassifiersNamesForFileRead(String[] classifierNames) {
-    setClassifiers(null,classifierNames,null);
+        setClassifiers(null,classifierNames,null);
 
     }
 
@@ -458,7 +459,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             this.trainInsts = data;
 //            this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = transform.process(data);
+           transform.setInputFormat(data);
+           this.trainInsts = Filter.useFilter(data,transform);
         }
           
         //init
@@ -980,7 +982,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            transform.setInputFormat(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
@@ -1034,7 +1037,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            transform.setInputFormat(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
@@ -1054,7 +1058,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            transform.setInputFormat(rawContainer);
+            Instances converted = Filter.useFilter(rawContainer,transform);
             ins = converted.instance(0);
         }
 
@@ -1379,7 +1384,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                             7. boolean whether to checkpoint parameter search for applicable tuned classifiers (true/false)
                             8. integer for specific parameter search (0 indicates ignore this)
                             */
-                        Experiments.main(new String[] { dataPaths[archive], baseWritePath+dataHeaders[archive]+"/", "true", classifier, dset, ""+(fold+1)});
+                        Experiments.main(new String[] { "-dp="+dataPaths[archive], "-rp="+baseWritePath+dataHeaders[archive]+"/", "-cn="+classifier, "-dn="+dset, "-f="+(fold+1), "-gtf=true"});
                     }
                 }
             }
@@ -1416,7 +1421,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest24/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest25/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1485,8 +1490,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
-            setBuildMatlabDiagrams(true).
-//            setBuildMatlabDiagrams(false).
+//            setBuildMatlabDiagrams(true).
+            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
@@ -1520,7 +1525,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                     //this code could ofc be editted to build whatever particular classifiers
                     //you want, instead of using the janky reflection
 
-                    String predictions = writePath+ensembleID+"/Predictions/"+dset;
+                    String predictions = writePath+ensembleID+"/Predictions/"+dset+"/";
                     File f=new File(predictions);
                     if(!f.exists())
                         f.mkdirs();
