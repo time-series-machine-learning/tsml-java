@@ -954,6 +954,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     * 
     */
     
+    /**
+     * 
+     */
     public ArrayList<Double> getTrueClassVals() {
         return trueClassValues;
     }
@@ -1515,7 +1518,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         for(int i=0;i<trueClassValues.size();i++)
             countPerClass[trueClassValues.get(i).intValue()]++;
 
-        calculateAcc();
+        if (acc < 0)
+            calculateAcc();
         balancedAcc=findBalancedAcc(confusionMatrix);
         
         mcc = computeMCC(confusionMatrix);
