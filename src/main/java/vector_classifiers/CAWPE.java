@@ -1384,7 +1384,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                             7. boolean whether to checkpoint parameter search for applicable tuned classifiers (true/false)
                             8. integer for specific parameter search (0 indicates ignore this)
                             */
-                        Experiments.main(new String[] { dataPaths[archive], baseWritePath+dataHeaders[archive]+"/", "true", classifier, dset, ""+(fold+1)});
+                        Experiments.main(new String[] { "-dp="+dataPaths[archive], "-rp="+baseWritePath+dataHeaders[archive]+"/", "-cn="+classifier, "-dn="+dset, "-f="+(fold+1), "-gtf=true"});
                     }
                 }
             }
@@ -1421,7 +1421,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "Z:/Data/UCIDelgado/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest24/";
+        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest25/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1490,8 +1490,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
-            setBuildMatlabDiagrams(true).
-//            setBuildMatlabDiagrams(false).
+//            setBuildMatlabDiagrams(true).
+            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
@@ -1525,7 +1525,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                     //this code could ofc be editted to build whatever particular classifiers
                     //you want, instead of using the janky reflection
 
-                    String predictions = writePath+ensembleID+"/Predictions/"+dset;
+                    String predictions = writePath+ensembleID+"/Predictions/"+dset+"/";
                     File f=new File(predictions);
                     if(!f.exists())
                         f.mkdirs();
