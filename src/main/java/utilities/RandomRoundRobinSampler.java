@@ -40,7 +40,7 @@ public class RandomRoundRobinSampler{
 
     public Instance next() {
         int classValue = indicies.remove(random.nextInt(indicies.size()));
-        List<Instance> homogeneousInstances = instancesByClass.get(classValue);
+        Instances homogeneousInstances = instancesByClass.get(classValue);
         Instance instance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));
         if(homogeneousInstances.isEmpty()) {
             instancesByClass.remove(classValue);
@@ -56,13 +56,15 @@ public class RandomRoundRobinSampler{
 
     public int nextIndex() {
         int classValue = indicies.remove(random.nextInt(indicies.size()));
-        List<Instance> homogeneousInstances = instancesByClass.get(classValue);
+        Instances homogeneousInstances = instancesByClass.get(classValue);
         int instance = random.nextInt(homogeneousInstances.size());
         homogeneousInstances.remove(instance);
         if(homogeneousInstances.isEmpty()) {
             instancesByClass.remove(classValue);
-            for(int i = classValue; i < indicies.size(); i++) {
-                indicies.set(i, indicies.get(i) - 1);
+            for(int i = 0; i < indicies.size(); i++) {
+                if (indicies.get(i) > classValue) {
+                    indicies.set(i, indicies.get(i) - 1);
+                }
             }
         }
         if(indicies.isEmpty()) {
