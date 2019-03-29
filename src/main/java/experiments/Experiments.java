@@ -360,26 +360,26 @@ public class Experiments  {
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="E:/Data/TSCProblems2018/";
-                settings[1]="E:/Results/Java/";
-                settings[2]="false";
-                settings[3]="TSF";
-                settings[4]="blank";
-                settings[5]="0";
+                settings[1]="E:/Results/";
+                settings[2]="true";
+                settings[3]="RISE";
+                settings[4]="Adiac";
+                settings[5]="1";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
-                settings[0]="Z:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="E:/Results/";//Where to write results                
-                settings[2]="false"; //Whether to generate train files or not               
-                settings[3]="TSF"; //Classifier name
-                for(String str:DataSets.tscProblems78){
-                    settings[4]=str; //Problem file   
-                    settings[5]="1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
+                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
+                settings[1]="-rp=E:/Results/";//Where to write results                
+                settings[2]="-gtf=true"; //Whether to generate train files or not               
+                settings[3]="-cn=RISE"; //Classifier name
+//                for(String str:DataSets.tscProblems78){
+                    settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
+                    settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                     ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                     setupAndRunExperiment(expSettings);
-                }
+//                }
             }
         }
     }

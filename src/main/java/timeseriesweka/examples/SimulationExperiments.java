@@ -145,7 +145,7 @@ public class SimulationExperiments {
                 break;
             case "RISE":
                 c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
+//                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                 ((RISE)c).setNumClassifiers(500);
                 break;
             default:
@@ -364,7 +364,7 @@ public class SimulationExperiments {
                         break;
                     case "RISE":
                         c=new RISE();
-                        ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
+//                        ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
                         ((RISE)c).setNumClassifiers(500);
                         break;
                     default:
