@@ -26,7 +26,9 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.proximityForest.ProximityForestWeka;
 import vector_classifiers.CAWPE;
+import vector_classifiers.PLSNominalClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -83,6 +85,9 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             
+            case "ProximityForest":
+                c = new ProximityForestWeka();
+                break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
@@ -114,6 +119,9 @@ public class ClassifierLists {
                 rf.setNumIterations(50);
                 rf.setSeed(fold);
                 c = rf;
+                break;
+            case "PLSNominalClassifier":
+                c = new PLSNominalClassifier();
                 break;
             case "bayesNet": 
                 c = new BayesNet();
