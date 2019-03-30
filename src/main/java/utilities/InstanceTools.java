@@ -700,6 +700,18 @@ public class InstanceTools {
         return instancesByClass;
     }
 
+    public static List<List<Integer>> indexByClass(Instances instances) {
+        List<List<Integer>> instancesByClass = new ArrayList<>();
+        int numClasses = instances.get(0).numClasses();
+        for(int i = 0; i < numClasses; i++) {
+            instancesByClass.add(new ArrayList());
+        }
+        for(int i = 0; i < instances.size(); i++) {
+            instancesByClass.get((int) instances.get(i).classValue()).add(i);
+        }
+        return instancesByClass;
+    }
+
     public static double[] classDistribution(Instances instances) {
         double[] distribution = new double[instances.numClasses()];
         for(Instance instance : instances) {

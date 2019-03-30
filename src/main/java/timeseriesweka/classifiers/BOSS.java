@@ -34,7 +34,6 @@ import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 
-import static utilities.InstanceTools.classDistribution;
 import static utilities.InstanceTools.resampleInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
@@ -60,16 +59,16 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private int ensembleSizePerChannel = -1;
     private Random rand;
     private boolean randomEnsembleSelection = false;
-    private boolean randomEnsembleSelectionUnique = false;
     private boolean randomCVAccEnsemble = false;
     private boolean useCAWPE = false;
 
     private boolean useFastTrainEstimate = false;
-    private int maxInstancesPerClass = 50;
+    private int maxEvalPerClass = -1;
+    private int maxEval = 500;
 
     private boolean reduceTrainInstances = false;
     private double trainProportion = -1;
-    private int maxTrainInstances = 500;
+    private int maxTrainInstances = 1000;
 
     private boolean cutoff = false;
     public boolean loadAndFinish = false;
@@ -203,7 +202,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         ensembleSizePerChannel = saved.ensembleSizePerChannel;
         rand = saved.rand;
         randomEnsembleSelection = saved.randomEnsembleSelection;
-        randomEnsembleSelectionUnique = saved.randomEnsembleSelectionUnique;
         useCAWPE = saved.useCAWPE;
         cawpe = saved.cawpe;
         numSeries = saved.numSeries;
@@ -280,10 +278,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         randomEnsembleSelection = b;
     }
 
-    public void setRandomEnsembleSelectionUnique(boolean b){
-        randomEnsembleSelectionUnique = b;
-    }
-
     public void setRandomCVAccEnsemble(boolean b){
         randomCVAccEnsemble = b;
     }
@@ -308,7 +302,21 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         cleanupCheckpointFiles = b;
     }
 
-    public void setCutoff(boolean b) {cutoff = b;}
+    public void setCutoff(boolean b) {
+        cutoff = b;
+    }
+
+    public void setMaxTrainInstances(int i){
+        maxTrainInstances = i;
+    }
+
+    public void setMaxEval(int i) {
+        maxEval = i;
+    }
+
+    public void setMaxEvalPerClass(int i) {
+        maxEvalPerClass = i;
+    }
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
@@ -358,6 +366,10 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                 numClassifiers = new int[1];
             }
 
+            if (maxEvalPerClass > 0){
+                maxEval = data.numClasses()*maxEvalPerClass;
+            }
+
             rand = new Random(seed);
         }
         
@@ -376,6 +388,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             series[0] = data;
         }
 
+        //If checkpointing and flag is set stop building.
         if (!checkpoint || (checkpoint && !loadAndFinish)){
             //Contracted
             if (contract) {
@@ -401,7 +414,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         //end train time, converted to milliseconds currently for compatability
         trainResults.setBuildTime((System.nanoTime()/1000000) - (trainResults.getBuildTime()/1000000) - (checkpointTimeDiff/1000000));
 
-        //Estimate train accuracy, may be broken for CAWPE/Alternate classifiers (currently untested)
+        //Estimate train accuracy
         if (trainCV) {
             OutFile of=new OutFile(trainCVPath);
             of.writeLine(data.relationName()+",BOSSEnsemble,train");
@@ -820,22 +833,19 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
-        int subsampleSize = series.numClasses()*maxInstancesPerClass;
-
-        if (useFastTrainEstimate && subsampleSize < series.numInstances()){
-            RandomRoundRobinSampler sampler = new RandomRoundRobinSampler(rand);
+        if (useFastTrainEstimate && maxEval < series.numInstances()){
+            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
             sampler.setInstances(series);
 
             int correct = 0;
-            int requiredCorrect = (int)lowestAcc*subsampleSize;
+            int requiredCorrect = (int)lowestAcc*maxEval;
 
-            for (int i = 0; i < subsampleSize; ++i) {
-                if (correct + subsampleSize - i < requiredCorrect){
+            for (int i = 0; i < maxEval; ++i) {
+                if (correct + maxEval - i < requiredCorrect){
                     return -1;
                 }
 
-                int subsampleIndex = sampler.nextIndex();
-
+                int subsampleIndex = sampler.next();
                 double c = boss.classifyInstance(subsampleIndex); //classify series subsampleIndex, while ignoring its corresponding histogram subsampleIndex
                 if (c == series.get(subsampleIndex).classValue())
                     ++correct;
@@ -843,7 +853,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
             //System.out.println(subsampleSize + " " + series.numInstances() + " " + ((double) correct / (double) subsampleSize));
 
-            return (double) correct / (double) subsampleSize;
+            return (double) correct / (double) maxEval;
         }
         else {
             int correct = 0;
@@ -865,16 +875,16 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     private double[][] individualTrainPreds(BOSSIndividual boss, Instances series) throws Exception {
-        int subsampleSize = series.numClasses()*maxInstancesPerClass;
+        int subsampleSize = series.numClasses()* maxEvalPerClass;
         double[][] preds;
 
         if (useFastTrainEstimate && subsampleSize < series.numInstances()){
-            RandomRoundRobinSampler sampler = new RandomRoundRobinSampler(rand);
+            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
             sampler.setInstances(series);
             preds = new double[subsampleSize][series.numClasses()];
 
             for (int i = 0; i < subsampleSize; ++i) {
-                int subsampleIndex = sampler.nextIndex();
+                int subsampleIndex = sampler.next();
                 double c = boss.classifyInstance(subsampleIndex); //classify series subsampleIndex, while ignoring its corresponding histogram subsampleIndex
                 preds[i][(int)c] = 1.0;
             }
@@ -913,34 +923,38 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
-        
-        double[][] results = new double[2+data.numClasses()][data.numInstances() + 1];
-        
-        this.ensembleCvPreds = new double[data.numInstances()];
-        
-        double correct = 0; 
-        for (int i = 0; i < data.numInstances(); ++i) {
-            double[] probs=distributionForInstance(i, data.numClasses());
-
-
-            double c = 0;
-            for(int j=1;j<probs.length;j++)
-                if(probs[j]>probs[(int)c])
-                    c=j;
-                    //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
-            if (c == data.get(i).classValue())
-                ++correct;
-            results[0][i+1] = data.get(i).classValue();
-            results[1][i+1] = c;
-            for(int j=0;j<probs.length;j++)   
-                results[2+j][i+1]=probs[j];
-            this.ensembleCvPreds[i] = c;
+        if (useCAWPE || (reduceTrainInstances && (data.numInstances() > maxTrainInstances || trainProportion > 0))){
+            throw new Exception("Unable to create ensemble train estimate for these settings");
         }
-        
-        results[0][0] = correct / data.numInstances();
-        //TODO fill results[1][0]
-        
-        return results;
+        else {
+            double[][] results = new double[2 + data.numClasses()][data.numInstances() + 1];
+
+            this.ensembleCvPreds = new double[data.numInstances()];
+
+            double correct = 0;
+            for (int i = 0; i < data.numInstances(); ++i) {
+                double[] probs = distributionForInstance(i, data.numClasses());
+
+
+                double c = 0;
+                for (int j = 1; j < probs.length; j++)
+                    if (probs[j] > probs[(int) c])
+                        c = j;
+                //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+                if (c == data.get(i).classValue())
+                    ++correct;
+                results[0][i + 1] = data.get(i).classValue();
+                results[1][i + 1] = c;
+                for (int j = 0; j < probs.length; j++)
+                    results[2 + j][i + 1] = probs[j];
+                this.ensembleCvPreds[i] = c;
+            }
+
+            results[0][0] = correct / data.numInstances();
+            //TODO fill results[1][0]
+
+            return results;
+        }
     }
     
     public double getEnsembleCvAcc(){
@@ -968,24 +982,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         return this.ensembleCvPreds;
     }
 
-    /**
-     * Classify the train instance at index 'test', whilst ignoring the corresponding bags 
-     * in each of the members of the ensemble, for use in CV of BOSSEnsemble
-     */
-    public double classifyInstance(int test, int numclasses) throws Exception {
-        double[] dist = distributionForInstance(test, numclasses);
-        
-        double maxFreq=dist[0], maxClass=0;
-        for (int i = 1; i < dist.length; ++i) 
-            if (dist[i] > maxFreq) {
-                maxFreq = dist[i];
-                maxClass = i;
-            }
-        
-        return maxClass;
-    }
-
-    public double[] distributionForInstance(int test, int numclasses) throws Exception {
+    private double[] distributionForInstance(int test, int numclasses) throws Exception {
         double[][] classHist = new double[numSeries][numclasses];
 
         //get sum of all channels, votes from each are weighted the same.
@@ -1078,7 +1075,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "DistalPhalanxTW";
+        String dataset = "ItalyPowerDemand";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
@@ -1088,6 +1085,12 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         Classifier c;
         double accuracy;
+
+//                c = new BOSS();
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
 //        c = new BOSS();
 //        ((BOSS) c).ensembleSize = 250;
@@ -1099,12 +1102,15 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 //        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
         c = new BOSS();
+
+        ((BOSS) c).maxEval = train.numInstances();
+
         ((BOSS) c).ensembleSize = 250;
         ((BOSS) c).setMaxEnsembleSize(50);
         ((BOSS) c).setRandomCVAccEnsemble(true);
         ((BOSS) c).setSeed(0);
         ((BOSS) c).useFastTrainEstimate = true;
-        ((BOSS) c).reduceTrainInstances = true;
+        //((BOSS) c).reduceTrainInstances = true;
         //((BOSS) c).cutoff = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
@@ -1154,28 +1160,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 //        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 ////
 ////        c = new BOSS();
-////        ((BOSS) c).ensembleSize = 250;
-////        ((BOSS) c).randomEnsembleSelection = true;
-////        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-////        c.buildClassifier(train2);
-////        accuracy = ClassifierTools.accuracy(test2, c);
-////
-////        System.out.println(((BOSS) c).numSeries);
-////        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
-////
-////        System.out.println("Random Tree BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
-////
-//        c = new BOSS();
-//        ((BOSS) c).ensembleSize = 250;
-//        ((BOSS) c).randomEnsembleSelection = true;
-//        ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-//        ((BOSS) c).setSeed(0);
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("Random Tree BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-////
-////        c = new BOSS();
 ////        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
 ////        c.buildClassifier(train2);
 ////        accuracy = ClassifierTools.accuracy(test2, c);
@@ -1201,11 +1185,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 ////
 ////        System.out.println("BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
 //
-//        c = new BOSS();
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
     }
 
     /**
