@@ -1,7 +1,16 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package utilities;
 
@@ -15,8 +24,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -153,7 +162,7 @@ public class InstanceTools {
         }
         Instances all = new Instances(train);
         all.addAll(test);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(train);
+        ClassCounts trainDistribution = new TreeSetClassCounts(train);
         
         Map<Double, Instances> classBins = createClassInstancesMap(all);
        
@@ -186,7 +195,7 @@ public class InstanceTools {
  * @return 
  */
     public static Instances[] resampleInstances(Instances all, long seed, double propInTrain){
-        ClassDistribution classDist = new TreeSetClassDistribution(all);
+        ClassCounts classDist = new TreeSetClassCounts(all);
         Map<Double, Instances> classBins = createClassInstancesMap(all);
        
         Random r = new Random(seed);
@@ -396,14 +405,23 @@ public class InstanceTools {
         }       
     }
 
-    
+/**
+ * 
+ * @param ins Instances object
+ * @return true if there are any missing values (including class value)
+ */    
     public static boolean hasMissing(Instances ins){
         for(Instance in:ins)
             if(in.hasMissingValue())
                 return true;
        return false;
     }
-     //Deletes the attributes by *shifted* index
+/**
+ * Deletes the attributes by *shifted* index, i.e. the positions are *not* the 
+ * original positions in the data
+ * @param test
+ * @param features 
+ */
     public static void removeConstantAttributes(Instances test, int[] features){
         for(int del:features)
             test.deleteAttributeAt(del);
@@ -495,7 +513,7 @@ public class InstanceTools {
         if(amount < data.numClasses()) System.out.println("Error: too few instances compared to classes.");
 
         Map<Double, Instances> classBins = createClassInstancesMap(data);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         Random r = new Random(seed);
 
@@ -520,7 +538,7 @@ public class InstanceTools {
     
     public static Instances subSampleFixedProportion(Instances data, double proportion, long seed){
         Map<Double, Instances> classBins = createClassInstancesMap(data);
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         Random r = new Random(seed);
 
@@ -558,7 +576,7 @@ public class InstanceTools {
  
     
     public static int findSmallestClassAmount(Instances data){
-        ClassDistribution trainDistribution = new TreeSetClassDistribution(data);
+        ClassCounts trainDistribution = new TreeSetClassCounts(data);
         
         //find the smallest represented class.
         Iterator<Double> keys = trainDistribution.keySet().iterator();

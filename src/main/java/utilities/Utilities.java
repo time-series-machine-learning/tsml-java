@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package utilities;
 
 import weka.core.Instance;
@@ -10,7 +24,13 @@ public class Utilities {
         }
         return population;
     }
+/**
 
+* 6/2/19: bug fixed so it properly ignores the class value, only place its used
+* is in measures.DistanceMeasure
+ * @param instance
+ * @return array of doubles with the class value removed
+*/
     public static final double[] extractTimeSeries(Instance instance) {
         if(instance.classIsMissing()) {
             return instance.toDoubleArray();
@@ -19,64 +39,11 @@ public class Utilities {
             for(int i = 0; i < instance.numAttributes(); i++) {
                 if(i < instance.classIndex()) {
                     timeSeries[i] = instance.value(i);
-                } else {
+                } else if (i != instance.classIndex()){
                     timeSeries[i - 1] = instance.value(i);
                 }
             }
             return timeSeries;
-        }
-    }
-
-    public static double[] extractTimeSeries2(Instance instance) {
-        if(instance.classIndex() >= 0) {
-            return instance.toDoubleArray();
-        } else {
-            double[] timeSeries = new double[instance.numAttributes() - 1];
-            for(int i = 0; i < instance.numAttributes(); i++) {
-                if (instance.classIndex() == i){
-                }
-                else if (i < instance.classIndex()) {
-                    timeSeries[i] = instance.value(i);
-                } else {
-                    timeSeries[i - 1] = instance.value(i);
-                }
-            }
-            return timeSeries;
-        }
-    }
-
-    public static final void lessThanOrEqualTo(double value, double limit) {
-        if(value > limit) {
-            throw new IllegalArgumentException("Cannot be larger than");
-        }
-    }
-
-    public static final void notNullCheck(Object obj) {
-        if(obj == null) {
-            throw new IllegalArgumentException("Not null!");
-        }
-    }
-
-    public static final void notNullCheck(Object... objs) {
-        for(Object obj : objs) {
-            notNullCheck(obj);
-        }
-    }
-
-    public static final void positiveCheck(double... values) {
-        for(double value : values) {
-            if(value <= 0) {
-                throw new IllegalArgumentException(value + " is not larger than 0");
-            }
-        }
-    }
-
-
-    public static final void positiveCheck(int... values) {
-        for(int value : values) {
-            if(value <= 0) {
-                throw new IllegalArgumentException(value + " is not larger than 0");
-            }
         }
     }
 

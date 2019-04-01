@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 
 import utilities.ClassifierTools;
@@ -19,7 +33,7 @@ import timeseriesweka.filters.SAX;
  * 
  * @author James
  */
-public class BagOfPatterns extends AbstractClassifierWithTrainingData{
+public class BagOfPatterns extends AbstractClassifierWithTrainingInfo{
 
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
@@ -157,7 +171,7 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingData{
     
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.buildTime=System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         if (data.classIndex() != data.numAttributes()-1)
             throw new Exception("LinBoP_BuildClassifier: Class attribute not set as last attribute in dataset");
         
@@ -188,7 +202,7 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingData{
         //real work
         matrix = bop.process(data); //transform
         knn.buildClassifier(matrix); //give to 1nn
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
     }
 

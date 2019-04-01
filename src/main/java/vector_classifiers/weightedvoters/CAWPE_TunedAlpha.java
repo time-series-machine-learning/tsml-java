@@ -1,17 +1,31 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers.weightedvoters;
 
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.FileNotFoundException;
 import timeseriesweka.classifiers.ensembles.voting.BestIndividualTrain;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.StatisticalUtilities;
 import vector_classifiers.CAWPE;
 import weka.core.Instances;
+import weka.filters.Filter;
 
 /**
  * Tunes the value of alpha for a given dataset. Not much slower than normal hesca
@@ -53,15 +67,16 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
         //transform data if specified
         if(this.transform==null){
-            this.train = new Instances(data);
+            this.trainInsts = new Instances(data);
         }else{
-            this.train = transform.process(data);
+            transform.setInputFormat(data);
+            this.trainInsts  = Filter.useFilter(data,transform);
         }
         
         //init
-        this.numTrainInsts = train.numInstances();
-        this.numClasses = train.numClasses();
-        this.numAttributes = train.numAttributes();
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
         
         //set up modules
         initialiseModules();
@@ -77,10 +92,10 @@ public class CAWPE_TunedAlpha extends CAWPE {
         for (int i = 0; i < alphaParaRange.length; i++) {
             initCombinationSchemes(alphaParaRange[i]);
             alphaResults[i] = doEnsembleCV(data); 
-            alphaParaAccs[i] = alphaResults[i].acc;
+            alphaParaAccs[i] = alphaResults[i].getAcc();
             
-            if (alphaResults[i].acc > maxAcc) { 
-                maxAcc = alphaResults[i].acc;
+            if (alphaResults[i].getAcc() > maxAcc) { 
+                maxAcc = alphaResults[i].getAcc();
                 maxAccInd = i;
             }
         }
@@ -89,10 +104,10 @@ public class CAWPE_TunedAlpha extends CAWPE {
         ensembleTrainResults = alphaResults[maxAccInd];
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        ensembleTrainResults.buildTime = buildTime;
+        ensembleTrainResults.setBuildTime(buildTime);
             
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(train);
+            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
         
         this.testInstCounter = 0; //prep for start of testing
@@ -120,7 +135,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         StringBuilder out = new StringBuilder();
         
         if (ensembleTrainResults != null) //cv performed
-            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
+            out.append("BuildTime,").append(ensembleTrainResults.getBuildTime()).append(",Trainacc,").append(ensembleTrainResults.getAcc()).append(",");
         else 
             out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
         
@@ -146,7 +161,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
     }
     
-    public static void buildParaAnalysisFiles() throws FileNotFoundException {
+    public static void buildParaAnalysisFiles() throws FileNotFoundException, Exception {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         

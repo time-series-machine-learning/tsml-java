@@ -1,9 +1,21 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers;
 
-import development.CollateResults;
-import development.DataSets;
-import static development.Experiments.singleClassifierAndFoldTrainTestSplit;
+import experiments.CollateResults;
+import experiments.DataSets;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,10 +26,15 @@ import java.util.Random;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
+import experiments.Experiments;
 import utilities.ClassifierTools;
+import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
+import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
+import weka.filters.Filter;
 
 /**
  * Implementation of ensemble selection
@@ -45,6 +62,21 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class EnsembleSelection extends CAWPE {
+
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
+        TechnicalInformation 	result;
+        result = new TechnicalInformation(TechnicalInformation.Type.INPROCEEDINGS);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "R. Caruana, A. Niculescu-Mizil, G. Crew and A. Ksikes");
+        result.setValue(TechnicalInformation.Field.YEAR, "2004");
+        result.setValue(TechnicalInformation.Field.TITLE, "Ensemble selection from libraries of models");
+        result.setValue(TechnicalInformation.Field.BOOKTITLE, "Proceedings of the twenty-first international conference on Machine learning");
+        result.setValue(TechnicalInformation.Field.PAGES, "18");
+        result.setValue(TechnicalInformation.Field.ORGANIZATION, "ACM");
+
+        return result;
+    }
+    
     
 //    Integer numBags = null; //default 2 * floor(log(sizeOfLibrary)), i.e 22 classifiers gives 8 bags. Paper says 20 bags from 2000 models, so definitely seems fair
     Integer numBags = null; //default 10. Paper says 20 bags from 2000 models, so definitely seems fair
@@ -114,19 +146,19 @@ public class EnsembleSelection extends CAWPE {
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         
         //transform data if specified
         if(this.transform==null){
-            this.train = new Instances(data);
+            this.trainInsts = new Instances(data);
         }else{
-            this.train = transform.process(data);
+            this.trainInsts = Filter.useFilter(data,transform);
         }
         
         //init
-        this.numTrainInsts = train.numInstances();
-        this.numClasses = train.numClasses();
-        this.numAttributes = train.numAttributes();
+        this.numTrainInsts = trainInsts.numInstances();
+        this.numClasses = trainInsts.numClasses();
+        this.numAttributes = trainInsts.numAttributes();
         
         //set up modules
         initialiseModules();
@@ -193,7 +225,7 @@ public class EnsembleSelection extends CAWPE {
                     
             //initialisation of subensemble done, start the forward selection
             double accSoFar;
-            double newAcc = subEnsembleResults == null ? .0 : subEnsembleResults.acc;
+            double newAcc = subEnsembleResults == null ? .0 : subEnsembleResults.getAcc();
             boolean finished;
             do {
                 finished = true;
@@ -203,7 +235,7 @@ public class EnsembleSelection extends CAWPE {
                 double[] accs = new double[bagOfModels.size()];
                 for (int modelID = 0; modelID < bagOfModels.size(); modelID++) {
                     candidateResults[modelID] = combinePredictions(subEnsembleResults, subensemble.size(), bagOfModels.get(modelID).trainResults);
-                    accs[modelID] = candidateResults[modelID].acc;
+                    accs[modelID] = candidateResults[modelID].getAcc();
                 }
                 
                 int maxAccInd = (int)utilities.GenericTools.indexOfMax(accs);
@@ -250,13 +282,16 @@ public class EnsembleSelection extends CAWPE {
         }
 //END OF THE ACTUAL SELECTION STUFF   
 
-        this.ensembleTrainResults = globalEnsembleResults;
-        this.ensembleTrainResults.setName("EnsembleSelection");
+        ensembleTrainResults = globalEnsembleResults;
+        ensembleTrainResults.setClassifierName("EnsembleSelection");
+        ensembleTrainResults.setDatasetName(datasetName);
+        ensembleTrainResults.setFoldID(seed);
+        ensembleTrainResults.setSplit("train");
         
-        long buildTime = System.currentTimeMillis() - startTime; 
-        this.ensembleTrainResults.buildTime = buildTime; //store the buildtime to be saved
+        long buildTime = System.nanoTime() - startTime; 
+        ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
-            writeEnsembleCVResults(train);
+            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
         
         this.testInstCounter = 0; //prep for start of testing
     }
@@ -279,16 +314,18 @@ public class EnsembleSelection extends CAWPE {
     public static class SortByTrainAcc implements Comparator<EnsembleModule> {
         @Override
         public int compare(EnsembleModule o1, EnsembleModule o2) {
-            return Double.compare(o1.trainResults.acc, o2.trainResults.acc);
+            return Double.compare(o1.trainResults.getAcc(), o2.trainResults.getAcc());
         }
     }
     
     public ClassifierResults combinePredictions(final ClassifierResults ensembleSoFarResults, int ensembleSizeSoFar, final ClassifierResults newModelResults) throws Exception {
         ClassifierResults newResults = new ClassifierResults(numClasses);
+        assert(ensembleSoFarResults.getTimeUnit().equals(newModelResults.getTimeUnit()));
+        newResults.setTimeUnit(ensembleSoFarResults.getTimeUnit());
         
-        for (int inst = 0; inst < ensembleSoFarResults.predictedClassProbabilities.size(); inst++) {
-            double[] ensDist = ensembleSoFarResults.predictedClassProbabilities.get(inst);
-            double[] indDist = newModelResults.predictedClassProbabilities.get(inst);
+        for (int inst = 0; inst < ensembleSoFarResults.getProbabilityDistributions().size(); inst++) {
+            double[] ensDist = ensembleSoFarResults.getProbabilityDistribution(inst);
+            double[] indDist = newModelResults.getProbabilityDistribution(inst);
             
             assert(ensDist.length == numClasses);
             assert(indDist.length == numClasses);
@@ -297,18 +334,20 @@ public class EnsembleSelection extends CAWPE {
             for (int c = 0; c < numClasses; c++)
                 newDist[c] = ((ensDist[c] * ensembleSizeSoFar) + indDist[c]) / (ensembleSizeSoFar+1); //expand existing average, add in new model, and divide again
             
-            newResults.storeSingleResult(newDist);
+            //todo: exactly how to time train-instance predictions for this classifier is very debatable. going with this for now
+            long predTime = ensembleSoFarResults.getPredictionTime(inst) + newModelResults.getPredictionTime(inst);
+            newResults.addPrediction(newDist, indexOfMax(newDist), predTime, "");
         }
         
-        newResults.finaliseResults(ensembleSoFarResults.getTrueClassVals());
+        newResults.finaliseResults(ensembleSoFarResults.getTrueClassValsAsArray());
         return newResults;
     }
     
     public static void main(String[] args) throws Exception {
-        tests();
+ //       tests();
 //        ana();
     }
-    
+   
     public static void tests() { 
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
@@ -354,13 +393,19 @@ public class EnsembleSelection extends CAWPE {
                     c.setRandSeed(fold);
                     c.setPerformCV(true);
                     c.setResultsFileWritingLocation(resPath);
-                    
-                    singleClassifierAndFoldTrainTestSplit(data[0],data[1],c,fold,predictions);
+                                        
+                    Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                    exp.classifierName = classifier;
+                    exp.datasetName = dset;
+                    exp.foldId = fold;
+                    exp.generateErrorEstimateOnTrainSet = true;
+                    Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                 }
             }
         }
     }
-    
+   
+
     public static String[] CAWPE_basic = new String[] { 
         "NN",
         "SVML",

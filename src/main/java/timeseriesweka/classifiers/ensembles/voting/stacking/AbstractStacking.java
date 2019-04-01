@@ -1,19 +1,24 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers.ensembles.voting.stacking;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.logging.Level;
 import weka.classifiers.Classifier;
-import utilities.ClassifierResults;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka.core.Attribute;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -68,9 +73,9 @@ public abstract class AbstractStacking extends ModuleVotingScheme {
         
         for (int m = 0; m < modules.length; m++) {
             if (train)
-                dists[m] = modules[m].trainResults.getDistributionForInstance(instIndex);
+                dists[m] = modules[m].trainResults.getProbabilityDistribution(instIndex);
             else //test
-                dists[m] = modules[m].testResults.getDistributionForInstance(instIndex);
+                dists[m] = modules[m].testResults.getProbabilityDistribution(instIndex);
             
             for (int c = 0; c < numClasses; c++) 
                 dists[m][c] *= modules[m].priorWeight * modules[m].posteriorWeights[c];
@@ -112,8 +117,11 @@ public abstract class AbstractStacking extends ModuleVotingScheme {
         double[][] dists = new double[modules.length][];
         
         for(int m = 0; m < modules.length; m++){
-            dists[m] = modules[m].getClassifier().distributionForInstance(testInstance); 
-            storeModuleTestResult(modules[m], dists[m]);
+            long startTime = System.currentTimeMillis();
+            dists[m] = modules[m].getClassifier().distributionForInstance(testInstance);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dists[m], predTime);
             
             for (int c = 0; c < numClasses; c++) 
                 dists[m][c] *= modules[m].priorWeight * modules[m].posteriorWeights[c];

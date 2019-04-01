@@ -4,6 +4,7 @@
 
 
 package statistics.simulators;
+import timeseriesweka.filters.NormalizeCase;
 import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;
@@ -601,8 +602,8 @@ public class SimulateSpectralData extends DataSimulator{
         Instances d=generateARDataSet(1,1,200,cases,false);
         ArmaModel.setGlobalVariance(10);
         Instances d2=generateARDataSet(1,1,200,cases,false);
-        OutFile of=new OutFile("C:\\\\Research\\Results\\AR1_1.csv");
-        OutFile of2=new OutFile("C:\\\\Research\\Results\\AR1_10.csv");
+        OutFile of=new OutFile("C:\\PhD\\Data\\ARMA\\Results\\AR1_1.csv");
+        OutFile of2=new OutFile("C:\\PhD\\Data\\ARMA\\Results\\AR1_10.csv");
         of.writeString(d.toString());
         of2.writeString(d2.toString());
 

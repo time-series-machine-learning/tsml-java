@@ -1,12 +1,17 @@
-/**
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
  *
- * @author ajb
- * FINAL VERSION of simulator experiments for stand alone execution only
- * Just the main experiments, copied here for clarity. For sensitivity analysis
- * and cluster based versions, see the class 
- * Please read the technical report 
-LINK HERE
-*/
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.examples;
 
 import timeseriesweka.classifiers.FlatCote;
@@ -23,20 +28,15 @@ import timeseriesweka.classifiers.ElasticEnsemble;
 import timeseriesweka.classifiers.DD_DTW;
 import timeseriesweka.classifiers.BagOfPatterns;
 import timeseriesweka.classifiers.HiveCote;
-import development.DataSets;
-import fileIO.InFile;
+import experiments.DataSets;
 import fileIO.OutFile;
-import java.io.File;
-import java.text.DecimalFormat;
-import statistics.simulators.DataSimulator;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
 import statistics.simulators.SimulateDictionaryData;
 import statistics.simulators.SimulateIntervalData;
 import statistics.simulators.SimulateShapeletData;
-import statistics.simulators.SimulateWholeSeriesData;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
@@ -47,6 +47,15 @@ import weka.core.Instances;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
 
+/**
+ * 
+ * @author ajb
+ * FINAL VERSION of simulator experiments for stand alone execution only
+ * Just the main experiments, copied here for clarity. For sensitivity analysis
+ * and cluster based versions, see the class 
+ * Please read the technical report 
+LINK HERE
+ */
 public class SimulationExperiments {
 //Global variables that relate to the data set. These are different for different
 //simulators, and are set to default values in setStandardGlobalParameters    
@@ -136,15 +145,8 @@ public class SimulationExperiments {
                 break;
             case "RISE":
                 c=new RISE();
-                ((RISE)c).setTransformType("PS_ACF");
-                ((RISE)c).setNosBaseClassifiers(500);
-                break;
-            case "RISE_HESCA":
-                c=new RISE();
-                ((RISE)c).setTransformType("PS_ACF");
-                Classifier base=new CAWPE();
-                ((RISE)c).setBaseClassifier(base);
-                ((RISE)c).setNosBaseClassifiers(20);
+//                ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
+                ((RISE)c).setNumClassifiers(500);
                 break;
             default:
                 throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
@@ -362,8 +364,8 @@ public class SimulationExperiments {
                         break;
                     case "RISE":
                         c=new RISE();
-                        ((RISE)c).setTransformType("PS_ACF");
-                        ((RISE)c).setNosBaseClassifiers(500);
+//                        ((RISE)c).setTransformType(RISE.TransformType.ACF_PS);
+                        ((RISE)c).setNumClassifiers(500);
                         break;
                     default:
                         throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);

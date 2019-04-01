@@ -1,7 +1,22 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers.ensembles.voting;
 
 import java.util.Arrays;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
 /**
@@ -45,7 +60,7 @@ public class MajorityVoteByCorrectedConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            (modules[m].trainResults.getDistributionForInstance(trainInstanceIndex)[pred] - normValue);
+                            (modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex)[pred] - normValue);
         }
         
         
@@ -58,12 +73,12 @@ public class MajorityVoteByCorrectedConfidence extends ModuleVotingScheme {
 //        }
 //        
 //        for(int m = 0; m < modules.length; m++) {
-//            printlnDebug(modules[m].getModuleName() + " distForInst:  " + Arrays.toString(modules[m].trainResults.getDistributionForInstance(trainInstanceIndex)));
+//            printlnDebug(modules[m].getModuleName() + " distForInst:  " + Arrays.toString(modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex)));
 //            printlnDebug(modules[m].getModuleName() + " priorweights: " + modules[m].priorWeight);
 //            printlnDebug(modules[m].getModuleName() + " postweights:  " + Arrays.toString(modules[m].posteriorWeights));
 //            printlnDebug(modules[m].getModuleName() + " voteweight:   " + (modules[m].priorWeight * 
 //                            modules[m].posteriorWeights[(int) modules[m].trainResults.getPredClassValue(trainInstanceIndex)] * 
-//                            (modules[m].trainResults.getDistributionForInstance(trainInstanceIndex)[(int) modules[m].trainResults.getPredClassValue(trainInstanceIndex)] - normValue)));
+//                            (modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex)[(int) modules[m].trainResults.getPredClassValue(trainInstanceIndex)] - normValue)));
 //        }
 //        
 //        printlnDebug("Ensemble Votes: " + Arrays.toString(unweightedPreds));
@@ -87,7 +102,7 @@ public class MajorityVoteByCorrectedConfidence extends ModuleVotingScheme {
             
             preds[pred] += modules[m].priorWeight * 
                             modules[m].posteriorWeights[pred] * 
-                            (modules[m].testResults.getDistributionForInstance(testInstanceIndex)[pred] - normValue);
+                            (modules[m].testResults.getProbabilityDistribution(testInstanceIndex)[pred] - normValue);
         }
         
         return normalise(preds);
@@ -102,8 +117,11 @@ public class MajorityVoteByCorrectedConfidence extends ModuleVotingScheme {
         int pred;
         double[] dist;
         for(int m = 0; m < modules.length; m++){
+            long startTime = System.currentTimeMillis();
             dist = modules[m].getClassifier().distributionForInstance(testInstance);
-            storeModuleTestResult(modules[m], dist);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

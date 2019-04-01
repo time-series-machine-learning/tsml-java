@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers.ensembles.voting;
 
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
@@ -33,7 +47,7 @@ public class AverageOfConfidences extends ModuleVotingScheme {
         for (int c = 0; c < numClasses; c++) {
             double sum = .0;
             for(int m = 0; m < modules.length; m++){
-                double[] p=modules[m].trainResults.getDistributionForInstance(trainInstanceIndex);
+                double[] p=modules[m].trainResults.getProbabilityDistribution(trainInstanceIndex);
                 sum += modules[m].priorWeight * 
                         modules[m].posteriorWeights[c]*p[c];
             }
@@ -49,7 +63,7 @@ public class AverageOfConfidences extends ModuleVotingScheme {
         for (int c = 0; c < numClasses; c++) {
             double sum = .0;
             for(int m = 0; m < modules.length; m++){
-                double[] p=modules[m].testResults.getDistributionForInstance(testInstanceIndex);
+                double[] p=modules[m].testResults.getProbabilityDistribution(testInstanceIndex);
                 sum += modules[m].priorWeight * 
                         modules[m].posteriorWeights[c]*p[c];
             }
@@ -65,8 +79,11 @@ public class AverageOfConfidences extends ModuleVotingScheme {
         
         double[][] dists = new double[modules.length][];
         for(int m = 0; m < modules.length; m++){
+            long startTime = System.currentTimeMillis();
             dists[m] = modules[m].getClassifier().distributionForInstance(testInstance);
-            storeModuleTestResult(modules[m], dists[m]);
+            long predTime = System.currentTimeMillis() - startTime;
+            
+            storeModuleTestResult(modules[m], dists[m], predTime);
         }
          
         for (int c = 0; c < numClasses; c++) {

@@ -58,8 +58,8 @@ import java.util.Random;
 import java.util.Vector;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
-import utilities.ClassifierResults;
-import utilities.SaveParameterInfo;
+import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
@@ -481,7 +481,7 @@ public class ContractRotationForest extends AbstractClassifier
                 }
             }
         }
-        res.buildTime=System.currentTimeMillis()-startTime;
+        res.setBuildTime(System.currentTimeMillis()-startTime);
         if(debug)
             System.out.println("Finished build");
 
@@ -968,7 +968,7 @@ public class ContractRotationForest extends AbstractClassifier
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
+        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
         result+=",numTrees,"+numTrees;
         return result;
     }

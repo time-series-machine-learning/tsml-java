@@ -1,11 +1,22 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
-import utilities.ClassifierResults;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
@@ -14,6 +25,7 @@ import weka.filters.SimpleBatchFilter;
 import timeseriesweka.filters.Cosine;
 import timeseriesweka.filters.Sine;
 import timeseriesweka.filters.Hilbert;
+import weka.filters.Filter;
 
 /**
  *
@@ -249,17 +261,20 @@ public class DTD_C extends DD_DTW{
             temp.add(first);
             temp.add(second);
             try{
+                SimpleBatchFilter bf=null;
                 switch(this.transformType){
                     case COS:
-                        temp = new Cosine().process(temp);
+                        bf=new Cosine();
                         break;
                     case SIN:
-                        temp = new Sine().process(temp);
+                        bf=new Sine();
                         break;
-                    case HIL:
-                        temp = new Hilbert().process(temp);
+                    case HIL: default:
+                         bf=new Hilbert();
                         break;
                 }
+                bf.setInputFormat(temp);
+                temp = Filter.useFilter(temp,bf);    
             }catch(Exception e){
                 e.printStackTrace();
                 return null;
@@ -294,8 +309,8 @@ public class DTD_C extends DD_DTW{
             
             // DTW on only the transformed data first
             for(SimpleBatchFilter transform:transforms){
-                transTrain = transform.process(train);
-                transTest = transform.process(test);
+                transTrain = Filter.useFilter(train,transform);
+                transTest = Filter.useFilter(test,transform);
                 dtw = new DTW_DistanceBasic();
                 knn = new kNN();
                 knn.setDistanceFunction(dtw);

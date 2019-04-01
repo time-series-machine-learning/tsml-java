@@ -1,13 +1,22 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.filters.shapelet_transforms.quality_measures;
 import java.util.Map;
 import java.util.TreeMap;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 /**
  *
  * @author raj09hxu
@@ -24,12 +33,12 @@ public class InformationGainBound extends ShapeletQualityBound{
          *
          * @param isExact
          * */
-        protected InformationGainBound(ClassDistribution classDist, int percentage, boolean isExact){
+        protected InformationGainBound(ClassCounts classDist, int percentage, boolean isExact){
             initParentFields(classDist, percentage);
             this.isExact = isExact;
             parentEntropy = InformationGain.entropy(parentClassDist);
         }
-        protected InformationGainBound(ClassDistribution classDist, int percentage){
+        protected InformationGainBound(ClassCounts classDist, int percentage){
             this(classDist,percentage,false);
         }
            
@@ -91,8 +100,8 @@ public class InformationGainBound extends ShapeletQualityBound{
         
         private double computeIG(Map<Double, Boolean> perm){
             //Initialise class counts
-            TreeSetClassDistribution lessClasses = new TreeSetClassDistribution();
-            TreeSetClassDistribution greaterClasses = new TreeSetClassDistribution();
+            TreeSetClassCounts lessClasses = new TreeSetClassCounts();
+            TreeSetClassCounts greaterClasses = new TreeSetClassCounts();
             TreeMap<Double, Boolean> isShifted = new TreeMap<>();
             
             int countOfAllClasses = 0;

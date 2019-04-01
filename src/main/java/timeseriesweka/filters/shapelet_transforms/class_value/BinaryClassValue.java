@@ -1,12 +1,21 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.filters.shapelet_transforms.class_value;
 
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -17,7 +26,7 @@ import weka.core.Instances;
 public class BinaryClassValue extends NormalClassValue{
 
     
-    ClassDistribution[] binaryClassDistribution;
+    ClassCounts[] binaryClassDistribution;
     
     @Override
     public void init(Instances inst)
@@ -28,7 +37,7 @@ public class BinaryClassValue extends NormalClassValue{
     }
     
     @Override
-    public ClassDistribution getClassDistributions() {
+    public ClassCounts getClassDistributions() {
         return binaryClassDistribution[(int)shapeletValue];        
     }
 
@@ -38,9 +47,9 @@ public class BinaryClassValue extends NormalClassValue{
     }
     
     
-    private ClassDistribution[] createBinaryDistributions()
+    private ClassCounts[] createBinaryDistributions()
     {
-        ClassDistribution[] binaryMapping = new ClassDistribution[classDistributions.size()];
+        ClassCounts[] binaryMapping = new ClassCounts[classDistributions.size()];
         
         //for each classVal build a binary distribution map.
         int i=0;
@@ -51,10 +60,10 @@ public class BinaryClassValue extends NormalClassValue{
         return binaryMapping;
     }
     
-    private ClassDistribution binariseDistributions(double shapeletClassVal)
+    private ClassCounts binariseDistributions(double shapeletClassVal)
     {
         //binary distribution only needs to be size 2.
-        ClassDistribution binaryDistribution = new TreeSetClassDistribution();
+        ClassCounts binaryDistribution = new TreeSetClassCounts();
 
         Integer shapeletClassCount = classDistributions.get(shapeletClassVal);
         binaryDistribution.put(0.0, shapeletClassCount);

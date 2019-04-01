@@ -1,13 +1,27 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.Scanner;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
@@ -212,7 +226,7 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
     
     @Override
     public String getParameters(){
-        String paras="BuildTime,"+res.buildTime;
+        String paras="BuildTime,"+res.getBuildTime();
         return paras;
         
     }    

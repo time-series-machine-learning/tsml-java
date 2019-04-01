@@ -1,8 +1,16 @@
 /*
-This class is a helper class to describe the structure of our shapelet code and
-* demonstrate how to use it.
- *copyright Anthony Bagnall
- * @author Anthony Bagnall, Jason Lines, Jon Hills and Edgaras Baranauskas
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.examples;
 
@@ -56,6 +64,13 @@ import java.util.logging.Logger;
  */
 import weka.core.*;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
+
+/**
+ * This class is a helper class to describe the structure of our shapelet code and
+* demonstrate how to use it.
+ *copyright Anthony Bagnall
+ * @author Anthony Bagnall, Jason Lines, Jon Hills and Edgaras Baranauskas
+ */
 public class ShapeletExamples {
 
     public static ShapeletTransform st;

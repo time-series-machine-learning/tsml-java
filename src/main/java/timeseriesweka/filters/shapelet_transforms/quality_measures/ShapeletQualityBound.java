@@ -1,7 +1,16 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.filters.shapelet_transforms.quality_measures;
 
@@ -10,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.ClassDistribution;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.ClassCounts;
+import utilities.class_counts.TreeSetClassCounts;
 
 /**
  *
@@ -31,11 +40,11 @@ public abstract class ShapeletQualityBound implements Serializable {
     /**
      * Class distribution of the observed distance, class pairs
      */
-    protected ClassDistribution orderLineClassDist;
+    protected ClassCounts orderLineClassDist;
     /**
      * Class distribution of the dataset, which currently being processed
      */
-    protected ClassDistribution parentClassDist;
+    protected ClassCounts parentClassDist;
     /**
      * Number of instances in the dataset, which is currently being processed
      */
@@ -51,12 +60,12 @@ public abstract class ShapeletQualityBound implements Serializable {
      * @param classDist
      * @param percentage
      */
-    protected void initParentFields(ClassDistribution classDist, int percentage) {
+    protected void initParentFields(ClassCounts classDist, int percentage) {
         //Initialize the fields
         bsfQuality = Double.MAX_VALUE;
         orderLine = new ArrayList<>();
 
-        orderLineClassDist = new TreeSetClassDistribution();
+        orderLineClassDist = new TreeSetClassCounts();
         parentClassDist = classDist;
         this.percentage = percentage;
 

@@ -1,7 +1,16 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package utilities.multivariate_tools;
 
@@ -10,7 +19,7 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 
 /**
  *
@@ -163,7 +172,7 @@ public class MultivariateInstanceTools {
         
         Instance firstInst = instances[0].firstInstance();
         int numAttsInChannel = instances[0].numAttributes()-1;
-        
+
 
         FastVector attributes = new FastVector();
         
@@ -289,7 +298,9 @@ public class MultivariateInstanceTools {
         
         Instances[] output = new Instances[2];
         output[0] = mergeToMultivariateInstances(resample_train_channels);
+        output[0].setRelationName(train.relationName());
         output[1] = mergeToMultivariateInstances(resample_test_channels);
+        output[1].setRelationName(test.relationName());
         
         return output;
     }

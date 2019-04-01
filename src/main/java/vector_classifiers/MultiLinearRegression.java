@@ -1,9 +1,19 @@
-
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package vector_classifiers;
 
-import development.MultipleClassifierEvaluation;
-import java.util.Arrays;
-import java.util.List;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.AbstractClassifier;
@@ -101,7 +111,7 @@ public class MultiLinearRegression extends AbstractClassifier {
 //        new MultipleClassifierEvaluation(basePath+"XGBoostAnalysis/", dsetGroup+"_testy", 10).
 //            setTestResultsOnly(true).
 ////            setBuildMatlabDiagrams(true).
-//            setDatasets(dsetGroup.equals("UCI") ? development.DataSets.UCIContinuousFileNames : development.DataSets.fileNames).
+//            setDatasets(dsetGroup.equals("UCI") ? development.experiments.DataSets.UCIContinuousFileNames : development.experiments.DataSets.fileNames).
 ////            setDatasets(basePath + dsetGroup + "2.txt").
 //            readInClassifiers(new String[] { "MLR", "1NN", "C4.5", }, basePath+dsetGroup+"Results/").
 ////            readInClassifiers(new String[] { "XGBoost", "XGBoost500Iterations", "RotF", "RandF" }, basePath+dsetGroup+"Results/").

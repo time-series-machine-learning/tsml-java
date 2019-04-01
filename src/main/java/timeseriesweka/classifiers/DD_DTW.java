@@ -1,11 +1,24 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package timeseriesweka.classifiers;
 
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.lazy.kNN;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -204,7 +217,7 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
     
     @Override
     public void buildClassifier(Instances train){
-        res.buildTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         
         if(!paramsSet){
             this.distanceFunction.crossValidateForAandB(train);
@@ -212,11 +225,16 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         }
         this.setDistanceFunction(this.distanceFunction);
         super.buildClassifier(train);
-        res.buildTime=System.currentTimeMillis()-res.buildTime;
+        try {
+            res.setBuildTime(System.currentTimeMillis()-startTime);
+        } catch (Exception e) {
+            System.err.println("Inheritance preventing me from throwing this error...");
+            System.err.println(e);
+        }
     }
      @Override
     public String getParameters() {
-        return "BuildTime,"+res.buildTime+",a,"+distanceFunction.a+",b,"+distanceFunction.b;
+        return "BuildTime,"+res.getBuildTime()+",a,"+distanceFunction.a+",b,"+distanceFunction.b;
     }
      
    

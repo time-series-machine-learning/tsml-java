@@ -1,5 +1,16 @@
 /*
-Shaplet transform with the weighted ensemble
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers;
 
@@ -14,7 +25,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import vector_classifiers.CAWPE;
 import weka.core.Instance;
@@ -29,7 +39,7 @@ import timeseriesweka.classifiers.cote.HiveCoteModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
@@ -132,7 +142,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
     public String getParameters(){
         String paras=transform.getParameters();
         String ensemble=this.ensemble.getParameters();
-        return "BuildTime,"+res.buildTime+",CVAcc,"+res.acc+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
+        return "BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
     }
     
     @Override
@@ -195,7 +205,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
 
             ensemble.buildClassifier(format);
             format=new Instances(data,0);
-            res.buildTime=System.currentTimeMillis()-startTime;
+            res.setBuildTime(System.currentTimeMillis()-startTime);
         }
     }
     private void  buildCheckpointClassifier(Instances data) throws Exception {   

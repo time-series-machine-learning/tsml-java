@@ -1,14 +1,24 @@
 /*
- A binary filter that uses information gain quality measure to determine the split point/
-     * copyright: Anthony Bagnall
- */
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
 package timeseriesweka.filters;
 
 //import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.TreeSetClassDistribution;
+import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
@@ -17,7 +27,8 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
 /**
- *
+ * A binary filter that uses information gain quality measure to determine the split point/
+     * copyright: Anthony Bagnall
  * @author Jon Hills j.hills@uea.ac.uk
  */
 public class BinaryTransform extends SimpleBatchFilter{
@@ -111,11 +122,11 @@ public class BinaryTransform extends SimpleBatchFilter{
         for(int i=0;i<vals.length;i++)
             list.add(new OrderLineObj(vals[i],classes[i]));
         //Sort the vals
-        TreeSetClassDistribution tree = new TreeSetClassDistribution(data);
+        TreeSetClassCounts tree = new TreeSetClassCounts(data);
         Collections.sort(list);
         return infoGainThreshold(list,tree);
     }
-   private static double entropy(TreeSetClassDistribution classDistributions){
+   private static double entropy(TreeSetClassCounts classDistributions){
             if(classDistributions.size() == 1){
                 return 0;
             }
@@ -145,7 +156,7 @@ public class BinaryTransform extends SimpleBatchFilter{
             return entropy;
         }
 
-    public static double infoGainThreshold(ArrayList<OrderLineObj> orderline, TreeSetClassDistribution classDistribution){
+    public static double infoGainThreshold(ArrayList<OrderLineObj> orderline, TreeSetClassCounts classDistribution){
 // for each split point, starting between 0 and 1, ending between end-1 and end
 // addition: track the last threshold that was used, don't bother if it's the same as the last one
         double lastDist = orderline.get(0).getDistance(); // must be initialised as not visited(no point breaking before any data!)
@@ -162,8 +173,8 @@ public class BinaryTransform extends SimpleBatchFilter{
             if(i==1 || thisDist != lastDist){ // check that threshold has moved(no point in sampling identical thresholds)- special case - if 0 and 1 are the same dist
 
                 // count class instances below and above threshold
-                TreeSetClassDistribution lessClasses = new TreeSetClassDistribution();
-                TreeSetClassDistribution greaterClasses = new TreeSetClassDistribution();
+                TreeSetClassCounts lessClasses = new TreeSetClassCounts();
+                TreeSetClassCounts greaterClasses = new TreeSetClassCounts();
 
                 for(double j : classDistribution.keySet()){
                     lessClasses.put(j, 0);

@@ -1,10 +1,25 @@
 /*
- * Created on Dec 4, 2005
- 
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package utilities;
+/*
+ * Created on Dec 4, 2005
 
+ */
 
+import evaluation.storage.ClassifierResults;
+import evaluation.evaluators.SingleTestSetEvaluator;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Random;
@@ -487,23 +502,9 @@ public class ClassifierTools {
     
     
     public static ClassifierResults constructClassifierResults(Classifier classifier, Instances test) throws Exception{
-        double[] preds = new double[test.numInstances()];
-        double[][] distForInstances = new double[test.numInstances()][];
-        double correct = 0;
-        for(int i=0; i<test.numInstances(); i++){
-            Instance test1 = test.get(i);
-            distForInstances[i] = classifier.distributionForInstance(test1);
-            preds[i] = utilities.GenericTools.indexOfMax(distForInstances[i]);
-            if(preds[i] == test1.classValue())
-                correct++;
-        }
-        
-        double accuracy = correct / (double) test.numInstances();
-        double[] classVals = test.attributeToDoubleArray(test.classIndex());
-        ClassifierResults results = new ClassifierResults(accuracy, classVals, preds, distForInstances, test.numClasses());
-        results.setNumInstances(test.numInstances());
-        results.setNumClasses(test.numClasses());
-        return results;
+        //jamesl: no usages reported 19/02/2019, but this function header left in and refactored to
+        //use up to date method in case external usages exist
+        return new SingleTestSetEvaluator().evaluate(classifier, test);
     }
 	
     

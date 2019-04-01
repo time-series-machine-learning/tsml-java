@@ -1,10 +1,24 @@
 /*
-     * copyright: Anthony Bagnall
- * 
- * */
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
 package timeseriesweka.filters;
 
+import fileIO.OutFile;
 import java.io.FileReader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
@@ -12,6 +26,20 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
+/** 
+  <!-- globalinfo-start -->
+* Implementation of power spectrum function as a Weka SimpleBatchFilter
+* Series to series transform independent of class value
+*  <!-- globalinfo-end -->
+<!-- options-start -->
+ * Valid options are: <p/>
+ * TO DO
+ <!-- options-end -->
+ *
+ * 
+ * author: Anthony Bagnall circa 2008.
+ Reviewed and tidied up 2019
+ */
 public class PowerSpectrum extends FFT {
     boolean log=false;
     FFT fftFilter;	
@@ -181,31 +209,27 @@ public class PowerSpectrum extends FFT {
     }
 
 
-
-    public static void main(String[] args){
-        matlabComparison();
-        System.exit(0);
-        PowerSpectrum ps = new PowerSpectrum();
-        System.out.println(" "+ps.getInputFormat());
-        Instances in=loadData("C:\\Research\\Data\\Time Series Classification\\Beef\\Beef_Train"); 
-
-        try{
-            Instances out =ps.process(in);
-            System.out.println(" "+out.numAttributes()+" "+out.numInstances());
-            Instance ins=out.instance(0);
-            double[] vals=ins.toDoubleArray();
-            System.out.println(" Class index ="+out.classIndex());
-            System.out.println(" Num atts ="+out.numAttributes());
-
-            System.out.println(" "+ins.value(out.classIndex()));
-//                       for(double d:vals)
-//                         System.out.println(" PS  "+d);
+    public static void main(String[] args) {
+        String problemPath = "E:/TSCProblems/";
+        String resultsPath="E:/Temp/";
+        String datasetName="ItalyPowerDemand";
+        Instances train =ClassifierTools.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
+        PowerSpectrum ps= new PowerSpectrum();
+        try {
+            Instances trans=ps.process(train);
+            OutFile out = new OutFile(resultsPath+datasetName+"PS_JAVA.csv");
+            out.writeLine(datasetName);
+            for(Instance ins: trans){
+                double[] d=ins.toDoubleArray();
+                for(int j=0;j<d.length;j++){
+                    if(j!=trans.classIndex())
+                        out.writeString(d[j]+",");
+                }
+                out.writeString("\n");
+            }
+        } catch (Exception ex) {
+            System.out.println("ERROR IN DEMO");
+            Logger.getLogger(ACF.class.getName()).log(Level.SEVERE, null, ex);
         }
-        catch(Exception e){
-            System.out.println(" Error ="+e);
-           e.printStackTrace();                   
-        }
-
     }
-
 }

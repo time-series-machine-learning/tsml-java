@@ -1,12 +1,16 @@
 /*
-Code to reproduce all the results in the paper
-@article{bagnall16bakeoff,
-  title={The Great Time Series Classification Bake Off: a Review and Experimental Evaluation of Recent Algorithmic Advance},
-  author={A. Bagnall and J. Lines and  A. Bostrom and J. Large and E. Keogh},
-  journal={Data Mining and Knowledge Discovery},
-  volume={Online First},
-  year={2016}
-}
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.examples;
 
@@ -27,13 +31,13 @@ import timeseriesweka.classifiers.SAXVSM;
 import timeseriesweka.classifiers.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.DD_DTW;
 import timeseriesweka.classifiers.BagOfPatterns;
-import development.DataSets;
+import experiments.DataSets;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -41,8 +45,6 @@ import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import timeseriesweka.classifiers.FastDTW_1NN;
-import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import vector_classifiers.CAWPE;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
@@ -51,7 +53,14 @@ import weka.classifiers.trees.RandomForest;
 import weka.core.Instances;
 
 /**
- *
+ * Code to reproduce all the results in the paper 
+ * @article{bagnall16bakeoff,
+ *     title={The Great Time Series Classification Bake Off: a Review and Experimental Evaluation of Recent Algorithmic Advance},
+ *     author={A. Bagnall and J. Lines and  A. Bostrom and J. Large and E. Keogh}, 
+ *     journal={Data Mining and Knowledge Discovery},
+ *     volume={Online First},
+ *     year={2016}
+ * }
  * @author ajb
  */
 public class ClassificationExamples {

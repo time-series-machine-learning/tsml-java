@@ -1,7 +1,16 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.filters.shapelet_transforms.quality_measures;
 
@@ -11,7 +20,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
-import utilities.class_distributions.ClassDistribution;
+import utilities.class_counts.ClassCounts;
 
 
 /**
@@ -66,7 +75,7 @@ public class ShapeletQuality {
     
     //init static lists of constructors.
     private static final List<Supplier<ShapeletQualityMeasure>> qualityConstructors = createQuality();
-    private static final List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>>  boundConstructor = createBound();
+    private static final List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>>  boundConstructor = createBound();
     private static List<Supplier<ShapeletQualityMeasure>> createQuality(){
         List<Supplier<ShapeletQualityMeasure>> cons = new ArrayList<>();
         cons.add(InformationGain::new);
@@ -76,8 +85,8 @@ public class ShapeletQuality {
         return cons;
     }
     
-    private static List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>> createBound(){
-        List<BiFunction<ClassDistribution, Integer, ShapeletQualityBound>> cons = new ArrayList();
+    private static List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> createBound(){
+        List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> cons = new ArrayList();
         cons.add(InformationGainBound::new);
         cons.add(FStatBound::new);
         cons.add(KruskalWallisBound::new);
@@ -90,7 +99,7 @@ public class ShapeletQuality {
         qualityMeasure = qualityConstructors.get(choice.ordinal()).get();
     }
     
-    public void initQualityBound(ClassDistribution classDist, int percentage){
+    public void initQualityBound(ClassCounts classDist, int percentage){
         bound = Optional.of(boundConstructor.get(choice.ordinal()).apply(classDist, percentage));
     }
     
