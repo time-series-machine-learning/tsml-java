@@ -1,5 +1,6 @@
-package utilities;
+package utilities.samplers;
 
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 

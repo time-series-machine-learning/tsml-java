@@ -1,4 +1,4 @@
-package utilities;
+package utilities.samplers;
 
 import weka.core.Instance;
 import weka.core.Instances;
