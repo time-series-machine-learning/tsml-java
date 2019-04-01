@@ -26,7 +26,6 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.RandomBaggingBOSS;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -229,149 +228,42 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
-            case "BOSSMV":
+            case "RBOSSAccCVMax":
                 c = new BOSS();
-                ((BOSS) c).setSeed(fold);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                break;
-            case "RBOSSMV":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RBOSSMV250":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
                 ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
                 ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxTrainInstances(500);
                 break;
-            case "RCBOSSMV":
+            case "RBOSSAccCVFast":
                 c = new BOSS();
-                ((BOSS) c).useCAWPE(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setNumCAWPEFolds(2);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RCBOSSMV250":
-                c = new BOSS();
-                ((BOSS) c).useCAWPE(true);
                 ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setNumCAWPEFolds(2);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
                 ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
                 break;
-            case "RandomBOSSContracted10Mins":
+            case "RBOSSAccCVFastMax":
                 c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 10);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted1Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted24Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted1HourMV":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomRTreeBOSS":
-                c = new BOSS();
-                ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomLogisticBOSS":
-                c = new BOSS();
-                ((BOSS) c).setAlternateIndividualClassifier(new Logistic());
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBoostedBOSS":
-                c = new RandomBoostedBOSS();
-                ((RandomBoostedBOSS) c).setSeed(fold);
-                break;
-            case "RandomBaggingBOSS":
-                c = new RandomBaggingBOSS();
-                ((RandomBaggingBOSS) c).setSeed(fold);
-                break;
-            case "RandomTreeBOSS":
-                c = new BOSS();
-                ((BOSS) c).setAlternateIndividualClassifier(new J48());
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomSVMBOSS":
-                c = new BOSS();
-                ((BOSS) c).setAlternateIndividualClassifier(new SMO());
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSWhales50":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(50);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSWhales100":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSWhales250":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
                 ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
                 ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
+                ((BOSS) c).setMaxTrainInstances(500);
                 break;
-            case "RandomBOSSWhalesContracted10Mins":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 10);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSWhalesContracted1Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSWhalesContracted4Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 4);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/Whales/checkpoint");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSUnique":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelectionUnique(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSS100New":
+            case "RBOSSSubsample":
                 c = new BOSS();
                 ((BOSS) c).setRandomEnsembleSelection(true);
                 ((BOSS) c).setEnsembleSize(100);
                 ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomCAWPEBOSS2502Folds":
-                c = new BOSS();
-                ((BOSS) c).useCAWPE(true);
-                ((BOSS) c).setNumCAWPEFolds(2);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSeed(fold);
-                break;
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
