@@ -29,6 +29,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.proximityForest.ProximityForestWeka;
 import vector_classifiers.CAWPE;
 import vector_classifiers.PLSNominalClassifier;
+import vector_classifiers.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -84,7 +85,18 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            
+            case "XGBoostMultiThreaded":
+                c = new TunedXGBoost(); 
+                break;
+            case "XGBoost":
+                c = new TunedXGBoost(); 
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                break;
+            case "SmallTunedXGBoost":
+                c = new TunedXGBoost(); 
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
+                break;
             case "ProximityForest":
                 c = new ProximityForestWeka();
                 break;            
