@@ -432,11 +432,16 @@ public class Experiments  {
         
             //If needed, build/make the directory to write the train and/or testFold files to
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
+                expSettings.supportingFilePath = fullWriteLocation;
+            
+            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished. 
+            // default builds a foldx/ dir in normal write dir
+//            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+//                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
 //            if (classifier instanceof FileProducer) {
-                f = new File(expSettings.supportingFilePath);
-                if (!f.exists())
-                    f.mkdirs();
+//                f = new File(expSettings.supportingFilePath);
+//                if (!f.exists())
+//                    f.mkdirs();
 //            }
             
             //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
