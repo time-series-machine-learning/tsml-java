@@ -15,6 +15,7 @@
 package experiments;
 
 
+import evaluation.tuning.ParameterSpace;
 import java.io.File;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
@@ -30,6 +31,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.proximityForest.ProximityForestWeka;
 import vector_classifiers.CAWPE;
 import vector_classifiers.PLSNominalClassifier;
+import vector_classifiers.TunedClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -373,9 +375,22 @@ public class ClassifierLists {
                 ((TSF)c).setSeed(fold);
                 ((TSF)c).setBagging(true);
                 break;
-
+             case "TunedTSF":
+                TunedClassifier tuner=new TunedClassifier();
+                TSF tree=new TSF();
+                ((TSF)tree).setSeed(fold);
+                int[] numTrees={3, 5, 10, 20, 50, 100, 200, 300, 400, 500, 600, 700};
+                String[] numIntervals={"1","2","3","5","10", "20", "sqrt", "log"};
+                ParameterSpace space = new ParameterSpace();
+                space.addParameter("T", numTrees);                
+                space.addParameter("I", numIntervals);                
+                tuner.setClassifier(tree);
+                tuner.setParameterSpace(space);
+                //ERRR NEED TO SET c
+                c=tuner;
+                break;
            default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifier);
+                System.out.println("UNKNOWN CLASSIFIER in Experiments.setClassifierClassic"+classifier);
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
         }

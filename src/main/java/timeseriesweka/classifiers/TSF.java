@@ -92,10 +92,10 @@ import weka.core.Utils;
  * Valid options are: <p/>
  * 
  * <pre> -T
- *  set number of trees.</pre>
+ *  set number of trees in the ensemble.</pre>
  * 
- * <pre> -F
- *  set number of features.</pre>
+ * <pre> -I
+ *  set number of intervals to calculate.</pre>
  <!-- options-end -->
 
 * @author ajb
@@ -604,9 +604,9 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             numClassifiers = Integer.parseInt(numTreesString);
         else
             numClassifiers = DEFAULT_NUM_CLASSIFIERS;
-        String numFeaturesString=Utils.getOption('F', options);
-//Options here are a double between 0 and 1 (proportion of features) or a text 
-//string sqrt or log
+        String numFeaturesString=Utils.getOption('I', options);
+//Options here are a double between 0 and 1 (proportion of features), a text 
+//string sqrt or log, or an integer number 
         try{
         if(numFeaturesString.equals("sqrt"))
             numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
@@ -614,10 +614,14 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             numIntervalsFinder = (numAtts) -> (int) Utils.log2(numAtts) + 1;
         else{
                 double d=Double.parseDouble(numFeaturesString);
-                if(d<=0 || d>1)
+                if(d<=0)
                     throw new Exception("proportion of features of of range 0 to 1");
-                numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
-                System.out.println("Proportion of atts = "+d);
+                if(d<=1)
+                    numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
+                else
+                    numIntervalsFinder = (numAtts) -> (int)(d);
+                    
+                System.out.println("Proportion/number of intervals = "+d);
             }
         }catch(Exception e){
             System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
@@ -633,11 +637,16 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
 
 //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
+        public static boolean findSkew=false;
+        public static boolean findKurtosis=false;
         double mean;
         double stDev;
         double slope;
+        double skew;
+        double kurtosis;
         public void setFeatures(double[] data, int start, int end){
             double sumX=0,sumYY=0;
+            double sumY3=0,sumY4=0;
             double sumY=0,sumXY=0,sumXX=0;
             int length=end-start+1;
             for(int i=start;i<=end;i++){
@@ -662,6 +671,27 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
 //                stDev=Math.sqrt(stDev);
             if(slope==0)
                 stDev=0;
+            if(findSkew){
+                if(stDev==0)
+                    skew=1;
+                else{
+                    for(int i=start;i<=end;i++)
+                        sumY3+=data[i]*data[i]*data[i];
+                    skew=sumY3-3*sumY*sumYY+2*sumY*sumY;
+                    skew/=length*stDev*stDev*stDev;
+                }
+            }
+            if(findKurtosis){
+                if(stDev==0)
+                    kurtosis=1;
+                else{
+                    for(int i=start;i<=end;i++)
+                        sumY4+=data[i]*data[i]*data[i]*data[i];
+                    kurtosis=sumY4-4*sumY*sumY3+6*sumY*sumY*sumYY-3*sumY*sumY*sumY*sumY;
+                    skew/=length*stDev*stDev*stDev*stDev;
+                }
+            }
+            
         }
         public void setFeatures(double[] data){
             setFeatures(data,0,data.length-1);
