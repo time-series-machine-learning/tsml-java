@@ -56,7 +56,7 @@ public class DataSets {
     
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
-    static String[] mtscProblems2018={
+    public static String[] mtscProblems2018={
         "ArticularyWordRecognition",
         "AtrialFibrillation",
         "BasicMotions",

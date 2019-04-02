@@ -359,12 +359,13 @@ public class Experiments  {
             boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
-                settings[0]="E:/Data/TSCProblems2018/";
-                settings[1]="E:/Results/";
-                settings[2]="true";
-                settings[3]="RISE";
-                settings[4]="Adiac";
+                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
+                settings[1]="-rp=E:/Results/";//Where to write results                
+                settings[2]="-gtf=true"; //Whether to generate train files or not               
+                settings[3]="-cn=RISE"; //Classifier name
                 settings[5]="1";
+                settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
+                settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
@@ -372,11 +373,16 @@ public class Experiments  {
 //Location of data set
                 settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
                 settings[1]="-rp=E:/Results/";//Where to write results                
-                settings[2]="-gtf=true"; //Whether to generate train files or not               
-                settings[3]="-cn=RISE"; //Classifier name
+                settings[2]="-gtf=false"; //Whether to generate train files or not               
+                settings[3]="-cn=TunedTSF"; //Classifier name
 //                for(String str:DataSets.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
-                    settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
+                    settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
+                System.out.println("Manually set args:");
+                for (String str : settings)
+                    System.out.println("\t"+settings);
+                System.out.println("");
+                    
                     ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                     setupAndRunExperiment(expSettings);
 //                }
