@@ -664,12 +664,12 @@ public static void basicSummaryComparisons(){
  * Next x arguments: number of numParas stored for each classifier    
    **/
    public static void exampleCollateResultsMethod1(String[] args) throws Exception{
-    String[] classifiers={"TSF"};
-    for(String classifier:classifiers){
-        String parameters="0";
         if(args.length>1)
             collate(args);
         else{ 
+        String[] classifiers={"TSF"};
+        for(String classifier:classifiers){
+            String parameters="0";
             String[] str={"E:\\Results\\Java\\",
                 "Z:\\Data\\TSCProblems2018\\","30","false",classifier,parameters};
             collate(str);

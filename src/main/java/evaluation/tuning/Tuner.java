@@ -62,7 +62,7 @@ public class Tuner
     //we're implementing CheckpointClassifier AND SaveEachParameter for now, however for this class checkpointing is 
     //identical to SaveEachParamter, we just implicitely checkpoint after each parameterSet evaluation
     private String parameterSavingPath = null; //SaveEachParameter //CheckpointClassifier
-    private boolean saveParameters = true; //SaveEachParameter //CheckpointClassifier
+    private boolean saveParameters = false; //SaveEachParameter //CheckpointClassifier
     
     long contractTimeNanos; //ContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
     boolean contracting = false; //ContractClassifier 
