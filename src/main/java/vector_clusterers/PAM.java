@@ -5,9 +5,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import utilities.ClassifierTools;
-import weka.core.DistanceFunction;
-import weka.core.EuclideanDistance;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -92,7 +89,7 @@ public class PAM extends AbstractVectorClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (changeOriginalInstances == false){
+        if (!dontCopyInstances){
             data = new Instances(data);
         }
 

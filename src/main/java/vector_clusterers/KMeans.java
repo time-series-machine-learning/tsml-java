@@ -87,15 +87,13 @@ public class KMeans extends AbstractVectorClusterer{
     
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (changeOriginalInstances == false){
+        if (!dontCopyInstances){
             data = new Instances(data);
         }
 
         distFunc.setInstances(data);
         numInstances = data.size();
         cluster = new int[numInstances];
-
-        System.out.println(data);
 
         if (numInstances <= k){
             clusterCenters = new Instances(data);

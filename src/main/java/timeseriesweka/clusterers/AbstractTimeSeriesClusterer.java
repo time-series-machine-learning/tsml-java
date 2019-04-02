@@ -15,50 +15,21 @@ import weka.core.Instances;
  */
 public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
-    protected boolean changeOriginalInstances = true;
-    protected boolean hasClassValue = false;
-
-    private boolean checkedClass = false;
+    protected boolean dontCopyInstances = true;
     
-    public void setChangeOriginalInstances(boolean b){
-        changeOriginalInstances = b;
-    }
-    
-    public void setHasClassValue(boolean b){
-        hasClassValue = b;
-        checkedClass = true;
+    public void setDontCopyInstances(boolean b){
+        dontCopyInstances = b;
     }
 
-    protected void zNormalise(Instances data, boolean hasClass) throws Exception {
-        int length;
-        
-        if (hasClass){
-            length = data.numAttributes()-1;
-        }
-        else{
-            length = data.numAttributes();
-        }
-        
+    protected void zNormalise(Instances data) {
         for (Instance inst: data){
-            zNormalise(inst, length);
+            zNormalise(inst);
         }
     }
 
-    protected void zNormalise(Instance inst, boolean hasClass){
-        int length;
-
-        if (hasClass){
-            length = inst.numAttributes()-1;
-        }
-        else{
-            length = inst.numAttributes();
-        }
-
-        zNormalise(inst, length);
-    }
-
-    private void zNormalise(Instance inst, int length){
+    protected void zNormalise(Instance inst){
         double meanSum = 0;
+        int length = inst.numAttributes();
 
         for (int i = 0; i < length; i++){
             meanSum += inst.value(i);
@@ -81,19 +52,6 @@ public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
 
         for (int i = 0; i < length; i++){
             inst.setValue(i, (inst.value(i) - mean) / stdev);
-        }
-    }
-
-    protected void checkClass(Instances data) throws Exception {
-        if (data.classIndex() >= 0 && data.classIndex() != data.numAttributes()-1){
-            throw new Exception("Class attribute is available and not the final attribute.");
-        }
-
-        if (data.classIndex() >= 0){
-            hasClassValue = true;
-        }
-        else{
-            hasClassValue = false;
         }
     }
 }

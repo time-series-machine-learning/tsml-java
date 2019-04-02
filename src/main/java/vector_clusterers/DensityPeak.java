@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import utilities.ClassifierTools;
-import weka.core.DistanceFunction;
 import weka.core.Instances;
 
 /**
@@ -83,7 +82,7 @@ public class DensityPeak extends AbstractVectorClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (changeOriginalInstances == false){
+        if (!dontCopyInstances){
             data = new Instances(data);
         }
         
@@ -123,12 +122,6 @@ public class DensityPeak extends AbstractVectorClusterer{
                 }
             }
         }
-        
-//        System.out.println("cs = "+clusterCenters);
-//        System.out.println("ld = "+Arrays.toString(localDensities));
-//        System.out.println("sd = "+Arrays.toString(shortestDist));
-//        System.out.println("nn = "+Arrays.toString(nearestNeighbours));
-//        System.out.println("sdens = "+Arrays.toString(sortedDensitiesIndex));
     }
     
     //Method used in the original implementation to set distC so that the 

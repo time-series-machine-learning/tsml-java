@@ -5,9 +5,6 @@ import java.util.Arrays;
 
 import utilities.ClassifierTools;
 import vector_clusterers.KMeans;
-import weka.clusterers.AbstractClusterer;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -20,6 +17,7 @@ import static utilities.InstanceTools.toWekaInstances;
 public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     private int k = 2;
+    int numFolds = 20;
     private int seed = Integer.MIN_VALUE;
 
     private ArrayList<UShapelet> shapelets;
@@ -27,8 +25,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     private int[] cluster;
     private ArrayList<Integer>[] clusters;
-
-    int numFolds = 5;
 
     public UnsupervisedShapelets(){}
 
@@ -39,7 +35,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!changeOriginalInstances){
+        if (!dontCopyInstances){
             data = new Instances(data);
         }
 
@@ -228,32 +224,35 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
 
     public static void main(String[] args) throws Exception{
-        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TEST.arff");
+        String dataset = "SyntheticControl";
+        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
+
         UnsupervisedShapelets us = new UnsupervisedShapelets();
-        us.seed = 1;
+        us.seed = 0;
+        us.k = 6;
         us.buildClusterer(inst);
         System.out.println(Arrays.toString(us.cluster));
     }
 
     private class UShapelet{
 
-        public int startPoint;
-        public int length;
-        public double[] series;
+        int startPoint;
+        int length;
+        double[] series;
 
-        public double gap;
-        public double dt;
+        double gap;
+        double dt;
 
-        public UShapelet(int startPoint, int length, Instance inst){
+        UShapelet(int startPoint, int length, Instance inst){
             this.startPoint = startPoint;
             this.length = length;
             this.series = inst.toDoubleArray();
         }
 
-        public void computeGap(Instances data){
+        void computeGap(Instances data){
             double[] sortedDistances = computeDistances(data);
             Arrays.sort(sortedDistances);
 
@@ -290,7 +289,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             }
         }
 
-        public double[] computeDistances(Instances data){
+        double[] computeDistances(Instances data){
 
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();
@@ -319,14 +318,14 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             return distances;
         }
 
-        private double[] zNormalise(){
+        double[] zNormalise(){
             double meanSum = 0;
 
             for (int i = startPoint; i < startPoint + length; i++){
                 meanSum += series[i];
             }
 
-            double mean = meanSum /= length;
+            double mean = meanSum / length;
 
             double stdevSum = 0;
             double temp;

@@ -19,7 +19,7 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
     
     protected DistanceFunction distFunc = new EuclideanDistance();
     protected boolean normaliseData = true;
-    protected boolean changeOriginalInstances = true;
+    protected boolean dontCopyInstances = true;
     
     //mean and stdev of each attribute for normalisation.
     protected double[] attributeMeans;
@@ -33,8 +33,8 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
         this.normaliseData = b;
     }
     
-    public void setChangeOriginalInstances(boolean b){
-        changeOriginalInstances = b;
+    public void setDontCopyInstances(boolean b){
+        dontCopyInstances = b;
     }
 
     //Create lower half distance matrix.

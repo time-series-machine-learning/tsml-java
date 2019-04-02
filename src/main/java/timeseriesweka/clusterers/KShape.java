@@ -15,7 +15,8 @@ import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
 import utilities.ClassifierTools;
-import static utilities.Utilities.extractTimeSeries2;
+
+import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.matrix.EigenvalueDecomposition;
@@ -28,10 +29,10 @@ import weka.core.matrix.Matrix;
 public class KShape extends AbstractTimeSeriesClusterer {
     
     private int k = 2;
-    int seed = Integer.MIN_VALUE;
+    private int seed = Integer.MIN_VALUE;
     
-    Instances centroids;
-    double[] cluster;
+    private Instances centroids;
+    private double[] cluster;
     
     public KShape(){}
     
@@ -46,12 +47,11 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!changeOriginalInstances){
+        if (!dontCopyInstances){
             data = new Instances(data);
         }
 
-        checkClass(data);
-        zNormalise(data, hasClassValue);
+        zNormalise(data);
         
         ArrayList<Attribute> atts = new ArrayList(data.numAttributes());
         
@@ -80,8 +80,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
         for (int i = 0; i < cluster.length; i++){
             cluster[i] = Math.ceil(rand.nextDouble()*k)-1;
         }
-
-        System.out.println(Arrays.toString(cluster));
 
         double[] prevCluster = new double[data.numInstances()];
         prevCluster[0] = -1;
@@ -115,10 +113,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
         Instances subsample = new Instances(data, 0);
         int seriesSize = centroid.numAttributes();
 
-        if (hasClassValue){
-            seriesSize--;
-        }
-
         double sum = 0;
         
         for (int i = 0; i < seriesSize; i++){
@@ -143,12 +137,12 @@ public class KShape extends AbstractTimeSeriesClusterer {
             return new DenseInstance(1, new double[centroid.numAttributes()]);
         }
 
-        zNormalise(subsample, hasClassValue);
+        zNormalise(subsample);
 
         double[][] subsampleArray = new double[subsample.numInstances()][];
 
         for (int i = 0; i < subsample.numInstances(); i++){
-            subsampleArray[i] = extractTimeSeries2(subsample.get(i));
+            subsampleArray[i] = extractTimeSeries(subsample.get(i));
         }
         
         Matrix matrix = new Matrix(subsampleArray);
@@ -192,7 +186,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             newCent = new DenseInstance(1, eigVectorNeg);
         }
 
-        zNormalise(newCent, false);
+        zNormalise(newCent);
 
         return newCent;
     }
@@ -242,18 +236,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
 
         private void calculateDistance(Instance first, Instance second, boolean calcShift){
-            int oldLength;
-            int oldLengthY;
-            
-            if(hasClassValue){
-                oldLength = first.numAttributes()-1;
-                oldLengthY = second.numAttributes()-1;
-
-            }
-            else{
-                oldLength = first.numAttributes();
-                oldLengthY = second.numAttributes();
-            }
+            int oldLength = first.numAttributes();
+            int oldLengthY = second.numAttributes();
             
             int length = paddedLength(2*oldLength-1);
             
