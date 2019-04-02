@@ -89,7 +89,7 @@ public class TunedClassifier extends AbstractClassifier
     
     
     public TunedClassifier() { 
-        this.tuner = new Tuner(); 
+//        this.tuner = new Tuner(); 
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 

@@ -405,7 +405,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         if(base instanceof RandomTree){
             ((RandomTree) base).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-            System.out.println("Base classifier num of features = "+((RandomTree) base).getKValue());
         }        
         /** Set up for Bagging **/
         if(bagging){
@@ -599,35 +598,44 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
    */
     @Override
     public void setOptions(String[] options) throws Exception{
+        System.out.print("TSF para sets ");
+        for (String str:options)
+             System.out.print(","+str);
+        System.out.print("\n");
         String numTreesString=Utils.getOption('T', options);
         if (numTreesString.length() != 0)
             numClassifiers = Integer.parseInt(numTreesString);
         else
             numClassifiers = DEFAULT_NUM_CLASSIFIERS;
+        
         String numFeaturesString=Utils.getOption('I', options);
 //Options here are a double between 0 and 1 (proportion of features), a text 
 //string sqrt or log, or an integer number 
-        try{
-        if(numFeaturesString.equals("sqrt"))
-            numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
-        else if(numFeaturesString.equals("log"))
-            numIntervalsFinder = (numAtts) -> (int) Utils.log2(numAtts) + 1;
-        else{
-                double d=Double.parseDouble(numFeaturesString);
-                if(d<=0)
-                    throw new Exception("proportion of features of of range 0 to 1");
-                if(d<=1)
-                    numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
-                else
-                    numIntervalsFinder = (numAtts) -> (int)(d);
-                    
-                System.out.println("Proportion/number of intervals = "+d);
+        if (numTreesString.length() != 0){
+            try{
+                if(numFeaturesString.equals("sqrt"))
+                    numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+                else if(numFeaturesString.equals("log"))
+                    numIntervalsFinder = (numAtts) -> (int) Utils.log2(numAtts) + 1;
+                else{
+                        double d=Double.parseDouble(numFeaturesString);
+                        if(d<=0)
+                            throw new Exception("proportion of features of of range 0 to 1");
+                        if(d<=1)
+                            numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
+                        else
+                            numIntervalsFinder = (numAtts) -> (int)(d);
+
+//                        System.out.println("Proportion/number of intervals = "+d);
+                 }
+            }catch(Exception e){
+                System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
+                System.err.print("Value"+numIntervalsFinder+" Permissable values: sqrt, log, or a double range 0...1");
+                numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
             }
-        }catch(Exception e){
-            System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
-            System.err.print("Value"+numIntervalsFinder+" Permissable values: sqrt, log, or a double range 0...1");
-            numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
         }
+        else
+            System.out.println("Unable to read number of intervals, not set");
     }
 
     @Override
@@ -722,7 +730,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         String[] options=new String[4];
         options[0]="-T";
         options[1]="10";
-        options[2]="-F";
+        options[2]="-I";
         options[3]="1";
         tsf.setOptions(options);
         tsf.buildClassifier(train);
