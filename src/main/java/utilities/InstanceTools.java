@@ -676,4 +676,12 @@ public class InstanceTools {
         
         return result;
     }
+
+    public static void deleteClassAttribute(Instances data){
+        if (data.classIndex() >= 0){
+            int clsIndex = data.classIndex();
+            data.setClassIndex(-1);
+            data.deleteAttributeAt(clsIndex);
+        }
+    }
 }

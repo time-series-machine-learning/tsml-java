@@ -8,6 +8,8 @@ import vector_clusterers.KMeans;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.randIndex;
+import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.InstanceTools.toWekaInstances;
 
 /**
@@ -39,12 +41,14 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             data = new Instances(data);
         }
 
+        deleteClassAttribute(data);
+
         extractUShapelets(data);
         clusterData(data);
     }
 
     private void extractUShapelets(Instances data){
-        int[] shapeletLengths = {10, 100, 1000};
+        int[] shapeletLengths = {50};
 
         shapelets = new ArrayList();
         numInstances = data.size();
@@ -110,6 +114,10 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 }
 
                 data = newData;
+
+                if (data.size() == 1){
+                    break;
+                }
             }
         }
     }
@@ -182,24 +190,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
     }
 
-    private double randIndex(int[] clusters1, int[] clusters2){
-        int samePairs = 0;
-        int numPairs = 0;
-
-        for (int i = 0; i < clusters1.length; i++){
-            for (int n = 0; n < i; n++){
-                if ((clusters1[i] == clusters1[n] && clusters2[i] == clusters2[n]) ||
-                       (clusters1[i] != clusters1[n] && clusters2[i] != clusters2[n])){
-                    samePairs++;
-                }
-            }
-
-            numPairs += i;
-        }
-
-        return samePairs/numPairs;
-    }
-
     private double mean(ArrayList<Double> dists){
         double meanSum = 0;
 
@@ -207,7 +197,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             meanSum += dists.get(i);
         }
 
-        return meanSum /= dists.size();
+        return meanSum / dists.size();
     }
 
     private double standardDeviation(ArrayList<Double> dists, double mean){
@@ -224,17 +214,18 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
 
     public static void main(String[] args) throws Exception{
-        String dataset = "SyntheticControl";
-        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        String dataset = "Trace";
+        Instances inst = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
         UnsupervisedShapelets us = new UnsupervisedShapelets();
         us.seed = 0;
-        us.k = 6;
+        us.k = inst.numClasses();
         us.buildClusterer(inst);
-        System.out.println(Arrays.toString(us.cluster));
+
+        System.out.println(randIndex(us.cluster, inst));
     }
 
     private class UShapelet{
@@ -243,8 +234,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         int length;
         double[] series;
 
-        double gap;
-        double dt;
+        double gap = 0;
+        double dt = 0;
 
         UShapelet(int startPoint, int length, Instance inst){
             this.startPoint = startPoint;
@@ -290,6 +281,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
 
         double[] computeDistances(Instances data){
+
+            //if this shapelet set to 0
 
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();

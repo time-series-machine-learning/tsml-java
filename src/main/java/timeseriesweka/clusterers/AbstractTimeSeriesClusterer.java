@@ -15,7 +15,7 @@ import weka.core.Instances;
  */
 public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
-    protected boolean dontCopyInstances = true;
+    protected boolean dontCopyInstances = false;
     
     public void setDontCopyInstances(boolean b){
         dontCopyInstances = b;

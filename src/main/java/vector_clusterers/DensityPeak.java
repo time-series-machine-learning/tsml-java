@@ -7,6 +7,8 @@ import java.util.Comparator;
 import utilities.ClassifierTools;
 import weka.core.Instances;
 
+import static utilities.InstanceTools.deleteClassAttribute;
+
 /**
  * Implementation of the Density Peaks algorithm described in "Clustering by 
  * fast search and find of density peaks.".
@@ -85,6 +87,8 @@ public class DensityPeak extends AbstractVectorClusterer{
         if (!dontCopyInstances){
             data = new Instances(data);
         }
+
+        deleteClassAttribute(data);
         
         if (normaliseData){
             normaliseData(data);

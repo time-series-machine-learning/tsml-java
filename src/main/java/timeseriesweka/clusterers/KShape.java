@@ -16,6 +16,7 @@ import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
 import utilities.ClassifierTools;
 
+import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -50,6 +51,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         if (!dontCopyInstances){
             data = new Instances(data);
         }
+
+        deleteClassAttribute(data);
 
         zNormalise(data);
         

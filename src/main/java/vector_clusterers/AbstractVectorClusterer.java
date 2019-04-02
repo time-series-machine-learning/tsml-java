@@ -19,7 +19,7 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
     
     protected DistanceFunction distFunc = new EuclideanDistance();
     protected boolean normaliseData = true;
-    protected boolean dontCopyInstances = true;
+    protected boolean dontCopyInstances = false;
     
     //mean and stdev of each attribute for normalisation.
     protected double[] attributeMeans;

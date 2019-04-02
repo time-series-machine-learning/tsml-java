@@ -7,6 +7,8 @@ import java.util.Random;
 import utilities.ClassifierTools;
 import weka.core.Instances;
 
+import static utilities.InstanceTools.deleteClassAttribute;
+
 /**
  * Implementation of the Partitioning Around Medoids (PAM) algorithm with 
  * options for finding a value for k and a refined initial medoid selection.
@@ -92,6 +94,8 @@ public class PAM extends AbstractVectorClusterer{
         if (!dontCopyInstances){
             data = new Instances(data);
         }
+
+        deleteClassAttribute(data);
 
         numInstances = data.size();
         cluster = new int[numInstances];

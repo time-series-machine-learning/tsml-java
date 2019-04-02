@@ -8,6 +8,8 @@ import utilities.ClassifierTools;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static utilities.InstanceTools.deleteClassAttribute;
+
 /**
  * Implementation of the K-Means algorithm with options for finding a value 
  * for k and a refined initial cluster center selection.
@@ -90,6 +92,8 @@ public class KMeans extends AbstractVectorClusterer{
         if (!dontCopyInstances){
             data = new Instances(data);
         }
+
+        deleteClassAttribute(data);
 
         distFunc.setInstances(data);
         numInstances = data.size();
