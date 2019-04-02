@@ -86,17 +86,25 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private boolean testResultsOnly;
     
     /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    private boolean evaluateDatasetsOverClassifiers;
+    
+    /**
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
      * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
-      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
- 
- 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
- 
- 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
- 
- 4) perform the normal grouping analysis based on those clusters
+     * e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+     * 
+     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+     * 
+     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+     * 
+     * 4) perform the normal grouping analysis based on those clusters
      */
     private boolean performPostHocDsetResultsClustering;
     
@@ -118,6 +126,16 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.classifiersResults = new HashMap<>();
         
         this.metrics = PerformanceMetric.getDefaultStatistics();
+    }
+
+    /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
+        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
     }
     
     /**
@@ -503,7 +521,44 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
+    private void transposeEverything() { 
+        //need to put the classifier names into the datasets list
+        //repalce the entries of the classifier results map with entries for each dataset
+        //to go from this:    Map<String, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults; 
+        //to this:            Map<String, ClassifierResults[/* train/test */][/* classifier */][/* fold */]> classifiersResults; 
+        
+        Map<String, ClassifierResults[][][]> newMap = new HashMap<>();
+        ArrayList<String> newNames = new ArrayList<>();
+        
+        for (Map.Entry<String, ClassifierResults[][][]> entry : classifiersResults.entrySet()) {
+            newNames.add(entry.getKey());
+            
+            //normally ClassifierResults[][][] results = new ClassifierResults[2][datasets.size()][numFolds];
+            //in readInClassifier
+            ClassifierResults[][][] newRes = new ClassifierResults[2][classifiersResults.size()][numFolds];
+            
+            for (int splitid = 0; splitid < 2; splitid++) {
+                for (int cid = 0; cid < classifiersResults.size(); cid++) {
+                    for (int fid = 0; fid < numFolds; fid++) {
+                        //cant figure this shit out, revisit at some point
+                    }
+                }
+            }
+        }
+        
+        for (String string : classifiersResults.keySet()) {
+        }
+        
+        
+        this.classifiersResults = newMap; 
+        this.datasets = newNames;
+    }
+    
     public void runComparison() {
+        if (evaluateDatasetsOverClassifiers) {
+            transposeEverything();
+        }
+        
         ArrayList<ClassifierResultsAnalysis.ClassifierEvaluation> results = new ArrayList<>(classifiersResults.size());
         for (Map.Entry<String, ClassifierResults[][][]> classifier : classifiersResults.entrySet())
             results.add(new ClassifierResultsAnalysis.ClassifierEvaluation(classifier.getKey(), classifier.getValue()[1], classifier.getValue()[0]));
