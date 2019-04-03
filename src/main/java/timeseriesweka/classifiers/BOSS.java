@@ -855,8 +855,6 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
                     ++correct;
             }
 
-            //System.out.println(subsampleSize + " " + series.numInstances() + " " + ((double) correct / (double) subsampleSize));
-
             return (double) correct / (double) maxEval;
         }
         else {
@@ -1079,7 +1077,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "PowerCons";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
@@ -1105,21 +1103,20 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 //
 //        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
-//        c = new BOSS();
-//
-//        ((BOSS) c).maxEval = train.numInstances();
-//
-//        ((BOSS) c).ensembleSize = 250;
-//        ((BOSS) c).setMaxEnsembleSize(50);
-//        ((BOSS) c).setRandomCVAccEnsemble(true);
-//        ((BOSS) c).setSeed(0);
-//        ((BOSS) c).useFastTrainEstimate = true;
-//        //((BOSS) c).reduceTrainInstances = true;
-//        //((BOSS) c).cutoff = true;
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("Random CV Acc BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+        c = new BOSS();
+
+        ((BOSS) c).ensembleSize = 250;
+        ((BOSS) c).setMaxEnsembleSize(50);
+        ((BOSS) c).setRandomCVAccEnsemble(true);
+        ((BOSS) c).setSeed(0);
+        ((BOSS) c).useFastTrainEstimate = true;
+        ((BOSS) c).setMaxEvalPerClass(50);
+        //((BOSS) c).reduceTrainInstances = true;
+        //((BOSS) c).cutoff = true;
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Random CV Acc BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
 ////        c = new BOSS();
 ////        ((BOSS) c).ensembleSize = 250;
@@ -1133,16 +1130,16 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 ////
 ////        System.out.println("Random BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
 ////
-        c = new BOSS();
-        ((BOSS) c).ensembleSize = 100;
-        ((BOSS) c).randomEnsembleSelection = true;
-        ((BOSS) c).setSeed(0);
-        ((BOSS) c).setReduceTrainInstances(true);
-        ((BOSS) c).setTrainProportion(0.7);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//        c = new BOSS();
+//        ((BOSS) c).ensembleSize = 100;
+//        ((BOSS) c).randomEnsembleSelection = true;
+//        ((BOSS) c).setSeed(0);
+//        ((BOSS) c).setReduceTrainInstances(true);
+//        ((BOSS) c).setTrainProportion(0.7);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Random BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 ////
 ////        c = new BOSS();
 ////        ((BOSS) c).ensembleSize = 250;

@@ -1272,13 +1272,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         //for now, overwriting that buildtime with this one, but printing warning 
         if (parts.length > 1)  {
             if (buildTime != -1 && !buildTimeDuplicateWarningPrinted)  {
-                System.out.println("CLASSIFIERRESULTS READ WARNING: build time reported on both "
-                        + "second and third line. Using the value reported on the third line");
-
-                buildTimeDuplicateWarningPrinted = true;
+//                System.out.println("CLASSIFIERRESULTS READ WARNING: build time reported on both "
+//                        + "second and third line. Using the value reported on the third line");
+//
+//                buildTimeDuplicateWarningPrinted = true;
             }
-            
-            buildTime = Long.parseLong(parts[1]); 
+            else {
+                buildTime = Long.parseLong(parts[1]);
+            }
         }
         if (parts.length > 2) 
             testTime = Long.parseLong(parts[2]);
