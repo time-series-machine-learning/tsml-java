@@ -16,6 +16,7 @@ import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
 import utilities.ClassifierTools;
 
+import static utilities.ClusteringUtilities.randIndex;
 import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
@@ -33,7 +34,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
     private int seed = Integer.MIN_VALUE;
     
     private Instances centroids;
-    private double[] cluster;
+    private int[] cluster;
     
     public KShape(){}
     
@@ -53,7 +54,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
 
         deleteClassAttribute(data);
-
         zNormalise(data);
         
         ArrayList<Attribute> atts = new ArrayList(data.numAttributes());
@@ -78,13 +78,13 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
         
         int iterations = 0;
-        cluster = new double[data.numInstances()];
+        cluster = new int[data.numInstances()];
         
         for (int i = 0; i < cluster.length; i++){
-            cluster[i] = Math.ceil(rand.nextDouble()*k)-1;
+            cluster[i] = (int)Math.ceil(rand.nextDouble()*k)-1;
         }
 
-        double[] prevCluster = new double[data.numInstances()];
+        int[] prevCluster = new int[data.numInstances()];
         prevCluster[0] = -1;
         
         while (!Arrays.equals(cluster, prevCluster) && iterations < 100){
@@ -145,7 +145,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         double[][] subsampleArray = new double[subsample.numInstances()][];
 
         for (int i = 0; i < subsample.numInstances(); i++){
-            subsampleArray[i] = extractTimeSeries(subsample.get(i));
+            subsampleArray[i] = subsample.get(i).toDoubleArray();
         }
         
         Matrix matrix = new Matrix(subsampleArray);
@@ -214,17 +214,18 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.dist);
 //        System.out.println(sbd.yShift);
 
-        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/Adiac/Adiac_TEST.arff");
-        inst.addAll(inst2);
+        String dataset = "Trace";
+        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
+        inst.addAll(inst2);
 
         KShape k = new KShape();
-        k.seed = 1;
-        k.k = 5;
+        k.seed = 0;
+        k.k = inst.numClasses();
         k.buildClusterer(inst);
-        System.out.println(Arrays.toString(k.cluster));
-        System.out.println(k.centroids);
+
+        System.out.println(randIndex(k.cluster, inst));
     }
     
     private class SBD{

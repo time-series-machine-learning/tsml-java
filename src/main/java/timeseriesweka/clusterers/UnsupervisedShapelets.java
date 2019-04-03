@@ -48,11 +48,10 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
 
     private void extractUShapelets(Instances data){
-        int[] shapeletLengths = {50};
+        int[] shapeletLengths = {25, 50};
 
         shapelets = new ArrayList();
         numInstances = data.size();
-        //random?
         Instance inst = data.firstInstance();
         boolean finished = false;
 
@@ -67,7 +66,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 }
             }
 
-            double maxGap = 0;
+            double maxGap = -1;
             int maxGapIndex = -1;
 
             for (int i = 0; i < shapeletCandidates.size(); i++){
@@ -78,12 +77,11 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             }
 
             UShapelet best = shapeletCandidates.get(maxGapIndex);
-
             shapelets.add(best);
 
             double[] distances = best.computeDistances(data);
             ArrayList<Double> lesserDists = new ArrayList();
-            double maxDist = 0;
+            double maxDist = -1;
             int maxDistIndex = -1;
 
             for (int i = 0; i < distances.length; i++){
@@ -116,7 +114,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 data = newData;
 
                 if (data.size() == 1){
-                    break;
+                    finished = true;
                 }
             }
         }
@@ -160,7 +158,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 }
             }
 
-            double randIndex = 0;
+            double randIndex = 1;
 
             if (i > 1){
                 randIndex = 1-randIndex(foldClusters[i-1],foldClusters[i]);
@@ -215,8 +213,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -281,9 +279,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         }
 
         double[] computeDistances(Instances data){
-
-            //if this shapelet set to 0
-
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();
 
@@ -328,8 +323,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 stdevSum += temp * temp;
             }
 
-            double meanOfDiffs = stdevSum/length;
-            double stdev = Math.sqrt(meanOfDiffs);
+            double stdev = Math.sqrt(stdevSum/length);
 
             double[] output = new double[length];
 
