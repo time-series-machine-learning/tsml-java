@@ -939,12 +939,53 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = true;
     }
     
+    public boolean hasProbabilityDistributionInformation() { 
+        return predDistributions != null && 
+                !predDistributions.isEmpty() && 
+                predDistributions.size() == predClassValues.size() && 
+                predDistributions.get(0) != null;
+    }
     
-    
-    
-    
-    
-    
+    /**
+     * If this results object does not contain probability distributions but does 
+     * contain predicted classes, this will infer distributions as one-hot vectors 
+     * from the predicted class values, i.e if class 0 is predicted in a three class 
+     * problem, dist would be [ 1.0, 0.0, 0.0 ]  
+     * 
+     * If this object already contains distributions, this method will do nothing
+     * 
+     * The number of classes is inferred from via length(unique(trueclassvalues)). As a 
+     * reminder of why this method should not generally be used unless you have a specific 
+     * reason, this may not be entirely correct, if e.g a particular cv fold of a particular 
+     * subsample does not contain instances of every class. And also in general it assumes 
+     * that the true class values supplied (as they would be if read from file) Consider yourself warned
+     * 
+     * Intended to help with old results files that may not have distributions stored. 
+     * Should not be used by default anywhere and everywhere to overcome laziness in 
+     * newly generated results, thus in part it's implementation as a single method applied
+     * to an already populated set of results. 
+     * 
+     * Intended usage:
+     * res.loadFromFile(someOldFilePotentiallyMissingDists);
+     * if (ignoreMissingDists) {
+     *   res.populateMissingDists();
+     * }
+     * // res.findAllStats() etcetcetc
+     */
+    public void populateMissingDists() { 
+        if (this.hasProbabilityDistributionInformation())
+            return;
+        
+        //ayyyy java8 being used for something
+        int numClasses = (int) trueClassValues.stream().distinct().count();
+        
+        predDistributions = new ArrayList<>(predClassValues.size());
+        for (double d : predClassValues) {
+            double[] dist = new double[numClasses];
+            dist[(int)d] = 1;
+            predDistributions.add(dist);
+        }
+    }   
     
     /******************************
     *

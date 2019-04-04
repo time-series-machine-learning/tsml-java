@@ -100,6 +100,17 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     private boolean performPostHocDsetResultsClustering;
     
+    
+    /**
+     * if true, will fill in missing probability distributions with one-hot vectors
+     * for files read in that are missing them. intended for very old files, where you still 
+     * want to calc auroc etc (metrics that need dists) for all the other classifiers 
+     * that DO provide them, but also want to compare e.g accuracy with classifier that don't
+     * 
+     * defaults to false
+     */
+    private boolean ignoreMissingDistributions;
+    
     /**
      * @param experimentName forms the analysis directory name, and the prefix to most files
      */
@@ -112,7 +123,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.cleanResults = true;
         this.testResultsOnly = true;
         this.performPostHocDsetResultsClustering = false;
-
+        this.ignoreMissingDistributions = false;
+        
         this.datasets = new ArrayList<>();
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
@@ -142,6 +154,10 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     public MultipleClassifierEvaluation setCleanResults(boolean b) {
         cleanResults = b;
         return this;
+    }
+    
+    public void setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
+        this.ignoreMissingDistributions = ignoreMissingDistributions;
     }
     
     /**
@@ -428,6 +444,10 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     String trainFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/trainFold" + f + ".csv";
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
+                        if (ignoreMissingDistributions) {
+                            results[0][d][f].populateMissingDists();
+                            System.out.println("Probability distributions missing, but ignored: " + classifierNameInStorage + " - " + datasets.get(d) + " - " + f);
+                        }
                         results[0][d][f].findAllStatsOnce();
                         if (cleanResults)
                             results[0][d][f].cleanPredictionInfo();
