@@ -156,8 +156,9 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
-    public void setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
+    public MultipleClassifierEvaluation setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
         this.ignoreMissingDistributions = ignoreMissingDistributions;
+        return this;
     }
     
     /**
