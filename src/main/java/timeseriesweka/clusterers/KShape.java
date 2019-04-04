@@ -111,6 +111,23 @@ public class KShape extends AbstractTimeSeriesClusterer {
             
             iterations++;
         }
+
+        //Create and store an ArrayList for each cluster containing indexes of
+        //points inside the cluster.
+        clusters = new ArrayList[k];
+
+        for (int i = 0; i < k; i++){
+            clusters[i] = new ArrayList();
+        }
+
+        for (int i = 0; i < data.numInstances(); i++){
+            for (int n = 0; n < k; n++){
+                if(n == cluster[i]){
+                    clusters[n].add(i);
+                    break;
+                }
+            }
+        }
     }
     
     private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum) throws Exception {

@@ -113,6 +113,7 @@ public class DensityPeak extends AbstractVectorClusterer{
             for (int n = 0; n < numInstances; n++){
                 if(clusterCenters.get(i) == cluster[n]){
                     clusters[i].add(n);
+                    cluster[n] = i;
                 }
             }
         }

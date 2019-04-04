@@ -365,15 +365,15 @@ public class KMeans extends AbstractVectorClusterer{
                 membershipChange = true;
             }
         }
-        
+
         //Create and store an ArrayList for each cluster containing indexes of
         //points inside the cluster.
         clusters = new ArrayList[k];
-        
+
         for (int i = 0; i < k; i++){
             clusters[i] = new ArrayList();
         }
-        
+
         for (int i = 0; i < numInstances; i++){
             for (int n = 0; n < k; n++){
                 if(n == cluster[i]){
