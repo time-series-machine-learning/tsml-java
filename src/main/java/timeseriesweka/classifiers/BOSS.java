@@ -1202,7 +1202,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
      * 
      * Implementation based on the algorithm described in getTechnicalInformation()
      */
-    public static class BOSSIndividual extends AbstractClassifier implements Serializable {
+    public static class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual> {
 
         //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
         protected BitWord [/*instance*/][/*windowindex*/] SFAwords;
@@ -1251,6 +1251,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
             this.breakpoints = boss.breakpoints;
 
             this.bags = new ArrayList<>(boss.bags.size());
+        }
+
+        @Override
+        public int compareTo(BOSSIndividual o) {
+            return Double.compare(this.accuracy, o.accuracy);
         }
 
         public static class Bag extends HashMap<BitWord, Integer> {

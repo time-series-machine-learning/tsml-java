@@ -228,6 +228,14 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
+            case "RBOSS70Percent":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
             case "RBOSSAccCVMax":
                 c = new BOSS();
                 ((BOSS) c).setEnsembleSize(250);
