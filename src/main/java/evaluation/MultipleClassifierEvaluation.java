@@ -471,8 +471,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                 try {
                     results[1][d][f] = new ClassifierResults(testFile);
                     if (ignoreMissingDistributions) {
-                        results[1][d][f].populateMissingDists();
-                        if (ignoringDistsFirstTimeFlagTest) {
+                        boolean wasMissing = results[1][d][f].populateMissingDists();
+                        if (wasMissing && ignoringDistsFirstTimeFlagTest) {
                             System.out.println("---------Probability distributions missing, but ignored: " 
                                     + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - test");
                             ignoringDistsFirstTimeFlagTest = false;
