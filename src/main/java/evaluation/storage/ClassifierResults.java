@@ -976,8 +976,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         if (this.hasProbabilityDistributionInformation())
             return;
         
-        //ayyyy java8 being used for something
-        int numClasses = (int) trueClassValues.stream().distinct().count();
+        if (this.numClasses <= 0) 
+            //ayyyy java8 being used for something
+            numClasses = (int) trueClassValues.stream().distinct().count();
         
         predDistributions = new ArrayList<>(predClassValues.size());
         for (double d : predClassValues) {
