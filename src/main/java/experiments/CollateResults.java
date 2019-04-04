@@ -703,7 +703,7 @@ public static void basicSummaryComparisons(){
    public static String hiveCotePath="Z:/Results/CollatedResults/HIVE-COTE2017/";
    public static String bakeOffPathBeast="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
    public static String hiveCotePathBeast="Z:/Results/CollatedResults/HIVE-COTE2017/";
-   public static String bakeOffPathCluster="/gpfs/home/ajb/Results/ReferenceResults/Bakeoff2015/byClassifier/";
+   public static String bakeOffPathCluster="/gpfs/home/ajb/Results/ReferenceResults/Bakeoff2015/ByClassifier/";
    public static String hiveCotePathCluster="/gpfs/home/ajb/Results/ReferenceResults/HIVE-COTE2017/";
 
    
@@ -997,7 +997,7 @@ public static void basicSummaryComparisons(){
 
         }
         else{           //Cluster run
-            bakeOffPath=bakeOffPathBeast;
+            bakeOffPath=bakeOffPathCluster;
             hiveCotePath=hiveCotePathCluster;
             System.out.println("Cluster Job Args:");
             for(String s:args)
