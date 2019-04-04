@@ -34,8 +34,6 @@ public class KMeans extends AbstractVectorClusterer{
     private boolean hasInitialCenters = false;
     
     private Instances clusterCenters;
-    private int[] cluster;
-    private ArrayList<Integer>[] clusters;
     
     public KMeans(){}
     
@@ -48,14 +46,6 @@ public class KMeans extends AbstractVectorClusterer{
     
     public Instances getClusterCenters(){
         return clusterCenters;
-    }
-    
-    public int[] getCluster(){
-        return cluster;
-    }
-    
-    public ArrayList<Integer>[] getClusters(){
-        return clusters;
     }
     
     @Override

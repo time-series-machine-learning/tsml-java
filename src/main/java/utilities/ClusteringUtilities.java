@@ -1,5 +1,6 @@
 package utilities;
 
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class ClusteringUtilities {
@@ -49,5 +50,39 @@ public class ClusteringUtilities {
         }
 
         return (A + B)/(A + B + C + D);
+    }
+
+    public static void zNormalise(Instances data) {
+        for (Instance inst: data){
+            zNormalise(inst);
+        }
+    }
+
+    public static void zNormalise(Instance inst){
+        double meanSum = 0;
+        int length = inst.numAttributes();
+
+        for (int i = 0; i < length; i++){
+            meanSum += inst.value(i);
+        }
+
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < length; i++){
+            double temp = inst.value(i) - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < length; i++){
+            inst.setValue(i, (inst.value(i) - mean) / stdev);
+        }
     }
 }

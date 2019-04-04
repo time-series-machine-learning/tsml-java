@@ -16,10 +16,10 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * @author MMiddlehurst
  */
 public class PAM extends AbstractVectorClusterer{
-    
-    //Kaufman, Leonard, and Peter Rousseeuw. 
-    //Clustering by means of medoids. 
-    //North-Holland, 1987.
+
+    //L. Kaufman, P.J. Rousseeuw
+    //Finding groups in data: An introduction to cluster analysis
+    //Wiley, New York (1990)
     
     private int k = 2;
     private boolean findBestK = false;
@@ -33,8 +33,6 @@ public class PAM extends AbstractVectorClusterer{
     private boolean hasDistances = false;
     
     private int[] medoids;
-    private int[] cluster;
-    private ArrayList<Integer>[] clusters;
     
     public PAM(){}
     
@@ -54,14 +52,6 @@ public class PAM extends AbstractVectorClusterer{
     
     public int[] getMedoids(){
         return medoids;
-    }
-    
-    public int[] getCluster(){
-        return cluster;
-    }
-    
-    public ArrayList<Integer>[] getClusters(){
-        return clusters;
     }
     
     @Override

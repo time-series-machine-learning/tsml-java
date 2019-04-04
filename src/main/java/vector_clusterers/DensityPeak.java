@@ -36,21 +36,11 @@ public class DensityPeak extends AbstractVectorClusterer{
     private Integer[] sortedDensitiesIndex;
     
     private ArrayList<Integer> clusterCenters;
-    private int[] cluster;
-    private ArrayList<Integer>[] clusters;
     
     public DensityPeak(){}
     
     public ArrayList<Integer> getClusterCenters(){
         return clusterCenters;
-    }
-    
-    public int[] getCluster(){
-        return cluster;
-    }
-    
-    public ArrayList<Integer>[] getClusters(){
-        return clusters;
     }
     
     @Override

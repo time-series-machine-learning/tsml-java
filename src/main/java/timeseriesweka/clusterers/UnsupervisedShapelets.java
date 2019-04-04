@@ -25,9 +25,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     private ArrayList<UShapelet> shapelets;
     private int numInstances;
 
-    private int[] cluster;
-    private ArrayList<Integer>[] clusters;
-
     public UnsupervisedShapelets(){}
 
     @Override

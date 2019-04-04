@@ -17,6 +17,7 @@ import static timeseriesweka.filters.FFT.MathsPower2;
 import utilities.ClassifierTools;
 
 import static utilities.ClusteringUtilities.randIndex;
+import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
@@ -25,6 +26,7 @@ import weka.core.matrix.EigenvalueDecomposition;
 import weka.core.matrix.Matrix;
 
 /**
+ * UNFINISHED AND UNTESTED, DONT USE.
  *
  * @author pfm15hbu
  */
@@ -34,7 +36,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
     private int seed = Integer.MIN_VALUE;
     
     private Instances centroids;
-    private int[] cluster;
     
     public KShape(){}
     
