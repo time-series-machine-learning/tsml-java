@@ -26,6 +26,7 @@ import java.util.Collections;
 import statistics.distributions.BinomialDistribution;
 import statistics.tests.OneSampleTests;
 import evaluation.storage.ClassifierResults;
+import java.util.HashMap;
 
 /**
  * Class to collate results from any classifier creating standard output 
@@ -663,7 +664,7 @@ public static void basicSummaryComparisons(){
  * Next x arguments: x Classifiers to collate    
  * Next x arguments: number of numParas stored for each classifier    
    **/
-   public static void exampleCollateResultsMethod1(String[] args) throws Exception{
+   public static void singleClassifierFullStats(String[] args) throws Exception{
         if(args.length>1)
             collate(args);
         else{ 
@@ -683,7 +684,7 @@ public static void basicSummaryComparisons(){
  * Usage of MultipleClassifierEvaluation. See the class for more info
  * @throws Exception 
  */
-   public static void exampleCollateResultsMethod2(String[] args) throws Exception{
+   public static void multipleClassifierFullStats(String[] args) throws Exception{
        if(args.length>0){
 //TO DO           
        }
@@ -698,14 +699,323 @@ public static void basicSummaryComparisons(){
             m.runComparison(); 
        }
    }
+   public static String bakeOffPath="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePath="Z:/Results/CollatedResults/HIVE-COTE2017/";
+   public static String bakeOffPathBeast="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePathBeast="Z:/Results/CollatedResults/HIVE-COTE2017/";
+   public static String bakeOffPathCluster="/gpfs/home/ajb/Results/ReferenceResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePathCluster="/gpfs/home/ajb/Results/ReferenceResults/HIVE-COTE2017/";
 
+   
+   
+/**
+ * Quick in place collation and comparison to reference results 
+ * @param args
+ * @throws Exception 
+ * Primary: these results are built from file using predictions or just reading line 3 
+ * para 1: String: location of primary results, including classifier name
+ * para 2: Boolean stored as string: true: calculate acc from preds and check. False: just read from line 3. 
+ * Para 3: Integer stored as string: number of folds to look for
+ * OPTIONAL: these results are read directly, can have as many as desired 
+ * Input format ProblemSource,ClassifierName. Problem source must be Bakeoff, HIVE-COTE, or Redux 
+ * para 3: comparison classifier TYPE,NAME 1
+ * para 4: comparison classifier full path 2
+ * ..
+ * Notes: 
+ * 1. Only uses accuracy, does not require classes map 0... numClasses-1 or probabilities.
+ * 2. Assumes file structure is arg[0]/Predictions/ProblemName/testFold0.csv
+ * 3. Assumes every directory in Predictions is a results folder
+ * 4. For the fold averages, it ignores any problem without a full set of results, will print the results as empty
+ * 5. Prints results to arg[0]/QuickResults/TrainTest<classifierName>.csv, 
+ */
+    public static void singleClassifiervsReferenceResults(String[] args) throws Exception{
+        if(args.length<3){
+            String input="";
+            for(String s:args)
+                input+=s+" ";
+            throw new Exception("Wrong input args =:"+input);
+        }
+        for(int i=0;i<args.length;i++){
+            System.out.println("args["+i+"] = "+args[i]);
+        }
+        String fullPath=args[0];
+        String[] temp=args[0].split("/");
+        String classifierName=temp[temp.length-1];
+        System.out.println(" Primary Classifier = "+classifierName);
+        boolean calcAcc=Boolean.parseBoolean(args[1]);
+        int folds=Integer.parseInt(args[2]);
+        File f= new File(fullPath+"/QuickResults");
+        f.mkdirs();
+//Get primary results
+        ArrayList<String> problems =new ArrayList<>();
+        ArrayList<String> missing =new ArrayList<>();
+        f=new File(fullPath+"/Predictions");
+        File[] fileList=f.listFiles();
+        for(File t:fileList){
+            if(t.isDirectory()){ // Note 3: assume all dirs are problems
+                problems.add(t.getName());
+            }
+        }
+        System.out.println("File names in primary :");
+        for(String s:problems)
+            System.out.println("\t"+s);
+        double[] trainTest= new double[problems.size()];
+        double[] means= new double[problems.size()];
+        double[][] allFolds= new double[problems.size()][folds];
+        OutFile trTsFile=new OutFile(fullPath+"/QuickResults/TrainTest"+classifierName+".csv");
+        OutFile meansFile=new OutFile(fullPath+"/QuickResults/Average"+folds+classifierName+".csv");
+        OutFile allFoldsFile=new OutFile(fullPath+"/QuickResults/AllFolds"+classifierName+".csv");
+              
+        InFile inf=null;
+        for(int i=0;i<trainTest.length;i++){
+            System.out.println("Processing "+problems.get(i));
+            boolean cont=true;
+            for(int j=0;j<folds && cont;j++){
+                try{
+                    inf=new InFile(fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
+                    inf.readLine();//Ignore first two
+                    inf.readLine();
+                    double acc=inf.readDouble();//
+                    if(calcAcc){
+                        String line=inf.readLine();
+                        double a=0;
+                        int count=0;
+                        while(line!=null){
+                            String[] split=line.split(",");
+                            count++;
+                            if(split[0].equals(split[1]))
+                                a++;
+                            line=inf.readLine();
+                        }
+                        if(count>0)
+                            a/=count;
+                        if((a-acc)>0.000000001){
+                            System.out.println("Mismatch in acc read from file and acc calculated from file");
+                            System.out.println("THIS NEEDS INVESTIGATING. Abandoning the whole problem compilation ");
+                            System.exit(1);
+                        }
+                    }
+                    if(j==0)
+                        trainTest[i]=acc;
+                    allFolds[i][j]=acc;
+                }catch(Exception e){
+                    missing.add(problems.get(i));
+                    System.out.println("Some error processing "+fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
+                    System.out.println(" Abandoning entire problem "+problems.get(i));
+                    cont=false;
+                }
+                finally{
+                    if(inf!=null)
+                        inf.closeFile();
+                }
+            }
+            if(cont){//Should have all the data
+                trTsFile.writeString(problems.get(i));
+                meansFile.writeString(problems.get(i));
+                allFoldsFile.writeString(problems.get(i));
+                trTsFile.writeString(","+trainTest[i]);
+                means[i]=0;
+                for(int j=0;j<allFolds[i].length;j++){
+                    allFoldsFile.writeString(","+allFolds[i][j]);
+                    means[i]+=allFolds[i][j];
+                }                
+                means[i]/=folds;
+                meansFile.writeString(","+means[i]);
+                trTsFile.writeString("\n");
+                meansFile.writeString("\n");
+                allFoldsFile.writeString("\n");
+
+            }else{//Write trainTest if present
+                if(trainTest[i]>0) //Captured fold 0, lets use it
+                    trTsFile.writeLine(problems.get(i)+","+trainTest[i]);
+                
+            }
+            
+            
+        }        
+        if(args.length>3){ //Going to compare to some others
+            String[] rc=new String[args.length-3];
+            for(int i=3;i<args.length;i++)
+                rc[i-3]=args[i];
+            System.out.println("Comparing "+classifierName+" to ");
+            String[][] classifiers=new String[rc.length][];
+            for(int i=0;i<rc.length;i++)
+                classifiers[i]=rc[i].split(",");
+            ArrayList<HashMap<String,Double>> trainTestResults=new ArrayList<>();
+            ArrayList<HashMap<String,Double>> averageResults=new ArrayList<>();
+            for(int i=0;i<classifiers.length;i++){
+                classifiers[i][0]=classifiers[i][0].toUpperCase();
+                System.out.println(classifiers[i][0]+"_"+classifiers[i][1]);
+                HashMap<String,Double> trTest=new HashMap<>();
+                HashMap<String,Double> averages=new HashMap<>();
+//Look for train results
+                String path="";
+                switch(classifiers[i][0]){
+                    case "BAKEOFF":
+                        path=bakeOffPath;
+                        break;
+                    case "HIVE-COTE":
+                        path=hiveCotePath;
+                        break;
+                    default: 
+                        System.out.println("UNKNOWN LOCATION INDICATOR "+classifiers[i][0]);
+                        throw new Exception("UNKNOWN LOCATION INDICATOR "+classifiers[i][0]);
+                }
+                f=new File(path+"TrainTest/TrainTest"+classifiers[i][1]+".csv");
+                if(f.exists()){
+                    inf=new InFile(path+"TrainTest/TrainTest"+classifiers[i][1]+".csv");
+                    String line=inf.readLine();
+                    while(line!=null){
+                        String[] split=line.split(",");
+                        String prob=split[0];
+                        if(prob.equals("CinCECGtorso"))//Hackhackityhack: legacy problem
+                            prob="CinCECGTorso";
+                        Double d = Double.parseDouble(split[1]);
+                        trTest.put(prob,d);
+                        line=inf.readLine();
+                    }
+                }
+                f=new File(path+"Average30/Average30"+classifiers[i][1]+".csv");
+                if(f.exists()){
+                    inf=new InFile(path+"Average30/Average30"+classifiers[i][1]+".csv");
+//                    inf.readLine();
+                    String line=inf.readLine();
+                    while(line!=null){
+                        String[] split=line.split(",");
+                        String prob=split[0];
+                        if(prob.equals("CinCECGtorso"))//Hackhackityhack: legacy problem
+                            prob="CinCECGTorso";
+                        Double d = Double.parseDouble(split[1]);
+                        averages.put(prob,d);
+                        line=inf.readLine();
+                    }
+                }
+                trainTestResults.add(trTest);
+                averageResults.add(averages);
+            }
+            trTsFile=new OutFile(fullPath+"/QuickResults/CompareTrainTest.csv");
+            OutFile trTsFileComplete=new OutFile(fullPath+"/QuickResults/CompareTrainTestCompleteOnly.csv");
+            meansFile=new OutFile(fullPath+"/QuickResults/CompareAverage"+folds+".csv");
+            OutFile meansFileComplete=new OutFile(fullPath+"/QuickResults/CompareAverageCompleteOnly.csv");
+            trTsFile.writeString("Problem,"+classifierName);
+            meansFile.writeString("Problem,"+classifierName);
+            meansFileComplete.writeString("Problem,"+classifierName);
+            trTsFileComplete.writeString("Problem,"+classifierName);
+            for(int i=0;i<classifiers.length;i++){
+                trTsFile.writeString(","+classifiers[i][0]+"_"+classifiers[i][1]);
+                meansFile.writeString(","+classifiers[i][0]+"_"+classifiers[i][1]);
+                meansFileComplete.writeString(","+classifiers[i][0]+"_"+classifiers[i][1]);
+                trTsFileComplete.writeString(","+classifiers[i][0]+"_"+classifiers[i][1]);
+            }
+            trTsFile.writeString("\n");
+            meansFile.writeString("\n");
+            meansFileComplete.writeString("\n");
+            trTsFileComplete.writeString("\n");
+            for(int i=0;i<problems.size();i++){
+                String name=problems.get(i);
+                boolean present=true;
+//Train test                
+                if(trainTest[i]>0){ //Captured fold 0, lets use it
+                    String line=name+","+trainTest[i];
+                    trTsFile.writeString(name+","+trainTest[i]);
+                    for(int j=0;j<classifiers.length;j++){
+                        HashMap<String,Double> trTest=trainTestResults.get(j);
+                        if(trTest.containsKey(name)){
+                            Double x=trTest.get(name);
+                            trTsFile.writeString(","+x);
+                            line+=","+x;
+                        }
+                        else{
+                             trTsFile.writeString(",");
+                             present=false;
+                        }
+                    }
+                    trTsFile.writeString("\n");
+                    if(present)
+                        trTsFileComplete.writeLine(line);
+                }
+//Averages
+                if(!missing.contains(name)){
+                    String line=name+","+trainTest[i];
+                    meansFile.writeString(name+","+trainTest[i]);
+                    for(int j=0;j<classifiers.length;j++){
+                        HashMap<String,Double> av=averageResults.get(j);
+                        if(av.containsKey(name)){
+                            Double x=av.get(name);
+                            meansFile.writeString(","+x);
+                            line+=","+x;
+                        }
+                        else{
+                             meansFile.writeString(",");
+                             present=false;
+                        }
+                    }
+                    meansFile.writeString("\n");
+                    if(present)
+                        meansFileComplete.writeLine(line);
+                }
+            }
+            
+        }        
+        
+        
+    }
 
     public static void main(String[] args) throws Exception {
+ 
+        
+        
+        if (args.length == 0) {//Local run
+            bakeOffPath=bakeOffPathBeast;
+            hiveCotePath=hiveCotePathBeast;
+            String[] testy;
+    //        testy[0]="E:/Results/UCR Debug/Python/ST_RandFor_7200";//Need to use forward slash!
+            ArrayList<String> list=new ArrayList<>();
+
+            /*       list.add("E:/Results/UCR Debug/Java/TunedTSF");//Need to use forward slash!
+            list.add("false");
+            list.add("30");
+            list.add("Bakeoff,ST");
+            list.add("Bakeoff,TSF");
+            list.add("Bakeoff,BOSS");
+            list.add("Bakeoff,DTWCV");
+    */
+
+           list.add("E:/Results/UCR Debug/Java/ProximityForest");//Need to use forward slash!
+            list.add("false");
+            list.add("30");
+            list.add("HIVE-COTE,EE");
+            list.add("HIVE-COTE,HIVE-COTE");
+            list.add("HIVE-COTE,Flat-COTE");
+            list.add("HIVE-COTE,ST");
+
+            testy=new String[list.size()];
+            for(int i=0;i<testy.length;i++)
+                testy[i]=list.get(i);
+
+            singleClassifiervsReferenceResults(testy);
+
+        }
+        else{           //Cluster run
+            bakeOffPath=bakeOffPathBeast;
+            hiveCotePath=hiveCotePathCluster;
+            System.out.println("Cluster Job Args:");
+            for(String s:args)
+                System.out.println(s);
+            singleClassifiervsReferenceResults(args);
+        }
+
+        System.exit(0);
         boolean singleClassifierStats=true;
         if(singleClassifierStats)
-            exampleCollateResultsMethod1(args);
+            singleClassifierFullStats(args);
         else
-            exampleCollateResultsMethod2(args);
-    }            
-        
+            multipleClassifierFullStats(args);
+    } 
+    
+    
+    
+    
+    
+    
 }
