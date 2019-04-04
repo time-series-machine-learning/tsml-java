@@ -703,8 +703,8 @@ public static void basicSummaryComparisons(){
    public static String hiveCotePath="Z:/Results/CollatedResults/HIVE-COTE2017/";
    public static String bakeOffPathBeast="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
    public static String hiveCotePathBeast="Z:/Results/CollatedResults/HIVE-COTE2017/";
-   public static String bakeOffPathCluster="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
-   public static String hiveCotePathCluster="Z:/Results/CollatedResults/HIVE-COTE2017/";
+   public static String bakeOffPathCluster="/gpfs/home/ajb/Results/ReferenceResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePathCluster="/gpfs/home/ajb/Results/ReferenceResults/HIVE-COTE2017/";
 
    
    
@@ -718,7 +718,7 @@ public static void basicSummaryComparisons(){
  * Para 3: Integer stored as string: number of folds to look for
  * OPTIONAL: these results are read directly, can have as many as desired 
  * Input format ProblemSource,ClassifierName. Problem source must be Bakeoff, HIVE-COTE, or Redux 
- * para 3: comparison classifier full path 1
+ * para 3: comparison classifier TYPE,NAME 1
  * para 4: comparison classifier full path 2
  * ..
  * Notes: 
@@ -999,6 +999,9 @@ public static void basicSummaryComparisons(){
         else{           //Cluster run
             bakeOffPath=bakeOffPathBeast;
             hiveCotePath=hiveCotePathCluster;
+            System.out.println("Cluster Job Args:");
+            for(String s:args)
+                System.out.println(s);
             singleClassifiervsReferenceResults(args);
         }
 
