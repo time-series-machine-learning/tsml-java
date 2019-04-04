@@ -440,8 +440,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         //train files may be produced via TrainAccuracyEstimate, older code
         //while test files likely by experiments, but still might be a very old file
         //so having separate checks for each.
-        boolean ignoringDistsFirsTimeFlagTrain = true;
-        boolean ignoringDistsFirsTimeFlagTest = true;
+        boolean ignoringDistsFirstTimeFlagTrain = true;
+        boolean ignoringDistsFirstTimeFlagTest = true;
         
         for (int d = 0; d < datasets.size(); d++) {
             for (int f = 0; f < numFolds; f++) {
@@ -451,11 +451,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
                         if (ignoreMissingDistributions) {
-                            results[0][d][f].populateMissingDists();
-                            if (ignoringDistsFirsTimeFlagTrain) {
+                            boolean wasMissing = results[0][d][f].populateMissingDists();
+                            if (wasMissing && ignoringDistsFirstTimeFlagTrain) {
                                 System.out.println("---------Probability distributions missing, but ignored: " 
                                         + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - train");
-                                ignoringDistsFirsTimeFlagTrain = false;
+                                ignoringDistsFirstTimeFlagTrain = false;
                             }
                         }
                         results[0][d][f].findAllStatsOnce();
@@ -472,10 +472,10 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     results[1][d][f] = new ClassifierResults(testFile);
                     if (ignoreMissingDistributions) {
                         results[1][d][f].populateMissingDists();
-                        if (ignoringDistsFirsTimeFlagTest) {
+                        if (ignoringDistsFirstTimeFlagTest) {
                             System.out.println("---------Probability distributions missing, but ignored: " 
                                     + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - test");
-                            ignoringDistsFirsTimeFlagTest = false;
+                            ignoringDistsFirstTimeFlagTest = false;
                         }
                     }
                     results[1][d][f].findAllStatsOnce();

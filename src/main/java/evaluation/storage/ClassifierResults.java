@@ -954,6 +954,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * If this object already contains distributions, this method will do nothing
      * 
+     * Returns whether or not values were missing but have been populated
+     * 
      * The number of classes is inferred from via length(unique(trueclassvalues)). As a 
      * reminder of why this method should not generally be used unless you have a specific 
      * reason, this may not be entirely correct, if e.g a particular cv fold of a particular 
@@ -972,9 +974,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * }
      * // res.findAllStats() etcetcetc
      */
-    public void populateMissingDists() { 
+    public boolean populateMissingDists() { 
         if (this.hasProbabilityDistributionInformation())
-            return;
+            return false;
         
         if (this.numClasses <= 0) 
             //ayyyy java8 being used for something
@@ -986,6 +988,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             dist[(int)d] = 1;
             predDistributions.add(dist);
         }
+        
+        return true;
     }   
     
     /******************************
