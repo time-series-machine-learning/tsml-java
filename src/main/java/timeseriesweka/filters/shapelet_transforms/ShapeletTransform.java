@@ -52,7 +52,7 @@ import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDista
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
 
 /**
- * copyright: Anthony Bagnall
+
  * NOTE: As shapelet extraction can be time consuming, there is an option to output shapelets
  * to a text file (Default location is in the root dir of the project, file name "defaultShapeletOutput.txt").
  *
