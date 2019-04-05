@@ -1026,6 +1026,22 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return timeUnit.toNanos(getPredictionTime(index)); 
     }
     
+    public ArrayList<String> getPredDescriptions() {
+        return predDescriptions;
+    }
+    
+    public String[] getPredDescriptionsAsArray() {
+        String[] ds=new String[predDescriptions.size()];
+        int i=0;
+        for(String d:predDescriptions)
+            ds[i++]=d;
+        return ds;
+    }
+    
+    public String getPredDescription(int index) {
+        return predDescriptions.get(index);
+    }
+    
     public void cleanPredictionInfo() {
         predDistributions = null;
         predClassValues = null;

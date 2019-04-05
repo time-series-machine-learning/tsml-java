@@ -48,6 +48,8 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
@@ -153,7 +155,15 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected boolean writeIndividualsResults = false;
 
     protected boolean resultsFilesParametersInitialised;
-
+    
+    /**
+     * An annoying comprimise to deal with base classfiers that dont produce dists 
+     * while getting their train estimate. Off by default, shouldnt be turned on for 
+     * mass-experiments, intended for cases where user knows that dists are missing
+     * (for BOSS, in this case) but still just wants to get ensemble results anyway... 
+     */
+    protected boolean fillMissingDistsWithOneHotVectors; 
+    
     /**
      * if readResultsFilesDirectories.length == 1, all classifier's results read from that one path
      * else, resultsPaths.length must equal classifiers.length, with each index aligning
@@ -527,7 +537,50 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         else
             trainModules();
 
+        
         for (int m = 0; m < modules.length; m++) { 
+            //see javadoc for this bool, hacky insert for handling old results. NOT to be used/turned on by default
+            //remove all this garbage when possible
+            if (fillMissingDistsWithOneHotVectors) {
+                ClassifierResults origres =  modules[m].trainResults;
+                
+                List<double[]> dists = origres.getProbabilityDistributions();
+                if (dists == null || dists.isEmpty() || dists.get(0) == null) { 
+                    
+                    double[][] newdists = new double[numTrainInsts][];
+                    for (int i = 0; i < numTrainInsts; i++) {
+                        double[] dist = new double[numClasses];
+                        dist[(int) origres.getPredClassValue(i)] = 1.0;
+                        newdists[i] = dist;
+                    }
+                    
+                    ClassifierResults replacementRes = new ClassifierResults(
+                            origres.getTrueClassValsAsArray(), 
+                            origres.getPredClassValsAsArray(), 
+                            newdists, 
+                            origres.getPredictionTimesAsArray(), 
+                            origres.getPredDescriptionsAsArray());
+                    
+                    replacementRes.setClassifierName(origres.getClassifierName());
+                    replacementRes.setDatasetName(origres.getDatasetName());
+                    replacementRes.setFoldID(origres.getFoldID());
+                    replacementRes.setSplit(origres.getSplit());
+                    replacementRes.setTimeUnit(origres.getTimeUnit());
+                    replacementRes.setDescription(origres.getDescription());
+                    
+                    replacementRes.setParas(origres.getParas());
+                    
+                    replacementRes.setBuildTime(origres.getBuildTime());
+                    replacementRes.setTestTime(origres.getTestTime());
+                    replacementRes.setBenchmarkTime(origres.getBenchmarkTime());
+                    replacementRes.setMemory(origres.getMemory());
+                    
+                    replacementRes.finaliseResults();
+                    
+                    modules[m].trainResults = replacementRes;
+                }
+            }
+                        
             //in case train results didnt have probability distributions, hack for old hive cote results tony todo clean
             modules[m].trainResults.setNumClasses(trainInsts.numClasses());
             modules[m].trainResults.findAllStatsOnce();
@@ -852,6 +905,14 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         this.ensembleIdentifier = ensembleIdentifier;
     }
 
+    public boolean isFillMissingDistsWithOneHotVectors() {
+        return fillMissingDistsWithOneHotVectors;
+    }
+
+    public void setFillMissingDistsWithOneHotVectors(boolean fillMissingDistsWithOneHotVectors) {
+        this.fillMissingDistsWithOneHotVectors = fillMissingDistsWithOneHotVectors;
+    }
+    
     public double[][] getPosteriorIndividualWeights() {
         double[][] weights = new double[modules.length][];
         for (int m = 0; m < modules.length; ++m)
