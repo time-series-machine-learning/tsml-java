@@ -228,6 +228,14 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
+            case "RBOSS250All":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
             case "RBOSS70Percent":
                 c = new BOSS();
                 ((BOSS) c).setEnsembleSize(100);
@@ -272,6 +280,34 @@ public class ClassifierLists {
                 ((BOSS) c).setSeed(fold);
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setTrainProportion(0.7);
+            case "RandomBOSSWhalesContracted4Hour":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(155);
+                ((BOSS) c).setSeed(fold);
+            case "RandomBOSSWhales100All":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+            case "RandomBOSSWhalesAccCV":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+            case "RandomBOSSWhalesAccCVFastMax":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
+                ((BOSS) c).setMaxTrainInstances(500);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);

@@ -511,6 +511,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
             double[] classVals = data.attributeToDoubleArray(data.classIndex());
             double[][] preds = individualTrainPreds(boss, data);
+
             cawpe[currentSeries].addToEnsemble(boss, preds, classVals);
 
             int prev = currentSeries;
@@ -1077,7 +1078,7 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
     public static void main(String[] args) throws Exception{
         //Minimum working example
-        String dataset = "PowerCons";
+        String dataset = "ItalyPowerDemand";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
 
@@ -1094,29 +1095,31 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 //
 //        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
-//        c = new BOSS();
-//        ((BOSS) c).ensembleSize = 250;
-//        ((BOSS) c).useCAWPE = true;
-//        ((BOSS) c).setSeed(0);
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
-
         c = new BOSS();
-
         ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).setMaxEnsembleSize(50);
-        ((BOSS) c).setRandomCVAccEnsemble(true);
+        ((BOSS) c).useCAWPE = true;
         ((BOSS) c).setSeed(0);
-        ((BOSS) c).useFastTrainEstimate = true;
-        ((BOSS) c).setMaxEvalPerClass(50);
-        //((BOSS) c).reduceTrainInstances = true;
-        //((BOSS) c).cutoff = true;
+        ((BOSS) c).reduceTrainInstances = true;
+        ((BOSS) c).setTrainProportion(0.7);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
-        System.out.println("Random CV Acc BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+
+//        c = new BOSS();
+//
+//        ((BOSS) c).ensembleSize = 250;
+//        ((BOSS) c).setMaxEnsembleSize(50);
+//        ((BOSS) c).setRandomCVAccEnsemble(true);
+//        ((BOSS) c).setSeed(0);
+//        ((BOSS) c).useFastTrainEstimate = true;
+//        ((BOSS) c).setMaxEvalPerClass(50);
+//        //((BOSS) c).reduceTrainInstances = true;
+//        //((BOSS) c).cutoff = true;
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Random CV Acc BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
 ////        c = new BOSS();
 ////        ((BOSS) c).ensembleSize = 250;
