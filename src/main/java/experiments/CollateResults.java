@@ -752,15 +752,16 @@ public static void basicSummaryComparisons(){
         ArrayList<String> problems =new ArrayList<>();
         ArrayList<String> missing =new ArrayList<>();
         f=new File(fullPath+"/Predictions");
+        System.out.println(fullPath+"/Predictions");
         File[] fileList=f.listFiles();
+        System.out.println("File names in primary : has "+f.length()+" files ");
         for(File t:fileList){
+            System.out.println("\t"+t.getName());
+
             if(t.isDirectory()){ // Note 3: assume all dirs are problems
                 problems.add(t.getName());
             }
         }
-        System.out.println("File names in primary :");
-        for(String s:problems)
-            System.out.println("\t"+s);
         double[] trainTest= new double[problems.size()];
         double[] means= new double[problems.size()];
         double[][] allFolds= new double[problems.size()][folds];
@@ -1002,17 +1003,19 @@ public static void basicSummaryComparisons(){
  //ProximityForest
 //            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,HIVE-COTE","HIVE-COTE,Flat-COTE");
  //REDUX: EE
- //           quickStats("Z:/Results/Bakeoff Redux/Java/EE/",false,30,"HIVE-COTE,EE","Bakeoff,EE");
+ //           quickStats("Z:/Results/Bakeoff Redux/Java/EE",false,30,"HIVE-COTE,EE","Bakeoff,EE");
  //REDUX: TSF
-            quickStats("Z:/Results/Bakeoff Redux/Java/TSF/",false,30,"HIVE-COTE,TSF","Bakeoff,TSF");
+//            quickStats("Z:/Results/Bakeoff Redux/Java/TSF",false,30,"HIVE-COTE,TSF","Bakeoff,TSF");
  //REDUX: BOSS
-//            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS/",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
+//            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
  //REDUX: RISE
-//            quickStats("Z:/Results/Bakeoff Redux/Java/RISE/",false,30,"HIVE-COTE,RISE");
+
+            quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
+ //           quickStats("Z:/Results/Bakeoff Redux/Java/RISE",false,30,"HIVE-COTE,RISE");
  //REDUX: ST
-//            quickStats("Z:/Results/Bakeoff Redux/Java/ST/",false,30,"HIVE-COTE,ST","Bakeoff,ST");
+//            quickStats("Z:/Results/Bakeoff Redux/Java/ST",false,30,"HIVE-COTE,ST","Bakeoff,ST");
 ///REDUX: HIVE-COTE
- //           quickStats("Z:/Results/Bakeoff Redux/Java/HIVE-COTE/",false,30,"HIVE-COTE,HIVE-COTE");
+//           quickStats("Z:/Results/Bakeoff Redux/Java/HIVE-COTE",false,30,"HIVE-COTE,HIVE-COTE");
 
             
             
