@@ -94,7 +94,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             for (int i = 0; i < k; i ++){
                 centroids.set(i, shapeExtraction(data, centroids.get(i), i));
             }
-            
+
             for (int i = 0; i < data.numInstances(); i++){
                 double minDist = Double.MAX_VALUE;
                 
@@ -106,7 +106,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
                         cluster[i] = n;
                     }
                 }
-                //System.out.println(minDist + " " + i);
             }
             
             iterations++;
@@ -153,7 +152,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
                 }
             }
         }
-        
+
         if (subsample.numInstances() == 0){
             return new DenseInstance(1, new double[centroid.numAttributes()]);
         }
@@ -178,24 +177,33 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         matrix = identity.times(matrix).times(identity);
 
-        EigenvalueDecomposition eig = new EigenvalueDecomposition(matrix);
+        EigenvalueDecomposition eig = matrix.eig();
         Matrix v = eig.getV();
         double[] eigVector = new double[centroid.numAttributes()];
         double[] eigVectorNeg = new double[centroid.numAttributes()];
 
-        for (int i = 0; i < seriesSize; i++){
-            eigVector[i] = v.get(i,0);
-            eigVectorNeg[i] = -eigVector[i];
-        }
-
         double eigSum = 0;
         double eigSumNeg = 0;
 
-        for (int i = 0; i < seriesSize; i++){
-            double firstVal = subsample.get(0).value(i);
+        int col = 0;
+        while(true) {
+            for (int i = 0; i < seriesSize; i++) {
+                eigVector[i] = v.get(i, col);
+                eigVectorNeg[i] = -eigVector[i];
 
-            eigSum += (firstVal - eigVector[i]) * (firstVal - eigVector[i]);
-            eigSumNeg += (firstVal - eigVectorNeg[i]) * (firstVal - eigVectorNeg[i]);
+                double firstVal = subsample.get(0).value(i);
+
+                eigSum += (firstVal - eigVector[i]) * (firstVal - eigVector[i]);
+                eigSumNeg += (firstVal - eigVectorNeg[i]) * (firstVal - eigVectorNeg[i]);
+            }
+
+            if (Math.round(eigSum) == subsample.get(0).numAttributes() && Math.round(eigSumNeg) == subsample.get(0).numAttributes()){
+                col++;
+                System.err.println("Possible eig error");
+            }
+            else{
+                break;
+            }
         }
 
         Instance newCent;
@@ -233,8 +241,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.yShift);
 
         String dataset = "Trace";
-        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = ClassifierTools.loadData("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -243,6 +251,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         k.k = inst.numClasses();
         k.buildClusterer(inst);
 
+        System.out.println(k.clusters.length);
+        System.out.println(Arrays.toString(k.clusters));
         System.out.println(randIndex(k.cluster, inst));
     }
     
@@ -260,7 +270,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         private void calculateDistance(Instance first, Instance second, boolean calcShift){
             int oldLength = first.numAttributes();
             int oldLengthY = second.numAttributes();
-            
+
             int length = paddedLength(2*oldLength-1);
             
             fft = new FFT();
