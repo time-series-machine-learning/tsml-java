@@ -752,15 +752,16 @@ public static void basicSummaryComparisons(){
         ArrayList<String> problems =new ArrayList<>();
         ArrayList<String> missing =new ArrayList<>();
         f=new File(fullPath+"/Predictions");
+        System.out.println(fullPath+"/Predictions");
         File[] fileList=f.listFiles();
+        System.out.println("File names in primary : has "+f.length()+" files ");
         for(File t:fileList){
+            System.out.println("\t"+t.getName());
+
             if(t.isDirectory()){ // Note 3: assume all dirs are problems
                 problems.add(t.getName());
             }
         }
-        System.out.println("File names in primary :");
-        for(String s:problems)
-            System.out.println("\t"+s);
         double[] trainTest= new double[problems.size()];
         double[] means= new double[problems.size()];
         double[][] allFolds= new double[problems.size()][folds];
@@ -872,6 +873,13 @@ public static void basicSummaryComparisons(){
                         String prob=split[0];
                         if(prob.equals("CinCECGtorso"))//Hackhackityhack: legacy problem
                             prob="CinCECGTorso";
+                        if(prob.equals("StarlightCurves"))//Hackhackityhack: legacy problem
+                            prob="StarLightCurves";
+                        if(prob.equals("NonInvasiveFatalECGThorax1"))//Hackhackityhack: legacy problem
+                            prob="NonInvasiveFetalECGThorax1";
+                        if(prob.equals("NonInvasiveFatalECGThorax2"))//Hackhackityhack: legacy problem
+                            prob="NonInvasiveFetalECGThorax2";
+                        
                         Double d = Double.parseDouble(split[1]);
                         trTest.put(prob,d);
                         line=inf.readLine();
@@ -887,6 +895,12 @@ public static void basicSummaryComparisons(){
                         String prob=split[0];
                         if(prob.equals("CinCECGtorso"))//Hackhackityhack: legacy problem
                             prob="CinCECGTorso";
+                        if(prob.equals("StarlightCurves"))//Hackhackityhack: legacy problem
+                            prob="StarLightCurves";
+                        if(prob.equals("NonInvasiveFatalECGThorax1"))//Hackhackityhack: legacy problem
+                            prob="NonInvasiveFetalECGThorax1";
+                        if(prob.equals("NonInvasiveFatalECGThorax2"))//Hackhackityhack: legacy problem
+                            prob="NonInvasiveFetalECGThorax2";
                         Double d = Double.parseDouble(split[1]);
                         averages.put(prob,d);
                         line=inf.readLine();
@@ -938,8 +952,8 @@ public static void basicSummaryComparisons(){
                 }
 //Averages
                 if(!missing.contains(name)){
-                    String line=name+","+trainTest[i];
-                    meansFile.writeString(name+","+trainTest[i]);
+                    String line=name+","+means[i];
+                    meansFile.writeString(name+","+means[i]);
                     for(int j=0;j<classifiers.length;j++){
                         HashMap<String,Double> av=averageResults.get(j);
                         if(av.containsKey(name)){
@@ -962,7 +976,21 @@ public static void basicSummaryComparisons(){
         
         
     }
-
+    public static void quickStats(String primary, boolean calcAcc, int folds, String...others) throws Exception{
+        String[] input;
+        if(others==null)
+            input=new String[3];
+        else 
+            input=new String[3+others.length];
+        input[0]=primary;
+        input[1]=calcAcc+"";
+        input[2]=folds+"";
+        if(others!=null)
+            for(int i=0;i<others.length;i++)
+                input[i+3]=others[i];
+       singleClassifiervsReferenceResults(input);
+        
+    }
     public static void main(String[] args) throws Exception {
  
         
@@ -970,33 +998,27 @@ public static void basicSummaryComparisons(){
         if (args.length == 0) {//Local run
             bakeOffPath=bakeOffPathBeast;
             hiveCotePath=hiveCotePathBeast;
-            String[] testy;
-    //        testy[0]="E:/Results/UCR Debug/Python/ST_RandFor_7200";//Need to use forward slash!
-            ArrayList<String> list=new ArrayList<>();
+ //TunedTSF
+ //           quickStats("E:/Results/UCR Debug/Java/TunedTSF",false,30,"Bakeoff,ST","Bakeoff,TSF","Bakeoff,BOSS","Bakeoff,DTWCV");
+ //ProximityForest
+//            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,HIVE-COTE","HIVE-COTE,Flat-COTE");
+ //REDUX: EE
+ //           quickStats("Z:/Results/Bakeoff Redux/Java/EE",false,30,"HIVE-COTE,EE","Bakeoff,EE");
+ //REDUX: TSF
+//            quickStats("Z:/Results/Bakeoff Redux/Java/TSF",false,30,"HIVE-COTE,TSF","Bakeoff,TSF");
+ //REDUX: BOSS
+//            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
+ //REDUX: RISE
 
-            /*       list.add("E:/Results/UCR Debug/Java/TunedTSF");//Need to use forward slash!
-            list.add("false");
-            list.add("30");
-            list.add("Bakeoff,ST");
-            list.add("Bakeoff,TSF");
-            list.add("Bakeoff,BOSS");
-            list.add("Bakeoff,DTWCV");
-    */
+            quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
+ //           quickStats("Z:/Results/Bakeoff Redux/Java/RISE",false,30,"HIVE-COTE,RISE");
+ //REDUX: ST
+//            quickStats("Z:/Results/Bakeoff Redux/Java/ST",false,30,"HIVE-COTE,ST","Bakeoff,ST");
+///REDUX: HIVE-COTE
+//           quickStats("Z:/Results/Bakeoff Redux/Java/HIVE-COTE",false,30,"HIVE-COTE,HIVE-COTE");
 
-           list.add("E:/Results/UCR Debug/Java/ProximityForest");//Need to use forward slash!
-            list.add("false");
-            list.add("30");
-            list.add("HIVE-COTE,EE");
-            list.add("HIVE-COTE,HIVE-COTE");
-            list.add("HIVE-COTE,Flat-COTE");
-//            list.add("HIVE-COTE,ST");
-
-            testy=new String[list.size()];
-            for(int i=0;i<testy.length;i++)
-                testy[i]=list.get(i);
-
-            singleClassifiervsReferenceResults(testy);
-
+            
+            
         }
         else{           //Cluster run
             bakeOffPath=bakeOffPathCluster;
