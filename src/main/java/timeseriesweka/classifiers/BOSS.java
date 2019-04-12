@@ -37,6 +37,8 @@ import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 
 import static utilities.InstanceTools.resample;
+import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
@@ -67,6 +69,9 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private boolean useFastTrainEstimate = false;
     private int maxEvalPerClass = -1;
     private int maxEval = 500;
+
+    private double maxWinLenProportion = 1;
+    private double maxWinSearchProportion = 0.25;
 
     private boolean reduceTrainInstances = false;
     private double trainProportion = -1;
@@ -320,6 +325,14 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         maxEvalPerClass = i;
     }
 
+    public void setMaxWinLenProportion(double d){
+        maxWinLenProportion = d;
+    }
+
+    public void setMaxWinSearchProportion(double d){
+        maxWinSearchProportion = d;
+    }
+
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         trainResults.setBuildTime(System.nanoTime());
@@ -392,8 +405,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 
         //If checkpointing and flag is set stop building.
         if (!checkpoint || (checkpoint && !loadAndFinish)){
+            if (randomCVAccEnsemble && useCAWPE){
+                buildWeightedRandomCVAccBOSS(series);
+            }
             //Contracted
-            if (contract) {
+            else if (contract) {
                 buildContractedBOSS(series);
             }
             //Randomly selected ensemble with CAWPE weighting
@@ -437,13 +453,98 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         }
     }
 
+    private void buildWeightedRandomCVAccBOSS(Instances[] series) throws Exception {
+        int seriesLength = series[0].numAttributes()-1; //minus class attribute
+        int minWindow = 10;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
+
+        //whats the max number of window sizes that should be searched through
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
+        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        if (winInc < 1) winInc = 1;
+
+        ArrayList<int[]>[] possibleParameters = uniqueParameters(minWindow, maxWindow, winInc);
+
+        cawpe = new HomogeneousContractCAWPE[numSeries];
+        for (int n = 0; n < numSeries; n++) {
+            cawpe[n] = new HomogeneousContractCAWPE();
+            cawpe[n].buildClassifier(series[n]);
+            cawpe[n].setRandom(rand);
+        }
+
+        int classifiersBuilt = 0;
+        double[] lowestAcc = new double[numSeries];
+        for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
+
+        //build classifiers up to a set size
+        while (classifiersBuilt < ensembleSize && possibleParameters[numSeries-1].size() > 0) {
+            int[] parameters = possibleParameters[currentSeries].remove(rand.nextInt(possibleParameters[currentSeries].size()));
+
+            Instances data = resampleData(series[currentSeries]);
+
+            BOSSIndividual boss = new BOSSIndividual(parameters[0], alphabetSize, parameters[1], parameters[2] == 0);
+            boss.cleanAfterBuild = true;
+            boss.buildClassifier(data);
+
+            double[] classVals = data.attributeToDoubleArray(data.classIndex());
+            double[][] preds = individualTrainPreds(boss, data);
+            boss.accuracy = accuracy(preds, classVals);
+
+            if(numClassifiers[currentSeries] < maxEnsembleSize){
+                if (boss.accuracy < lowestAcc[currentSeries]) lowestAcc[currentSeries] = boss.accuracy;
+                classifiers[currentSeries].add(boss);
+                numClassifiers[currentSeries]++;
+                cawpe[currentSeries].addToEnsemble(boss, preds, classVals);
+            }
+            else if (boss.accuracy > lowestAcc[currentSeries]) {
+                classifiers[currentSeries].add(boss);
+                cawpe[currentSeries].addToEnsemble(boss, preds, classVals);
+
+                int minAccInd = (int) findMinEnsembleAcc()[0];
+                classifiers[currentSeries].remove(minAccInd);
+                cawpe[currentSeries].remove(minAccInd);
+
+                lowestAcc[currentSeries] = findMinEnsembleAcc()[1];
+            }
+
+            if (isMultivariate) {
+                nextSeries();
+            }
+
+            classifiersBuilt++;
+        }
+
+        if (cutoff){
+            for (int n = 0; n < numSeries; n++) {
+                double maxAcc = 0;
+                for (int i = 0; i < classifiers[n].size(); i++){
+                    if (classifiers[n].get(i).accuracy > maxAcc){
+                        maxAcc = classifiers[n].get(i).accuracy;
+                    }
+                }
+
+                for (int i = 0; i < classifiers[n].size(); i++){
+                    BOSSIndividual b = classifiers[n].get(i);
+                    if (b.accuracy < maxAcc * correctThreshold) {
+                        classifiers[currentSeries].remove(i);
+                        cawpe[currentSeries].remove(i);
+                        numClassifiers[n]--;
+                        i--;
+                    }
+                }
+            }
+        }
+    }
+
     private void buildContractedBOSS(Instances[] series) throws Exception {
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = seriesLength/2;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
 
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -482,10 +583,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private void buildRandomCAWPEBOSS(Instances[] series) throws Exception {
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = seriesLength/2;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
 
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -528,10 +630,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private void buildRandomBOSS(Instances[] series) throws Exception {
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = seriesLength/2;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
 
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -565,10 +668,11 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = seriesLength;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
 
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength/4.0;
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -634,9 +738,10 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     private void buildBOSS(Instances[] series) throws Exception {
         int seriesLength = series[0].numAttributes()-1; //minus class attribute
         int minWindow = 10;
-        double maxWindowSearches = seriesLength/4.0;
+        int maxWindow = (int)(seriesLength*maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow/2;
 
-        int maxWindow = seriesLength;
+        double maxWindowSearches = seriesLength*maxWinSearchProportion;
         int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -905,6 +1010,16 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
         return preds;
     }
 
+    public double accuracy(double[][] probs, double[] classVals){
+        double correct = 0;
+        for (int i = 0; i < classVals.length; i++){
+            if (argMax(probs[i], rand) == classVals[i]){
+                correct++;
+            }
+        }
+        return correct/classVals.length;
+    }
+
     private boolean makesItIntoEnsemble(double acc, double maxAcc, double minMaxAcc, int curEnsembleSize) {
         if (acc >= maxAcc * correctThreshold) {
             if (curEnsembleSize >= maxEnsembleSize)
@@ -1077,10 +1192,15 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
     }
 
     public static void main(String[] args) throws Exception{
+        int fold = 1;
+
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "SonyAIBORobotSurface1";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
+        train = data[0];
+        test = data[1];
 
         String dataset2 = "PenDigits";
         Instances train2 = ClassifierTools.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
@@ -1096,10 +1216,12 @@ public class BOSS extends AbstractClassifierWithTrainingData implements HiveCote
 //        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
         c = new BOSS();
-        ((BOSS) c).ensembleSize = 250;
-        ((BOSS) c).useCAWPE = true;
-        ((BOSS) c).setSeed(0);
-        ((BOSS) c).reduceTrainInstances = true;
+        ((BOSS) c).setEnsembleSize(250);
+        ((BOSS) c).setMaxEnsembleSize(50);
+        ((BOSS) c).setRandomCVAccEnsemble(true);
+        ((BOSS) c).useCAWPE(true);
+        ((BOSS) c).setSeed(fold);
+        ((BOSS) c).setReduceTrainInstances(true);
         ((BOSS) c).setTrainProportion(0.7);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);

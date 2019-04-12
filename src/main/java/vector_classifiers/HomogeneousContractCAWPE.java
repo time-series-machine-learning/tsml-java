@@ -49,6 +49,13 @@ public class HomogeneousContractCAWPE extends CAWPE {
         modules[idx].trainResults.findAllStatsOnce();
     }
 
+    public void remove(int idx){
+        EnsembleModule[] temp = new EnsembleModule[modules.length - 1];
+        System.arraycopy(modules, 0, temp, 0, idx);
+        System.arraycopy(modules, idx + 1, temp, idx, modules.length - idx - 1);
+        modules = temp;
+    }
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         trainInsts = data;

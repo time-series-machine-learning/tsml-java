@@ -235,6 +235,7 @@ public class ClassifierLists {
                 ((BOSS) c).setSeed(fold);
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
                 break;
             case "RBOSS70Percent":
                 c = new BOSS();
@@ -243,6 +244,7 @@ public class ClassifierLists {
                 ((BOSS) c).setSeed(fold);
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
                 break;
             case "RBOSSAccCVMax":
                 c = new BOSS();
@@ -273,18 +275,36 @@ public class ClassifierLists {
                 ((BOSS) c).setMaxEvalPerClass(50);
                 ((BOSS) c).setMaxTrainInstances(500);
                 break;
-            case "RBOSSSubsample":
+            case "RBOSSAccCVCAWPE":
                 c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
                 ((BOSS) c).setSeed(fold);
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSS100WinLen25":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.25);
+                break;
+            case "RBOSS100WinLen75":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.75);
+                break;
             case "RandomBOSSWhalesContracted4Hour":
                 c = new BOSS();
                 ((BOSS) c).setRandomEnsembleSelection(true);
                 ((BOSS) c).setEnsembleSize(155);
                 ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
             case "RandomBOSSWhales100All":
                 c = new BOSS();
                 ((BOSS) c).setEnsembleSize(100);
@@ -292,6 +312,7 @@ public class ClassifierLists {
                 ((BOSS) c).setSeed(fold);
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
             case "RandomBOSSWhalesAccCV":
                 c = new BOSS();
                 ((BOSS) c).setEnsembleSize(250);
@@ -308,6 +329,15 @@ public class ClassifierLists {
                 ((BOSS) c).setReduceTrainInstances(true);
                 ((BOSS) c).setMaxEvalPerClass(50);
                 ((BOSS) c).setMaxTrainInstances(500);
+            case "RandomBOSSWhalesAccCVCAWPE":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
