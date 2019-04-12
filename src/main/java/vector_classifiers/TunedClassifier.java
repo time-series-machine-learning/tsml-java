@@ -89,6 +89,7 @@ public class TunedClassifier extends AbstractClassifier
     
     
     public TunedClassifier() { 
+        this.tuner = new Tuner(); 
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
@@ -273,7 +274,7 @@ public class TunedClassifier extends AbstractClassifier
 //        
 //        exp.singleParameterID = 1;
         
-        experiments.Experiments.setupAndRunSingleClassifierAndFoldTrainTestSplit(exp);
+        experiments.Experiments.setupAndRunExperiment(exp);
     }
 
     

@@ -53,7 +53,7 @@ import weka.core.TechnicalInformation;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingData implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate{
 
     
     public TechnicalInformation getTechnicalInformation() {

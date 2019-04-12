@@ -67,7 +67,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingData implements ContractClassifier{
+public class HiveCote extends AbstractClassifierWithTrainingInfo implements ContractClassifier{
 
 
     private ArrayList<Classifier> classifiers;
@@ -136,8 +136,7 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
         h.setTransform(st);
         
         classifiers.add(h); // to get around the issue of needing training data 
-        RISE rise = new RISE(0);
-        rise.setTransformType("BOTH");
+        RISE rise = new RISE();
         classifiers.add(rise);
         classifiers.add(new BOSS());
         classifiers.add(new TSF());
@@ -178,7 +177,7 @@ public class HiveCote extends AbstractClassifierWithTrainingData implements Cont
             
             
             // if classifier is an implementation of HiveCoteModule, no need to cv for ensemble accuracy as it can self-report
-            // e.g. of the default modules, EE, CAWPE, and BOSS should all have this fucntionality (group a); RISE and TSF do not currently (group b) so must manualy cv
+            // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
             if(classifiers.get(i) instanceof HiveCoteModule){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);

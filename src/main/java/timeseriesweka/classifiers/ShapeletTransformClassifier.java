@@ -40,6 +40,8 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
+import fileIO.FullAccessOutFile;
+import java.util.ArrayList;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
@@ -52,13 +54,12 @@ import weka.classifiers.trees.RandomForest;
 
 /**
  *
- * @author raj09hxu
- * By default, performs a shapelet transform through full enumeration (max 2000 shapelets selected)
+ * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
  *  then classifies with the heterogeneous ensemble CAWPE, using randF, rotF and SVMQ.
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier{
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, SaveParameterInfo, ContractClassifier{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
@@ -68,24 +69,30 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
     private String shapeletOutputPath;
     private CAWPE ensemble;
     private ShapeletTransform transform;
-    private Instances format;
+    private Instances shapeletData;
     int[] redundantFeatures;
     private boolean doTransform=true;
     private long transformBuildTime;
-    protected ClassifierResults res =new ClassifierResults();
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
     private long numShapelets = 0;
     private long seed = 0;
     private boolean setSeed=false;
     private long timeLimit = Long.MAX_VALUE;
-    private String checkpointFullPath; //location to check point 
+    private String checkpointFullPath=""; //location to check point 
     private boolean checkpoint=false;
+    private boolean saveShapelets=false;
+    private String shapeletPath="";
+    
     enum TransformType{UNI,MULTI_D,MULTI_I};
     TransformType type=TransformType.UNI;
     
     public void setTransformType(TransformType t){
         type=t;
+    }
+    public void saveShapelets(String str){
+        shapeletPath=str;
+        saveShapelets=true;
     }
     public void setTransformType(String t){
         t=t.toLowerCase();
@@ -118,31 +125,18 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
         searchType = type;
     }
 
-    @Override
-    public void writeCVTrainToFile(String train) {
-        ensemble.writeCVTrainToFile(train);
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        ensemble.setFindTrainAccuracyEstimate(setCV);
-
-    }
 
     /*//if you want CAWPE to perform CV.
     public void setPerformCV(boolean b) {
         ensemble.setPerformCV(b);
     }*/
-    
-    @Override
-    public ClassifierResults getTrainResults() {
-        return  ensemble.getTrainResults();
-    }
+ 
         
     @Override
     public String getParameters(){
         String paras=transform.getParameters();
         String ensemble=this.ensemble.getParameters();
-        return "BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
+        return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
     }
     
     @Override
@@ -191,37 +185,38 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        if(checkpoint){
-            buildCheckpointClassifier(data);
+    // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        
+        long startTime=System.nanoTime(); 
+        shapeletData = doTransform ? createTransformData(data, timeLimit) : data;
+        transformBuildTime=System.currentTimeMillis()-startTime;
+        if(setSeed)
+            ensemble.setRandSeed((int) seed);
+
+        redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
+        if(saveShapelets){
+            System.out.println("Shapelet Saving  ....");
+            FullAccessOutFile of=new FullAccessOutFile(shapeletPath+"Transforms"+seed+".arff");
+            of.writeString(shapeletData.toString());
+            of.closeFile();
+            of=new FullAccessOutFile(shapeletPath+"Shaplelets"+seed+".csv");
+            of.writeLine("BuildTime,"+(System.nanoTime()-startTime));
+            of.writeLine("NumShapelets,"+transform.getNumberOfShapelets());
+            of.writeLine("Count(not sure!),"+transform.getCount());
+            of.writeString("ShapeletLengths");
+            ArrayList<Integer> lengths=transform.getShapeletLengths();
+            for(Integer i:lengths)
+                of.writeString(","+i);
+            of.writeString("\n");
+            of.writeString(transform.toString());
+            of.closeFile();
+            
         }
-        else{
-            long startTime=System.currentTimeMillis(); 
-            format = doTransform ? createTransformData(data, timeLimit) : data;
-            transformBuildTime=System.currentTimeMillis()-startTime;
-            if(setSeed)
-                ensemble.setRandSeed((int) seed);
 
-            redundantFeatures=InstanceTools.removeRedundantTrainAttributes(format);
-
-            ensemble.buildClassifier(format);
-            format=new Instances(data,0);
-            res.setBuildTime(System.currentTimeMillis()-startTime);
-        }
-    }
-    private void  buildCheckpointClassifier(Instances data) throws Exception {   
-//Load file if one exists
-
-//Set timer options
-
-//Sample shapelets until checkpoint time
-
-//Save to file
-
-//When finished, build classifier
-            ensemble.buildClassifier(format);
-            format=new Instances(data,0);
-//            res.buildTime=System.currentTimeMillis()-startTime;
-
+        ensemble.buildClassifier(shapeletData);
+        shapeletData=new Instances(data,0);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
     }
 /**
  * Classifiers used in the HIVE COTE paper
@@ -320,28 +315,28 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
     
      @Override
     public double classifyInstance(Instance ins) throws Exception{
-        format.add(ins);
+        shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(format) : format;
+        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
         
         Instance test  = temp.get(0);
-        format.remove(0);
+        shapeletData.remove(0);
         return ensemble.classifyInstance(test);
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
-        format.add(ins);
+        shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(format) : format;
+        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
         
         Instance test  = temp.get(0);
-        format.remove(0);
+        shapeletData.remove(0);
         return ensemble.distributionForInstance(test);
     }
     
@@ -462,11 +457,11 @@ public class ShapeletTransformClassifier  extends AbstractClassifier implements 
         preferShortShapelets = st.preferShortShapelets;
         shapeletOutputPath=st.shapeletOutputPath;
         transform=st.transform;
-        format=st.format;
+        shapeletData=st.shapeletData;
         int[] redundantFeatures=st.redundantFeatures;
         doTransform=st.doTransform;
         transformBuildTime=st.transformBuildTime;
-        res =st.res;
+        trainResults =st.trainResults;
         numShapeletsInTransform =st.numShapeletsInTransform;
         searchType =st.searchType;
         numShapelets  =st.numShapelets;

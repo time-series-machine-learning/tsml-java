@@ -26,7 +26,10 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.proximityForest.ProximityForestWeka;
 import vector_classifiers.CAWPE;
+import vector_classifiers.PLSNominalClassifier;
+import vector_classifiers.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -38,6 +41,7 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
@@ -46,14 +50,33 @@ import weka.core.EuclideanDistance;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ClassifierLists {
+    //leaving in for now, in case particular classifiers require it.
+    //eventually should be removed in favour of using the info in the experimental settings passed 
+    //in the newer setClassifier
     public static String horribleGlobalPath="";
-    public static String nastyGlobalDatasetName=""; //leaving in for now
+    public static String nastyGlobalDatasetName="";  
 
-    public String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
-    public String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
+    public static String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
+    public static String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
     
     /**
-     * This is the method exactly as it was in experiments. 
+     * This method is currently a placeholder that simply call setClassifierClassic(classifierName, fold),
+     * exactly where to take this newer method is still up for debate
+     * 
+     * This shall be the start of the newer setClassifier, which take the experimental 
+     * arguments themselves and therefore the classifiers can take from them whatever they 
+     * need, e.g the dataset name, the fold id, separate checkpoint paths, etc. 
+     * 
+     * To take this idea further, to be honest each of the TSC-specific classifiers
+     * could/should have a constructor and/or factory that builds the classifier
+     * from the experimental args. 
+     */
+    public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
+        return setClassifierClassic(exp.classifierName, exp.foldId);
+    }
+    
+    /**
+     * This is the method exactly as it was in old experiments.java. 
      * 
      * @param classifier
      * @param fold
@@ -62,7 +85,21 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            
+            case "XGBoostMultiThreaded":
+                c = new TunedXGBoost(); 
+                break;
+            case "XGBoost":
+                c = new TunedXGBoost(); 
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                break;
+            case "SmallTunedXGBoost":
+                c = new TunedXGBoost(); 
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
+                break;
+            case "ProximityForest":
+                c = new ProximityForestWeka();
+                break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
@@ -83,7 +120,24 @@ public class ClassifierLists {
                 c=new NN_DTW_A();
                 break;
 //TIME DOMAIN CLASSIFIERS   
-            
+            case "RandF": 
+                RandomForest r=new RandomForest();
+                r.setNumTrees(500);
+                r.setSeed(fold);
+                c = r;
+                break;
+            case "RotF":
+                RotationForest rf=new RotationForest();
+                rf.setNumIterations(50);
+                rf.setSeed(fold);
+                c = rf;
+                break;
+            case "PLSNominalClassifier":
+                c = new PLSNominalClassifier();
+                break;
+            case "bayesNet": 
+                c = new BayesNet();
+                break;
             case "ED":
                 c=new ED1NN();
                 break;
@@ -216,9 +270,6 @@ public class ClassifierLists {
                 ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
-            case "RISE":
-                c=new RISE(fold);
-                break;
             case "TSBF":
                 c=new TSBF();
                 break;
@@ -342,15 +393,6 @@ public class ClassifierLists {
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
                 break;
-            case "TSF":
-                c=new TSF();
-                ((TSF)c).setSeed(fold);
-                break;
-             case "TSFProb":
-                c=new TSF();
-                ((TSF)c).setSeed(fold);
-                ((TSF)c).setProbabilityEnsemble(true);
-                break;
              case "TSFC45":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
@@ -369,202 +411,16 @@ public class ClassifierLists {
                 c=new HiveCote();
                 ((HiveCote)c).setContract(24);
                 break; 
-            case "RotFDefault":
-                c = new RotationForest();
-                ((RotationForest)c).setSeed(fold);
+            case "RISE":
+                c=new RISE();
+                ((RISE) c).setSeed(fold);
+                ((RISE) c).setTransforms("PS","ACF");
                 break;
-            case "cRISE_BOTH_NOSTBLS":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                //((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 1);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
+            case "TSF":
+                c=new TSF();
+                ((TSF)c).setSeed(fold);
                 break;
-            case "cRISE_PS_NOSTBLS_1MIN":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 1);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_24HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_48HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 48);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_72HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 72);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_96HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 96);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_120HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 120);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_144HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 144);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_BOTH_NOSTBLS_168HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("BOTH");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 168);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_24HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_48HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 48);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_72HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 72);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_96HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 96);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_120HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 120);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_144HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 144);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
-            case "cRISE_PS_NOSTBLS_168HR":
-                c = new RISE((long)fold);
-                //Classieir settings.
-                ((RISE)c).setDownSample(false);
-                ((RISE)c).setTransformType("PS");
-                ((RISE)c).setMinNumTrees(200);
-                //((RISE)c).setStabilise(5);
-                //Timer settings.
-                ((RISE)c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 168);
-                ((RISE)c).setModelOutPath(DataSets.resultsPath+classifier+"/Predictions/");
-                ((RISE)c).setSavePath(DataSets.resultsPath+classifier+"/Predictions/" + nastyGlobalDatasetName);
-                break;
+
            default:
                 System.out.println("UNKNOWN CLASSIFIER "+classifier);
                 System.exit(0);

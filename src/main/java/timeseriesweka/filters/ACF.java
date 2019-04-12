@@ -41,16 +41,15 @@ import weka.filters.*;
 <!-- options-start -->
  * Valid options are: <p/>
  * 
- * <pre> -T
- *  set number of trees.</pre>
- * 
- * <pre> -F
- *  set number of features.</pre>
+ * <pre> -L
+ *  set the max lag.</pre>
  <!-- options-end -->
  *
  * 
  * author: Anthony Bagnall circa 2008.
- Reviewed and tidied up 2019
+ * Reviewed and tidied up 2019
+ * This should not really be a batch filter, as it is series to series, but
+ * it makes the use case simpler. 
  */
 
 public class ACF extends SimpleBatchFilter {
@@ -61,14 +60,14 @@ public class ACF extends SimpleBatchFilter {
 
  /** Whatever the maxLag value, we always ignore at least the endTerms correlations 
  * since they are based on too little data and hence unreliable  */
-    int endTerms=4;
+    private  int endTerms=4;
     
 /** The maximum number of ACF terms considered. It must be less than seriesLength-endTerms
  * (checked in process() */    
-    static final int DEFAULT_MAXLAG=100;
-    int maxLag=DEFAULT_MAXLAG;
+    public static final int DEFAULT_MAXLAG=100;
+    private int maxLag=DEFAULT_MAXLAG;
 /** Currently assumed constant for all series. Have to, using instances* */   
-    int seriesLength;
+    private int seriesLength;
 
     public void setMaxLag(int n){ maxLag=n;}
     public void setNormalized(boolean flag){ normalized=flag;}
@@ -79,6 +78,7 @@ public class ACF extends SimpleBatchFilter {
      * @return
      * @throws Exception 
      */
+    @Override
     protected Instances determineOutputFormat(Instances inputFormat)  throws Exception {
     //Check capabilities for the filter. Can only handle real valued, no missing.       
         getCapabilities().testWithFail(inputFormat);
@@ -87,8 +87,8 @@ public class ACF extends SimpleBatchFilter {
         if(inputFormat.classIndex()>=0)
             seriesLength--;
 //Cannot include the final endTerms correlations, since they are based on too little data and hence unreliable.
-        if(maxLag>inputFormat.numAttributes()-endTerms)
-            maxLag=inputFormat.numAttributes()-endTerms;
+        if(maxLag>seriesLength-endTerms)
+            maxLag=seriesLength-endTerms;
         if(maxLag<0)
             maxLag=inputFormat.numAttributes()-1;
         //Set up instances size and format. 
@@ -127,6 +127,7 @@ public class ACF extends SimpleBatchFilter {
    * @param options the list of options as an array of strings
    * @throws Exception if an option is not supported
    */
+    @Override
     public void setOptions(String[] options) throws Exception {
         String maxLagString=Utils.getOption('L', options);
         if (maxLagString.length() != 0)
@@ -141,20 +142,20 @@ public class ACF extends SimpleBatchFilter {
      * @return Capabilities object
      */    
     public Capabilities getCapabilities() {
-    Capabilities result = super.getCapabilities();
-    result.disableAll();
-    // attributes must be numeric
-    // Here add in relational when ready
-    result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-//    result.enable(Capabilities.Capability.MISSING_VALUES);
-    
-    // class
-    result.enableAllClasses();
-    result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
-    result.enable(Capabilities.Capability.NO_CLASS);
-    
-    return result;
-  }
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+        // attributes must be numeric
+        // Here add in relational when ready
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+    //    result.enable(Capabilities.Capability.MISSING_VALUES);
+
+        // class
+        result.enableAllClasses();
+        result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
+        result.enable(Capabilities.Capability.NO_CLASS);
+
+        return result;
+    }
 
     /**
      * NOTE THIS SHOULD BE PROTECTED. We have hacked the Weka base class. This 
@@ -234,7 +235,12 @@ public class ACF extends SimpleBatchFilter {
                 a[i-1]/=(data.length-i);
                 v1=ss1/(data.length-i)-s1*s1;
                 v2=ss2/(data.length-i)-s2*s2;
-                a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
+                if(v1==0 && v2==0)//Both zero variance, both must be 100% corr
+                    a[i-1]=1;
+                else if(v1==0 || (v2==0))//One zero variance the other not
+                    a[i-1]=0;
+                else
+                    a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
             }
         }
         else{
@@ -254,27 +260,43 @@ public class ACF extends SimpleBatchFilter {
  * @return first mLag autocorrelations
  */    
     public static double[] fitAutoCorrelations(double[] data, int mLag){
+        return fitAutoCorrelations(data,mLag,false);
+    }
+    
+    public static double[] fitAutoCorrelations(double[] data, int mLag, boolean normalised){
         double[] a = new double[mLag];
 
-        double s1,s2,ss1,ss2,v1,v2;
-        for(int i=1;i<=mLag;i++){
-            a[i-1]=0;
-            s1=s2=ss1=ss2=0;
-            for(int j=0;j<data.length-i;j++){
-                s1+=data[j];
-                ss1+=data[j]*data[j];
-                s2+=data[j+i];
-                ss2+=data[j+i]*data[j+i];
+        if(!normalised){
+            double s1,s2,ss1,ss2,v1,v2;
+            for(int i=1;i<=mLag;i++){
+                a[i-1]=0;
+                s1=s2=ss1=ss2=0;
+                for(int j=0;j<data.length-i;j++){
+                    s1+=data[j];
+                    ss1+=data[j]*data[j];
+                    s2+=data[j+i];
+                    ss2+=data[j+i]*data[j+i];
+                }
+                s1/=data.length-i;
+                s2/=data.length-i;
+                for(int j=0;j<data.length-i;j++)
+                    a[i-1]+=(data[j]-s1)*(data[j+i]-s2);
+                a[i-1]/=(data.length-i);
+                v1=ss1/(data.length-i)-s1*s1;
+                v2=ss2/(data.length-i)-s2*s2;
+                if(v1!=0 && v2!=0)
+                    a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
             }
-            s1/=data.length-i;
-            s2/=data.length-i;
-            for(int j=0;j<data.length-i;j++)
-                a[i-1]+=(data[j]-s1)*(data[j+i]-s2);
-            a[i-1]/=(data.length-i);
-            v1=ss1/(data.length-i)-s1*s1;
-            v2=ss2/(data.length-i)-s2*s2;
-            a[i-1]/=Math.sqrt(v1)*Math.sqrt(v2);
         }
+        else{
+            for(int i=1;i<=mLag;i++){
+                a[i-1]=0;
+                for(int j=0;j<data.length-i;j++)
+                    a[i-1]+=data[j]*data[j+i];
+                a[i-1]/=data.length;
+            }
+        }
+        
         return a;
     }
 
@@ -424,51 +446,6 @@ public class ACF extends SimpleBatchFilter {
         }
     }
 /**
- * This forms the concatenated Instances used by RISE. Should really be there!
- * @param d
- * @return 
- */
-    public static Instances formChangeCombo(Instances d){
-        int maxLag=(d.numAttributes()-1)/4;
-        if(maxLag>DEFAULT_MAXLAG)
-            maxLag=DEFAULT_MAXLAG;
-        if(maxLag<10)
-            maxLag=(d.numAttributes()-1);
-
-        try{
-       //1. ACF
-            ACF acf=new ACF();
-            acf.setMaxLag(maxLag);
-            acf.setNormalized(false);
-            Instances acfData=acf.process(d);
-      //2. ARMA 
-            ARMA arma=new ARMA();                        
-            arma.setMaxLag(maxLag);
-            arma.setUseAIC(false);
-            Instances arData=arma.process(d);
-      //3. PACF Full
-            PACF pacf=new PACF();
-            pacf.setMaxLag(maxLag);
-            Instances pacfData=pacf.process(d);
-            Instances combo=new Instances(acfData);
-            combo.setClassIndex(-1);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, pacfData);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            combo=Instances.mergeInstances(combo, arData);
-            combo.setClassIndex(combo.numAttributes()-1);
-            return combo;
-
-       }catch(Exception e){
-//FIX THIS           
-            System.out.println(" Exception in Combo="+e+" max lag ="+maxLag);
-            e.printStackTrace();
-            System.exit(1);
-       }
-       return null;
-    }
-    
-/**
 /**Debug code to test ACF generation: 
  */
     public static void testTransform(){
@@ -515,17 +492,24 @@ public class ACF extends SimpleBatchFilter {
         }
     }
 
-    public static void main(String[] args){
-        testTransform();
-        testTrunctate();
-        Instances train =ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ElectricDevices\\ElectricDevices_TRAIN");
-        Instances test =ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ElectricDevices\\ElectricDevices_TEST");
+    public static void main(String[] args) {
+        String problemPath = "E:/TSCProblems/";
+        String resultsPath="E:/Temp/";
+        String datasetName="ItalyPowerDemand";
+        Instances train =ClassifierTools.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         ACF acf= new ACF();
-        Instances f;
         try {
-            f = acf.process(train);
-//                System.out.println(f.toString());
-            f=InstanceTools.subSample(f, f.numInstances()/100, 0);
+            Instances trans=acf.process(train);
+            OutFile out = new OutFile(resultsPath+datasetName+"ACF_JAVA.csv");
+            out.writeLine(datasetName);
+            for(Instance ins: trans){
+                double[] d=ins.toDoubleArray();
+                for(int j=0;j<d.length;j++){
+                    if(j!=trans.classIndex())
+                        out.writeString(d[j]+",");
+                }
+                out.writeString("\n");
+            }
         } catch (Exception ex) {
             Logger.getLogger(ACF.class.getName()).log(Level.SEVERE, null, ex);
         }

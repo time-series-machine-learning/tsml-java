@@ -22,7 +22,7 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 
 /**
  *

@@ -29,7 +29,6 @@ import java.util.function.Function;
 import utilities.DebugPrinting;
 import utilities.GenericTools;
 import utilities.InstanceTools;
-import utilities.generic_storage.Pair;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a 
@@ -50,21 +49,24 @@ import utilities.generic_storage.Pair;
  *    - get/setClassifierName(String)
  *    - get/setSplit(String)
  *    - get/setFoldId(String)
- *    - get/setDescription(String)
  *    - get/setTimeUnit(TimeUnit)
+ *    - FileType, set implicitly via the write...() method used 
+ *    - get/setDescription(String)
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
- *    - getAccuracy() (calculated from predictions, not settable)
+ *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
  *    - get/setBuildTime(long)
  *    - get/setTestTime(long)
+ *    - get/setBenchmarkTime(long)
  *    - get/setMemory(long)
+ *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  * 
  * Supports reading/writing of results from/to file, in the 'classifierResults file-format'
  *    - loadResultsFromFile(String path)
- *    - writeToFile(String path)
+ *    - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
  * 
  * Supports recording of timings in different time units. Milliseconds is the default for 
  * backwards compatability, however nano seconds is generally preferred.
@@ -78,10 +80,50 @@ import utilities.generic_storage.Pair;
  *      long buildTimeInResultsUnit = results.getTimeUnit().convert(builtTimeInSecs, TimeUnit.SECONDS);
  *      results.setBuildTime(buildTimeInResultsUnit)
  *
- * Also supports the calculation of various evaluative performance metrics  based on the results (accuracy, 
+ * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy, 
  * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them 
- * via the appropriate get methods.
+ * via directly via the public variables. In the future, these metrics will likely be separated out 
+ * into their own package
+ * 
+ * 
+ * EXAMPLE USAGE: 
+ *          ClassifierResults res = new ClassifierResults();
+ *          //set a particular timeunit, if using something other than millis. Nanos recommended
+ *          //set any meta info you want to keep, e.g classifiername, datasetname...
+ * 
+ *          for (Instance inst : test) {
+ *              long startTime = //time
+ *              double[] dist = classifier.distributionForInstance(inst);
+ *              long predTime = //time - startTime
+ *  
+ *              double pred = max(dist); //with some particular tie breaking scheme built in. 
+ *                              //easiest is utilities.GenericTools.indexOfMax(double[])
+ * 
+ *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //desription is optional
+ *          }
+ * 
+ *          res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
+ * 
+ *          //can now find summary scores for these predictions
+ *          //stats stored in simple public members for now
+ *          res.findAllStats(); 
+ * 
+ *          //and/or save to file
+ *          res.writeFullResultsToFile(path);
+ * 
+ *          //and could then load them back in
+ *          ClassifierResults res2 = new ClassifierResults(path);
+ * 
+ *          //the are automatically finalised, however the stats are not automatically found          
+ *          res2.findAllStats();
+ * 
+ * TODOS: 
+ *      - Move metric/scores/stats into their own packge, and rename consistently to scores OR metrics. 
+ *      - Rename finaliseResults to finalisePredictions, and add in the extra validation
+ *      - Consult with group and implement writeCompactResultsTo...(...) as wanted 
+ *      - Maybe break down the object into different parts to reduce the get/set bloat. This 
+ *           is a very large and needlessly complex object. Predictions object, ExpInfo (line1) object, etcetc
  * 
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
@@ -139,7 +181,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long buildTime = -1; 
@@ -148,7 +190,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary 
      * in case complete prediction information is not stored, and/or for a human reader to quickly compare times. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long testTime = -1; //total testtime for all predictions
@@ -159,7 +201,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale 
      * across different results sets. It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take. 
      * 
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default nanoseconds. 
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended. 
      * If no benchmark time is supplied, the default value is -1
      */
     private long benchmarkTime = -1; 
@@ -198,6 +240,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public double nll; 
     public double meanAUROC;
     public double stddev; //across cv folds, where applicable
+    public long medianPredTime;
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
     
@@ -277,6 +320,44 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
     
+    //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
+    //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
+    //      a double's mantissa = 52bits, 2^52 / 1000000000 / 60 / 60 / 24 / 7 = 7.something weeks
+    //so, will assume the usage/requirement for milliseconds in the stats pipeline, to avoid the potential future problem 
+    //of meta-ensembles taking more than a week, etc. (or even just summing e.g 30 large times to be averaged)
+    //it is still preferable of course to store any timings in nano's in the classifierresults object since they'll
+    //store them as longs. 
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.medianPredTime, cr.timeUnit);};
+    
+    private static double toDoubleMillis(long time, TimeUnit unit) {
+        if (time < 0)
+            return -1;
+        if (time == 0)
+            return 0;
+        
+        if (unit.equals(TimeUnit.MICROSECONDS)) {
+            long pre = time / 1000;  //integer division for pre - decimal point
+            long post = time % 1000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else if (unit.equals(TimeUnit.NANOSECONDS)) {
+            long pre = time / 1000000;  //integer division for pre - decimal point
+            long post = time % 1000000;  //the remainder that needs to be converted to post decimal point, some value < 1000
+            double convertedPost = (double)post / 1000000; // now some fraction < 1
+            
+            return pre + convertedPost;
+        }
+        else {
+            //not higher resolution than millis, no special conversion needed just cast to double
+            return (double)unit.toMillis(time); 
+        }
+    }
+    
+
     
     /*********************************
      * 
@@ -580,7 +661,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * until the accuracy is no longer directly set
      * 
      * If you REALLY dont want this message being printed, since e.g. it's messing up your own print formatting,
-     * set ClassifierResults.printSetAccWarning to false.
+     * set ClassifierResults.printSetAccWarning to false. This also acts a way of ensuring that you've read this 
+     * message...
      * 
      * Todo: remove this method, i.e. the possibility to directly set the accuracy instead of 
      * have it calculated implicitly, when possible.
@@ -608,14 +690,19 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             calculateAcc();
         return acc; 
     }
+    public boolean isAccSet(){
+        return acc<0 ? false: true; 
+    }
     private void calculateAcc() {
-        if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1)
-            System.out.println("**getAcc():calculateAcc() no true class values suppleid yet, cannot calculate accuracy");
+        if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1) {
+            System.out.println("**getAcc():calculateAcc() no true class values supplied yet, cannot calculate accuracy");
+            return;
+        }
         
         int size = predClassValues.size();
         double correct = .0;
         for (int i = 0; i < size; i++) {
-            if (predClassValues.get(i) == trueClassValues.get(i))
+            if (predClassValues.get(i).equals(trueClassValues.get(i)))
                 correct++;
         }
         
@@ -695,7 +782,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      * 
-     * Todo future, maaaybe add enum for tie resolution to handle it here.
+     * Todo future, maaaybe add enum/functor arg for tie resolution to handle it here.
      *
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
@@ -774,6 +861,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The description argument may be null, however all other arguments are required in full
      */
     public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws Exception {
+        
+        //todo replace asserts with actual exceptions
         assert(predictions.length == distributions.length);
         assert(predictions.length == predTimes.length);
         
@@ -803,8 +892,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             return;
         }
         
-        assert(numInstances() == testClassVals.length);
-        
         if (testClassVals.length != predClassValues.size())
             throw new Exception("finaliseTestResults(double[] testClassVals): Number of predictions "
                     + "made and number of true class values passed do not match");
@@ -830,6 +917,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             printlnDebug("finaliseResults(): Results already finalised, skipping re-finalisation");
             return;
         }
+        
+       if (numInstances <= 0)
+           inferNumInstances();
+       if (numClasses <= 0)
+           inferNumClasses();
         
         //todo extra verification 
         
@@ -862,6 +954,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     * 
     */
     
+    /**
+     * 
+     */
     public ArrayList<Double> getTrueClassVals() {
         return trueClassValues;
     }
@@ -931,6 +1026,22 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return timeUnit.toNanos(getPredictionTime(index)); 
     }
     
+    public ArrayList<String> getPredDescriptions() {
+        return predDescriptions;
+    }
+    
+    public String[] getPredDescriptionsAsArray() {
+        String[] ds=new String[predDescriptions.size()];
+        int i=0;
+        for(String d:predDescriptions)
+            ds[i++]=d;
+        return ds;
+    }
+    
+    public String getPredDescription(int index) {
+        return predDescriptions.get(index);
+    }
+    
     public void cleanPredictionInfo() {
         predDistributions = null;
         predClassValues = null;
@@ -956,6 +1067,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return exists(new File(path));
     }
     
+    private boolean firstTimeDistMissing = true;
+    public static boolean printDistMissingWarning = true;
     /**
      * Reads and STORES the prediction in this classifierresults object
      * returns true if the prediction described by this string was correct (i.e. truclass==predclass) 
@@ -973,11 +1086,25 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         double trueClassVal=Double.valueOf(split[0].trim());
         double predClassVal=Double.valueOf(split[1].trim());
         
-        if(split.length==2) //no probabilities, no timing. VERY old files will not have them
-            return true;
-        
+        if(split.length<3) { //no probabilities, no timing. VERY old files will not have them
+            if (printDistMissingWarning && firstTimeDistMissing) {
+                System.out.println("*********");
+                System.out.println("");
+                System.out.println("Probability distribution information missing in file. Be aware that certain stats cannot be computed, usability will be diminished. "
+                        + "If you know this and dont want this message being printed right now, since e.g. it's messing up your "
+                        + "own print formatting, set ClassifierResults.printDistMissingWarning to false.");
+                System.out.println("");
+                System.out.println("*********");
+
+                firstTimeDistMissing = false;
+            }
+            
+            addPrediction(trueClassVal, null, predClassVal, -1, "");
+            return trueClassVal==predClassVal;
+        }
+        //else 
         //collect probabilities
-        int distStartInd = 3; //actual, predicted, space, distStart
+        final int distStartInd = 3; //actual, predicted, space, distStart
         double[] dist = null;
         if (numClasses < 2) {
             List<Double> distL = new ArrayList<>();
@@ -1007,13 +1134,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         //collect timings
         long predTime = -1;
-        int timingInd = distStartInd + (numClasses-1) + 1 + 1; //actual, predicted, space, dist, space, timing
+        final int timingInd = distStartInd + (numClasses-1) + 1 + 1; //actual, predicted, space, dist, space, timing
         if (split.length > timingInd)
             predTime = Long.parseLong(split[timingInd].trim());
         
         //collect description
         String description = "";
-        int descriptionInd = timingInd + 1 + 1; //actual, predicted, space, dist, space, timing, space, description
+        final int descriptionInd = timingInd + 1 + 1; //actual, predicted, space, dist, space, timing, space, description
         if (split.length > descriptionInd) {
             description = split[descriptionInd];
             
@@ -1096,7 +1223,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return generateFirstLine();
     }
     
-    public String writeFullResultsFileToString() throws Exception {         
+    public String writeFullResultsToString() throws Exception {         
         finaliseResults();
         fileType = FileType.PREDICTIONS;
         
@@ -1113,7 +1240,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeFullResultsFileToString());
+            out.writeString(writeFullResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1124,7 +1251,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
     
-    public String writeCompactResultsFileToString() throws Exception {         
+    public String writeCompactResultsToString() throws Exception {         
         finaliseResults();
         fileType = FileType.COMPACT;
         
@@ -1139,7 +1266,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeFullResultsFileToString());
+            out.writeString(writeFullResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1158,7 +1285,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * written using this method would not be used to train a post-processed ensemble at a 
      * later date, forexample, but could still be used as part of a comparative evaluation
      */
-    public String writeSummaryResultsFileToString() throws Exception {         
+    public String writeSummaryResultsToString() throws Exception {         
         finaliseResults();
         findAllStatsOnce();
         fileType = FileType.METRICS;
@@ -1184,7 +1311,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         OutFile out = null;
         try {
             out = new OutFile(path);
-            out.writeString(writeSummaryResultsFileToString());
+            out.writeString(writeSummaryResultsToString());
         } catch (Exception e) { 
              throw new Exception("Error writing results file.\n"
                      + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n" 
@@ -1287,6 +1414,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4) 
             memoryUsage = Long.parseLong(parts[4]);
+        if (parts.length > 5) 
+            numClasses = Integer.parseInt(parts[5]);
         
         return acc;
     }
@@ -1295,7 +1424,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + buildTime
             + "," + testTime
             + "," + benchmarkTime
-            + "," + memoryUsage;
+            + "," + memoryUsage
+            + "," + numClasses();
         return res;
     }
 
@@ -1343,8 +1473,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
                 double eps = 1.e-8;
                 if (Math.abs(reportedTestAcc - acc) > eps) {
                     throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
-                            + "by more than eps (" + eps + ")");
+                            + "by more than eps (" + eps + "). File = " + path + ". numinstances = " + numInstances + ". numClasses = " + numClasses);
                 }
+                
+                if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
+                    if (printDistMissingWarning)
+                        System.out.println("Probabiltiy distributions missing from file: " + path);
+                }
+                
                 break;
             }
             case METRICS:
@@ -1376,34 +1512,57 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     
     
     /**
-     * Find: Accuracy, Balanced Accuracy, F1 (1 vs All averaged?), 
-     * Sensitivity, Specificity, AUROC, negative log likelihood, MCC
+     * Will calculate all the metrics that can be found from the prediction information
+     * stored in this object. Will NOT call finaliseResults(..), and finaliseResults(..) 
+     * not have been called elsewhere, however if it has not been called then true 
+     * class values must have been supplied while storing predictions. 
+     * 
+     * This is to allow iterative calculation of the metrics (in e.g. batches 
+     * of added predictions)
      */   
     public void findAllStats(){
-       if (numInstances <= 0)
-           inferNumInstances();
         
-       confusionMatrix=buildConfusionMatrix();
-       
-       countPerClass=new double[confusionMatrix.length];
-       for(int i=0;i<trueClassValues.size();i++)
-           countPerClass[trueClassValues.get(i).intValue()]++;
-       
-       acc=0;
-       for(int i=0;i<numClasses;i++)
-           acc+=confusionMatrix[i][i];
-       acc/=numInstances;
-       
-       balancedAcc=findBalancedAcc(confusionMatrix);
-       nll=findNLL();
-       meanAUROC=findMeanAUROC();
-       mcc = computeMCC(confusionMatrix);
-       
-       f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
-       
-       allStatsFound = true;
+        //meta info
+        if (numInstances <= 0)
+            inferNumInstances();
+        if (numClasses <= 0)
+            inferNumClasses();
+        
+        //predictions-only 
+        confusionMatrix=buildConfusionMatrix();
+
+        countPerClass=new double[confusionMatrix.length];
+        for(int i=0;i<trueClassValues.size();i++)
+            countPerClass[trueClassValues.get(i).intValue()]++;
+
+        if (acc < 0)
+            calculateAcc();
+        balancedAcc=findBalancedAcc(confusionMatrix);
+        
+        mcc = computeMCC(confusionMatrix);
+        f1=findF1(confusionMatrix); //also handles spec/sens/prec/recall in the process of finding f1
+
+        //need probabilities. very old files that have been read in may not have them.
+        if (predDistributions != null && !predDistributions.isEmpty() && predDistributions.get(0) != null ) {
+            nll=findNLL();
+            meanAUROC=findMeanAUROC();
+        }
+
+        //timing 
+        medianPredTime=findMedianPredTime();
+
+        allStatsFound = true;
     }
    
+    
+    /**
+     * Will calculate all the metrics that can be found from the prediction information
+     * stored in this object, UNLESS this object has been finalised (finaliseResults(..)) AND 
+     * has already had it's stats found (findAllStats()), e.g. if it has already been called 
+     * by another process. 
+     * 
+     * In this latter case, this method does nothing.
+     */
     public void findAllStatsOnce(){
         if (finalised && allStatsFound) {
             System.out.println("Stats already found, ignoring findAllStatsOnce()");
@@ -1588,6 +1747,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return (1+beta*beta) * (precision*recall) / ((beta*beta)*precision + recall);
     }
     
+    /**
+     * Makes copy of pred times to easily maintain original ordering
+     */
+    protected long findMedianPredTime() {
+        List<Long> copy = new ArrayList<>(predTimes);
+        Collections.sort(copy);
+        
+        int mid = copy.size()/2;
+        if (copy.size() % 2 == 0)
+            return (copy.get(mid) + copy.get(mid+1)) / 2;
+        else 
+            return copy.get(mid);
+    }
+    
     protected double findAUROC(int c){
         class Pair implements Comparable<Pair>{
             Double x;
@@ -1681,6 +1854,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         str+="nll,"+nll+"\n"; 
         str+="meanAUROC,"+meanAUROC+"\n"; 
         str+="stddev,"+stddev+"\n"; 
+        str+="medianPredTime,"+medianPredTime+"\n"; 
         str+="countPerClass:\n";
         for(int i=0;i<countPerClass.length;i++)
             str+="Class "+i+","+countPerClass[i]+"\n";
@@ -1708,6 +1882,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             nll =           Double.parseDouble(scan.nextLine().split(",")[1]);
             meanAUROC =     Double.parseDouble(scan.nextLine().split(",")[1]);
             stddev =        Double.parseDouble(scan.nextLine().split(",")[1]);
+            medianPredTime= Long.parseLong(scan.nextLine().split(",")[1]);
             
             assert(scan.nextLine() == "countPerClass");//todo change to if not throws 
             countPerClass = new double[numClasses];
@@ -1728,36 +1903,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             System.err.println("Error reading metrics in allPerformanceMetricsFromString(str), parsing metric value failed");
             throw e;
         }
-    }
-
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getDefaultStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        return stats;
-    }
-        
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAllStatistics() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        stats.add(new Pair<>("BALACC", GETTER_BalancedAccuracy));
-        stats.add(new Pair<>("AUROC", GETTER_AUROC));
-        stats.add(new Pair<>("NLL", GETTER_NLL));
-        stats.add(new Pair<>("F1", GETTER_F1));
-        stats.add(new Pair<>("MCC", GETTER_MCC));
-        stats.add(new Pair<>("Prec", GETTER_Precision));
-        stats.add(new Pair<>("Recall", GETTER_Recall));
-        stats.add(new Pair<>("Sens", GETTER_Sensitivity));
-        stats.add(new Pair<>("Spec", GETTER_Specificity));
-        return stats;
-    }
-    
-    public static ArrayList<Pair<String, Function<ClassifierResults, Double>>> getAccuracyStatistic() { 
-        ArrayList<Pair<String, Function<ClassifierResults, Double>>> stats = new ArrayList<>();
-        stats.add(new Pair<>("ACC", GETTER_Accuracy));
-        return stats;
     }
     
     public static void main(String[] args) throws Exception {
@@ -1788,12 +1933,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         res.finaliseResults();
         
-        System.out.println(res.writeFullResultsFileToString());
+        System.out.println(res.writeFullResultsToString());
         System.out.println("\n\n");
         
         res.writeFullResultsToFile("test.csv");
         
         ClassifierResults res2 = new ClassifierResults("test.csv");
-        System.out.println(res2.writeFullResultsFileToString());
+        System.out.println(res2.writeFullResultsToString());
     }
 }

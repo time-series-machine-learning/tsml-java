@@ -15,12 +15,9 @@
 package timeseriesweka.filters;
 
 import java.util.ArrayList;
-import weka.filters.*;
 
 import weka.core.Attribute;
-import weka.core.Capabilities;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.RevisionUtils;
@@ -38,55 +35,13 @@ import weka.core.Utils;
  <!-- options-end -->
  *
  * 
- * author: Anthony Bagnall circa 2008.
- * Reviewed and tidied up 2019
- * This should not really be a batch filter, as it is series to series, but
- * it makes the use case simpler. 
+ * author: Anthony Bagnall 2019.
+ * Transform for RISE: It finds both the ACF and PACF features and
+ * concatenates them. Will ditch AR and test if there is a difference
  */
 
-public class PACF extends SimpleBatchFilter {
+public class ACF_PACF extends PACF {
 
-    protected static final int DEFAULT_MAXLAG=100;
-/** Auto correlations. These can be passed to the filter if they have already been calculated. **/    
-    protected double[] autos;
-/** Partial auto correlations, calculated by */    
-    protected double[][] partials;
-
-/** Defaults to 1/4 length of series or 100, whichever is smaller */
-    protected int maxLag=DEFAULT_MAXLAG;
-/** If the series are normalised, the calculation can be done much more efficiently*/
-    private boolean normalized=false;   //if true, assum zero mean and unit variance
-
-/** Currently assumed constant for all series. Have to, using instances* */   
-    protected int seriesLength;
-/** Whatever the maxLag value, we always ignore at least the endTerms correlations 
- * since they are based on too little data and hence unreliable  */
-    protected int endTerms=4;
-     
-    public void setMaxLag(int a){maxLag=a;}
-    public void setNormalized(boolean flag){ normalized=flag;}
-
-    /**
-     * ACF/PACF can only operate on real valued attributes with no missing values
-     * @return Capabilities object
-     */    
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-    //    result.enable(Capabilities.Capability.MISSING_VALUES);
-
-        // class
-        result.enableAllClasses();
-        result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
-        result.enable(Capabilities.Capability.NO_CLASS);
-
-        return result;
-    }
-    
     @Override
     protected Instances determineOutputFormat(Instances inputFormat)
                     throws Exception {
@@ -103,6 +58,10 @@ public class PACF extends SimpleBatchFilter {
         //Set up instances size and format. 
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
+        for(int i=0;i<maxLag;i++){
+            name = "ACF_"+i;
+            atts.add(new Attribute(name));
+        }
         for(int i=0;i<maxLag;i++){
             name = "PACF_"+i;
             atts.add(new Attribute(name));
@@ -146,7 +105,6 @@ public class PACF extends SimpleBatchFilter {
              autos=ACF.fitAutoCorrelations(d,maxLag);
         //3. Form Partials	
             partials=formPartials(autos);
-            
         //5. Find parameters
             double[] pi= new double[maxLag];
             for(int k=0;k<maxLag;k++){  //Set NANs to zero
@@ -163,6 +121,10 @@ public class PACF extends SimpleBatchFilter {
             if(cls>=0)
                 in.setValue(cls, inst.instance(i).classValue());
             int count=0;
+            for(int k=0;k<autos.length;k++){
+                in.setValue(count,autos[k]);
+                count++;
+            }
             for(int k=0;k<pi.length;k++){
                 in.setValue(count, pi[k]);
                 count++;
@@ -171,35 +133,31 @@ public class PACF extends SimpleBatchFilter {
         }
         return output;
     }
-/**
- * Finds partial autocorrelation function using Durban-Leverson recursions
- * @param acf the ACF
- * @return 
- */
-    public static double[][] formPartials(double[] acf){
-        //Using the Durban-Leverson
-        int p=acf.length;
-        double[][] phi = new double[p][p];
-        double numerator,denominator;
-        phi[0][0]=acf[0];
 
-        for(int k=1;k<p;k++){
-        //Find diagonal k,k
-        //Naive implementation, should be able to do with running sums?
-            numerator=acf[k];
-            for(int i=0;i<k;i++)
-                    numerator-=phi[i][k-1]*acf[k-1-i];
-            denominator=1;
-            for(int i=0;i<k;i++)
-                denominator-=phi[k-1-i][k-1]*acf[k-1-i];
-            if(denominator!=0)//What to do otherwise? 
+    public static double[][] formPartials(double[] r){
+    //Using the Durban-Leverson
+            int p=r.length;
+            double[][] phi = new double[p][p];
+            double numerator,denominator;
+            phi[0][0]=r[0];
+
+            for(int k=1;k<p;k++){
+//Find diagonal k,k
+//Naive implementation, should be able to do with running sums
+                numerator=r[k];
+                for(int i=0;i<k;i++)
+                        numerator-=phi[i][k-1]*r[k-1-i];
+                denominator=1;
+                for(int i=0;i<k;i++)
+                    denominator-=phi[k-1-i][k-1]*r[k-1-i];
                 phi[k][k]=numerator/denominator;
-    //Find terms 1 to k-1
-            for(int i=0;i<k;i++)
-                phi[i][k]=phi[i][k-1]-phi[k][k]*phi[k-1-i][k-1];
-        }
-        return phi;
+        //Find terms 1 to k-1
+                for(int i=0;i<k;i++)
+                    phi[i][k]=phi[i][k-1]-phi[k][k]*phi[k-1-i][k-1];
+            }
+            return phi;
     }
+
 
     public double[][] getPartials(){return partials;}
 

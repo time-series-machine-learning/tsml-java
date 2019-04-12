@@ -42,7 +42,7 @@ import timeseriesweka.filters.PowerSpectrum;
  
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public class FlatCote extends AbstractClassifierWithTrainingData{
+public class FlatCote extends AbstractClassifierWithTrainingInfo{
 
       
     public TechnicalInformation getTechnicalInformation() {

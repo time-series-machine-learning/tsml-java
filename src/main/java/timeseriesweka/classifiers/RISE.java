@@ -1,3 +1,4 @@
+package timeseriesweka.classifiers;
 /*
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -12,38 +13,50 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
-
-import fileIO.FullAccessOutFile;
-import timeseriesweka.filters.ACF;
-import timeseriesweka.filters.FFT;
+import java.util.ArrayList;
+import java.util.Random;
 import utilities.ClassifierTools;
-import utilities.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
-import weka.core.*;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-import java.util.logging.Logger;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.TechnicalInformation;
+import timeseriesweka.filters.ACF;
+import timeseriesweka.filters.PowerSpectrum;
+import timeseriesweka.filters.ACF_PACF;
+import timeseriesweka.filters.ARMA;
+import timeseriesweka.filters.PACF;
+import weka.core.Capabilities;
+import weka.core.Randomizable;
+import weka.core.Utils;
+import weka.filters.Filter;
+import weka.filters.SimpleFilter;
 
 /**
+ * Development code for RISE
+ * 1. set number of trees to max(500,m)
+ * 2. Set the first tree to the full interval
+ * 3. Randomly select the interval length and start point for each other tree *
+ * 4. Find the PS, ACF, PACF and AR features
+ * 5. Build each base classifier (default RandomTree).
+
+* 19/3/19: DONE
+* A1. Restructure
+* A2. Test whether we need all four components, particularly AR and PACF!
+* A3. Implement speed up to avoid recalculating ACF each time
+* A4. Compare to python version
+* 
  <!-- globalinfo-start -->
- * Variation of Lines' Random Interval Spectral Ensemble
+ * Random Interval Spectral Ensemble
  *
- * This implementation extends the original to include:
- * down sampling
- * stabilisation (constraining interval length to within some distance of previous length)
- * check pointing
- * contracting
- *
+ * This implementation is the base RISE
  * Overview: Input n series length m
  * for each tree
- *      sample interval of random size
- *      transform interval into ACF and PS features
+ *      sample interval of random size (minimum set to 16)
+ *      transform interval into ACF, PS, AR and PACF features
  *      build tree on concatenated features
  * ensemble the trees with majority vote
  <!-- globalinfo-end -->
@@ -63,855 +76,375 @@ import java.util.logging.Logger;
  * </pre>
  <!-- technical-bibtex-end -->
  <!-- options-start -->
+ * Valid options are: <p/>
+ * 
+ * <pre> -T
+ *  set number of trees.</pre>
+ * 
+ * <pre> -F
+ *  set number of features.</pre>
  <!-- options-end -->
- * @author Michael Flynn
- * @date 19/02/19
+ * @author Tony Bagnall
+ * @date Some time in 2017
  **/
 
-public class RISE implements Classifier, SaveParameterInfo, ContractClassifier, CheckpointClassifier{
 
-    private int maxIntervalLength = 0;
-    private int minIntervalLength = 2;
-    private int numTrees = 500;
-    private int treeCount = 0;
-    private int minNumTrees = 200;
-    private boolean downSample = false;
-    private boolean loadedFromFile = false;
-    private int stabilise = 0;
-    private long seed = 0;
-
-    private Timer timer = null;
-    private Random random = null;
-    private Classifier classifier = new RandomTree();
-    private ArrayList<Classifier> baseClassifiers = null;
-    private ArrayList<int[]> intervalsInfo = null;
-    private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
-    private ArrayList<Integer> rawIntervalIndexes = null;
-    private FFT fft;
-    private String transformType = null;
-    private String serialisePath = null;
-    private Instances data = null;
-
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable{
+    /** Default to a random tree */
+    private Classifier baseClassifierTemplate=new RandomTree();
+    /** Ensemble base classifiers */    
+    private Classifier[] baseClassifiers;
+    /** Ensemble size */    
+    private static int DEFAULT_NUM_CLASSIFIERS=500;
+    private int numBaseClassifiers=DEFAULT_NUM_CLASSIFIERS;
+    /** Random Intervals for the transform. INTERVAL BOUNDS ARE INCLUSIVE  */  
+    private int[] startPoints;
+    private int[] endPoints;
+    /** Minimum size of all intervals */    
+    private static int DEFAULT_MIN_INTERVAL=16;
+    private int minInterval=DEFAULT_MIN_INTERVAL;
+    
+    /**Can seed for reproducibility */
+    private Random rand;
+    private int seed=0;
+    private boolean setSeed=false;
+    SimpleFilter[] filters;
+    /** Power Spectrum transformer, probably dont need to store this here  */   
+//    private PowerSpectrum ps=new PowerSpectrum();
+    
+    /** If we are estimating the CV, it is possible to sample fewer elements. **/
+    //Really should try bagging this!    
+    private boolean subSample=false;
+    private double sampleProp=1;
+    public RISE(){
+        filters=new SimpleFilter[3];
+        ACF acf= new ACF();
+        acf.setNormalized(false);
+        filters[0]=acf;
+        PACF pacf=new PACF();
+        filters[1]=pacf;
+        filters[2]=new PowerSpectrum();
+        rand=new Random();
+    }
+    public RISE(int s){
+        this();
+        seed=s;
+        setSeed=true;
+        rand.setSeed(seed);
+        
+    }
     /**
-     * Constructor
-     * @param seed
-     */
-    public RISE(long seed){
-        this.seed = seed;
-        random = new Random(seed);
-        timer = new Timer();
-    }
-
-    private void RISE(){
-        this.seed = 0;
-        random = new Random(0);
-        timer = new Timer();
-    }
-
-    /**
-     * Function used to reset internal state of classifier.
-     * Is called at beginning of buildClassifier.
-     * Can subsequently call buildClassifier multiple times per instance of RISE.
-     */
-    private void initialise(){
-        timer.reset();
-        baseClassifiers = new ArrayList<>();
-        intervalsInfo = new ArrayList<>();
-        intervalsAttIndexes = new ArrayList<>();
-        rawIntervalIndexes = new ArrayList<>();
-        fft = new FFT();
-        treeCount = 0;
-    }
-
-    public void setSeed(long seed){
-        this.seed = seed;
-        random = new Random(seed);
-    }
-
-    /**
-     * Sets number of trees.
-     * @param numTrees
-     */
-    public void setNumTrees(int numTrees){
-        this.numTrees = numTrees;
-    }
-
-    /**
-     * Sets minimum number of trees RISE will build if contracted.
-     * @param minNumTrees
-     */
-    public void setMinNumTrees(int minNumTrees){
-        this.minNumTrees = minNumTrees;
-    }
-
-    /**
-     * Boolean to set downSample.
-     * If true down sample rate is randomly selected per interval.
-     * @param bool
-     */
-    public void setDownSample(boolean bool){
-        this.downSample = bool;
-    }
-
-    /**
-     * Parameter to control width of interval space with prior interval length centered.
-     * e.g. priorIntervalLength = 53
-     *      width = 7
-     *      possibleWidths = 50 < x < 56 (inclusive)
-     * Has the effect of constraining the space around the previous interval length, contributing to a more robust
-     * timing model via preventing leveraging in large problems.
-     * @param width
-     */
-    public void setStabilise(int width){
-        this.stabilise = width;
-    }
-
-    /**
-     * Location of folder in which to save timing model information.
-     * @param modelOutPath
-     */
-    public void setModelOutPath(String modelOutPath){
-        timer.modelOutPath = modelOutPath;
-    }
-
-    /**
-     * Default transform combined ACF+PS
-     * @param transformType
-     */
-    public void setTransformType(String transformType){
-        if (!transformType.isEmpty()) {
-            this.transformType = transformType.toUpperCase();
-        }
-    }
-
-    /**
-     * Pass in instance of {@code weka.classifiers.trees} to replace default base classifier.
-     * @param classifier
-     */
-    public void setBaseClassifier(Classifier classifier){
-        this.classifier = classifier;
-    }
-
-    /**
-     * RISE will attempt to load serialisation file on method call using the seed set on instantiation as file
-     * identifier.
-     * If successful this object is returned to state in which it was at creation of serialisation file.
-     * @param serializePath Path to folder in which to save serialisation files.
-     */
+     * This interface is not formalised and needs to be considered in the next
+     * review
+     * @param prop
+     * @param s 
+     */    
     @Override
-    public void setSavePath(String serializePath){
-        this.serialisePath = serializePath;
-        System.out.println("Attempting to load from file location: "
-                + serialisePath
-                + "\\SERIALISE_cRISE_"
-                + seed
-                + ".txt");
-        RISE temp = readSerialise(seed);
-        copyFromSerObject(temp);
+    public void subSampleTrain(double prop, int s){
+        subSample=true;
+        sampleProp=prop;
+        seed=s;
     }
 
-    /**
-     * Method controlling interval length, interval start position and down sample factor (if set).
-     * Takes into account stabilisation parameter if set.
-     * @param maxIntervalLength maximum length interval can be in order to adhere to minimum number of trees and contract constraints.
-     * @param instanceLength
-     * @return int[] of size three:
-     *      int[0] = rawIntervalLength
-     *      int[1] = startIndex
-     *      int[2] = downSampleFactor
-     */
-    private int[] selectIntervalAttributes(int maxIntervalLength, int instanceLength){
 
-        //rawIntervalLength[0], startIndex[1], downSampleFactor[2];
-        int[] intervalInfo = new int[3];
-
-        //Produce powers of 2 ArrayList for interval selection.
-        ArrayList<Integer> powersOf2 = new ArrayList<>();
-        for (int j = maxIntervalLength; j >= 1; j--) {
-            // If j is a power of 2
-            if ((j & (j - 1)) == 0){
-                powersOf2.add(j);
+    public void setTransforms(String ... trans){
+        filters=new SimpleFilter[trans.length];
+        int count=0;
+        for(String s:trans){
+            switch(s){
+                case "ACF": case "Autocorrelation":
+                    filters[count]= new ACF();
+                    break;
+                case "PACF": case "PartialAutocorrelation":
+                    filters[count]= new PACF();
+                    break;
+                case "AR": case "AutoRegressive":
+                    filters[count]= new ARMA();
+                    break;
+                case "PS": case "PowerSpectrum":
+                    filters[count]= new PowerSpectrum();
+                    break;
+                case "ACF_PACF": case "PACF_ACF":
+                    filters[count]= new ACF_PACF();
+                    break;
+                default:
+                    System.out.println("Unknown tranform "+s);
+                    continue;
             }
+            count++;
         }
+        if(count<filters.length){
+            SimpleFilter[] temp=new SimpleFilter[count];
+            for(int i=0;i<count;i++)
+                temp[i]=filters[i];
+            filters=temp;
+        }
+    }
+    
+    /**
+    * Changes the base classifier,
+    * @param c new base classifier
+    */    
+    public void setBaseClassifier(Classifier c){
+        baseClassifierTemplate=c;
+    }
+    /**
+     * 
+     * @param k Ensemble size
+     */
+    public void setNumClassifiers(int k){
+        numBaseClassifiers=k;
+    }
+    /**
+     * 
+     * @return number of classifiers in the ensemble
+     */
+    public int getNumClassifiers(){ 
+        return numBaseClassifiers;
+    }
+    /**
+     * Holders for the headers of each transform. 
+     */    
+    Instances[] testHolders;
+    public void setSeed(int s){
+        rand=new Random();
+        this.seed=seed;
+        rand.setSeed(seed);
+    }
+    public TechnicalInformation getTechnicalInformation() {
+    TechnicalInformation 	result;
+    result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+    result.setValue(TechnicalInformation.Field.AUTHOR, "J. Lines, S. Taylor and A. Bagnall");
+    result.setValue(TechnicalInformation.Field.YEAR, "2018");
+    result.setValue(TechnicalInformation.Field.TITLE, "Time series classification with HIVE-COTE: The hierarchical vote collective of transformation-based ensembles");
+    result.setValue(TechnicalInformation.Field.JOURNAL, "ACM Transactions on Knowledge Discovery from Data ");
+    result.setValue(TechnicalInformation.Field.VOLUME, "12");
+    result.setValue(TechnicalInformation.Field.NUMBER, "5");
+    result.setValue(TechnicalInformation.Field.PAGES, "NA");
+    
+    return result;
+  }
+  /**
+   * Parses a given list of options to set the parameters of the classifier.
+   * We use this for the tuning mechanism, setting parameters through setOptions 
+   <!-- options-start -->
+   * Valid options are: <p/>
+   * <pre> -K
+   * Number of base classifiers.
+   * </pre>
+   * <pre> -I
+   * min Interval, integer, should be in range 3 to m-MINa check in build classifier is made to see if if.
+   * </pre>
+   * <pre> -T
+        transforms, a space separated list.
+   * </pre>
+   * 
+   <!-- options-end -->
+   *
+   * @param options the list of options as an array of strings
+   * @throws Exception if an option is not supported
+   */
+    @Override
+    public void setOptions(String[] options) throws Exception{
+        String numCls=Utils.getOption('K', options);
+        if (numCls.length() != 0)
+            numBaseClassifiers = Integer.parseInt(numCls);
+        else
+            numBaseClassifiers = DEFAULT_NUM_CLASSIFIERS;
+    /** Minimum sizer of all intervals */    
+        String minInt=Utils.getOption('I', options);
+        if (minInt.length() != 0)
+            minInterval=Integer.parseInt(minInt);
+    /** Transforms to use */    
+        String trans=Utils.getOption('T', options);
+        String[] t= trans.split(" ");
+//NEED TO CHECK THIS WORKS        
+        setTransforms(t);
+    }
 
-        Collections.reverse(powersOf2);
-        int index = 0;
-
-        //If stabilise is set.
-        if(stabilise > 0 && !rawIntervalIndexes.isEmpty()){
-            //Check stabilise is valid value.
-            if(stabilise > powersOf2.size()-1){
-                stabilise = powersOf2.size()-1;
-                while(stabilise % 2 == 0){
-                    stabilise --;
+    @Override
+    public String getParameters(){
+        String str=super.getParameters()+",numClassifiers,"+numBaseClassifiers+","+"MinInterval,"+minInterval;
+        for(int i=0;i<filters.length;i++)
+            str+=",Filter"+i+","+filters[i].getClass().getSimpleName();
+        return str;
+        
+    }
+  
+    @Override
+    public void buildClassifier(Instances data) throws Exception {
+        // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        int m=data.numAttributes()-1;
+        startPoints =new int[numBaseClassifiers];
+        endPoints =new int[numBaseClassifiers];
+//      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        long start=System.currentTimeMillis();
+        //Option to sub sample for training        
+         if(subSample){
+            data=subSample(data,sampleProp,seed);
+            System.out.println(" TRAIN SET SIZE NOW "+data.numInstances());
+        }
+         
+        //Initialise the memory 
+        baseClassifiers=new Classifier[numBaseClassifiers];
+        testHolders=new Instances[numBaseClassifiers];
+        //Select random intervals for each tree
+        for(int i=0;i<numBaseClassifiers;i++){
+            //Do whole series for first classifier            
+            if(i==0){
+                startPoints[i]=0;
+                endPoints[i]=m-1;
+            }
+            else{
+                //Random interval at least minInterval in size
+                startPoints[i]=rand.nextInt(m-minInterval);
+                //This avoid calling nextInt(0)
+                if(startPoints[i]==m-1-minInterval) 
+                    endPoints[i]=m-1;
+                else{    
+                    endPoints[i]=rand.nextInt(m-startPoints[i]);
+                    if(endPoints[i]<minInterval)
+                        endPoints[i]=minInterval;
+                    endPoints[i]+=startPoints[i];
                 }
-            }else if(stabilise < 2){
-                stabilise = 2;
-                while(stabilise % 2 == 0){
-                    stabilise ++;
-                }
-            }else{
-                while(stabilise % 2 == 0){
-                    stabilise ++;
-                }
             }
+            //Set up train instances prior to trainsform.
+            int numFeatures=endPoints[i]-startPoints[i]+1;
+            String name;
+            ArrayList<Attribute> atts=new ArrayList();
+            for(int j=0;j<numFeatures;j++){
+                    name = "F"+j;
+                    atts.add(new Attribute(name));
+            }
+            //Get the class values as a fast vector			
+            Attribute target =data.attribute(data.classIndex());
+            ArrayList<String> vals=new ArrayList<>(target.numValues());
+            for(int j=0;j<target.numValues();j++)
+                    vals.add(target.value(j));
+            atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));
+            //create blank instances with the correct class value                
+            Instances result = new Instances("Tree",atts,data.numInstances());
+            result.setClassIndex(result.numAttributes()-1);
+            for(int j=0;j<data.numInstances();j++){
+                DenseInstance in=new DenseInstance(result.numAttributes());
+                double[] v=data.instance(j).toDoubleArray();
+                for(int k=0;k<numFeatures;k++)
+                    in.setValue(k,v[startPoints[i]+k]);
+            //Set interval features                
+                in.setValue(result.numAttributes()-1,data.instance(j).classValue());
+                result.add(in);
+            }
+            testHolders[i] =new Instances(result,0);       
+            DenseInstance in=new DenseInstance(result.numAttributes());
+            testHolders[i].add(in);
+            //Perform the transform
+            Instances newTrain=filterData(result);
 
-            //Select random value between 0 - (stabilise - 1)
-            //Map value onto valid interval length based on previous length, correcting for occasions in which previous
-            //length = 0 | length = maxLength.
-            int option = random.nextInt(stabilise - 1);
-            if(rawIntervalIndexes.get(rawIntervalIndexes.size()-1) - ((stabilise - 1)/2) <= 2){
-                index = option + 2;
+//Build Classifier: Defaults to a RandomTree, but WHY ALL THE ATTS?
+            if(baseClassifierTemplate instanceof RandomTree){
+                baseClassifiers[i]=new RandomTree();   
+                ((RandomTree)baseClassifiers[i]).setKValue(numFeatures);
             }
-            if (rawIntervalIndexes.get(rawIntervalIndexes.size()-1) - ((stabilise - 1)/2) > 2 && rawIntervalIndexes.get(rawIntervalIndexes.size()-1) + ((stabilise - 1)/2) < powersOf2.size() - 1) {
-                option = option - ((stabilise - 1)/2);
-                index = rawIntervalIndexes.get(rawIntervalIndexes.size()-1) + option;
-            }
-            if(rawIntervalIndexes.get(rawIntervalIndexes.size()-1) + ((stabilise - 1)/2) >= powersOf2.size() - 1) {
-                index = (powersOf2.size() - 1) - option;
-            }
-        }else{
-            //If stabilise is not set.
-            //Select a new interval length at random (Selects in linear space and maps onto closest power of two).
-            int temp = random.nextInt(powersOf2.get(powersOf2.size() - 1)) + 1;
-            while((temp & (temp - 1)) != 0)
-                temp++;
-
-            for (int i = 0; i < powersOf2.size() && temp != powersOf2.get(i); i++) {
-                index = i;
-            }
-            index++;
+            else
+               baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
+            //if(baseClassifiers[i] instanceof Randomisable)
+            if(baseClassifiers[i] instanceof Randomizable && setSeed)
+                ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
+            baseClassifiers[i].buildClassifier(newTrain);
         }
-
-        //If this tree is one of first four trees use tree number as powersOf2 index. Establishes robust foundation for
-        //timing model. However, logic should be refactored to check this before executing prior code.
-        try{
-            if(treeCount < 4){
-                index = (treeCount + 2) < powersOf2.size()-1 ? (treeCount + 2) : powersOf2.size()-1;
-            }
-            intervalInfo[0] = powersOf2.get(index);
-        }catch(Exception e){
-            System.out.println(e);
-        }
-
-        //Select random start index to take interval from.
-        if ((instanceLength - intervalInfo[0]) != 0 ) {
-            intervalInfo[1] = random.nextInt(instanceLength - intervalInfo[0]);
-        }else{
-            intervalInfo[1] = 0;
-        }
-
-        //Select down sample factor such that it is a smaller or equal power of 2 whilst ensuring resulting interval
-        //length is also a power of 2.
-        //e.g. if length is 8 down sample factor can be 1, 2, 4 or 8. Results in step lengths of, 8(8/1), 4(8/2), 2(8/4) or 1(8/8)
-        //and total interval lengths of 1, 2, 4 or 8.
-        if (downSample) {
-            intervalInfo[2] = powersOf2.get(random.nextInt(index) + 1);
-        }else{
-            intervalInfo[2] = intervalInfo[0];
-        }
-
-        this.intervalsInfo.add(intervalInfo);
-        this.rawIntervalIndexes.add(index);
-        return intervalInfo;
+        trainResults.setBuildTime(System.currentTimeMillis()-start);
     }
-
-    /**
-     * Produces interval instances based on logic executed in {@code selectIntervalAttributes}.
-     * @param maxIntervalLength
-     * @param trainingData
-     * @return new training set transformed such that instances are now an interval of original instances.
-     */
-    private Instances produceIntervalInstances(int maxIntervalLength, Instances trainingData){
-
-        Instances intervalInstances;
-        ArrayList<Attribute>attributes = new ArrayList<>();
-        int[] intervalInfo = selectIntervalAttributes(maxIntervalLength, trainingData.numAttributes() - 1);
-        ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
-
-        for (int i = intervalInfo[1]; i < (intervalInfo[1] + intervalInfo[0]); i += (intervalInfo[0] / intervalInfo[2])) {
-            attributes.add(trainingData.attribute(i));
-            intervalAttIndexes.add(i);
-        }
-
-        intervalsAttIndexes.add(intervalAttIndexes);
-        attributes.add(trainingData.attribute(trainingData.numAttributes()-1));
-        intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
-        double[] intervalInstanceValues = new double[intervalInfo[2] + 1];
-
-        for (int i = 0; i < trainingData.size(); i++) {
-
-            for (int j = 0; j < intervalInfo[2]; j++) {
-                intervalInstanceValues[j] = trainingData.get(i).value(intervalAttIndexes.get(j));
+    private Instances filterData(Instances result) throws Exception{
+            int maxLag=(result.numAttributes()-1)/4;
+            if(maxLag>ACF.DEFAULT_MAXLAG)
+                maxLag=ACF.DEFAULT_MAXLAG;
+            Instances[] t=new Instances[filters.length];
+            for(int j=0;j<filters.length;j++){
+// Im not sure this a sensible or robust way of doing this
+//What if L meant something else to the SimpleFilter? 
+//Can you use a whole string, e.g. MAXLAG?
+                filters[j].setOptions(new String[]{"L",maxLag+""});
+                filters[j].setInputFormat(result);
+                t[j]=Filter.useFilter(result, filters[j]);
             }
-
-            DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
-            intervalInstance.replaceMissingValues(intervalInstanceValues);
-            intervalInstance.setValue(intervalInstanceValues.length-1, trainingData.get(i).classValue());
-            intervalInstances.add(intervalInstance);
-        }
-
-        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
-
-        return intervalInstances;
+            //4. Merge them all together
+            Instances combo=new Instances(t[0]);
+            combo.setClassIndex(-1);
+            combo.deleteAttributeAt(combo.numAttributes()-1); 
+            for(int j=1;j<filters.length-1;j++){
+                combo=Instances.mergeInstances(combo, t[j]);
+                combo.deleteAttributeAt(combo.numAttributes()-1); 
+            }
+            combo=Instances.mergeInstances(combo, t[t.length-1]);
+            combo.setClassIndex(combo.numAttributes()-1);
+            return combo;
     }
-
-    /**
-     * Transforms test instance into interval instance based on classifierNumber.
-     * @param testInstance
-     * @param classifierNum
-     * @return new test instance transformed such that it is now an interval of original instance.
-     */
-    private Instance produceIntervalInstance(Instance testInstance, int classifierNum){
-        double[] instanceValues = new double[intervalsAttIndexes.get(classifierNum).size() + 1];
-        ArrayList<Attribute>attributes = new ArrayList<>();
-
-        for (int i = 0; i < intervalsAttIndexes.get(classifierNum).size(); i++) {
-            attributes.add(testInstance.attribute(i));
-            instanceValues[i] = testInstance.value(intervalsAttIndexes.get(classifierNum).get(i));
+    @Override
+    public double[] distributionForInstance(Instance ins) throws Exception {
+        double[] votes=new double[ins.numClasses()];
+////Build instance
+        double[] series=ins.toDoubleArray();
+        for(int i=0;i<baseClassifiers.length;i++){
+            int numFeatures=endPoints[i]-startPoints[i]+1;
+        //extract the interval
+            for(int j=0;j<numFeatures;j++){
+                testHolders[i].instance(0).setValue(j, ins.value(j+startPoints[i]));
+            }
+//Do the transform
+            Instances temp=filterData(testHolders[i]);
+            int c=(int)baseClassifiers[i].classifyInstance(temp.instance(0));
+            votes[c]++;
+            
         }
-
-        Instances testInstances = new Instances("relationName", attributes, 1);
-        instanceValues[instanceValues.length - 1] = testInstance.value(testInstance.numAttributes() - 1);
-        Instance temp = new DenseInstance(instanceValues.length);
-        temp.replaceMissingValues(instanceValues);
-        testInstances.add(temp);
-        testInstances.setClassIndex(testInstances.numAttributes() - 1);
-
-        return testInstances.firstInstance();
+        for(int i=0;i<votes.length;i++)
+            votes[i]/=baseClassifiers.length;
+        return votes;
     }
+   
+    public static void main(String[] arg) throws Exception{
+        Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
+        Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
+        RISE rif = new RISE();
+        rif.setTransforms("ACF","AR","AFC");
+        for(Filter f: rif.filters)
+            System.out.println(f);
+        String[] temp={"PS","Autocorellation","BOB","PACF"};
+        rif.setTransforms(temp);
+        for(Filter f: rif.filters)
+            System.out.println(f);
+        System.exit(0);
+        
+        rif.buildClassifier(train);
+        System.out.println("build ok:");
+        double a=ClassifierTools.accuracy(test, rif);
+        System.out.println(" Accuracy ="+a);
+/*
+        //Get the class values as a fast vector			
+        Attribute target =data.attribute(data.classIndex());
 
-    /**
-     * Transforms instances into either PS ACF or concatenation based on {@code setTransformType}
-     * @param instances
-     * @return transformed instances.
-     */
-    private Instances transformInstances(Instances instances){
-        Instances temp = null;
-
-        switch(transformType){
-            case "ACF":
-                temp = ACF.formChangeCombo(instances);
-                break;
-            case "PS":
-                try {
-                    fft.useFFT();
-                    temp = fft.process(instances);
-                } catch (Exception ex) {
-                    System.out.println("FFT failed (could be build or classify) \n" + ex);
-                }
-                break;
-            default:
-                temp = combinedPSACF(instances);
-                break;
+        FastVector vals=new FastVector(target.numValues());
+        for(int j=0;j<target.numValues();j++)
+                vals.addElement(target.value(j));
+        atts.addElement(new Attribute(data.attribute(data.classIndex()).name(),vals));
+//Does this create the actual instances?                
+        Instances result = new Instances("Tree",atts,data.numInstances());
+        for(int i=0;i<data.numInstances();i++){
+            DenseInstance in=new DenseInstance(result.numAttributes());
+            result.add(in);
         }
-        return temp;
-    }
-
-    private Instances combinedPSACF(Instances instances){
-
-        Instances combo=ACF.formChangeCombo(instances);
-        Instances temp = null;
-        try {
-            temp = fft.process(instances);
-        } catch (Exception ex) {
-            Logger.getLogger("Combined PS-ACF failed (could be build or classify) \n" + ex);
-        }
-        combo.setClassIndex(-1);
-        combo.deleteAttributeAt(combo.numAttributes()-1);
-        combo = Instances.mergeInstances(combo, temp);
-        combo.setClassIndex(combo.numAttributes()-1);
-
-        return combo;
-    }
-
-    private void saveToFile(long seed){
-        try{
-            System.out.println("Serialising classifier.");
-            File file = new File(serialisePath
-                    + (serialisePath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
-                    + seed
-                    + ".txt");
-            file.setWritable(true, false);
-            file.setExecutable(true, false);
-            file.setReadable(true, false);
-            FileOutputStream f = new FileOutputStream(file);
-            ObjectOutputStream o = new ObjectOutputStream(f);
-            this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
-            o.writeObject(this);
-            o.close();
-            f.close();
-            System.out.println("Serialisation completed: " + treeCount + " trees");
-        } catch (IOException ex) {
-            System.out.println("Serialisation failed: " + ex);
-        }
-    }
-
-    private RISE readSerialise(long seed){
-        ObjectInputStream oi = null;
-        RISE temp = null;
-        try {
-            FileInputStream fi = new FileInputStream(new File(
-                    serialisePath
-                            + (serialisePath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
-                            + seed
-                            + ".txt"));
-            oi = new ObjectInputStream(fi);
-            temp = (RISE)oi.readObject();
-            oi.close();
-            fi.close();
-            System.out.println("File load successful: " + ((RISE)temp).treeCount + " trees.");
-        } catch (IOException | ClassNotFoundException ex) {
-            System.out.println("File load: failed.");
-        }
-        return temp;
+        result.setClassIndex(result.numAttributes()-1);
+        Instances testHolder =new Instances(result,10);       
+//For each tree   
+        System.out.println("Train size "+result.numInstances());
+        System.out.println("Test size "+testHolder.numInstances());
+*/
     }
 
     @Override
-    public void copyFromSerObject(Object temp){
-
-        try{
-            this.baseClassifiers = ((RISE)temp).baseClassifiers;
-            this.classifier = ((RISE)temp).classifier;
-            this.data = ((RISE)temp).data;
-            this.downSample = ((RISE)temp).downSample;
-            this.fft = ((RISE)temp).fft;
-            this.intervalsAttIndexes = ((RISE)temp).intervalsAttIndexes;
-            this.intervalsInfo = ((RISE)temp).intervalsInfo;
-            this.maxIntervalLength = ((RISE)temp).maxIntervalLength;
-            this.minIntervalLength = ((RISE)temp).minIntervalLength;
-            this.numTrees = ((RISE)temp).numTrees;
-            this.random = ((RISE)temp).random;
-            this.rawIntervalIndexes = ((RISE)temp).rawIntervalIndexes;
-            this.serialisePath = ((RISE)temp).serialisePath;
-            this.stabilise = ((RISE)temp).stabilise;
-            this.timer = ((RISE)temp).timer;
-            this.transformType = ((RISE)temp).transformType;
-            this.treeCount = ((RISE)temp).treeCount;
-            this.loadedFromFile = true;
-            System.out.println("Varible assignment: successful.");
-        }catch(Exception ex){
-            System.out.println("Varible assignment: unsuccessful.");
-        }
-
-    }
-
-    /**
-     * Method to maintain timing, takes into consideration that object may have been read from file and therefore be
-     * mid way through a contract.
-     * @return
-     */
-    private long getTime(){
-        long time = 0;
-        if(loadedFromFile){
-            time = timer.forestElapsedTime;
-        }else{
-            time = 0;
-        }
-        return time;
-    }
-
-    /**
-     * Build classifier
-     * @param trainingData whole training set.
-     * @throws Exception
-     */
-    @Override
-    public void buildClassifier(Instances trainingData) throws Exception {
-
-        //If not loaded from file e.g. Starting fresh experiment.
-        if (!loadedFromFile) {
-            //Just used for getParameters.
-            data = trainingData;
-            //(re)Initailse all variables to account for mutiple calls of buildClassifier.
-            initialise();
-
-            //Check min & max interval lengths are valid.
-            if(maxIntervalLength > trainingData.numAttributes()-1 || maxIntervalLength <= 0){
-                maxIntervalLength = trainingData.numAttributes()-1;
-            }
-            if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= (int)Math.sqrt(trainingData.numAttributes()-1)){
-                minIntervalLength = (int)Math.sqrt(trainingData.numAttributes()-1);
-            }
-
-        }
-
-        //Start forest timer.
-        timer.forestStartTime = System.nanoTime();
-
-        for (; treeCount < numTrees && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
-
-            //Start tree timer.
-            timer.treeStartTime = System.nanoTime();
-
-            //Compute maximum interval length given time remaining.
-            timer.buildModel();
-            maxIntervalLength = (int)timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
-
-
-            //Produce intervalInstances from trainingData using interval attributes.
-            Instances intervalInstances;
-            intervalInstances = produceIntervalInstances(maxIntervalLength, trainingData);
-
-            //Transform instances.
-            if (transformType != null) {
-                intervalInstances = transformInstances(intervalInstances);
-            }
-
-            //Add independent variable to model (length of interval).
-            timer.makePrediciton(intervalInstances.numAttributes() - 1);
-            timer.independantVariables.add(intervalInstances.numAttributes() - 1);
-
-            //Build classifier with intervalInstances.
-            baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
-            baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
-
-            //Add dependant variable to model (time taken).
-            timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
-
-            //Serialise every 100 trees (if path has been set).
-            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
-                saveToFile(seed);
-                System.out.print("");
-            }
-        }
-        if (serialisePath != null) {
-            saveToFile(seed);
-        }
-
-        if (timer.modelOutPath != null) {
-            timer.saveModelToCSV(trainingData.relationName());
-        }
-    }
-
-    /**
-     * Classify one instance from test set.
-     * @param instance the instance to be classified
-     * @return double representing predicted class of test instance.
-     * @throws Exception
-     */
-    @Override
-    public double classifyInstance(Instance instance) throws Exception {
-        double[]distribution = distributionForInstance(instance);
-
-        int maxVote=0;
-        for(int i = 1; i < distribution.length; i++)
-            if(distribution[i] > distribution[maxVote])
-                maxVote = i;
-        return maxVote;
-    }
-
-    /**
-     * Distribution or probabilities over classes for one test instance.
-     * @param testInstance
-     * @return double array of size numClasses containing probabilities of test instance belonging to each class.
-     * @throws Exception
-     */
-    @Override
-    public double[] distributionForInstance(Instance testInstance) throws Exception {
-        double[]distribution = new double[testInstance.numClasses()];
-        ArrayList<Attribute> attributes;
-
-        //For every base classifier.
-        for (int i = 0; i < baseClassifiers.size(); i++) {
-            //Transform instance into interval instance.
-            attributes = new ArrayList<>();
-            for (int j = 0; j < intervalsAttIndexes.get(i).size(); j++) {
-                attributes.add(testInstance.attribute(intervalsAttIndexes.get(i).get(j)));
-            }
-            attributes.add(testInstance.attribute(testInstance.numAttributes() - 1));
-            Instances instances = new Instances("relationName", attributes, 1);
-            Instance intervalInstance = produceIntervalInstance(testInstance, i);
-            instances.add(intervalInstance);
-            instances.setClassIndex(instances.numAttributes() - 1);
-
-            //Transform interval instance into PS, ACF or ACF+PS
-            if (transformType != null) {
-                intervalInstance = transformInstances(instances).firstInstance();
-            }
-
-            double[] temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
-            for (int j = 0; j < testInstance.numClasses(); j++) {
-                distribution[j] += temp[j];
-            }
-        }
-        for (int j = 0; j < testInstance.numClasses(); j++) {
-            distribution[j] /= baseClassifiers.size();
-        }
-        return distribution;
-    }
-
-    /**
-     * Returns default capabilities of the classifier. These are that the
-     * data must be numeric, with no missing and a nominal class
-     * @return the capabilities of this classifier
-     **/
-    @Override
-    public Capabilities getCapabilities() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    /**
-     * Method returning all classifier parameters as a string.
-     * @return
-     */
-    @Override
-    public String getParameters() {
-
-        long buildClassifierTime = 0;
-        for (int i = 0; i < timer.independantVariables.size(); i++) {
-            buildClassifierTime += timer.dependantVariables.get(i);
-        }
-
-        String result = "Total Time Taken," + (System.nanoTime() - timer.forestStartTime)
-                + ", Contract Length (ns), " + timer.forestTimeLimit
-                + ", Build Classifier (ns)," + buildClassifierTime
-                + ", NumAtts," + data.numAttributes()
-                + ", MaxNumTrees," + numTrees
-                + ", MinIntervalLength," + minIntervalLength
-                + ", Final Coefficients (time = a * x^2 + b * x + c)"
-                + ", a, " + timer.a
-                + ", b, " + timer.b
-                + ", c, " + timer.c;
-        return result;
-    }
-
-    /**
-     * Set contract limit in nanoseconds.
-     * @param time
-     */
-    @Override
-    public void setTimeLimit(long time) {
-        this.timer.forestTimeLimit = time;
-    }
-
-    /**
-     * Use to set contract length
-     * @param time wrapper for enum, supporting MINUTE, HOUR, DAY. Default HOUR
-     * @param amount int representing multiple of time.
-     */
-    @Override
-    public void setTimeLimit(TimeLimit time, int amount) {
-        double conversion;
-        switch(time){
-            case MINUTE:
-                conversion = 0.0166667;
-                break;
-            case DAY:
-                conversion = 24;
-                break;
-            default:
-            case HOUR:
-                conversion = 1;
-                break;
-        }
-        timer.setTimeLimit(amount * conversion);
-    }
-
-    /**
-     * Private inner class containing all logic pertaining to timing.
-     * RISE is contracted via updating a linear regression model (y = a * x^2 + b * x + c) in which the dependant
-     * variable (y) is time taken and the independent variable (x) is interval length.
-     * The equation is then reordered to solve for positive x, providing the upper bound on the interval space.
-     * Dividing this by minNumtrees - treeCount gives the maximum space such that in the worse case the contract is met.
-     */
-    private class Timer implements Serializable{
-
-        protected long forestTimeLimit = Long.MAX_VALUE;
-        protected long forestStartTime = 0;
-        protected long treeStartTime = 0;
-        protected long forestElapsedTime = 0;
-
-        protected ArrayList<Integer> independantVariables = null;
-        protected ArrayList<Long> dependantVariables = null;
-        protected ArrayList<Double> predictions = null;
-        private ArrayList<Double> aValues = null;
-        private ArrayList<Double> bValues = null;
-        private ArrayList<Double> cValues = null;
-
-        protected double a = 0.0;
-        protected double b = 0.0;
-        protected double c = 0.0;
-
-        protected String modelOutPath = null;
-
-        /**
-         * Called in RISE.initialise in order to reset timer.
-         */
-        protected void reset(){
-            independantVariables = new ArrayList<>();
-            dependantVariables = new ArrayList<>();
-            predictions = new ArrayList<>();
-            aValues = new ArrayList<>();
-            bValues = new ArrayList<>();
-            cValues = new ArrayList<>();
-        }
-
-        /**
-         * computes coefficients (a, b, c).
-         */
-        protected void buildModel(){
-
-            a = 0.0;
-            b = 0.0;
-            c = 0.0;
-            double numberOfVals = (double) independantVariables.size();
-            double smFrstScrs = 0.0;
-            double smScndScrs = 0.0;
-            double smSqrFrstScrs = 0.0;
-            double smCbFrstScrs = 0.0;
-            double smPwrFrFrstScrs = 0.0;
-            double smPrdtFrstScndScrs = 0.0;
-            double smSqrFrstScrsScndScrs = 0.0;
-
-            for (int i = 0; i < independantVariables.size(); i++) {
-                smFrstScrs += independantVariables.get(i);
-                smScndScrs += dependantVariables.get(i);
-                smSqrFrstScrs += Math.pow(independantVariables.get(i), 2);
-                smCbFrstScrs += Math.pow(independantVariables.get(i), 3);
-                smPwrFrFrstScrs += Math.pow(independantVariables.get(i), 4);
-                smPrdtFrstScndScrs += independantVariables.get(i) * dependantVariables.get(i);
-                smSqrFrstScrsScndScrs += Math.pow(independantVariables.get(i), 2) * dependantVariables.get(i);
-            }
-
-            double valOne = smSqrFrstScrs - (Math.pow(smFrstScrs, 2) / numberOfVals);
-            double valTwo = smPrdtFrstScndScrs - ((smFrstScrs * smScndScrs) / numberOfVals);
-            double valThree = smCbFrstScrs - ((smSqrFrstScrs * smFrstScrs) / numberOfVals);
-            double valFour = smSqrFrstScrsScndScrs - ((smSqrFrstScrs * smScndScrs) / numberOfVals);
-            double valFive = smPwrFrFrstScrs - (Math.pow(smSqrFrstScrs, 2) / numberOfVals);
-
-            a = ((valFour * valOne) - (valTwo * valThree)) / ((valOne * valFive) - Math.pow(valThree, 2));
-            b = ((valTwo * valFive) - (valFour * valThree)) / ((valOne * valFive) - Math.pow(valThree, 2));
-            c = (smScndScrs / numberOfVals) - (b * (smFrstScrs / numberOfVals)) - (a * (smSqrFrstScrs / numberOfVals));
-
-            aValues.add(a);
-            bValues.add(b);
-            cValues.add(c);
-        }
-
-        /**
-         * Adds x(y') to predictions arrayList for model output.
-         * @param x interval size.
-         */
-        protected void makePrediciton(int x){
-            predictions.add(a * Math.pow(x, 2) + b * x + c);
-        }
-
-
-        /**
-         * Given time remaining returns largest interval space possible.
-         * Takes into account whether minNumTrees is satisfied.
-         * ensures minIntervalLength < x < maxIntervalLength.
-         * @param timeRemaining
-         * @return interval length
-         */
-        protected double getFeatureSpace(long timeRemaining){
-            double y = timeRemaining;
-            double x = ((-b) + (Math.sqrt((b * b) - (4 * a * (c - y))))) / (2 * a);
-
-            if (treeCount < minNumTrees) {
-                x = x / (minNumTrees - treeCount);
-            }
-            if(treeCount == minNumTrees){
-                maxIntervalLength = data.numAttributes()-1;
-            }
-
-            if (x > maxIntervalLength || Double.isNaN(x)) {
-                x = maxIntervalLength;
-            }
-            if(x < minIntervalLength){
-                x = minIntervalLength;
-            }
-
-            return x;
-        }
-
-        protected void setTimeLimit(double timeLimit){
-            this.forestTimeLimit = (long) (timeLimit * 3600000000000L);
-        }
-
-        protected void printModel(){
-
-            for (int i = 0; i < independantVariables.size(); i++) {
-                System.out.println(Double.toString(independantVariables.get(i)) + "," + Double.toString(dependantVariables.get(i)) + "," + Double.toString(predictions.get(i)));
-            }
-        }
-
-        protected void saveModelToCSV(String problemName){
-            try{
-                FullAccessOutFile outFile = new FullAccessOutFile((modelOutPath.isEmpty() ? "timingModel" + (int) seed + ".csv" : modelOutPath + "/" + problemName + "/" + "/timingModel" + (int) seed + ".csv"));
-                for (int i = 0; i < independantVariables.size(); i++) {
-                    outFile.writeLine(Double.toString(independantVariables.get(i)) + ","
-                            + Double.toString(dependantVariables.get(i)) + ","
-                            + Double.toString(predictions.get(i)) + ","
-                            + Double.toString(timer.aValues.get(i)) + ","
-                            + Double.toString(timer.bValues.get(i)) + ","
-                            + Double.toString(timer.cValues.get(i)));
-                }
-                outFile.closeFile();
-            }catch(Exception e){
-                System.out.println("Mismatch between relation name and name of results folder: " + e);
-            }
-
-        }
-    }
-
-    public static void main(String[] args){
-
-        Instances train;
-        Instances test;
-        Instances instances;
-        String problemName = "StarLightCurves";
-        //String problemName = "InsectWingbeat";
-
-        train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TRAIN.arff");
-        test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TEST.arff");
-        //instances = ClassifierTools.loadData("Z:\\Data\\TSCProblemsAudio2019\\InsectWingbeat\\InsectWingbeat.arff");
-        //Instances[] data = InstanceTools.resampleInstances(instances, 0, 0.5);
-        //train = data[0];
-        //test = data[1];
-
-        double[] dist = null;
-        double acc = 0.0;
-        double classification = 0.0;
-
-        RISE c = new RISE(0);
-        c.setDownSample(true);
-        c.setTransformType("PS");
-        //c.setStabilise(3);
-        c.setModelOutPath("");
-        c.setSavePath("");
-        c.setTimeLimit(TimeLimit.MINUTE,5);
-
-        //Train
-        try {
-            c.buildClassifier(train);
-        } catch (Exception ex) {
-            System.out.println("Build failed: " + ex);
-        }
-
-        //Test
-        for (int i = 0; i < test.size(); i++) {
-
-            try {
-                dist = c.distributionForInstance(test.get(i));
-                classification = c.classifyInstance(test.get(i));
-            } catch (Exception ex) {
-                System.out.println("distributionForInstance | classifyInstance failed: " + ex);
-            }
-
-            //print dist
-            for (int j = 0; j < dist.length; j++) {
-                System.out.print(dist[j] + ", ");
-            }
-            System.out.println();
-
-            if(test.get(i).classValue() == classification)
-                acc++;
-        }
-
-        acc /= test.size();
-        System.out.println(acc);
-
+    public int getSeed() {
+        if(setSeed)
+            return seed;
+        throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
     }
 }
