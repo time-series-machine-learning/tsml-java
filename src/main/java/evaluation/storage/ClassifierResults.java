@@ -1292,9 +1292,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         StringBuilder st = new StringBuilder();
         st.append(generateFirstLine()).append("\n");
-        st.append(generate
-                  
-                  ()).append("\n");
+        st.append(generateSecondLine()).append("\n");
         st.append(generateThirdLine()).append("\n");
 
         st.append(allPerformanceMetricsToString());
