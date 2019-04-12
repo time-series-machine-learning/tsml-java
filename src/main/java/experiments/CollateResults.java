@@ -1001,8 +1001,13 @@ public static void basicSummaryComparisons(){
  //TunedTSF
  //           quickStats("E:/Results/UCR Debug/Java/TunedTSF",false,30,"Bakeoff,ST","Bakeoff,TSF","Bakeoff,BOSS","Bakeoff,DTWCV");
  //ProximityForest
-//            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,HIVE-COTE","HIVE-COTE,Flat-COTE");
- //REDUX: EE
+//            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+
+ //           quickStats("Z:/Results/Post Bakeoff Results/resnet/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+           quickStats("Z:/Results/Post Bakeoff Results/WEASEL/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+             
+
+//REDUX: EE
  //           quickStats("Z:/Results/Bakeoff Redux/Java/EE",false,30,"HIVE-COTE,EE","Bakeoff,EE");
  //REDUX: TSF
 //            quickStats("Z:/Results/Bakeoff Redux/Java/TSF",false,30,"HIVE-COTE,TSF","Bakeoff,TSF");
@@ -1010,7 +1015,7 @@ public static void basicSummaryComparisons(){
 //            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
  //REDUX: RISE
 
-            quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
+ //           quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
  //           quickStats("Z:/Results/Bakeoff Redux/Java/RISE",false,30,"HIVE-COTE,RISE");
  //REDUX: ST
 //            quickStats("Z:/Results/Bakeoff Redux/Java/ST",false,30,"HIVE-COTE,ST","Bakeoff,ST");
