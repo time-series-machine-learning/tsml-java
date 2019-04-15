@@ -16,6 +16,10 @@ package utilities;
 
 import weka.core.Instance;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class Utilities {
     public static final int size(double[][] matrix) {
         int population = 0;
@@ -148,4 +152,31 @@ public class Utilities {
         return result;
     }
 
+    public static int[] argMax(double[] array) {
+        List<Integer> indices = new ArrayList<>();
+        double max = array[0];
+        indices.add(0);
+        for(int i = 1; i < array.length; i++) {
+            if(array[i] >= max) {
+                if(array[i] > max) {
+                    max = array[i];
+                    indices.clear();
+                }
+                indices.add(i);
+            }
+        }
+        int[] indicesCopy = new int[indices.size()];
+        for(int i = 0; i < indicesCopy.length; i++) {
+            indicesCopy[i] = indices.get(i);
+        }
+        return indicesCopy;
+    }
+
+    public static int argMax(double[] array, Random random) {
+        int[] indices = argMax(array);
+        if(indices.length == 1) {
+            return indices[0];
+        }
+        return indices[random.nextInt(indices.length)];
+    }
 }

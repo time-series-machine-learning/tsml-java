@@ -16,14 +16,8 @@ package utilities;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.*;
+
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -33,6 +27,8 @@ import weka.core.DistanceFunction;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+
+import static utilities.Utilities.normalise;
 
 /**
  *
@@ -218,7 +214,18 @@ public class InstanceTools {
 
         return new Instances[]{outputTrain,outputTest};
     }
-    
+
+    public static Instances resample(Instances series, double trainProportion, Random random) {
+        int newSize = (int)(series.numInstances()*trainProportion);
+
+        Instances newData = new Instances(series, newSize);
+        Instances temp = new Instances(series);
+
+        while (newData.numInstances() < newSize) {
+            newData.add(temp.remove(random.nextInt(temp.numInstances())));
+        }
+        return newData;
+    }
     
     //converts a 2d array into a weka Instances.
     public static Instances toWekaInstances(double[][] data) {
@@ -675,5 +682,38 @@ public class InstanceTools {
         }
         
         return result;
+    }
+
+    public static List<Instances> instancesByClass(Instances instances) {
+        List<Instances> instancesByClass = new ArrayList<>();
+        int numClasses = instances.get(0).numClasses();
+        for(int i = 0; i < numClasses; i++) {
+            instancesByClass.add(new Instances(instances,0));
+        }
+        for(Instance instance : instances) {
+            instancesByClass.get((int) instance.classValue()).add(instance);
+        }
+        return instancesByClass;
+    }
+
+    public static List<List<Integer>> indexByClass(Instances instances) {
+        List<List<Integer>> instancesByClass = new ArrayList<>();
+        int numClasses = instances.get(0).numClasses();
+        for(int i = 0; i < numClasses; i++) {
+            instancesByClass.add(new ArrayList());
+        }
+        for(int i = 0; i < instances.size(); i++) {
+            instancesByClass.get((int) instances.get(i).classValue()).add(i);
+        }
+        return instancesByClass;
+    }
+
+    public static double[] classDistribution(Instances instances) {
+        double[] distribution = new double[instances.numClasses()];
+        for(Instance instance : instances) {
+            distribution[(int) instance.classValue()]++;
+        }
+        normalise(distribution);
+        return distribution;
     }
 }
