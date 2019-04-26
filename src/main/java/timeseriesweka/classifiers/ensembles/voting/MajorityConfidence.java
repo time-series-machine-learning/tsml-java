@@ -88,7 +88,7 @@ public class MajorityConfidence extends ModuleVotingScheme {
                             dist[c];
             }
         }
-        
+
         return normalise(preds);
     }
     
