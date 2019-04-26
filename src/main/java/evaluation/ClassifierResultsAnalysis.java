@@ -206,29 +206,32 @@ public class ClassifierResultsAnalysis {
         
         //using the presence of summaries for train and test timings as an indicator that they are present 
         List<PerformanceMetric> timeMetrics = new ArrayList<>();
-        timeMetrics.add(PerformanceMetric.buildTime);
-        timeMetrics.add(testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
-        for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
-            String label = timeMetrics.get(j).name;
-            if (trainTestTimingSummary[j] != null) {
-                //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
-                metrics.add(timeMetrics.get(j));
-                
-                bigSummary.writeString(label + ":");
-                bigSummary.writeLine(trainTestTimingSummary[j][0]);
+        
+        if (trainTestTimingSummary != null) { 
+            timeMetrics.add(PerformanceMetric.buildTime);
+            timeMetrics.add(testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
+            for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
+                String label = timeMetrics.get(j).name;
+                if (trainTestTimingSummary[j] != null) {
+                    //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
+                    metrics.add(timeMetrics.get(j));
 
-                smallSummary.writeString(label + ":");
-                smallSummary.writeLine(trainTestTimingSummary[j][1]);
+                    bigSummary.writeString(label + ":");
+                    bigSummary.writeLine(trainTestTimingSummary[j][0]);
 
-                statCliquesForCDDias.add(trainTestTimingSummary[j][2]);
-            } 
-            else {
-                //not present, ignore, and remvoe from list of time-specific metrics 
-                //to be passed to the timign dia creator
-                timeMetrics.remove(j);
-                
-                bigSummary.writeString(label + ":  MISSING\n\n");
-                smallSummary.writeString(label + ": MISSING\n\n");
+                    smallSummary.writeString(label + ":");
+                    smallSummary.writeLine(trainTestTimingSummary[j][1]);
+
+                    statCliquesForCDDias.add(trainTestTimingSummary[j][2]);
+                } 
+                else {
+                    //not present, ignore, and remvoe from list of time-specific metrics 
+                    //to be passed to the timign dia creator
+                    timeMetrics.remove(j);
+
+                    bigSummary.writeString(label + ":  MISSING\n\n");
+                    smallSummary.writeString(label + ": MISSING\n\n");
+                }
             }
         }
         //END TIMINGS
