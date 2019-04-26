@@ -15,6 +15,7 @@
 package experiments;
 
 
+import evaluation.CAWPEResultsCollationCode;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -72,7 +73,8 @@ public class ClassifierLists {
      * from the experimental args. 
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
-        return setClassifierClassic(exp.classifierName, exp.foldId);
+//        return setClassifierClassic(exp.classifierName, exp.foldId);
+        return CAWPEResultsCollationCode.setClassifier_CAWPEPAPER(exp);
     }
     
     /**

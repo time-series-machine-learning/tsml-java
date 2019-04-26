@@ -39,6 +39,7 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
@@ -759,12 +760,20 @@ public class Experiments  {
         else { 
             long trainBenchmark = findBenchmarkTime(exp);
             
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            cv.setSeed(fold);
-            int numFolds = Math.min(train.numInstances(), numCVFolds);
-            cv.setNumFolds(numFolds);
-            trainResults = cv.crossValidateWithStats(classifier, train);
+            //for logitboost/bagging on trains
+            StratifiedResamplesEvaluator eval = new StratifiedResamplesEvaluator();
+            eval.setNumFolds(5);
+            eval.setPropInstancesInTrain(0.99);
+            trainResults = eval.evaluate(classifier, train);
             trainResults.setBenchmarkTime(trainBenchmark);
+            
+            //normal
+//            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+//            cv.setSeed(fold);
+//            int numFolds = Math.min(train.numInstances(), numCVFolds);
+//            cv.setNumFolds(numFolds);
+//            trainResults = cv.crossValidateWithStats(classifier, train);
+//            trainResults.setBenchmarkTime(trainBenchmark);
         }
         
         return trainResults;
