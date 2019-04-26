@@ -761,19 +761,19 @@ public class Experiments  {
             long trainBenchmark = findBenchmarkTime(exp);
             
             //for logitboost/bagging on trains
-            StratifiedResamplesEvaluator eval = new StratifiedResamplesEvaluator();
-            eval.setNumFolds(5);
-            eval.setPropInstancesInTrain(0.99);
-            trainResults = eval.evaluate(classifier, train);
-            trainResults.setBenchmarkTime(trainBenchmark);
+//            StratifiedResamplesEvaluator eval = new StratifiedResamplesEvaluator();
+//            eval.setNumFolds(5);
+//            eval.setPropInstancesInTrain(0.99);
+//            trainResults = eval.evaluate(classifier, train);
+//            trainResults.setBenchmarkTime(trainBenchmark);
             
             //normal
-//            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-//            cv.setSeed(fold);
-//            int numFolds = Math.min(train.numInstances(), numCVFolds);
-//            cv.setNumFolds(numFolds);
-//            trainResults = cv.crossValidateWithStats(classifier, train);
-//            trainResults.setBenchmarkTime(trainBenchmark);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            cv.setSeed(fold);
+            int numFolds = Math.min(train.numInstances(), numCVFolds);
+            cv.setNumFolds(numFolds);
+            trainResults = cv.crossValidateWithStats(classifier, train);
+            trainResults.setBenchmarkTime(trainBenchmark);
         }
         
         return trainResults;
