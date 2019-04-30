@@ -1,0 +1,52 @@
+TRAINTrainTimes,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+AvgTRAINTrainTimesOverDsets:,41.02479338842975,100.31818181818181,293.6694214876033
+AvgTRAINTrainTimesRankOverDsets:,1.0,2.0,3.0
+StddevOfTRAINTrainTimesOverDsets:,117.68143529673081,169.14872647072065,479.67840161281936
+AvgOfStddevsOfTRAINTrainTimesOverDsetFolds:,3.423115050524135,14.956119896531256,29.278971419550757
+StddevsOfTRAINTrainTimesRanksOverDsets:,0.0,0.0,0.0
+
+flat,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0|121|0,0|0|121,0|0|121
+CAWPE-A(ConTie),121|0|0,0|121|0,0|0|121
+CAWPE-A(RandTie),121|0|0,121|0|0,0|121|0
+
+
+
+p=0.01,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0|121|0,0|0|121,0|0|121
+CAWPE-A(ConTie),121|0|0,0|121|0,0|0|121
+CAWPE-A(RandTie),121|0|0,121|0|0,0|121|0
+
+
+
+p=0.05,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0|121|0,0|0|121,0|0|121
+CAWPE-A(ConTie),121|0|0,0|121|0,0|0|121
+CAWPE-A(RandTie),121|0|0,121|0|0,0|121|0
+
+
+
+T TEST,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0.0,0.0,0.0
+CAWPE-A(ConTie),0.0,0.0,0.0
+CAWPE-A(RandTie),0.0,0.0,0.0
+
+SIGN TEST,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0.0,0.0,0.0
+CAWPE-A(ConTie),0.0,0.0,0.0
+CAWPE-A(RandTie),0.0,0.0,0.0
+
+SIGN RANK TEST,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),0.0,0.0,0.0
+CAWPE-A(ConTie),0.0,0.0,0.0
+CAWPE-A(RandTie),0.0,0.0,0.0
+
+NOSIGDIFFERENCE,CAWPE-A(alpha=4),CAWPE-A(ConTie),CAWPE-A(RandTie)
+CAWPE-A(alpha=4),true,false,false
+CAWPE-A(ConTie),false,true,false
+CAWPE-A(RandTie),false,false,true
+
+
+
+cliques = []
+

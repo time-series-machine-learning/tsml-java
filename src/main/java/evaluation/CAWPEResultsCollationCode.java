@@ -48,8 +48,8 @@ import weka.core.Instances;
  */
 public class CAWPEResultsCollationCode {
 
-    public static String baseResultsReadPath = "C:/JamesLPHD/HESCA/";
-//    public static String baseResultsReadPath = "C:/JamesLPHD/HESCA/4TH_SUBMISSION_RESULTS/CAWPERerun/";
+//    public static String baseResultsReadPath = "C:/JamesLPHD/HESCA/";
+    public static String baseResultsReadPath = "C:/JamesLPHD/HESCA/4TH_SUBMISSION_RESULTS/CAWPERerun/";
     
     
 //    public static String analysisWritePath = "C:/JamesLPHD/HESCA/4TH_SUBMISSION_ANALYSIS/FinalisedAnalysis/";
@@ -303,7 +303,7 @@ public class CAWPEResultsCollationCode {
 //        ana_5_1_CAWPEplusVsComponents_UCI(); 
 //        
 //        // SECTION 5.2
-//        ana_5_2_CAWPEVsHeteroEnsembles("UCI");
+        ana_5_2_CAWPEVsHeteroEnsembles("UCI");
 //        ana_5_2_CAWPEplusVsHeteroEnsembles("UCI"); 
 //        
 //        // SECTION 5.3
@@ -346,7 +346,7 @@ public class CAWPEResultsCollationCode {
 //        timingsRedo_ana_5_3_CAWPEVsUntunedHomoEnsembles("UCI");
 
 //        ana_5_5_CAWPEVsComponents_UCR_FORTABLE();
-        ana_5_5_CAWPEplusVsComponents_UCR_FORTABLE();
+//        ana_5_5_CAWPEplusVsComponents_UCR_FORTABLE();
 
         System.out.println("done");
         System.exit(0);
@@ -472,14 +472,15 @@ public class CAWPEResultsCollationCode {
         String basePath = baseResultsReadPath+dsetGroup+"/";
         
         new MultipleClassifierEvaluation(analysisWritePath, "5_2"+dsetGroup+"cawpeSVSheteroEnsembles", 30).
-            setTestResultsOnly(false).
+            setTestResultsOnly(true).
             setBuildMatlabDiagrams(true,false).
             setDatasets(dsets).
 //            readInClassifiers(new String[] { "HESCA", "HESCA_MajorityVote", "HESCA_NaiveBayesCombiner", "HESCA_RecallCombiner", "HESCA_WeightedMajorityVote", "HESCA_PickBest", "EnsembleSelectionHESCAClassifiers", "SMLRE", "SMLR", "SMM5", },
 //                              new String[] { "CAWPE", "MV",                 "NBC",                      "RC",                   "WMV",                        "PB",             "ES",                                "SMLRE", "SMLR", "SMM5", },
 //                              basePath+dsetGroup+"Results/").
-            readInClassifiers(new String[] { "HESCA", "HESCA_MajorityVote", "HESCA_NaiveBayesCombiner", "HESCA_RecallCombiner", "HESCA_WeightedMajorityVote", "HESCA_PickBest", "EnsembleSelectionHESCAClassifiers_Preds", "SMLRE", "SMLR", "SMM5", },
-                              new String[] { "CAWPE-S", "MV-S",                 "NBC-S",                      "RC-S",                   "WMV-S",                        "PB-S",             "ES-S",                                "SMLRE-S", "SMLR-S", "SMM5-S", },
+//            readInClassifiers(new String[] { "HESCA", "HESCA_MajorityVote", "HESCA_NaiveBayesCombiner", "HESCA_RecallCombiner", "HESCA_WeightedMajorityVote", "HESCA_PickBest", "EnsembleSelectionHESCAClassifiers_Preds", "SMLRE", "SMLR", "SMM5", },
+//                              new String[] { "CAWPE-S", "MV-S",                 "NBC-S",                      "RC-S",                   "WMV-S",                        "PB-S",             "ES-S",                                "SMLRE-S", "SMLR-S", "SMM5-S", },
+            readInClassifiers(new String[] { "CAWPE-S", "MV-S",   "NBC-S",    "RC-S",      "WMV-S",    "PB-S",     "ES-S",  "SMLRE-S", "SMLR-S", "SMM5-S", },
                               basePath+dsetGroup+"Results/").
             runComparison(); 
     }
