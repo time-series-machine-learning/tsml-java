@@ -10,6 +10,6 @@ Code for using our analysis pipeline (contantly being updated) in order to produ
 
 The [CAWPE class](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpe/src/main/java/vector_classifiers/CAWPE.java) itself also contains example code to produce all base classifier and post-processed ensemble results for figure 3, buildCAWPEPaper_AllResultsForFigure3().
 
-james.large@uea.ac.uk - lead author
-j.lines@uea.ac.uk - secondary author
-ajb@uea.ac.uk - corresponding author
+* james.large@uea.ac.uk - lead author
+* j.lines@uea.ac.uk - secondary author
+* ajb@uea.ac.uk - corresponding author
