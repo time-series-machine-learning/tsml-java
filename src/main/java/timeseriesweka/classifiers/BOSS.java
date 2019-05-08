@@ -43,7 +43,7 @@ import static weka.core.Utils.sum;
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
- * If parameters are known, use the nested class BOSSIndividual and directly provide them.
+ * If parameters are known, use the nested class BOSSIndividual and directly provide the parameters (or use defaults).
  * 
  * Options to change the method of ensembling to randomly select parameters instead of searching.
  * Has the capability to contract train time and checkpoint when using a random ensemble.
@@ -276,15 +276,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     public void setCleanupCheckpointFiles(boolean b) {
         cleanupCheckpointFiles = b;
     }
-
-    @Override
-    public void buildClassifier(final Instances data) throws Exception {
-        trainResults.setBuildTime(System.nanoTime());
-
-        if(data.checkForAttributeType(Attribute.RELATIONAL)){
-            isMultivariate = true;
-        }
-
+    private String getSerPath(String dataName){
         //creating path for checkpointing
         String type = "";
 
@@ -308,22 +300,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             }
         }
 
-        String relationName = data.relationName();
-        serPath = checkpointPath + "/" + relationName + seed + type + "BOSSser/";
-        File f = new File(serPath + "BOSS.ser");
-
-        //if checkpointing and serialised files exist load said files
-        if (checkpoint && f.exists()){
-            loadFromFile(serPath + "BOSS.ser");
-        }
-        //initialise variables
-        else {
-            if (data.classIndex() != data.numAttributes()-1)
-                throw new Exception("BOSSEnsemble_BuildClassifier: Class attribute not set as last attribute in dataset");
-
-            //Multivariate
+        return checkpointPath + "/" + dataName + seed + type + "BOSSser/";  
+    }
+    private void configureDimensions(){
             if (isMultivariate) {
-                numSeries = numChannels(data);
+                numSeries = numChannels(this.train);
                 classifiers = new LinkedList[numSeries];
 
                 for (int n = 0; n < numSeries; n++){
@@ -343,12 +324,37 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                 classifiers[0] = new LinkedList<>();
                 numClassifiers = new int[1];
             }
-
-            rand = new Random(seed);
-        }
         
+    }
+    
+    @Override
+    public void buildClassifier(final Instances data) throws Exception {
+        getCapabilities().testWithFail(data);
+        trainResults.setBuildTime(System.nanoTime());
+        if(data.checkForAttributeType(Attribute.RELATIONAL)){
+            isMultivariate = true;
+        }
+        String relationName=data.relationName();
         this.train = data;
 
+        //if checkpointing and serialised file exists load said files
+        if (checkpoint){
+            File f = new File(serPath + "BOSS.ser");
+            if(f.exists()){
+                serPath=getSerPath(relationName);
+                loadFromFile(serPath + "BOSS.ser");
+            }
+        }
+        //otherwise, build from scratch.
+        else {
+            if (data.classIndex() != data.numAttributes()-1)
+                throw new Exception("BOSSEnsemble_BuildClassifier: Class attribute not set as last attribute in dataset");
+
+            //Set up parameters for univariate (single list of classifiers)
+            //or multivariate (multiple lists of classifiers
+            configureDimensions();
+            rand = new Random(seed);
+        }
         //required to deal with multivariate datasets, each channel is split into its own instances
         Instances[] series;
 
@@ -563,7 +569,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         //delete any serialised files and holding folder for checkpointing on completion
         if (checkpoint && cleanupCheckpointFiles){
-            f = new File(serPath);
+            File f = new File(serPath);
             String[] files = f.list();
 
             for (String file: files){

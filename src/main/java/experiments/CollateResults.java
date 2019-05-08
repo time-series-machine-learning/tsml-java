@@ -765,9 +765,13 @@ public static void basicSummaryComparisons(){
         double[] trainTest= new double[problems.size()];
         double[] means= new double[problems.size()];
         double[][] allFolds= new double[problems.size()][folds];
+        double[] meansTime= new double[problems.size()];
+        double[][] allFoldsTime= new double[problems.size()][folds];
         OutFile trTsFile=new OutFile(fullPath+"/QuickResults/TrainTest"+classifierName+".csv");
         OutFile meansFile=new OutFile(fullPath+"/QuickResults/Average"+folds+classifierName+".csv");
         OutFile allFoldsFile=new OutFile(fullPath+"/QuickResults/AllFolds"+classifierName+".csv");
+        OutFile meanTimesFile=new OutFile(fullPath+"/QuickResults/TimeAverage"+folds+classifierName+".csv");
+        OutFile allFoldsTimesFile=new OutFile(fullPath+"/QuickResults/TimeAllFolds"+classifierName+".csv");
               
         InFile inf=null;
         for(int i=0;i<trainTest.length;i++){
@@ -777,14 +781,17 @@ public static void basicSummaryComparisons(){
                 try{
                     inf=new InFile(fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
                     inf.readLine();//Ignore first two
-                    inf.readLine();
+                    String secondLine=inf.readLine();
+                    String[] split=secondLine.split(",");
+                    
+                    
                     double acc=inf.readDouble();//
                     if(calcAcc){
                         String line=inf.readLine();
                         double a=0;
                         int count=0;
                         while(line!=null){
-                            String[] split=line.split(",");
+                            split=line.split(",");
                             count++;
                             if(split[0].equals(split[1]))
                                 a++;
@@ -1004,7 +1011,7 @@ public static void basicSummaryComparisons(){
 //            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
 
  //           quickStats("Z:/Results/Post Bakeoff Results/resnet/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
-           quickStats("Z:/Results/Post Bakeoff Results/WEASEL/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+  //         quickStats("Z:/Results/Post Bakeoff Results/WEASEL/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
              
 
 //REDUX: EE
@@ -1015,7 +1022,7 @@ public static void basicSummaryComparisons(){
 //            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
  //REDUX: RISE
 
- //           quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
+            quickStats("E:/Results/UCR Debug/Python/TSF",false,30,"HIVE-COTE,TSF","HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
  //           quickStats("Z:/Results/Bakeoff Redux/Java/RISE",false,30,"HIVE-COTE,RISE");
  //REDUX: ST
 //            quickStats("Z:/Results/Bakeoff Redux/Java/ST",false,30,"HIVE-COTE,ST","Bakeoff,ST");
