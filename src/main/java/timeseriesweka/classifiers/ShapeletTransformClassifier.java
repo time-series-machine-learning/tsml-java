@@ -41,7 +41,10 @@ import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import fileIO.FullAccessOutFile;
+import fileIO.OutFile;
 import java.util.ArrayList;
+import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
+import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
@@ -193,7 +196,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         transformBuildTime=System.currentTimeMillis()-startTime;
         if(setSeed)
             ensemble.setRandSeed((int) seed);
-
+//        if(debug)
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
             System.out.println("Shapelet Saving  ....");
@@ -313,7 +316,32 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
     }
     
-     @Override
+
+    
+    public void configureBasicEnsemble(){
+// Random forest only
+        ensemble=new CAWPE();
+        Classifier[] classifiers = new Classifier[1];
+        String[] classifierNames = new String[1];
+        RandomForest r=new RandomForest();
+        r.setNumTrees(500);
+        if(setSeed)
+           r.setSeed((int)seed);            
+        classifiers[0] = r;
+        classifierNames[0] = "RandF";
+
+
+        ensemble.setWeightingScheme(new EqualWeighting());
+        ensemble.setVotingScheme(new MajorityVote());
+        RotationForest rf=new RotationForest();
+        rf.setNumIterations(100);
+        if(setSeed)
+           rf.setSeed((int)seed);
+        ensemble.setClassifiers(classifiers, classifierNames, null);
+    }
+    
+
+    @Override
     public double classifyInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
         
@@ -419,10 +447,10 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public static void main(String[] args) throws Exception {
-        String dataLocation = "C:\\Temp\\TSC\\";
-        //String dataLocation = "..\\..\\resampled transforms\\BalancedClassShapeletTransform\\";
+//        String dataLocation = "C:\\Temp\\TSC\\";
+        String dataLocation = "E:\\Data\\TSCProblems2018\\";
         String saveLocation = "C:\\Temp\\TSC\\";
-        String datasetName = "ItalyPowerDemand";
+        String datasetName = "FordA";
         int fold = 0;
         
         Instances train= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
@@ -430,17 +458,23 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
         String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
         String preds=saveLocation+datasetName;
-
+        System.out.println("Data Loaded");
         ShapeletTransformClassifier st= new ShapeletTransformClassifier();
+        st.configureBasicEnsemble();
         //st.saveResults(trainS, testS);
         st.doSTransform(true);
         st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
-        st.setOneMinuteLimit();
-        st.buildClassifier(train);
-
-        double accuracy = utilities.ClassifierTools.accuracy(test, st);
+        st.setMinuteLimit(2);
+        System.out.println("Start transform");
         
-        System.out.println("accuracy: " + accuracy);    }
+        long t1= System.currentTimeMillis();
+        Instances stTrain=st.createTransformData(train,st.timeLimit);
+        long t2= System.currentTimeMillis();
+        System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");
+        OutFile out=new OutFile(saveLocation+"ST_"+datasetName+".arff");
+        out.writeString(stTrain.toString());
+        
+    }
 /**
  * Checkpoint methods
  */
