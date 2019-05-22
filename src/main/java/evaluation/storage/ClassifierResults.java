@@ -1404,8 +1404,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
                 buildTimeDuplicateWarningPrinted = true;
             }
-            
-            buildTime = Long.parseLong(parts[1]); 
+                
+            buildTime = Long.parseLong(parts[1]);
         }
         if (parts.length > 2) 
             testTime = Long.parseLong(parts[2]);

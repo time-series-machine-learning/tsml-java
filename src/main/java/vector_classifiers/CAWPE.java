@@ -131,7 +131,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
     //TrainAccuracyEstimate
     protected boolean writeEnsembleTrainingFile = false;
-    protected String outputEnsembleTrainingPathAndFile;
 
     protected boolean performEnsembleCV = true;
     protected CrossValidationEvaluator cv = null;
@@ -509,7 +508,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             ensembleTrainResults.turnOnZeroTimingsErrors();
 
             if (writeEnsembleTrainingFile)
-                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+//                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+                writeEnsembleTrainAccuracyEstimateResultsFile();
         }
 
         this.testInstCounter = 0; //prep for start of testing
@@ -697,6 +697,13 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             return file;
     }
 
+    //hack for handling train accuracy estimate. experiments is giving us the full path and filename
+    //to write to, instead of just the folder and expecting us to fill in the +classifierName+"/Predictions/"+datasetName+filename;
+    //when doing the interface overhaul, sort this stuff out.
+    protected void writeEnsembleTrainAccuracyEstimateResultsFile() throws Exception {
+        ensembleTrainResults.writeFullResultsToFile(writeResultsFilesDirectory);
+    }
+    
     protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws Exception {
         String fullPath = writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
         new File(fullPath).mkdirs();
@@ -800,6 +807,14 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double acc = correct/numTrainInsts;
         double stddevOverFolds = StatisticalUtilities.standardDeviation(accPerFold, false, acc);
 
+        trainResults.setClassifierName(ensembleIdentifier);
+        if (datasetName == null || datasetName.equals(""))
+            datasetName = data.relationName();
+        trainResults.setDatasetName(datasetName);
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());
+        
         trainResults.stddev = stddevOverFolds;
         trainResults.finaliseResults();
         
@@ -975,11 +990,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         this.transform = transform;
     }
 
-    @Override
+    @Override //TrainAccuracyEstimate
     public void writeCVTrainToFile(String path) {
-        outputEnsembleTrainingPathAndFile=path;
         performEnsembleCV=true;
         writeEnsembleTrainingFile=true;
+        
+        setResultsFileWritingLocation(path);
     }
     @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){

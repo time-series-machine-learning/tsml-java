@@ -37,6 +37,9 @@ public abstract class ModuleWeightingScheme {
     protected abstract double[] defineWeighting(EnsembleModule trainPredictions, int numClasses);
     
     protected double[] makeUniformWeighting(double weight, int numClasses) {
+        //Prevents all weights from being set to 0 for datasets such as Fungi.
+        if (weight == 0) weight = 1;
+
         double[] weights = new double[numClasses];
         for (int i = 0; i < weights.length; ++i)
             weights[i] = weight;
