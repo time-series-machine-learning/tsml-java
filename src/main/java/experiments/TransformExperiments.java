@@ -26,7 +26,7 @@ import weka.filters.SimpleBatchFilter;
 
 /**
  *
- * @author a.bostrom1
+ * @author Aaron Bostrom
  */
 public class TransformExperiments {
     
