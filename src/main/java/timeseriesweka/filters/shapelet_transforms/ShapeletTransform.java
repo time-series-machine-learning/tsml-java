@@ -26,6 +26,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +39,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import utilities.ClassifierTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
 import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
 import weka.core.*;
@@ -1180,8 +1184,50 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
         return subseqDistOpCount;
     }
+    public static void basicTest(){
+        String dataLocation = "E:\\Data\\TSCProblems2018\\";
+        String saveLocation = "C:\\Temp\\TSC\\";
+        final String dataset = "FordA";
+        final int fold = 1;
+        final String filePath = dataLocation + File.separator + dataset + File.separator + dataset;
+        Instances test, train;
+        test = utilities.ClassifierTools.loadData(filePath + "_TEST");
+        train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
+         ShapeletSearchOptions searchOptions = new ShapeletSearchOptions.Builder()
+                                            .setMin(3)
+                                            .setMax(train.numAttributes()-1)
+                                            .setSearchType(ShapeletSearch.SearchType.FULL)
+                                            .build();
 
-    
+
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+                                            .setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE)
+                                            .setKShapelets(train.numInstances()*10)
+                                            .useBinaryClassValue()
+                                            .useClassBalancing()
+                                            .useCandidatePruning()
+                                            .useRoundRobin()
+                                            .setSearchOptions(searchOptions)
+                                            .build();
+
+        ShapeletTransform transform = new ShapeletTransformFactory(options).getTransform();
+        transform.setLogOutputFile(saveLocation+"fordAOutput.csv");
+
+        long startTime1 = System.nanoTime();
+
+        Instances tranTrain1 = transform.process(train);
+        Instances tranTest1 = transform.process(test);
+
+        long endTime1 = System.nanoTime();
+
+        System.out.println("Transform time = " + (endTime1-startTime1)); 
+        
+        
+        
+        
+        
+        
+    }
     public static void main(String[] args){
         try {
             final String resampleLocation = "../../Dropbox//TSC Problems";
