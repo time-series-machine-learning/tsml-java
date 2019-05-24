@@ -173,8 +173,8 @@ public class DataSets {
                         "MixedShapesRegularTrain",
                         "MixedShapesSmallTrain",
 			"MoteStrain", // 20,1252,84,2
-			"NonInvasiveFatalECGThorax1", // 1800,1965,750,42
-			"NonInvasiveFatalECGThorax2", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 			"OliveOil", // 30,30,570,4
 			"OSULeaf", // 200,242,427,6
 			"PhalangesOutlinesCorrect", // 1800,858,80,2
@@ -1208,15 +1208,40 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
     System.out.println("TOTAL NOT NORMED ="+notNormed.size());
 
   }
-
-public static void dataDescription(String[] fileNames){
+  public static boolean testNormalised(Instances data){
+//Just test first instance, this is very brittle
+        double mean=0;
+        double stDev=0;
+        Instance ins=data.instance(0);
+        int n=0;
+        for(int i=0;i<ins.numAttributes()-1;i++){
+            if(!ins.isMissing(i)){
+                mean+=ins.value(i);
+                stDev+=ins.value(i)*ins.value(i);
+                n++;
+            }
+        }
+        mean/=(n-1);
+        stDev=stDev/(n-1)-mean*mean;    
+        System.out.println("Mean = "+mean+" St Dev ="+stDev);
+        boolean normed=false;
+        if(Math.abs(mean)<0.01 && Math.abs(stDev-1)<0.05)
+            normed=true;
+        return normed;
+      
+  }
+public static void dataDescriptionUnivariate(String[] fileNames){
     //Produce summary descriptions
     //dropboxPath=uciPath;
         OutFile f=new OutFile(problemPath+"DataDimensions.csv");
         MetaData[] all=new MetaData[fileNames.length];
-        TreeSet<String> nm=new TreeSet<>();
-        nm.addAll(Arrays.asList(notNormalised));     
-        f.writeLine("Problem,TrainSize,TestSize,SeriesLength,NumClasses,Normalised,ClassCounts");
+        TreeSet<String> hasMissing=new TreeSet<>();
+        hasMissing.addAll(Arrays.asList(missingValue2018Problems));     
+        TreeSet<String> variableLength=new TreeSet<>();
+        variableLength.addAll(Arrays.asList(variableLength2018Problems));     
+        
+        
+        f.writeLine("Problem,TrainSize,TestSize,SeriesLength,NumClasses,Normalised,Padded,MissingValues,ClassCounts");
                 
         for(int i=0;i<fileNames.length;i++){
             try{
@@ -1228,15 +1253,23 @@ public static void dataDescription(String[] fileNames){
 //                allData.randomize(new Random());
 //                OutFile combo=new OutFile(problemPath+tscProblems85[i]+"/"+tscProblems85[i]+".arff");    
 //                combo.writeString(allData.toString());
-                boolean normalised=true;
-                if(nm.contains(fileNames[i]))
-                    normalised=false;
+                boolean normalised=testNormalised(allData);
+                
+                
+                boolean missing=false;
+                if(hasMissing.contains(fileNames[i]))
+                    missing=true;
+                boolean varL=false;
+                if(variableLength.contains(fileNames[i]))
+                    varL=true;
+                if(varL==true)//Does not allow for padded and missing at the moment
+                    missing=false;
                 int[] classCounts=new int[allData.numClasses()*2];
                 for(Instance ins: train)
                     classCounts[(int)(ins.classValue())]++;
                 for(Instance ins: test)
                     classCounts[allData.numClasses()+(int)(ins.classValue())]++;
-                all[i]=new MetaData(fileNames[i],train.numInstances(),test.numInstances(),test.numAttributes()-1,test.numClasses(),classCounts,normalised);
+                all[i]=new MetaData(fileNames[i],train.numInstances(),test.numInstances(),test.numAttributes()-1,test.numClasses(),classCounts,normalised,varL,missing);
                 f.writeLine(all[i].toString());
                 System.out.println(all[i].toString());
                 }
@@ -1264,6 +1297,74 @@ public static void dataDescription(String[] fileNames){
 */
 
 }
+
+
+
+public static void dataDescriptionMultivariate(String[] fileNames){
+    //Produce summary descriptions
+    //dropboxPath=uciPath;
+        OutFile f=new OutFile(problemPath+"DataDimensions.csv");
+        MetaData[] all=new MetaData[fileNames.length];
+        TreeSet<String> hasMissing=new TreeSet<>();
+        hasMissing.addAll(Arrays.asList(missingValue2018Problems));     
+        TreeSet<String> variableLength=new TreeSet<>();
+        variableLength.addAll(Arrays.asList(variableLength2018Problems));     
+        f.writeLine("Problem,TrainSize,TestSize,NumDimensions,SeriesLength,NumClasses,Normalised,Padded,MissingValues,ClassCounts");
+                
+        for(int i=0;i<fileNames.length;i++){
+            try{
+                Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
+                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");			
+                Instances allData =new Instances(test);
+                for(int j=0;j<train.numInstances();j++)
+                    allData.add(train.instance(j));
+//                allData.randomize(new Random());
+//                OutFile combo=new OutFile(problemPath+tscProblems85[i]+"/"+tscProblems85[i]+".arff");    
+//                combo.writeString(allData.toString());
+                Instances temp=allData.instance(0).relationalValue(0);
+//Gonna ignore one!                
+                boolean normalised=testNormalised(temp);
+                boolean missing=false;
+                boolean varL=false;    
+                int[] classCounts=new int[allData.numClasses()*2];
+                for(Instance ins: train)
+                    classCounts[(int)(ins.classValue())]++;
+                for(Instance ins: test)
+                    classCounts[allData.numClasses()+(int)(ins.classValue())]++;
+                int numDim=temp.numInstances();
+                int len=temp.instance(0).numAttributes();
+                String str =fileNames[i]+","+train.numInstances()+","+test.numInstances()+","+numDim+","+len+","+test.numClasses()+","+normalised+","+varL+","+missing;
+                for(int x:classCounts)
+                    str+=","+x;
+                f.writeLine(str);
+                System.out.println(str);
+                }
+            catch(Exception e){
+                System.out.println(" ERRROR"+e);
+            }
+        }
+        /*
+        Arrays.sort(all);       
+        f=new OutFile(problemPath+"DataDimensionsBySeriesLength.csv");
+        for(MetaData m: all)
+            f.writeLine(m.toString());
+        Arrays.sort(all, new MetaData.CompareByTrain());       
+        f=new OutFile(problemPath+"DataDimensionsByTrainSize.csv");
+        for(MetaData m: all)
+            f.writeLine(m.toString());
+        Arrays.sort(all, new MetaData.CompareByClasses());       
+        f=new OutFile(problemPath+"DataDimensionsByNosClasses.csv");
+        for(MetaData m: all)
+            f.writeLine(m.toString());
+        Arrays.sort(all, new MetaData.CompareByTotalSize());       
+        f=new OutFile(problemPath+"DataDimensionsByTotalSize.csv");
+        for(MetaData m: all)
+            f.writeLine(m.toString());
+*/
+
+}
+
+
 
 
 
@@ -1584,8 +1685,15 @@ public static void describeTextFiles(){
        
    }
    public static boolean hasMissing(String file){
-       for(String str:variableLength2018Problems)
+       for(String str:missingValue2018Problems)
            if(str.equals(file)) return true;
+       return false;
+           
+   }
+   public static boolean hasMissing(Instances data){
+       for(Instance ins:data)
+           if(ins.hasMissingValue())
+               return true;
        return false;
            
    }
@@ -1604,8 +1712,13 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
-    problemPath="E:\\Data\\ConcatenatedMTSC\\";
-    dataDescription(mtscProblems2018);
+//    problemPath="E:\\Data\\TSCProblems2018\\";
+//    dataDescriptionUnivariate(tscProblems2018);
+
+
+    problemPath="Z:\\Data\\MultivariateTSCProblems\\";
+    dataDescriptionMultivariate(mtscProblems2018);
+
     System.exit(0);
     path="E:\\Data\\TSCProblems2018\\";
     makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
@@ -1644,7 +1757,10 @@ public static void main(String[] args) throws Exception{
         int nosClasses;
         int[] classDistribution;
         boolean normalised=true;
-        public MetaData(String n, int t1, int t2, int s, int c, int[] dist,boolean norm){
+        boolean variableLength=false;
+        boolean missing=false;
+        
+        public MetaData(String n, int t1, int t2, int s, int c, int[] dist,boolean norm,boolean v, boolean m){
             fileName=n;
             trainSetSize=t1;
             testSetSize=t2;
@@ -1652,10 +1768,12 @@ public static void main(String[] args) throws Exception{
             nosClasses=c;
             classDistribution=dist;
             normalised=norm;
+            variableLength=v;
+            missing=m;
         }
         @Override
         public String toString(){
-            String str= fileName+","+trainSetSize+","+testSetSize+","+seriesLength+","+nosClasses+","+normalised;
+            String str= fileName+","+trainSetSize+","+testSetSize+","+seriesLength+","+nosClasses+","+normalised+","+variableLength+","+missing;
             for(int i:classDistribution)
                 str+=","+i;
             return str;
