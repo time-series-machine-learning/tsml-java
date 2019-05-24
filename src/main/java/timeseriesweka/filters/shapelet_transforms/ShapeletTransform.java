@@ -893,7 +893,13 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         return (double) (finishTime - startTime) / 1000000000.0;
     }
 
-    protected void recordShapelets(ArrayList<Shapelet> kShapelets, String saveLocation) {
+    
+    public void writeAdditionalData(String saveDirectory, int fold){
+        recordShapelets(this.kShapelets, saveDirectory + "_shapelets" + fold + ".csv");
+    }
+    
+    
+    public void recordShapelets(ArrayList<Shapelet> kShapelets, String saveLocation) {
         //just in case the file doesn't exist or the directories.
         File file = new File(saveLocation);
         if (file.getParentFile() != null) {
