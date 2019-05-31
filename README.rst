@@ -4,14 +4,14 @@
 
 Find more info on our [website](http://www.timeseriesclassification.com).
 
-A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>' compatible Java toolbox for
+A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>`__ compatible Java toolbox for
 time series classification, clustering and transformation. Eventually, we would like to support:
 
 Installation
 ------------
 We are looking at getting this on Maven. For now there are two options:
 
-* download the `Jar File <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`
+* download the `Jar File <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`__
 * download the source file and include in a project in your favourite IDE
 you can then construct your own experiment (see `BasicExamples.java <https://github.com/TonyBagnall/uea-tsc/blob/master/src/main/java/examples/BasicExamples.java>'__) or 
 the experimental structure we use (see 'Experiments.java <https://github.com/TonyBagnall/uea-tsc/blob/master/src/main/java/experiments/Experiments.java>'__) 
