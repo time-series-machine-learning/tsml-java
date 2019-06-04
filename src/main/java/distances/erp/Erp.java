@@ -1,7 +1,11 @@
 package distances.erp;
 
 import distances.dtw.Dtw;
+import evaluation.tuning.ParameterSpace;
+import timeseriesweka.elastic_distance_measures.ERPDistance;
 import utilities.ArrayUtilities;
+import utilities.StatisticalUtilities;
+import weka.core.Instances;
 
 public class Erp
     extends Dtw {
@@ -15,8 +19,8 @@ public class Erp
         setPenalty(DEFAULT_PENALTY);
     }
 
-    public Erp(double warpingWindowPercentage, double penalty) {
-        super(warpingWindowPercentage);
+    public Erp(int warpingWindow, double penalty) {
+        super(warpingWindow);
         setPenalty(penalty);
     }
 
@@ -146,4 +150,22 @@ public class Erp
         }
     }
 
+    public static final String NAME = "ERP";
+
+    @Override
+    public String toString() {
+        return NAME;
+    }
+
+    public static ParameterSpace discreteParameterSpace(Instances instances) {
+        double std = StatisticalUtilities.pStdDev(instances);
+        double stdFloor = std*0.2;
+        int[] warpingWindowValues = ArrayUtilities.incrementalRange(0, (instances.numAttributes() - 1) / 4, 10);
+        double[] penaltyValues = ArrayUtilities.incrementalRange(stdFloor, std, 10);
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, warpingWindowValues);
+        parameterSpace.addParameter(PENALTY_KEY, penaltyValues);
+        return parameterSpace;
+    }
 }

@@ -1,14 +1,18 @@
 package distances.lcss;
 
 import distances.dtw.Dtw;
+import evaluation.tuning.ParameterSpace;
+import timeseriesweka.elastic_distance_measures.LCSSDistance;
 import utilities.ArrayUtilities;
+import utilities.StatisticalUtilities;
+import weka.core.Instances;
 
 public class Lcss extends Dtw {
 
     public static final double DEFAULT_TOLERANCE = 0.01;
 
-    public Lcss(double tolerance, double warpingWindowPercentage) {
-        super(warpingWindowPercentage);
+    public Lcss(double tolerance, int warpingWindow) {
+        super(warpingWindow);
         setTolerance(tolerance);
     }
 
@@ -91,6 +95,25 @@ public class Lcss extends Dtw {
             TOLERANCE_KEY,
             String.valueOf(tolerance)
         });
+    }
+
+    public static final String NAME = "LCSS";
+
+    @Override
+    public String toString() {
+        return NAME;
+    }
+
+    public static ParameterSpace discreteParameterSpace(Instances instances) {
+        double std = StatisticalUtilities.pStdDev(instances);
+        double stdFloor = std*0.2;
+        double[] toleranceValues = ArrayUtilities.incrementalRange(stdFloor, std, 10);
+        int[] warpingWindowValues = ArrayUtilities.incrementalRange(0, (instances.numAttributes() - 1) / 4, 10);
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, warpingWindowValues);
+        parameterSpace.addParameter(TOLERANCE_KEY, toleranceValues);
+        return parameterSpace;
     }
 
 

@@ -14,6 +14,8 @@
  */
 package utilities;
 
+import weka.core.Instances;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Arrays;
@@ -218,5 +220,24 @@ public class StatisticalUtilities {
     
     public static double averageFinalDimension(double[] results) { 
         return StatisticalUtilities.mean(results, false);
+    }
+
+
+    public static double pStdDev(Instances input){
+
+        double sumx = 0;
+        double sumx2 = 0;
+        double[] ins2array;
+        for(int i = 0; i < input.numInstances(); i++){
+            ins2array = input.instance(i).toDoubleArray();
+            for(int j = 0; j < ins2array.length-1; j++){//-1 to avoid classVal
+                sumx+=ins2array[j];
+                sumx2+=ins2array[j]*ins2array[j];
+            }
+        }
+        int n = input.numInstances()*(input.numAttributes()-1);
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+
     }
 }

@@ -1,8 +1,7 @@
 package classifiers.distance_based.nearest_neighbour;
 
-import classifiers.template.ExtendedClassifier;
+import classifiers.template_classifier.TemplateClassifier;
 import distances.DistanceMeasure;
-import distances.DistanceMeasureFactory;
 import distances.dtw.Dtw;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
@@ -14,7 +13,7 @@ import java.util.*;
 import static java.lang.Double.max;
 
 public class NearestNeighbour
-    extends ExtendedClassifier {
+    extends TemplateClassifier {
 
     public static final int DEFAULT_K = 1;
     public static final boolean DEFAULT_EARLY_ABANDON = false;
@@ -23,7 +22,6 @@ public class NearestNeighbour
     public static final String SAMPLE_SIZE_KEY = "sampleSize";
     public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
     public static final String DISTANCE_MEASURE_OPTIONS_KEY = "distanceMeasureOptionsStart";
-    public static final String DISTANCE_MEASURE_OPTIONS_END_KEY = "distanceMeasureOptionsEnd";
     private final List<NearestNeighbourSet> trainNearestNeighbourSets = new ArrayList<>();
     private int k;
     private DistanceMeasure distanceMeasure;
@@ -39,7 +37,6 @@ public class NearestNeighbour
             DISTANCE_MEASURE_KEY,
             distanceMeasure.toString(),
             DISTANCE_MEASURE_OPTIONS_KEY,
-            "{",
             StringUtilities.join(",", distanceMeasure.getOptions()),
             });
     }
@@ -58,33 +55,18 @@ public class NearestNeighbour
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        boolean parseDistanceMeasureOptions = false;
-        List<String> distanceMeasureOptions = new ArrayList<>();
         for (int i = 0; i < options.length - 1; i += 2) {
             String key = options[i];
             String value = options[i + 1];
-            if (parseDistanceMeasureOptions) {
-                if (key.equals(DISTANCE_MEASURE_OPTIONS_END_KEY)) {
-                    parseDistanceMeasureOptions = false;
-                } else {
-                    distanceMeasureOptions.add(key);
-                    distanceMeasureOptions.add(value);
-                }
-            } else {
-                if (key.equals(K_KEY)) {
-                    setK(Integer.parseInt(value));
-                } else if (key.equals(SAMPLE_SIZE_KEY)) {
-                    setK(Integer.parseInt(value));
-                } else if (key.equals(DISTANCE_MEASURE_KEY)) {
-                    setDistanceMeasure(DistanceMeasureFactory.fromString(value));
-                } else if (key.equals(DISTANCE_MEASURE_OPTIONS_KEY)) {
-                    parseDistanceMeasureOptions = true;
-                }
+            if (key.equals(K_KEY)) {
+                setK(Integer.parseInt(value));
+            } else if (key.equals(SAMPLE_SIZE_KEY)) {
+                setK(Integer.parseInt(value));
+            } else if (key.equals(DISTANCE_MEASURE_KEY)) {
+                setDistanceMeasure(DistanceMeasure.fromString(value));
             }
         }
-        if (distanceMeasureOptions.size() > 0) {
-            distanceMeasure.setOptions(distanceMeasureOptions.toArray(new String[0]));
-        }
+        distanceMeasure.setOptions(options);
     }
 
     public void setK(final int k) {

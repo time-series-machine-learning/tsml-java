@@ -1,6 +1,7 @@
 package distances.wdtw;
 
 import distances.DistanceMeasure;
+import evaluation.tuning.ParameterSpace;
 
 public class Wdtw
     extends DistanceMeasure {
@@ -111,5 +112,23 @@ public class Wdtw
             };
     }
 
+
+    public static final String NAME = "WDTW";
+
+    @Override
+    public String toString() {
+        return NAME;
+    }
+
+    public static ParameterSpace discreteParameterSpace() {
+        double[] gValues = new double[100];
+        for(int i = 0; i < gValues.length; i++) {
+            gValues[i] = i / gValues.length;
+        }
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WEIGHT_KEY, gValues);
+        return parameterSpace;
+    }
 
 }

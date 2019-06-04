@@ -154,4 +154,32 @@ public class ArrayUtilities {
         }
         return result;
     }
+
+    // don't use unless you want imprecision due to incrementation
+    public static int[] incrementalRange(int min, int max, int size){
+        int[] output = new int[size];
+
+        double diff = (double)(max-min)/(size - 1);
+        double[] doubleOut = new double[size];
+        doubleOut[0] = min;
+        output[0] = min;
+        for(int i = 1; i < size - 1; i++){
+            doubleOut[i] = doubleOut[i-1]+diff;
+            output[i] = (int)Math.round(doubleOut[i]);
+        }
+        output[size - 1] = max;
+        return output;
+    }
+
+    // don't use unless you want imprecision due to incrementation
+    public static double[] incrementalRange(double min, double max, int size){
+        double[] output = new double[size];
+        double diff = (max-min)/(size - 1);
+        output[0] = min;
+        for(int i = 1; i < size - 1; i++){
+            output[i] = output[i-1]+diff;
+        }
+        output[size - 1] = max; // to make sure max isn't omitted due to double imprecision
+        return output;
+    }
 }

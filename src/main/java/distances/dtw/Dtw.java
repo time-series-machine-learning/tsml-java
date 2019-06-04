@@ -1,61 +1,37 @@
 package distances.dtw;
 
 import distances.DistanceMeasure;
+import evaluation.tuning.ParameterSpace;
+import utilities.ArrayUtilities;
+import weka.core.Instances;
 
 public class Dtw extends DistanceMeasure {
 
-    public static double DEFAULT_WARPING_WINDOW = 1;
+    public static int DEFAULT_WARPING_WINDOW = -1;
 
-    /**
-     * get the current warpingWindowPercentage percentage
-     * @return warpingWindowPercentage percentage between 0 and 1 inclusive
-     */
-    public double getWarpingWindow() {
-        return warpingWindowPercentage;
+    public int getWarpingWindow() {
+        return warpingWindow;
     }
 
-    /**
-     * set the percentage percentage
-     * @param percentage percentage percentage between 0 and 1 inclusive
-     */
-    public void setWarpingWindow(double percentage) {
-        if(percentage < 0) {
+    public void setWarpingWindow(int warpingWindow) {
+        if(warpingWindow < 0) {
             throw new IllegalArgumentException("Warp cannot be less than 0");
-        } else if(percentage > 1) {
+        } else if(warpingWindow > 1) {
             throw new IllegalArgumentException("Warp cannot be more than 1");
         } else {
-            this.warpingWindowPercentage = percentage;
+            this.warpingWindow = warpingWindow;
         }
     }
 
-    public Dtw(double warpingWindowPercentage) {
-        setWarpingWindow(warpingWindowPercentage);
+    public Dtw(int warpingWindow) {
+        setWarpingWindow(warpingWindow);
     }
 
     public Dtw() {
         this(DEFAULT_WARPING_WINDOW);
     }
 
-    private double warpingWindowPercentage;
-
-    /**
-     * find the cost
-     *
-     * @return the distance between the values, squared
-     */
-    protected double findCost(double[] timeSeriesA, int indexA,
-                                          double[] timeSeriesB, int indexB) {
-        return Math.pow(timeSeriesA[indexA] - timeSeriesB[indexB], 2);
-    }
-
-    protected int findWindowSize(int length) { // todo scale window size correctly, current duplicates n (i.e. a instance length of 10 would have 10 for the window size for both 100% and 90% window
-        int size =(int)(warpingWindowPercentage * length); // round window down
-        // no warp = windowSize=1
-        if(size < 1) size = 1; // full warp : windowSize=n, otherwise scale between
-        else if(size<length)
-            size++;
-        return size;
-    }
+    private int warpingWindow;
 
     @Override
     protected double measureDistance(double[] timeSeriesA,
@@ -125,7 +101,7 @@ public class Dtw extends DistanceMeasure {
 //        }
 //        int n=a.length;
 //        int m=b.length;
-//        //No Warp: windowSize=1, full warpingWindowPercentage: windowSize=m
+//        //No Warp: windowSize=1, full warpingWindow: windowSize=m
 //        int windowSize = (int) Math.max(1, Math.round(a.length * getWarpingWindow()));;
 //        double[] row1=new double[m];
 //        double[] row2;
@@ -153,7 +129,7 @@ public class Dtw extends DistanceMeasure {
 ////        System.out.println();
 ////        System.out.println(asString(row1));
 //
-//        //For each remaining row, warpingWindowPercentage row i
+//        //For each remaining row, warpingWindow row i
 //        for (int i=1;i<n;i++){
 //            tooBig=true;
 //            row2=new double[m];
@@ -217,10 +193,11 @@ public class Dtw extends DistanceMeasure {
 
         int n = first.length;
         int m = second.length;
-        /*  Parameter 0<=r<=1. 0 == no warpingWindowPercentage, 1 == full warpingWindowPercentage
+        /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
          generalised for variable window size
          * */
-        int windowSize = findWindowSize(n);
+        int windowSize = warpingWindow;
+
 //Extra memory than required, could limit to windowsize,
 //        but avoids having to recreate during CV 
 //for varying window sizes        
@@ -283,17 +260,9 @@ public class Dtw extends DistanceMeasure {
         return matrixD[n-1][m-1];
     }
 
-    public static void main(String[] args) {
-        Dtw dtw = new Dtw();
-        dtw.setWarpingWindow(0.3);
-        double[] a = new double[] {4, 6, 3, 23, 15, 6, 4, 13, 21, 12};
-        double[] b = new double[] {7, 9, 15, 17, 6, 17, 13, 12, 19, 20};
-        System.out.println(dtw.distance(a,b));
-    }
-
     @Override
     public String[] getOptions() {
-        return new String[] {WARPING_WINDOW_KEY, String.valueOf(warpingWindowPercentage)};
+        return new String[] {WARPING_WINDOW_KEY, String.valueOf(warpingWindow)};
     }
 
     public static final String WARPING_WINDOW_KEY = "warpingWindow";
@@ -304,10 +273,36 @@ public class Dtw extends DistanceMeasure {
             String key = options[i];
             String value = options[i + 1];
             if(key.equals(WARPING_WINDOW_KEY)) {
-                setWarpingWindow(Double.parseDouble(value));
+                setWarpingWindow(Integer.parseInt(value));
             }
         }
     }
 
+    public static final String NAME = "DTW";
 
+    @Override
+    public String toString() {
+        return NAME;
+    }
+
+    public static ParameterSpace euclideanParameterSpace() {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, new int[] {0});
+        return parameterSpace;
+    }
+
+    public static ParameterSpace fullWindowParameterSpace() {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, new int[] {-1});
+        return parameterSpace;
+    }
+
+    public static ParameterSpace discreteParameterSpace(Instances instances) {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 100));
+        return parameterSpace;
+    }
 }

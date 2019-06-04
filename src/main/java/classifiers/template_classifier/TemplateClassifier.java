@@ -1,18 +1,20 @@
-package classifiers.template;
+package classifiers.template_classifier;
 
 import evaluation.storage.ClassifierResults;
+import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instances;
 
-
-import static utilities.StringUtilities.joinWithComma;
-
-public abstract class ExtendedClassifier
+public abstract class TemplateClassifier
     extends AbstractClassifier
-    implements ExtendedClassifierInterface {
+    implements TemplateClassifierInterface {
 
     private String savePath;
     private long trainContractNanos = -1;
+
+    @Override
+    public abstract void buildClassifier(final Instances trainInstances) throws
+                                                      Exception;
 
     @Override
     public void setSavePath(final String path) {
@@ -22,7 +24,7 @@ public abstract class ExtendedClassifier
     @Override
     public void copyFromSerObject(final Object obj) throws
                                                     Exception {
-        ExtendedClassifier other = (ExtendedClassifier) obj;
+        TemplateClassifier other = (TemplateClassifier) obj;
         setSavePath(other.savePath);
         setSeed(other.seed);
         setTimeLimit(other.getTrainContractNanos());
@@ -52,7 +54,7 @@ public abstract class ExtendedClassifier
 
     @Override
     public String getParameters() {
-        return joinWithComma(getOptions());
+        return StringUtilities.join(",", getOptions());
     }
 
     @Override
