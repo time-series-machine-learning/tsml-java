@@ -16,6 +16,7 @@ package utilities;
 
 import weka.core.Instance;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -178,5 +179,9 @@ public class Utilities {
             return indices[0];
         }
         return indices[random.nextInt(indices.length)];
+    }
+
+    public static void mkdir(final File file) {
+        throw new UnsupportedOperationException();
     }
 }
