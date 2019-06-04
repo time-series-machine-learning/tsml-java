@@ -1,0 +1,97 @@
+package distances.lcss;
+
+import distances.dtw.Dtw;
+import utilities.ArrayUtilities;
+
+public class Lcss extends Dtw {
+
+    public static final double DEFAULT_TOLERANCE = 0.01;
+
+    public Lcss(double tolerance, double warpingWindowPercentage) {
+        super(warpingWindowPercentage);
+        setTolerance(tolerance);
+    }
+
+    // delta === warp
+    // epsilon === diff between two values before they're considered the same AKA tolerance
+
+    public Lcss() {
+        super();
+        setTolerance(DEFAULT_TOLERANCE);
+    }
+
+    private double tolerance;
+
+    public double getTolerance() {
+        return tolerance;
+    }
+
+    public void setTolerance(double tolerance) {
+        this.tolerance = tolerance;
+    }
+
+    @Override
+    protected double measureDistance(double[] first, double[] second, double cutOff) {
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
+        double[] a  = first;
+        double[] b = second;
+        int m = first.length;
+        int n = second.length;
+
+        int[][] lcss = new int[m+1][n+1];
+
+        int warpingWindow = (int) (this.getWarpingWindow() * first.length);
+
+        for(int i = 0; i < m; i++){
+            for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
+                if(j < 0){
+                    j = -1;
+                }else if(j >= n){
+                    j = i+warpingWindow;
+                }else if(second[j]+this.tolerance >= first[i] && second[j]-tolerance <=first[i]){
+                    lcss[i+1][j+1] = lcss[i][j]+1;
+                }else if(lcss[i][j+1] > lcss[i+1][j]){
+                    lcss[i+1][j+1] = lcss[i][j+1];
+                }else{
+                    lcss[i+1][j+1] = lcss[i+1][j];
+                }
+
+                // could maybe do an early abandon here? Not sure, investigate further
+            }
+        }
+
+        int max = -1;
+        for(int i = 1; i < lcss[lcss.length-1].length; i++){
+            if(lcss[lcss.length-1][i] > max){
+                max = lcss[lcss.length-1][i];
+            }
+        }
+        return 1-((double)max/m);
+    }
+
+    public static final String TOLERANCE_KEY = "tolerance";
+
+    @Override
+    public void setOptions(String[] options) {
+        super.setOptions(options);
+        for (int i = 0; i < options.length - 1; i += 2) {
+            String key = options[i];
+            String value = options[i + 1];
+            if(key.equals(TOLERANCE_KEY)) {
+                setTolerance(Double.parseDouble(value));
+            }
+        }
+    }
+
+    @Override
+    public String[] getOptions() {
+        return ArrayUtilities.concat(super.getOptions(), new String[] {
+            TOLERANCE_KEY,
+            String.valueOf(tolerance)
+        });
+    }
+
+
+}

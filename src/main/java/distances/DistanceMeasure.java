@@ -1,19 +1,15 @@
-package timeseriesweka.measures;
+package distances;
 
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.Instance;
 import weka.core.NormalizableDistance;
-import weka.core.TechnicalInformationHandler;
+import weka.core.OptionHandler;
+
+import java.io.Serializable;
 
 import static utilities.Utilities.extractTimeSeries;
 
-// todo summary for each measure / relate to paper
-// auth
-// d Itakura Parallelogram
-
-
-
-public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, TechnicalInformationHandler {
+public abstract class DistanceMeasure extends NormalizableDistance implements Serializable, OptionHandler {
 
     public DistanceMeasure() {
         setDontNormalize(true); // disable WEKA's normalisation - shouldn't use it anyway but just in case!
@@ -21,12 +17,12 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
 
     @Override
     public String globalInfo() {
-        throw new UnsupportedOperationException("Haven't done this yet"); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected double updateDistance(double currDist, double diff) {
-        throw new UnsupportedOperationException("Haven't done this yet"); // todo
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -83,5 +79,10 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      */
     public final double distance(Instance instanceA, Instance instanceB, double cutOff) {
         return measureDistance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
+    }
+
+    @Override
+    public String getRevision() {
+        throw new UnsupportedOperationException();
     }
 }
