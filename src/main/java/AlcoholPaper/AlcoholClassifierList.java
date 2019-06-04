@@ -18,6 +18,7 @@
 package AlcoholPaper;
 
 import experiments.Experiments;
+import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.BOSS;
 import timeseriesweka.classifiers.CRISE;
 import timeseriesweka.classifiers.RISE;
@@ -59,7 +60,50 @@ import weka.classifiers.trees.RandomForest;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class AlcoholClassifierList {
-
+    
+    public static String[] classifiers_all = { 
+        "ED",
+        "PLS",
+        "SVMQ",
+        "RandF",
+        "XGBoost",
+        "CAWPE",
+        "ResNet",
+        "ST",
+        "BOSS",
+        "TSF",
+        "RISE",
+        "HIVE-COTE",  
+    };
+    
+    public static String[] classifiers_hiveCoteMembers = { 
+        "ED", //using ed > ee, we KNOW there's no gain from any kind of warping, and ee is a bit of a pig
+              //derivative measures are definitely an option worth considering, however skipping for the 
+              //feasibility analysis 
+        
+        "ST",
+        "BOSS",
+        "TSF",
+        "RISE",
+    };
+    
+    public static String[] classifiers_tsc = { 
+        "ResNet",
+        "ST",
+        "BOSS",
+        "TSF",
+        "RISE",
+        "HIVE-COTE",  
+    };
+    
+    public static String[] classifiers_nonTsc = { 
+        "ED",
+        "PLS",
+        "SVMQ",
+        "RandF",
+        "XGBoost",
+        "CAWPE",
+    };
     
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         
@@ -82,7 +126,7 @@ public class AlcoholClassifierList {
                 svmq.setKernel(k);
                 svmq.setRandomSeed(fold);
                 svmq.setBuildLogisticModels(true); //for probabilistic output
-               break;
+                return svmq;
                  
             ////////// MODERN ENSEMBLES
             case "RandF": 
@@ -144,7 +188,7 @@ public class AlcoholClassifierList {
                 CAWPE hive = new CAWPE();
 
                 hive.setEnsembleIdentifier("HIVE-COTE");
-                hive.setClassifiers(null, new String[] { "ST", "BOSS", "TSF", "RISE", "ED" }, null);
+                hive.setClassifiers(null, classifiers_hiveCoteMembers, null);
                 hive.setBuildIndividualsFromResultsFiles(true);
                 hive.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, fold);
                 hive.setRandSeed(fold);
@@ -161,5 +205,40 @@ public class AlcoholClassifierList {
         }
         
         return null;
+    }
+    
+    public static void buildHIVECOTEs() { 
+        for (String dset  : new String[] { "JWRorJWB_RedBottle", "JWRorJWB_BlackBottle", "RandomBottlesEthanol" }) {
+            for (int fold = 0; fold < 30; fold++) {
+                ExperimentalArguments args = new Experiments.ExperimentalArguments();
+                args.resultsWriteLocation = AlcoholAnalysis.resultsPath;
+                args.dataReadLocation = AlcoholAnalysis.datasetPath;
+                args.classifierName = "HIVECOTE";
+                args.generateErrorEstimateOnTrainSet = true;
+                
+                args.datasetName = dset;
+                args.foldId = fold;
+                
+                args.run();
+            }
+        }
+        for (String dset  : new String[] { "AlcoholForgeryEthanol", "AlcoholForgeryMethanol" }) {
+            for (int fold = 0; fold < 44; fold++) {
+                ExperimentalArguments args = new Experiments.ExperimentalArguments();
+                args.resultsWriteLocation = AlcoholAnalysis.resultsPath;
+                args.dataReadLocation = AlcoholAnalysis.datasetPath;
+                args.classifierName = "HIVECOTE";
+                args.generateErrorEstimateOnTrainSet = true;
+                
+                args.datasetName = dset;
+                args.foldId = fold;
+                
+                args.run();
+            }
+        }
+    }
+    
+    public static void main(String[] args) {
+        buildHIVECOTEs();
     }
 }
