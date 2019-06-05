@@ -1,9 +1,14 @@
 package classifiers.template_classifier;
 
 import evaluation.storage.ClassifierResults;
-import utilities.StringUtilities;
+import net.sourceforge.sizeof.SizeOf;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instances;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import static utilities.StringUtilities.join;
 
 public abstract class TemplateClassifier
     extends AbstractClassifier
@@ -11,6 +16,44 @@ public abstract class TemplateClassifier
 
     private String savePath;
     private long trainContractNanos = -1;
+    private Random trainRandom = new Random();
+    private long testTimeNanos = -1;
+    private Random testRandom = new Random();
+
+    protected void setClassifierResultsMetaInfo(ClassifierResults classifierResults) throws
+                                                                                     Exception {
+        classifierResults.setTestTime(getTestTimeNanos());
+        classifierResults.setBuildTime(getTrainTimeNanos());
+        classifierResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        classifierResults.setParas(join(",", getOptions()));
+        try {
+            classifierResults.setMemory(SizeOf.deepSizeOf(this));
+        } catch (Exception e) {
+            classifierResults.setMemory(-1);
+        }
+    }
+
+    public void incrementTrainTimeNanos(long nanos) {
+        trainTimeNanos += nanos;
+    }
+
+    public void incrementTestTimeNanos(long nanos) {
+        testTimeNanos += nanos;
+    }
+
+    public long getTrainTimeNanos() {
+        return trainTimeNanos;
+    }
+
+    public void setTrainTimeNanos(final long trainTimeNanos) {
+        this.trainTimeNanos = trainTimeNanos;
+    }
+
+    private long trainTimeNanos = -1;
+
+    public Random getTrainRandom() {
+        return trainRandom;
+    }
 
     @Override
     public abstract void buildClassifier(final Instances trainInstances) throws
@@ -54,7 +97,7 @@ public abstract class TemplateClassifier
 
     @Override
     public String getParameters() {
-        return StringUtilities.join(",", getOptions());
+        return join(",", getOptions());
     }
 
     @Override
@@ -73,7 +116,8 @@ public abstract class TemplateClassifier
     }
 
     @Override
-    public ClassifierResults getTrainResults() {
+    public ClassifierResults getTrainResults() throws
+                                               Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -82,9 +126,27 @@ public abstract class TemplateClassifier
         throw new UnsupportedOperationException();
     }
 
+    public void resetTrainRandom() {
+        if(seed != null) {
+            trainRandom.setSeed(seed);
+        }
+    }
+
+    public void resetTestRandom() {
+        if(seed != null) {
+            testRandom.setSeed(seed);
+        }
+    }
+
+    public void resetRandom() {
+        resetTestRandom();
+        resetTrainRandom();
+    }
+
     @Override
     public void setSeed(final int seed) {
         this.seed = seed;
+        resetRandom();
     }
 
     @Override
@@ -101,4 +163,17 @@ public abstract class TemplateClassifier
     public String getSavePath() {
         return savePath;
     }
+
+    public long getTestTimeNanos() {
+        return testTimeNanos;
+    }
+
+    public void setTestTimeNanos(final long testTimeNanos) {
+        this.testTimeNanos = testTimeNanos;
+    }
+
+    public Random getTestRandom() {
+        return testRandom;
+    }
+
 }

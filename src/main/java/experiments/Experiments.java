@@ -65,7 +65,7 @@ import weka.core.Instances;
  or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
  will load the classifier and dataset specified, prep the location to write results to, 
  train the classifier - potentially generating an error estimate via cross validation on the train set 
- as well - and then predict the cases of the test set. 
+ as well - and then getTestResults the cases of the test set.
  
  The primary outputs are the train and/or 'testFoldX.csv' files, in the so-called ClassifierResults format,
  (see the class of the same name under utilities). 
@@ -493,6 +493,8 @@ public class Experiments  {
      * @return new Instances[] { trainSet, testSet };
      */
     public static Instances[] sampleDataset(String parentFolder, String problem, int fold) throws Exception {
+        parentFolder = new File(parentFolder).getPath() + '/';
+
         Instances[] data = new Instances[2];
 
         File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");

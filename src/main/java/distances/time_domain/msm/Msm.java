@@ -1,9 +1,10 @@
-package distances.msm;
+package distances.time_domain.msm;
 
 import distances.DistanceMeasure;
-import distances.dtw.Dtw;
 import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
+import utilities.Utilities;
+import weka.core.Instance;
 
 public class Msm
     extends DistanceMeasure {
@@ -43,11 +44,15 @@ public class Msm
     }
 
     @Override
-    protected double measureDistance(double[] timeSeriesA, double[] timeSeriesB, double cutOff) {
+    public double distance(Instance a,
+                           Instance b,
+                           final double cutOff) {
         // todo cleanup
         // todo trim memory to window by window
         // todo early abandon
 
+        double[] timeSeriesA = Utilities.extractTimeSeries(a);
+        double[] timeSeriesB = Utilities.extractTimeSeries(b);
         int m, n, i, j;
         m = timeSeriesA.length;
         n = timeSeriesB.length;

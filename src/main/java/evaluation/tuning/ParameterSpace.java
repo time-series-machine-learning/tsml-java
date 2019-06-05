@@ -14,13 +14,11 @@
  */
 package evaluation.tuning;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
+
+import static utilities.Utilities.fromPermutation;
+import static utilities.Utilities.numPermutations;
 
 /**
  *
@@ -31,7 +29,7 @@ import java.util.Map.Entry;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
-    public Map<String, List<String>> parameterLists = new HashMap<>();
+    public Map<String, List<String>> parameterLists = new TreeMap<>();
        
     public int numParas() { 
         return parameterLists.size();
@@ -47,10 +45,29 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
     public List<String> getValues(String key)  {
         return parameterLists.get(key);
     }
-    
-    
-    
-    
+
+    public List<Integer> getParameterSizes() {
+        List<Integer> sizes = new ArrayList<>();
+        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
+            sizes.add(entry.getValue().size());
+        }
+        return sizes;
+    }
+
+    public int size() {
+        return numPermutations(getParameterSizes());
+    }
+
+    public ParameterSet get(int index) {
+        List<Integer> indices = fromPermutation(index, getParameterSizes());
+        ParameterSet parameterSet = new ParameterSet();
+        int i = 0;
+        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
+            parameterSet.addParameter(entry.getKey(), entry.getValue().get(indices.get(i)));
+            i++;
+        }
+        return parameterSet;
+    }
     
     /**
      * Adder for *list* of any object (including string)
@@ -128,4 +145,18 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
         
         return sb.toString();
     }
+
+    public static void main(String[] args) {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter("p1", new String[] {"a", "b", "c"});
+        parameterSpace.addParameter("p2", new String[] {"d", "e", "f", "g"});
+        parameterSpace.addParameter("p3", new String[] {"h", "i", "j", "k"});
+        int size = parameterSpace.size();
+        for(int i = 0; i < size; i++) {
+            ParameterSet parameterSet = parameterSpace.get(i);
+            System.out.println(parameterSet);
+        }
+    }
+
+
 }

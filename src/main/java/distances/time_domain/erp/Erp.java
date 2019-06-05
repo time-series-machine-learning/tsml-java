@@ -1,10 +1,11 @@
-package distances.erp;
+package distances.time_domain.erp;
 
-import distances.dtw.Dtw;
+import distances.time_domain.dtw.Dtw;
 import evaluation.tuning.ParameterSpace;
-import timeseriesweka.elastic_distance_measures.ERPDistance;
 import utilities.ArrayUtilities;
 import utilities.StatisticalUtilities;
+import utilities.Utilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class Erp
@@ -33,11 +34,13 @@ public class Erp
     }
 
     @Override
-    protected double measureDistance(
-        double[] timeSeriesA,
-        double[] timeSeriesB,
-        double cutOff
-                                    ) {
+    public double distance(Instance a,
+                           Instance b,
+                           final double cutOff) {
+
+
+        double[] timeSeriesA = Utilities.extractTimeSeries(b);
+        double[] timeSeriesB = Utilities.extractTimeSeries(a);
 
         // todo cleanup
         // todo trim memory to window by window
@@ -45,7 +48,7 @@ public class Erp
         // todo remove sqrt (Jay says this changes the distance however, need to confirm!)
 
         // Current and previous columns of the matrix
-        double[] curr = new double[timeSeriesB.length]; // todo use timeSeriesA as it's the longer of the two
+        double[] curr = new double[timeSeriesB.length];
         double[] prev = new double[timeSeriesB.length];
 
         // size of edit distance band

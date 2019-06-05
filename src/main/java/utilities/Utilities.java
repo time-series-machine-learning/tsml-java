@@ -17,6 +17,7 @@ package utilities;
 import weka.core.Instance;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -181,7 +182,126 @@ public class Utilities {
         return indices[random.nextInt(indices.length)];
     }
 
-    public static void mkdir(final File file) {
-        throw new UnsupportedOperationException();
+    public static void mkdir(String path) {
+        mkdir(new File(path));
     }
+
+    public static void mkdir(final File file) {
+        File parent = file.getParentFile();
+        if(parent != null) {
+            mkdir(parent);
+        }
+        file.mkdir();
+        setOpenPermissions(file);
+    }
+
+    public static void mkfile(File file) throws
+                                         IOException {
+        File parent = file.getParentFile();
+        if(parent != null) {
+            mkdir(parent);
+        }
+        file.createNewFile();
+        setOpenPermissions(file);
+    }
+
+    public static void setOpenPermissions(File file) {
+        file.setReadable(true, false);
+        file.setReadable(true, true);
+        file.setWritable(true, false);
+        file.setWritable(true, true);
+        file.setExecutable(true, false);
+        file.setExecutable(true, true);
+    }
+
+    public static void mkfile(String path) throws
+                                           IOException {
+        mkfile(new File(path));
+    }
+
+    public static int[] fromPermutation(int permutataion, int... binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutataion > maxCombination || binSizes.length == 0 || permutataion < 0) {
+            throw new IllegalArgumentException();
+        }
+        int[] result = new int[binSizes.length];
+        for(int index = 0; index < binSizes.length; index++) {
+            int binSize = binSizes[index];
+            if(binSize > 1) {
+                result[index] = permutataion % binSize;
+                permutataion /= binSize;
+            } else {
+                result[index] = 0;
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static List<Integer> fromPermutation(int permutation, List<Integer> binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutation > maxCombination || binSizes.size() == 0 || permutation < 0) {
+            throw new IllegalArgumentException();
+        }
+        List<Integer> result = new ArrayList<>();
+        for(int index = 0; index < binSizes.size(); index++) {
+            int binSize = binSizes.get(index);
+            if(binSize > 1) {
+                result.add(permutation % binSize);
+                permutation /= binSize;
+            } else {
+                result.add(0);
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static int toPermutation(int[] values, int[] binSizes) {
+        return toPermutation(primitiveArrayToList(values), primitiveArrayToList(binSizes));
+    }
+
+    public static int toPermutation(List<Integer> values, List<Integer> binSizes) {
+        if(values.size() != binSizes.size()) {
+            throw new IllegalArgumentException("incorrect number of args");
+        }
+        int permutation = 0;
+        for(int i = binSizes.size() - 1; i >= 0; i--) {
+            int binSize = binSizes.get(i);
+            if(binSize > 1) {
+                int value = values.get(i);
+                permutation *= binSize;
+                permutation += value;
+            } else if(binSize <= 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+        return permutation;
+    }
+
+
+    public static int numPermutations(List<Integer> binSizes) {
+        List<Integer> maxValues = new ArrayList<>();
+        for(int i = 0; i < binSizes.size(); i++) {
+            maxValues.add(binSizes.get(i) - 1);
+        }
+        return toPermutation(maxValues, binSizes) + 1;
+    }
+
+    public static int numPermutations(int[] binSizes) {
+        return numPermutations(primitiveArrayToList(binSizes));
+    }
+    public static List<Integer> primitiveArrayToList(int[] values) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < values.length; i++) {
+            list.add(i);
+        }
+        return list;
+    }
+
+
 }

@@ -1,7 +1,9 @@
-package distances.wdtw;
+package distances.time_domain.wdtw;
 
 import distances.DistanceMeasure;
 import evaluation.tuning.ParameterSpace;
+import utilities.Utilities;
+import weka.core.Instance;
 
 public class Wdtw
     extends DistanceMeasure {
@@ -27,12 +29,16 @@ public class Wdtw
     private double weight; // AKA g // 0.05 to 3 perhaps
 
     @Override
-    protected double measureDistance(final double[] timeSeriesA, final double[] timeSeriesB, final double cutOff) {
+    public double distance(Instance a,
+                           Instance b,
+                           final double cutOff) {
 
         // todo cleanup
         // todo trim memory to window by window
         // todo early abandon
 
+        double[] timeSeriesA = Utilities.extractTimeSeries(a);
+        double[] timeSeriesB = Utilities.extractTimeSeries(b);
         int seriesLength = timeSeriesA.length;
         double[] weightVector = new double[seriesLength];
         double halfLength = (double) seriesLength / 2;

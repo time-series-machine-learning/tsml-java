@@ -219,7 +219,7 @@ public class Tuner
         Instances data = cloneDataIfNeeded(trainSet);
         AbstractClassifier classifier = cloneClassifierIfNeeded(baseClassifier); 
             
-        String[] options = parameterSet.toOptionsList();
+        String[] options = parameterSet.getOptions();
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);

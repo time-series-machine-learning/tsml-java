@@ -1,10 +1,11 @@
-package distances.lcss;
+package distances.time_domain.lcss;
 
-import distances.dtw.Dtw;
+import distances.time_domain.dtw.Dtw;
 import evaluation.tuning.ParameterSpace;
-import timeseriesweka.elastic_distance_measures.LCSSDistance;
 import utilities.ArrayUtilities;
 import utilities.StatisticalUtilities;
+import utilities.Utilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class Lcss extends Dtw {
@@ -35,12 +36,15 @@ public class Lcss extends Dtw {
     }
 
     @Override
-    protected double measureDistance(double[] first, double[] second, double cutOff) {
+    public double distance(Instance a,
+                           Instance b,
+                           final double cutOff) {
+
+        double[] first = Utilities.extractTimeSeries(a);
+        double[] second = Utilities.extractTimeSeries(b);
         // todo cleanup
         // todo trim memory to window by window
         // todo early abandon
-        double[] a  = first;
-        double[] b = second;
         int m = first.length;
         int n = second.length;
 

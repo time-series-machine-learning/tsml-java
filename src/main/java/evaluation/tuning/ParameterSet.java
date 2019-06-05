@@ -14,6 +14,9 @@
  */
 package evaluation.tuning;
 
+import weka.core.OptionHandler;
+
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,7 +26,7 @@ import java.util.Set;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ParameterSet {
+public class ParameterSet implements OptionHandler {
     public Map<String, String> parameterSet = new HashMap<>();
         
     private static String startParaLineDelimiter = "parasStart";
@@ -59,8 +62,32 @@ public class ParameterSet {
         
         return sb.toString();
     }
-    
-    public String[] toOptionsList() { 
+
+
+    @Override
+    public Enumeration listOptions() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Assumes that this is just a list of flag-value pairs, e.g
+     * [ flag1, value1, flag2, value2....]
+     * and does not contain any independent flags (maybe representing that a boolean
+     * flag should be set to true, for example), and that all the flag/value pairs
+     * are parameter to be read in (e.g no debug flags)
+     */
+    @Override
+    public void setOptions(final String[] options) throws
+                                                   Exception {
+        parameterSet = new HashMap<String, String>();
+
+        for (int i = 0; i < options.length; i+=2)
+            parameterSet.put(options[i], options[i+1]);
+
+        //todo error checking etc
+    }
+
+    public String[] getOptions() {
         String[] ps = new String[parameterSet.size() * 2];
 
         int i = 0;
@@ -72,22 +99,7 @@ public class ParameterSet {
 
         return ps;
     }
-    
-    /**
-     * Assumes that this is just a list of flag-value pairs, e.g 
-     * [ flag1, value1, flag2, value2....] 
-     * and does not contain any independent flags (maybe representing that a boolean 
-     * flag should be set to true, for example), and that all the flag/value pairs 
-     * are parameter to be read in (e.g no debug flags)
-     */
-    public void readOptionsList(String[] options) { 
-        parameterSet = new HashMap<String, String>();
-        
-        for (int i = 0; i < options.length; i+=2)
-            parameterSet.put(options[i], options[i+1]);
-        
-        //todo error checking etc
-    }
+
     
     public static String toFileNameString(int[] inds) {
         StringBuilder sb = new StringBuilder();

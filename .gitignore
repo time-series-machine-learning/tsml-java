@@ -37,3 +37,5 @@ build.xml
 nbproject/
 manifest.mf
 defaultShapeletOutput.txt
+
+out/

@@ -1,21 +1,20 @@
 package distances;
 
-import distances.ddtw.Ddtw;
-import distances.dtw.Dtw;
-import distances.erp.Erp;
-import distances.lcss.Lcss;
-import distances.msm.Msm;
-import distances.twe.Twe;
-import distances.wddtw.Wddtw;
-import distances.wdtw.Wdtw;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import distances.derivative_time_domain.ddtw.CachedDdtw;
+import distances.derivative_time_domain.ddtw.Ddtw;
+import distances.time_domain.dtw.Dtw;
+import distances.time_domain.erp.Erp;
+import distances.time_domain.lcss.Lcss;
+import distances.time_domain.msm.Msm;
+import distances.time_domain.twe.Twe;
+import distances.derivative_time_domain.wddtw.CachedWddtw;
+import distances.derivative_time_domain.wddtw.Wddtw;
+import distances.time_domain.wdtw.Wdtw;
 import weka.core.Instance;
 import weka.core.NormalizableDistance;
 import weka.core.OptionHandler;
 
 import java.io.Serializable;
-
-import static utilities.Utilities.extractTimeSeries;
 
 public abstract class DistanceMeasure extends NormalizableDistance implements Serializable, OptionHandler {
 
@@ -31,41 +30,6 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Se
     @Override
     protected double updateDistance(double currDist, double diff) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * measures distance between time series
-     * @param timeSeriesA longest time series of the two
-     * @param timeSeriesB shortest time series of the two
-     * @param cutOff cut off value to abandon distance measurement early
-     * @return distance between two time series
-     */
-    protected abstract double measureDistance(double[] timeSeriesA, double[] timeSeriesB, double cutOff);
-
-    /**
-     * measures distance between time series, swapping the two time series so A is always the longest
-     * @param timeSeriesA time series
-     * @param timeSeriesB time series
-     * @param cutOff cut off value to abandon distance measurement early
-     * @return distance between two time series
-     */
-    public final double distance(double[] timeSeriesA, double[] timeSeriesB, double cutOff) {
-        if(timeSeriesA.length < timeSeriesB.length) {
-            double[] temp = timeSeriesA;
-            timeSeriesA = timeSeriesB;
-            timeSeriesB = temp;
-        }
-        return measureDistance(timeSeriesA, timeSeriesB, cutOff);
-    }
-
-    /**
-     * measures distance between time series, swapping the two time series so A is always the longest
-     * @param timeSeriesA time series
-     * @param timeSeriesB time series
-     * @return distance between two time series
-     */
-    public final double distance(double[] timeSeriesA, double[] timeSeriesB) {
-        return distance(timeSeriesA, timeSeriesB, Double.POSITIVE_INFINITY);
     }
 
     /**
@@ -85,9 +49,7 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Se
      * @param cutOff cut off value to abandon distance measurement early
      * @return distance between the two instances
      */
-    public final double distance(Instance instanceA, Instance instanceB, double cutOff) {
-        return measureDistance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
-    }
+    public abstract double distance(Instance instanceA, Instance instanceB, double cutOff);
 
     @Override
     public String getRevision() {
@@ -99,8 +61,10 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Se
         switch(str) {
             case "dtw": return new Dtw();
             case "ddtw": return new Ddtw();
+            case "cddtw": return new CachedDdtw();
             case "wdtw": return new Wdtw();
             case "wddtw": return new Wddtw();
+            case "cwddtw": return new CachedWddtw();
             case "twe": return new Twe();
             case "msm": return new Msm();
             case "lcss": return new Lcss();

@@ -1,13 +1,16 @@
-package distances.twe;
+package distances.time_domain.twe;
 
 import distances.DistanceMeasure;
 import evaluation.tuning.ParameterSpace;
-import weka.core.Instances;
+import utilities.Utilities;
+import weka.core.Instance;
 
 public class Twe extends DistanceMeasure {
 
     @Override
-    protected double measureDistance(double[] a, double[] b, double cutOff) {
+    public double distance(Instance ia,
+                           Instance ib,
+                           final double cutOff) {
         /*This code is faithful to the c version, so uses a redundant
  * Multidimensional representation. The c code does not describe what the
             arguments
@@ -20,6 +23,8 @@ public class Twe extends DistanceMeasure {
         // todo early abandon
         // todo might be able to inherit from dtw to use warping window perhaps?
 
+        double[] a = Utilities.extractTimeSeries(ia);
+        double[] b = Utilities.extractTimeSeries(ib);
         int dim=1;
         double dist, disti1, distj1;
         double[][] ta=new double[a.length][dim];
@@ -162,14 +167,6 @@ public class Twe extends DistanceMeasure {
 
     public static final String STIFFNESS_KEY = "stiffness";
     public static final String PENALTY_KEY = "penalty";
-
-    public static void main(String[] args) {
-        double[] a = new double[] {1,2,3,4,5,6,7,8,9,10};
-        double[] b = new double[] {10,9,8,7,6,5,4,3,2,1};
-        Twe twe = new Twe();
-        double distance = twe.measureDistance(a, b, Double.POSITIVE_INFINITY);
-        System.out.println(distance);
-    }
 
     @Override
     public void setOptions(String[] options) {

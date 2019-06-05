@@ -1,8 +1,10 @@
-package distances.dtw;
+package distances.time_domain.dtw;
 
 import distances.DistanceMeasure;
 import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
+import utilities.Utilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class Dtw extends DistanceMeasure {
@@ -34,9 +36,9 @@ public class Dtw extends DistanceMeasure {
     private int warpingWindow;
 
     @Override
-    protected double measureDistance(double[] timeSeriesA,
-                                     double[] timeSeriesB,
-                                     double cutOff) { // todo missing vals / variable length
+    public double distance(Instance a,
+                           Instance b,
+                           final double cutOff) { // todo missing vals / variable length
         // timeSeriesA across the top (i.e. columns)
         // timeSeriesB down (i.e. rows)
 //        int windowSize = findWindowSize(timeSeriesA.length); // todo cleanedup version
@@ -185,8 +187,8 @@ public class Dtw extends DistanceMeasure {
         // todo trim memory to window by window
         // todo early abandon
 
-        double[] first = timeSeriesA;
-        double[] second = timeSeriesB;
+        double[] first = Utilities.extractTimeSeries(a);
+        double[] second = Utilities.extractTimeSeries(b);
         
         double minDist;
         boolean tooBig;
@@ -196,7 +198,7 @@ public class Dtw extends DistanceMeasure {
         /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
          generalised for variable window size
          * */
-        int windowSize = warpingWindow;
+        int windowSize = warpingWindow + 1; // + 1 to include the current cell
 
 //Extra memory than required, could limit to windowsize,
 //        but avoids having to recreate during CV 
@@ -300,6 +302,14 @@ public class Dtw extends DistanceMeasure {
     }
 
     public static ParameterSpace discreteParameterSpace(Instances instances) {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 100));
+        return parameterSpace;
+    }
+
+
+    public static ParameterSpace ddtwDiscreteParameterSpace(Instances instances) {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 100));

@@ -182,4 +182,17 @@ public class ArrayUtilities {
         output[size - 1] = max; // to make sure max isn't omitted due to double imprecision
         return output;
     }
+
+    public static double argMax(final double[] array) {
+        int index = 0;
+        double max = array[index];
+        for(int i = 1; i < array.length; i++) {
+            double value = array[i];
+            if(value > max) {
+                max = value;
+                index = i;
+            }
+        }
+        return index;
+    }
 }
