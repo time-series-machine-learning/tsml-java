@@ -132,7 +132,7 @@ public class ROCDiagramMaker {
             proxy.eval("m_posClass = " + positiveClassIndex + ";");
             
             //function [f] = roccurves(filepathandname,classifierNames,classValues,posClassProbs,posClassLabel,visible)
-            proxy.eval("roccurves(m_fname, m_cnames, m_cvals, m_posClassProbs, m_posClass)");
+            proxy.eval("roccurves(m_fname, m_cnames, m_cvals, m_posClassProbs, m_posClass, 'off')");
             proxy.eval("clear");
 
         } catch (Exception io) {

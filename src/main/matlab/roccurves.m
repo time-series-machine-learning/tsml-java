@@ -17,9 +17,9 @@ function [f] = roccurves(filepathandname, classifierNames,classValues,posClassPr
 %   classValues     : a vector length n of classvalues, denoting the class of
 %        each instance. it is assumed that the posClassProbs provided are 
 %        aligned for each classifier, this assumption may be relaxed in the future
-%	posClassProbs   : an n by m matix of doubles/floats in the range 0 to 1 inclusive, 
-%        such that each cell is the probability of the instance (row) being of 
-%        the positive class as assigned by the classifier (column)
+%	posClassProbs   : an m by n matix of doubles/floats in the range 0 to 1 inclusive, 
+%        such that each element is the probability of the instance (column) being of 
+%        the positive class as assigned by the classifier (row)
 %   posClassLabel   : the class value that is to be considered the positive
 %        class, which exists in the classValues vector. If no value is supplied,
 %        the minority element in classValues is assumed to be the minority class
@@ -36,7 +36,7 @@ function [f] = roccurves(filepathandname, classifierNames,classValues,posClassPr
 % based on perfcurve: https://uk.mathworks.com/help/stats/perfcurve.html
 
 if nargin < 6 
-   visible = 'off';
+   visible = 'on';
 end
 
 if nargin < 5
@@ -53,7 +53,15 @@ set(f,'Units','normalized');
 set(f,'Position',[0 0 0.7 0.5]);
 
 m = size(classifierNames, 1);
+n = length(classValues);
 
+%X = zeros(n+1,m);
+%Y = zeros(n+1,m);
+
+X = cell(m,1);
+Y = cell(m,1);
+
+AUC = zeros(m,1);
 legendLabels = cell(m,1);
 
 for cid = 1:m
@@ -66,17 +74,32 @@ for cid = 1:m
     %posClassProbsC = rand(1, 100);  % prob given for positive class of each instance, e.g [ 0.2, 0.5, 1, 0.5 ... 0.1 ]
     %posClassLabel = 1;              % positive class label                            e.g 1 
 
-    [X,Y,T,AUC] = perfcurve(classValues,posClassProbsC,posClassLabel);
-
-    if cid > 1
-        hold on 
-    end 
+    [x,y,~,auc] = perfcurve(classValues,posClassProbsC,posClassLabel);
     
-    plot(X,Y,'LineWidth',2)
-    %title(sprintf('ROC for Classification by %s', classifierName))
-
-    legendLabels{cid} = sprintf('%s, AUC=%.3f',classifierName,AUC);
+    AUC(cid) = auc;
+    X{cid} = x;
+    Y{cid} = y;
+    legendLabels{cid} = sprintf('%s, AUC=%.3f',classifierName,auc);
 end
+    
+if m > 1
+    [~, inds] = sort(AUC, 'descend');
+    X = X(inds);
+    Y = Y(inds);
+    legendLabels = legendLabels(inds);
+end
+
+plot(X{1}, Y{1}, 'LineWidth', 2);
+
+if m > 1
+    hold on
+    for i=2:m
+       plot(X{i}, Y{i}, 'LineWidth', 2);
+    end 
+end 
+
+%plot(X,Y,'LineWidth',2)
+%title(sprintf('ROC for Classification by %s', classifierName))
 
 set(gca,'FontSize',secondaryFontSize)
 
