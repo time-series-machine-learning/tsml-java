@@ -18,7 +18,13 @@
 package evaluation;
 
 import ResultsProcessing.MatlabController;
+import static evaluation.ClassifierResultsAnalysis.matlabFilePath;
 import evaluation.storage.ClassifierResults;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Class to convert results in the format as they are in the results pipeline (ClassifierResults) 
@@ -41,65 +47,111 @@ public class ROCDiagramMaker {
         return null;
     }
     
-    public static void matlab_buildROCDiagrams(String outPath, String expName, String dsetName, ClassifierResults[][] cresults, String[] cnames) {   
-        matlab_buildROCDiagrams(outPath, expName, dsetName, concatenateClassifierResults(cresults), cnames);
-    }   
+    public static String[] formatClassifierNames(String[] cnames) { 
+        int maxLength = -1; 
+        for (String cname : cnames)
+            if (cname.length() > maxLength)
+                maxLength = cname.length();
+        String[] paddedNames = new String[cnames.length];
+        for (int i = 0; i < cnames.length; i++) {
+            paddedNames[i] = cnames[i];
+            while(paddedNames[i].length() < maxLength)
+                paddedNames[i] += " ";
+        }
+        return paddedNames;
+    }
     
-    public static void matlab_buildROCDiagrams(String outPath, String expName, String dsetName, ClassifierResults[] cresults, String[] cnames) {      
-        outPath += rocDiaPath;
+    public static double[] extractPosClassProbabilities(ClassifierResults results, int positiveClass) { 
+        double[][] dists = results.getProbabilityDistributionsAsArray();
+        double[] posClassProbs = new double[dists.length];
         
-        for (PerformanceMetric metric : metrics) {
-            try {
-                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
-                ResultTable rt = new ResultTable(ResultTable.createColumns(asd.var1, dsets, asd.var2));
-
-                int numClassiifers = rt.getColumns().size();
-
-                MatlabController proxy = MatlabController.getInstance();
-                
-                for (int c1 = 0; c1 < numClassiifers-1; c1++) {
-                    for (int c2 = c1+1; c2 < numClassiifers; c2++) {
-                        String c1name = rt.getColumns().get(c1).getName();
-                        String c2name = rt.getColumns().get(c2).getName();
-                        
-                        if (c1name.compareTo(c2name) > 0) {
-                            String t = c1name;
-                            c1name = c2name;
-                            c2name = t;
-                        }
-                        
-                        String pwFolderName = outPath + c1name + "vs" + c2name + "/";
-                        (new File(pwFolderName)).mkdir();
-                        
-                        List<ResultColumn> pwrl = new ArrayList<>(2);
-                        pwrl.add(rt.getColumn(c1name).get());
-                        pwrl.add(rt.getColumn(c2name).get());
-                        ResultTable pwrt = new ResultTable(pwrl);
-
-                        proxy.eval("array = ["+ pwrt.toStringValues(false) + "];");
-
-                        final StringBuilder concat = new StringBuilder();
-                        concat.append("'");
-                        concat.append(c1name.replaceAll("_", "\\\\_"));
-                        concat.append("',");
-                        concat.append("'");
-                        concat.append(c2name.replaceAll("_", "\\\\_"));
-                        concat.append("'");
-                        proxy.eval("labels = {" + concat.toString() + "}");
-                        
-//                        System.out.println("array = ["+ pwrt.toStringValues(false) + "];");
-//                        System.out.println("labels = {" + concat.toString() + "}");
-//                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, statName).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+statName+"')");
-                        
-                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"')");
-                        proxy.eval("clear");
-                    }
-                }
-            } catch (Exception io) {
-                System.out.println("buildPairwiseScatterDiagrams("+outPath+") failed loading " + metric.name + " file\n" + io);
+        for (int i = 0; i < posClassProbs.length; i++)
+            posClassProbs[i] = dists[i][positiveClass];
+        
+        return posClassProbs;
+    }
+    
+    public static int findMinorityClass(double[] classVals) { 
+        HashMap<Integer,Integer> classes = new HashMap<>();
+        
+        for (double classVal : classVals) {
+            Integer v = classes.get(classVal);
+            if (v == null) 
+                v = 0;
+            classes.put((int)classVal, v++);
+        }
+        
+        int minClass = -1, minCount = Integer.MAX_VALUE;
+        for (Map.Entry<Integer, Integer> entry : classes.entrySet()) {
+            if (entry.getValue() < minCount) {
+                minCount = entry.getValue();
+                minClass = entry.getKey();
             }
         }
+        
+        return minClass;
+    }
+        
+    public static void matlab_buildROCDiagrams(String outPath, String expName, String dsetName, ClassifierResults[] cresults, String[] cnames) {   
+        matlab_buildROCDiagrams(outPath, expName, dsetName, cresults, cnames, findMinorityClass(cresults[0].getTrueClassValsAsArray()));
+    }   
     
+    public static void matlab_buildROCDiagrams(String outPath, String expName, String dsetName, ClassifierResults[] cresults, String[] cnames, int positiveClassIndex) {      
+        String targetFolder = outPath + rocDiaPath;
+        (new File(targetFolder)).mkdirs();
+        
+        String targetFile = targetFolder + "rocDia_" + expName + "_" + dsetName;
+        
+        try {
+            MatlabController proxy = MatlabController.getInstance();
+
+            proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
+            
+            proxy.eval("m_fname = '" + targetFile + "';");
+            
+            //holy hacks batman
+            // turns [CAWPE, resnet, XGBoost] 
+            // into  ['CAWPE  '; 'resnet '; 'XGBoost']
+            String[] paddedNames = formatClassifierNames(cnames);
+//            System.out.println("m_cnames = " + Arrays.toString(paddedNames).replace(", ", "'; '").replace("[", "['").replace("]", "']") + "");
+            proxy.eval("m_cnames = " + Arrays.toString(paddedNames).replace(", ", "'; '").replace("[", "['").replace("]", "']") + ";");
+            
+            double[] cvals = cresults[0].getTrueClassValsAsArray();
+            int[] m_cvals = new int[cvals.length];
+            for (int i = 0; i < cvals.length; i++)
+                m_cvals[i] = (int)cvals[i];
+            proxy.eval("m_cvals = " + Arrays.toString(m_cvals) + ";");
+
+            StringBuilder probsSB = new StringBuilder();
+            for (int i = 0; i < cresults.length; i++)  {
+                double[] probs = extractPosClassProbabilities(cresults[i], positiveClassIndex);
+                probsSB.append(Arrays.toString(probs).replace("[", "").replace("]", ";"));
+            }
+            proxy.eval("m_posClassProbs = [ " + probsSB.toString() + " ];");
+            
+            proxy.eval("m_posClass = " + positiveClassIndex + ";");
+            
+            //function [f] = roccurves(filepathandname,classifierNames,classValues,posClassProbs,posClassLabel,visible)
+            proxy.eval("roccurves(m_fname, m_cnames, m_cvals, m_posClassProbs, m_posClass)");
+            proxy.eval("clear");
+
+        } catch (Exception io) {
+            System.out.println("matlab_buildROCDiagrams failed while building " +targetFile+ "\n" + io);
+        }
+    }
+    
+    public static void main(String[] args) throws Exception {
+        
+        String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
+        String dset = "JWRorJWB_BlackBottle";
+        String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+        
+        ClassifierResults[] res = new ClassifierResults[cnames.length];
+        for (int i = 0; i < res.length; i++)
+            res[i] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold0.csv");
+        
+        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, res, cnames);
+    }
     
     
 }
