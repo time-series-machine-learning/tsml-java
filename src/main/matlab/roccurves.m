@@ -47,7 +47,7 @@ primaryFontSize = 24;   %legend, axis labels
 secondaryFontSize = 16; %axis tick labels
 
 %f = figure('Name', filepathandname, 'visible', 'off');
-f = figure('Name', filepathandname, 'visible', visible);
+f = figure('Name', filepathandname, 'visible', 'off');
 
 set(f,'Units','normalized');		
 set(f,'Position',[0 0 0.7 0.5]);
@@ -64,22 +64,13 @@ Y = cell(m,1);
 AUC = zeros(m,1);
 legendLabels = cell(m,1);
 
-for cid = 1:m
-    classifierName = classifierNames(cid,:);
-    posClassProbsC = posClassProbs(cid, :);
-        
-    % test/example cases 
-    %classifierName = 'Random Guessing';
-    %classValues = (1:100)>50;       % class values of each instance                   e.g [ 1 0 0 1 0 1 1... 0 ]
-    %posClassProbsC = rand(1, 100);  % prob given for positive class of each instance, e.g [ 0.2, 0.5, 1, 0.5 ... 0.1 ]
-    %posClassLabel = 1;              % positive class label                            e.g 1 
-
-    [x,y,~,auc] = perfcurve(classValues,posClassProbsC,posClassLabel);
+for cid = 1:m        
+    [x,y,~,auc] = perfcurve(classValues,posClassProbs(cid, :),posClassLabel);
     
     AUC(cid) = auc;
     X{cid} = x;
     Y{cid} = y;
-    legendLabels{cid} = sprintf('%s, AUC=%.3f',classifierName,auc);
+    legendLabels{cid} = sprintf('%s, AUC=%.3f',classifierNames(cid,:),auc);
 end
     
 if m > 1
@@ -114,6 +105,8 @@ end
 orient(f,'landscape')
 set(f,'PaperUnits','centimeters') 
 set(f,'PaperPosition', [0 0 25 22]); %a4 page default
+
+set(f, 'CreateFcn', 'set(gcbo,''Visible'',''on'')');
 
 saveas(f,filepathandname); %fig file
 print(f,filepathandname,'-dpdf'); %pdf file
