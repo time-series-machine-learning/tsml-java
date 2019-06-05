@@ -31,6 +31,7 @@ import vector_classifiers.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
+import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.RandomForest;
 
 /**
@@ -158,10 +159,26 @@ public class AlcoholClassifierList {
             
             ////////// TIME SERIES CLASSIFIERS
             case "ST": 
-                ShapeletTransformClassifier st = new ShapeletTransformClassifier();
-                st.setOneDayLimit();
-                st.setSeed(fold);
-                return st;
+//                ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+//                st.setOneDayLimit();
+//                st.setSeed(fold);
+//                return st;
+                
+                //something weird happening with shapelettransformclassifier, either outdatedwith current experiments
+                //class or parameters set incorrectly - jobs jsut are not finishing.
+                //thesefore using the transformExperiments class to generate the transforms for each fold 
+                //by themselves, then building Rotation Forest on the transform data (10 fold cv on train set, and build on full train/evaluate on test) as a 
+                //secondary step
+                
+                //therefore, not handled here. called TransformExperiments with same args, ST
+                return null;
+                
+            case "RotF": 
+                //see previous case, for building on the shapelet transform data
+                RotationForest rotf = new RotationForest();
+                rotf.setNumIterations(50);
+                rotf.setSeed(fold);
+                return rotf;
                 
             case "BOSS":
                 BOSS boss = new BOSS();
