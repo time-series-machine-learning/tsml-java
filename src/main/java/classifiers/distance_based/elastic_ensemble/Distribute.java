@@ -30,6 +30,11 @@ public class Distribute {
         Instances test = data[1];
         Knn knn = new Knn();
         List<ParameterSpace> parameterSpaces = ElasticEnsemble.getParameterSpaces(train, ElasticEnsemble.getDefaultParameterSpaceGetters());
+        int sum = 0;
+        for(ParameterSpace parameterSpace : parameterSpaces) {
+            sum += parameterSpace.size();
+        }
+        System.out.println(sum);
         ParameterSet parameterSet = getParameterPermutation(parameterIndex, parameterSpaces);
         knn.setOptions(parameterSet.getOptions());
         knn.setSeed(seed);

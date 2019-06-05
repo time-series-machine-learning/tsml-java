@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 public class ElasticEnsemble extends TemplateClassifier {
 
-    public static List<Function<Instances, ParameterSpace>> getDefaultParameterSpaceGetters() {
+    public static List<Function<Instances, ParameterSpace>> getClassicParameterSpaceGetters() {
         return new ArrayList<>(Arrays.asList(
             instances -> Dtw.euclideanParameterSpace(),
             instances -> Dtw.fullWindowParameterSpace(),
@@ -33,6 +33,19 @@ public class ElasticEnsemble extends TemplateClassifier {
             instances -> Msm.discreteParameterSpace(),
             instances -> Twe.discreteParameterSpace()
             ));
+    }
+
+    public static List<Function<Instances, ParameterSpace>> getDefaultParameterSpaceGetters() {
+        return new ArrayList<>(Arrays.asList(
+            Dtw::allDiscreteParameterSpace,
+            CachedDdtw::allDiscreteParameterSpace,
+            instances -> Wdtw.discreteParameterSpace(),
+            instances -> CachedWddtw.discreteParameterSpace(),
+            Lcss::discreteParameterSpace,
+            Erp::discreteParameterSpace,
+            instances -> Msm.discreteParameterSpace(),
+            instances -> Twe.discreteParameterSpace()
+                                            ));
     }
 
     public ElasticEnsemble() {

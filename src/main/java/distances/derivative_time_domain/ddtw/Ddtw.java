@@ -3,6 +3,7 @@ package distances.derivative_time_domain.ddtw;
 import distances.time_domain.dtw.Dtw;
 import evaluation.tuning.ParameterSpace;
 import timeseriesweka.filters.DerivativeFilter;
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -50,6 +51,19 @@ public class Ddtw extends Dtw {
     public static ParameterSpace fullWindowParameterSpace() {
         ParameterSpace parameterSpace = Dtw.fullWindowParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        return parameterSpace;
+    }
+
+    public static ParameterSpace allDiscreteParameterSpace(Instances instances) {
+        ParameterSpace parameterSpace = new ParameterSpace();
+        parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
+        int[] range;
+        if(instances.numAttributes() - 1 < 101) {
+            range = ArrayUtilities.range(instances.numAttributes() - 1);
+        } else {
+            range = ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 101);
+        }
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, range);
         return parameterSpace;
     }
 }

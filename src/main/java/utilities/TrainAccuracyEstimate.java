@@ -61,7 +61,8 @@ public interface TrainAccuracyEstimate {
  * 
      * @return All the data from the train CV
     */
-    ClassifierResults getTrainResults();    
+    ClassifierResults getTrainResults() throws
+                                        Exception;
     default int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }

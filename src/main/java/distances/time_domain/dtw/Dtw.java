@@ -308,11 +308,17 @@ public class Dtw extends DistanceMeasure {
         return parameterSpace;
     }
 
-
-    public static ParameterSpace ddtwDiscreteParameterSpace(Instances instances) {
+    public static ParameterSpace allDiscreteParameterSpace(Instances instances) {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
-        parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 100));
+        int[] range;
+        if(instances.numAttributes() - 1 < 101) {
+            range = ArrayUtilities.range(instances.numAttributes() - 1 - 1);
+        } else {
+            range = ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 101);
+        }
+        parameterSpace.addParameter(WARPING_WINDOW_KEY, range);
         return parameterSpace;
     }
+
 }

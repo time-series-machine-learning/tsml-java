@@ -195,4 +195,12 @@ public class ArrayUtilities {
         }
         return index;
     }
+
+    public static int[] range(final int i) {
+        int[] result = new int[i + 1];
+        for(int j = 0; j <= i; j++) {
+            result[j] = j;
+        }
+        return result;
+    }
 }
