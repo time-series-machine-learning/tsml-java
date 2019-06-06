@@ -108,8 +108,9 @@ public class TransformExperiments {
 
             ArffSaver saver = new ArffSaver();
 
-            String transformed_train_output = fullWriteLocation + expSettings.datasetName +"_TRAIN.arff";
-            String transformed_test_output = fullWriteLocation + expSettings.datasetName +"_TEST.arff";
+            //jamesl added foldid
+            String transformed_train_output = fullWriteLocation + expSettings.datasetName + expSettings.foldId + "_TRAIN.arff";
+            String transformed_test_output = fullWriteLocation + expSettings.datasetName + expSettings.foldId + "_TEST.arff";
 
             saver.setInstances(transformed_train);
             saver.setFile(new File(transformed_train_output));
