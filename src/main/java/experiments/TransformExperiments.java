@@ -81,8 +81,12 @@ public class TransformExperiments {
         File f = new File(transformWriteLocation);
         if (!f.exists())
             f.mkdirs();
-                
-        if (experiments.CollateResults.validateSingleFoldFile(transformWriteLocation) && experiments.CollateResults.validateSingleFoldFile(additionalWriteLocation)) {
+        
+        //jamesl looking for presence of full arff file instead of just presence of folder... 
+        String trainFileTarget = transformWriteLocation + expSettings.datasetName + expSettings.foldId + "_TRAIN.arff";
+        String testFileTarget = transformWriteLocation + expSettings.datasetName + expSettings.foldId + "_TEST.arff";
+        
+        if (experiments.CollateResults.validateSingleFoldFile(trainFileTarget) && experiments.CollateResults.validateSingleFoldFile(testFileTarget)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+additionalWriteLocation+", exiting.");
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+transformWriteLocation+", exiting.");
             return;
