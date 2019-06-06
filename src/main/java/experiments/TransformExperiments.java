@@ -145,8 +145,8 @@ public class TransformExperiments {
                 int numShapeletsInTransform=n;
                 
                 long numShapeletsToSearchFor = 0;
-                if(expSettings.contractTrainTimeHours > 0){
-                    long time  = expSettings.contractTrainTimeHours *  (dayNano/24); //time in nanoseconds for the number of hours we want to run for.
+                if(expSettings.contractTrainTimeSeconds > 0){
+                    long time  = expSettings.contractTrainTimeSeconds *  (dayNano/24/3600); //time in nanoseconds for the number of hours we want to run for.
                     
                     //proportion of operations we can perform in time frame.
                     BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
