@@ -85,6 +85,11 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
+            case "GEE":
+                classifiers.distance_based.elastic_ensemble.ElasticEnsemble ee = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ee.setSeed(fold);
+                c = ee;
+                break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 
                 break;
