@@ -27,7 +27,7 @@ import java.util.Set;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ParameterSet implements OptionHandler {
-    public Map<String, String> parameterSet = new HashMap<>();
+    public Map<String, Object> parameterSet = new HashMap<>();
         
     private static String startParaLineDelimiter = "parasStart";
     private static String endParaLineDelimiter = "parasEnd";
@@ -40,15 +40,15 @@ public class ParameterSet implements OptionHandler {
         return parameterSet.containsKey(paraName); 
     }
     
-    public Set<Entry<String,String>> getAllParameters() {
+    public Set<Entry<String,Object>> getAllParameters() {
         return parameterSet.entrySet();
     }
     
-    public String getParameterValue(String paraName) {
+    public Object getParameterValue(String paraName) {
         return parameterSet.get(paraName);
     }
     
-    public void addParameter(String paraName, String paraValue) { 
+    public void addParameter(String paraName, Object paraValue) {
         parameterSet.put(paraName, paraValue);
     }
     
@@ -56,7 +56,7 @@ public class ParameterSet implements OptionHandler {
     public String toString() { 
         StringBuilder sb = new StringBuilder("{");
         
-        for (Map.Entry<String, String> para : parameterSet.entrySet())
+        for (Map.Entry<String, Object> para : parameterSet.entrySet())
             sb.append(para.getKey() + ": " + para.getValue() + ", ");
         sb.append("}");
         
@@ -79,7 +79,7 @@ public class ParameterSet implements OptionHandler {
     @Override
     public void setOptions(final String[] options) throws
                                                    Exception {
-        parameterSet = new HashMap<String, String>();
+        parameterSet = new HashMap<String, Object>();
 
         for (int i = 0; i < options.length; i+=2)
             parameterSet.put(options[i], options[i+1]);
@@ -91,9 +91,9 @@ public class ParameterSet implements OptionHandler {
         String[] ps = new String[parameterSet.size() * 2];
 
         int i = 0;
-        for (Map.Entry<String, String> entry : parameterSet.entrySet()) {
+        for (Map.Entry<String, Object> entry : parameterSet.entrySet()) {
             ps[i] = "-" + entry.getKey();
-            ps[i+1] = entry.getValue();
+            ps[i+1] = entry.getValue().toString();
             i+=2;
         }
 
@@ -122,7 +122,7 @@ public class ParameterSet implements OptionHandler {
             sb.append(startParaLineDelimiter).append(",");
         
         boolean first = true;
-        for (Map.Entry<String, String> entry : parameterSet.entrySet()) {
+        for (Map.Entry<String, Object> entry : parameterSet.entrySet()) {
             if (first) {
                 //no initial comma
                 sb.append(entry.getKey()).append(",").append(entry.getValue());

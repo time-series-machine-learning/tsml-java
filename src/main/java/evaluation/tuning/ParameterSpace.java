@@ -14,6 +14,8 @@
  */
 package evaluation.tuning;
 
+import utilities.ArrayUtilities;
+
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -28,8 +30,8 @@ import static utilities.Utilities.numPermutations;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
-    public Map<String, List<String>> parameterLists = new TreeMap<>();
+public class ParameterSpace implements Iterable<Entry<String, List<Object>>>{
+    public Map<String, List<Object>> parameterLists = new TreeMap<>();
        
     public int numParas() { 
         return parameterLists.size();
@@ -37,18 +39,18 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
     
     public int numUniqueParameterSets() { 
         int total = 1;
-        for (Map.Entry<String, List<String>> entry : parameterLists.entrySet())
+        for (Map.Entry<String, List<Object>> entry : parameterLists.entrySet())
             total *= entry.getValue().size();
         return total;
     }
 
-    public List<String> getValues(String key)  {
+    public List<Object> getValues(String key)  {
         return parameterLists.get(key);
     }
 
     public List<Integer> getParameterSizes() {
         List<Integer> sizes = new ArrayList<>();
-        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
+        for(Map.Entry<String, List<Object>> entry : parameterLists.entrySet()) {
             sizes.add(entry.getValue().size());
         }
         return sizes;
@@ -62,8 +64,8 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
         List<Integer> indices = fromPermutation(index, getParameterSizes());
         ParameterSet parameterSet = new ParameterSet();
         int i = 0;
-        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
-            parameterSet.addParameter(entry.getKey(), entry.getValue().get(indices.get(i)));
+        for(Map.Entry<String, List<Object>> entry : parameterLists.entrySet()) {
+            parameterSet.addParameter(entry.getKey(), String.valueOf(entry.getValue().get(indices.get(i))));
             i++;
         }
         return parameterSet;
@@ -74,60 +76,39 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
      * *arrays* of object will use this method by making the call 
      * space.addParater(paraName, Arrays.asList(values));
      */
-    public void addParameter(String paraName, List<? extends Object> paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.size());
-        for (int i = 0; i < paraValues.size(); i++)
-            stringValues.add(paraValues.get(i).toString());
-        parameterLists.put(paraName, stringValues);
+    public void addParameter(String paraName, Collection<? extends Object> paraValues) {
+        parameterLists.put(paraName, new ArrayList<>(paraValues));
     }
 
     /**
      * Adder for *array* of strings themselves
      */
     public void addParameter(String paraName, String[] paraValues) {
-        parameterLists.put(paraName, Arrays.asList(paraValues));
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(paraValues)));
     }
 
     //Adders for the primitive types
     public void addParameter(String paraName, int[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
     public void addParameter(String paraName, double[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
     public void addParameter(String paraName, float[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
     public void addParameter(String paraName, boolean[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
     public void addParameter(String paraName, long[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
     public void addParameter(String paraName, short[] paraValues) {
-        List<String> stringValues = new ArrayList<>(paraValues.length);
-        for (int i = 0; i < paraValues.length; i++)
-            stringValues.add(paraValues[i]+"");
-        parameterLists.put(paraName, stringValues);
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(ArrayUtilities.box(paraValues))));
     }
 
     @Override
-    public Iterator<Entry<String, List<String>>> iterator() {
+    public Iterator<Entry<String, List<Object>>> iterator() {
         return parameterLists.entrySet().iterator();
     }
     
@@ -135,10 +116,10 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
     public String toString() {
         StringBuilder sb = new StringBuilder("{\n");
         
-        for (Map.Entry<String, List<String>> paras : parameterLists.entrySet()) {
+        for (Map.Entry<String, List<Object>> paras : parameterLists.entrySet()) {
             sb.append("\t" + paras.getKey() + ": [ ");
-            for (String val : paras.getValue())
-                sb.append(val + ", ");
+            for (Object val : paras.getValue())
+                sb.append(String.valueOf(val) + ", ");
             sb.append("]\n");
         }
         sb.append("}");
@@ -148,7 +129,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
 
     public static void main(String[] args) {
         ParameterSpace parameterSpace = new ParameterSpace();
-        parameterSpace.addParameter("p1", new String[] {"a", "b", "c"});
+        parameterSpace.addParameter("p1", new double[] {1.0,2.0,3.0,4.0,3.0,2.0,1.0});
         parameterSpace.addParameter("p2", new String[] {"d", "e", "f", "g"});
         parameterSpace.addParameter("p3", new String[] {"h", "i", "j", "k"});
         int size = parameterSpace.size();
@@ -156,7 +137,21 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
             ParameterSet parameterSet = parameterSpace.get(i);
             System.out.println(parameterSet);
         }
+        parameterSpace.removeDuplicateValues();
+        System.out.println("----");
+        size = parameterSpace.size();
+        for(int i = 0; i < size; i++) {
+            ParameterSet parameterSet = parameterSpace.get(i);
+            System.out.println(parameterSet);
+        }
     }
 
 
+    public void removeDuplicateValues() {
+        for(List<Object> values : parameterLists.values()) {
+            Set<Object> set = new TreeSet<>(values); // must be treeset to maintain ordering
+            values.clear();
+            values.addAll(set);
+        }
+    }
 }

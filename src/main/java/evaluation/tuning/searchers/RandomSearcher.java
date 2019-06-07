@@ -76,7 +76,7 @@ public class RandomSearcher extends ParameterSearcher {
             keys = new String[numParas];
             
             int i = 0;
-            for (Map.Entry<String, List<String>> entry : space.parameterLists.entrySet()) {
+            for (Map.Entry<String, List<Object>> entry : space.parameterLists.entrySet()) {
                 keys[i] = entry.getKey();
                 sizes[i] = entry.getValue().size();
                 i++;
@@ -114,7 +114,7 @@ public class RandomSearcher extends ParameterSearcher {
             
             ParameterSet pset = new ParameterSet();
             for (int i = 0; i < keys.length; i++)
-                pset.parameterSet.put(keys[i], space.parameterLists.get(keys[i]).get(psetInds[i]));
+                pset.parameterSet.put(keys[i], space.parameterLists.get(keys[i]).get(psetInds[i]).toString());
             
             numParaSetsSampled++;
             
