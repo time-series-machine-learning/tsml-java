@@ -16,13 +16,7 @@ public class Dtw extends DistanceMeasure {
     }
 
     public void setWarpingWindow(int warpingWindow) {
-        if(warpingWindow < 0) {
-            throw new IllegalArgumentException("Warp cannot be less than 0");
-        } else if(warpingWindow > 1) {
-            throw new IllegalArgumentException("Warp cannot be more than 1");
-        } else {
-            this.warpingWindow = warpingWindow;
-        }
+        this.warpingWindow = warpingWindow;
     }
 
     public Dtw(int warpingWindow) {

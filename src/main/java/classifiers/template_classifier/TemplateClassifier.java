@@ -76,7 +76,9 @@ public abstract class TemplateClassifier
                                                     Exception {
         TemplateClassifier other = (TemplateClassifier) obj;
         setSavePath(other.savePath);
-        setSeed(other.seed);
+        if(other.seed != null) {
+            setSeed(other.seed);
+        }
         setTimeLimit(other.getTrainContractNanos());
     }
 

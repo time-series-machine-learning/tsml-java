@@ -3,6 +3,7 @@ package distances.derivative_time_domain.ddtw;
 import distances.time_domain.dtw.Dtw;
 import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
+import utilities.FilterUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -19,7 +20,7 @@ public class CachedDdtw extends Dtw {
         instances.add(first);
         instances.add(second);
         try {
-            instances = Filter.useFilter(instances, DERIVATIVE_FILTER);
+            instances = FilterUtilities.filter(instances, DERIVATIVE_FILTER);
             first = instances.get(0);
             second = instances.get(1);
             return super.distance(first, second, cutOff);

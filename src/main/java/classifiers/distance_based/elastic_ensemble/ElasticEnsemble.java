@@ -119,7 +119,9 @@ public class ElasticEnsemble extends TemplateClassifier {
         incrementTrainTimeNanos(System.nanoTime() - startTime);
         boolean remainingParameters = !parameterSetIterators.isEmpty();
         boolean remainingKnns = !knns.isEmpty();
+        int count = 0;
         while((remainingParameters || remainingKnns) && remainingTrainContract() > phaseTime) {
+            System.out.println(count++);
             long startPhaseTime = System.nanoTime();
             Knn knn;
             boolean choice = true;
@@ -146,9 +148,8 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knns.remove(index);
                 }
             }
-            knn = knn.copy();
             knn.buildClassifier(trainInstances);
-            Candidate candidate = new Candidate(knn, knn.getTrainResults());
+            Candidate candidate = new Candidate(knn.copy(), knn.getTrainResults());
             selector.add(candidate);
             phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
             remainingParameters = !parameterSetIterators.isEmpty();
