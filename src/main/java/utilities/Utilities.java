@@ -195,14 +195,15 @@ public class Utilities {
         setOpenPermissions(file);
     }
 
-    public static void mkfile(File file) throws
+    public static boolean mkfile(File file) throws
                                          IOException {
         File parent = file.getParentFile();
         if(parent != null) {
             mkdir(parent);
         }
-        file.createNewFile();
-        setOpenPermissions(file);
+        boolean result = file.createNewFile();
+        if(result) setOpenPermissions(file);
+        return result;
     }
 
     public static void setOpenPermissions(File file) {
@@ -214,9 +215,9 @@ public class Utilities {
         file.setExecutable(true, true);
     }
 
-    public static void mkfile(String path) throws
+    public static boolean mkfile(String path) throws
                                            IOException {
-        mkfile(new File(path));
+        return mkfile(new File(path));
     }
 
     public static int[] fromPermutation(int permutataion, int... binSizes) {

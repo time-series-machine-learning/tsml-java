@@ -203,4 +203,52 @@ public class ArrayUtilities {
         }
         return result;
     }
+
+    public static Integer[] box(int[] array) {
+        Integer[] boxed = new Integer[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Long[] box(long[] array) {
+        Long[] boxed = new Long[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Double[] box(double[] array) {
+        Double[] boxed = new Double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Float[] box(float[] array) {
+        Float[] boxed = new Float[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Short[] box(short[] array) {
+        Short[] boxed = new Short[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Boolean[] box(boolean[] array) {
+        Boolean[] boxed = new Boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
 }
