@@ -12,7 +12,7 @@ public class RandomIndexIterator implements Iterator<Integer> {
 
     public RandomIndexIterator(final Random random, final int size) {this.random = random;
         this.size = size;
-        indices = new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(size))));
+        indices = new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(size - 1))));
     }
 
     @Override
