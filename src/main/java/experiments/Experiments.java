@@ -353,6 +353,7 @@ public class Experiments  {
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
+            expSettings.resultsWriteLocation += '/';
             setupAndRunExperiment(expSettings);
         }else{
             int folds=1;
@@ -626,7 +627,6 @@ public class Experiments  {
      * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
     public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
-        
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
         String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);
