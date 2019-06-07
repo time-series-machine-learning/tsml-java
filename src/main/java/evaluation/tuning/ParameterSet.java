@@ -92,7 +92,7 @@ public class ParameterSet implements OptionHandler {
 
         int i = 0;
         for (Map.Entry<String, Object> entry : parameterSet.entrySet()) {
-            ps[i] = "-" + entry.getKey();
+            ps[i] = entry.getKey();
             ps[i+1] = entry.getValue().toString();
             i+=2;
         }
