@@ -20,6 +20,13 @@ public abstract class TemplateClassifier
     private long testTimeNanos = -1;
     private Random testRandom = new Random();
 
+    public long remainingTrainContract() {
+        if(trainContractNanos < 0) {
+            return Long.MAX_VALUE;
+        }
+        return trainContractNanos - trainTimeNanos;
+    }
+
     protected void setClassifierResultsMetaInfo(ClassifierResults classifierResults) throws
                                                                                      Exception {
         classifierResults.setTestTime(getTestTimeNanos());
@@ -116,8 +123,7 @@ public abstract class TemplateClassifier
     }
 
     @Override
-    public ClassifierResults getTrainResults() throws
-                                               Exception {
+    public ClassifierResults getTrainResults() {
         throw new UnsupportedOperationException();
     }
 

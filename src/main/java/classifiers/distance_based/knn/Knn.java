@@ -120,6 +120,9 @@ public class Knn
         return k <= 0;
     }
 
+    private long phaseTime = 0;
+    private ClassifierResults trainResults;
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         long startTime = System.nanoTime();
@@ -134,14 +137,24 @@ public class Knn
                 trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
             }
         }
-        while(withinSampleSize() && samplesTrainInstances() && !remainingTrainInstances.isEmpty()) {
+        while(withinSampleSize() && samplesTrainInstances()
+              && !remainingTrainInstances.isEmpty()
+              && phaseTime < remainingTrainContract()) {
+            long startPhaseTime = System.nanoTime();
             Instance instance = sampleInstance();
             untestedTrainInstances.add(instance);
             for(NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
                 nearestNeighbourSet.add(instance);
             }
+            phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
+        }
+        trainResults = new ClassifierResults();
+        for(NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
+            double[] distribution = nearestNeighbourSet.predict();
+            trainResults.addPrediction(nearestNeighbourSet.getTarget().classValue(), distribution, argMax(distribution), nearestNeighbourSet.getTime(), null);
         }
         incrementTrainTimeNanos(System.nanoTime() - startTime);
+        setClassifierResultsMetaInfo(trainResults);
     }
 
     private boolean withinSampleSize() {
@@ -163,14 +176,8 @@ public class Knn
         }
     }
 
-    public ClassifierResults getTrainResults() throws
-                                               Exception {
-        ClassifierResults results = new ClassifierResults();
-        for(NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
-            double[] distribution = nearestNeighbourSet.predict();
-            results.addPrediction(nearestNeighbourSet.getTarget().classValue(), distribution, argMax(distribution), nearestNeighbourSet.getTime(), null);
-        }
-        return results;
+    public ClassifierResults getTrainResults() {
+        return trainResults;
     }
 
     @Override

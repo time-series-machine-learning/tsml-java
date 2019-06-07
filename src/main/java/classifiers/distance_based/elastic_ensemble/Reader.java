@@ -24,7 +24,7 @@ public class Reader {
         int seed = Integer.parseInt(args[4]);
         int parameterIndex = Integer.parseInt(args[5]);
         resultsDirPath = resultsDirPath + '/' + classifierName + '/' + datasetName;
-        String trainResultsFilePath = resultsDirPath + '/' + type + "Fold" + seed + "_" + parameterIndex + ".csv.gzip";
+        String trainResultsFilePath = resultsDirPath + "/auxFold" + seed + '/' + type + "Param" + parameterIndex + ".csv.gzip";
         ObjectInputStream trainInput = new ObjectInputStream(new GZIPInputStream(new FileInputStream(trainResultsFilePath)));
         int i = 0;
         try {
