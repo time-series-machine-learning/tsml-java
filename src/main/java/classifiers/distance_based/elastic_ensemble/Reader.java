@@ -1,18 +1,7 @@
 package classifiers.distance_based.elastic_ensemble;
 
-import classifiers.distance_based.knn.Knn;
-import evaluation.storage.ClassifierResults;
-import evaluation.tuning.ParameterSet;
-import evaluation.tuning.ParameterSpace;
-import utilities.Utilities;
-import weka.core.Instances;
-
 import java.io.*;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-import static experiments.Experiments.sampleDataset;
 
 public class Reader {
     public static void main(String[] args) throws

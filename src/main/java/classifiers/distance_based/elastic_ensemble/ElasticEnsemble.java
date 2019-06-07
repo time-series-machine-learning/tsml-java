@@ -1,5 +1,7 @@
 package classifiers.distance_based.elastic_ensemble;
 
+import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
+import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;
 import classifiers.template_classifier.TemplateClassifier;
 import distances.derivative_time_domain.ddtw.CachedDdtw;
@@ -17,7 +19,6 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityVoteByConfidence;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -86,18 +87,24 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private boolean removeDuplicateParameterValues = true;
-    private final List<Constituent> constituents = new ArrayList<>();
     private EnsembleModule[] modules = null;
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVoteByConfidence();
     private long phaseTime = 0;
-    private ClassifierResults trainResults = null;
+    private final List<Knn> knns = new ArrayList<>();
+    private final List<Iterator<String[]>> parameterSetIterators = new ArrayList<>();
+    private Selector<Candidate> selector = new BestPerTypeSelector<>(candidate -> candidate.getKnn()
+                                                                                           .getDistanceMeasure()
+                                                                                           .toString(), (candidate, t1) -> Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getTrainResults(), t1.getTrainResults()));
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws
                                                       Exception {
         long startTime = System.nanoTime();
-        constituents.clear();
+        Random random = getTrainRandom();
+        knns.clear();
+        selector.setRandom(random);
+        parameterSetIterators.clear();
         parameterSpaces.clear();
         parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
         if(removeDuplicateParameterValues) {
@@ -106,23 +113,49 @@ public class ElasticEnsemble extends TemplateClassifier {
             }
         }
         for(ParameterSpace parameterSpace : parameterSpaces) {
-            Knn knn = new Knn();
-            constituents.add(new Constituent(knn, new ParameterSetIterator(parameterSpace, new RandomIndexIterator(getTrainRandom(), parameterSpace.size())), trainInstances.size()));
+            Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIndexIterator(random, parameterSpace.size()));
+            if(iterator.hasNext()) parameterSetIterators.add(iterator);
         }
         incrementTrainTimeNanos(System.nanoTime() - startTime);
-        while (!constituents.isEmpty() && remainingTrainContract() > phaseTime) {
-            int constituentIndex = getTrainRandom().nextInt(constituents.size());
-            Constituent constituent = constituents.get(constituentIndex);
-            if(!constituent.hasNext()) {
-                constituents.remove(constituentIndex);
-            } else {
-                long startPhaseTime = System.nanoTime();
-                Knn knn = constituent.next();
-                knn.buildClassifier(trainInstances);
-                phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
+        boolean remainingParameters = !parameterSetIterators.isEmpty();
+        boolean remainingKnns = !knns.isEmpty();
+        while((remainingParameters || remainingKnns) && remainingTrainContract() > phaseTime) {
+            long startPhaseTime = System.nanoTime();
+            Knn knn;
+            boolean choice = true;
+            if(remainingParameters && remainingKnns) {
+                choice = random.nextBoolean();
             }
+            if(choice) {
+                int index = random.nextInt(parameterSetIterators.size());
+                Iterator<String[]> iterator = parameterSetIterators.get(index);
+                String[] parameters = iterator.next();
+                if(!iterator.hasNext()) {
+                    parameterSetIterators.remove(index);
+                }
+                knn = new Knn();
+                knn.setOptions(parameters);
+                knn.setSampleSize(1);
+                knns.add(knn);
+            } else {
+                int index = random.nextInt(knns.size());
+                knn = knns.get(index);
+                int sampleSize = knn.getSampleSize() + 1;
+                knn.setSampleSize(sampleSize);
+                if(sampleSize + 1 > trainInstances.size()) {
+                    knns.remove(index);
+                }
+            }
+            knn = knn.copy();
+            knn.buildClassifier(trainInstances);
+            Candidate candidate = new Candidate(knn, knn.getTrainResults());
+            selector.add(candidate);
+            phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
+            remainingParameters = !parameterSetIterators.isEmpty();
+            remainingKnns = !knns.isEmpty();
             incrementTrainTimeNanos(System.nanoTime() - startTime);
         }
+        List<Candidate> constituents = selector.getSelected();
         modules = new EnsembleModule[constituents.size()];
         for(int i = 0; i < constituents.size(); i++) {
             Knn knn = constituents.get(i).getKnn();
@@ -131,7 +164,8 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
         weightingScheme.defineWeightings(modules, trainInstances.numClasses());
         votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
-        trainResults = new ClassifierResults();
+        ClassifierResults trainResults = new ClassifierResults();
+        setTrainResults(trainResults);
         for(int i = 0; i < trainInstances.size(); i++) {
             long predictionTime = System.nanoTime();
             double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
@@ -151,57 +185,22 @@ public class ElasticEnsemble extends TemplateClassifier {
         return votingScheme.distributionForInstance(modules, testInstance);
     }
 
-    @Override
-    public ClassifierResults getTrainResults() {
-        return trainResults;
-    }
+    private class Candidate {
+        private final Knn knn;
+        private final ClassifierResults trainResults;
 
-    private class Constituent implements Iterator<Knn> {
+        private Candidate(final Knn knn, final ClassifierResults trainResults) {
+            this.knn = knn;
+            this.trainResults = trainResults;
+        }
 
         public Knn getKnn() {
             return knn;
         }
 
-        private final Knn knn;
-        private final Iterator<String[]> parameterIterator;
-        private final int numTrainInstances;
-
-        private Constituent(final Knn knn,
-                            final Iterator<String[]> parameterIterator,
-                            final int numTrainInstances) {
-            this.knn = knn;
-            knn.setSampleSize(0);
-            this.parameterIterator = parameterIterator;
-            this.numTrainInstances = numTrainInstances;
+        public ClassifierResults getTrainResults() {
+            return trainResults;
         }
 
-        public boolean neighboursRemaining() {
-            return knn.getSampleSize() < numTrainInstances;
-        }
-
-        public boolean parametersRemaining() {
-            return parameterIterator.hasNext();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return neighboursRemaining() || parametersRemaining();
-        }
-
-        @Override
-        public Knn next() {
-            // todo dimension priority
-            if(neighboursRemaining()) {
-                knn.setSampleSize(knn.getSampleSize() + 1);
-            } else { // params remaining
-                String[] params = parameterIterator.next();
-                try {
-                    knn.setOptions(params);
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-            return knn;
-        }
     }
 }
