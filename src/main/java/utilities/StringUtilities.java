@@ -6,6 +6,9 @@ import java.util.List;
 public class StringUtilities {
 
     public static String join(String separator, String... parts) {
+        if(parts.length == 0) {
+            return "";
+        }
         StringBuilder list = new StringBuilder();
         for(int i = 0; i < parts.length - 1; i++){
             list.append(parts[i]);
