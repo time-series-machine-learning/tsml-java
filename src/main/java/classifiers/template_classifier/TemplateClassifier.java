@@ -117,14 +117,18 @@ public abstract class TemplateClassifier
         throw new UnsupportedOperationException();
     }
 
+    private String trainResultsPath;
+
     @Override
-    public void writeCVTrainToFile(final String train) {
-        throw new UnsupportedOperationException();
+    public void writeCVTrainToFile(final String path) {
+        trainResultsPath = path;
     }
+
+    private ClassifierResults trainResults;
 
     @Override
     public ClassifierResults getTrainResults() {
-        throw new UnsupportedOperationException();
+        return trainResults;
     }
 
     @Override
@@ -182,4 +186,7 @@ public abstract class TemplateClassifier
         return testRandom;
     }
 
+    public void setTrainResults(final ClassifierResults trainResults) {
+        this.trainResults = trainResults;
+    }
 }
