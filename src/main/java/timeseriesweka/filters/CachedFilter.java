@@ -1,5 +1,6 @@
 package timeseriesweka.filters;
 
+import utilities.FilterUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -19,13 +20,13 @@ public class CachedFilter extends SimpleBatchFilter {
 
     @Override
     public String globalInfo() {
-        throw new UnsupportedOperationException();
+        return "cached_" + filter.globalInfo();
     }
 
     @Override
     protected Instances determineOutputFormat(final Instances inputFormat) throws
                                                                            Exception {
-        throw new UnsupportedOperationException();
+        return FilterUtilities.filter(inputFormat, filter);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class CachedFilter extends SimpleBatchFilter {
                 results.add(instance);
             }
         }
-        Instances converted = Filter.useFilter(toConvert, filter);
+        Instances converted = FilterUtilities.filter(toConvert, filter);
         results.addAll(converted);
         for(Instance instance : converted) {
             double[] raw = instance.toDoubleArray();

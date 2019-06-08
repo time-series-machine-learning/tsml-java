@@ -37,20 +37,21 @@ public class Utilities {
  * @param instance
  * @return array of doubles with the class value removed
 */
-    public static final double[] extractTimeSeries(Instance instance) {
-        if(instance.classIsMissing()) {
-            return instance.toDoubleArray();
+    public static final double[] extractAttributesNoClassValue(Instance instance) {
+        double[] timeSeries;
+        if(instance.classIndex() < 0) {
+            timeSeries = new double[instance.numAttributes()];
         } else {
-            double[] timeSeries = new double[instance.numAttributes() - 1];
-            for(int i = 0; i < instance.numAttributes(); i++) {
-                if(i < instance.classIndex()) {
-                    timeSeries[i] = instance.value(i);
-                } else if (i != instance.classIndex()){
-                    timeSeries[i - 1] = instance.value(i);
-                }
-            }
-            return timeSeries;
+            timeSeries = new double[instance.numAttributes() - 1];
         }
+        for(int i = 0; i < instance.numAttributes(); i++) {
+            if(i < instance.classIndex()) {
+                timeSeries[i] = instance.value(i);
+            } else if (i > instance.classIndex()){
+                timeSeries[i - 1] = instance.value(i);
+            }
+        }
+        return timeSeries;
     }
 
     public static final double min(double... values) {

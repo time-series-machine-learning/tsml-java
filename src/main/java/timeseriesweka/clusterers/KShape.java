@@ -19,7 +19,7 @@ import utilities.ClassifierTools;
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
-import static utilities.Utilities.extractTimeSeries;
+
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.matrix.EigenvalueDecomposition;
