@@ -120,13 +120,15 @@ public class ElasticEnsemble extends TemplateClassifier {
         boolean remainingParameters = !parameterSetIterators.isEmpty();
         boolean remainingKnns = !knns.isEmpty();
         int count = 0;
-        while((remainingParameters || remainingKnns) && remainingTrainContract() > phaseTime) {
+        while((remainingParameters || remainingKnns) && remainingTrainContractNanos() > phaseTime) {
             System.out.println(count++);
             long startPhaseTime = System.nanoTime();
             Knn knn;
             boolean choice = true;
             if(remainingParameters && remainingKnns) {
                 choice = random.nextBoolean();
+            } else if(remainingKnns) {
+                choice = false;
             }
             if(choice) {
                 int index = random.nextInt(parameterSetIterators.size());
@@ -148,6 +150,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knns.remove(index);
                 }
             }
+            knn.setTrainContractNanos(remainingTrainContractNanos());
             knn.buildClassifier(trainInstances);
             Candidate candidate = new Candidate(knn.copy(), knn.getTrainResults());
             selector.add(candidate);
@@ -171,8 +174,8 @@ public class ElasticEnsemble extends TemplateClassifier {
             long predictionTime = System.nanoTime();
             double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
             predictionTime = System.nanoTime() - predictionTime;
-            for(int j = 0; j < modules.length; j++) {
-                predictionTime += modules[j].trainResults.getPredictionTimeInNanos(i);
+            for (EnsembleModule module : modules) {
+                predictionTime += module.trainResults.getPredictionTimeInNanos(i);
             }
             trainResults.addPrediction(trainInstances.get(i).classValue(), distribution, Utilities.argMax(distribution, getTrainRandom()), predictionTime, null);
         }

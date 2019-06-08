@@ -20,7 +20,7 @@ public abstract class TemplateClassifier
     private long testTimeNanos = -1;
     private Random testRandom = new Random();
 
-    public long remainingTrainContract() {
+    public long remainingTrainContractNanos() {
         if(trainContractNanos < 0) {
             return Long.MAX_VALUE;
         }
@@ -76,6 +76,8 @@ public abstract class TemplateClassifier
                                                     Exception {
         TemplateClassifier other = (TemplateClassifier) obj;
         setSavePath(other.savePath);
+        setTrainTimeNanos(other.getTrainTimeNanos());
+        setTrainResults(other.getTrainResults());
         if(other.seed != null) {
             setSeed(other.seed);
         }

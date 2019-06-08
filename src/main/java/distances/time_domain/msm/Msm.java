@@ -51,8 +51,8 @@ public class Msm
         // todo trim memory to window by window
         // todo early abandon
 
-        double[] timeSeriesA = Utilities.extractTimeSeries(a);
-        double[] timeSeriesB = Utilities.extractTimeSeries(b);
+        double[] timeSeriesA = Utilities.extractAttributesNoClassValue(a);
+        double[] timeSeriesB = Utilities.extractAttributesNoClassValue(b);
         int m, n, i, j;
         m = timeSeriesA.length;
         n = timeSeriesB.length;

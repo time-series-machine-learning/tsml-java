@@ -181,8 +181,8 @@ public class Dtw extends DistanceMeasure {
         // todo trim memory to window by window
         // todo early abandon
 
-        double[] first = Utilities.extractTimeSeries(a);
-        double[] second = Utilities.extractTimeSeries(b);
+        double[] first = Utilities.extractAttributesNoClassValue(a);
+        double[] second = Utilities.extractAttributesNoClassValue(b);
         
         double minDist;
         boolean tooBig;

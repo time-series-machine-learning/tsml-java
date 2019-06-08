@@ -40,8 +40,8 @@ public class Lcss extends Dtw {
                            Instance b,
                            final double cutOff) {
 
-        double[] first = Utilities.extractTimeSeries(a);
-        double[] second = Utilities.extractTimeSeries(b);
+        double[] first = Utilities.extractAttributesNoClassValue(a);
+        double[] second = Utilities.extractAttributesNoClassValue(b);
         // todo cleanup
         // todo trim memory to window by window
         // todo early abandon

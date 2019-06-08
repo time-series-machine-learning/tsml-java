@@ -23,8 +23,8 @@ public class Twe extends DistanceMeasure {
         // todo early abandon
         // todo might be able to inherit from dtw to use warping window perhaps?
 
-        double[] a = Utilities.extractTimeSeries(ia);
-        double[] b = Utilities.extractTimeSeries(ib);
+        double[] a = Utilities.extractAttributesNoClassValue(ia);
+        double[] b = Utilities.extractAttributesNoClassValue(ib);
         int dim=1;
         double dist, disti1, distj1;
         double[][] ta=new double[a.length][dim];

@@ -180,7 +180,7 @@ public class Knn
         }
         while(withinSampleSize() && samplesTrainInstances()
               && !remainingTrainInstances.isEmpty()
-              && phaseTime < remainingTrainContract()) {
+              && phaseTime < remainingTrainContractNanos()) {
             long startPhaseTime = System.nanoTime();
             Instance instance = sampleInstance();
             untestedTrainInstances.add(instance);

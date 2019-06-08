@@ -37,8 +37,8 @@ public class Wdtw
         // todo trim memory to window by window
         // todo early abandon
 
-        double[] timeSeriesA = Utilities.extractTimeSeries(a);
-        double[] timeSeriesB = Utilities.extractTimeSeries(b);
+        double[] timeSeriesA = Utilities.extractAttributesNoClassValue(a);
+        double[] timeSeriesB = Utilities.extractAttributesNoClassValue(b);
         int seriesLength = timeSeriesA.length;
         double[] weightVector = new double[seriesLength];
         double halfLength = (double) seriesLength / 2;

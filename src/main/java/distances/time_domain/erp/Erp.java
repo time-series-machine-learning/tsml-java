@@ -39,8 +39,8 @@ public class Erp
                            final double cutOff) {
 
 
-        double[] timeSeriesA = Utilities.extractTimeSeries(b);
-        double[] timeSeriesB = Utilities.extractTimeSeries(a);
+        double[] timeSeriesA = Utilities.extractAttributesNoClassValue(b);
+        double[] timeSeriesB = Utilities.extractAttributesNoClassValue(a);
 
         // todo cleanup
         // todo trim memory to window by window
