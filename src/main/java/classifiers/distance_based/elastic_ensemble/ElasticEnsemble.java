@@ -95,7 +95,13 @@ public class ElasticEnsemble extends TemplateClassifier {
     private final List<Iterator<String[]>> parameterSetIterators = new ArrayList<>();
     private Selector<Candidate> selector = new BestPerTypeSelector<>(candidate -> candidate.getKnn()
                                                                                            .getDistanceMeasure()
-                                                                                           .toString(), (candidate, t1) -> Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getTrainResults(), t1.getTrainResults()));
+                                                                                           .toString(), (candidate, other) -> {
+        int comparison = Integer.compare(candidate.getKnn().getSampleSize(), other.getKnn().getSampleSize());
+        if(comparison <= 0) {
+            comparison = Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getTrainResults(), other.getTrainResults());
+        }
+        return comparison;
+    });
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws
@@ -140,6 +146,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                 knn = new Knn();
                 knn.setOptions(parameters);
                 knn.setSampleSize(1);
+                knn.setEarlyAbandon(true);
                 knns.add(knn);
             } else {
                 int index = random.nextInt(knns.size());
