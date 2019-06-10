@@ -100,6 +100,17 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     private boolean performPostHocDsetResultsClustering;
     
+    
+    /**
+     * if true, will fill in missing probability distributions with one-hot vectors
+     * for files read in that are missing them. intended for very old files, where you still 
+     * want to calc auroc etc (metrics that need dists) for all the other classifiers 
+     * that DO provide them, but also want to compare e.g accuracy with classifier that don't
+     * 
+     * defaults to false
+     */
+    private boolean ignoreMissingDistributions;
+    
     /**
      * if true, will close the matlab connected once analysis complete (if it was opened)
      * if false, will allow for multiple stats runs in a single execution, but the 
@@ -120,7 +131,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.cleanResults = true;
         this.testResultsOnly = true;
         this.performPostHocDsetResultsClustering = false;
-
+        this.ignoreMissingDistributions = false;
+        
         this.datasets = new ArrayList<>();
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
@@ -159,6 +171,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     public MultipleClassifierEvaluation setCleanResults(boolean b) {
         cleanResults = b;
+        return this;
+    }
+    
+    public MultipleClassifierEvaluation setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
+        this.ignoreMissingDistributions = ignoreMissingDistributions;
         return this;
     }
     
@@ -438,6 +455,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         if (testResultsOnly)
             results[0]=null; //crappy but w/e
      
+        //train files may be produced via TrainAccuracyEstimate, older code
+        //while test files likely by experiments, but still might be a very old file
+        //so having separate checks for each.
+        boolean ignoringDistsFirstTimeFlagTrain = true;
+        boolean ignoringDistsFirstTimeFlagTest = true;
         
         for (int d = 0; d < datasets.size(); d++) {
             for (int f = 0; f < numFolds; f++) {
@@ -446,6 +468,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     String trainFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/trainFold" + f + ".csv";
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
+                        if (ignoreMissingDistributions) {
+                            boolean wasMissing = results[0][d][f].populateMissingDists();
+                            if (wasMissing && ignoringDistsFirstTimeFlagTrain) {
+                                System.out.println("---------Probability distributions missing, but ignored: " 
+                                        + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - train");
+                                ignoringDistsFirstTimeFlagTrain = false;
+                            }
+                        }
                         results[0][d][f].findAllStatsOnce();
                         if (cleanResults)
                             results[0][d][f].cleanPredictionInfo();
@@ -458,6 +488,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                 String testFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/testFold" + f + ".csv";
                 try {
                     results[1][d][f] = new ClassifierResults(testFile);
+                    if (ignoreMissingDistributions) {
+                        boolean wasMissing = results[1][d][f].populateMissingDists();
+                        if (wasMissing && ignoringDistsFirstTimeFlagTest) {
+                            System.out.println("---------Probability distributions missing, but ignored: " 
+                                    + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - test");
+                            ignoringDistsFirstTimeFlagTest = false;
+                        }
+                    }
                     results[1][d][f].findAllStatsOnce();
                     if (cleanResults)
                         results[1][d][f].cleanPredictionInfo();
