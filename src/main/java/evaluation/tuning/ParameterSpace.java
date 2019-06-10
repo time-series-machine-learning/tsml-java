@@ -19,6 +19,7 @@ import utilities.ArrayUtilities;
 import java.util.*;
 import java.util.Map.Entry;
 
+import static utilities.ArrayUtilities.removeDuplicatesInPlace;
 import static utilities.Utilities.fromPermutation;
 import static utilities.Utilities.numPermutations;
 
@@ -149,9 +150,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<Object>>>{
 
     public void removeDuplicateValues() {
         for(List<Object> values : parameterLists.values()) {
-            Set<Object> set = new TreeSet<>(values); // must be treeset to maintain ordering
-            values.clear();
-            values.addAll(set);
+            removeDuplicatesInPlace(values);
         }
     }
 }

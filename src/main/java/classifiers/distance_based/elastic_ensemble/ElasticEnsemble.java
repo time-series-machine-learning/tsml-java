@@ -96,77 +96,156 @@ public class ElasticEnsemble extends TemplateClassifier {
     private Selector<Candidate> selector = new BestPerTypeSelector<>(candidate -> candidate.getKnn()
                                                                                            .getDistanceMeasure()
                                                                                            .toString(), (candidate, other) -> {
-        int comparison = Integer.compare(candidate.getKnn().getSampleSize(), other.getKnn().getSampleSize());
+        int comparison = Integer.compare(candidate.getKnn().getNeighbourhoodSize(), other.getKnn().getNeighbourhoodSize());
         if(comparison <= 0) {
             comparison = Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getTrainResults(), other.getTrainResults());
         }
         return comparison;
     });
+    private final List<Knn> finishedKnns = new ArrayList<>();
+
+    public int getNeighbourhoodSize() {
+        return neighbourhoodSize;
+    }
+
+    public void setNeighbourhoodSize(final int neighbourhoodSize) {
+        if(this.neighbourhoodSize < neighbourhoodSize) {
+            knns.addAll(finishedKnns);
+            finishedKnns.clear();
+        }
+        this.neighbourhoodSize = neighbourhoodSize;
+    }
+
+    private int numParameterSets = -1;
+    private int parameterSetCount = 0;
+    private int neighbourhoodSize = -1;
+
+    private void setupNeighbourhoodSize(Instances trainInstances) {
+        if(neighbourhoodSizePercentage >= 0) {
+            setNeighbourhoodSize((int) (neighbourhoodSizePercentage * trainInstances.size()));
+        }
+    }
+
+    private void setupNumParameterSets() {
+        if(numParameterSetsPercentage >= 0) {
+            int size = 0;
+            for(ParameterSpace parameterSpace : parameterSpaces) {
+                size += parameterSpace.size();
+            }
+            numParameterSets = (int) (numParameterSetsPercentage * size);
+        }
+    }
+
+    public double getNumParameterSetsPercentage() {
+        return numParameterSetsPercentage;
+    }
+
+    public void setNumParameterSetsPercentage(final double numParameterSetsPercentage) {
+        this.numParameterSetsPercentage = numParameterSetsPercentage;
+    }
+
+    private double numParameterSetsPercentage = -1;
+
+    public double getNeighbourhoodSizePercentage() {
+        return neighbourhoodSizePercentage;
+    }
+
+    public void setNeighbourhoodSizePercentage(final double neighbourhoodSizePercentage) {
+        this.neighbourhoodSizePercentage = neighbourhoodSizePercentage;
+    }
+
+    private double neighbourhoodSizePercentage = -1;
+    private final List<Candidate> constituents = new ArrayList<>();
+
+    private boolean limitedNumParameterSets() {
+        return numParameterSets >= 0;
+    }
+
+    private boolean withinNumParameterSets() {
+        return parameterSetCount < numParameterSets;
+    }
+
+    private boolean remainingParameterSets() {
+        return !parameterSetIterators.isEmpty() && (!limitedNumParameterSets() || withinNumParameterSets());
+    }
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws
                                                       Exception {
         long startTime = System.nanoTime();
         Random random = getTrainRandom();
-        knns.clear();
-        selector.setRandom(random);
-        parameterSetIterators.clear();
-        parameterSpaces.clear();
-        parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
-        if(removeDuplicateParameterValues) {
+        if(trainSetChanged(trainInstances)) {
+            knns.clear();
+            selector.setRandom(random);
+            parameterSetIterators.clear();
+            parameterSpaces.clear();
+            parameterSetCount = 0;
+            finishedKnns.clear();
+            parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
+            if(removeDuplicateParameterValues) {
+                for(ParameterSpace parameterSpace : parameterSpaces) {
+                    parameterSpace.removeDuplicateValues();
+                }
+            }
             for(ParameterSpace parameterSpace : parameterSpaces) {
-                parameterSpace.removeDuplicateValues();
+                Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIndexIterator(random, parameterSpace.size()));
+                if(iterator.hasNext()) parameterSetIterators.add(iterator);
             }
-        }
-        for(ParameterSpace parameterSpace : parameterSpaces) {
-            Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIndexIterator(random, parameterSpace.size()));
-            if(iterator.hasNext()) parameterSetIterators.add(iterator);
-        }
-        incrementTrainTimeNanos(System.nanoTime() - startTime);
-        boolean remainingParameters = !parameterSetIterators.isEmpty();
-        boolean remainingKnns = !knns.isEmpty();
-        int count = 0;
-        while((remainingParameters || remainingKnns) && remainingTrainContractNanos() > phaseTime) {
-            System.out.println(count++);
-            long startPhaseTime = System.nanoTime();
-            Knn knn;
-            boolean choice = true;
-            if(remainingParameters && remainingKnns) {
-                choice = random.nextBoolean();
-            } else if(remainingKnns) {
-                choice = false;
-            }
-            if(choice) {
-                int index = random.nextInt(parameterSetIterators.size());
-                Iterator<String[]> iterator = parameterSetIterators.get(index);
-                String[] parameters = iterator.next();
-                if(!iterator.hasNext()) {
-                    parameterSetIterators.remove(index);
-                }
-                knn = new Knn();
-                knn.setOptions(parameters);
-                knn.setSampleSize(1);
-                knn.setEarlyAbandon(true);
-                knns.add(knn);
-            } else {
-                int index = random.nextInt(knns.size());
-                knn = knns.get(index);
-                int sampleSize = knn.getSampleSize() + 1;
-                knn.setSampleSize(sampleSize);
-                if(sampleSize + 1 > trainInstances.size()) {
-                    knns.remove(index);
-                }
-            }
-            knn.setTrainContractNanos(remainingTrainContractNanos());
-            knn.buildClassifier(trainInstances);
-            Candidate candidate = new Candidate(knn.copy(), knn.getTrainResults());
-            selector.add(candidate);
-            phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
-            remainingParameters = !parameterSetIterators.isEmpty();
-            remainingKnns = !knns.isEmpty();
+            setupNeighbourhoodSize(trainInstances);
+            setupNumParameterSets();
             incrementTrainTimeNanos(System.nanoTime() - startTime);
         }
-        List<Candidate> constituents = selector.getSelected();
+        boolean remainingParameters = remainingParameterSets();
+        boolean remainingKnns = !knns.isEmpty();
+//        int count = 0;
+        if(getNeighbourhoodSize() != 0) {
+            while((remainingParameters || remainingKnns) && remainingTrainContractNanos() > phaseTime) {
+//                System.out.println(count++);
+                long startPhaseTime = System.nanoTime();
+                Knn knn;
+                boolean choice = true;
+                if(remainingParameters && remainingKnns) {
+                    choice = random.nextBoolean();
+                } else if(remainingKnns) {
+                    choice = false;
+                }
+                int knnIndex;
+                if(choice) {
+                    int index = random.nextInt(parameterSetIterators.size());
+                    Iterator<String[]> iterator = parameterSetIterators.get(index);
+                    String[] parameters = iterator.next();
+                    if(!iterator.hasNext()) {
+                        parameterSetIterators.remove(index);
+                    } // todo random guess if no params or constituents
+                    knn = new Knn();
+                    knn.setOptions(parameters);
+                    knn.setNeighbourhoodSize(1);
+                    knn.setEarlyAbandon(true);
+                    knns.add(knn);
+                    knnIndex = knns.size() - 1;
+                    System.out.println(parameterSetCount);
+                    parameterSetCount++;
+                } else {
+                    knnIndex = random.nextInt(knns.size());
+                    knn = knns.get(knnIndex);
+                    int sampleSize = knn.getNeighbourhoodSize() + 1;
+                    knn.setNeighbourhoodSize(sampleSize);
+                }
+                if((knn.getNeighbourhoodSize() + 1 > getNeighbourhoodSize() && getNeighbourhoodSize() >= 0) || knn.getNeighbourhoodSize() + 1 > trainInstances.size()) {
+                    finishedKnns.add(knns.remove(knnIndex));
+                }
+                knn.setTrainContractNanos(remainingTrainContractNanos());
+                knn.buildClassifier(trainInstances);
+                Candidate candidate = new Candidate(knn.copy(), knn.getTrainResults());
+                selector.add(candidate);
+                phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
+                remainingParameters = remainingParameterSets();
+                remainingKnns = !knns.isEmpty();
+                incrementTrainTimeNanos(System.nanoTime() - startTime);
+            }
+        }
+        constituents.clear();
+        constituents.addAll(selector.getSelected());
         modules = new EnsembleModule[constituents.size()];
         for(int i = 0; i < constituents.size(); i++) {
             Knn knn = constituents.get(i).getKnn();

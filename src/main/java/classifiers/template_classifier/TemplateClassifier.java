@@ -3,11 +3,14 @@ package classifiers.template_classifier;
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
 import weka.classifiers.AbstractClassifier;
+import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static utilities.ArrayUtilities.argMax;
 import static utilities.StringUtilities.join;
 
 public abstract class TemplateClassifier
@@ -19,6 +22,28 @@ public abstract class TemplateClassifier
     private Random trainRandom = new Random();
     private long testTimeNanos = -1;
     private Random testRandom = new Random();
+    private Integer testInstancesHash = null;
+    private Integer trainInstancesHash = null;
+
+    protected boolean trainSetChanged(Instances trainInstances) {
+        int hash = trainInstances.hashCode();
+        if (trainInstancesHash == null || hash != trainInstancesHash) {
+            trainInstancesHash = hash;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected boolean testSetChanged(Instances testInstances) {
+        int hash = testInstances.hashCode();
+        if (testInstancesHash == null || hash != testInstancesHash) {
+            testInstancesHash = hash;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public long remainingTrainContractNanos() {
         if(trainContractNanos < 0) {
@@ -82,6 +107,8 @@ public abstract class TemplateClassifier
             setSeed(other.seed);
         }
         setTimeLimit(other.getTrainContractNanos());
+        testInstancesHash = other.testInstancesHash;
+        trainInstancesHash = other.trainInstancesHash;
     }
 
     @Override
@@ -192,5 +219,18 @@ public abstract class TemplateClassifier
 
     public void setTrainResults(final ClassifierResults trainResults) {
         this.trainResults = trainResults;
+    }
+
+    public ClassifierResults getTestResults(Instances testInstances) throws
+                                                                     Exception {
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testInstance : testInstances) {
+            long time = System.nanoTime();
+            double[] distribution = distributionForInstance(testInstance);
+            time = System.nanoTime() - time;
+            results.addPrediction(testInstance.classValue(), distribution, argMax(distribution), time, null);
+        }
+        setClassifierResultsMetaInfo(results);
+        return results;
     }
 }

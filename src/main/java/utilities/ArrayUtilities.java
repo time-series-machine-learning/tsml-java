@@ -2,9 +2,7 @@ package utilities;
 
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
@@ -250,5 +248,11 @@ public class ArrayUtilities {
             boxed[i] = array[i];
         }
         return boxed;
+    }
+
+    public static <A> void removeDuplicatesInPlace(List<A> values) {
+        Set<A> set = new TreeSet<>(values); // must be treeset to maintain ordering
+        values.clear();
+        values.addAll(set);
     }
 }

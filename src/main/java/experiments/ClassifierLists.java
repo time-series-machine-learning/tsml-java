@@ -42,7 +42,6 @@ import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
 /**
@@ -85,10 +84,105 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            case "GEE":
-                classifiers.distance_based.elastic_ensemble.ElasticEnsemble ee = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
-                ee.setSeed(fold);
-                c = ee;
+            case "ee10pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.1);
+                break;
+            case "ee20pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.2);
+                break;
+            case "ee30pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.3);
+                break;
+            case "ee40pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.4);
+                break;
+            case "ee50pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.5);
+                break;
+            case "ee60pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.6);
+                break;
+            case "ee70pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.7);
+                break;
+            case "ee80pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.8);
+                break;
+            case "ee90pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(0.9);
+                break;
+            case "ee100pp":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParameterSetsPercentage(1);
+                break;
+            case "ee10pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.1);
+                break;
+            case "ee20pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.2);
+                break;
+            case "ee30pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.3);
+                break;
+            case "ee40pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.4);
+                break;
+            case "ee50pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.5);
+                break;
+            case "ee60pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.6);
+                break;
+            case "ee70pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.7);
+                break;
+            case "ee80pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.8);
+                break;
+            case "ee90pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(0.9);
+                break;
+            case "ee100pnb":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizePercentage(1);
                 break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 
