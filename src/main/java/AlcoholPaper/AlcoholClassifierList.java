@@ -70,7 +70,7 @@ public class AlcoholClassifierList {
         "XGBoost",
         "CAWPE",
         "ResNet",
-        "ST",
+        "RotF_ST12Hour",
         "BOSS",
         "TSF",
         "RISE",
@@ -82,7 +82,7 @@ public class AlcoholClassifierList {
               //derivative measures are definitely an option worth considering, however skipping for the 
               //feasibility analysis 
         
-        "ST",
+        "RotF_ST12Hour",
         "BOSS",
         "TSF",
         "RISE",
@@ -105,6 +105,18 @@ public class AlcoholClassifierList {
         "XGBoost",
         "CAWPE",
     };
+    
+    public static String[] replaceLabelsForImages(String[] a) {
+        final String find = "RotF_ST12Hour";
+        final String replace = "ST";
+        
+        for (int i = 0; i < a.length; i++)
+            if (a[i].equals(find))
+                a[i] = replace;
+        
+        return a;
+    }
+    
     
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         
@@ -210,6 +222,7 @@ public class AlcoholClassifierList {
                 hive.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, fold);
                 hive.setRandSeed(fold);
                 hive.setPerformCV(exp.generateErrorEstimateOnTrainSet);
+                hive.setFillMissingDistsWithOneHotVectors(true); //for boss, missing train probabilities, but is 1nn in the end anyway
                 
                 return hive;
             }
@@ -224,13 +237,13 @@ public class AlcoholClassifierList {
         return null;
     }
     
-    public static void buildHIVECOTEs() { 
+    public static void buildHIVECOTEResults() { 
         for (String dset  : new String[] { "JWRorJWB_RedBottle", "JWRorJWB_BlackBottle", "RandomBottlesEthanol" }) {
             for (int fold = 0; fold < 30; fold++) {
                 ExperimentalArguments args = new Experiments.ExperimentalArguments();
                 args.resultsWriteLocation = AlcoholAnalysis.resultsPath;
                 args.dataReadLocation = AlcoholAnalysis.datasetPath;
-                args.classifierName = "HIVECOTE";
+                args.classifierName = "HIVE-COTE";
                 args.generateErrorEstimateOnTrainSet = true;
                 
                 args.datasetName = dset;
@@ -244,7 +257,7 @@ public class AlcoholClassifierList {
                 ExperimentalArguments args = new Experiments.ExperimentalArguments();
                 args.resultsWriteLocation = AlcoholAnalysis.resultsPath;
                 args.dataReadLocation = AlcoholAnalysis.datasetPath;
-                args.classifierName = "HIVECOTE";
+                args.classifierName = "HIVE-COTE";
                 args.generateErrorEstimateOnTrainSet = true;
                 
                 args.datasetName = dset;
@@ -256,6 +269,6 @@ public class AlcoholClassifierList {
     }
     
     public static void main(String[] args) {
-        buildHIVECOTEs();
+        buildHIVECOTEResults();
     }
 }

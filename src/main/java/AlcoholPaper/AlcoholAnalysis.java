@@ -17,6 +17,9 @@
 
 package AlcoholPaper;
 
+import static AlcoholPaper.AlcoholClassifierList.classifiers_all;
+import static AlcoholPaper.AlcoholClassifierList.classifiers_nonTsc;
+import static AlcoholPaper.AlcoholClassifierList.replaceLabelsForImages;
 import evaluation.MultipleClassifierEvaluation;
 
 /**
@@ -31,8 +34,13 @@ public class AlcoholAnalysis {
     static String resultsPath = "C:\\JamesLPHD\\Alcohol\\JOURNALPAPER\\Results\\";
             
     
-    public static void main(String[] args) {
-        
+    public static void main(String[] args) throws Exception {
+        ana_alcConc_LOBO();
+        ana_alcConc_LOBOPCA();
+        ana_alcConc_RandomBottle();
+        ana_jw_30RandFold();
+        ana_jw_30RandFoldPCA();
+        ana_jw_1FoldUserSplit();
     }
     
     public static void ana_alcConc_LOBO() throws Exception { 
@@ -41,7 +49,7 @@ public class AlcoholAnalysis {
         mce.setBuildMatlabDiagrams(false);
         mce.setDatasets(new String[] { "AlcoholForgeryEthanol", "AlcoholForgeryMethanol" });
         mce.setUseAllStatistics();
-        mce.readInClassifiers(AlcoholClassifierList.classifiers_all, resultsPath);
+        mce.readInClassifiers(classifiers_all, replaceLabelsForImages(classifiers_all), resultsPath);
         
         mce.runComparison();
     }
@@ -52,18 +60,18 @@ public class AlcoholAnalysis {
         mce.setBuildMatlabDiagrams(false);
         mce.setDatasets(new String[] { "PCAAlcoholForgeryEthanol", "PCAAlcoholForgeryMethanol" });
         mce.setUseAllStatistics();
-        mce.readInClassifiers(AlcoholClassifierList.classifiers_nonTsc, resultsPath);
+        mce.readInClassifiers(classifiers_nonTsc, replaceLabelsForImages(classifiers_nonTsc), resultsPath);
         
         mce.runComparison();
     }
     
     public static void ana_alcConc_RandomBottle() throws Exception { 
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "alcConc_LOBOPCA", 30);
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "alcConc_RandomBottle", 30);
         mce.setTestResultsOnly(true);
         mce.setBuildMatlabDiagrams(false);
         mce.setDatasets(new String[] { "RandomBottlesEthanol", });
         mce.setUseAllStatistics();
-        mce.readInClassifiers(AlcoholClassifierList.classifiers_nonTsc, resultsPath);
+        mce.readInClassifiers(classifiers_nonTsc, replaceLabelsForImages(classifiers_nonTsc), resultsPath);
         
         mce.runComparison();
     }
@@ -75,19 +83,32 @@ public class AlcoholAnalysis {
         mce.setBuildMatlabDiagrams(false);
         mce.setDatasets(new String[] { "JWRorJWB_RedBottle", "JWRorJWB_BlackBottle", });
         mce.setUseAllStatistics();
-        mce.readInClassifiers(AlcoholClassifierList.classifiers_all, resultsPath);
+        mce.readInClassifiers(classifiers_all, replaceLabelsForImages(classifiers_all), resultsPath);
         
         mce.runComparison();
     }
     
     
-    public static void ana_jw_1FoldUSerSplit() throws Exception { 
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "jw_FoldUSerSplit", 1);
+    public static void ana_jw_1FoldUserSplit() throws Exception { 
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "jw_1FoldUserSplit", 1);
         mce.setTestResultsOnly(true);
         mce.setBuildMatlabDiagrams(false);
         mce.setDatasets(new String[] { "JWRorJWB_RedBottle", "JWRorJWB_BlackBottle", });
         mce.setUseAllStatistics();
-        mce.readInClassifiers(AlcoholClassifierList.classifiers_all, resultsPath);
+        mce.readInClassifiers(classifiers_all, replaceLabelsForImages(classifiers_all), resultsPath);
+        
+        mce.runComparison();
+    }
+    
+    
+    public static void ana_jw_30RandFoldPCA() throws Exception { 
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "jw_30RandFoldPCA", 30);
+        mce.setTestResultsOnly(true);
+        mce.setBuildMatlabDiagrams(false);
+        mce.setDatasets(new String[] { "PCA90_JWRorJWB_RedBottle", "PCA90_JWRorJWB_BlackBottle", 
+                                        "PCAtop3_JWRorJWB_RedBottle", "PCAtop3_JWRorJWB_BlackBottle" });
+        mce.setUseAllStatistics();
+        mce.readInClassifiers(classifiers_all, replaceLabelsForImages(classifiers_all), resultsPath);
         
         mce.runComparison();
     }
