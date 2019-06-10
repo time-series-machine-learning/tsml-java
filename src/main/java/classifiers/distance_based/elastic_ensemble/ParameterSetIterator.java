@@ -15,6 +15,11 @@ public class ParameterSetIterator implements Iterator<String[]> {
     }
 
     @Override
+    public void remove() {
+        iterator.remove();
+    }
+
+    @Override
     public boolean hasNext() {
         return iterator.hasNext();
     }

@@ -1,5 +1,7 @@
 package classifiers.distance_based.elastic_ensemble;
 
+import classifiers.distance_based.elastic_ensemble.iteration.RandomIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.RoundRobinIterator;
 import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
 import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;
@@ -20,6 +22,7 @@ import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import utilities.ArrayUtilities;
+import utilities.StringUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -94,13 +97,27 @@ public class ElasticEnsemble extends TemplateClassifier {
         return "ee";
     }
 
+    public enum ConstituentIterationStrategy {
+        RANDOM,
+        ROUND_ROBIN;
+
+        public static ConstituentIterationStrategy fromString(String str) {
+            for (ConstituentIterationStrategy s : ConstituentIterationStrategy.values()) {
+                if (s.name()
+                     .equals(str)) {
+                    return s;
+                }
+            }
+            throw new IllegalArgumentException("No enum value by the name of " + str);
+        }
+    }
+
     private boolean removeDuplicateParameterValues = true;
     private EnsembleModule[] modules = null;
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVoteByConfidence();
     private long phaseTime = 0;
     private final List<Candidate> candidates = new ArrayList<>();
-    private final List<Iterator<String[]>> parameterSetIterators = new ArrayList<>();
     private Selector<TrainedCandidate> selector = new BestPerTypeSelector<>(Candidate::getParameterSpace, (candidate, other) -> {
         int comparison = Integer.compare(candidate.getKnn().getNeighbourhoodSize(), other.getKnn().getNeighbourhoodSize());
         if(comparison != 0) {
@@ -129,6 +146,7 @@ public class ElasticEnsemble extends TemplateClassifier {
         this.numParameterSets = numParameterSets;
     }
 
+    private ConstituentIterationStrategy constituentIterationStrategy = ConstituentIterationStrategy.ROUND_ROBIN;
     private int numParameterSets = -1;
     private int parameterSetCount = 0;
     private int neighbourhoodSize = -1;
@@ -136,15 +154,23 @@ public class ElasticEnsemble extends TemplateClassifier {
     private final static String NEIGHBOURHOOD_SIZE_KEY = "neighbourhoodSize";
     private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "numParameterSetsPercentage";
     private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "neighbourhoodSizePercentage";
+    private final static String CONSTITUENT_PARAMETERS_KEY = "constituentParametersTag";
 
     @Override
     public String[] getOptions() {
+        List<String> constituentParameters = new ArrayList<>();
+        for(TrainedCandidate constituent : constituents) {
+            constituentParameters.add(CONSTITUENT_PARAMETERS_KEY);
+            constituentParameters.add(String.valueOf(constituent.getTrainResults().getAcc()));
+            constituentParameters.add(StringUtilities.join(",", constituent.getKnn().getOptions()));
+        }
+        constituentParameters.add(CONSTITUENT_PARAMETERS_KEY);
         return ArrayUtilities.concat(super.getOptions(), new String[] {
             NUM_PARAMETER_SETS_KEY,
             String.valueOf(getNumParameterSets()),
             NEIGHBOURHOOD_SIZE_KEY,
             String.valueOf(getNeighbourhoodSize())
-        });
+        }, constituentParameters.toArray(new String[0]));
     }
 
     @Override
@@ -212,7 +238,39 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private boolean remainingParameterSets() {
-        return !parameterSetIterators.isEmpty() && (!limitedNumParameterSets() || withinNumParameterSets());
+        return parameterSpacesIterator.hasNext() && (!limitedNumParameterSets() || withinNumParameterSets());
+    }
+
+    private Iterator<IterableParameterSpace> parameterSpacesIterator;
+
+    private static class IterableParameterSpace {
+        private final ParameterSpace parameterSpace;
+        private final Iterator<String[]> iterator;
+
+        private IterableParameterSpace(final ParameterSpace parameterSpace,
+                                       final Iterator<String[]> iterator) {
+            this.parameterSpace = parameterSpace;
+            this.iterator = iterator;
+        }
+
+        public Iterator<String[]> getIterator() {
+            return iterator;
+        }
+
+        public ParameterSpace getParameterSpace() {
+            return parameterSpace;
+        }
+    }
+
+    private Iterator<IterableParameterSpace> getParameterSpacesIterator(List<IterableParameterSpace> iterableParameterSpaces) {
+        switch (constituentIterationStrategy) {
+            case RANDOM:
+                return parameterSpacesIterator = new RandomIterator<>(iterableParameterSpaces, getTrainRandom());
+            case ROUND_ROBIN:
+                return parameterSpacesIterator = new RoundRobinIterator<>(iterableParameterSpaces);
+            default:
+                throw new IllegalStateException(constituentIterationStrategy.name() + " not implemented");
+        }
     }
 
     @Override
@@ -223,7 +281,6 @@ public class ElasticEnsemble extends TemplateClassifier {
             getTrainStopWatch().reset();
             candidates.clear();
             selector.setRandom(random);
-            parameterSetIterators.clear();
             parameterSpaces.clear();
             parameterSetCount = 0;
             parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
@@ -232,10 +289,16 @@ public class ElasticEnsemble extends TemplateClassifier {
                     parameterSpace.removeDuplicateValues();
                 }
             }
+            List<IterableParameterSpace> iterableParameterSpaces = new ArrayList<>();
             for(ParameterSpace parameterSpace : parameterSpaces) {
-                Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIndexIterator(random, parameterSpace.size()));
-                if(iterator.hasNext()) parameterSetIterators.add(iterator);
+                Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIterator<>(
+                                    new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1)))),
+                                    random));
+                if(iterator.hasNext()) {
+                    iterableParameterSpaces.add(new IterableParameterSpace(parameterSpace, iterator));
+                }
             }
+            parameterSpacesIterator = getParameterSpacesIterator(iterableParameterSpaces);
             setupNeighbourhoodSize(trainInstances);
             setupNumParameterSets();
             getTrainStopWatch().lap();
@@ -257,17 +320,17 @@ public class ElasticEnsemble extends TemplateClassifier {
                 }
                 int knnIndex;
                 if(choice) {
-                    int index = random.nextInt(parameterSetIterators.size());
-                    ParameterSpace parameterSpace = parameterSpaces.get(index);
-                    Iterator<String[]> iterator = parameterSetIterators.get(index);
-                    String[] parameters = iterator.next();
-                    if(!iterator.hasNext()) {
-                        parameterSetIterators.remove(index);
-                        parameterSpaces.remove(index);
+                    IterableParameterSpace iterableParameterSpace = parameterSpacesIterator.next();
+                    Iterator<String[]> parameterSetIterator = iterableParameterSpace.getIterator();
+                    ParameterSpace parameterSpace = iterableParameterSpace.getParameterSpace();
+                    String[] parameters = parameterSetIterator.next();
+                    parameterSetIterator.remove();
+                    if(!parameterSetIterator.hasNext()) {
+                        parameterSpacesIterator.remove();
                     } // todo random guess if no params or constituents
                     knn = new Knn();
                     knn.setOptions(parameters);
-                    knn.setNeighbourhoodSize(getNeighbourhoodSize());//1); TODO CHANGE!!
+                    knn.setNeighbourhoodSize(1);
                     knn.setEarlyAbandon(true);
                     knn.setSeed(random.nextInt());
                     candidate = new Candidate(knn, parameterSpace);
@@ -304,7 +367,6 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
         for(int i = 0; i < constituents.size(); i++) {
             Knn knn = constituents.get(i).getKnn();
-            System.out.println(knn.getDistanceMeasure().toString());
             modules[i] = new EnsembleModule(knn.toString(), knn, knn.getParameters());
             modules[i].trainResults = knn.getTrainResults();
             if(savePath != null) {
