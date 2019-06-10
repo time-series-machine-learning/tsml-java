@@ -14,6 +14,8 @@
  */
 package experiments;
 
+import classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -21,15 +23,15 @@ import com.beust.jcommander.Parameters;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import net.sourceforge.sizeof.SizeOf;
+import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -43,8 +45,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
@@ -102,7 +102,13 @@ public class Experiments  {
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
-        
+
+        @DynamicParameter(names={"-P"}, description = "List of parameters for the classifier, e.g. -Pkey=value")
+        public Map<String, String> options = new HashMap<>();
+
+        @Parameter(names={"-cl", "--classifierLabel"}, required = true, description = "Label for the classifier")
+        public String classifierLabel;
+
     //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
@@ -279,8 +285,7 @@ public class Experiments  {
 //                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
 //                System.exit(1);
             }
-            
-            foldId -= 1; //go from one-indexed to zero-indexed
+
             Experiments.debug = this.debug;
             
             //populating the contract times if present
@@ -633,7 +638,11 @@ public class Experiments  {
         if (trainFoldFilename == null) 
             //otherwise, defined by this as default
             trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
-        String testFoldFilename = "testFold" + expSettings.foldId + ".csv";       
+        String testFoldFilename = "testFold" + expSettings.foldId + ".csv";
+
+        if(classifier instanceof CheckpointClassifier && expSettings.checkpointing) {
+            ((CheckpointClassifier) classifier).setSavePath(resultsPath + "/fold" + expSettings.foldId);
+        }
         
         ClassifierResults trainResults = null;
         ClassifierResults testResults = null;
@@ -662,6 +671,12 @@ public class Experiments  {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
+                    try {
+                        trainResults.setMemory(SizeOf.deepSizeOf(classifier));
+                    } catch (Exception e) {
+                        System.err.println("no sizeof");
+                        e.printStackTrace();
+                    }
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
                 //else 
@@ -678,10 +693,14 @@ public class Experiments  {
                 //no reason not to check again
                 if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
                     long testBenchmark = findBenchmarkTime(expSettings);
-                    
-                    testResults = evaluateClassifier(expSettings, classifier, testSet);
-                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
-                    
+
+                    if(classifier instanceof ElasticEnsemble) {
+                        testResults = ((ElasticEnsemble) classifier).getTestResults(testSet);
+                    } else {
+                        testResults = evaluateClassifier(expSettings, classifier, testSet);
+                        assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+                    }
+
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
                     

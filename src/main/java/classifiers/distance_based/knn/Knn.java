@@ -34,7 +34,7 @@ public class Knn
     private boolean earlyAbandon;
     private int neighbourhoodSize;
     private SamplingStrategy samplingStrategy = SamplingStrategy.RANDOM;
-    private long phaseTime = 0;
+    private long maxPhaseTime = 0;
 
     public Knn() {
         setDistanceMeasure(new Dtw(0));
@@ -42,6 +42,11 @@ public class Knn
         setNeighbourhoodSize(DEFAULT_SAMPLE_SIZE);
         setEarlyAbandon(DEFAULT_EARLY_ABANDON);
         setSamplingStrategy(SamplingStrategy.RANDOM);
+    }
+
+    @Override
+    public String toString() {
+        return "knn";
     }
 
     public String[] getOptions() {
@@ -134,9 +139,8 @@ public class Knn
     @Override
     public void buildClassifier(Instances data) throws
                                                 Exception {
-        long startTime = System.nanoTime();
         if (trainSetChanged(data)) {
-            setTrainTimeNanos(0);
+            getTrainStopWatch().reset();
             trainInstances.clear();
             trainInstances.addAll(data);
             remainingTrainInstances.clear();
@@ -145,17 +149,20 @@ public class Knn
             for (Instance instance : data) {
                 trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
             }
+            getTrainStopWatch().lap();
         }
         while (withinSampleSize() && samplesTrainInstances()
                && !remainingTrainInstances.isEmpty()
-               && phaseTime < remainingTrainContractNanos()) {
-            long startPhaseTime = System.nanoTime();
+               && maxPhaseTime < remainingTrainContractNanos()) {
+            long startTime = System.nanoTime();
             Instance instance = sampleInstance();
             untestedTrainInstances.add(instance);
             for (NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
                 nearestNeighbourSet.add(instance);
             }
-            phaseTime = Long.max(System.nanoTime() - startPhaseTime, phaseTime);
+            long phaseTime = System.nanoTime() - startTime;
+            maxPhaseTime = Long.max(phaseTime, maxPhaseTime);
+            getTrainStopWatch().lap();
         }
         ClassifierResults trainResults = new ClassifierResults();
         setTrainResults(trainResults);
@@ -165,7 +172,7 @@ public class Knn
                                                           .classValue(), distribution, argMax(distribution),
                                        nearestNeighbourSet.getTime(), null);
         }
-        incrementTrainTimeNanos(System.nanoTime() - startTime);
+        getTrainStopWatch().lap();
         setClassifierResultsMetaInfo(trainResults);
     }
 
@@ -228,8 +235,8 @@ public class Knn
 
     public ClassifierResults getTestResults(Instances testInstances) throws
                                                                      Exception {
-        long startTime = System.nanoTime();
         if (testSetChanged(testInstances)) {
+            getTestStopWatch().reset();
             testNearestNeighbourSets.clear();
             for (Instance testInstance : testInstances) {
                 testNearestNeighbourSets.add(new NearestNeighbourSet(testInstance));
@@ -255,8 +262,11 @@ public class Knn
             results.addPrediction(nearestNeighbourSet.getTarget()
                                                      .classValue(), distribution, argMax(distribution), time, null);
         }
-        incrementTestTimeNanos(System.nanoTime() - startTime);
+        getTestStopWatch().lap();
         setClassifierResultsMetaInfo(results);
+        if(getTrainResultsPath() != null) {
+            getTrainResults().writeFullResultsToFile(getTrainResultsPath());
+        }
         return results;
     }
 

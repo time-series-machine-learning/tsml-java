@@ -2,6 +2,7 @@ package classifiers.template_classifier;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
+import utilities.StopWatch;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -20,10 +21,11 @@ public abstract class TemplateClassifier
     private String savePath;
     private long trainContractNanos = -1;
     private Random trainRandom = new Random();
-    private long testTimeNanos = -1;
     private Random testRandom = new Random();
     private Integer testInstancesHash = null;
     private Integer trainInstancesHash = null;
+    private StopWatch trainStopWatch = new StopWatch();
+    private StopWatch testStopWatch = new StopWatch();
 
     protected boolean trainSetChanged(Instances trainInstances) {
         int hash = trainInstances.hashCode();
@@ -49,13 +51,13 @@ public abstract class TemplateClassifier
         if(trainContractNanos < 0) {
             return Long.MAX_VALUE;
         }
-        return trainContractNanos - trainTimeNanos;
+        return trainContractNanos - trainStopWatch.get();
     }
 
     protected void setClassifierResultsMetaInfo(ClassifierResults classifierResults) throws
                                                                                      Exception {
-        classifierResults.setTestTime(getTestTimeNanos());
-        classifierResults.setBuildTime(getTrainTimeNanos());
+        classifierResults.setTestTime(testStopWatch.get());
+        classifierResults.setBuildTime(trainStopWatch.get());
         classifierResults.setTimeUnit(TimeUnit.NANOSECONDS);
         classifierResults.setParas(join(",", getOptions()));
         try {
@@ -64,24 +66,6 @@ public abstract class TemplateClassifier
             classifierResults.setMemory(-1);
         }
     }
-
-    public void incrementTrainTimeNanos(long nanos) {
-        trainTimeNanos += nanos;
-    }
-
-    public void incrementTestTimeNanos(long nanos) {
-        testTimeNanos += nanos;
-    }
-
-    public long getTrainTimeNanos() {
-        return trainTimeNanos;
-    }
-
-    public void setTrainTimeNanos(final long trainTimeNanos) {
-        this.trainTimeNanos = trainTimeNanos;
-    }
-
-    private long trainTimeNanos = -1;
 
     public Random getTrainRandom() {
         return trainRandom;
@@ -101,7 +85,8 @@ public abstract class TemplateClassifier
                                                     Exception {
         TemplateClassifier other = (TemplateClassifier) obj;
         setSavePath(other.savePath);
-        setTrainTimeNanos(other.getTrainTimeNanos());
+        trainStopWatch = other.trainStopWatch;
+        testStopWatch = other.testStopWatch;
         setTrainResults(other.getTrainResults());
         if(other.seed != null) {
             setSeed(other.seed);
@@ -205,14 +190,6 @@ public abstract class TemplateClassifier
         return savePath;
     }
 
-    public long getTestTimeNanos() {
-        return testTimeNanos;
-    }
-
-    public void setTestTimeNanos(final long testTimeNanos) {
-        this.testTimeNanos = testTimeNanos;
-    }
-
     public Random getTestRandom() {
         return testRandom;
     }
@@ -221,6 +198,7 @@ public abstract class TemplateClassifier
         this.trainResults = trainResults;
     }
 
+    // todo use test stopwatch below
     public ClassifierResults getTestResults(Instances testInstances) throws
                                                                      Exception {
         ClassifierResults results = new ClassifierResults();
@@ -232,5 +210,18 @@ public abstract class TemplateClassifier
         }
         setClassifierResultsMetaInfo(results);
         return results;
+    }
+
+    public StopWatch getTestStopWatch() {
+        return testStopWatch;
+    }
+
+    public StopWatch getTrainStopWatch() {
+        return trainStopWatch;
+    }
+
+
+    public String getTrainResultsPath() {
+        return trainResultsPath;
     }
 }
