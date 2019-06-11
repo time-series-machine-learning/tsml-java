@@ -172,12 +172,28 @@ public class ROCDiagramMaker {
         String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
         String dset = "JWRorJWB_BlackBottle";
         String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+        int numFolds = 10;
         
-        ClassifierResults[] res = new ClassifierResults[cnames.length];
-        for (int i = 0; i < res.length; i++)
-            res[i] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold0.csv");
+        ClassifierResults[][] res = new ClassifierResults[cnames.length][numFolds];
+        for (int i = 0; i < res.length; i++) {
+            for (int f = 0; f < numFolds; f++) {
+                res[i][f] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold"+f+".csv");
+            }
+        }
         
-        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, res, cnames);
+        ClassifierResults[] concatenatedRes = concatenateClassifierResults(res);
+        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, concatenatedRes, cnames);
+        
+        //single fold 
+//        String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
+//        String dset = "JWRorJWB_BlackBottle";
+//        String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+//        
+//        ClassifierResults[] res = new ClassifierResults[cnames.length];
+//        for (int i = 0; i < res.length; i++)
+//            res[i] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold0.csv");
+//        
+//        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, res, cnames);
     }
     
     
