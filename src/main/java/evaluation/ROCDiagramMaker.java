@@ -43,8 +43,35 @@ public class ROCDiagramMaker {
      * @param cresults [classifier][fold]
      * @return         [classifier]
      */
-    public static ClassifierResults[/*classifier*/] concatenateClassifierResults(ClassifierResults[/*classiifer*/][/*fold*/] cresults) { 
-        return null;
+    public static ClassifierResults[/*classifier*/] concatenateClassifierResults(ClassifierResults[/*classiifer*/][/*fold*/] cresults) throws Exception { 
+        ClassifierResults[] concatenatedResults = new ClassifierResults[cresults.length];
+        if (cresults[0].length == 1)  {
+            for (int i = 0; i < cresults.length; i++)
+                concatenatedResults[i] = cresults[i][0];
+        }
+        else {
+            //if classifierresults ever gets split into separate classes for prediction and meta info, this obviously 
+            //gets cleaned up a lot
+            for (int classifierid = 0; classifierid < cresults.length; classifierid++) {
+                ClassifierResults newCres = new ClassifierResults();
+                for (int foldid = 0; foldid < cresults[classifierid].length; foldid++) {
+                    ClassifierResults foldCres = cresults[classifierid][foldid];
+                    
+                    for (int predid = 0; predid < foldCres.numInstances(); predid++) {
+                        newCres.addPrediction(foldCres.getTrueClassValue(predid), 
+                                        foldCres.getProbabilityDistribution(predid), 
+                                        foldCres.getPredClassValue(predid), 
+                                        1,   //dont care
+                                        ""); //dont care
+                    }
+                }
+                
+                concatenatedResults[classifierid] = newCres;
+            }
+            
+        }
+        
+        return concatenatedResults;
     }
     
     public static String[] formatClassifierNames(String[] cnames) { 
@@ -145,12 +172,28 @@ public class ROCDiagramMaker {
         String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
         String dset = "JWRorJWB_BlackBottle";
         String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+        int numFolds = 10;
         
-        ClassifierResults[] res = new ClassifierResults[cnames.length];
-        for (int i = 0; i < res.length; i++)
-            res[i] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold0.csv");
+        ClassifierResults[][] res = new ClassifierResults[cnames.length][numFolds];
+        for (int i = 0; i < res.length; i++) {
+            for (int f = 0; f < numFolds; f++) {
+                res[i][f] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold"+f+".csv");
+            }
+        }
         
-        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, res, cnames);
+        ClassifierResults[] concatenatedRes = concatenateClassifierResults(res);
+        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, concatenatedRes, cnames);
+        
+        //single fold 
+//        String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
+//        String dset = "JWRorJWB_BlackBottle";
+//        String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+//        
+//        ClassifierResults[] res = new ClassifierResults[cnames.length];
+//        for (int i = 0; i < res.length; i++)
+//            res[i] = new ClassifierResults(baseReadPath + cnames[i] + "/Predictions/" + dset + "/testFold0.csv");
+//        
+//        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, res, cnames);
     }
     
     
