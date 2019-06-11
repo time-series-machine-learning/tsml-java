@@ -1,0 +1,17 @@
+function [data, headers] = readcsv(path, hasRowHeaders)
+    fileID = fopen(path,'r');
+    if hasRowHeaders
+        
+    else
+        headers = fgets(fileID); 
+    end
+    fclose(fileID);
+    headers = split(headers, ',');
+    headers = headers';
+    if hasRowHeaders
+        data = csvread(path,1,1);
+    else
+        data = csvread(path,1);
+    end
+end
+
