@@ -110,13 +110,28 @@ public class AlcoholClassifierList {
         final String find = "RotF_ST12Hour";
         final String replace = "ST";
         
+        String[] copy = new String[a.length];
+        
         for (int i = 0; i < a.length; i++)
             if (a[i].equals(find))
-                a[i] = replace;
+                copy[i] = replace;
+            else 
+                copy[i] = a[i];
         
-        return a;
+        return copy;
     }
     
+    public static String[] removeClassifier(String[] a, String toremove) {
+        String[] copy = new String[a.length-1];
+        
+        for (int i = 0, j = 0; j < a.length; i++, j++)
+            if (!a[j].equals(toremove))
+                copy[i] = a[j];
+            else 
+                i--;
+        
+        return copy;
+    }
     
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         
