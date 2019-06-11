@@ -43,8 +43,35 @@ public class ROCDiagramMaker {
      * @param cresults [classifier][fold]
      * @return         [classifier]
      */
-    public static ClassifierResults[/*classifier*/] concatenateClassifierResults(ClassifierResults[/*classiifer*/][/*fold*/] cresults) { 
-        return null;
+    public static ClassifierResults[/*classifier*/] concatenateClassifierResults(ClassifierResults[/*classiifer*/][/*fold*/] cresults) throws Exception { 
+        ClassifierResults[] concatenatedResults = new ClassifierResults[cresults.length];
+        if (cresults[0].length == 1)  {
+            for (int i = 0; i < cresults.length; i++)
+                concatenatedResults[i] = cresults[i][0];
+        }
+        else {
+            //if classifierresults ever gets split into separate classes for prediction and meta info, this obviously 
+            //gets cleaned up a lot
+            for (int classifierid = 0; classifierid < cresults.length; classifierid++) {
+                ClassifierResults newCres = new ClassifierResults();
+                for (int foldid = 0; foldid < cresults[classifierid].length; foldid++) {
+                    ClassifierResults foldCres = cresults[classifierid][foldid];
+                    
+                    for (int predid = 0; predid < foldCres.numInstances(); predid++) {
+                        newCres.addPrediction(foldCres.getTrueClassValue(predid), 
+                                        foldCres.getProbabilityDistribution(predid), 
+                                        foldCres.getPredClassValue(predid), 
+                                        1,   //dont care
+                                        ""); //dont care
+                    }
+                }
+                
+                concatenatedResults[classifierid] = newCres;
+            }
+            
+        }
+        
+        return concatenatedResults;
     }
     
     public static String[] formatClassifierNames(String[] cnames) { 
