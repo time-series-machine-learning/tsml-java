@@ -1,7 +1,9 @@
 package classifiers.distance_based.elastic_ensemble;
 
+import classifiers.distance_based.elastic_ensemble.iteration.LinearIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.RandomIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.RoundRobinIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.SpreadIterator;
 import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
 import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;
@@ -97,12 +99,12 @@ public class ElasticEnsemble extends TemplateClassifier {
         return "ee";
     }
 
-    public enum ConstituentIterationStrategy {
+    public enum ParameterSpacesIterationStrategy {
         RANDOM,
         ROUND_ROBIN;
 
-        public static ConstituentIterationStrategy fromString(String str) {
-            for (ConstituentIterationStrategy s : ConstituentIterationStrategy.values()) {
+        public static ParameterSpacesIterationStrategy fromString(String str) {
+            for (ParameterSpacesIterationStrategy s : ParameterSpacesIterationStrategy.values()) {
                 if (s.name()
                      .equals(str)) {
                     return s;
@@ -112,7 +114,31 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
     }
 
-    private boolean removeDuplicateParameterValues = true;
+    public enum DistanceMeasureSearchStrategy {
+        RANDOM,
+        LINEAR,
+        SPREAD;
+
+        public static DistanceMeasureSearchStrategy fromString(String str) {
+            for (DistanceMeasureSearchStrategy s : DistanceMeasureSearchStrategy.values()) {
+                if (s.name()
+                     .equals(str)) {
+                    return s;
+                }
+            }
+            throw new IllegalArgumentException("No enum value by the name of " + str);
+        }
+    }
+
+    public boolean isRemoveDuplicateParameterSets() {
+        return removeDuplicateParameterSets;
+    }
+
+    public void setRemoveDuplicateParameterSets(final boolean removeDuplicateParameterSets) {
+        this.removeDuplicateParameterSets = removeDuplicateParameterSets;
+    }
+
+    private boolean removeDuplicateParameterSets = true;
     private EnsembleModule[] modules = null;
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVoteByConfidence();
@@ -147,7 +173,9 @@ public class ElasticEnsemble extends TemplateClassifier {
         this.numParameterSets = numParameterSets;
     }
 
-    private ConstituentIterationStrategy constituentIterationStrategy = ConstituentIterationStrategy.ROUND_ROBIN;
+    private ParameterSpacesIterationStrategy parameterSpacesIterationStrategy = ParameterSpacesIterationStrategy.ROUND_ROBIN;
+    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
+    private DistanceMeasureSearchStrategy distanceMeasureSearchStrategy = DistanceMeasureSearchStrategy.RANDOM;
     private int numParameterSets = -1;
     private int parameterSetCount = 0;
     private int neighbourhoodSize = -1;
@@ -264,13 +292,30 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private Iterator<IterableParameterSpace> getParameterSpacesIterator(List<IterableParameterSpace> iterableParameterSpaces) {
-        switch (constituentIterationStrategy) {
+        switch (parameterSpacesIterationStrategy) {
             case RANDOM:
                 return parameterSpacesIterator = new RandomIterator<>(iterableParameterSpaces, getTrainRandom());
             case ROUND_ROBIN:
                 return parameterSpacesIterator = new RoundRobinIterator<>(iterableParameterSpaces);
             default:
-                throw new IllegalStateException(constituentIterationStrategy.name() + " not implemented");
+                throw new IllegalStateException(parameterSpacesIterationStrategy.name() + " not implemented");
+        }
+    }
+
+    private ParameterSetIterator getParameterSetIterator(ParameterSpace parameterSpace) {
+        ArrayList<Integer> values =
+            new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
+        switch (distanceMeasureSearchStrategy) {
+            case RANDOM:
+                return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values,
+                    getTrainRandom()));
+            case SPREAD:
+                return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(
+                    values));
+            case LINEAR:
+                return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+            default:
+                throw new IllegalStateException(distanceMeasureSearchStrategy.name() + " not implemented yet");
         }
     }
 
@@ -286,16 +331,14 @@ public class ElasticEnsemble extends TemplateClassifier {
             parameterSpaces.clear();
             parameterSetCount = 0;
             parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
-            if(removeDuplicateParameterValues) {
+            if(removeDuplicateParameterSets) {
                 for(ParameterSpace parameterSpace : parameterSpaces) {
                     parameterSpace.removeDuplicateValues();
                 }
             }
             List<IterableParameterSpace> iterableParameterSpaces = new ArrayList<>();
             for(ParameterSpace parameterSpace : parameterSpaces) {
-                Iterator<String[]> iterator = new ParameterSetIterator(parameterSpace, new RandomIterator<>(
-                                    new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1)))),
-                                    random));
+                Iterator<String[]> iterator = getParameterSetIterator(parameterSpace);
                 if(iterator.hasNext()) {
                     iterableParameterSpaces.add(new IterableParameterSpace(parameterSpace, iterator));
                 }

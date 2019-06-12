@@ -28,8 +28,8 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 
 import utilities.*;
-import utilities.samplers.RandomRoundRobinIndexSampler;
-import utilities.samplers.RandomStratifiedSampler;
+import classifiers.distance_based.knn.samplers.RandomRoundRobinIndexSampler;
+import classifiers.distance_based.knn.samplers.RandomStratifiedSampler;
 import vector_classifiers.HomogeneousContractCAWPE;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;

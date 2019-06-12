@@ -542,29 +542,124 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     public static void main(String[] args) throws Exception {
-//        String basePath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
-////            String basePath = "Z:/Results/FinalisedUCIContinuous/";
-//
-//        MultipleClassifierEvaluation mcc = 
-//            new MultipleClassifierEvaluation("C:/JamesLPHD/analysisTest/", "testrunPWS10", 30);
-//        
-//        mcc.setTestResultsOnly(true); //as is default
-//        mcc.setBuildMatlabDiagrams(true); //as is default
-//        mcc.setCleanResults(true); //as is default
-//        mcc.setDebugPrinting(true);
-//        
-//        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-////        mcc.setUseAccuracyOnly();
-////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
-////        mcc.setUseAllStatistics();
-//        
-//        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
-//        
-//        //general rule of thumb: set/add/read the classifiers as the last thing before running
-//        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath); 
-////        mcc.readInClassifier("RandF", basePath); //
-//
-//        mcc.runComparison();  
+        MultipleClassifierEvaluation mcc =
+            new MultipleClassifierEvaluation("/scratch/", "ee_analysis_half", 10);
+
+        mcc.setTestResultsOnly(false); //as is default
+        mcc.setBuildMatlabDiagrams(true); //as is default
+        mcc.setCleanResults(true); //as is default
+        mcc.setDebugPrinting(true);
+
+//        mcc.setUseAllStatistics();
+
+        mcc.setDatasets("/scratch/dataset_name_list.txt");
+
+        //general rule of thumb: set/add/read the classifiers as the last thing before running
+        mcc.readInClassifiers(new String[] {
+            "ee_np=0.1_pp=0.1",
+//            "ee_np=0.1_pp=0.2",
+//            "ee_np=0.1_pp=0.3",
+//            "ee_np=0.1_pp=0.4",
+//            "ee_np=0.1_pp=0.5",
+//            "ee_np=0.1_pp=0.6",
+//            "ee_np=0.1_pp=0.7",
+//            "ee_np=0.1_pp=0.8",
+//            "ee_np=0.1_pp=0.9",
+//            "ee_np=0.1_pp=1.0",
+//            "ee_np=0.2_pp=0.1",
+            "ee_np=0.2_pp=0.2",
+//            "ee_np=0.2_pp=0.3",
+//            "ee_np=0.2_pp=0.4",
+//            "ee_np=0.2_pp=0.5",
+//            "ee_np=0.2_pp=0.6",
+//            "ee_np=0.2_pp=0.7",
+//            "ee_np=0.2_pp=0.8",
+//            "ee_np=0.2_pp=0.9",
+//            "ee_np=0.2_pp=1.0",
+//            "ee_np=0.3_pp=0.1",
+//            "ee_np=0.3_pp=0.2",
+            "ee_np=0.3_pp=0.3",
+//            "ee_np=0.3_pp=0.4",
+//            "ee_np=0.3_pp=0.5",
+//            "ee_np=0.3_pp=0.6",
+//            "ee_np=0.3_pp=0.7",
+//            "ee_np=0.3_pp=0.8",
+//            "ee_np=0.3_pp=0.9",
+//            "ee_np=0.3_pp=1.0",
+//            "ee_np=0.4_pp=0.1",
+//            "ee_np=0.4_pp=0.2",
+//            "ee_np=0.4_pp=0.3",
+            "ee_np=0.4_pp=0.4",
+//            "ee_np=0.4_pp=0.5",
+//            "ee_np=0.4_pp=0.6",
+//            "ee_np=0.4_pp=0.7",
+//            "ee_np=0.4_pp=0.8",
+//            "ee_np=0.4_pp=0.9",
+//            "ee_np=0.4_pp=1.0",
+//            "ee_np=0.5_pp=0.1",
+//            "ee_np=0.5_pp=0.2",
+//            "ee_np=0.5_pp=0.3",
+//            "ee_np=0.5_pp=0.4",
+            "ee_np=0.5_pp=0.5",
+//            "ee_np=0.5_pp=0.6",
+//            "ee_np=0.5_pp=0.7",
+//            "ee_np=0.5_pp=0.8",
+//            "ee_np=0.5_pp=0.9",
+//            "ee_np=0.5_pp=1.0",
+//            "ee_np=0.6_pp=0.1",
+//            "ee_np=0.6_pp=0.2",
+//            "ee_np=0.6_pp=0.3",
+//            "ee_np=0.6_pp=0.4",
+//            "ee_np=0.6_pp=0.5",
+            "ee_np=0.6_pp=0.6",
+//            "ee_np=0.6_pp=0.7",
+//            "ee_np=0.6_pp=0.8",
+//            "ee_np=0.6_pp=0.9",
+//            "ee_np=0.6_pp=1.0",
+//            "ee_np=0.7_pp=0.1",
+//            "ee_np=0.7_pp=0.2",
+//            "ee_np=0.7_pp=0.3",
+//            "ee_np=0.7_pp=0.4",
+//            "ee_np=0.7_pp=0.5",
+//            "ee_np=0.7_pp=0.6",
+            "ee_np=0.7_pp=0.7",
+//            "ee_np=0.7_pp=0.8",
+//            "ee_np=0.7_pp=0.9",
+//            "ee_np=0.7_pp=1.0",
+//            "ee_np=0.8_pp=0.1",
+//            "ee_np=0.8_pp=0.2",
+//            "ee_np=0.8_pp=0.3",
+//            "ee_np=0.8_pp=0.4",
+//            "ee_np=0.8_pp=0.5",
+//            "ee_np=0.8_pp=0.6",
+//            "ee_np=0.8_pp=0.7",
+            "ee_np=0.8_pp=0.8",
+//            "ee_np=0.8_pp=0.9",
+//            "ee_np=0.8_pp=1.0",
+//            "ee_np=0.9_pp=0.1",
+//            "ee_np=0.9_pp=0.2",
+//            "ee_np=0.9_pp=0.3",
+//            "ee_np=0.9_pp=0.4",
+//            "ee_np=0.9_pp=0.5",
+//            "ee_np=0.9_pp=0.6",
+//            "ee_np=0.9_pp=0.7",
+//            "ee_np=0.9_pp=0.8",
+            "ee_np=0.9_pp=0.9",
+//            "ee_np=0.9_pp=1.0",
+//            "ee_np=1.0_pp=0.1",
+//            "ee_np=1.0_pp=0.2",
+//            "ee_np=1.0_pp=0.3",
+//            "ee_np=1.0_pp=0.4",
+//            "ee_np=1.0_pp=0.5",
+//            "ee_np=1.0_pp=0.6",
+//            "ee_np=1.0_pp=0.7",
+//            "ee_np=1.0_pp=0.8",
+//            "ee_np=1.0_pp=0.9",
+            "ee_np=1.0_pp=1.0",
+        }, "/scratch/ee_results_half/");
+//        mcc.readInClassifier("RandF", basePath); //
+
+        mcc.runComparison();
 
         
 //        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
@@ -583,7 +678,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
 //            runComparison(); 
 
-        workingExampleCodeRunnableOnTSCServerMachine();
+//        workingExampleCodeRunnableOnTSCServerMachine();
     }
     
     public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {

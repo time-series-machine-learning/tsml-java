@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static experiments.Experiments.sampleDataset;
 
@@ -18,14 +19,6 @@ public class Distribute {
 
     public static void main(String[] args) throws
                                            Exception {
-//        for(int n = 10; n <= 100; n+=10) {
-//            for(int p = 10; p <= 100; p+=10) {
-//                double np = (double) n / 100;
-//                double pp = (double) p / 100;
-//                System.out.println("\"ee;np=" + np + ";pp=" + pp + "\",");
-//            }
-//        }
-//        System.exit(1);
         System.out.print("args:");
         for(String arg : args) {
             System.out.print(" ");
@@ -45,22 +38,21 @@ public class Distribute {
         Instances test = data[1];
         ElasticEnsemble ee = new ElasticEnsemble();
         ee.setSeed(seed);
-        double pp = Double.parseDouble(args[4]);
-        System.out.println(pp);
-        ee.setNumParameterSetsPercentage(pp);
-        for(int n = 10; n <= 100; n+=10) {
-            double np = (double) n / 100;
-            System.out.println(np + ", " + pp);
-            String classifierName = "ee_np=" + np + "_pp=" + pp;
+        boolean stop = false;
+        int hours = 1;
+        while(!stop) {
+            long contractNanos = TimeUnit.NANOSECONDS.convert(hours, TimeUnit.HOURS);
+            ee.setTimeLimit(contractNanos);
+            String classifierName = "ee_" + hours + "hrs";
             String experimentResultsDirPath = resultsDirPath + "/" + classifierName + "/Predictions/" + datasetName;
             String trainResultsFilePath = experimentResultsDirPath + "/trainFold" + seed + ".csv";
             String testResultsFilePath = experimentResultsDirPath + "/testFold" + seed + ".csv";
-            ee.setNeighbourhoodSizePercentage(np);
             boolean trainMissing = !exists(trainResultsFilePath);
             boolean testMissing = !exists(testResultsFilePath);
-            if(trainMissing || testMissing) {
-                System.out.println("training");
-                ee.buildClassifier(train);
+            System.out.println("training");
+            ee.buildClassifier(train);
+            if(ee.getTrainResults().getBuildTimeInNanos() > contractNanos) {
+                stop = true;
             }
             if(trainMissing) {
                 System.out.println("getting train results");
@@ -85,6 +77,68 @@ public class Distribute {
             }
         }
     }
+
+//    public static void main(String[] args) throws
+//                                           Exception {
+//        System.out.print("args:");
+//        for(String arg : args) {
+//            System.out.print(" ");
+//            System.out.print(arg);
+//        }
+//        System.out.println();
+//        String datasetDirPath = new File(args[0]).getPath();
+//        System.out.println(datasetDirPath);
+//        String datasetName = args[1];
+//        System.out.println(datasetName);
+//        String resultsDirPath = new File(args[2]).getPath();
+//        System.out.println(resultsDirPath);
+//        int seed = Integer.parseInt(args[3]);
+//        System.out.println(seed);
+//        Instances[] data = sampleDataset(datasetDirPath, datasetName, seed);
+//        Instances train = data[0];
+//        Instances test = data[1];
+//        ElasticEnsemble ee = new ElasticEnsemble();
+//        ee.setSeed(seed);
+//        double pp = Double.parseDouble(args[4]);
+//        System.out.println(pp);
+//        ee.setNumParameterSetsPercentage(pp);
+//        for(int n = 10; n <= 100; n+=10) {
+//            double np = (double) n / 100;
+//            System.out.println(np + ", " + pp);
+//            String classifierName = "ee_np=" + np + "_pp=" + pp;
+//            String experimentResultsDirPath = resultsDirPath + "/" + classifierName + "/Predictions/" + datasetName;
+//            String trainResultsFilePath = experimentResultsDirPath + "/trainFold" + seed + ".csv";
+//            String testResultsFilePath = experimentResultsDirPath + "/testFold" + seed + ".csv";
+//            ee.setNeighbourhoodSizePercentage(np);
+//            boolean trainMissing = !exists(trainResultsFilePath);
+//            boolean testMissing = !exists(testResultsFilePath);
+//            if(trainMissing || testMissing) {
+//                System.out.println("training");
+//                ee.buildClassifier(train);
+//            }
+//            if(trainMissing) {
+//                System.out.println("getting train results");
+//                ClassifierResults trainResults = ee.getTrainResults();
+//                trainResults.setDatasetName(datasetName);
+//                trainResults.setFoldID(seed);
+//                trainResults.setClassifierName(classifierName);
+//                writeToFile(trainResults, trainResultsFilePath);
+//            } else {
+//                System.out.println("train exists");
+//            }
+//            if(testMissing) {
+//                System.out.println("getting test results");
+//                ClassifierResults testResults = ee.getTestResults(test);
+//                testResults.setDatasetName(datasetName);
+//                testResults.setFoldID(seed);
+//                testResults.setClassifierName(classifierName);
+//                writeToFile(testResults, testResultsFilePath);
+//                ee.resetTestRandom();
+//            } else {
+//                System.out.println("test exists");
+//            }
+//        }
+//    }
 
     private static boolean exists(String path) {
         File file = new File(path);

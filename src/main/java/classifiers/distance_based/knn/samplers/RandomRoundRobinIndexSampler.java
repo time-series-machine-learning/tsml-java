@@ -1,4 +1,4 @@
-package utilities.samplers;
+package classifiers.distance_based.knn.samplers;
 
 import weka.core.Instance;
 import weka.core.Instances;

@@ -21,9 +21,9 @@ public class Knn
     public static final boolean DEFAULT_EARLY_ABANDON = false;
     public static final String K_KEY = "k";
     public static final int DEFAULT_SAMPLE_SIZE = -1;
-    public static final String SAMPLE_SIZE_KEY = "neighbourhoodSize";
+    public static final String NEIGHBOURHOOD_SIZE_KEY = "neighbourhoodSize";
     public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
-    public static final String SAMPLING_STRATEGY_KEY = "samplingStrategy";
+    public static final String NEIGHBOUR_SEARCH_STRATEGY_KEY = "neighbourSearchStrategy";
     private final List<NearestNeighbourSet> trainNearestNeighbourSets = new ArrayList<>();
     private final List<NearestNeighbourSet> testNearestNeighbourSets = new ArrayList<>();
     private final List<Instance> untestedTrainInstances = new ArrayList<>();
@@ -33,7 +33,7 @@ public class Knn
     private DistanceMeasure distanceMeasure;
     private boolean earlyAbandon;
     private int neighbourhoodSize;
-    private SamplingStrategy samplingStrategy = SamplingStrategy.RANDOM;
+    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private long maxPhaseTime = 0;
 
     public Knn() {
@@ -41,7 +41,7 @@ public class Knn
         setK(DEFAULT_K);
         setNeighbourhoodSize(DEFAULT_SAMPLE_SIZE);
         setEarlyAbandon(DEFAULT_EARLY_ABANDON);
-        setSamplingStrategy(SamplingStrategy.RANDOM);
+        setNeighbourSearchStrategy(NeighbourSearchStrategy.RANDOM);
     }
 
     @Override
@@ -53,10 +53,10 @@ public class Knn
         return ArrayUtilities.concat(super.getOptions(), new String[] {
             K_KEY,
             String.valueOf(k),
-            SAMPLE_SIZE_KEY,
+            NEIGHBOURHOOD_SIZE_KEY,
             String.valueOf(neighbourhoodSize),
-            SAMPLING_STRATEGY_KEY,
-            samplingStrategy.name(),
+            NEIGHBOUR_SEARCH_STRATEGY_KEY,
+            neighbourSearchStrategy.name(),
             DISTANCE_MEASURE_KEY,
             distanceMeasure.toString(),
             StringUtilities.join(",", distanceMeasure.getOptions()),
@@ -93,12 +93,12 @@ public class Knn
             String value = options[i + 1];
             if (key.equals(K_KEY)) {
                 setK(Integer.parseInt(value));
-            } else if (key.equals(SAMPLE_SIZE_KEY)) {
+            } else if (key.equals(NEIGHBOURHOOD_SIZE_KEY)) {
                 setK(Integer.parseInt(value));
             } else if (key.equals(DISTANCE_MEASURE_KEY)) {
                 setDistanceMeasure(DistanceMeasure.fromString(value));
-            } else if (key.equals(SAMPLING_STRATEGY_KEY)) {
-                setSamplingStrategy(SamplingStrategy.fromString(value));
+            } else if (key.equals(NEIGHBOUR_SEARCH_STRATEGY_KEY)) {
+                setNeighbourSearchStrategy(NeighbourSearchStrategy.fromString(value));
             }
         }
         distanceMeasure.setOptions(options);
@@ -120,12 +120,12 @@ public class Knn
         return neighbourhoodSize;
     }
 
-    public SamplingStrategy getSamplingStrategy() {
-        return samplingStrategy;
+    public NeighbourSearchStrategy getNeighbourSearchStrategy() {
+        return neighbourSearchStrategy;
     }
 
-    public void setSamplingStrategy(final SamplingStrategy samplingStrategy) {
-        this.samplingStrategy = samplingStrategy;
+    public void setNeighbourSearchStrategy(final NeighbourSearchStrategy neighbourSearchStrategy) {
+        this.neighbourSearchStrategy = neighbourSearchStrategy;
     }
 
     public void setNeighbourhoodSize(final int neighbourhoodSize) {
@@ -195,7 +195,7 @@ public class Knn
         setDistanceMeasure(other.getDistanceMeasure());
         setEarlyAbandon(other.getEarlyAbandon());
         setNeighbourhoodSize(other.getNeighbourhoodSize());
-        setSamplingStrategy(other.getSamplingStrategy());
+        setNeighbourSearchStrategy(other.getNeighbourSearchStrategy());
         remainingTrainInstances.clear();
         remainingTrainInstances.addAll(other.remainingTrainInstances);
         trainInstances.clear();
@@ -214,10 +214,14 @@ public class Knn
 
     private Instance sampleInstance() {
         List<Instance> instances = remainingTrainInstances;
-        if (samplingStrategy.equals(SamplingStrategy.RANDOM)) {
+        if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.RANDOM)) {
             return instances.remove(getTrainRandom().nextInt(instances.size()));
-        } else if (samplingStrategy.equals(SamplingStrategy.LINEAR)) {
+        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.LINEAR)) {
             return instances.remove(0);
+        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.ROUND_ROBIN_RANDOM)) {
+//            return instances.remove(0); todo
+        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.DISTRIBUTED_RANDOM)) {
+//            return instances.remove(0); todo
         } else {
             throw new UnsupportedOperationException();
         }
@@ -271,13 +275,14 @@ public class Knn
     }
 
 
-    public enum SamplingStrategy {
+    public enum NeighbourSearchStrategy {
         RANDOM,
         LINEAR,
-        STRATIFIED;
+        ROUND_ROBIN_RANDOM,
+        DISTRIBUTED_RANDOM;
 
-        public static SamplingStrategy fromString(String str) {
-            for (SamplingStrategy s : SamplingStrategy.values()) {
+        public static NeighbourSearchStrategy fromString(String str) {
+            for (NeighbourSearchStrategy s : NeighbourSearchStrategy.values()) {
                 if (s.name()
                      .equals(str)) {
                     return s;

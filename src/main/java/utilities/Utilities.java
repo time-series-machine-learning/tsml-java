@@ -15,12 +15,11 @@
 package utilities;
 
 import weka.core.Instance;
+import weka.core.Instances;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -317,5 +316,42 @@ public class Utilities {
         return list;
     }
 
+    public static Map<Double, Instances> instancesByClassValue(List<Instance> instances) {
+        Map<Double, Instances> instancesByClassValue = new HashMap<>();
+        for(Instance instance : instances) {
+            List<Instance> homogeneousInstances = instancesByClassValue.computeIfAbsent(instance.classValue(), key -> new ArrayList<>());
+            homogeneousInstances.add(instance);
+        }
+        return instancesByClassValue;
+    }
 
+    public static int[] classDistribution(Instances instances) {
+        int[] classDistribution = new int[instances.numClasses()];
+        for(Instance instance : instances) {
+            classDistribution[(int) instance.classValue()]++;
+        }
+        return classDistribution;
+    }
+
+    public static double[] intArrayToDoubleArray(int[] array) {
+        double[] copy = new double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            copy[i] = array[i];
+        }
+        return copy;
+    }
+
+    public static double[] classDistributionNormalised(Instances instances) {
+        int[] classDistribution = classDistribution(instances);
+        return normalise(intArrayToDoubleArray(classDistribution));
+    }
+
+    public static Map<Double, Double> classDistributionAsMap(final Instances instances) {
+        Map<Double, Double> classDistribution = new HashMap<>();
+        for(Instance instance : instances) {
+            Double count = classDistribution.computeIfAbsent(instance.classValue(), key -> 0d);
+            classDistribution.put(instance.classValue(), count + 1);
+        }
+        return classDistribution;
+    }
 }
