@@ -129,6 +129,7 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
         return comparison;
     });
+    private final List<Candidate> fullyTrainedCandidates = new ArrayList<>();
 
     public int getNeighbourhoodSize() {
         return neighbourhoodSize;
@@ -281,6 +282,7 @@ public class ElasticEnsemble extends TemplateClassifier {
             getTrainStopWatch().reset();
             candidates.clear();
             selector.setRandom(random);
+            fullyTrainedCandidates.clear();
             parameterSpaces.clear();
             parameterSetCount = 0;
             parameterSpaces.addAll(getParameterSpaces(trainInstances, parameterSpaceGetters));
@@ -303,8 +305,13 @@ public class ElasticEnsemble extends TemplateClassifier {
             setupNumParameterSets();
             getTrainStopWatch().lap();
         }
+        if(!fullyTrainedCandidates.isEmpty() && neighbourhoodSize > fullyTrainedCandidates.get(0).getKnn().getNeighbourhoodSize()) {
+            candidates.addAll(fullyTrainedCandidates);
+            fullyTrainedCandidates.clear();
+        }
         boolean remainingParameters = remainingParameterSets();
         boolean remainingCandidates = !candidates.isEmpty();
+        getTrainStopWatch().lap();
 //        int count = 0;
         if(getNeighbourhoodSize() != 0) {
             while((remainingParameters || remainingCandidates) && remainingTrainContractNanos() > phaseTime) {
@@ -345,7 +352,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knn.setNeighbourhoodSize(sampleSize);
                 }
                 if((knn.getNeighbourhoodSize() + 1 > getNeighbourhoodSize() && getNeighbourhoodSize() >= 0) || knn.getNeighbourhoodSize() + 1 > trainInstances.size()) {
-                    candidates.remove(knnIndex);
+                    fullyTrainedCandidates.add(candidates.remove(knnIndex));
                 }
                 knn.setTrainContractNanos(remainingTrainContractNanos());
                 knn.buildClassifier(trainInstances);

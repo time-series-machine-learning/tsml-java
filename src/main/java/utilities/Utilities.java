@@ -183,6 +183,18 @@ public class Utilities {
         return indices[random.nextInt(indices.length)];
     }
 
+    public static void mkdirParent(File file) {
+        File parent = file.getParentFile();
+        if(parent != null) {
+            Utilities.mkdir(parent);
+        }
+    }
+
+    public static void mkdirParent(String path) {
+        File file = new File(path);
+        mkdirParent(file);
+    }
+
     public static void mkdir(String path) {
         mkdir(new File(path));
     }

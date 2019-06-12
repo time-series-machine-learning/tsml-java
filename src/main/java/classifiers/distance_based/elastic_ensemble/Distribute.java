@@ -3,96 +3,29 @@ package classifiers.distance_based.elastic_ensemble;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
+import utilities.Utilities;
 import weka.core.Instances;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
 
 import static experiments.Experiments.sampleDataset;
 
 public class Distribute {
 
-
-//    System.out.print("args:");
-//        for(String arg : args) {
-//            System.out.print(" ");
-//            System.out.print(arg);
-//        }
-//        System.out.println();
-//        boolean wait = false;
-//        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-//        String datasetDirPath = new File(args[0]).getPath();
-//        String datasetName = args[1];
-//        String classifierName = args[2];
-//        String resultsDirPath = new File(args[3]).getPath();
-//        int seed = Integer.parseInt(args[4]);
-//        int parameterIndex = Integer.parseInt(args[5]);
-//        boolean overwrite = Boolean.parseBoolean(args[6]);
-//        Instances[] data = sampleDataset(datasetDirPath, datasetName, seed);
-//        if(wait) Thread.sleep(500);
-//        Instances train = data[0];
-//        Instances test = data[1];
-//        Knn knn = new Knn();
-//        List<ParameterSpace> parameterSpaces = ElasticEnsemble.getParameterSpaces(train, ElasticEnsemble
-//        .getDefaultParameterSpaceGetters());
-//        int sum = 0;
-//        for(ParameterSpace parameterSpace : parameterSpaces) {
-//            parameterSpace.removeDuplicateValues();
-//            sum += parameterSpace.size();
-//        }
-//        System.out.println("n_param_vals: " + sum);
-//        ParameterSet parameterSet = getParameterPermutation(parameterIndex, parameterSpaces);
-//        knn.setOptions(parameterSet.getOptions());
-//        knn.setSeed(seed);
-//        resultsDirPath = resultsDirPath + '/' + classifierName + '/' + datasetName;
-//        String trainResultsFilePath = resultsDirPath + "/auxFold" + seed + "/trainParam" + parameterIndex + ".csv
-//        .gzip";
-//        String testResultsFilePath = resultsDirPath + "/auxFold" + seed + "/testParam" + parameterIndex + ".csv.gzip";
-//        boolean trainExists = !Utilities.mkfile(trainResultsFilePath);
-//        boolean testExists = !Utilities.mkfile(testResultsFilePath);
-//        if(!overwrite && trainExists && testExists) {
-//            System.out.println("train and test exists");
-//            System.exit(0);
-//        }
-//        // todo work out if this overwrites files
-//        ObjectOutputStream trainOutput = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream
-//        (trainResultsFilePath)));
-//        ObjectOutputStream testOutput = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream
-//        (testResultsFilePath)));
-//        for(int i = 0; i <= train.size(); i++) {
-//            long startTime = System.nanoTime();
-//            System.out.println("train size: " + i);
-//            knn.setNeighbourhoodSize(i);
-//            knn.buildClassifier(train);
-//            if(!trainExists || overwrite) {
-//                ClassifierResults trainResults = knn.getTrainResults();
-//                trainResults.setDatasetName(datasetName);
-//                trainResults.setFoldID(seed);
-//                trainResults.setClassifierName(classifierName);
-//                trainOutput.writeObject(trainResults.writeFullResultsToString());
-//                trainOutput.flush();
-//            }
-//            if(!trainExists || overwrite) {
-//                knn.resetTestRandom();
-//                ClassifierResults testResults = knn.getTestResults(test);
-//                testResults.setDatasetName(datasetName);
-//                testResults.setFoldID(seed);
-//                testResults.setClassifierName(classifierName);
-//                testOutput.writeObject(testResults.writeFullResultsToString());
-//                testOutput.flush();
-//            }
-//            long endTime = System.nanoTime();
-//            long diff = endTime - startTime;
-//            long diffMillis = TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
-//            if(diffMillis < 500 && wait) {
-//                Thread.sleep(500 - diffMillis);
-//            }
-//        }
-//        trainOutput.close();
-//        testOutput.close();
-
     public static void main(String[] args) throws
                                            Exception {
+//        for(int n = 10; n <= 100; n+=10) {
+//            for(int p = 10; p <= 100; p+=10) {
+//                double np = (double) n / 100;
+//                double pp = (double) p / 100;
+//                System.out.println("\"ee;np=" + np + ";pp=" + pp + "\",");
+//            }
+//        }
+//        System.exit(1);
         System.out.print("args:");
         for(String arg : args) {
             System.out.print(" ");
@@ -100,80 +33,93 @@ public class Distribute {
         }
         System.out.println();
         String datasetDirPath = new File(args[0]).getPath();
+        System.out.println(datasetDirPath);
         String datasetName = args[1];
-        String classifierName = args[2];
-        String resultsDirPath = new File(args[3]).getPath();
-        int seed = Integer.parseInt(args[4]);
-        int parameterIndex = Integer.parseInt(args[5]);
-        boolean overwrite = Boolean.parseBoolean(args[6]);
+        System.out.println(datasetName);
+        String resultsDirPath = new File(args[2]).getPath();
+        System.out.println(resultsDirPath);
+        int seed = Integer.parseInt(args[3]);
+        System.out.println(seed);
         Instances[] data = sampleDataset(datasetDirPath, datasetName, seed);
         Instances train = data[0];
         Instances test = data[1];
         ElasticEnsemble ee = new ElasticEnsemble();
-        List<ParameterSpace> parameterSpaces = ElasticEnsemble.getParameterSpaces(train, ElasticEnsemble.getDefaultParameterSpaceGetters());
-        int sum = 0;
-        for(ParameterSpace parameterSpace : parameterSpaces) {
-            parameterSpace.removeDuplicateValues();
-            sum += parameterSpace.size();
-        }
-        System.out.println("n_param_vals: " + sum);
-        ParameterSet parameterSet = getParameterPermutation(parameterIndex, parameterSpaces);
-        ee.setOptions(parameterSet.getOptions());
         ee.setSeed(seed);
-        resultsDirPath = resultsDirPath + '/' + classifierName + '/' + datasetName;
-//        String trainResultsFilePath = resultsDirPath + "/auxFold" + seed + "/trainParam" + parameterIndex + ".csv.gzip";
-//        String testResultsFilePath = resultsDirPath + "/auxFold" + seed + "/testParam" + parameterIndex + ".csv.gzip";
-//        boolean trainExists = !Utilities.mkfile(trainResultsFilePath);
-//        boolean testExists = !Utilities.mkfile(testResultsFilePath);
-//        if(!overwrite && trainExists && testExists) {
-//            System.out.println("train and test exists");
-//            System.exit(0);
-//        }
-//        // todo work out if this overwrites files
-//        ObjectOutputStream trainOutput = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(trainResultsFilePath))));
-//        ObjectOutputStream testOutput = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(testResultsFilePath))));
-        for(int i = 1; i <= train.size(); i++) {
-            System.out.println(i);
-            String trainResultsFilePath = resultsDirPath + "/auxFold" + seed + "/trainNeighbourhood" + i + ".csv";
-            String testResultsFilePath = resultsDirPath + "/auxFold" + seed + "/testNeighbourhood" + i + ".csv";
-            BufferedWriter trainOutput = new BufferedWriter(new FileWriter(trainResultsFilePath));
-            BufferedWriter testOutput = new BufferedWriter(new FileWriter(testResultsFilePath));
-            ee.setNeighbourhoodSize(i);
-            ee.buildClassifier(train);
-            ClassifierResults trainResults = ee.getTrainResults();
-            trainResults.setDatasetName(datasetName);
-            trainResults.setFoldID(seed);
-            trainResults.setClassifierName(classifierName);
-            trainOutput.write(trainResults.writeFullResultsToString());
-            trainOutput.close();
-            ee.resetTestRandom();
-            ClassifierResults testResults = ee.getTestResults(test);
-            testResults.setDatasetName(datasetName);
-            testResults.setFoldID(seed);
-            testResults.setClassifierName(classifierName);
-            testOutput.write(testResults.writeFullResultsToString());
-            testOutput.close();
-        }
-//        trainOutput.close();
-//        testOutput.close();
-    }
-
-    private static ParameterSet getParameterPermutation(int parameterIndex, List<ParameterSpace> parameterSpaces) {
-        int index = parameterIndex;
-        boolean stop = false;
-        ParameterSpace parameterSpace;
-        int parameterSpaceIndex = 0;
-        do {
-            parameterSpace = parameterSpaces.get(parameterSpaceIndex);
-            int size = parameterSpace.size();
-            if(index < size) {
-                stop = true;
+        double pp = Double.parseDouble(args[4]);
+        System.out.println(pp);
+        ee.setNumParameterSetsPercentage(pp);
+        for(int n = 10; n <= 100; n+=10) {
+            double np = (double) n / 100;
+            System.out.println(np + ", " + pp);
+            String classifierName = "ee_np=" + np + "_pp=" + pp;
+            String experimentResultsDirPath = resultsDirPath + "/" + classifierName + "/Predictions/" + datasetName;
+            String trainResultsFilePath = experimentResultsDirPath + "/trainFold" + seed + ".csv";
+            String testResultsFilePath = experimentResultsDirPath + "/testFold" + seed + ".csv";
+            ee.setNeighbourhoodSizePercentage(np);
+            boolean trainMissing = !exists(trainResultsFilePath);
+            boolean testMissing = !exists(testResultsFilePath);
+            if(trainMissing || testMissing) {
+                System.out.println("training");
+                ee.buildClassifier(train);
+            }
+            if(trainMissing) {
+                System.out.println("getting train results");
+                ClassifierResults trainResults = ee.getTrainResults();
+                trainResults.setDatasetName(datasetName);
+                trainResults.setFoldID(seed);
+                trainResults.setClassifierName(classifierName);
+                writeToFile(trainResults, trainResultsFilePath);
             } else {
-                index -= size;
-                parameterSpaceIndex++;
+                System.out.println("train exists");
+            }
+            if(testMissing) {
+                System.out.println("getting test results");
+                ClassifierResults testResults = ee.getTestResults(test);
+                testResults.setDatasetName(datasetName);
+                testResults.setFoldID(seed);
+                testResults.setClassifierName(classifierName);
+                writeToFile(testResults, testResultsFilePath);
+                ee.resetTestRandom();
+            } else {
+                System.out.println("test exists");
             }
         }
-        while (!stop);
-        return parameterSpace.get(index);
+    }
+
+    private static boolean exists(String path) {
+        File file = new File(path);
+        return file.exists() && file.length() > 0;
+    }
+
+    private static FileLock lockedExists(String path) throws
+                                                     IOException {
+        // Get a file channel for the file
+        File file = new File(path);
+        Utilities.mkdirParent(file);
+        FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+
+        // Use the file channel to create a lock on the file.
+        // This method blocks until it can retrieve the lock.
+        FileLock lock = channel.lock();
+        boolean exists = file.length() > 0;
+        if(exists) {
+            lock.close();
+            // Close the file
+            lock.channel().close();
+            lock = null;
+        }
+        return lock;
+    }
+
+    private static void writeToFile(ClassifierResults results, String path, FileLock lock) throws Exception {
+        writeToFile(results, path);
+        lock.close();
+        lock.channel().close();
+    }
+
+    private static void writeToFile(ClassifierResults results, String path) throws Exception {
+        BufferedWriter output = new BufferedWriter(new FileWriter(path));
+        output.write(results.writeFullResultsToString());
+        output.close();
     }
 }
