@@ -174,7 +174,7 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private ParameterSpacesIterationStrategy parameterSpacesIterationStrategy = ParameterSpacesIterationStrategy.ROUND_ROBIN;
-    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
+//    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private DistanceMeasureSearchStrategy distanceMeasureSearchStrategy = DistanceMeasureSearchStrategy.RANDOM;
     private int numParameterSets = -1;
     private int parameterSetCount = 0;

@@ -28,7 +28,7 @@ public class Knn
     private final List<NearestNeighbourSet> testNearestNeighbourSets = new ArrayList<>();
     private final List<Instance> untestedTrainInstances = new ArrayList<>();
     private final List<Instance> remainingTrainInstances = new ArrayList<>();
-    private final List<Instance> trainInstances = new ArrayList<>();
+    private List<Instance> trainInstances;
     private int k;
     private DistanceMeasure distanceMeasure;
     private boolean earlyAbandon;
@@ -141,8 +141,7 @@ public class Knn
                                                 Exception {
         if (trainSetChanged(data)) {
             getTrainStopWatch().reset();
-            trainInstances.clear();
-            trainInstances.addAll(data);
+            trainInstances = data;
             remainingTrainInstances.clear();
             remainingTrainInstances.addAll(data);
             trainNearestNeighbourSets.clear();
@@ -198,8 +197,7 @@ public class Knn
         setNeighbourSearchStrategy(other.getNeighbourSearchStrategy());
         remainingTrainInstances.clear();
         remainingTrainInstances.addAll(other.remainingTrainInstances);
-        trainInstances.clear();
-        trainInstances.addAll(other.trainInstances);
+        trainInstances = other.trainInstances;
         remainingTrainInstances.clear();
         remainingTrainInstances.addAll(other.remainingTrainInstances);
     }
@@ -220,8 +218,10 @@ public class Knn
             return instances.remove(0);
         } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.ROUND_ROBIN_RANDOM)) {
 //            return instances.remove(0); todo
+            throw new UnsupportedOperationException();
         } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.DISTRIBUTED_RANDOM)) {
 //            return instances.remove(0); todo
+            throw new UnsupportedOperationException();
         } else {
             throw new UnsupportedOperationException();
         }
