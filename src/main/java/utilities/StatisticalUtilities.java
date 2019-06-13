@@ -47,11 +47,13 @@ public class StatisticalUtilities {
     // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
     // can make O(n) if wanted later 
     public static double median(double[] values) {
+        if(values.length == 1) {
+            return values[0];
+        }
         double[] copy = Arrays.copyOf(values, values.length);
         Arrays.sort(copy);
-        
-        if (copy .length % 2 == 1)
-            return copy[copy.length/2];
+        if (copy.length % 2 == 1)
+            return copy[copy.length/2 + 1];
         else 
             return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
     }
