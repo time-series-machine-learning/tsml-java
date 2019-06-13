@@ -434,7 +434,7 @@ public class ElasticEnsemble extends TemplateClassifier {
         setTrainResults(trainResults);
         for (int i = 0; i < trainInstances.size(); i++) {
             long predictionTime = System.nanoTime();
-            double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
+            double[] distribution = votingScheme.distributionForInstance(modules, trainInstances.get(i)); // todo hacky, doesn't use already computed train due to rand sampling! could be a better way? Probs by using the stats from train results manually rather than cawpe'ing it
             predictionTime = System.nanoTime() - predictionTime;
             for (EnsembleModule module : modules) {
                 predictionTime += module.trainResults.getPredictionTimeInNanos(i);

@@ -209,6 +209,10 @@ public class Knn
         this.neighbourhoodSizePercentage = neighbourhoodSizePercentage;
     }
 
+    private boolean withinTrainSetSize(Instances trainSetOutside) {
+        return trainSet.size() < trainSetSize || (trainSetSize < 0 && trainSet.size() < trainSetOutside.size());
+    }
+
     @Override
     public void buildClassifier(Instances trainSetOutside) throws
             Exception {
@@ -220,9 +224,9 @@ public class Knn
             setupNeighbourhoodSize(trainSetOutside);
             setupTrainSetSize(trainSetOutside);
         }
-        if (trainSet.size() < trainSetSize) {
+        if (withinTrainSetSize(trainSetOutside)) {
             sampler = setupSampler(trainSetOutside);
-            while (trainSet.size() < trainSetSize && sampler.hasNext()) {
+            while (withinTrainSetSize(trainSetOutside) && sampler.hasNext()) {
                 Instance instance = sampler.next();
                 sampler.remove();
                 trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
