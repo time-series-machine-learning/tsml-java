@@ -6,6 +6,7 @@ import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
+import utilities.Checks;
 import utilities.StringUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -335,9 +336,6 @@ public class Knn
     }
 
     public void setTrainSetSizePercentage(final double trainSetSizePercentage) {
-        if (trainSetSizePercentage < 0 || trainSetSizePercentage > 1) {
-            throw new IllegalArgumentException("percentage out of range");
-        }
         this.trainSetSizePercentage = trainSetSizePercentage;
     }
 
