@@ -1,9 +1,6 @@
 package classifiers.distance_based.elastic_ensemble;
 
-import classifiers.distance_based.elastic_ensemble.iteration.LinearIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.RandomIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.RoundRobinIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.SpreadIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.*;
 import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
 import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;

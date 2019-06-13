@@ -1,4 +1,4 @@
-package classifiers.distance_based.elastic_ensemble;
+package classifiers.distance_based.elastic_ensemble.iteration;
 
 import evaluation.tuning.ParameterSpace;
 

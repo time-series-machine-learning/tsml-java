@@ -26,12 +26,15 @@ public class Knn
     public static final String K_KEY = "k";
     public static final int DEFAULT_NEIGHBOURHOOD_SIZE = -1;
     public static final String NEIGHBOURHOOD_SIZE_KEY = "neighbourhoodSize";
+    public static final String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "neighbourhoodSizePercentage";
     public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
     public static final String NEIGHBOUR_SEARCH_STRATEGY_KEY = "neighbourSearchStrategy";
     public static final String TRAIN_SET_SIZE_KEY = "trainSetSize";
+    public static final String TRAIN_SET_SIZE_PERCENTAGE_KEY = "trainSetSizePercentage";
     public static final String EARLY_ABANDON_KEY = "earlyAbandon";
     public static final int DEFAULT_TRAIN_SET_SIZE = -1;
     public static final int DEFAULT_TRAIN_SET_SIZE_PERCENTAGE = -1;
+    public static final double DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
     private final List<NearestNeighbourSet> trainNearestNeighbourSets = new ArrayList<>();
     private final List<NearestNeighbourSet> testNearestNeighbourSets = new ArrayList<>();
     private final List<Instance> untestedTrainInstances = new ArrayList<>(); // todo needed?
@@ -46,6 +49,7 @@ public class Knn
     private long maxPhaseTime = 0;
     private Sampler sampler;
     private int neighbourCount;
+    private double neighbourhoodSizePercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
 
     public Knn() {
         setDistanceMeasure(new Dtw(0));
@@ -82,6 +86,10 @@ public class Knn
                 String.valueOf(trainSetSize),
                 EARLY_ABANDON_KEY,
                 String.valueOf(earlyAbandon),
+                NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
+                String.valueOf(neighbourhoodSizePercentage),
+                TRAIN_SET_SIZE_PERCENTAGE_KEY,
+                String.valueOf(trainSetSizePercentage),
                 DISTANCE_MEASURE_KEY,
                 distanceMeasure.toString(),
                 StringUtilities.join(",", distanceMeasure.getOptions()),
@@ -106,6 +114,10 @@ public class Knn
                 setEarlyAbandon(Boolean.parseBoolean(value));
             } else if (key.equals(TRAIN_SET_SIZE_KEY)) {
                 setTrainSetSize(Integer.parseInt(value));
+            } else if (key.equals(TRAIN_SET_SIZE_PERCENTAGE_KEY)) {
+                setTrainSetSizePercentage(Double.parseDouble(value));
+            } else if (key.equals(NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY)) {
+                setNeighbourhoodSizePercentage(Double.valueOf(value));
             }
         }
         distanceMeasure.setOptions(options);
@@ -176,6 +188,26 @@ public class Knn
         }
     }
 
+    private void setupTrainSetSize(List<Instance> instances) {
+        if (trainSetSizePercentage >= 0) {
+            setTrainSetSize((int) (instances.size() * trainSetSizePercentage));
+        }
+    }
+
+    private void setupNeighbourhoodSize(List<Instance> instances) {
+        if (neighbourhoodSizePercentage >= 0) {
+            setNeighbourhoodSize((int) (instances.size() * neighbourhoodSizePercentage));
+        }
+    }
+
+    public double getNeighbourhoodSizePercentage() {
+        return neighbourhoodSizePercentage;
+    }
+
+    public void setNeighbourhoodSizePercentage(double neighbourhoodSizePercentage) {
+        this.neighbourhoodSizePercentage = neighbourhoodSizePercentage;
+    }
+
     @Override
     public void buildClassifier(Instances trainSetOutside) throws
             Exception {
@@ -184,6 +216,8 @@ public class Knn
             trainSet = new Instances(trainSetOutside, 0);
             neighbourCount = 0;
             trainNearestNeighbourSets.clear();
+            setupNeighbourhoodSize(trainSetOutside);
+            setupTrainSetSize(trainSetOutside);
         }
         if (trainSet.size() < trainSetSize) {
             sampler = setupSampler(trainSetOutside);
@@ -431,7 +465,7 @@ public class Knn
             }
             equalDistanceNeighbours.add(instance);
             size++;
-            if(k > 0) {
+            if (k > 0) {
                 int lastEntrySize = neighbours.lastEntry()
                         .getValue()
                         .size();
