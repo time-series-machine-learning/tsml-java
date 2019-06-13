@@ -51,7 +51,7 @@ public class StatisticalUtilities {
         Arrays.sort(copy);
         
         if (copy .length % 2 == 1)
-            return copy[copy.length/2 + 1];
+            return copy[copy.length/2];
         else 
             return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
     }
