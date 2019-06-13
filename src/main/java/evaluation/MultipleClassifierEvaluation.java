@@ -543,7 +543,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
     public static void main(String[] args) throws Exception {
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("/scratch/", "ee_analysis_half", 10);
+            new MultipleClassifierEvaluation("/scratch/analysis", "ee_p", 10);
 
         mcc.setTestResultsOnly(false); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -552,11 +552,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
 //        mcc.setUseAllStatistics();
 
-        mcc.setDatasets("/scratch/dataset_name_list.txt");
+        mcc.setDatasets("/scratch/dataset_name_lists/dataset_name_list.txt");
 
         //general rule of thumb: set/add/read the classifiers as the last thing before running
         mcc.readInClassifiers(new String[] {
-            "ee_np=0.1_pp=0.1",
+//            "ee_np=0.1_pp=0.1",
 //            "ee_np=0.1_pp=0.2",
 //            "ee_np=0.1_pp=0.3",
 //            "ee_np=0.1_pp=0.4",
@@ -567,7 +567,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.1_pp=0.9",
 //            "ee_np=0.1_pp=1.0",
 //            "ee_np=0.2_pp=0.1",
-            "ee_np=0.2_pp=0.2",
+//            "ee_np=0.2_pp=0.2",
 //            "ee_np=0.2_pp=0.3",
 //            "ee_np=0.2_pp=0.4",
 //            "ee_np=0.2_pp=0.5",
@@ -578,7 +578,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.2_pp=1.0",
 //            "ee_np=0.3_pp=0.1",
 //            "ee_np=0.3_pp=0.2",
-            "ee_np=0.3_pp=0.3",
+//            "ee_np=0.3_pp=0.3",
 //            "ee_np=0.3_pp=0.4",
 //            "ee_np=0.3_pp=0.5",
 //            "ee_np=0.3_pp=0.6",
@@ -589,7 +589,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.4_pp=0.1",
 //            "ee_np=0.4_pp=0.2",
 //            "ee_np=0.4_pp=0.3",
-            "ee_np=0.4_pp=0.4",
+//            "ee_np=0.4_pp=0.4",
 //            "ee_np=0.4_pp=0.5",
 //            "ee_np=0.4_pp=0.6",
 //            "ee_np=0.4_pp=0.7",
@@ -600,7 +600,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.5_pp=0.2",
 //            "ee_np=0.5_pp=0.3",
 //            "ee_np=0.5_pp=0.4",
-            "ee_np=0.5_pp=0.5",
+//            "ee_np=0.5_pp=0.5",
 //            "ee_np=0.5_pp=0.6",
 //            "ee_np=0.5_pp=0.7",
 //            "ee_np=0.5_pp=0.8",
@@ -611,7 +611,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.6_pp=0.3",
 //            "ee_np=0.6_pp=0.4",
 //            "ee_np=0.6_pp=0.5",
-            "ee_np=0.6_pp=0.6",
+//            "ee_np=0.6_pp=0.6",
 //            "ee_np=0.6_pp=0.7",
 //            "ee_np=0.6_pp=0.8",
 //            "ee_np=0.6_pp=0.9",
@@ -622,7 +622,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.7_pp=0.4",
 //            "ee_np=0.7_pp=0.5",
 //            "ee_np=0.7_pp=0.6",
-            "ee_np=0.7_pp=0.7",
+//            "ee_np=0.7_pp=0.7",
 //            "ee_np=0.7_pp=0.8",
 //            "ee_np=0.7_pp=0.9",
 //            "ee_np=0.7_pp=1.0",
@@ -633,7 +633,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.8_pp=0.5",
 //            "ee_np=0.8_pp=0.6",
 //            "ee_np=0.8_pp=0.7",
-            "ee_np=0.8_pp=0.8",
+//            "ee_np=0.8_pp=0.8",
 //            "ee_np=0.8_pp=0.9",
 //            "ee_np=0.8_pp=1.0",
 //            "ee_np=0.9_pp=0.1",
@@ -644,19 +644,19 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            "ee_np=0.9_pp=0.6",
 //            "ee_np=0.9_pp=0.7",
 //            "ee_np=0.9_pp=0.8",
-            "ee_np=0.9_pp=0.9",
+//            "ee_np=0.9_pp=0.9",
 //            "ee_np=0.9_pp=1.0",
-//            "ee_np=1.0_pp=0.1",
-//            "ee_np=1.0_pp=0.2",
-//            "ee_np=1.0_pp=0.3",
-//            "ee_np=1.0_pp=0.4",
-//            "ee_np=1.0_pp=0.5",
-//            "ee_np=1.0_pp=0.6",
-//            "ee_np=1.0_pp=0.7",
-//            "ee_np=1.0_pp=0.8",
-//            "ee_np=1.0_pp=0.9",
+            "ee_np=1.0_pp=0.1",
+            "ee_np=1.0_pp=0.2",
+            "ee_np=1.0_pp=0.3",
+            "ee_np=1.0_pp=0.4",
+            "ee_np=1.0_pp=0.5",
+            "ee_np=1.0_pp=0.6",
+            "ee_np=1.0_pp=0.7",
+            "ee_np=1.0_pp=0.8",
+            "ee_np=1.0_pp=0.9",
             "ee_np=1.0_pp=1.0",
-        }, "/scratch/ee_results_half/");
+        }, "/scratch/results/ee_np/");
 //        mcc.readInClassifier("RandF", basePath); //
 
         mcc.runComparison();

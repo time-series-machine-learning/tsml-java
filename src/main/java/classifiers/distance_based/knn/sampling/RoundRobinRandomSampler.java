@@ -18,8 +18,8 @@ public class RoundRobinRandomSampler implements Sampler {
 
     public RoundRobinRandomSampler(final Instances instances, final Random random) {
         List<RandomSampler> randomSamplers = new ArrayList<>();
-        Map<Double, Instances> classMap = Utilities.instancesByClassValue(instances);
-        for(Map.Entry<Double, Instances> entry : classMap.entrySet()) {
+        Map<Double, List<Instance>> classMap = Utilities.instancesByClassValue(instances);
+        for(Map.Entry<Double, List<Instance>> entry : classMap.entrySet()) {
             RandomSampler randomSampler = new RandomSampler(entry.getValue(), random);
             if(randomSampler.hasNext()) {
                 randomSamplers.add(randomSampler);
