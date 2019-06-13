@@ -174,8 +174,61 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private ParameterSpacesIterationStrategy parameterSpacesIterationStrategy = ParameterSpacesIterationStrategy.ROUND_ROBIN;
-//    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
+
+    public List<Function<Instances, ParameterSpace>> getParameterSpaceGetters() {
+        return parameterSpaceGetters;
+    }
+
+    public ModuleWeightingScheme getWeightingScheme() {
+        return weightingScheme;
+    }
+
+    public void setWeightingScheme(final ModuleWeightingScheme weightingScheme) {
+        this.weightingScheme = weightingScheme;
+    }
+
+    public ModuleVotingScheme getVotingScheme() {
+        return votingScheme;
+    }
+
+    public void setVotingScheme(final ModuleVotingScheme votingScheme) {
+        this.votingScheme = votingScheme;
+    }
+
+    public Selector<TrainedCandidate> getSelector() {
+        return selector;
+    }
+
+    public void setSelector(final Selector<TrainedCandidate> selector) {
+        this.selector = selector;
+    }
+
+    public ParameterSpacesIterationStrategy getParameterSpacesIterationStrategy() {
+        return parameterSpacesIterationStrategy;
+    }
+
+    public void setParameterSpacesIterationStrategy(final ParameterSpacesIterationStrategy parameterSpacesIterationStrategy) {
+        this.parameterSpacesIterationStrategy = parameterSpacesIterationStrategy;
+    }
+
+    public DistanceMeasureSearchStrategy getDistanceMeasureSearchStrategy() {
+        return distanceMeasureSearchStrategy;
+    }
+
+    public void setDistanceMeasureSearchStrategy(final DistanceMeasureSearchStrategy distanceMeasureSearchStrategy) {
+        this.distanceMeasureSearchStrategy = distanceMeasureSearchStrategy;
+    }
+
+    public Knn.NeighbourSearchStrategy getNeighbourSearchStrategy() {
+        return neighbourSearchStrategy;
+    }
+
+    public void setNeighbourSearchStrategy(final Knn.NeighbourSearchStrategy neighbourSearchStrategy) {
+        this.neighbourSearchStrategy = neighbourSearchStrategy;
+    }
+
     private DistanceMeasureSearchStrategy distanceMeasureSearchStrategy = DistanceMeasureSearchStrategy.RANDOM;
+    private Knn.NeighbourSearchStrategy neighbourSearchStrategy = Knn.NeighbourSearchStrategy.RANDOM;
     private int numParameterSets = -1;
     private int parameterSetCount = 0;
     private int neighbourhoodSize = -1;
@@ -355,10 +408,10 @@ public class ElasticEnsemble extends TemplateClassifier {
         boolean remainingParameters = remainingParameterSets();
         boolean remainingCandidates = !candidates.isEmpty();
         getTrainStopWatch().lap();
-//        int count = 0;
+        int count = 0;
         if(getNeighbourhoodSize() != 0) {
             while((remainingParameters || remainingCandidates) && remainingTrainContractNanos() > phaseTime) {
-//                System.out.println(count++);
+                System.out.println(count++);
                 long startTime = System.nanoTime();
                 Knn knn;
                 Candidate candidate;
@@ -382,6 +435,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knn.setOptions(parameters);
                     knn.setNeighbourhoodSize(1);
                     knn.setEarlyAbandon(true);
+                    knn.setNeighbourSearchStrategy(neighbourSearchStrategy);
                     knn.setSeed(random.nextInt());
                     candidate = new Candidate(knn, parameterSpace);
                     candidates.add(candidate);

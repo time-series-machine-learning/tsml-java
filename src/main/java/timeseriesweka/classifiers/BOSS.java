@@ -28,8 +28,6 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 
 import utilities.*;
-import classifiers.distance_based.knn.samplers.RandomRoundRobinIndexSampler;
-import classifiers.distance_based.knn.samplers.RandomStratifiedSampler;
 import vector_classifiers.HomogeneousContractCAWPE;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
@@ -925,13 +923,14 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             data = resample(series, trainProportion, rand);
         }
         else if (reduceTrainInstances && series.numInstances() > maxTrainInstances) {
-            RandomStratifiedSampler sampler = new RandomStratifiedSampler(rand);
-            sampler.setInstances(series);
-            data = new Instances(series, 0);
-
-            for (int i = 0; i < maxTrainInstances; i++){
-                data.add(sampler.next());
-            }
+//            RandomStratifiedSampler sampler = new RandomStratifiedSampler(rand);
+//            sampler.setInstances(series);
+//            data = new Instances(series, 0);
+//
+//            for (int i = 0; i < maxTrainInstances; i++){
+//                data.add(sampler.next());
+//            }
+            throw new UnsupportedOperationException("this needs to be changed to work with new samplers!"); // todo
 
             //System.out.println(data.numInstances() + " " + Arrays.toString(classDistribution(data)) + " " + Arrays.toString(classDistribution(series)));
         }
@@ -944,8 +943,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
     private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
         if (useFastTrainEstimate && maxEval < series.numInstances()){
-            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
-            sampler.setInstances(series);
+//            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
+//            sampler.setInstances(series);
 
             int correct = 0;
             int requiredCorrect = (int)lowestAcc*maxEval;
@@ -955,7 +954,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                     return -1;
                 }
 
-                int subsampleIndex = sampler.next();
+                int subsampleIndex = 0;//sampler.next();
                 double c = boss.classifyInstance(subsampleIndex); //classify series subsampleIndex, while ignoring its corresponding histogram subsampleIndex
                 if (c == series.get(subsampleIndex).classValue())
                     ++correct;
@@ -987,12 +986,13 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         double[][] preds;
 
         if (useFastTrainEstimate && subsampleSize < series.numInstances()){
-            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
-            sampler.setInstances(series);
+
+//            RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
+//            sampler.setInstances(series);
             preds = new double[subsampleSize][series.numClasses()];
 
             for (int i = 0; i < subsampleSize; ++i) {
-                int subsampleIndex = sampler.next();
+                int subsampleIndex = 0;//sampler.next();
                 double c = boss.classifyInstance(subsampleIndex); //classify series subsampleIndex, while ignoring its corresponding histogram subsampleIndex
                 preds[i][(int)c] = 1.0;
             }

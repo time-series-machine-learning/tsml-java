@@ -1,11 +1,13 @@
 package classifiers.distance_based.knn;
 
+import classifiers.distance_based.knn.sampling.*;
 import classifiers.template_classifier.TemplateClassifier;
 import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
+import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -33,8 +35,20 @@ public class Knn
     private DistanceMeasure distanceMeasure;
     private boolean earlyAbandon;
     private int neighbourhoodSize;
+    private double trainSampleSizePercentage = -1;
+
+    public int getTrainSampleSize() {
+        return trainSampleSize;
+    }
+
+    public void setTrainSampleSize(final int trainSampleSize) {
+        this.trainSampleSize = trainSampleSize;
+    }
+
+    private int trainSampleSize = -1;
     private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private long maxPhaseTime = 0;
+    private Sampler sampler;
 
     public Knn() {
         setDistanceMeasure(new Dtw(0));
@@ -136,6 +150,36 @@ public class Knn
         return k <= 0;
     } // todo use this!
 
+    private Sampler setupSampler(Instances instances) {
+        switch(neighbourSearchStrategy) {
+            case RANDOM:
+                return new RandomSampler(instances, getTrainRandom());
+            case LINEAR:
+                return new LinearSampler(instances);
+            case ROUND_ROBIN_RANDOM:
+                return new RoundRobinRandomSampler(instances, getTrainRandom());
+            case DISTRIBUTED_RANDOM:
+                return new DistributedRandomSampler(instances, getTrainRandom());
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
+
+    private void setupTrainSampleSize(List<Instance> trainInstances) {
+        if(trainSampleSizePercentage >= 0) {
+            setTrainSampleSize((int) (trainInstances.size() * trainSampleSizePercentage));
+        }
+    }
+
+    private List<Instance> sampleTrain(Instances trainInstances) {
+        Sampler trainSampler = setupSampler(trainInstances);
+        List<Instance> sample = new ArrayList<>();
+        for(int i = 0; i < trainSampleSize && trainSampler.hasNext(); i++) {
+            sample.add(sampler.next());
+        }
+        return sample;
+    }
+
     @Override
     public void buildClassifier(Instances data) throws
                                                 Exception {
@@ -145,16 +189,26 @@ public class Knn
             remainingTrainInstances.clear();
             remainingTrainInstances.addAll(data);
             trainNearestNeighbourSets.clear();
+            sampler = setupSampler(data);
             for (Instance instance : data) {
                 trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
             }
+//            Map<Double, List<Instance>> instancesByClass = Utilities.instancesByClassValue(data);
+//            for(int j = 0; j < (int) (trainInstances.size() * 0.75);) {
+//                for(int i = 0; i < data.numClasses(); i++, j++) {
+//                    List<Instance> homogenousInstances = instancesByClass.get((double) i);
+//                    Instance instance = homogenousInstances.remove(getTrainRandom().nextInt(homogenousInstances.size()));
+//                    trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
+//                }
+//            }
             getTrainStopWatch().lap();
         }
         while (withinSampleSize() && samplesTrainInstances()
                && !remainingTrainInstances.isEmpty()
-               && maxPhaseTime < remainingTrainContractNanos()) {
+               && maxPhaseTime < remainingTrainContractNanos() && sampler.hasNext()) {
             long startTime = System.nanoTime();
-            Instance instance = sampleInstance();
+            Instance instance = sampler.next();
+            sampler.remove();
             untestedTrainInstances.add(instance);
             for (NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
                 nearestNeighbourSet.add(instance);
@@ -210,23 +264,6 @@ public class Knn
         return neighbourhoodSize > 0;
     }
 
-    private Instance sampleInstance() {
-        List<Instance> instances = remainingTrainInstances;
-        if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.RANDOM)) {
-            return instances.remove(getTrainRandom().nextInt(instances.size()));
-        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.LINEAR)) {
-            return instances.remove(0);
-        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.ROUND_ROBIN_RANDOM)) {
-//            return instances.remove(0); todo
-            throw new UnsupportedOperationException();
-        } else if (neighbourSearchStrategy.equals(NeighbourSearchStrategy.DISTRIBUTED_RANDOM)) {
-//            return instances.remove(0); todo
-            throw new UnsupportedOperationException();
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                          Exception {
@@ -272,6 +309,14 @@ public class Knn
             getTrainResults().writeFullResultsToFile(getTrainResultsPath());
         }
         return results;
+    }
+
+    public double getTrainSampleSizePercentage() {
+        return trainSampleSizePercentage;
+    }
+
+    public void setTrainSampleSizePercentage(final double trainSampleSizePercentage) {
+        this.trainSampleSizePercentage = trainSampleSizePercentage;
     }
 
 

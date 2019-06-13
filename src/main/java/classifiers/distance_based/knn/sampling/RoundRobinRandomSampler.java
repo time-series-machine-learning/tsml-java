@@ -31,6 +31,9 @@ public class RoundRobinRandomSampler implements Sampler {
     @Override
     public void remove() {
         randomSampler.remove();
+        if(!randomSampler.hasNext()) {
+            randomSamplerIterator.remove();
+        }
     }
 
     @Override
@@ -42,9 +45,7 @@ public class RoundRobinRandomSampler implements Sampler {
     public Instance next() {
         randomSampler = randomSamplerIterator.next();
         Instance instance = randomSampler.next();
-        if(!randomSampler.hasNext()) {
-            randomSamplerIterator.remove();
-        }
+
         return instance;
     }
 }
