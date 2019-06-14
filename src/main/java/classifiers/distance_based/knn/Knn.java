@@ -6,7 +6,6 @@ import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
-import utilities.Checks;
 import utilities.StringUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -48,7 +47,8 @@ public class Knn
     private int trainSetSize;
     private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private long maxPhaseTime = 0;
-    private Sampler sampler;
+    private Sampler neighbourhoodSampler;
+    private Sampler trainSetSampler;
     private int neighbourCount;
     private double neighbourhoodSizePercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
 
@@ -223,24 +223,24 @@ public class Knn
             trainNearestNeighbourSets.clear();
             setupNeighbourhoodSize(trainSetOutside);
             setupTrainSetSize(trainSetOutside);
+            neighbourhoodSampler = setupSampler(trainSetOutside);
         }
         if (withinTrainSetSize(trainSetOutside)) {
-            sampler = setupSampler(trainSetOutside);
-            while (withinTrainSetSize(trainSetOutside) && sampler.hasNext()) {
-                Instance instance = sampler.next();
-                sampler.remove();
+            while (withinTrainSetSize(trainSetOutside) && neighbourhoodSampler.hasNext()) {
+                Instance instance = neighbourhoodSampler.next();
+                neighbourhoodSampler.remove();
                 trainNearestNeighbourSets.add(new NearestNeighbourSet(instance));
                 trainSet.add(instance);
             }
-            sampler = setupSampler(this.trainSet);
+            trainSetSampler = setupSampler(this.trainSet);
         }
         getTrainStopWatch().lap();
         while ((neighbourCount < neighbourhoodSize || neighbourhoodSize < 0)
-                && maxPhaseTime < remainingTrainContractNanos()
-                && sampler.hasNext()) {
+               && maxPhaseTime < remainingTrainContractNanos()
+               && neighbourhoodSampler.hasNext()) {
             long startTime = System.nanoTime();
-            Instance neighbour = sampler.next();
-            sampler.remove();
+            Instance neighbour = neighbourhoodSampler.next();
+            neighbourhoodSampler.remove();
             neighbourCount++;
             untestedTrainInstances.add(neighbour);
             for (NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
