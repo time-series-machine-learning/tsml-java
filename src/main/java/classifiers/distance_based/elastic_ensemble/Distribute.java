@@ -101,7 +101,7 @@ public class Distribute {
         ElasticEnsemble ee = new ElasticEnsemble();
         ee.setNumParameterSetsPercentage(0.1);
         ee.setSeed(seed);
-        ee.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.ROUND_ROBIN_RANDOM);
+        ee.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.RANDOM);
         int n = Integer.parseInt(args[4]);
 //        n *= train.numClasses();
 //        double pp = Double.parseDouble(args[4]);

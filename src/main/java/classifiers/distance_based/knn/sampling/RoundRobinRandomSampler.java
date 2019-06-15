@@ -1,9 +1,7 @@
 package classifiers.distance_based.knn.sampling;
 
 import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.random.AbstractRoundRobinIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.random.RoundRobinIterator;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -12,21 +10,13 @@ import java.util.*;
 public class RoundRobinRandomSampler
     extends DynamicIterator<Instance, RoundRobinRandomSampler> {
 
-    private RoundRobinIterator<ListIterator<Instance>> randomSamplerIterator;
-    private ListIterator<Instance> randomSampler;
-    private final Map<Double, ListIterator<Instance>> randomSamplers = new HashMap<>();
+    private final RoundRobinIterator<ListIterator<Instance>> samplerIterator = new RoundRobinIterator<>();
+    private ListIterator<Instance> sampler;
+    private final Map<Double, ListIterator<Instance>> samplers = new HashMap<>();
     private final Random random;
 
     public RoundRobinRandomSampler(final Instances instances, final Random random) {
-        Map<Double, List<Instance>> classMap = Utilities.instancesByClassValue(instances);
-        for(Map.Entry<Double, List<Instance>> entry : classMap.entrySet()) {
-            RandomSampler randomSampler = new RandomSampler(entry.getValue(), random);
-            if(randomSampler.hasNext()) {
-                randomSamplers.put(entry.getKey(), randomSampler);
-            }
-        }
-        this.random = random;
-        randomSamplerIterator = new RoundRobinIterator<>(randomSamplers.values());
+        throw new UnsupportedOperationException();
     }
 
     public RoundRobinRandomSampler(Random random) {
@@ -40,27 +30,32 @@ public class RoundRobinRandomSampler
 
     @Override
     public void remove() {
-        randomSampler.remove();
-        if(!randomSampler.hasNext()) {
-            randomSamplerIterator.remove();
+        sampler.remove();
+        if(!sampler.hasNext()) {
+            samplerIterator.remove();
         }
     }
 
     @Override
     public void add(final Instance instance) {
         double classValue = instance.classValue();
-        randomSamplers.get(classValue).add(instance);
+        ListIterator<Instance> instanceIterator = samplers.computeIfAbsent(classValue, key -> {
+            RandomSampler sampler = new RandomSampler(random);
+            samplerIterator.add(sampler);
+            return sampler;
+        });
+        instanceIterator.add(instance);
     }
 
     @Override
     public boolean hasNext() {
-        return randomSamplerIterator.hasNext();
+        return samplerIterator.hasNext();
     }
 
     @Override
     public Instance next() {
-        randomSampler = randomSamplerIterator.next();
-        return randomSampler.next();
+        sampler = samplerIterator.next();
+        return sampler.next();
     }
 
     @Override

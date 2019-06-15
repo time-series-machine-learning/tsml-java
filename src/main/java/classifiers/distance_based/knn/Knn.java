@@ -1,5 +1,6 @@
 package classifiers.distance_based.knn;
 
+import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
 import classifiers.distance_based.knn.sampling.*;
 import classifiers.template_classifier.TemplateClassifier;
 import distances.DistanceMeasure;
@@ -44,13 +45,11 @@ public class Knn
     private int trainSubSetSize;
     private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private long maxPhaseTime = 0;
-    private ListIterator<Instance> neighbourhoodSampler;
-    private ListIterator<Instance> trainSubSetSampler;
+    private DynamicIterator<Instance, ?> neighbourhoodSampler;
+    private DynamicIterator<Instance, ?> trainSubSetSampler;
     private final List<Instance> neighbourhood = new ArrayList<>();
     private double neighbourhoodSizePercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
     private TrainSetSampleStrategy trainSetSampleStrategy = TrainSetSampleStrategy.RANDOM;
-    private int neighbourhoodSampleCount = 0;
-    private int trainSetSamplerCount = 0;
     private Instances trainSet;
 
     public Knn() {
@@ -316,6 +315,9 @@ public class Knn
             default:
                 throw new UnsupportedOperationException();
         }
+        for(Instance trainInstance : trainSet) {
+            trainSubSetSampler.add(trainInstance);
+        }
     }
 
     @Override
@@ -347,8 +349,8 @@ public class Knn
         trainSubSet.addAll(other.trainSubSet);
         neighbourhood.clear();
         neighbourhood.addAll(other.neighbourhood);
-        trainSubSetSampler = other.trainSubSetSampler; // todo probs not a good idea to share the sampler...
-        neighbourhoodSampler = other.neighbourhoodSampler;
+        trainSubSetSampler = other.trainSubSetSampler.iterator();
+        neighbourhoodSampler = other.neighbourhoodSampler.iterator();
         trainSet = other.trainSet;
     }
 
@@ -393,6 +395,7 @@ public class Knn
                                                                          Exception {
         NearestNeighbourSet testNearestNeighbourSet = new NearestNeighbourSet(testInstance);
         testNearestNeighbourSet.addAll(neighbourhood);
+        testNearestNeighbourSet.trim();
         return testNearestNeighbourSet.predict();
     }
 
@@ -502,7 +505,7 @@ public class Knn
                     distribution[(int) instance.classValue()]++;
                 }
             }
-            ArrayUtilities.normalise_inplace(distribution);
+            ArrayUtilities.normaliseInplace(distribution);
             predictTime = System.nanoTime() - startTime;
             return distribution;
         }

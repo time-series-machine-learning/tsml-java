@@ -33,11 +33,11 @@ public class ArrayUtilities {
 
     public static double[] normalise(double[] array) {
         array = Arrays.copyOf(array, array.length);
-        normalise_inplace(array);
+        normaliseInplace(array);
         return array;
     }
 
-    public static void normalise_inplace(double[] array) {
+    public static void normaliseInplace(double[] array) {
         double sum = sum(array);
         if(sum == 0) {
             throw new IllegalArgumentException("sum of zero");
