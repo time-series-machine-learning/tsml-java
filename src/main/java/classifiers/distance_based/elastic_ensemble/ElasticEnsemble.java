@@ -328,11 +328,11 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
         getTrainStopWatch().lap();
         if (getNeighbourhoodSize() != 0) {
-            int count = 0;
+//            int count = 0;
             boolean remainingParameters = hasRemainingParameterSets();
             boolean remainingCandidates = !candidates.isEmpty();
             while ((remainingParameters || remainingCandidates) && remainingTrainContractNanos() > maxPhaseTime) {
-                System.out.println(count++);
+//                System.out.println(count++);
                 long startTime = System.nanoTime();
                 Knn knn;
                 Candidate candidate;
@@ -358,7 +358,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knn.setEarlyAbandon(true);
                     knn.setNeighbourSearchStrategy(neighbourSearchStrategy);
                     knn.setSeed(random.nextInt());
-                    knn.setTrainSubSetSize(trainSubSetSize); // todo make knn adapt when train set size changes
+                    knn.setTrainSubSetSize(trainSubSetSize); // todo make knn adapt when train set size changes / make enum strategy
                     candidate = new Candidate(knn, parameterSpace);
                     candidates.add(candidate);
                     knnIndex = candidates.size() - 1;
@@ -404,16 +404,18 @@ public class ElasticEnsemble extends TemplateClassifier {
             for(Candidate constituent : constituents) {
                 Knn knn = constituent.getKnn();
                 double[] candidateDistribution;
-                if(samplesTrainSet()) {
+//                if(samplesTrainSet()) {
                     candidateDistribution = knn.distributionForInstance(trainSet.get(i));
-                } else {
-                    ClassifierResults constituentTrainResults = knn.getTrainResults();
-                    candidateDistribution = constituentTrainResults.getProbabilityDistribution(i);
-                    predictionTime -= constituentTrainResults.getPredictionTimeInNanos(i);
-                }
+//                } else { todo use pre-computed train results if not sampling train set in knns
+//                    ClassifierResults constituentTrainResults = knn.getTrainResults();
+//                    candidateDistribution = constituentTrainResults.getProbabilityDistribution(i);
+//                    predictionTime -= constituentTrainResults.getPredictionTimeInNanos(i);
+//                }
                 ArrayUtilities.multiply(candidateDistribution, knn.getTrainResults().getAcc());
+                ArrayUtilities.normaliseInplace(candidateDistribution);
                 ArrayUtilities.add(distribution, candidateDistribution);
             }
+            ArrayUtilities.normaliseInplace(distribution);
             predictionTime = System.nanoTime() - predictionTime;
             trainResults.addPrediction(trainSet.get(i).classValue(), distribution, Utilities.argMax(distribution, getTrainRandom()), predictionTime, null);
         }
