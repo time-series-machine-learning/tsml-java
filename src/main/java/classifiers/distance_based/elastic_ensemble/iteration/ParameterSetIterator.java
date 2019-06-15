@@ -4,19 +4,32 @@ import evaluation.tuning.ParameterSpace;
 
 import java.util.Iterator;
 
-public class ParameterSetIterator implements Iterator<String[]> {
+public class ParameterSetIterator extends DynamicIterator<String[], ParameterSetIterator> {
     private final ParameterSpace parameterSpace;
-    private final Iterator<Integer> iterator;
+    private final DynamicIterator<Integer, ?> iterator;
 
     public ParameterSetIterator(final ParameterSpace parameterSpace,
-                                final Iterator<Integer> iterator) {
+                                final DynamicIterator<Integer, ?> iterator) {
         this.parameterSpace = parameterSpace;
         this.iterator = iterator;
+    }
+
+    public ParameterSetIterator() {
+        throw new UnsupportedOperationException();
+    }
+
+    public ParameterSetIterator(ParameterSetIterator other) {
+        this(other.parameterSpace, other.iterator); // todo need to copy these!
     }
 
     @Override
     public void remove() {
         iterator.remove();
+    }
+
+    @Override
+    public void add(final String[] strings) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -27,5 +40,10 @@ public class ParameterSetIterator implements Iterator<String[]> {
     @Override
     public String[] next() {
         return parameterSpace.get(iterator.next()).getOptions();
+    }
+
+    @Override
+    public ParameterSetIterator iterator() {
+        return new ParameterSetIterator(parameterSpace, iterator.iterator());
     }
 }
