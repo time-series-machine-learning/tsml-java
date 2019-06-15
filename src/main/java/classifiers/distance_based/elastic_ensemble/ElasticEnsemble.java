@@ -1,6 +1,10 @@
 package classifiers.distance_based.elastic_ensemble;
 
 import classifiers.distance_based.elastic_ensemble.iteration.*;
+import classifiers.distance_based.elastic_ensemble.iteration.linear.AbstractLinearIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.linear.SpreadIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.random.AbstractRandomIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.random.AbstractRoundRobinIterator;
 import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
 import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;
@@ -21,8 +25,6 @@ import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import utilities.ArrayUtilities;
-import utilities.Checks;
-import utilities.StringUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -299,8 +301,8 @@ public class ElasticEnsemble extends TemplateClassifier {
 
     private Iterator<IterableParameterSpace> getParameterSpacesIterator(List<IterableParameterSpace> iterableParameterSpaces) {
         switch (parameterSpacesIterationStrategy) {
-            case RANDOM: return parameterSpacesIterator = new RandomIterator<>(iterableParameterSpaces, getTrainRandom());
-            case ROUND_ROBIN: return parameterSpacesIterator = new RoundRobinIterator<>(iterableParameterSpaces);
+            case RANDOM: return parameterSpacesIterator = new AbstractRandomIterator<>(iterableParameterSpaces, getTrainRandom());
+            case ROUND_ROBIN: return parameterSpacesIterator = new AbstractRoundRobinIterator<>(iterableParameterSpaces);
             default: throw new IllegalStateException(parameterSpacesIterationStrategy.name() + " not implemented");
         }
     }
@@ -309,9 +311,9 @@ public class ElasticEnsemble extends TemplateClassifier {
         ArrayList<Integer> values =
                 new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
         switch (distanceMeasureSearchStrategy) {
-            case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom()));
+            case RANDOM: return new ParameterSetIterator(parameterSpace, new AbstractRandomIterator<>(values, getTrainRandom()));
             case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
-            case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+            case LINEAR: return new ParameterSetIterator(parameterSpace, new AbstractLinearIterator<>(values));
             default: throw new IllegalStateException(distanceMeasureSearchStrategy.name() + " not implemented yet");
         }
     }
@@ -362,6 +364,9 @@ public class ElasticEnsemble extends TemplateClassifier {
             boolean remainingCandidates = !candidates.isEmpty();
             while ((remainingParameters || remainingCandidates) && remainingTrainContractNanos() > phaseTime) {
                 System.out.println(count++);
+                if(count == 11) {
+                    boolean ohdear = true;
+                }
                 long startTime = System.nanoTime();
                 Knn knn;
                 Candidate candidate;
@@ -387,7 +392,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knn.setEarlyAbandon(true);
                     knn.setNeighbourSearchStrategy(neighbourSearchStrategy);
                     knn.setSeed(random.nextInt());
-                    knn.setTrainSetSize(trainSetSize); // todo make knn adapt when train set size changes
+                    knn.setTrainSubSetSize(trainSetSize); // todo make knn adapt when train set size changes
                     candidate = new Candidate(knn, parameterSpace);
                     candidates.add(candidate);
                     knnIndex = candidates.size() - 1;
@@ -436,9 +441,9 @@ public class ElasticEnsemble extends TemplateClassifier {
             long predictionTime = System.nanoTime();
             double[] distribution = votingScheme.distributionForInstance(modules, trainInstances.get(i)); // todo hacky, doesn't use already computed train due to rand sampling! could be a better way? Probs by using the stats from train results manually rather than cawpe'ing it
             predictionTime = System.nanoTime() - predictionTime;
-            for (EnsembleModule module : modules) {
-                predictionTime += module.trainResults.getPredictionTimeInNanos(i);
-            }
+//            for (EnsembleModule module : modules) {
+//                predictionTime += module.trainResults.getPredictionTimeInNanos(i);
+//            }
             trainResults.addPrediction(trainInstances.get(i).classValue(), distribution, Utilities.argMax(distribution, getTrainRandom()), predictionTime, null);
         }
         getTrainStopWatch().lap();

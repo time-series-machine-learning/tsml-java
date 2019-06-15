@@ -1,5 +1,7 @@
 package classifiers.distance_based.knn.sampling;
 
+import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
+import util.Sampler;
 import utilities.CollectionUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -7,12 +9,18 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class DistributedRandomSampler implements Sampler {
+public class DistributedRandomSampler
+    extends DynamicIterator<Instance, DistributedRandomSampler> {
     private final Random random;
     private final Map<Double, List<Instance>> instancesByClass;
     private final List<ClassLikelihood> probabilities = new ArrayList<>();
     private List<Instance> instances;
     private int index = 0;
+
+    @Override
+    public DistributedRandomSampler iterator() {
+        return new DistributedRandomSampler(this);
+    }
 
     private static class ClassLikelihood
         implements Comparable<ClassLikelihood> {
@@ -55,6 +63,15 @@ public class DistributedRandomSampler implements Sampler {
         }
     }
 
+    public DistributedRandomSampler(Random random) {
+        this.random = random;
+        instancesByClass = null;
+    }
+
+    public DistributedRandomSampler(DistributedRandomSampler other) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public boolean hasNext() {
         return !instancesByClass.isEmpty();
@@ -75,6 +92,11 @@ public class DistributedRandomSampler implements Sampler {
     @Override
     public void remove() {
         instances.remove(index);
+    }
+
+    @Override
+    public void add(final Instance instance) {
+        throw new UnsupportedOperationException();
     }
 
 }

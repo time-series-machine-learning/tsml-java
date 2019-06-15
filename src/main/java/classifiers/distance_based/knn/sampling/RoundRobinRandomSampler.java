@@ -1,31 +1,41 @@
 package classifiers.distance_based.knn.sampling;
 
-import classifiers.distance_based.elastic_ensemble.iteration.RoundRobinIterator;
-import utilities.InstanceTools;
+import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.random.AbstractRoundRobinIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.random.RoundRobinIterator;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
-public class RoundRobinRandomSampler implements Sampler {
+public class RoundRobinRandomSampler
+    extends DynamicIterator<Instance, RoundRobinRandomSampler> {
 
-    private final RoundRobinIterator<RandomSampler> randomSamplerIterator;
-    private RandomSampler randomSampler;
+    private RoundRobinIterator<ListIterator<Instance>> randomSamplerIterator;
+    private ListIterator<Instance> randomSampler;
+    private final Map<Double, ListIterator<Instance>> randomSamplers = new HashMap<>();
+    private final Random random;
 
     public RoundRobinRandomSampler(final Instances instances, final Random random) {
-        List<RandomSampler> randomSamplers = new ArrayList<>();
         Map<Double, List<Instance>> classMap = Utilities.instancesByClassValue(instances);
         for(Map.Entry<Double, List<Instance>> entry : classMap.entrySet()) {
             RandomSampler randomSampler = new RandomSampler(entry.getValue(), random);
             if(randomSampler.hasNext()) {
-                randomSamplers.add(randomSampler);
+                randomSamplers.put(entry.getKey(), randomSampler);
             }
         }
-        randomSamplerIterator = new RoundRobinIterator<>(randomSamplers);
+        this.random = random;
+        randomSamplerIterator = new RoundRobinIterator<>(randomSamplers.values());
+    }
+
+    public RoundRobinRandomSampler(Random random) {
+        this.random = random;
+    }
+
+    public RoundRobinRandomSampler(RoundRobinRandomSampler other) {
+        this(other.random);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -37,6 +47,12 @@ public class RoundRobinRandomSampler implements Sampler {
     }
 
     @Override
+    public void add(final Instance instance) {
+        double classValue = instance.classValue();
+        randomSamplers.get(classValue).add(instance);
+    }
+
+    @Override
     public boolean hasNext() {
         return randomSamplerIterator.hasNext();
     }
@@ -44,8 +60,11 @@ public class RoundRobinRandomSampler implements Sampler {
     @Override
     public Instance next() {
         randomSampler = randomSamplerIterator.next();
-        Instance instance = randomSampler.next();
+        return randomSampler.next();
+    }
 
-        return instance;
+    @Override
+    public RoundRobinRandomSampler iterator() {
+        return new RoundRobinRandomSampler(this);
     }
 }

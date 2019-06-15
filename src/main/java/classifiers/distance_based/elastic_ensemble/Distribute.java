@@ -103,7 +103,7 @@ public class Distribute {
         ee.setSeed(seed);
         ee.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.ROUND_ROBIN_RANDOM);
         int n = Integer.parseInt(args[4]);
-        n *= train.numClasses();
+//        n *= train.numClasses();
 //        double pp = Double.parseDouble(args[4]);
 //        System.out.println(pp);
 //        ee.setNumParameterSetsPercentage(pp);
