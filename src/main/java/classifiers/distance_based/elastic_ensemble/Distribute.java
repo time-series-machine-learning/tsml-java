@@ -5,6 +5,7 @@ import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import utilities.Utilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
@@ -42,7 +43,7 @@ public class Distribute {
     double pp = Double.parseDouble(args[4]);
     System.out.println(pp);
     ee.setNumParameterSetsPercentage(pp);
-    for(int n = 10; n <= 100; n+=10) {
+    for(int n = 10; n <= 100; n+=10) { // TODO change!
         double np = (double) n / 100;
         System.out.println(np + ", " + pp);
         String classifierName = "ee_np=" + np + "_pp=" + pp;

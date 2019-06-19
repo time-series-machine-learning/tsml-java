@@ -67,6 +67,7 @@ public class ElasticEnsemble extends TemplateClassifier {
     private Iterator<IterableParameterSpace> parameterSpacesIterator;
     public final static int DEFAULT_TRAIN_SUB_SET_SIZE = -1;
     public final static int DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE = -1;
+    private boolean progressive = false;
 
     public int getTrainSubSetSize() {
         return trainSubSetSize;
@@ -354,7 +355,11 @@ public class ElasticEnsemble extends TemplateClassifier {
                     } // todo random guess if no params or constituents
                     knn = new Knn();
                     knn.setOptions(parameters);
-                    knn.setNeighbourhoodSize(1);
+                    if(progressive) {
+                        knn.setNeighbourhoodSize(1);
+                    } else {
+                        knn.setNeighbourhoodSize(neighbourhoodSize);
+                    }
                     knn.setEarlyAbandon(true);
                     knn.setNeighbourSearchStrategy(neighbourSearchStrategy);
                     knn.setSeed(random.nextInt());
@@ -442,9 +447,12 @@ public class ElasticEnsemble extends TemplateClassifier {
         ClassifierResults results = new ClassifierResults();
         for (Instance testInstance : testInstances) {
             long time = System.nanoTime();
+            double classValue = testInstance.classValue();
+            testInstance.setClassMissing();
             double[] distribution = distributionForInstance(testInstance);
+            testInstance.setClassValue(classValue);
             time = System.nanoTime() - time;
-            results.addPrediction(testInstance.classValue(), distribution, argMax(distribution), time, null);
+            results.addPrediction(classValue, distribution, argMax(distribution), time, null);
         }
         getTestStopWatch().lap();
         setClassifierResultsMetaInfo(results);

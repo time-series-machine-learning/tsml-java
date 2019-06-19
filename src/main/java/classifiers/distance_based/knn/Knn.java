@@ -28,7 +28,7 @@ public class Knn
     public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
     public static final String NEIGHBOUR_SEARCH_STRATEGY_KEY = "neighbourSearchStrategy";
     public static final String TRAIN_SET_SIZE_KEY = "trainSubSetSize";
-    public static final String TRAIN_SET_SIZE_PERCENTAGE_KEY = "trainSetSizePercentage";
+    public static final String TRAIN_SET_SIZE_PERCENTAGE_KEY = "trainSubSetSizePercentage";
     public static final String EARLY_ABANDON_KEY = "earlyAbandon";
     public static final int DEFAULT_TRAIN_SET_SIZE = -1;
     public static final int DEFAULT_TRAIN_SET_SIZE_PERCENTAGE = -1;
@@ -41,7 +41,7 @@ public class Knn
     private DistanceMeasure distanceMeasure;
     private boolean earlyAbandon;
     private int neighbourhoodSize;
-    private double trainSetSizePercentage;
+    private double trainSubSetSizePercentage;
     private int trainSubSetSize;
     private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
     private long maxPhaseTime = 0;
@@ -57,7 +57,7 @@ public class Knn
         setK(DEFAULT_K);
         setNeighbourhoodSize(DEFAULT_NEIGHBOURHOOD_SIZE);
         setEarlyAbandon(DEFAULT_EARLY_ABANDON);
-        setTrainSetSizePercentage(DEFAULT_TRAIN_SET_SIZE_PERCENTAGE);
+        setTrainSubSetSizePercentage(DEFAULT_TRAIN_SET_SIZE_PERCENTAGE);
         setTrainSubSetSize(DEFAULT_TRAIN_SET_SIZE);
         setNeighbourSearchStrategy(NeighbourSearchStrategy.RANDOM);
     }
@@ -96,7 +96,7 @@ public class Knn
             NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
             String.valueOf(neighbourhoodSizePercentage),
             TRAIN_SET_SIZE_PERCENTAGE_KEY,
-            String.valueOf(trainSetSizePercentage),
+            String.valueOf(trainSubSetSizePercentage),
             DISTANCE_MEASURE_KEY,
             distanceMeasure.toString(),
             StringUtilities.join(",", distanceMeasure.getOptions()),
@@ -126,7 +126,7 @@ public class Knn
             } else if (key.equals(TRAIN_SET_SIZE_KEY)) {
                 setTrainSubSetSize(Integer.parseInt(value));
             } else if (key.equals(TRAIN_SET_SIZE_PERCENTAGE_KEY)) {
-                setTrainSetSizePercentage(Double.parseDouble(value));
+                setTrainSubSetSizePercentage(Double.parseDouble(value));
             } else if (key.equals(NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY)) {
                 setNeighbourhoodSizePercentage(Double.valueOf(value));
             }
@@ -166,8 +166,8 @@ public class Knn
         this.neighbourSearchStrategy = neighbourSearchStrategy;
     }
 
-    public double getTrainSetSizePercentage() {
-        return trainSetSizePercentage;
+    public double getTrainSubSetSizePercentage() {
+        return trainSubSetSizePercentage;
     }
 
     public int getTrainSubSetSize() {
@@ -178,8 +178,8 @@ public class Knn
         this.trainSubSetSize = trainSubSetSize;
     }
 
-    public void setTrainSetSizePercentage(final double trainSetSizePercentage) {
-        this.trainSetSizePercentage = trainSetSizePercentage;
+    public void setTrainSubSetSizePercentage(final double trainSubSetSizePercentage) {
+        this.trainSubSetSizePercentage = trainSubSetSizePercentage;
     }
 
     public double getNeighbourhoodSizePercentage() {
@@ -259,8 +259,7 @@ public class Knn
         for (NearestNeighbourSet nearestNeighbourSet : trainNearestNeighbourSets) {
             nearestNeighbourSet.trim();
             double[] distribution = nearestNeighbourSet.predict();
-            trainResults.addPrediction(nearestNeighbourSet.getTarget()
-                                                          .classValue(), distribution, argMax(distribution), // todo random
+            trainResults.addPrediction(nearestNeighbourSet.getTarget().classValue(), distribution, argMax(distribution), // todo random
                                        nearestNeighbourSet.getTime(), null);
         }
         getTrainStopWatch().lap();
@@ -293,8 +292,8 @@ public class Knn
     }
 
     private void setupTrainSetSize() {
-        if (trainSetSizePercentage >= 0) {
-            setTrainSubSetSize((int) (trainSet.size() * trainSetSizePercentage));
+        if (trainSubSetSizePercentage >= 0) {
+            setTrainSubSetSize((int) (trainSet.size() * trainSubSetSizePercentage));
         }
     }
 
@@ -343,7 +342,7 @@ public class Knn
         setEarlyAbandon(other.getEarlyAbandon());
         setNeighbourhoodSize(other.getNeighbourhoodSize());
         setNeighbourSearchStrategy(other.getNeighbourSearchStrategy());
-        setTrainSetSizePercentage(other.getTrainSetSizePercentage());
+        setTrainSubSetSizePercentage(other.getTrainSubSetSizePercentage());
         setTrainSubSetSize(other.getTrainSubSetSize());
         trainSubSet.clear();
         trainSubSet.addAll(other.trainSubSet);

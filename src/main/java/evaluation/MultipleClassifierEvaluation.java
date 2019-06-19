@@ -543,7 +543,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
     public static void main(String[] args) throws Exception {
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("/scratch/analysis", "ee_np", 10);
+            new MultipleClassifierEvaluation("/scratch/analysis/v4", "ee_n", 10);
 
         mcc.setTestResultsOnly(false); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -657,18 +657,18 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 ////        "ee_np=1.0_pp=0.9",
 //"ee_np=1.0_pp=1.0",
 //};
-//        String[] names = new String[] {
-//            "ee_np=0.1_pp=1.0",
-//            "ee_np=0.2_pp=1.0",
-//            "ee_np=0.3_pp=1.0",
-//            "ee_np=0.4_pp=1.0",
-//            "ee_np=0.5_pp=1.0",
-//            "ee_np=0.6_pp=1.0",
-//            "ee_np=0.7_pp=1.0",
-//            "ee_np=0.8_pp=1.0",
-//            "ee_np=0.9_pp=1.0",
-//            "ee_np=1.0_pp=1.0",
-//        };
+        String[] names = new String[] {
+            "ee_np=0.1_pp=1.0",
+            "ee_np=0.2_pp=1.0",
+            "ee_np=0.3_pp=1.0",
+            "ee_np=0.4_pp=1.0",
+            "ee_np=0.5_pp=1.0",
+            "ee_np=0.6_pp=1.0",
+            "ee_np=0.7_pp=1.0",
+            "ee_np=0.8_pp=1.0",
+            "ee_np=0.9_pp=1.0",
+            "ee_np=1.0_pp=1.0",
+        };
 //        String[] names = new String[] {
 //        "ee_np=1.0_pp=0.1",
 //        "ee_np=1.0_pp=0.2",
@@ -681,26 +681,26 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //        "ee_np=1.0_pp=0.9",
 //        "ee_np=1.0_pp=1.0",
 //};
-        String[] names = new String[] {
-            "ee_np=0.1_pp=0.1",
-            "ee_np=0.2_pp=0.2",
-            "ee_np=0.3_pp=0.3",
-            "ee_np=0.4_pp=0.4",
-            "ee_np=0.5_pp=0.5",
-            "ee_np=0.6_pp=0.6",
-            "ee_np=0.7_pp=0.7",
-            "ee_np=0.8_pp=0.8",
-            "ee_np=0.9_pp=0.9",
-            "ee_np=1.0_pp=1.0",
-            };
+//        String[] names = new String[] {
+//            "ee_np=0.1_pp=0.1",
+//            "ee_np=0.2_pp=0.2",
+//            "ee_np=0.3_pp=0.3",
+//            "ee_np=0.4_pp=0.4",
+//            "ee_np=0.5_pp=0.5",
+//            "ee_np=0.6_pp=0.6",
+//            "ee_np=0.7_pp=0.7",
+//            "ee_np=0.8_pp=0.8",
+//            "ee_np=0.9_pp=0.9",
+//            "ee_np=1.0_pp=1.0",
+//            };
         String[] output_names = new String[names.length];
 //        for(int i = 0; i < names.length; i++) {
-//            output_names[i] = "ee" + (int) (Double.parseDouble(names[i].substring(13)) * 100);
+//            output_names[i] = "ee" + (int) (Double.parseDouble(names[i].substring(13)) * 100) + "%P";
 //        }
         for(int i = 0; i < names.length; i++) {
-            output_names[i] = "ee" + (int) (Double.parseDouble(names[i].substring(6,9)) * 100);
+            output_names[i] = "EE" + (int) (Double.parseDouble(names[i].substring(6,9)) * 100) + "%N";
         }
-        mcc.readInClassifiers(names, output_names, "/scratch/results/ee_np/");
+        mcc.readInClassifiers(names, output_names, "/scratch/results/v4/ee/");
 //        mcc.readInClassifier("RandF", basePath); //
 
         mcc.runComparison();
