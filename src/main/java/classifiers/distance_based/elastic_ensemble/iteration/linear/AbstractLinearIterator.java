@@ -25,6 +25,9 @@ public abstract class AbstractLinearIterator<A, B extends AbstractLinearIterator
     public void remove() {
         index--;
         values.remove(index);
+        if(index < 0) {
+            index = 0;
+        }
     }
 
     @Override

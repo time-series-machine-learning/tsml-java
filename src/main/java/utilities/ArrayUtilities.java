@@ -74,6 +74,23 @@ public class ArrayUtilities {
         return result;
     }
 
+    public static List<Integer> maxIndices(double[] array) {
+        List<Integer> indices = new ArrayList<>();
+        indices.add(0);
+        double max = array[0];
+        for(int i = 1; i < array.length; i++) {
+            double value = array[i];
+            if(value >= max) {
+                if(value > max) {
+                    max = value;
+                    indices.clear();
+                }
+                indices.add(i);
+            }
+        }
+        return indices;
+    }
+
     public static double mean(double[] array) {
         return sum(array) / array.length;
     }
@@ -192,6 +209,14 @@ public class ArrayUtilities {
             }
         }
         return index;
+    }
+
+    public static int indexOfMax(double[] array, Random random) {
+        if(array.length <= 0) {
+            throw new IllegalArgumentException("empty array");
+        }
+        List<Integer> indices = maxIndices(array);
+        return indices.get(random.nextInt(indices.size()));
     }
 
     public static int[] range(final int i) {
