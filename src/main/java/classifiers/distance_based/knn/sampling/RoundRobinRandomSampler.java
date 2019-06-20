@@ -15,7 +15,7 @@ public class RoundRobinRandomSampler
     private final Map<Double, ListIterator<Instance>> samplers = new HashMap<>();
     private final Random random;
 
-    public RoundRobinRandomSampler(final Instances instances, final Random random) {
+    public RoundRobinRandomSampler(final Instances instances, final Random random) { // todo update to seeding system
         throw new UnsupportedOperationException();
     }
 
@@ -40,7 +40,7 @@ public class RoundRobinRandomSampler
     public void add(final Instance instance) {
         double classValue = instance.classValue();
         ListIterator<Instance> instanceIterator = samplers.computeIfAbsent(classValue, key -> {
-            RandomSampler sampler = new RandomSampler(random);
+            RandomSampler sampler = new RandomSampler(random.nextLong());
             samplerIterator.add(sampler);
             return sampler;
         });

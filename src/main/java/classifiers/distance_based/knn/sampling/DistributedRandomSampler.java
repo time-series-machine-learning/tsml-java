@@ -54,7 +54,7 @@ public class DistributedRandomSampler
         }
     }
 
-    public DistributedRandomSampler(Instances instances, Random random) {
+    public DistributedRandomSampler(Instances instances, Random random) { // todo update to seeding system
         this.random = random;
         instancesByClass = Utilities.instancesByClassValue(instances);
         for(Map.Entry<Double, List<Instance>> entry : instancesByClass.entrySet()) {

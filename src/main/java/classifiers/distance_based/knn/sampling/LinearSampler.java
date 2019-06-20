@@ -7,7 +7,7 @@ import weka.core.Instance;
 import java.util.List;
 
 public class LinearSampler extends LinearIterator<Instance> {
-    public LinearSampler(final List<? extends Instance> values) {
+    public LinearSampler(final List<Instance> values) {
         super(values);
     }
 

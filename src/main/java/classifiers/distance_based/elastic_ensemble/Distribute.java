@@ -8,6 +8,7 @@ import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import javax.rmi.CORBA.Util;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -38,28 +39,30 @@ public class Distribute {
     Instances[] data = sampleDataset(datasetDirPath, datasetName, seed);
     Instances train = data[0];
     Instances test = data[1];
-    ElasticEnsemble ee = new ElasticEnsemble();
-    ee.setSeed(seed);
+//    Knn cls = new Knn();
+    ElasticEnsemble cls = new ElasticEnsemble();
+    cls.setSeed(seed);
     double pp = Double.parseDouble(args[4]);
     System.out.println(pp);
-    ee.setNumParameterSetsPercentage(pp);
-    for(int n = 10; n <= 100; n+=10) { // TODO change!
+    cls.setNumParametersLimitPercentage(pp);
+    for(int n = 10; n <= 100; n+=10) {
         double np = (double) n / 100;
         System.out.println(np + ", " + pp);
         String classifierName = "ee_np=" + np + "_pp=" + pp;
+//        String classifierName = "knn";
         String experimentResultsDirPath = resultsDirPath + "/" + classifierName + "/Predictions/" + datasetName;
         String trainResultsFilePath = experimentResultsDirPath + "/trainFold" + seed + ".csv";
         String testResultsFilePath = experimentResultsDirPath + "/testFold" + seed + ".csv";
-        ee.setNeighbourhoodSizePercentage(np);
+        cls.setNeighbourhoodSizeLimitPercentage(np);
         boolean trainMissing = !exists(trainResultsFilePath);
         boolean testMissing = !exists(testResultsFilePath);
         if(trainMissing || testMissing) {
             System.out.println("training");
-            ee.buildClassifier(train);
+            cls.buildClassifier(train);
         }
         if(trainMissing) {
             System.out.println("getting train results");
-            ClassifierResults trainResults = ee.getTrainResults();
+            ClassifierResults trainResults = cls.getTrainResults();
             trainResults.setDatasetName(datasetName);
             trainResults.setFoldID(seed);
             trainResults.setClassifierName(classifierName);
@@ -69,12 +72,12 @@ public class Distribute {
         }
         if(testMissing) {
             System.out.println("getting test results");
-            ClassifierResults testResults = ee.getTestResults(test);
+            ClassifierResults testResults = cls.getTestResults(test);
             testResults.setDatasetName(datasetName);
             testResults.setFoldID(seed);
             testResults.setClassifierName(classifierName);
             writeToFile(testResults, testResultsFilePath);
-            ee.resetTestRandom();
+            cls.resetTestRandom();
         } else {
             System.out.println("test exists");
         }
@@ -162,14 +165,14 @@ public class Distribute {
 //        Instances train = data[0];
 //        Instances test = data[1];
 //        ElasticEnsemble ee = new ElasticEnsemble();
-//        ee.setNumParameterSetsPercentage(0.1);
+//        ee.setNumParametersLimitPercentage(0.1);
 //        ee.setSeed(seed);
 //        ee.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.RANDOM);
 //        int n = Integer.parseInt(args[4]);
 ////        n *= train.numClasses();
 ////        double pp = Double.parseDouble(args[4]);
 ////        System.out.println(pp);
-////        ee.setNumParameterSetsPercentage(pp);
+////        ee.setNumParametersLimitPercentage(pp);
 ////        for(int n = 5; n <= 30; n+=5) {
 ////            double np = (double) n / 100;
 ////            System.out.println(np + ", " + pp);
@@ -179,8 +182,8 @@ public class Distribute {
 //            String experimentResultsDirPath = resultsDirPath + "/" + classifierName + "/Predictions/" + datasetName;
 //            String trainResultsFilePath = experimentResultsDirPath + "/trainFold" + seed + ".csv";
 //            String testResultsFilePath = experimentResultsDirPath + "/testFold" + seed + ".csv";
-//            ee.setNeighbourhoodSize(n);
-////            ee.setNeighbourhoodSizePercentage(np);
+//            ee.setTrainNeighbourhoodSizeLimit(n);
+////            ee.setTrainNeighbourhoodSizeLimitPercentage(np);
 //            boolean trainMissing = !exists(trainResultsFilePath);
 //            boolean testMissing = !exists(testResultsFilePath);
 //            if(trainMissing || testMissing) {

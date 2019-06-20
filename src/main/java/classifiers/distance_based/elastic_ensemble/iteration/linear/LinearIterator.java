@@ -1,10 +1,11 @@
 package classifiers.distance_based.elastic_ensemble.iteration.linear;
 
 import java.util.Collection;
+import java.util.List;
 
 public class LinearIterator<A> extends AbstractLinearIterator<A, LinearIterator<A>> {
 
-    public LinearIterator(final Collection<? extends A> values) {
+    public LinearIterator(final List<A> values) {
         super(values);
     }
 

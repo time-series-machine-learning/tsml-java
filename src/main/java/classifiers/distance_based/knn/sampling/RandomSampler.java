@@ -9,11 +9,11 @@ import java.util.Random;
 
 public class RandomSampler extends RandomIterator<Instance> {
 
-    public RandomSampler(final List<? extends Instance> values, final Random random) {
-        super(values, random);
+    public RandomSampler(final List<Instance> values, final long seed) {
+        super(values, seed);
     }
 
-    public RandomSampler(Random random) {
-        super(random);
+    public RandomSampler(long seed) {
+        super(seed);
     }
 }

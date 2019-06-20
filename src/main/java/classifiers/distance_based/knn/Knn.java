@@ -13,39 +13,83 @@ import weka.core.Instances;
 
 import java.util.*;
 
-import static utilities.ArrayUtilities.argMax;
-import static utilities.ArrayUtilities.indexOfMax;
-
 public class Knn
     extends TemplateClassifier {
 
     public static final int DEFAULT_K = 1;
     public static final boolean DEFAULT_EARLY_ABANDON = true;
     public static final String K_KEY = "k";
-    public static final int DEFAULT_NEIGHBOURHOOD_SIZE = -1;
-    public static final String NEIGHBOURHOOD_SIZE_KEY = "neighbourhoodSizeLimit";
-    public static final String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "neighbourhoodSizePercentage";
+    public static final int DEFAULT_TRAIN_NEIGHBOURHOOD_SIZE = -1;
+    public static final double DEFAULT_TRAIN_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
+    public static final int DEFAULT_TEST_NEIGHBOURHOOD_SIZE = -1;
+    public static final double DEFAULT_TEST_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
+    public static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY = "trainNeighbourhoodSizeLimit";
+    public static final String TEST_NEIGHBOURHOOD_SIZE_LIMIT_KEY = "testNeighbourhoodSizeLimit";
+    public static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trainNeighbourhoodSizeLimitPercentage";
+    public static final String TEST_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "testNeighbourhoodSizeLimitPercentage";
     public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
     public static final String NEIGHBOUR_SEARCH_STRATEGY_KEY = "neighbourSearchStrategy";
-    public static final String TRAIN_SET_SIZE_KEY = "trainSubSetSizeLimit";
-    public static final String TRAIN_SET_SIZE_PERCENTAGE_KEY = "trainSubSetSizePercentage";
+    public static final String TRAIN_ESTIMATE_SET_SIZE_KEY = "trainEstimateSetSizeLimit";
+    public static final String TRAIN_ESTIMATE_SET_SIZE_PERCENTAGE_KEY = "trainEstimateSetSizeLimitPercentage";
     public static final String EARLY_ABANDON_KEY = "earlyAbandon";
-    public static final int DEFAULT_TRAIN_SET_SIZE = -1;
-    public static final int DEFAULT_TRAIN_SET_SIZE_PERCENTAGE = -1;
+    public static final int DEFAULT_TRAIN_ESTIMATE_SET_SIZE = -1;
+    public static final int DEFAULT_TRAIN_ESTIMATE_SET_SIZE_PERCENTAGE = -1;
     public static final double DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
     private final List<KNearestNeighbours> trainKNearestNeighbours = new ArrayList<>();
-    private final List<Instance> trainSubSet = new ArrayList<>();
+    private final List<Instance> trainEstimateSet = new ArrayList<>();
+    private Instances trainSet;
     private int k;
     private DistanceMeasure distanceMeasure;
     private boolean earlyAbandon;
-    private int neighbourhoodSizeLimit;
-    private double trainSubSetSizePercentage;
-    private int trainSubSetSizeLimit;
+    private int trainNeighbourhoodSizeLimit;
+    private double trainEstimateSetSizeLimitPercentage;
+    private int trainEstimateSetSizeLimit;
+    private double testNeighbourhoodSizeLimitPercentage;
+    private int testNeighbourhoodSizeLimit;
     private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
-    private DynamicIterator<Instance, ?> trainSubSetSampler;
-    private DynamicIterator<Instance, ?> trainSetSampler;
-    private final List<Instance> neighbourhood = new ArrayList<>();
-    private double neighbourhoodSizePercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
+    private DynamicIterator<Instance, ?> neighboursIterator;
+    private DynamicIterator<Instance, ?> trainSetIterator;
+    private List<Instance> trainNeighbourhood = new ArrayList<>();
+    private List<Instance> predefinedTrainNeighbourhood = null; // todo predefined trainestimateset
+    private double trainNeighbourhoodSizeLimitPercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
+    private TrainSetSampleStrategy trainSetSampleStrategy = TrainSetSampleStrategy.RANDOM;
+
+    public Knn() {
+        setDistanceMeasure(new Dtw(0));
+        setK(DEFAULT_K);
+        setTrainNeighbourhoodSizeLimit(DEFAULT_TRAIN_NEIGHBOURHOOD_SIZE);
+        setTrainNeighbourhoodSizeLimitPercentage(DEFAULT_TRAIN_NEIGHBOURHOOD_SIZE_PERCENTAGE);
+        setEarlyAbandon(DEFAULT_EARLY_ABANDON);
+        setTrainEstimateSetSizeLimitPercentage(DEFAULT_TRAIN_ESTIMATE_SET_SIZE_PERCENTAGE);
+        setTrainEstimateSetSizeLimit(DEFAULT_TRAIN_ESTIMATE_SET_SIZE);
+        setNeighbourSearchStrategy(NeighbourSearchStrategy.RANDOM);
+        setTestNeighbourhoodSizeLimit(DEFAULT_TEST_NEIGHBOURHOOD_SIZE);
+        setTestNeighbourhoodSizeLimitPercentage(DEFAULT_TEST_NEIGHBOURHOOD_SIZE_PERCENTAGE);
+    }
+
+    public double getTestNeighbourhoodSizeLimitPercentage() {
+        return testNeighbourhoodSizeLimitPercentage;
+    }
+
+    public void setTestNeighbourhoodSizeLimitPercentage(double testNeighbourhoodSizeLimitPercentage) {
+        this.testNeighbourhoodSizeLimitPercentage = testNeighbourhoodSizeLimitPercentage;
+    }
+
+    public int getTestNeighbourhoodSizeLimit() {
+        return testNeighbourhoodSizeLimit;
+    }
+
+    public void setTestNeighbourhoodSizeLimit(int testNeighbourhoodSizeLimit) {
+        this.testNeighbourhoodSizeLimit = testNeighbourhoodSizeLimit;
+    }
+
+    public List<Instance> getPredefinedTrainNeighbourhood() {
+        return predefinedTrainNeighbourhood;
+    }
+
+    public void setPredefinedTrainNeighbourhood(List<Instance> predefinedTrainNeighbourhood) {
+        this.predefinedTrainNeighbourhood = new ArrayList<>(predefinedTrainNeighbourhood);
+    }
 
     public TrainSetSampleStrategy getTrainSetSampleStrategy() {
         return trainSetSampleStrategy;
@@ -53,19 +97,6 @@ public class Knn
 
     public void setTrainSetSampleStrategy(TrainSetSampleStrategy trainSetSampleStrategy) {
         this.trainSetSampleStrategy = trainSetSampleStrategy;
-    }
-
-    private TrainSetSampleStrategy trainSetSampleStrategy = TrainSetSampleStrategy.RANDOM;
-    private Instances trainSet;
-
-    public Knn() {
-        setDistanceMeasure(new Dtw(0));
-        setK(DEFAULT_K);
-        setNeighbourhoodSizeLimit(DEFAULT_NEIGHBOURHOOD_SIZE);
-        setEarlyAbandon(DEFAULT_EARLY_ABANDON);
-        setTrainSubSetSizePercentage(DEFAULT_TRAIN_SET_SIZE_PERCENTAGE);
-        setTrainSubSetSizeLimit(DEFAULT_TRAIN_SET_SIZE);
-        setNeighbourSearchStrategy(NeighbourSearchStrategy.RANDOM);
     }
 
     @Override
@@ -87,30 +118,30 @@ public class Knn
         return k;
     }
 
+    public void setK(final int k) {
+        this.k = k;
+    }
+
     public String[] getOptions() { // todo
         return ArrayUtilities.concat(super.getOptions(), new String[] {
             K_KEY,
             String.valueOf(k),
-            NEIGHBOURHOOD_SIZE_KEY,
-            String.valueOf(neighbourhoodSizeLimit),
+                TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY,
+            String.valueOf(trainNeighbourhoodSizeLimit),
             NEIGHBOUR_SEARCH_STRATEGY_KEY,
             neighbourSearchStrategy.name(),
-            TRAIN_SET_SIZE_KEY,
-            String.valueOf(trainSubSetSizeLimit),
+                TRAIN_ESTIMATE_SET_SIZE_KEY,
+            String.valueOf(trainEstimateSetSizeLimit),
             EARLY_ABANDON_KEY,
             String.valueOf(earlyAbandon),
-            NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
-            String.valueOf(neighbourhoodSizePercentage),
-            TRAIN_SET_SIZE_PERCENTAGE_KEY,
-            String.valueOf(trainSubSetSizePercentage),
+                TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY,
+            String.valueOf(trainNeighbourhoodSizeLimitPercentage),
+                TRAIN_ESTIMATE_SET_SIZE_PERCENTAGE_KEY,
+            String.valueOf(trainEstimateSetSizeLimitPercentage),
             DISTANCE_MEASURE_KEY,
             distanceMeasure.toString(),
             StringUtilities.join(",", distanceMeasure.getOptions()),
             });
-    }
-
-    public void setK(final int k) {
-        this.k = k;
     }
 
     public void setOptions(final String[] options) throws
@@ -121,7 +152,7 @@ public class Knn
             String value = options[i + 1];
             if (key.equals(K_KEY)) {
                 setK(Integer.parseInt(value));
-            } else if (key.equals(NEIGHBOURHOOD_SIZE_KEY)) {
+            } else if (key.equals(TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY)) {
                 setK(Integer.parseInt(value));
             } else if (key.equals(DISTANCE_MEASURE_KEY)) {
                 setDistanceMeasure(DistanceMeasure.fromString(value));
@@ -129,12 +160,16 @@ public class Knn
                 setNeighbourSearchStrategy(NeighbourSearchStrategy.fromString(value));
             } else if (key.equals(EARLY_ABANDON_KEY)) {
                 setEarlyAbandon(Boolean.parseBoolean(value));
-            } else if (key.equals(TRAIN_SET_SIZE_KEY)) {
-                setTrainSubSetSizeLimit(Integer.parseInt(value));
-            } else if (key.equals(TRAIN_SET_SIZE_PERCENTAGE_KEY)) {
-                setTrainSubSetSizePercentage(Double.parseDouble(value));
-            } else if (key.equals(NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY)) {
-                setNeighbourhoodSizePercentage(Double.valueOf(value));
+            } else if (key.equals(TRAIN_ESTIMATE_SET_SIZE_KEY)) {
+                setTrainEstimateSetSizeLimit(Integer.parseInt(value));
+            } else if (key.equals(TRAIN_ESTIMATE_SET_SIZE_PERCENTAGE_KEY)) {
+                setTrainEstimateSetSizeLimitPercentage(Double.parseDouble(value));
+            } else if (key.equals(TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY)) {
+                setTrainNeighbourhoodSizeLimitPercentage(Double.valueOf(value));
+            } else if(key.equals(TEST_NEIGHBOURHOOD_SIZE_LIMIT_KEY)) {
+                setTestNeighbourhoodSizeLimit(Integer.parseInt(value));
+            } else if(key.equals(TEST_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY)) {
+                setTestNeighbourhoodSizeLimitPercentage(Double.parseDouble(value));
             }
         }
         distanceMeasure.setOptions(options);
@@ -156,12 +191,12 @@ public class Knn
         this.earlyAbandon = earlyAbandon;
     }
 
-    public int getNeighbourhoodSizeLimit() {
-        return neighbourhoodSizeLimit;
+    public int getTrainNeighbourhoodSizeLimit() {
+        return trainNeighbourhoodSizeLimit;
     }
 
-    public void setNeighbourhoodSizeLimit(final int neighbourhoodSizeLimit) {
-        this.neighbourhoodSizeLimit = neighbourhoodSizeLimit;
+    public void setTrainNeighbourhoodSizeLimit(final int trainNeighbourhoodSizeLimit) {
+        this.trainNeighbourhoodSizeLimit = trainNeighbourhoodSizeLimit;
     }
 
     public NeighbourSearchStrategy getNeighbourSearchStrategy() {
@@ -172,69 +207,68 @@ public class Knn
         this.neighbourSearchStrategy = neighbourSearchStrategy;
     }
 
-    public double getTrainSubSetSizePercentage() {
-        return trainSubSetSizePercentage;
+    public double getTrainEstimateSetSizeLimitPercentage() {
+        return trainEstimateSetSizeLimitPercentage;
     }
 
-    public int getTrainSubSetSizeLimit() {
-        return trainSubSetSizeLimit;
+    public void setTrainEstimateSetSizeLimitPercentage(final double trainEstimateSetSizeLimitPercentage) {
+        this.trainEstimateSetSizeLimitPercentage = trainEstimateSetSizeLimitPercentage;
     }
 
-    public void setTrainSubSetSizeLimit(final int trainSubSetSizeLimit) {
-        this.trainSubSetSizeLimit = trainSubSetSizeLimit;
+    public int getTrainEstimateSetSizeLimit() {
+        return trainEstimateSetSizeLimit;
     }
 
-    public void setTrainSubSetSizePercentage(final double trainSubSetSizePercentage) {
-        this.trainSubSetSizePercentage = trainSubSetSizePercentage;
+    public void setTrainEstimateSetSizeLimit(final int trainEstimateSetSizeLimit) {
+        this.trainEstimateSetSizeLimit = trainEstimateSetSizeLimit;
     }
 
-    public double getNeighbourhoodSizePercentage() {
-        return neighbourhoodSizePercentage;
+    public double getTrainNeighbourhoodSizeLimitPercentage() {
+        return trainNeighbourhoodSizeLimitPercentage;
     }
 
-    public void setNeighbourhoodSizePercentage(double neighbourhoodSizePercentage) {
-        this.neighbourhoodSizePercentage = neighbourhoodSizePercentage;
+    public void setTrainNeighbourhoodSizeLimitPercentage(double trainNeighbourhoodSizeLimitPercentage) {
+        this.trainNeighbourhoodSizeLimitPercentage = trainNeighbourhoodSizeLimitPercentage;
     }
 
     private boolean hasRemainingTrainSubSet() {
-        return (trainSubSet.size() < trainSubSetSizeLimit || (trainSubSetSizeLimit < 0 && trainSubSet.size() < trainSet.size()))
-               && trainSetSampler.hasNext();
+        return (trainEstimateSet.size() < trainEstimateSetSizeLimit || (trainEstimateSetSizeLimit < 0 && trainEstimateSet.size() < trainSet.size()))
+               && trainSetIterator.hasNext();
     }
 
     private boolean hasRemainingNeighbours() {
-        return (neighbourhood.size() < neighbourhoodSizeLimit || neighbourhoodSizeLimit < 0)
-               && trainSubSetSampler.hasNext();
+        return (trainNeighbourhood.size() < trainNeighbourhoodSizeLimit || trainNeighbourhoodSizeLimit < 0)
+               && neighboursIterator.hasNext();
     }
 
     private Instance nextTrainInstance() {
-        Instance instance = trainSetSampler.next();
-        trainSetSampler.remove();
+        Instance instance = trainSetIterator.next();
+        trainSetIterator.remove();
         return instance;
     }
 
-    private void nextTrainInstanceEstimate() {
+    private void nextTrainEstimateInstance() {
         Instance trainInstance = nextTrainInstance();
-        KNearestNeighbours KNearestNeighbours = new KNearestNeighbours(trainInstance);
-        trainKNearestNeighbours.add(KNearestNeighbours);
-        trainSubSet.add(trainInstance);
-        KNearestNeighbours.addAll(neighbourhood);
-        trainSubSetSampler.add(trainInstance);
+        KNearestNeighbours kNearestNeighbours = new KNearestNeighbours(trainInstance);
+        trainKNearestNeighbours.add(kNearestNeighbours);
+        trainEstimateSet.add(trainInstance);
+        kNearestNeighbours.addAll(trainNeighbourhood);
+        if(predefinedTrainNeighbourhood == null) {
+            neighboursIterator.add(trainInstance);
+        }
     }
 
     private Instance nextNeighbour() {
-        Instance neighbour = trainSubSetSampler.next();
-        trainSubSetSampler.remove();
+        Instance neighbour = neighboursIterator.next();
+        neighboursIterator.remove();
         return neighbour;
     }
 
     private void nextNeighbourSearch() {
         Instance neighbour = nextNeighbour();
-        neighbourhood.add(neighbour);
+        trainNeighbourhood.add(neighbour);
         for (KNearestNeighbours trainKNearestNeighbours : this.trainKNearestNeighbours) {
-            if (!trainKNearestNeighbours.getTarget()
-                    .equals(neighbour)) {
-                trainKNearestNeighbours.add(neighbour);
-            }
+            trainKNearestNeighbours.add(neighbour);
         }
     }
 
@@ -256,12 +290,11 @@ public class Knn
 
     private void checkTrainSet(Instances trainSet) {
         if (trainSetChanged(trainSet)) { // todo call in setters if exceeding certain
-            // stuff, e.g. neighbourhood size inc
+            // stuff, e.g. trainNeighbourhood size inc
             getTrainStopWatch().reset();
             this.trainSet = trainSet;
-            trainSubSet.clear();
             trainKNearestNeighbours.clear();
-            neighbourhood.clear();
+            trainEstimateSet.clear();
             setupNeighbourhoodSize();
             setupTrainSetSize();
             setupTrainSetSampleStrategy();
@@ -284,7 +317,7 @@ public class Knn
 //            }
 //            if(choice) {
             if(remainingTrainSubSet) {
-                nextTrainInstanceEstimate();
+                nextTrainEstimateInstance();
             } else {
                 nextNeighbourSearch();
             }
@@ -299,54 +332,55 @@ public class Knn
     private void setupNeighbourSearchStrategy() {
         switch (neighbourSearchStrategy) {
             case RANDOM:
-                trainSubSetSampler = new RandomSampler(getTrainRandom());
+                neighboursIterator = new RandomSampler(getTrainRandom().nextLong());
                 break;
             case LINEAR:
-                trainSubSetSampler = new LinearSampler();
+                neighboursIterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                trainSubSetSampler = new RoundRobinRandomSampler(getTrainRandom());
+                neighboursIterator = new RoundRobinRandomSampler(getTrainRandom());
                 break;
             case DISTRIBUTED_RANDOM:
-                trainSubSetSampler = new DistributedRandomSampler(getTrainRandom());
+                neighboursIterator = new DistributedRandomSampler(getTrainRandom());
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
+        if(predefinedTrainNeighbourhood != null) {
+            neighboursIterator.addAll(predefinedTrainNeighbourhood);
+        }
     }
 
     private void setupNeighbourhoodSize() {
-        if (neighbourhoodSizePercentage >= 0) {
-            setNeighbourhoodSizeLimit((int) (trainSet.size() * neighbourhoodSizePercentage));
+        if (trainNeighbourhoodSizeLimitPercentage >= 0) {
+            setTrainNeighbourhoodSizeLimit((int) (trainSet.size() * trainNeighbourhoodSizeLimitPercentage));
         }
     }
 
     private void setupTrainSetSize() {
-        if (trainSubSetSizePercentage >= 0) {
-            setTrainSubSetSizeLimit((int) (trainSet.size() * trainSubSetSizePercentage));
+        if (trainEstimateSetSizeLimitPercentage >= 0) {
+            setTrainEstimateSetSizeLimit((int) (trainSet.size() * trainEstimateSetSizeLimitPercentage));
         }
     }
 
     private void setupTrainSetSampleStrategy() {
         switch (trainSetSampleStrategy) {
             case RANDOM:
-                trainSetSampler = new RandomSampler(getTrainRandom());
+                trainSetIterator = new RandomSampler(getTrainRandom().nextLong()); // todo make the remainder of these use seed instead of random
                 break;
             case LINEAR:
-                trainSetSampler = new LinearSampler();
+                trainSetIterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                trainSetSampler = new RoundRobinRandomSampler(getTrainRandom());
+                trainSetIterator = new RoundRobinRandomSampler(getTrainRandom());
                 break;
             case DISTRIBUTED_RANDOM:
-                trainSetSampler = new DistributedRandomSampler(getTrainRandom());
+                trainSetIterator = new DistributedRandomSampler(getTrainRandom());
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
-        for(Instance trainInstance : trainSet) {
-            trainSetSampler.add(trainInstance);
-        }
+        trainSetIterator.addAll(trainSet);
     }
 
     @Override
@@ -363,18 +397,18 @@ public class Knn
         distanceMeasure.setOptions(other.getDistanceMeasure()
                                         .getOptions());
         setEarlyAbandon(other.getEarlyAbandon());
-        setNeighbourhoodSizeLimit(other.getNeighbourhoodSizeLimit());
+        setTrainNeighbourhoodSizeLimit(other.getTrainNeighbourhoodSizeLimit());
         setNeighbourSearchStrategy(other.getNeighbourSearchStrategy());
-        setTrainSubSetSizePercentage(other.getTrainSubSetSizePercentage());
-        setTrainSubSetSizeLimit(other.getTrainSubSetSizeLimit());
-        setNeighbourhoodSizePercentage(other.getNeighbourhoodSizePercentage());
+        setTrainEstimateSetSizeLimitPercentage(other.getTrainEstimateSetSizeLimitPercentage());
+        setTrainEstimateSetSizeLimit(other.getTrainEstimateSetSizeLimit());
+        setTrainNeighbourhoodSizeLimitPercentage(other.getTrainNeighbourhoodSizeLimitPercentage());
         setTrainSetSampleStrategy(other.getTrainSetSampleStrategy());
-        trainSubSet.clear();
-        trainSubSet.addAll(other.trainSubSet);
-        neighbourhood.clear();
-        neighbourhood.addAll(other.neighbourhood);
-        trainSetSampler = other.trainSetSampler.iterator();
-        trainSubSetSampler = other.trainSubSetSampler.iterator();
+        trainEstimateSet.clear();
+        trainEstimateSet.addAll(other.trainEstimateSet);
+        trainNeighbourhood.clear();
+        trainNeighbourhood.addAll(other.trainNeighbourhood);
+        trainSetIterator = other.trainSetIterator.iterator();
+        neighboursIterator = other.neighboursIterator.iterator();
         trainSet = other.trainSet;
     }
 
@@ -382,7 +416,7 @@ public class Knn
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                          Exception {
         KNearestNeighbours testKNearestNeighbours = new KNearestNeighbours(testInstance);
-        testKNearestNeighbours.addAll(neighbourhood);
+        testKNearestNeighbours.addAll(trainSet); // todo limited test neighbourhood
         testKNearestNeighbours.trim();
         return testKNearestNeighbours.predict().getDistribution();
     }
@@ -418,6 +452,24 @@ public class Knn
                 }
             }
             throw new IllegalArgumentException("No enum value by the name of " + str);
+        }
+    }
+
+    private static class Prediction {
+        private final double[] distribution;
+        private final long predictionTimeNanos;
+
+        private Prediction(double[] distribution, long predictionTimeNanos) {
+            this.distribution = distribution;
+            this.predictionTimeNanos = predictionTimeNanos;
+        }
+
+        public double[] getDistribution() {
+            return distribution;
+        }
+
+        public long getPredictionTimeNanos() {
+            return predictionTimeNanos;
         }
     }
 
@@ -514,52 +566,35 @@ public class Knn
 
         public void add(Instance instance, double distance) {
             long startTime = System.nanoTime();
-            if((distance <= furthestDistance || size < k) && k > 0) {
-                Collection<Instance> equalDistanceNeighbours = kNeighbours.get(distance);
-                if (equalDistanceNeighbours == null) {
-                    equalDistanceNeighbours = new ArrayList<>();
-                    kNeighbours.put(distance, equalDistanceNeighbours);
-                    if(size == 0) {
-                        furthestDistance = distance;
-                        furthestNeighbours = equalDistanceNeighbours;
-                    } else {
-                        furthestDistance = Math.max(furthestDistance, distance);
+            if(!instance.equals(target)) {
+                if((distance <= furthestDistance || size < k) && k > 0) {
+                    Collection<Instance> equalDistanceNeighbours = kNeighbours.get(distance);
+                    if (equalDistanceNeighbours == null) {
+                        equalDistanceNeighbours = new ArrayList<>();
+                        kNeighbours.put(distance, equalDistanceNeighbours);
+                        if(size == 0) {
+                            furthestDistance = distance;
+                            furthestNeighbours = equalDistanceNeighbours;
+                        } else {
+                            furthestDistance = Math.max(furthestDistance, distance);
+                        }
                     }
-                }
-                equalDistanceNeighbours.add(instance);
-                size++;
-                if(distance < furthestDistance && size > k) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
-                    int numFurthestNeighbours = furthestNeighbours.size();
-                    if (size - k >= numFurthestNeighbours) {
-                        kNeighbours.pollLastEntry();
-                        size -= numFurthestNeighbours;
-                        Map.Entry<Double, Collection<Instance>> furthestNeighboursEntry = kNeighbours.lastEntry();
-                        furthestNeighbours = furthestNeighboursEntry.getValue();
-                        furthestDistance = furthestNeighboursEntry.getKey();
+                    equalDistanceNeighbours.add(instance);
+                    size++;
+                    if(distance < furthestDistance && size > k) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
+                        int numFurthestNeighbours = furthestNeighbours.size();
+                        if (size - k >= numFurthestNeighbours) {
+                            kNeighbours.pollLastEntry();
+                            size -= numFurthestNeighbours;
+                            Map.Entry<Double, Collection<Instance>> furthestNeighboursEntry = kNeighbours.lastEntry();
+                            furthestNeighbours = furthestNeighboursEntry.getValue();
+                            furthestDistance = furthestNeighboursEntry.getKey();
+                        }
                     }
+                    trimmedKNeighbours = null;
                 }
-                trimmedKNeighbours = null;
             }
             searchTimeNanos += System.nanoTime() - startTime;
-        }
-    }
-
-    private static class Prediction {
-        private final double[] distribution;
-
-        public double[] getDistribution() {
-            return distribution;
-        }
-
-        public long getPredictionTimeNanos() {
-            return predictionTimeNanos;
-        }
-
-        private final long predictionTimeNanos;
-
-        private Prediction(double[] distribution, long predictionTimeNanos) {
-            this.distribution = distribution;
-            this.predictionTimeNanos = predictionTimeNanos;
         }
     }
 

@@ -3,11 +3,12 @@ package classifiers.distance_based.elastic_ensemble.iteration.random;
 import classifiers.distance_based.elastic_ensemble.iteration.linear.AbstractLinearIterator;
 
 import java.util.Collection;
+import java.util.List;
 
 public abstract class AbstractRoundRobinIterator<A, B extends AbstractRoundRobinIterator<A, B>> extends AbstractLinearIterator<A, AbstractRoundRobinIterator<A, B>>
      {
 
-    public AbstractRoundRobinIterator(final Collection<? extends A> values) {
+    public AbstractRoundRobinIterator(final List<A> values) {
         super(values);
     }
 
@@ -18,11 +19,6 @@ public abstract class AbstractRoundRobinIterator<A, B extends AbstractRoundRobin
 
     public AbstractRoundRobinIterator() {
         super();
-    }
-
-    @Override
-    public void remove() {
-        values.remove(index--);
     }
 
     @Override
