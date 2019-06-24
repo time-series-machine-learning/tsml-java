@@ -365,17 +365,33 @@ public class CrossValidationEvaluator extends Evaluator {
         
         String dset = "ItalyPowerDemand";
         String[] classifierNames = { "SVML", "Logistic", "MLP", "C45", "NN" };
-        int numFolds = 5;
+        int numResamples = 5;
             
         for (String classifierName : classifierNames) {
             System.out.println(classifierName);
-            for (int i = 0; i < numFolds; i++) {
-                Instances[] data = Experiments.sampleDataset(dataLoc, dset, i);
-                Classifier classifier = ClassifierLists.setClassifierClassic(classifierName, i);
-
-                CrossValidationEvaluator cv = new CrossValidationEvaluator(i, false, false, true, true);
-                ClassifierResults res = cv.evaluate(classifier, data[0]);
-                System.out.println("\tfold"+i+": "+res.getAcc());
+            for (int resample = 0; resample < numResamples; resample++) {
+                Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
+                Classifier classifier = ClassifierLists.setClassifierClassic(classifierName, resample);
+                
+                CrossValidationEvaluator cv = new CrossValidationEvaluator(resample, false, false, true, true);
+                ClassifierResults fullcvResults = cv.evaluate(classifier, data[0]);
+                System.out.println("\tdataset resample "+resample+" cv acc: "+fullcvResults.getAcc());
+                
+                for (int fold = 0; fold < cv.numFolds; fold++) {
+                    ClassifierResults foldClassifierResultsOnValFold = cv.resultsPerFold[0][fold];
+                    System.out.println("\t\t cv fold "+fold+": "+foldClassifierResultsOnValFold.getAcc());
+                    
+                    
+                    SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, false, false);
+                    ClassifierResults foldClassifierResultsOnFullTest = testeval.evaluate(cv.foldClassifiers[0][fold], data[1]);
+                    System.out.println("\t\t fold "+fold+" classiifer on test: "+foldClassifierResultsOnFullTest.getAcc());
+                }
+                
+                
+                classifier.buildClassifier(data[0]);
+                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, false, false);
+                System.out.println("\tfull train set test acc : " + testeval.evaluate(classifier, data[1]).getAcc());
+                
             }
             System.out.println("");
         }
