@@ -15,11 +15,7 @@
 package experiments;
 
 
-import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
-import multivariate_timeseriesweka.classifiers.NN_DTW_A;
-import multivariate_timeseriesweka.classifiers.NN_DTW_D;
-import multivariate_timeseriesweka.classifiers.NN_DTW_I;
-import multivariate_timeseriesweka.classifiers.NN_ED_I;
+import multivariate_timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
@@ -42,7 +38,6 @@ import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
 /**
@@ -86,14 +81,14 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             case "XGBoostMultiThreaded":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 break;
             case "XGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 break;
             case "SmallTunedXGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
@@ -195,13 +190,13 @@ public class ClassifierLists {
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);                
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setAdvancedCAWPESettings();
                 break;
             case "CAWPEFROMFILE":
                 String[] classifiers={"XGBoost","RandF","RotF"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 
@@ -212,7 +207,7 @@ public class ClassifierLists {
             case "CAWPE_AS_COTE":
                 String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -223,7 +218,7 @@ public class ClassifierLists {
                 break;
             case "DTW":
                 c=new DTW1NN();
-                ((DTW1NN )c).setWindow(1);
+                ((DTW1NN)c).setWindow(1);
                 break;
             case "SLOWDTWCV":
 //                c=new DTW1NN();
@@ -279,10 +274,242 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
-            case "RBOSS":
+            case "RandomBOSSContracted10Mins":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.MINUTE, 10);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RandomBOSSContracted1Hour":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RandomBOSSContracted24Hour":
+                c = new BOSS();
+                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RBOSS100":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RBOSS250":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RBOSS250All":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RBOSS70Percent":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RandomCVAccBOSS25050":
                 c = new BOSS();
                 ((BOSS) c).setEnsembleSize(250);
                 ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RBOSSAccCVMax":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxTrainInstances(500);
+                break;
+            case "RBOSSAccCVFast":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
+                break;
+            case "RBOSSAccCVFastMax":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
+                ((BOSS) c).setMaxTrainInstances(500);
+                break;
+            case "RBOSSAccCVCAWPE":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSS100WinLen25":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.25);
+                break;
+            case "RBOSS100WinLen75":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.75);
+                break;
+            case "RandomBOSSWhalesContracted4Hour":
+                c = new BOSS();
+                ((BOSS) c).setRandomEnsembleSelection(true);
+                ((BOSS) c).setEnsembleSize(155);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RandomBOSSWhales100All":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(100);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).setMaxWinLenProportion(0.5);
+                break;
+            case "RandomBOSSWhalesAccCV":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "RandomBOSSWhalesAccCVFastMax":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setFastTrainEstimate(true);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setMaxEvalPerClass(50);
+                ((BOSS) c).setMaxTrainInstances(500);
+                break;
+            case "WhalesGoodCAWPE":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "WhalesGoodCAWPE2":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(500);
+                ((BOSS) c).setMaxEnsembleSize(100);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE2":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(100);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE3":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(10);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE4":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(500);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE5":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(500);
+                ((BOSS) c).setMaxEnsembleSize(100);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE6":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(500);
+                ((BOSS) c).setMaxEnsembleSize(10);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE7":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(750);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE8":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(750);
+                ((BOSS) c).setMaxEnsembleSize(100);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
+                break;
+            case "RBOSSAccCVCAWPE9":
+                c = new BOSS();
+                ((BOSS) c).setEnsembleSize(750);
+                ((BOSS) c).setMaxEnsembleSize(100);
                 ((BOSS) c).setRandomCVAccEnsemble(true);
                 ((BOSS) c).useCAWPE(true);
                 ((BOSS) c).setSeed(fold);

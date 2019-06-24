@@ -17,28 +17,27 @@ package experiments;
 
 import fileIO.InFile;
 import fileIO.OutFile;
+import timeseriesweka.filters.SummaryStats;
+import utilities.ClassifierTools;
+import weka.classifiers.Classifier;
+import weka.classifiers.lazy.IBk;
+import weka.core.Attribute;
+import weka.core.Instance;
+import weka.core.Instances;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 import java.util.TreeSet;
-import utilities.ClassifierTools;
-import weka.core.Attribute;
-import weka.core.Instance;
-import weka.core.Instances;
-import timeseriesweka.filters.SummaryStats;
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.*;
-import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import weka.classifiers.Classifier;
-import weka.classifiers.lazy.IBk;
+
 /**
  * Class containing lists of data sets in the UCR and UEA archive. 
  * @author ajb
@@ -58,7 +57,7 @@ public class DataSets {
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
         "ArticularyWordRecognition",
-        "AtrialFibrillation",
+        "AtrialFibrilation",
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -1175,8 +1174,8 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
     DecimalFormat df = new DecimalFormat("###.######");
     for(String s:fileNames){
 //Load test train
-        Instances train=ClassifierTools.loadData(problemPath+s+"/"+s+"_TRAIN");
-        Instances test=ClassifierTools.loadData(problemPath+s+"/"+s+"_TEST");
+        Instances train= ClassifierTools.loadData(problemPath+s+"/"+s+"_TRAIN");
+        Instances test= ClassifierTools.loadData(problemPath+s+"/"+s+"_TEST");
 //Find summary 
         SummaryStats ss= new SummaryStats();
         train=ss.process(train);
@@ -1220,8 +1219,8 @@ public static void dataDescription(String[] fileNames){
                 
         for(int i=0;i<fileNames.length;i++){
             try{
-                Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
-                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");			
+                Instances test= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
+                Instances train= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");
                 Instances allData =new Instances(test);
                 for(int j=0;j<train.numInstances();j++)
                     allData.add(train.instance(j));
@@ -1274,7 +1273,7 @@ public static void dataDescriptionDataNotSplit(String[] fileNames){
         f.writeLine("problem,numinstances,numAttributes,numClasses,classDistribution");
         try{
             for(int i=0;i<fileNames.length;i++){
-                Instances allData=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]);
+                Instances allData= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]);
 //                allData.randomize(new Random());
 //                OutFile combo=new OutFile(problemPath+tscProblems85[i]+"/"+tscProblems85[i]+".arff");    
 //                combo.writeString(allData.toString());
@@ -1459,8 +1458,8 @@ public static void testArffs(String[] problems){
     
     for(String str:problems){
         System.out.println("Loading ARFF for "+str);
-       train=ClassifierTools.loadData(path+str+"\\"+str+"_TRAIN.arff");
-       test=ClassifierTools.loadData(path+str+"\\"+str+"_TEST.arff");
+       train= ClassifierTools.loadData(path+str+"\\"+str+"_TRAIN.arff");
+       test= ClassifierTools.loadData(path+str+"\\"+str+"_TEST.arff");
        Classifier c= new IBk();
        double acc = ClassifierTools.singleTrainTestSplitAccuracy(c, train, test);
         System.out.println(" 1NN acc on "+str +" = "+acc);
