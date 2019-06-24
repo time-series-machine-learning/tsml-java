@@ -433,9 +433,7 @@ public class Experiments  {
         }
         else {           
 //            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
-//            Classifier classifier = ClassifierLists.setClassifier(expSettings);
-            //jamesl paper/alcohol branch
-            Classifier classifier = AlcoholPaper.AlcoholClassifierList.setClassifier(expSettings);
+            Classifier classifier = ClassifierLists.setClassifier(expSettings);
             
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
