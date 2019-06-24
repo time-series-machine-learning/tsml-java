@@ -58,7 +58,7 @@ public class DataSets {
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
         "ArticularyWordRecognition", //Index 0
-        "AtrialFibrillation",
+        "AtrialFibrillation",//1
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -67,7 +67,7 @@ public class DataSets {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-        "FaceDetection",
+        "FaceDetection",//10
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",
@@ -81,7 +81,7 @@ public class DataSets {
         "NATOPS",//20
         "PenDigits",
         "PEMS-SF",
-        "Phoneme",
+        "PhonemeSpectra",
         "RacketSports",
         "SelfRegulationSCP1",//25
         "SelfRegulationSCP2",

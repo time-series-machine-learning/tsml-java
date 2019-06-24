@@ -4,7 +4,7 @@ function [cd,f] = buildDia(accsFile, a, pairwise, cliques)
 %accs = csvread(accsFile);
 %accs = accs';
 
-[accs,labels,~] = xlsread(accsFile);
+[accs,labels] = readcsv(accsFile, false);
 name = accsFile(1:(length(accsFile)-length('.csv')));
 
 errs = 1 - accs;

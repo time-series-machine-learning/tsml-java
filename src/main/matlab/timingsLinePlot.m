@@ -7,7 +7,7 @@ function [ f ] = timingsLinePlot( filename,evalSet )
 %   dataset2,    c1d1time,    c2d1time, ...
 %        ...,         ...,         ...
 
-[timings, headers, ~] = xlsread([filename,'.csv']);
+[timings, headers] = readcsv(strcat(filename,'.csv'), true);
 [ ~, inds ] = sort(median(timings, 2), 'ascend'); %mean
 timings = timings(inds, :);
 

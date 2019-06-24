@@ -276,6 +276,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         int m=data.numAttributes()-1;
+        if(minInterval>m)
+            minInterval=m/2;
         startPoints =new int[numBaseClassifiers];
         endPoints =new int[numBaseClassifiers];
 //      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
