@@ -47,10 +47,34 @@ public class CrossValidationEvaluator extends Evaluator {
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
     
-    
+    /**
+     * If true, the classifiers shall be cloned (via AbstractClassifier.makeCopy(...))
+     * when building and predicting on each fold. Useful if a particular classifier 
+     * maintains information after one buildclassifier that might not be replaced 
+     * or effect the next call to buildclassifier. Ideally, this should not be the case,
+     * but this option will make sure either way
+     */
     private boolean cloneClassifiers = false;
+    
+    /**
+     * If true, will keep the classifiers trained on each fold in memory
+     * 
+     * When set to true, will force clone classifier to also be true. Note - this will naturally 
+     * come with a large cost to required memory, (size of trained classifier) * numFolds
+     */
     private boolean maintainClassifiers = false;
+    
+    /** 
+     * If maintainClassifiers is true, this will become populated with the classifiers 
+     * trained on each fold, [classifier][fold], otherwise will be null
+     */
     private Classifier[][] foldClassifiers = null;
+    
+    /**
+     * Populated with the classifierresults object for each fold, such that each
+     * object effectively represents a single hold-out validation set. 
+     * [classifier][fold] 
+     */
     private ClassifierResults[][] resultsPerFold = null;
 
     public CrossValidationEvaluator() {
@@ -65,13 +89,19 @@ public class CrossValidationEvaluator extends Evaluator {
         super(seed,cloneData,setClassMissing);
         
         this.cloneClassifiers = cloneClassifiers;
-        this.maintainClassifiers = maintainClassifiers;
+        setMaintainClassifiers(maintainClassifiers);
         
         this.folds = null;
         this.foldIndexing = null;
         this.numFolds = 10;
     }
 
+    public void setMaintainClassifiers(boolean maintainClassifiers) { 
+        this.maintainClassifiers = maintainClassifiers;
+        if (maintainClassifiers)
+            this.cloneClassifiers = true;
+    }
+    
     public ArrayList<ArrayList<Integer>> getFoldIndices() { return foldIndexing; }
 
     public int getNumFolds() {
@@ -192,6 +222,9 @@ public class CrossValidationEvaluator extends Evaluator {
                 classifierFoldRes.turnOnZeroTimingsErrors();
                 classifierFoldRes.findAllStatsOnce(); 
                 resultsPerFold[c][testFold] = classifierFoldRes;
+                
+                if (maintainClassifiers)
+                    foldClassifiers[c][testFold] = foldClassifier;
             }
         }
         
@@ -340,7 +373,7 @@ public class CrossValidationEvaluator extends Evaluator {
                 Instances[] data = Experiments.sampleDataset(dataLoc, dset, i);
                 Classifier classifier = ClassifierLists.setClassifierClassic(classifierName, i);
 
-                CrossValidationEvaluator cv = new CrossValidationEvaluator(i, false, false, false, false);
+                CrossValidationEvaluator cv = new CrossValidationEvaluator(i, false, false, true, true);
                 ClassifierResults res = cv.evaluate(classifier, data[0]);
                 System.out.println("\tfold"+i+": "+res.getAcc());
             }
