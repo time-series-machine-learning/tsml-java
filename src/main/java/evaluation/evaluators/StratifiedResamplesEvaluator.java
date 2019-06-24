@@ -63,11 +63,6 @@ public class StratifiedResamplesEvaluator extends Evaluator {
         this.numFolds = numFolds;
     }
     
-    private ClassifierResults performLOOCVInstead(Classifier classifier, Instances dataset) throws Exception { 
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed,cloneData,setClassMissing);
-        return cv.evaluate(classifier, dataset);
-    }
-    
     public ClassifierResults[] getResultsOfEachSample() {
         return resultsPerFold;
     }
@@ -127,16 +122,17 @@ public class StratifiedResamplesEvaluator extends Evaluator {
             resultsPerFold[fold].turnOffZeroTimingsErrors();
             
             //todo, implement this loop via SingleTestSetEvluator            
-            for (Instance testinst : resampledData[1]) {
+            for (Instance testInst : resampledData[1]) {
+                double classVal = testInst.classValue(); //save in case we're deleting next line
                 if (setClassMissing)
-                    testinst.setClassMissing();
+                    testInst.setClassMissing();
                 
                 long startTime = System.nanoTime();
-                double[] dist = classifier.distributionForInstance(testinst);
+                double[] dist = classifier.distributionForInstance(testInst);
                 long predTime = System.nanoTime()- startTime;
                 
-                resultsPerFold[fold].addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
-                allFoldsResults.addPrediction(testinst.classValue(), dist, indexOfMax(dist), predTime, "");
+                resultsPerFold[fold].addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+                allFoldsResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
             }
             
             resultsPerFold[fold].turnOnZeroTimingsErrors();

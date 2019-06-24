@@ -17,6 +17,11 @@
 
 package vector_classifiers;
 
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import utilities.TrainAccuracyEstimate;
+
 /**
  * Class for testing CAWPE while keeping the models trained on the cross validation 
  * folds of the error estimates of each member
@@ -24,5 +29,6 @@ package vector_classifiers;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class CAWPE_Extended extends CAWPE {
+
 
 }
