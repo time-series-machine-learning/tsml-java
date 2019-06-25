@@ -41,50 +41,14 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class CrossValidationEvaluator extends Evaluator {
+public class CrossValidationEvaluator extends SamplingEvaluator {
             
     private int numFolds;
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
-    
-    /**
-     * If true, the classifiers shall be cloned when building and predicting on each fold. 
-     * 
-     * This is achieved via AbstractClassifier.makeCopy(...), and therefore the classifier
-     * and all relevant/wanted info/hyperparamters that may have been set up prior to giving 
-     * the classifier to the evaluator must be properly (de-)serialisable.
-     * 
-     * Useful if a particular classifier maintains information after one buildclassifier that 
-     * might not be replaced or effect the next call to buildclassifier. Ideally, this 
-     * should not be the case, but this option will make sure either way
-     * 
-     * If maintainClassifiers == true, clone classifiers is forced to true
-     */
-    private boolean cloneClassifiers = false;
-    
-    /**
-     * If true, will keep the classifiers trained on each fold in memory
-     * 
-     * When set to true, will force clone classifier to also be true. Note - this will naturally 
-     * come with a large cost to required memory, (size of trained classifier) * numFolds
-     */
-    private boolean maintainClassifiers = false;
-    
-    /** 
-     * If maintainClassifiers is true, this will become populated with the classifiers 
-     * trained on each fold, [classifier][fold], otherwise will be null
-     */
-    private Classifier[][] foldClassifiers = null;
-    
-    /**
-     * Populated with the classifierresults object for each fold, such that each
-     * object effectively represents a single hold-out validation set. 
-     * [classifier][fold] 
-     */
-    private ClassifierResults[][] resultsPerFold = null;
 
     public CrossValidationEvaluator() {
-        super(0,false,false);
+        super(0,false,false,false,false);
         
         this.folds = null;
         this.foldIndexing = null;
@@ -92,52 +56,13 @@ public class CrossValidationEvaluator extends Evaluator {
     }
     
     public CrossValidationEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean cloneClassifiers, boolean maintainClassifiers) {
-        super(seed,cloneData,setClassMissing);
-        
-        this.cloneClassifiers = cloneClassifiers;
-        setMaintainClassifiers(maintainClassifiers);
+        super(seed,cloneData,setClassMissing, cloneClassifiers, maintainClassifiers);
         
         this.folds = null;
         this.foldIndexing = null;
         this.numFolds = 10;
     }
 
-    public ClassifierResults[] getFoldResults() {
-        return getFoldResults(0);
-    }
-    
-    public ClassifierResults[] getFoldResults(int classifierIndex) {
-        if (resultsPerFold != null)
-            return resultsPerFold[0];
-        else
-            return null;
-    }
-    
-    public ClassifierResults[][] getFoldResultsAll() {
-        return resultsPerFold;
-    }
-    
-    public Classifier[] getFoldClassifiers() {
-        return getFoldClassifiers(0);
-    }
-    
-    public Classifier[] getFoldClassifiers(int classifierIndex) {
-        if (foldClassifiers != null)
-            return foldClassifiers[0];
-        else
-            return null;
-    }
-    
-    public Classifier[][] getFoldClassifiersAll() {
-        return foldClassifiers;
-    }
-    
-    public void setMaintainClassifiers(boolean maintainClassifiers) { 
-        this.maintainClassifiers = maintainClassifiers;
-        if (maintainClassifiers)
-            this.cloneClassifiers = true;
-    }
-    
     public ArrayList<ArrayList<Integer>> getFoldIndices() { return foldIndexing; }
 
     public int getNumFolds() {
@@ -205,13 +130,8 @@ public class CrossValidationEvaluator extends Evaluator {
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
-        if (cloneClassifiers) {
-            // clone them all here in one go for efficiency of serialisation
-            foldClassifiers = new Classifier[classifiers.length][];
-            
-            for (int c = 0; c < classifiers.length; ++c)
-                foldClassifiers[c] = AbstractClassifier.makeCopies(classifiers[c], numFolds);
-        }
+        if (cloneClassifiers)
+            cloneClassifiers(classifiers);
         
         //for each fold as test
         for(int testFold = 0; testFold < numFolds; testFold++){

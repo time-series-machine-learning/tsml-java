@@ -22,6 +22,7 @@ import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierLists;
 import experiments.Experiments;
+import experiments.Experiments.ExperimentalArguments;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -244,16 +245,16 @@ public class CAWPE_Extended extends CAWPE {
         //to index into the new list while taking from various sources, 
         //while the loop vars stay within 0 to the respective source's length
         int globalModuleIndex = 0;
-        
-        if (retrainOnFullTrainSet) //the core modules will have been rebuilt on the full train set, add them on
-            for (int j = 0; j < modules.length; j++, globalModuleIndex++)
-                expandedModules[globalModuleIndex] = modules[j];
-        //else ignore them
-        
+
         //pull in the 'foldclassifiers'
         for (int j = 0; j < newSubModules.length; j++)
             for (int k = 0; k < newSubModules[j].length; k++, globalModuleIndex++)
                 expandedModules[globalModuleIndex] = newSubModules[j][k];
+                
+        if (retrainOnFullTrainSet) //the core modules will have been rebuilt on the full train set, add them on
+            for (int j = 0; j < modules.length; j++, globalModuleIndex++)
+                expandedModules[globalModuleIndex] = modules[j];
+        //else ignore them
         
         this.modules = expandedModules;
     }
@@ -261,7 +262,8 @@ public class CAWPE_Extended extends CAWPE {
     
     
     public static void main(String[] args) throws Exception {
-        test_basic();
+//        test_basic();
+        test_smallComparison();
     }
     
     public static void test_basic() throws Exception { 
@@ -269,9 +271,10 @@ public class CAWPE_Extended extends CAWPE {
         String dataLoc = "C:/TSC Problems/";
         String dset = "ItalyPowerDemand";
         
-        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE(),  };
+        CAWPE_Extended[] classifiers = { new CAWPE_Extended()  }; //, new CAWPE(),
         classifiers[0].performEnsembleCV = false;
-        classifiers[1].performEnsembleCV = false;
+        classifiers[0].retrainOnFullTrainSet = false;
+//        classifiers[1].performEnsembleCV = false;
         
         int numResamples = 30;
         for (Classifier classifier : classifiers) { 
@@ -282,21 +285,105 @@ public class CAWPE_Extended extends CAWPE {
                 System.out.println("\t" + testeval.evaluate(classifier, data[1]).getAcc());
             }
         }
-//        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE() };
-//        classifiers[0].performEnsembleCV = false;
-//        classifiers[1].performEnsembleCV = false;
-//        
-//        int numResamples = 5;
-//            
-//        for (Classifier classifier : classifiers) {
-//            System.out.println(classifier.getClass().getSimpleName() + ": ");
-//            for (int resample = 0; resample < numResamples; resample++) {
-//                Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
-//                classifier.buildClassifier(data[0]);
-//                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
-//                System.out.println("\t" + testeval.evaluate(classifier, data[1]).getAcc());
-//                
-//            }
-//        }
+    }
+    
+    
+    public static void test_smallComparison() throws Exception { 
+        String resLoc = "C:/Temp/cawpeExtensionTests/";
+        String dataLoc = "C:/UCI Problems/";
+        String[] dsets = { "hayes-roth", "fertility", "blood", "hepatitis" };
+        String[] classifierNames = all_ensembles;
+        int numResamples = 5;
+        
+        double[] accs = new double[classifierNames.length];
+        
+        for (int c = 0; c < classifierNames.length; c++) {
+            String classifierName = classifierNames[c];
+            System.out.println(classifierName);
+            
+            for (String dset : dsets) {
+                System.out.print("\t"+dset+"\n\t\t");
+                
+                for (int resample = 0; resample < numResamples; resample++) {
+                    Classifier classifier = setClassifier(classifierName, resample);
+                    Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
+                    
+                    classifier.buildClassifier(data[0]);
+                    SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
+                    
+                    double acc = testeval.evaluate(classifier, data[1]).getAcc();
+                    accs[c] += acc;
+                    System.out.print(acc + ",");
+                }
+                
+                System.out.println("");
+            }
+            
+            accs[c] /= dsets.length * numResamples;
+        }
+        
+        System.out.println("\n\n");
+        
+        for (int c = 0; c < accs.length; c++) {
+            System.out.println(String.format("%-30s %f", classifierNames[c], accs[c]));
+        }
+    }
+    
+    
+    public static final String[] all_ensembles = { 
+        "CAWPE", 
+        "CAWPE_retrain__noWeight", 
+        "CAWPE_retrain_foldWeight", 
+        "CAWPE_noRetrain" 
+    };
+    
+    public static Classifier setClassifier(ExperimentalArguments exp) {        
+        return setClassifier(exp.classifierName, exp.foldId);
+    }
+    
+    public static Classifier setClassifier(String classifier, int fold) {                
+        switch(classifier){
+            
+            case "CAWPE": 
+                CAWPE cawpe_base = new CAWPE();
+                cawpe_base.setRandSeed(fold);
+                cawpe_base.setPerformCV(false);
+                return cawpe_base;
+            
+            case "CAWPE_retrain__noWeight": 
+                CAWPE_Extended cawpe_retrain_noWeight = new CAWPE_Extended();
+                cawpe_retrain_noWeight.setRandSeed(fold);
+                cawpe_retrain_noWeight.setPerformCV(false);
+                cawpe_retrain_noWeight.setSubModulePriorWeightingScheme(CAWPE_Extended.priorScheme_none);
+                cawpe_retrain_noWeight.setRetrainOnFullTrainSet(true);
+                return cawpe_retrain_noWeight;
+            
+            case "CAWPE_retrain_foldWeight": 
+                CAWPE_Extended cawpe_retrain_foldWeight = new CAWPE_Extended();
+                cawpe_retrain_foldWeight.setRandSeed(fold);
+                cawpe_retrain_foldWeight.setPerformCV(false);
+                cawpe_retrain_foldWeight.setSubModulePriorWeightingScheme(CAWPE_Extended.priorScheme_oneOverNumFolds);
+                cawpe_retrain_foldWeight.setRetrainOnFullTrainSet(true);
+                return cawpe_retrain_foldWeight;
+            
+            case "CAWPE_noRetrain": 
+                CAWPE_Extended cawpe_noRetrain = new CAWPE_Extended();
+                cawpe_noRetrain.setRandSeed(fold);
+                cawpe_noRetrain.setPerformCV(false);
+                cawpe_noRetrain.setSubModulePriorWeightingScheme(CAWPE_Extended.priorScheme_none); //irrelevant, all submodules will have same prior
+                cawpe_noRetrain.setRetrainOnFullTrainSet(false);
+                return cawpe_noRetrain;
+                
+                
+                
+                
+            default:
+                System.out.println("UNKNOWN CLASSIFIER "+classifier);
+                System.exit(0);
+//                throw new Exception("Unknown classifier "+classifier);
+                
+        }
+        
+        return null;
     }
 }
