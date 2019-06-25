@@ -81,6 +81,14 @@ public abstract class SamplingEvaluator extends Evaluator {
         setMaintainClassifiers(maintainClassifiers);
     }
 
+    public int getNumFolds() {
+        return numFolds;
+    }
+
+    public void setNumFolds(int numFolds) {
+        this.numFolds = numFolds;
+    }
+    
     public ClassifierResults[] getFoldResults() {
         return getFoldResults(0);
     }

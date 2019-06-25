@@ -14,22 +14,16 @@
  */
 package evaluation.evaluators;
 
-import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierLists;
 import experiments.Experiments;
-import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import utilities.ClassifierTools;
-import static utilities.GenericTools.indexOfMax;
-import utilities.StatisticalUtilities;
-import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.lazy.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -47,7 +41,6 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             
     private String previousRelationName = "EmPtY";
     
-    private int numFolds;
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
 
@@ -68,14 +61,6 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
     }
 
     public ArrayList<ArrayList<Integer>> getFoldIndices() { return foldIndexing; }
-
-    public int getNumFolds() {
-        return numFolds;
-    }
-
-    public void setNumFolds(int numFolds) {
-        this.numFolds = numFolds;
-    }
 
     /**
      * @return the index in the original train set of the instance found at folds.get(fold).get(indexInFold) 

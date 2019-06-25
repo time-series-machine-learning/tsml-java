@@ -14,7 +14,6 @@
  */
 package evaluation.evaluators;
 
-import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
@@ -56,14 +55,6 @@ public class StratifiedResamplesEvaluator extends SamplingEvaluator {
 
     public void setPropInstancesInTrain(double propInstancesInTrain) {
         this.propInstancesInTrain = propInstancesInTrain;
-    }
-    
-    public int getNumFolds() {
-        return numFolds;
-    }
-
-    public void setNumFolds(int numFolds) {
-        this.numFolds = numFolds;
     }
     
     /**
