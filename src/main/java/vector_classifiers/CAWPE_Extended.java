@@ -25,6 +25,7 @@ import experiments.Experiments;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import utilities.TrainAccuracyEstimate;
@@ -40,16 +41,60 @@ import weka.filters.Filter;
  */
 public class CAWPE_Extended extends CAWPE {
     
-    // intended to be a copy of the raw modules (not expanded from modules built on each cv fold) 
-    // such that if cawpe is rebuilt on subsequent datasets, the first step of build classifier
-    // can be to replace the list of expanded modules with the core set again
-    EnsembleModule[] coreModules = null;
+    /**
+     * intended to be a copy of the raw modules (not expanded from modules built on each cv fold) 
+     * such that if cawpe is rebuilt on subsequent datasets, the first step of build classifier
+     * can be to replace the list of expanded modules with the core set again
+     */
+    private EnsembleModule[] coreModules = null;
     
+    /**
+     * if true, the core modules shall be retrained on the full train set and be part of 
+     * the final ensemble. otherwise, ONLY the 'foldClassifiers' will be in the ensemble
+     * e.g. if modules.length = 5 and numCVFolds = 10, final ensemble size would be (5*10) + 5 = 55 
+     * if retrainOnFullTrainSet = true, else just (5*10) = 50 if false
+     */
+    private boolean retrainOnFullTrainSet = true;
+
+    public static final Function<Double, Double> priorScheme_none = (numCVFolds) -> 1.0; //input ignored
+    public static final Function<Double, Double> priorScheme_oneOverNumFolds = (numCVFolds) -> { return 1.0 / numCVFolds; };
+    
+    /**
+     * While the core modules trained on the full train set will maintain a 
+     * prior weighting of 1.0, sub modules will be given a prior weighting according 
+     * to this function
+     */
+    private Function<Double, Double> subModulePriorWeightingScheme;
+
     public CAWPE_Extended() {
         this.ensembleIdentifier = "CAWPE_Extended";
         this.transform = null;
         this.setDefaultCAWPESettings();
+      
+        //modules set in setDefaultCAWPESettings()
+        coreModules = Arrays.copyOf(modules, modules.length);
+        subModulePriorWeightingScheme = CAWPE_Extended.priorScheme_oneOverNumFolds;
+    }
+    
+    public boolean getRetrainOnFullTrainSet() {
+        return retrainOnFullTrainSet;
+    }
+
+    public void setRetrainOnFullTrainSet(boolean retrainOnFullTrainSet) {
+        this.retrainOnFullTrainSet = retrainOnFullTrainSet;
+    }
+
+    public Function<Double, Double> getSubModulePriorWeightingScheme() {
+        return subModulePriorWeightingScheme;
+    }
+
+    public void setSubModulePriorWeightingScheme(Function<Double, Double> subModulePriorWeightingScheme) {
+        this.subModulePriorWeightingScheme = subModulePriorWeightingScheme;
+    }
         
+    @Override
+    public void setClassifiers(Classifier[] classifiers, String[] classifierNames, String[] classifierParameters) {
+        super.setClassifiers(classifiers, classifierNames, classifierParameters);
         coreModules = Arrays.copyOf(modules, modules.length);
     }
 
@@ -159,7 +204,6 @@ public class CAWPE_Extended extends CAWPE {
                 module.trainResults = cv.crossValidateWithStats(module.getClassifier(), trainInsts);
                 module.trainResults.finaliseResults();
                 
-                // START MAIN NEW STUFF FOR _EXTENDED
                 Classifier[] foldClassifiers = cv.getFoldClassifiers();
                 ClassifierResults[] foldResults = cv.getFoldResults();
                 
@@ -169,43 +213,48 @@ public class CAWPE_Extended extends CAWPE {
                 for (int i = 0; i < subModules.length; i++) {
                     subModules[i] = new EnsembleModule(module.getModuleName()+"_cvFold"+i, foldClassifiers[i], module.getParameters());
                     subModules[i].trainResults = foldResults[i];
+                    subModules[i].priorWeight = subModulePriorWeightingScheme.apply((double) cv.getNumFolds());
+                    
+                    if (writeIndividualsResults) { //if we're doing trainFold# file writing
+                        writeResultsFile(subModules[i].getModuleName(), subModules[i].getParameters(), subModules[i].trainResults, "train"); //write results out
+                        printlnDebug(subModules[i].getModuleName() + " writing submodule train file with full preds from scratch...");
+                    }
                 }
                 
                 newSubModules[m] = subModules;
-                // END   MAIN NEW STUFF FOR _EXTENDED
-                //todo timings, look for anything else that needs to be done for module init, fundtionality for prior weightings
-                //  test, finalise results? 
                 
-                
-                //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
-                //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
-                long startTime = System.nanoTime();
-                module.getClassifier().buildClassifier(trainInsts);
-                module.trainResults.setBuildTime(System.nanoTime() - startTime);
-                module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-
-                if (writeIndividualsResults) { //if we're doing trainFold# file writing
-                    writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
-                    printlnDebug(module.getModuleName() + " writing train file with full preds from scratch...");
+                if (retrainOnFullTrainSet) { 
+                    long startTime = System.nanoTime();
+                    module.getClassifier().buildClassifier(trainInsts);
+                    module.trainResults.setBuildTime(System.nanoTime() - startTime);
+                    module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+                    
+                    if (writeIndividualsResults) { //if we're doing trainFold# file writing
+                        writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
+                        printlnDebug(module.getModuleName() + " writing train file with full preds from scratch...");
+                    }
                 }
             }
         }
         
         //copy across the modules into complete list
-        EnsembleModule[] expandedModules = new EnsembleModule[modules.length + newSubModules.length * newSubModules[0].length];
+        int finalisedLength = modules.length * cv.getNumFolds() + (retrainOnFullTrainSet ? modules.length : 0);
+        EnsembleModule[] expandedModules = new EnsembleModule[finalisedLength];
         
         //to index into the new list while taking from various sources, 
         //while the loop vars stay within 0 to the respective source's length
         int globalModuleIndex = 0;
-        for (int j = 0; j < modules.length; j++, globalModuleIndex++)
-            expandedModules[globalModuleIndex] = modules[j];
         
+        if (retrainOnFullTrainSet) //the core modules will have been rebuilt on the full train set, add them on
+            for (int j = 0; j < modules.length; j++, globalModuleIndex++)
+                expandedModules[globalModuleIndex] = modules[j];
+        //else ignore them
         
+        //pull in the 'foldclassifiers'
         for (int j = 0; j < newSubModules.length; j++)
             for (int k = 0; k < newSubModules[j].length; k++, globalModuleIndex++)
                 expandedModules[globalModuleIndex] = newSubModules[j][k];
         
-        //done
         this.modules = expandedModules;
     }
     
@@ -220,7 +269,7 @@ public class CAWPE_Extended extends CAWPE {
         String dataLoc = "C:/TSC Problems/";
         String dset = "ItalyPowerDemand";
         
-        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE() };
+        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE(),  };
         classifiers[0].performEnsembleCV = false;
         classifiers[1].performEnsembleCV = false;
         
