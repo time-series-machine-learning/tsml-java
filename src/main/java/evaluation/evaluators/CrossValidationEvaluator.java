@@ -34,10 +34,12 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Start of a custom cross validation class, to be built on/optimised over time as
- * work with ensembles progresses
+ * An evaluator that performs k-fold crossvalidation (default k=10) on the given s
+ * data and evaluates the given classifier(s) on each fold. 
  * 
- * Initial push uses Jay's stratified folding code from HESCA
+ * Concatenated predictions across all folds are returned from the main 
+ * evaluate method, however predictions split across each fold can also be retrieved
+ * afterwards
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -135,19 +137,18 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             cloneClassifiers(classifiers);
         
         //for each fold as test
-        for(int testFold = 0; testFold < numFolds; testFold++){
-            Instances[] trainTest = buildTrainTestSet(testFold);
+        for(int fold = 0; fold < numFolds; fold++){
+            Instances[] trainTest = buildTrainTestSet(fold);
 
             //for each classifier in ensemble
-            for (int c = 0; c < classifiers.length; ++c) {
+            for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
                 long t1 = System.nanoTime();
                 
                 // get the classifier instance to be used this fold
-                Classifier foldClassifier = classifiers[c];
-                    
+                Classifier foldClassifier = classifiers[classifierIndex];
                 if (cloneClassifiers)
                     //use the clone instead
-                    foldClassifier = foldClassifiers[c][testFold];
+                    foldClassifier = foldClassifiers[classifierIndex][fold];
                
                 foldClassifier.buildClassifier(trainTest[0]);
                 
@@ -155,14 +156,14 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                 ClassifierResults classifierFoldRes = new ClassifierResults(dataset.numClasses());
                 classifierFoldRes.setTimeUnit(TimeUnit.NANOSECONDS);
                 classifierFoldRes.setClassifierName(foldClassifier.getClass().getSimpleName());
-                classifierFoldRes.setDatasetName(dataset.relationName()+"_cvfold"+testFold);
+                classifierFoldRes.setDatasetName(dataset.relationName()+"_cvfold"+fold);
                 classifierFoldRes.setFoldID(seed);
                 classifierFoldRes.setSplit("train"); 
                 classifierFoldRes.turnOffZeroTimingsErrors();
 
                 //for each test instance on this fold
                 for(int i = 0; i < trainTest[1].numInstances(); i++){
-                    int instIndex = getOriginalInstIndex(testFold, i);
+                    int instIndex = getOriginalInstIndex(fold, i);
                     
                     Instance testInst = trainTest[1].instance(i);
                     
@@ -175,20 +176,20 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     double[] dist = foldClassifier.distributionForInstance(testInst);
                     long predTime = System.nanoTime()- startTime;
                     
-                    distsForInsts[c][instIndex] = dist;
-                    predTimes[c][instIndex] = predTime;
+                    distsForInsts[classifierIndex][instIndex] = dist;
+                    predTimes[classifierIndex][instIndex] = predTime;
                     
                     classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
                 }    
                 
-                buildTimes[c] += System.nanoTime() - t1;
+                buildTimes[classifierIndex] += System.nanoTime() - t1;
                 
                 classifierFoldRes.turnOnZeroTimingsErrors();
                 classifierFoldRes.findAllStatsOnce(); 
-                resultsPerFold[c][testFold] = classifierFoldRes;
+                resultsPerFold[classifierIndex][fold] = classifierFoldRes;
                 
                 if (cloneClassifiers && !maintainClassifiers)
-                    foldClassifiers[c][testFold] = null; //free the memory
+                    foldClassifiers[classifierIndex][fold] = null; //free the memory
             }
         }
         

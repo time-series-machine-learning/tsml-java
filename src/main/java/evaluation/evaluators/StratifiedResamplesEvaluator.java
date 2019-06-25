@@ -24,26 +24,29 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- *
+ * An evaluator that performs k stratified random resamples (default k=30) of the given 
+ * data and evaluates the given classifier(s) on each resample. 
+ * 
+ * Concatenated predictions across all resamples are returned from the main 
+ * evaluate method, however predictions split across each resample can also be retrieved
+ * afterwards
+ * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class StratifiedResamplesEvaluator extends Evaluator {
-    int numFolds;
+public class StratifiedResamplesEvaluator extends SamplingEvaluator {
     double propInstancesInTrain;
-
-    private ClassifierResults[] resultsPerFold;
     
     public StratifiedResamplesEvaluator() {
-        super(0,false,false);
+        super(0,false,false,false,false);
         
-        this.numFolds = 5;
+        this.numFolds = 30;
         this.propInstancesInTrain = 0.5;
     }
     
-    public StratifiedResamplesEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
-        super(seed,cloneData,setClassMissing);
+    public StratifiedResamplesEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean cloneClassifiers, boolean maintainClassifiers) {
+        super(seed,cloneData,setClassMissing, cloneClassifiers, maintainClassifiers);
         
-        this.numFolds = 5;
+        this.numFolds = 30;
         this.propInstancesInTrain = 0.5;
     }
 
@@ -61,10 +64,6 @@ public class StratifiedResamplesEvaluator extends Evaluator {
 
     public void setNumFolds(int numFolds) {
         this.numFolds = numFolds;
-    }
-    
-    public ClassifierResults[] getResultsOfEachSample() {
-        return resultsPerFold;
     }
     
     /**
@@ -105,43 +104,69 @@ public class StratifiedResamplesEvaluator extends Evaluator {
 //            return performLOOCVInstead(classifier, dataset);
 //        }
         
+        ClassifierResults res = stratifiedResampleWithStats(classifier, dataset);
+        res.findAllStatsOnce();
+        return res;
+    }
+    
+    public ClassifierResults stratifiedResampleWithStats(Classifier classifier, Instances dataset) throws Exception {
+        return stratifiedResampleWithStats(new Classifier[] { classifier }, dataset)[0];
+    }
+    
+    public ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
         if (cloneData)
             dataset = new Instances(dataset);
+        if (cloneClassifiers)
+            cloneClassifiers(classifiers);
+        
+        resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
+        
+        ClassifierResults[] concatenatedResamplesResults = new ClassifierResults[classifiers.length] ;
+        
+        for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
+            
+            ClassifierResults concResults = new ClassifierResults(dataset.numClasses());
+            concResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            concResults.turnOffZeroTimingsErrors();
+            
+            for (int fold = 0; fold < numFolds; fold++) {
+                Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
 
-        resultsPerFold = new ClassifierResults[numFolds]; 
-        ClassifierResults allFoldsResults = new ClassifierResults(dataset.numClasses());
-        allFoldsResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        allFoldsResults.turnOffZeroTimingsErrors();
+                Classifier foldClassifier = classifiers[classifierIndex];
+                if (cloneClassifiers)
+                    //use the clone instead
+                    foldClassifier = foldClassifiers[classifierIndex][fold];
                 
-        for (int fold = 0; fold < numFolds; fold++) {
-            Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
-            
-            classifier.buildClassifier(resampledData[0]);
-            resultsPerFold[fold] = new ClassifierResults(dataset.numClasses());
-            resultsPerFold[fold].setTimeUnit(TimeUnit.NANOSECONDS);
-            resultsPerFold[fold].turnOffZeroTimingsErrors();
-            
-            //todo, implement this loop via SingleTestSetEvluator            
-            for (Instance testInst : resampledData[1]) {
-                double classVal = testInst.classValue(); //save in case we're deleting next line
-                if (setClassMissing)
-                    testInst.setClassMissing();
+                foldClassifier.buildClassifier(resampledData[0]);
+                ClassifierResults foldResults = new ClassifierResults(dataset.numClasses());
+                foldResults.setTimeUnit(TimeUnit.NANOSECONDS);
+                foldResults.turnOffZeroTimingsErrors();
+
+                //todo, implement this loop via SingleTestSetEvluator            
+                for (Instance testInst : resampledData[1]) {
+                    double classVal = testInst.classValue(); //save in case we're deleting next line
+                    if (setClassMissing)
+                        testInst.setClassMissing();
+
+                    long startTime = System.nanoTime();
+                    double[] dist = foldClassifier.distributionForInstance(testInst);
+                    long predTime = System.nanoTime()- startTime;
+
+                    foldResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+                    concResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+                }
+
+                foldResults.turnOnZeroTimingsErrors();
+                foldResults.findAllStatsOnce(); 
                 
-                long startTime = System.nanoTime();
-                double[] dist = classifier.distributionForInstance(testInst);
-                long predTime = System.nanoTime()- startTime;
-                
-                resultsPerFold[fold].addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-                allFoldsResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+                resultsPerFold[classifierIndex][fold] = foldResults;
             }
             
-            resultsPerFold[fold].turnOnZeroTimingsErrors();
-            resultsPerFold[fold].findAllStatsOnce(); 
+            concResults.turnOnZeroTimingsErrors();
+            concatenatedResamplesResults[classifierIndex] = concResults;
         }
    
-        allFoldsResults.turnOnZeroTimingsErrors();
-        allFoldsResults.findAllStatsOnce(); 
-        return allFoldsResults;
+        return concatenatedResamplesResults;
     }
 }
 
