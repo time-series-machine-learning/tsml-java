@@ -288,7 +288,7 @@ public class CAWPE_Extended extends CAWPE {
 //        classifiers[1].performEnsembleCV = false;
         
         
-//        Experiments.main(new String[] { "-dp="+dataLoc, "-rp="+resLoc, "-cn=CAWPE_noRetrain", "-dn="+dset, "-f=0" });
+//        Experiments.main(new String[] { "-dp="+dataLoc, "-rp="+resLoc, "-cn=CAWPE", "-dn="+dset, "-f=0" }); //_noRetrain
 
         int numResamples = 30;
         for (Classifier classifier : classifiers) { 

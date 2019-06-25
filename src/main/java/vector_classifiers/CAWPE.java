@@ -500,17 +500,26 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         
         if(this.performEnsembleCV) {
             ensembleTrainResults = doEnsembleCV(data); //combine modules to find overall ensemble trainpreds
-            
-            //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
-            //time unit has been set in doEnsembleCV(data);
-            ensembleTrainResults.turnOffZeroTimingsErrors();
-            ensembleTrainResults.setBuildTime(buildTime);
-            ensembleTrainResults.turnOnZeroTimingsErrors();
 
             if (writeEnsembleTrainingFile)
 //                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
                 writeEnsembleTrainAccuracyEstimateResultsFile();
         }
+        else {
+            ensembleTrainResults = new ClassifierResults();
+            ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        }
+        
+        //HACK FOR CAWPE_EXTENSION PAPER: 
+        //since experiments expects us to make a train results object 
+        //and for us to record our build time, going to record it here instead of 
+        //editting experiments to record the buildtime at that level
+        
+        //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
+        //time unit has been set in doEnsembleCV(data);
+        ensembleTrainResults.turnOffZeroTimingsErrors();
+        ensembleTrainResults.setBuildTime(buildTime);
+        ensembleTrainResults.turnOnZeroTimingsErrors();
 
         this.testInstCounter = 0; //prep for start of testing
     }
