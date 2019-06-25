@@ -1063,7 +1063,7 @@ tiianic
 
 //Refactor when repo back 
     public static String[] ReducedUCI={"bank","blood","breast-cancer-wisc-diag",
-        "breast-tissue","cardiotocography-10clases",
+        "breast-tissue","cardiotocography-10clases", 
         "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
         "ecoli","glass","hill-valley",
         "image-segmentation","ionosphere","iris","libras","magic",
@@ -1076,7 +1076,16 @@ tiianic
             "wall-following","waveform-noise","wine-quality-white","yeast"};
  
     
-    
+        public static String[] twoClassProblems2018={"BeetleFly","BirdChicken","Chinatown",
+            "Coffee","Computers","DistalPhalanxOutlineCorrect","DodgerLoopGame",
+            "DodgerLoopWeekend","Earthquakes","ECG200","ECGFiveDays","FordA","FordB",
+            "FreezerRegularTrain","FreezerSmallTrain","GunPoint","GunPointAgeSpan",
+            "GunPointMaleVersusFemale","GunPointOldVersusYoung","Ham","HandOutlines",
+            "Herring","HouseTwenty","ItalyPowerDemand","Lightning2","MiddlePhalanxOutlineCorrect",
+                "MoteStrain","PhalangesOutlinesCorrect","PowerCons","ProximalPhalanxOutlineCorrect",
+                "SemgHandGenderCh2","ShapeletSim","SonyAIBORobotSurface1","SonyAIBORobotSurface2",
+                "Strawberry","ToeSegmentation1","ToeSegmentation2","TwoLeadECG","Wafer","Wine",
+                "WormsTwoClass","Yoga"};     
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
