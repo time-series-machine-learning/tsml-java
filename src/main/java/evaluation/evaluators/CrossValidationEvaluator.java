@@ -48,11 +48,17 @@ public class CrossValidationEvaluator extends Evaluator {
     private ArrayList<ArrayList<Integer>> foldIndexing;
     
     /**
-     * If true, the classifiers shall be cloned (via AbstractClassifier.makeCopy(...))
-     * when building and predicting on each fold. Useful if a particular classifier 
-     * maintains information after one buildclassifier that might not be replaced 
-     * or effect the next call to buildclassifier. Ideally, this should not be the case,
-     * but this option will make sure either way
+     * If true, the classifiers shall be cloned when building and predicting on each fold. 
+     * 
+     * This is achieved via AbstractClassifier.makeCopy(...), and therefore the classifier
+     * and all relevant/wanted info/hyperparamters that may have been set up prior to giving 
+     * the classifier to the evaluator must be properly (de-)serialisable.
+     * 
+     * Useful if a particular classifier maintains information after one buildclassifier that 
+     * might not be replaced or effect the next call to buildclassifier. Ideally, this 
+     * should not be the case, but this option will make sure either way
+     * 
+     * If maintainClassifiers == true, clone classifiers is forced to true
      */
     private boolean cloneClassifiers = false;
     
@@ -165,12 +171,17 @@ public class CrossValidationEvaluator extends Evaluator {
         //cv has finished
         double[][][] distsForInsts = new double[classifiers.length][dataset.numInstances()][];
         long[][] predTimes = new long[classifiers.length][dataset.numInstances()];
-        
         long[] buildTimes = new long[classifiers.length];
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
-        if (maintainClassifiers)
-            foldClassifiers = new Classifier[classifiers.length][numFolds];
+        
+        if (cloneClassifiers) {
+            // clone them all here in one go for efficiency of serialisation
+            foldClassifiers = new Classifier[classifiers.length][];
+            
+            for (int c = 0; c < classifiers.length; ++c)
+                foldClassifiers[c] = AbstractClassifier.makeCopies(classifiers[c], numFolds);
+        }
         
         //for each fold as test
         for(int testFold = 0; testFold < numFolds; testFold++){
@@ -182,9 +193,11 @@ public class CrossValidationEvaluator extends Evaluator {
                 
                 // get the classifier instance to be used this fold
                 Classifier foldClassifier = classifiers[c];
-                if (cloneClassifiers) 
-                    foldClassifier = AbstractClassifier.makeCopy(foldClassifier);
                     
+                if (cloneClassifiers)
+                    //use the clone instead
+                    foldClassifier = foldClassifiers[c][testFold];
+               
                 foldClassifier.buildClassifier(trainTest[0]);
                 
                 // init the classifierXfold results object
@@ -223,8 +236,8 @@ public class CrossValidationEvaluator extends Evaluator {
                 classifierFoldRes.findAllStatsOnce(); 
                 resultsPerFold[c][testFold] = classifierFoldRes;
                 
-                if (maintainClassifiers)
-                    foldClassifiers[c][testFold] = foldClassifier;
+                if (!maintainClassifiers)
+                    foldClassifiers[c][testFold] = null; //free the memory
             }
         }
         
@@ -364,7 +377,7 @@ public class CrossValidationEvaluator extends Evaluator {
         String dataLoc = "C:/TSC Problems/";
         
         String dset = "ItalyPowerDemand";
-        String[] classifierNames = { "SVML", "Logistic", "MLP", "C45", "NN" };
+        String[] classifierNames = { "MLP", "SVML", "Logistic", "C45", "NN" };
         int numResamples = 5;
             
         for (String classifierName : classifierNames) {
@@ -373,7 +386,7 @@ public class CrossValidationEvaluator extends Evaluator {
                 Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
                 Classifier classifier = ClassifierLists.setClassifierClassic(classifierName, resample);
                 
-                CrossValidationEvaluator cv = new CrossValidationEvaluator(resample, false, false, true, true);
+                CrossValidationEvaluator cv = new CrossValidationEvaluator(resample, true, false, true, true);
                 ClassifierResults fullcvResults = cv.evaluate(classifier, data[0]);
                 System.out.println("\tdataset resample "+resample+" cv acc: "+fullcvResults.getAcc());
                 
@@ -382,14 +395,13 @@ public class CrossValidationEvaluator extends Evaluator {
                     System.out.println("\t\t cv fold "+fold+": "+foldClassifierResultsOnValFold.getAcc());
                     
                     
-                    SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, false, false);
+                    SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
                     ClassifierResults foldClassifierResultsOnFullTest = testeval.evaluate(cv.foldClassifiers[0][fold], data[1]);
                     System.out.println("\t\t fold "+fold+" classiifer on test: "+foldClassifierResultsOnFullTest.getAcc());
                 }
                 
-                
                 classifier.buildClassifier(data[0]);
-                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, false, false);
+                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
                 System.out.println("\tfull train set test acc : " + testeval.evaluate(classifier, data[1]).getAcc());
                 
             }

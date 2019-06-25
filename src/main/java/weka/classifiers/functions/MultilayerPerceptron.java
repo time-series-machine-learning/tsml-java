@@ -56,6 +56,7 @@ import weka.classifiers.functions.neural.NeuralNode;
 import weka.classifiers.functions.neural.SigmoidUnit;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
+import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -2103,7 +2104,7 @@ public class MultilayerPerceptron
       m_currentInstance = m_nominalToBinaryFilter.output();
     }
     else {
-      m_currentInstance = i;
+      m_currentInstance = new DenseInstance(i);
     }
     
     if (m_normalizeAttributes) {
