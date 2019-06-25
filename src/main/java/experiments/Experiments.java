@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import CawpeExtensionPaper.CAWPEClassifierList;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -433,7 +434,10 @@ public class Experiments  {
         }
         else {           
 //            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
-            Classifier classifier = ClassifierLists.setClassifier(expSettings);
+//            Classifier classifier = ClassifierLists.setClassifier(expSettings);
+
+            // for cawpe extension paper
+            Classifier classifier = CAWPEClassifierList.setClassifier(expSettings);
             
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
