@@ -15,26 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package vector_classifiers;
+package CawpeExtensionPaper;
 
 import CawpeExtensionPaper.CAWPEClassifierList;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluator;
-import evaluation.evaluators.StratifiedResamplesEvaluator;
 import evaluation.storage.ClassifierResults;
-import experiments.ClassifierLists;
 import experiments.Experiments;
-import experiments.Experiments.ExperimentalArguments;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import utilities.TrainAccuracyEstimate;
+import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import weka.filters.Filter;
 
 /**
  * Class for testing CAWPE while keeping the models trained on the cross validation 
@@ -104,7 +100,19 @@ public class CAWPE_Extended extends CAWPE {
     @Override
     public void buildClassifier(Instances data) throws Exception {
         modules = coreModules;
+        
+        long startTime = System.nanoTime();
         super.buildClassifier(data);
+        buildTime = System.nanoTime() - startTime;
+        
+        //mega hack, since experiments expects us to make a train results object 
+        //and for us to record our build time, going to record it here instead of 
+        //editting experiments to record the buildtime at that level
+        ensembleTrainResults = new ClassifierResults();
+        ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        ensembleTrainResults.turnOffZeroTimingsErrors();
+        ensembleTrainResults.setBuildTime(buildTime);
+        ensembleTrainResults.turnOnZeroTimingsErrors();
     }
     
     @Override
@@ -279,6 +287,9 @@ public class CAWPE_Extended extends CAWPE {
         classifiers[0].retrainOnFullTrainSet = false;
 //        classifiers[1].performEnsembleCV = false;
         
+        
+//        Experiments.main(new String[] { "-dp="+dataLoc, "-rp="+resLoc, "-cn=CAWPE_noRetrain", "-dn="+dset, "-f=0" });
+
         int numResamples = 30;
         for (Classifier classifier : classifiers) { 
             for (int resample = 0; resample < numResamples; resample++) {

@@ -27,10 +27,26 @@ import weka.classifiers.Classifier;
  */
 public class CAWPEClassifierList {
     
+    //copied from experiments.DataSets.ReducedUCI to have as a permanantly fixed list here
+    //this is the 39 datasets left of when removing toy, heavily related etc datasets from the 
+    //delgado 121. first decided upon in tony rotf paper
+    public static final String[] datasetList = {"bank","blood","breast-cancer-wisc-diag",
+        "breast-tissue","cardiotocography-10clases", 
+        "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
+        "ecoli","glass","hill-valley",
+        "image-segmentation","ionosphere","iris","libras","magic",
+        "miniboone",
+        "oocytes_merluccius_nucleus_4d","oocytes_trisopterus_states_5b",
+        "optical","ozone","page-blocks","parkinsons","pendigits",
+        "planning","post-operative","ringnorm","seeds","spambase",
+            "statlog-landsat","statlog-shuttle","statlog-vehicle","steel-plates",
+            "synthetic-control","twonorm","vertebral-column-3clases",
+            "wall-following","waveform-noise","wine-quality-white","yeast"};
+    
     
     public static final String[] all_ensembles = { 
         "CAWPE", 
-        "CAWPE_retrain__noWeight", 
+        "CAWPE_retrain_noWeight", 
         "CAWPE_retrain_foldWeight", 
         "CAWPE_noRetrain" 
     };
@@ -48,7 +64,7 @@ public class CAWPEClassifierList {
                 cawpe_base.setPerformCV(false);
                 return cawpe_base;
             
-            case "CAWPE_retrain__noWeight": 
+            case "CAWPE_retrain_noWeight": 
                 CAWPE_Extended cawpe_retrain_noWeight = new CAWPE_Extended();
                 cawpe_retrain_noWeight.setRandSeed(fold);
                 cawpe_retrain_noWeight.setPerformCV(false);
@@ -83,5 +99,9 @@ public class CAWPEClassifierList {
         }
         
         return null;
+    }
+    
+    public static void main(String[] args) {
+        System.out.println(datasetList.length);
     }
 }
