@@ -43,6 +43,8 @@ import weka.core.Instances;
  */
 public class CrossValidationEvaluator extends SamplingEvaluator {
             
+    private String previousRelationName = "EmPtY";
+    
     private int numFolds;
     private ArrayList<Instances> folds;
     private ArrayList<ArrayList<Integer>> foldIndexing;
@@ -97,8 +99,6 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
     }
     
     /**
-     * TODO return/report variance across folds too
-     * 
      * Performs more extensive cross validation using dist for instance and 
      * returns more information. 
      * 
@@ -107,13 +107,14 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
      * subset data to have made that classification
      * 
      * If folds have already been defined (by a call to buildFolds()), will use those,
-     * else will create them internally 
+     * else will create them internally. Setting the seed makes folds reproducable
+     * across different instantiations of this object
      * 
      * @return double[classifier][prediction]
      */
     public ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
         
-        if (folds == null)
+        if (folds == null || !previousRelationName.equals(dataset.relationName()))
             buildFolds(dataset);
         
         //store for later storage of results, in case we want to set the class values missing
@@ -242,6 +243,8 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
     }
 
     public void buildFolds(Instances dataset) throws Exception {
+        previousRelationName = dataset.relationName();
+        
         if (cloneData)
             dataset = new Instances(dataset); //make copy
         
