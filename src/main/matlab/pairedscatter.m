@@ -25,6 +25,8 @@ orient(f,'landscape')
 set(f,'PaperUnits','normalized') 
 set(f,'PaperPosition', [0.05 0 0.9 1]);
 
+set(f, 'CreateFcn', 'set(gcbo,''Visible'',''on'')');
+
 saveas(f,name);
 print(f,name,'-dpdf'); %'-bestfit'
 
