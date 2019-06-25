@@ -266,7 +266,7 @@ public class CrossValidationEvaluator extends Evaluator {
                 classifierFoldRes.findAllStatsOnce(); 
                 resultsPerFold[c][testFold] = classifierFoldRes;
                 
-                if (!maintainClassifiers)
+                if (cloneClassifiers && !maintainClassifiers)
                     foldClassifiers[c][testFold] = null; //free the memory
             }
         }

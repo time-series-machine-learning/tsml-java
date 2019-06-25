@@ -18,13 +18,19 @@
 package vector_classifiers;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.storage.ClassifierResults;
+import experiments.ClassifierLists;
+import experiments.Experiments;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
+import weka.core.Instances;
+import weka.filters.Filter;
 
 /**
  * Class for testing CAWPE while keeping the models trained on the cross validation 
@@ -33,6 +39,27 @@ import weka.classifiers.Classifier;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class CAWPE_Extended extends CAWPE {
+    
+    // intended to be a copy of the raw modules (not expanded from modules built on each cv fold) 
+    // such that if cawpe is rebuilt on subsequent datasets, the first step of build classifier
+    // can be to replace the list of expanded modules with the core set again
+    EnsembleModule[] coreModules = null;
+    
+    public CAWPE_Extended() {
+        this.ensembleIdentifier = "CAWPE_Extended";
+        this.transform = null;
+        this.setDefaultCAWPESettings();
+        
+        coreModules = Arrays.copyOf(modules, modules.length);
+    }
+
+    @Override
+    public void buildClassifier(Instances data) throws Exception {
+        modules = coreModules;
+        super.buildClassifier(data);
+    }
+    
+    @Override
     protected void initialiseModules() throws Exception {
         //prep cv
         if (willNeedToDoCV()) {
@@ -103,6 +130,7 @@ public class CAWPE_Extended extends CAWPE {
         }
     }
 
+    @Override
     protected void trainModules() throws Exception {
 
         EnsembleModule[][] newSubModules = new EnsembleModule[modules.length][];
@@ -179,5 +207,47 @@ public class CAWPE_Extended extends CAWPE {
         
         //done
         this.modules = expandedModules;
+    }
+    
+    
+    
+    public static void main(String[] args) throws Exception {
+        test_basic();
+    }
+    
+    public static void test_basic() throws Exception { 
+        String resLoc = "C:/Temp/cawpeExtensionTests/";
+        String dataLoc = "C:/TSC Problems/";
+        String dset = "ItalyPowerDemand";
+        
+        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE() };
+        classifiers[0].performEnsembleCV = false;
+        classifiers[1].performEnsembleCV = false;
+        
+        int numResamples = 30;
+        for (Classifier classifier : classifiers) { 
+            for (int resample = 0; resample < numResamples; resample++) {
+                Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
+                classifier.buildClassifier(data[0]);
+                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
+                System.out.println("\t" + testeval.evaluate(classifier, data[1]).getAcc());
+            }
+        }
+//        CAWPE[] classifiers = { new CAWPE_Extended(), new CAWPE() };
+//        classifiers[0].performEnsembleCV = false;
+//        classifiers[1].performEnsembleCV = false;
+//        
+//        int numResamples = 5;
+//            
+//        for (Classifier classifier : classifiers) {
+//            System.out.println(classifier.getClass().getSimpleName() + ": ");
+//            for (int resample = 0; resample < numResamples; resample++) {
+//                Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
+//                classifier.buildClassifier(data[0]);
+//                SingleTestSetEvaluator testeval = new SingleTestSetEvaluator(resample, true, false);
+//                System.out.println("\t" + testeval.evaluate(classifier, data[1]).getAcc());
+//                
+//            }
+//        }
     }
 }
