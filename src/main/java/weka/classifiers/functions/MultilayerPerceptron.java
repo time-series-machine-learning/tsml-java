@@ -2093,18 +2093,17 @@ public class MultilayerPerceptron
    * @throws Exception if can't classify instance.
    */
   public double[] distributionForInstance(Instance i) throws Exception {
-
+   
     // default model?
     if (m_useDefaultModel) {
       return m_ZeroR.distributionForInstance(i);
     }
+
+    m_currentInstance = new DenseInstance(i);
     
     if (m_useNomToBin) {
-      m_nominalToBinaryFilter.input(i);
+      m_nominalToBinaryFilter.input(m_currentInstance);
       m_currentInstance = m_nominalToBinaryFilter.output();
-    }
-    else {
-      m_currentInstance = new DenseInstance(i);
     }
     
     if (m_normalizeAttributes) {
