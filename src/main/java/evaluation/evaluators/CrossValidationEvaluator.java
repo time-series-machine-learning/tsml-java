@@ -102,6 +102,36 @@ public class CrossValidationEvaluator extends Evaluator {
         this.numFolds = 10;
     }
 
+    public ClassifierResults[] getFoldResults() {
+        return getFoldResults(0);
+    }
+    
+    public ClassifierResults[] getFoldResults(int classifierIndex) {
+        if (resultsPerFold != null)
+            return resultsPerFold[0];
+        else
+            return null;
+    }
+    
+    public ClassifierResults[][] getFoldResultsAll() {
+        return resultsPerFold;
+    }
+    
+    public Classifier[] getFoldClassifiers() {
+        return getFoldClassifiers(0);
+    }
+    
+    public Classifier[] getFoldClassifiers(int classifierIndex) {
+        if (foldClassifiers != null)
+            return foldClassifiers[0];
+        else
+            return null;
+    }
+    
+    public Classifier[][] getFoldClassifiersAll() {
+        return foldClassifiers;
+    }
+    
     public void setMaintainClassifiers(boolean maintainClassifiers) { 
         this.maintainClassifiers = maintainClassifiers;
         if (maintainClassifiers)
