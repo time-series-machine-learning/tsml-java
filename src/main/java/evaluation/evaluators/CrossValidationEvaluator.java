@@ -112,9 +112,9 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         //as opposed to instances in the order that they are predicted, after having been split into the k folds.
         //storing them here in order, then adding into the classifierresults objects in order after the actual 
         //cv has finished
-        double[][][] distsForInsts = new double[classifiers.length][dataset.numInstances()][];
-        long[][] predTimes = new long[classifiers.length][dataset.numInstances()];
-        long[] buildTimes = new long[classifiers.length];
+        double[][][] allFolds_distsForInsts = new double[classifiers.length][dataset.numInstances()][];
+        long[][] allFolds_predTimes = new long[classifiers.length][dataset.numInstances()];
+        long[] totalBuildTimes = new long[classifiers.length];
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
@@ -161,15 +161,18 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     double[] dist = foldClassifier.distributionForInstance(testInst);
                     long predTime = System.nanoTime()- startTime;
                     
-                    distsForInsts[classifierIndex][instIndex] = dist;
-                    predTimes[classifierIndex][instIndex] = predTime;
+                    allFolds_distsForInsts[classifierIndex][instIndex] = dist;
+                    allFolds_predTimes[classifierIndex][instIndex] = predTime;
                     
                     classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
                 }    
                 
-                buildTimes[classifierIndex] += System.nanoTime() - t1;
+                long foldBuildTime = System.nanoTime() - t1;
+                totalBuildTimes[classifierIndex] += foldBuildTime;
                 
+                classifierFoldRes.setBuildTime(foldBuildTime);
                 classifierFoldRes.turnOnZeroTimingsErrors();
+                classifierFoldRes.finaliseResults();
                 classifierFoldRes.findAllStatsOnce(); 
                 resultsPerFold[classifierIndex][fold] = classifierFoldRes;
                 
@@ -190,10 +193,10 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
             
             results[c].turnOffZeroTimingsErrors();
-            results[c].setBuildTime(buildTimes[c]);
+            results[c].setBuildTime(totalBuildTimes[c]);
             for (int i = 0; i < dataset.numInstances(); i++) {
-                double tiesResolvedRandomlyPred = indexOfMax(distsForInsts[c][i]);
-                results[c].addPrediction(distsForInsts[c][i], tiesResolvedRandomlyPred, predTimes[c][i], "");
+                double tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+                results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
             }
             results[c].turnOnZeroTimingsErrors();
             
