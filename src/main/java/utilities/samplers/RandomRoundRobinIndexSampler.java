@@ -10,7 +10,7 @@ import java.util.Random;
 import static utilities.InstanceTools.indexByClass;
 import static utilities.InstanceTools.instancesByClass;
 
-public class RandomRoundRobinIndexSampler {
+public class RandomRoundRobinIndexSampler implements Sampler{
 
     private List<List<Integer>> instancesByClass;
     private Random random;
@@ -39,7 +39,7 @@ public class RandomRoundRobinIndexSampler {
         return !indicies.isEmpty() || !instancesByClass.isEmpty();
     }
 
-    public int next() {
+    public Integer next() {
         int classValue = indicies.remove(random.nextInt(indicies.size()));
         List<Integer> homogeneousInstances = instancesByClass.get(classValue);
         int instance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));

@@ -7,29 +7,28 @@ import weka.core.Instances;
 import java.util.List;
 import java.util.Random;
 
-import static utilities.InstanceTools.classDistribution;
-import static utilities.InstanceTools.instancesByClass;
+import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
-public class RandomStratifiedSampler implements Sampler{
+public class RandomStratifiedIndexSampler implements Sampler{
 
-    private List<Instances> instancesByClass;
+    private List<List<Integer>> instancesByClass;
     private double[] classDistribution;
     private double[] classSamplingProbabilities;
     private int count;
     private Random random;
     private int maxCount;
 
-    public RandomStratifiedSampler(Random random){
+    public RandomStratifiedIndexSampler(Random random){
         this.random = random;
     }
 
-    public RandomStratifiedSampler(){
+    public RandomStratifiedIndexSampler(){
         random = new Random();
     }
 
     public void setInstances(Instances instances) {
-        instancesByClass = instancesByClass(instances);
+        instancesByClass = indexByClass(instances);
         classDistribution = classDistribution(instances);
         classSamplingProbabilities = classDistribution(instances);
         count = 0;
@@ -40,10 +39,10 @@ public class RandomStratifiedSampler implements Sampler{
         return count < maxCount;
     }
 
-    public Instance next() {
+    public Integer next() {
         int sampleClass = argMax(classSamplingProbabilities, random);
-        Instances homogeneousInstances = instancesByClass.get(sampleClass); // instances of the class value
-        Instance sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.numInstances()));
+        List<Integer> homogeneousInstances = instancesByClass.get(sampleClass); // instances of the class value
+        int sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));
         classSamplingProbabilities[sampleClass]--;
         ArrayUtilities.add(classSamplingProbabilities, classDistribution);
         return sampledInstance;

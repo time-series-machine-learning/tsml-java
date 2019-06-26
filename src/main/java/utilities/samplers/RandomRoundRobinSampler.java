@@ -9,7 +9,7 @@ import java.util.Random;
 
 import static utilities.InstanceTools.instancesByClass;
 
-public class RandomRoundRobinSampler{
+public class RandomRoundRobinSampler implements Sampler{
 
     private List<Instances> instancesByClass;
     private Random random;
