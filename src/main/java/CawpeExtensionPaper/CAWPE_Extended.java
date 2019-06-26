@@ -17,11 +17,11 @@
 
 package CawpeExtensionPaper;
 
-import CawpeExtensionPaper.CAWPEClassifierList;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -182,7 +182,7 @@ public class CAWPE_Extended extends CAWPE {
                         
             //in case train results didnt have probability distributions, hack for old hive cote results tony todo clean
             modules[m].trainResults.setNumClasses(trainInsts.numClasses());
-            modules[m].trainResults.findAllStatsOnce();
+//            modules[m].trainResults.findAllStatsOnce(); //now found in the evaluators
         }
     }
 
@@ -190,7 +190,6 @@ public class CAWPE_Extended extends CAWPE {
     protected void trainModules() throws Exception {
 
         EnsembleModule[][] newSubModules = new EnsembleModule[modules.length][];
-//        StratifiedResamplesEvaluator cv = new StratifiedResamplesEvaluator(seed, true, false, true, true);
         
         for (int m = 0; m < modules.length; m++) {
             EnsembleModule module = modules[m];
@@ -273,8 +272,41 @@ public class CAWPE_Extended extends CAWPE {
     
     
     public static void main(String[] args) throws Exception {
-        test_basic();
+//        test_basic();
 //        test_smallComparison();
+
+        test_expandedIndividualWriting();
+    }
+    
+    public static void test_expandedIndividualWriting() throws Exception { 
+        
+        //semi-manual experiment setup to get cawpe to write it's individuals predictions
+              
+        for (int i = 0; i < 30; i++) {
+
+            Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+            exp.dataReadLocation = "C:/TSC Problems/";
+            exp.resultsWriteLocation = "C:/Temp/cawpeExtensionTests/";
+            exp.classifierName = "CAWPE_retrain_foldWeight";
+//            exp.classifierName = "CAWPE_retrain_noWeight";
+            exp.datasetName = "ItalyPowerDemand";
+            exp.foldId = i;
+            exp.generateErrorEstimateOnTrainSet = false;
+
+            String fullWriteLoc = exp.resultsWriteLocation + exp.classifierName + "/Predictions/" + exp.datasetName + "/";
+            (new File(fullWriteLoc)).mkdirs();
+
+            CAWPE_Extended classifier = (CAWPE_Extended) CAWPEClassifierList.setClassifier(exp);
+            classifier.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+            classifier.setWriteIndividualsTrainResultsFiles(true);
+
+            Instances[] data = Experiments.sampleDataset(exp.dataReadLocation, exp.datasetName, exp.foldId);
+
+            Experiments.runExperiment(exp, data[0], data[1], classifier, fullWriteLoc);
+
+            classifier.writeIndividualTestFiles(data[1].attributeToDoubleArray(data[1].classIndex()), true);
+            
+        }
     }
     
     public static void test_basic() throws Exception { 
