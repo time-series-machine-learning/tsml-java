@@ -795,7 +795,8 @@ public class Experiments  {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, false); 
+        //setclassmissing turned off for cawpe extension - cawpe wants to use the class vals to populate the individual's results files
         
         return eval.evaluate(classifier, testSet);
     }
