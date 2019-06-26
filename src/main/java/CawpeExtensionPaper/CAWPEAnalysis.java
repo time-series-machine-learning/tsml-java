@@ -17,10 +17,36 @@
 
 package CawpeExtensionPaper;
 
+import static CawpeExtensionPaper.CAWPEClassifierList.datasetList;
+import static CawpeExtensionPaper.CAWPEClassifierList.replaceLabelsForImages;
+import evaluation.MultipleClassifierEvaluation;
+import static CawpeExtensionPaper.CAWPEClassifierList.cawpeConfigs;
+
 /**
+ * Analysis setups to create/collate the results reported in the alcohol paper
  *
  * @author James Large (james.large@uea.ac.uk)
  */
 public class CAWPEAnalysis {
-
+    static String datasetPath = "C:/UCI Problems/";
+    static String analysisPath = "C:/JamesLPHD/CAWPEExtension/Analysis/";
+    static String resultsPath = "C:/JamesLPHD/CAWPEExtension/Results/";
+            
+    static int masterNumFolds = 30;
+    
+    public static void main(String[] args) throws Exception {
+        ana_firsPass();
+    }
+    
+    public static void ana_firsPass() throws Exception { 
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "firstPass_diagrams", masterNumFolds);
+        mce.setTestResultsOnly(true);
+        mce.setBuildMatlabDiagrams(true);
+        mce.setDatasets(datasetList);
+        mce.setUseDefaultEvaluationStatistics();
+        mce.readInClassifiers(cawpeConfigs, replaceLabelsForImages(cawpeConfigs), resultsPath);
+        
+        mce.runComparison();
+    }
+    
 }

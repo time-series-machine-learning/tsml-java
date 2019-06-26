@@ -306,7 +306,7 @@ public class CAWPE_Extended extends CAWPE {
         String resLoc = "C:/Temp/cawpeExtensionTests/";
         String dataLoc = "C:/UCI Problems/";
         String[] dsets = { "hayes-roth", "fertility", "blood", "hepatitis" };
-        String[] classifierNames = CAWPEClassifierList.all_ensembles;
+        String[] classifierNames = CAWPEClassifierList.cawpeConfigs;
         int numResamples = 5;
         
         double[] accs = new double[classifierNames.length];

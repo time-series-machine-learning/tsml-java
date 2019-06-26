@@ -19,7 +19,10 @@ package CawpeExtensionPaper;
 
 import experiments.Experiments;
 import vector_classifiers.CAWPE;
+import vector_classifiers.TunedXGBoost;
 import weka.classifiers.Classifier;
+import weka.classifiers.meta.RotationForest;
+import weka.classifiers.trees.RandomForest;
 
 /**
  *
@@ -44,11 +47,27 @@ public class CAWPEClassifierList {
             "wall-following","waveform-noise","wine-quality-white","yeast"};
     
     
-    public static final String[] all_ensembles = { 
+    public static final String[] cawpeConfigs = { 
         "CAWPE", 
         "CAWPE_retrain_noWeight", 
         "CAWPE_retrain_foldWeight", 
         "CAWPE_noRetrain" 
+    };
+    
+    public static final String[] homoEnsembles = { 
+        "XGBoost", 
+        "RandF", 
+        "RotF",
+    };
+    
+    public static final String[] allClassifiers = { 
+        "CAWPE", 
+        "CAWPE_retrain_noWeight", 
+        "CAWPE_retrain_foldWeight", 
+        "CAWPE_noRetrain",
+        "XGBoost", 
+        "RandF", 
+        "RotF",
     };
     
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp) {        
@@ -58,6 +77,39 @@ public class CAWPEClassifierList {
     public static Classifier setClassifier(String classifier, int fold) {                
         switch(classifier){
             
+            // COMPARED HOMOGENEOUS ENSEMBLES
+            //
+            //
+            //
+            case "XGBoost":
+                TunedXGBoost xg = new TunedXGBoost(); 
+                xg.setRunSingleThreaded(true);
+                xg.setTuneParameters(false);
+                xg.setSeed(fold);
+                
+                // defaults as of 26/06/2019, but setting permanently here anyway
+                xg.setNumIterations(500); 
+                xg.setMaxTreeDepth(4);
+                xg.setLearningRate(0.1f);
+                break;
+                
+            case "RandF": 
+                RandomForest randf=new RandomForest();
+                randf.setNumTrees(500);
+                randf.setSeed(fold);
+                return randf;
+                
+            case "RotF":
+                RotationForest rotf=new RotationForest();
+                rotf.setNumIterations(50);
+                rotf.setSeed(fold);
+                return rotf;
+            
+            
+            // CAWPE CONFIGURATIONS
+            //
+            //
+            //
             case "CAWPE": 
                 CAWPE cawpe_base = new CAWPE();
                 cawpe_base.setRandSeed(fold);
@@ -99,6 +151,33 @@ public class CAWPEClassifierList {
         }
         
         return null;
+    }
+    
+    public static String[] replaceLabelsForImages(String[] a) {
+        final String find = "RotF_ST12Hour";
+        final String replace = "ST";
+        
+        String[] copy = new String[a.length];
+        
+        for (int i = 0; i < a.length; i++)
+            if (a[i].equals(find))
+                copy[i] = replace;
+            else 
+                copy[i] = a[i];
+        
+        return copy;
+    }
+    
+    public static String[] removeClassifier(String[] a, String toremove) {
+        String[] copy = new String[a.length-1];
+        
+        for (int i = 0, j = 0; j < a.length; i++, j++)
+            if (!a[j].equals(toremove))
+                copy[i] = a[j];
+            else 
+                i--;
+        
+        return copy;
     }
     
     public static void main(String[] args) {
