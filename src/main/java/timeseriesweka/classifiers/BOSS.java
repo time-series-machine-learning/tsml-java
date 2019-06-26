@@ -26,16 +26,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import utilities.*;
 import utilities.samplers.*;
-import vector_classifiers.HomogeneousContractCAWPE;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
-import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 
-import static utilities.InstanceTools.resample;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
@@ -56,6 +55,8 @@ import static weka.core.Utils.sum;
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
 public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier {
+
+    static int count = 0;
     
     private int ensembleSize = 50;
     private int seed = 0;
@@ -107,6 +108,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     private transient Instances train;
     private double ensembleCvAcc = -1;
     private double[] ensembleCvPreds = null;
+
+    private int numThreads = 1;
+    private boolean multiThread = false;
 
     protected static final long serialVersionUID = 22554L;
 
@@ -247,6 +251,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         trainResults = saved.trainResults;
         ensembleCvAcc = saved.ensembleCvAcc;
         ensembleCvPreds = saved.ensembleCvPreds;
+        numThreads = saved.numThreads;
+        multiThread = saved.multiThread;
 
         //load in each serisalised classifier
         classifiers = new LinkedList[numSeries];
@@ -412,6 +418,10 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         
         this.train = data;
 
+        if (multiThread && numThreads == 1){
+            numThreads = Runtime.getRuntime().availableProcessors();
+        }
+
         //required to deal with multivariate datasets, each channel is split into its own instances
         Instances[] series;
 
@@ -446,8 +456,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             }
         }
 
-        //end train time, converted to milliseconds currently for compatability
-        trainResults.setBuildTime((System.nanoTime()/1000000) - (trainResults.getBuildTime()/1000000) - (checkpointTimeDiff/1000000));
+        //end train time in nanoseconds
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
         if (trainCV) {
@@ -1042,103 +1052,106 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         BOSS c;
         double accuracy;
 
+        long start = System.nanoTime();
         c = new BOSS();
         c.useBestSettingsRBOSS();
         c.setSeed(fold);
+        c.multiThread = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
+        System.out.println(System.nanoTime() - start);
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new BOSS();
-        c.useBestSettingsRBOSS();
-        c.setSeed(fold);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.ensembleSize = 250;
-        c.setMaxEnsembleSize(50);
-        c.setRandomCVAccEnsemble(true);
-        c.setSeed(fold);
-        c.useFastTrainEstimate = true;
-        c.reduceTrainInstances = true;
-        c.setMaxEvalPerClass(50);
-        c.setMaxTrainInstances(500);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.ensembleSize = 250;
-        c.setMaxEnsembleSize(50);
-        c.setRandomCVAccEnsemble(true);
-        c.setSeed(fold);
-        c.useFastTrainEstimate = true;
-        c.reduceTrainInstances = true;
-        c.setMaxEvalPerClass(50);
-        c.setMaxTrainInstances(500);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.ensembleSize = 100;
-        c.randomEnsembleSelection = true;
-        c.useCAWPE(true);
-        c.setSeed(fold);
-        c.setReduceTrainInstances(true);
-        c.setTrainProportion(0.7);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.ensembleSize = 100;
-        c.randomEnsembleSelection = true;
-        c.useCAWPE(true);
-        c.setSeed(fold);
-        c.setReduceTrainInstances(true);
-        c.setTrainProportion(0.7);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.setRandomEnsembleSelection(true);
-        c.setTimeLimit(TimeLimit.MINUTE, 1);
-        c.setSeed(fold);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.setRandomEnsembleSelection(true);
-        c.setTimeLimit(TimeLimit.MINUTE, 1);
-        c.setSeed(fold);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new BOSS();
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//        c = new BOSS();
+//        c.useBestSettingsRBOSS();
+//        c.setSeed(fold);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.ensembleSize = 250;
+//        c.setMaxEnsembleSize(50);
+//        c.setRandomCVAccEnsemble(true);
+//        c.setSeed(fold);
+//        c.useFastTrainEstimate = true;
+//        c.reduceTrainInstances = true;
+//        c.setMaxEvalPerClass(50);
+//        c.setMaxTrainInstances(500);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.ensembleSize = 250;
+//        c.setMaxEnsembleSize(50);
+//        c.setRandomCVAccEnsemble(true);
+//        c.setSeed(fold);
+//        c.useFastTrainEstimate = true;
+//        c.reduceTrainInstances = true;
+//        c.setMaxEvalPerClass(50);
+//        c.setMaxTrainInstances(500);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.ensembleSize = 100;
+//        c.randomEnsembleSelection = true;
+//        c.useCAWPE(true);
+//        c.setSeed(fold);
+//        c.setReduceTrainInstances(true);
+//        c.setTrainProportion(0.7);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.ensembleSize = 100;
+//        c.randomEnsembleSelection = true;
+//        c.useCAWPE(true);
+//        c.setSeed(fold);
+//        c.setReduceTrainInstances(true);
+//        c.setTrainProportion(0.7);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.setRandomEnsembleSelection(true);
+//        c.setTimeLimit(TimeLimit.MINUTE, 1);
+//        c.setSeed(fold);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.setRandomEnsembleSelection(true);
+//        c.setTimeLimit(TimeLimit.MINUTE, 1);
+//        c.setSeed(fold);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new BOSS();
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("BOSS accuracy on " + dataset2 + " fold 0 = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         //Output 26/06/19
         /*
@@ -1663,12 +1676,10 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         public double classifyInstance(Instance instance) throws Exception {
             Bag testBag = BOSSTransform(instance);
 
-            double bestDist = Double.MAX_VALUE;
-
             //1NN BOSS distance
             double nn = -1.0;
+            double bestDist = Double.MAX_VALUE;
 
-            //find dist FROM testBag TO all trainBags
             for (int i = 0; i < bags.size(); ++i) {
                 double dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
@@ -1690,11 +1701,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
          * @return classification
          */
         public double classifyInstance(int testIndex) throws Exception {
-            double bestDist = Double.MAX_VALUE;
             Bag testBag = bags.get(testIndex);
 
             //1NN BOSS distance
             double nn = -1.0;
+            double bestDist = Double.MAX_VALUE;
 
             for (int i = 0; i < bags.size(); ++i) {
                 if (i == testIndex) //skip 'this' one, leave-one-out
