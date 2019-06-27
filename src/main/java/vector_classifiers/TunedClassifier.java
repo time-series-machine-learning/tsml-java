@@ -19,10 +19,8 @@ import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
-import fileIO.OutFile;
-import java.util.function.Function;
 import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
@@ -31,6 +29,8 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instance;
 import weka.core.Instances;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Given 
@@ -56,7 +56,7 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class TunedClassifier extends AbstractClassifier 
-        implements SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,ContractClassifier {
+        implements SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier, TrainTimeContractClassifier {
 
     int seed;
     ParameterSpace space = null;
@@ -73,8 +73,8 @@ public class TunedClassifier extends AbstractClassifier
     String SEP_CP_PS_paraWritePath; //SaveEachParameter //CheckpointClassifier //ParameterSplittable
     boolean SEP_CP_savingAllParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long CC_contractTimeNanos; //ContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean CC_contracting = false; //ContractClassifier 
+    long CC_contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean CC_contracting = false; //TrainTimeContractClassifier
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
@@ -293,7 +293,7 @@ public class TunedClassifier extends AbstractClassifier
     
     
     
-    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,ContractClassifier
+    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
     
     @Override //SaveParameterInfo
     public String getParameters() {
@@ -362,25 +362,22 @@ public class TunedClassifier extends AbstractClassifier
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //ContractClassifier
-    public void setTimeLimit(long time) {
-        CC_contracting = true;
-        CC_contractTimeNanos = time;
-    }
-
-    @Override //ContractClassifier
-    public void setTimeLimit(TimeLimit time, int amount) {
+    @Override //TrainTimeContractClassifier
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
         CC_contracting = true;
         long secToNano = 1000000000L;
         
         switch(time){
-            case MINUTE:
+            case NANOSECONDS:
+                CC_contractTimeNanos = amount;
+                break;
+            case MINUTES:
                 CC_contractTimeNanos = amount*60*secToNano;
                 break;
-            case HOUR: default:
+            case HOURS: default:
                 CC_contractTimeNanos= amount*60*60*secToNano;
                 break;
-            case DAY:
+            case DAYS:
                 CC_contractTimeNanos= amount*24*60*60*secToNano; 
                 break;
         }
@@ -398,6 +395,6 @@ public class TunedClassifier extends AbstractClassifier
             tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
         
         if (CC_contracting)
-            tuner.setTimeLimit(this.CC_contractTimeNanos);
+            tuner.setTrainTimeLimit(this.CC_contractTimeNanos);
     }
 }

@@ -24,9 +24,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
@@ -41,7 +42,7 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner 
-        implements SaveEachParameter,CheckpointClassifier,ContractClassifier{
+        implements SaveEachParameter,CheckpointClassifier, TrainTimeContractClassifier {
     
     //Main 3 design choices.
     private ParameterSearcher searcher = new GridSearcher();
@@ -64,8 +65,8 @@ public class Tuner
     private String parameterSavingPath = null; //SaveEachParameter //CheckpointClassifier
     private boolean saveParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long contractTimeNanos; //ContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean contracting = false; //ContractClassifier 
+    long contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean contracting = false; //TrainTimeContractClassifier
     
     ////////// end interface variables
     
@@ -452,7 +453,7 @@ public class Tuner
     
     
     
-    // METHODS FOR:        SaveEachParameter,CheckpointClassifier,ContractClassifier
+    // METHODS FOR:        SaveEachParameter,CheckpointClassifier,TrainTimeContractClassifier
     
 
     @Override //SaveEachParameter
@@ -478,25 +479,22 @@ public class Tuner
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //ContractClassifier
-    public void setTimeLimit(long time) {
-        contracting = true;
-        contractTimeNanos = time;
-    }
-
-    @Override //ContractClassifier
-    public void setTimeLimit(TimeLimit time, int amount) {
+    @Override //TrainTimeContractClassifier
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
         contracting = true;
         
         long secToNano = 1000000000L;
         switch(time){
-            case MINUTE:
+            case NANOSECONDS:
+                contractTimeNanos = amount;
+                break;
+            case MINUTES:
                 contractTimeNanos = amount*60*secToNano;
                 break;
-            case HOUR: default:
+            case HOURS: default:
                 contractTimeNanos= amount*60*60*secToNano;
                 break;
-            case DAY:
+            case DAYS:
                 contractTimeNanos= amount*24*60*60*secToNano; 
                 break;
         }

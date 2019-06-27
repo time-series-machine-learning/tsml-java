@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers;
 
 import fileIO.FullAccessOutFile;
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.FFT;
@@ -28,7 +29,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
-import java.util.logging.Logger;
+import java.util.concurrent.TimeUnit;
 
 /**
  <!-- globalinfo-start -->
@@ -68,7 +69,7 @@ import java.util.logging.Logger;
  * @date 19/02/19
  **/
 
-public class CRISE implements Classifier, SaveParameterInfo, ContractClassifier, CheckpointClassifier{
+public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractClassifier, CheckpointClassifier{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 2;
@@ -699,31 +700,25 @@ public class CRISE implements Classifier, SaveParameterInfo, ContractClassifier,
     }
 
     /**
-     * Set contract limit in nanoseconds.
-     * @param time
-     */
-    @Override
-    public void setTimeLimit(long time) {
-        this.timer.forestTimeLimit = time;
-    }
-
-    /**
      * Use to set contract length
-     * @param time wrapper for enum, supporting MINUTE, HOUR, DAY. Default HOUR
+     * @param time wrapper for enum, supporting NANOSECONDS, MINUTES, HOURS, DAYS. Default HOURS
      * @param amount int representing multiple of time.
      */
     @Override
-    public void setTimeLimit(TimeLimit time, int amount) {
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
         double conversion;
         switch(time){
-            case MINUTE:
+            case NANOSECONDS:
+                conversion = 2.7777778e-13;
+                break;
+            case MINUTES:
                 conversion = 0.0166667;
                 break;
-            case DAY:
+            case DAYS:
                 conversion = 24;
                 break;
             default:
-            case HOUR:
+            case HOURS:
                 conversion = 1;
                 break;
         }
@@ -903,7 +898,7 @@ public class CRISE implements Classifier, SaveParameterInfo, ContractClassifier,
         //c.setStabilise(3);
         c.setModelOutPath("");
         c.setSavePath("");
-        //c.setTimeLimit(TimeLimit.MINUTE,5);
+        //c.setTrainTimeLimit(TimeUnit.MINUTES,5);
 
         //Train
         try {
