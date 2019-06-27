@@ -7,6 +7,10 @@ import classifiers.distance_based.elastic_ensemble.iteration.random.RoundRobinIt
 import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
 import classifiers.distance_based.elastic_ensemble.selection.Selector;
 import classifiers.distance_based.knn.Knn;
+import classifiers.distance_based.knn.sampling.DistributedRandomSampler;
+import classifiers.distance_based.knn.sampling.LinearSampler;
+import classifiers.distance_based.knn.sampling.RandomSampler;
+import classifiers.distance_based.knn.sampling.RoundRobinRandomSampler;
 import classifiers.template_classifier.TemplateClassifier;
 import distances.derivative_time_domain.ddtw.CachedDdtw;
 import distances.derivative_time_domain.wddtw.CachedWddtw;
@@ -315,11 +319,31 @@ public class ElasticEnsemble extends TemplateClassifier {
             setupNeighbourhoodSize();
             setupNumParameterSets();
             setupTrainEstimateSetSize();
-            List<Instance> trainSetCopy = new ArrayList<>(trainSet);
-            while (trainNeighbours.size() < trainNeighbourhoodSizeLimit) {
-                trainNeighbours.add(trainSetCopy.remove(getTrainRandom().nextInt(trainSetCopy.size())));
-            }
+            setupNeighbourSearchStrategy();
             getTrainStopWatch().lap();
+        }
+    }
+
+    private void setupNeighbourSearchStrategy() {
+        DynamicIterator<Instance, ?> neighboursIterator;
+        switch (neighbourSearchStrategy) {
+            case RANDOM:
+                neighboursIterator = new RandomSampler(getTrainRandom().nextLong());
+                break;
+            case LINEAR:
+                neighboursIterator = new LinearSampler();
+                break;
+            case ROUND_ROBIN_RANDOM:
+                neighboursIterator = new RoundRobinRandomSampler(getTrainRandom());
+                break;
+            case DISTRIBUTED_RANDOM:
+                neighboursIterator = new DistributedRandomSampler(getTrainRandom());
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        while (trainNeighbours.size() < trainNeighbourhoodSizeLimit && neighboursIterator.hasNext()) {
+            trainNeighbours.add(neighboursIterator.next());
         }
     }
 
