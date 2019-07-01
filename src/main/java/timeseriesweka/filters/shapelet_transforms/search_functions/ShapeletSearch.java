@@ -27,8 +27,50 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.channelLeng
  */
 public class ShapeletSearch implements Serializable{
     
-    public enum SearchType {FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED};
+    public enum SearchType {FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
     
+    
+    //Immutable class to store search params. 
+    //avoids using the Triple tuple, which is less clear.
+    //TODO: could have a better name.
+    protected static class CandidateSearchData{
+        private final int startPosition;
+        private final int length;
+        private final int dimension; //this can be optional.
+        
+        protected CandidateSearchData(int pos,int len){
+            startPosition = pos;
+            length = len;
+            dimension = 0;
+        }
+        
+        protected CandidateSearchData(int pos,int len,int dim){
+            startPosition = pos;
+            length = len;
+            dimension = dim;
+        }
+
+        /**
+         * @return the startPosition
+         */
+        public int getStartPosition() {
+            return startPosition;
+        }
+
+        /**
+         * @return the length
+         */
+        public int getLength() {
+            return length;
+        }
+
+        /**
+         * @return the dimension
+         */
+        public int getDimension() {
+            return dimension;
+        }
+    }
 
     public interface ProcessCandidate{
         public default Shapelet process(Instance candidate, int start, int length) {return process(candidate, start, length, 0);}

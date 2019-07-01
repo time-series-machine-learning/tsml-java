@@ -30,6 +30,7 @@ import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  *
@@ -91,7 +92,7 @@ information.
  * ARGUMENTS
  * 
  */
-public class TSBF extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
+public class TSBF extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
 //Paras
     
 //<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper">        
@@ -209,7 +210,8 @@ public static void recreatePublishedResults() throws Exception{
         of.writeLine(",,,,Mean diff ="+meanDiff/problems.length+" Published better ="+publishedBetter);
 }          
 
-public TechnicalInformation getTechnicalInformation() {
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

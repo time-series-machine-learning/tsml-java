@@ -173,8 +173,8 @@ public class DataSets {
                         "MixedShapesRegularTrain",
                         "MixedShapesSmallTrain",
 			"MoteStrain", // 20,1252,84,2
-			"NonInvasiveFatalECGThorax1", // 1800,1965,750,42
-			"NonInvasiveFatalECGThorax2", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 			"OliveOil", // 30,30,570,4
 			"OSULeaf", // 200,242,427,6
 			"PhalangesOutlinesCorrect", // 1800,858,80,2

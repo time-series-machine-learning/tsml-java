@@ -44,6 +44,7 @@ import weka.core.PartitionGenerator;
 import weka.core.Randomizable;
 import weka.core.RevisionUtils;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.core.WeightedInstancesHandler;
 
@@ -63,7 +64,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
+public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -93,6 +94,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     public String globalInfo() {
         return "Blah";
     }
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
 

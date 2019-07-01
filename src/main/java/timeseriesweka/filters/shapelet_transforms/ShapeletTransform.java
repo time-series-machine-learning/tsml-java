@@ -99,7 +99,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     protected boolean recordShapelets; // default action is to write an output file
     protected boolean roundRobin;
 
-    public final static int DEFAULT_NUMSHAPELETS = 100;
+    public final static int DEFAULT_NUMSHAPELETS = 300;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
 

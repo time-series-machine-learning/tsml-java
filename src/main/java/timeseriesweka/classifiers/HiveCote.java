@@ -32,6 +32,7 @@ import vector_classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -68,7 +69,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractClassifier {
+public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractClassifier,TechnicalInformationHandler{
 
 
     private ArrayList<Classifier> classifiers;
@@ -99,6 +100,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             setTrainTimeLimit(TimeUnit.HOURS,contractHours);
         }
     }
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

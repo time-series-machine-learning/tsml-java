@@ -25,6 +25,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
+import weka.core.TechnicalInformationHandler;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
