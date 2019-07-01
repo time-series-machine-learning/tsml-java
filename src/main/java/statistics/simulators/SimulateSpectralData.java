@@ -16,7 +16,7 @@ import weka.core.*;
 import fileIO.*;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.FastDTW_1NN;
+import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.filters.*;
 
 

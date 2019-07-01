@@ -27,7 +27,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
