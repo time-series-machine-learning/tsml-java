@@ -25,6 +25,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
+import weka.core.TechnicalInformationHandler;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; it has been informally tested but awaiting rigurous testing before being signed off.
  * Also note that file writing/reading from file is not currently supported (will be added soon)
@@ -42,9 +43,10 @@ import timeseriesweka.filters.PowerSpectrum;
  
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public class FlatCote extends AbstractClassifierWithTrainingInfo{
+public class FlatCote extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
 
       
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

@@ -36,6 +36,7 @@ import weka.classifiers.meta.Bagging;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
+import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 
 /** 
@@ -104,7 +105,7 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable{
+public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -349,6 +350,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
   * paper defining TSF
   * @return TechnicalInformation
   */   
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

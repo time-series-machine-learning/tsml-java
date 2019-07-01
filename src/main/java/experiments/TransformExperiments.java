@@ -150,7 +150,7 @@ public class TransformExperiments {
                 ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.FULL;
                 
                 //kShapelets
-                int numShapeletsInTransform=n;
+                int numShapeletsInTransform=st.getNumberOfShapelets();
                 
                 long numShapeletsToSearchFor = 0;
                 if(expSettings.contractTrainTimeHours > 0){

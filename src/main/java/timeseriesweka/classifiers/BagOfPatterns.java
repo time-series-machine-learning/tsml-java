@@ -25,6 +25,7 @@ import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.BagOfPatternsFilter;
 import timeseriesweka.filters.SAX;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * Converts instances into Bag Of Patterns form, then gives to a 1NN 
@@ -33,8 +34,9 @@ import timeseriesweka.filters.SAX;
  * 
  * @author James
  */
-public class BagOfPatterns extends AbstractClassifierWithTrainingInfo{
+public class BagOfPatterns extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
 
+    @Override
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

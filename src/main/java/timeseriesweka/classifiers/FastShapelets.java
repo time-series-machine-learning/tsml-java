@@ -30,6 +30,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 /**
  * @inproceedings{rakthanmanon13fastshapelets,
 author="T. Rakthanmanon and E. Keogh ",
@@ -38,11 +39,11 @@ booktitle    ="Proc. 13th {SDM}",
 year="2013"
 }
 * 
- * @author raj09hxu
+ * @author Aaron Bostrom
  */
-public class FastShapelets extends AbstractClassifierWithTrainingInfo {
-
+public class FastShapelets extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
       
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.CONFERENCE);
