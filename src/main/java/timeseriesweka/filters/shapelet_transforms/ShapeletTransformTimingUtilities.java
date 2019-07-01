@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.ShapeletTransformClassifier;
 import utilities.InstanceTools;
 import utilities.generic_storage.Pair;
 import weka.core.Instances;

@@ -15,7 +15,7 @@
 package multivariate_timeseriesweka.classifiers;
 
 import timeseriesweka.classifiers.*;
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
@@ -33,9 +33,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
-import vector_classifiers.ensembles.voting.MajorityConfidence;
-import vector_classifiers.ensembles.weightings.TrainAcc;
+import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
+import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import utilities.TrainAccuracyEstimate;

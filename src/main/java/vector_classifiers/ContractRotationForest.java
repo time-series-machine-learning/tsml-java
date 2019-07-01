@@ -30,7 +30,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
