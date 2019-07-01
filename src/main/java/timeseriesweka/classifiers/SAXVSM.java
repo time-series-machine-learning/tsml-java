@@ -38,7 +38,7 @@ booktitle    ="Proc. 13th {IEEE ICDM}",
 year="2013"
 }
 
- * @author James
+ * @author James Large
  */
 public class SAXVSM extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
 
