@@ -29,6 +29,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * 
@@ -38,9 +39,10 @@ import weka.core.TechnicalInformation;
  * 
  */
 
-public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
+public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
 
   
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

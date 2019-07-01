@@ -22,6 +22,7 @@ import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.BagOfPatternsFilter;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * Classifier using SAX and Vector Space Model.
@@ -39,7 +40,7 @@ year="2013"
 
  * @author James
  */
-public class SAXVSM extends AbstractClassifierWithTrainingInfo {
+public class SAXVSM extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
 
     Instances transformedData;
     Instances corpus;
