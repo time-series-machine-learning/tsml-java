@@ -16,13 +16,13 @@ package experiments;
 
 import experiments.DataSets;
 import timeseriesweka.classifiers.FlatCote;
-import timeseriesweka.classifiers.LearnShapelets;
-import timeseriesweka.classifiers.FastShapelets;
+import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
+import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.interval_based.TSBF;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.distance_based.DTD_C;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.RISE;
+import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.ElasticEnsemble;

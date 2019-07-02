@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import multivariate_timeseriesweka.classifiers.ConcatenateClassifier;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.ElasticEnsemble;
-import timeseriesweka.classifiers.LearnShapelets;
+import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.ShapeletTransformClassifier;
 
 /**
