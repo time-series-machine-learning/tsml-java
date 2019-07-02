@@ -1,6 +1,7 @@
 package timeseriesweka.measures.taa;
 
 import timeseriesweka.measures.DistanceMeasure;
+
 import weka.core.TechnicalInformation;
 
 public class Taa extends DistanceMeasure {

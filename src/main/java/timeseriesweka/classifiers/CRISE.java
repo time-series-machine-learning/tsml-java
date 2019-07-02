@@ -69,7 +69,7 @@ import java.util.concurrent.TimeUnit;
  * @date 19/02/19
  **/
 
-public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractClassifier, CheckpointClassifier{
+public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractClassifier, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 2;
