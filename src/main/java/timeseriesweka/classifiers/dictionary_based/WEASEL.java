@@ -24,7 +24,7 @@ import com.carrotsearch.hppc.cursors.LongFloatCursor;
 import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import fileIO.OutFile;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;

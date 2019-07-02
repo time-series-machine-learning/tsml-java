@@ -15,7 +15,6 @@
 package timeseriesweka.classifiers.frequency_based;
 
 import fileIO.FullAccessOutFile;
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.FFT;
@@ -32,6 +31,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  <!-- globalinfo-start -->
@@ -71,7 +71,7 @@ import timeseriesweka.classifiers.SaveParameterInfo;
  * @date 19/02/19
  **/
 
-public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractClassifier, Checkpointable{
+public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 2;

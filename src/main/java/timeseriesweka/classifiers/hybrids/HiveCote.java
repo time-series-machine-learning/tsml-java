@@ -28,9 +28,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import vector_classifiers.CAWPE;
@@ -38,6 +37,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import timeseriesweka.classifiers.TrainTimeContractable;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -74,7 +74,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractClassifier,TechnicalInformationHandler{
+public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable,TechnicalInformationHandler{
 
 
     private ArrayList<Classifier> classifiers;
@@ -620,8 +620,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         contractTime=true;
         long used=0;
         for(Classifier c:classifiers){
-            if(c instanceof TrainTimeContractClassifier)
-                ((TrainTimeContractClassifier) c).setTrainTimeLimit(time, amount/classifiers.size());
+            if(c instanceof TrainTimeContractable)
+                ((TrainTimeContractable) c).setTrainTimeLimit(time, amount/classifiers.size());
             used+=amount/classifiers.size();    
         }
         long remaining = amount-used;
@@ -629,8 +629,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
 //for no real reason othe than simplicity and to avoid hidden randomization.       
         if(remaining>0){
             for(Classifier c:classifiers){
-                if(c instanceof TrainTimeContractClassifier){
-                    ((TrainTimeContractClassifier) c).setTrainTimeLimit(time, amount/classifiers.size()+remaining);
+                if(c instanceof TrainTimeContractable){
+                    ((TrainTimeContractable) c).setTrainTimeLimit(time, amount/classifiers.size()+remaining);
                     break;
                 }
             }

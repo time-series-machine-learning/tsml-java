@@ -21,7 +21,7 @@ package timeseriesweka.classifiers;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface MemoryContractClassifier {
+public interface MemoryContractable {
     enum DataUnit {BYTES, MEGABYTE, GIGABYTE}
 
     default void setSixGigabyteLimit(){ setMemoryLimit(DataUnit.GIGABYTE, 6); }

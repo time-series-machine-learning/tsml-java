@@ -30,7 +30,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -53,11 +52,12 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
 import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 
 public class ContractRotationForest extends AbstractClassifier
 
-  implements SaveParameterInfo, TrainTimeContractClassifier, Checkpointable, Serializable{
+  implements SaveParameterInfo, TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
     ArrayList<Classifier> classifiers;

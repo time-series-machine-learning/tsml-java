@@ -15,7 +15,6 @@
 package multivariate_timeseriesweka.classifiers;
 
 import timeseriesweka.classifiers.*;
-import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
@@ -33,7 +32,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
@@ -47,6 +46,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  *
@@ -56,7 +56,7 @@ import weka.classifiers.trees.RandomForest;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, TrainTimeContractClassifier, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
