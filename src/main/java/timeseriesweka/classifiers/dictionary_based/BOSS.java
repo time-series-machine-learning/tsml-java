@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.dictionary_based;
 
 import fileIO.OutFile;
 
@@ -38,6 +38,8 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.Checkpointable;
 
 import static utilities.InstanceTools.resample;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;

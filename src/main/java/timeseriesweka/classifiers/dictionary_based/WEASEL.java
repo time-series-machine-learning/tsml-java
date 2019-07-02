@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.dictionary_based;
 
 
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -35,6 +35,7 @@ import weka.core.TechnicalInformation;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformationHandler;
 
 /**

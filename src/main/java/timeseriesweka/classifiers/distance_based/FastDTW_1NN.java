@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.distance_based;
 import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
@@ -26,6 +26,8 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 import java.lang.instrument.*;
+import timeseriesweka.classifiers.ParameterSplittable;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
 /* 
  * The reason for specialising is this class has the option of searching for 

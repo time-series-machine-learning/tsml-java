@@ -15,6 +15,15 @@
 package experiments;
 
 
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.dictionary_based.SAXVSM;
+import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
+import timeseriesweka.classifiers.dictionary_based.WEASEL;
+import timeseriesweka.classifiers.distance_based.SlowDTW_1NN;
+import timeseriesweka.classifiers.distance_based.NN_CID;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.DTD_C;
+import timeseriesweka.classifiers.distance_based.DD_DTW;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;

@@ -12,12 +12,13 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.distance_based;
 
 import experiments.DataSets;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
 import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;

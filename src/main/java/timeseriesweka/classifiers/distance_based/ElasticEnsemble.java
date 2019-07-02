@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.distance_based;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -37,6 +37,7 @@ import weka.core.Instances;
 import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 

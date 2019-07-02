@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers;
 
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;

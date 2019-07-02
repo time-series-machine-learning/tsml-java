@@ -15,6 +15,8 @@
 package timeseriesweka.classifiers;
 
 
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;

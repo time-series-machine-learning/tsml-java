@@ -12,8 +12,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.dictionary_based;
 
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;

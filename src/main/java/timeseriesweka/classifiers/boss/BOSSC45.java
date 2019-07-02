@@ -37,7 +37,7 @@ import weka.core.TechnicalInformation;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
-import timeseriesweka.classifiers.BOSS;
+import timeseriesweka.classifiers.dictionary_based.BOSS;
 import utilities.BitWord;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
