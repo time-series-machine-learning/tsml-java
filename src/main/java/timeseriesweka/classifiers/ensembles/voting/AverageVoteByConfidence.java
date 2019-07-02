@@ -88,11 +88,7 @@ public class AverageVoteByConfidence extends ModuleVotingScheme {
         double[] dist;
         int pred; 
         for(int m = 0; m < modules.length; m++){
-            long startTime = System.currentTimeMillis();
-            dist = modules[m].getClassifier().distributionForInstance(testInstance);
-            long predTime = System.currentTimeMillis() - startTime;
-            
-            storeModuleTestResult(modules[m], dist, predTime);
+            dist = distributionForNewInstance(modules[m], testInstance);
             
             pred = (int)indexOfMax(dist);
             ++numPredsForClass[pred];

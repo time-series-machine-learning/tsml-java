@@ -16,8 +16,10 @@ package timeseriesweka.classifiers;
 
 import fileIO.OutFile;
 
+import java.security.InvalidParameterException;
 import java.util.*;
 
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +28,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import utilities.*;
 import utilities.samplers.RandomRoundRobinIndexSampler;
@@ -56,7 +59,7 @@ import static weka.core.Utils.sum;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractClassifier, CheckpointClassifier, TechnicalInformationHandler {
     
     private int ensembleSize = 50;
     private int seed = 0;
@@ -113,6 +116,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
     public BOSS() {}
 
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -164,26 +168,27 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return sb.toString();
     }
 
-    //set any value in nanoseconds you like.
-    @Override
-    public void setTimeLimit(long time){
-        contractTime = time;
-        contract = true;
-    }
-
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTimeLimit(TimeLimit time, int amount){
+    public void setTrainTimeLimit(TimeUnit time, long amount){
         switch (time){
-            case DAY:
+            case DAYS:
                 contractTime = (long)(8.64e+13)*amount;
                 break;
-            case HOUR:
+            case HOURS:
                 contractTime = (long)(3.6e+12)*amount;
                 break;
-            case MINUTE:
+            case MINUTES:
                 contractTime = (long)(6e+10)*amount;
                 break;
+            case SECONDS:
+                contractTime = (long)(1e+9)*amount;
+                break;
+            case NANOSECONDS:
+                contractTime = amount;
+                break;
+            default:
+                throw new InvalidParameterException("Invalid time unit");
         }
         contract = true;
     }
@@ -1215,18 +1220,18 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 //
 //        System.out.println("BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
-        c = new BOSS();
-        ((BOSS) c).setEnsembleSize(250);
-        ((BOSS) c).setMaxEnsembleSize(50);
-        ((BOSS) c).setRandomCVAccEnsemble(true);
-        ((BOSS) c).useCAWPE(true);
-        ((BOSS) c).setSeed(fold);
-        ((BOSS) c).setReduceTrainInstances(true);
-        ((BOSS) c).setTrainProportion(0.7);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+//        c = new BOSS();
+//        ((BOSS) c).setEnsembleSize(250);
+//        ((BOSS) c).setMaxEnsembleSize(50);
+//        ((BOSS) c).setRandomCVAccEnsemble(true);
+//        ((BOSS) c).useCAWPE(true);
+//        ((BOSS) c).setSeed(fold);
+//        ((BOSS) c).setReduceTrainInstances(true);
+//        ((BOSS) c).setTrainProportion(0.7);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 
 //        c = new BOSS();
 //
@@ -1287,22 +1292,22 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 //
 //        System.out.println("CAWPE BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 ////
-////        c = new BOSS();
-////        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
-////        c.buildClassifier(train2);
-////        accuracy = ClassifierTools.accuracy(test2, c);
-////
-////        System.out.println(((BOSS) c).numSeries);
-////        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
+//        c = new BOSS();
+//        ((BOSS) c).setTrainTimeLimit(TimeUnit.MINUTES, 2);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println(((BOSS) c).numSeries);
+//        System.out.println(Arrays.toString(((BOSS) c).numClassifiers));
 ////
 ////        System.out.println("Contract BOSS MV accuracy on " + dataset2 + " fold 0 = " + accuracy);
 ////
-////        c = new BOSS();
-////        ((BOSS) c).setTimeLimit(TimeLimit.MINUTE, 2);
-////        c.buildClassifier(train);
-////        accuracy = ClassifierTools.accuracy(test, c);
-////
-////        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
+        c = new BOSS();
+        ((BOSS) c).setTrainTimeLimit(TimeUnit.MINUTES, 2);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Contract BOSS accuracy on " + dataset + " fold 0 = " + accuracy);
 ////
 ////        c = new BOSS();
 ////        c.buildClassifier(train2);

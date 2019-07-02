@@ -67,6 +67,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         cid=new CIDDTWDistance();
     }
     
+     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
 

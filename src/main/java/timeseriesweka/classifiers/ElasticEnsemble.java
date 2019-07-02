@@ -38,6 +38,7 @@ import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * A new Elastic Ensemble for sharing with others
@@ -53,9 +54,10 @@ import weka.core.TechnicalInformation;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate,TechnicalInformationHandler{
 
     
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

@@ -7,7 +7,7 @@ function [ f ] = timingsLinePlot( filename,evalSet )
 %   dataset2,    c1d1time,    c2d1time, ...
 %        ...,         ...,         ...
 
-[timings, headers, ~] = xlsread([filename,'.csv']);
+[timings, headers] = readcsv(strcat(filename,'.csv'), true);
 [ ~, inds ] = sort(median(timings, 2), 'ascend'); %mean
 timings = timings(inds, :);
 
@@ -53,6 +53,9 @@ legend(classifiers, 'Location', 'northwest', 'FontSize', 24);
 orient(f,'landscape')
 set(f,'PaperUnits','normalized') 
 set(f,'PaperPosition', [0.05 0 0.9 1]);
+
+set(f, 'CreateFcn', 'set(gcbo,''Visible'',''on'')');
+
 saveas(f,filename);
 print(f,filename,'-dpdf'); %'-bestfit'
 

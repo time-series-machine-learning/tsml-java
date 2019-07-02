@@ -26,25 +26,17 @@ package vector_classifiers;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import weka.classifiers.meta.*;
-import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
+
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Option;
 import weka.core.OptionHandler;
 import weka.core.Randomizable;
-import weka.core.RevisionUtils;
-import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformation.Field;
-import weka.core.TechnicalInformation.Type;
-import weka.core.TechnicalInformationHandler;
-import weka.core.WeightedInstancesHandler;
 import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Normalize;
@@ -52,12 +44,10 @@ import weka.filters.unsupervised.attribute.PrincipalComponents;
 import weka.filters.unsupervised.attribute.RemoveUseless;
 import weka.filters.unsupervised.instance.RemovePercentage;
 
-import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.Random;
-import java.util.Vector;
+import java.util.concurrent.TimeUnit;
+
 import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
@@ -67,7 +57,7 @@ import weka.core.DenseInstance;
 
 public class ContractRotationForest extends AbstractClassifier
 
-  implements SaveParameterInfo, ContractClassifier, CheckpointClassifier, Serializable{
+  implements SaveParameterInfo, TrainTimeContractClassifier, CheckpointClassifier, Serializable{
   
     Classifier baseClassifier;
     ArrayList<Classifier> classifiers;
@@ -93,6 +83,8 @@ public class ContractRotationForest extends AbstractClassifier
     protected RemoveUseless removeUseless = null;
     /** Filter that normalized the attributes */
     protected Normalize normalize = null;
+
+    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
 //Added features
     double contractHours=1;    //Defaults to an approximate build time of 1 hour
@@ -701,9 +693,9 @@ public class ContractRotationForest extends AbstractClassifier
 
  
  private int setBatchSize(double singleTreeHours){
-        if(singleTreeHours>ContractClassifier.CHECKPOINTINTERVAL)
+        if(singleTreeHours> CHECKPOINTINTERVAL)
             return 1;
-        int hrs=(int)(ContractClassifier.CHECKPOINTINTERVAL/singleTreeHours);
+        int hrs=(int)(CHECKPOINTINTERVAL/singleTreeHours);
         return hrs;
         
     }
@@ -972,21 +964,20 @@ public class ContractRotationForest extends AbstractClassifier
         result+=",numTrees,"+numTrees;
         return result;
     }
-    @Override
-    public void setTimeLimit(long time) {
-        contractHours=((double)time)/(1000.0*60.0*60);
-    }
 
     @Override
-    public void setTimeLimit(TimeLimit time, int amount) {
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
         switch(time){
-            case MINUTE:
+            case NANOSECONDS:
+                contractHours=((double)amount)/60.0/60.0/1e+9;
+                break;
+            case MINUTES:
                 contractHours=((double)amount)/60.0;
                 break;
-            case DAY:
+            case DAYS:
                 contractHours=((double)amount*24.0);
                 break;
-            case HOUR: default:
+            case HOURS: default:
                 contractHours=((double)amount);
                 break;
         }

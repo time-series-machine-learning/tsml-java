@@ -136,11 +136,7 @@ public class NaiveBayesCombiner extends ModuleVotingScheme {
         int pred;
         double[] mdist;
         for (int m = 0; m < modules.length; m++) {
-            long startTime = System.currentTimeMillis();
-            mdist = modules[m].getClassifier().distributionForInstance(testInstance);
-            long predTime = System.currentTimeMillis() - startTime;
-            
-            storeModuleTestResult(modules[m], mdist, predTime);
+            mdist = distributionForNewInstance(modules[m], testInstance);
             
             pred = (int)indexOfMax(mdist);
             for (int ac = 0; ac < numClasses; ac++) {

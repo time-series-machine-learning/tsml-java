@@ -35,6 +35,7 @@ import weka.core.TechnicalInformation;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * WEASEL Classifier
@@ -42,8 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate,TechnicalInformationHandler {
 
+  @Override
   public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

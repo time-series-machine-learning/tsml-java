@@ -103,8 +103,8 @@ public class MagnifySearch extends ImpRandomSearch{
 
             //we divide the numShapeletsPerSeries by maxDepth.
             for(int i=0; i<numShapeletsPerSeries; i++){
-                Pair<Integer, Integer> sh = createRandomShapelet(seriesLength-1, minLength, maxLength, minPos, maxPos);
-                Shapelet shape = checkCandidate.process(timeSeries, sh.var1, sh.var2);
+                CandidateSearchData sh = createRandomShapelet(seriesLength-1, minLength, maxLength, minPos, maxPos);
+                Shapelet shape = checkCandidate.process(timeSeries, sh.getStartPosition(), sh.getLength());
                 
                 
                 if(bsf == null) {
@@ -144,7 +144,7 @@ public class MagnifySearch extends ImpRandomSearch{
         return candidateList;
     }
     
-    private Pair<Integer, Integer> createRandomShapelet(int totalLength, int minLen, int maxLen, int minPos, int maxPos){
+    private CandidateSearchData createRandomShapelet(int totalLength, int minLen, int maxLen, int minPos, int maxPos){
         //clamp the lengths.
         //never let the max length go lower than 3.
         int maxL = Math.min(totalLength, Math.max(maxLen, minShapeletLength));
@@ -160,7 +160,7 @@ public class MagnifySearch extends ImpRandomSearch{
         int minP = Math.max(0, minPos);
         int position = randomRange(random, minP, maxP);
         
-        return new Pair(length, position);   
+        return new CandidateSearchData(position,length);   
     }
     
     

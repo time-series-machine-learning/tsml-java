@@ -51,12 +51,12 @@ public class SkewedRandomSearch extends ImpRandomSearch{
             int dimension = random.nextInt(numDimensions);
             
             //find the shapelets for that series.
-            ArrayList<Triple<Integer,Integer,Integer>> shapeletList = shapeletsToFind.get(series);
+            ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(series);
             if(shapeletList == null)
                 shapeletList = new ArrayList<>();
             
             //add the random shapelet to the length
-            shapeletList.add(new Triple(length, position, dimension));
+            shapeletList.add(new CandidateSearchData(position,length,dimension));
             //put back the updated version.
             shapeletsToFind.put(series, shapeletList);
         }

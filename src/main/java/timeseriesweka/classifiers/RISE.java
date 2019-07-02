@@ -31,6 +31,7 @@ import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;
 import weka.core.Capabilities;
 import weka.core.Randomizable;
+import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
@@ -89,7 +90,7 @@ import weka.filters.SimpleFilter;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable{
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable,TechnicalInformationHandler{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */    
@@ -211,6 +212,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         this.seed=seed;
         rand.setSeed(seed);
     }
+    @Override
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -276,6 +278,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         int m=data.numAttributes()-1;
+        if(minInterval>m)
+            minInterval=m/2;
         startPoints =new int[numBaseClassifiers];
         endPoints =new int[numBaseClassifiers];
 //      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);

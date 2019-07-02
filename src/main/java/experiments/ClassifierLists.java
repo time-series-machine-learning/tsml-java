@@ -264,10 +264,14 @@ public class ClassifierLists {
             case "FastShapelets": case "FS":
                 c=new FastShapelets();
                 break;
+            case "FullShapeletTransformClassifier":
+                c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setSeed(fold);
+                break;
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
-                ((ShapeletTransformClassifier)c).setOneDayLimit();
+//                ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
             case "TSBF":

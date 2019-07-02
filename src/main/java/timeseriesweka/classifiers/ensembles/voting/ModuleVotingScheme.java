@@ -19,6 +19,7 @@ import java.util.Random;
 import utilities.DebugPrinting;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import evaluation.storage.ClassifierResults;
+import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
 
@@ -104,9 +105,22 @@ public abstract class ModuleVotingScheme implements DebugPrinting {
         return dist;
     }
     
+    protected double[] distributionForNewInstance(EnsembleModule module, Instance inst) throws Exception {
+        long startTime = System.nanoTime();
+        double[] dist = module.getClassifier().distributionForInstance(inst);
+        long predTime = System.nanoTime() - startTime;
+
+        storeModuleTestResult(module, dist, predTime);
+        
+        return dist;
+    }
+    
     public void storeModuleTestResult(EnsembleModule module, double[] dist, long predTime) throws Exception {
-        if (module.testResults == null)
-            module.testResults = new ClassifierResults();
+        if (module.testResults == null) {
+            module.testResults = new ClassifierResults();   
+            module.testResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            module.testResults.setBuildTime(module.trainResults.getBuildTime());
+        }
         
         module.testResults.addPrediction(dist, indexOfMax(dist), predTime, "");
     }

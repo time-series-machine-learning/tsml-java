@@ -29,6 +29,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
 /**
  * 
@@ -38,9 +39,10 @@ import weka.core.TechnicalInformation;
  * 
  */
 
-public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
+public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
 
   
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -69,15 +71,15 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     
     int L_min;
     // shapelets
-    double Shapelets[][][];
+    double[][][] shapelets;
     // classification weights
     double W[][][];
     double biasW[];
     
     // accumulate the gradients
-    double GradHistShapelets[][][];
-    double GradHistW[][][];
-    double GradHistBiasW[];
+    double[][][] gradHistShapelets;
+    double[][][] gradHistW;
+    double[] gradHistBiasW;
 
     // the regularization parameters
     public double lambdaW=0.01;
@@ -208,7 +210,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
         createOneVsAllTargets();
 
         // initialize the shapelets (complete initialization during the clustering)
-        Shapelets = new double[R][][];
+        shapelets = new double[R][][];
         // initialize the number of shapelets (by their starting point) and the length of the shapelets 
         numberOfSegments = new int[R];
         L = new int[R];
@@ -262,12 +264,12 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
         
         // initialize gradient accumulators
         
-        GradHistW = new double[C][R][K];
-        GradHistBiasW = new double[C];
+        gradHistW = new double[C][R][K];
+        gradHistBiasW = new double[C];
         
-        GradHistShapelets = new double[R][][];                 
+        gradHistShapelets = new double[R][][];                 
         for(int r=0; r<R; r++) 
-             GradHistShapelets[r] = new double[K][ L[r] ]; 
+             gradHistShapelets[r] = new double[K][ L[r] ]; 
         
         
         initializeShapeletsKMeans(); 
@@ -327,7 +329,46 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
             negIdxs.add(negIdx_c);  
         }
     }
+    // initialize the shapelets from a file provided
+    public void initializeShapeletsFromFile() throws Exception {
+        //for each scale r, i.e. for each set of K shapelets at
+        // length L_min*(r+1)
+        
+        for (int r=0; r<R; r++) {
+            double[][] segments_r = new double[train.length * numberOfSegments[r]][L[r]];
+            
+            //construct the segments from the train set.
+            for (int i = 0; i < train.length; i++)
+                for (int j = 0; j < numberOfSegments[r]; j++)
+                    for (int l = 0; l < L[r]; l++)
+                        segments_r[i * numberOfSegments[r] + j][l] = train[i][j + l]; 
+                    
 
+            // normalize segments
+            for (int i = 0; i < train.length; i++)
+                for (int j = 0; j < numberOfSegments[r]; j++)
+                    segments_r[i * numberOfSegments[r] + j] = StatisticalUtilities.normalize(segments_r[i * numberOfSegments[r] + j]);
+
+            Instances ins = InstanceTools.toWekaInstances(segments_r); 
+            
+            SimpleKMeans skm = new SimpleKMeans();
+            skm.setNumClusters(K);
+            skm.setMaxIterations(100); 
+            //skm.setInitializeUsingKMeansPlusPlusMethod(true); 
+            skm.setSeed((int) (rand.nextDouble() * 1000) );
+            skm.buildClusterer( ins );
+            Instances centroidsWeka = skm.getClusterCentroids();
+            shapelets[r] =  InstanceTools.fromWekaInstancesArray(centroidsWeka, false);
+              
+            // initialize the gradient history of shapelets
+            if (shapelets[r] == null)
+                print("P not set"); 
+        }
+    }
+
+
+    
+    
     // initialize the shapelets from the centroids of the segments
     public void initializeShapeletsKMeans() throws Exception {
         //for each scale r, i.e. for each set of K shapelets at
@@ -357,10 +398,10 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
             skm.setSeed((int) (rand.nextDouble() * 1000) );
             skm.buildClusterer( ins );
             Instances centroidsWeka = skm.getClusterCentroids();
-            Shapelets[r] =  InstanceTools.fromWekaInstancesArray(centroidsWeka, false);
+            shapelets[r] =  InstanceTools.fromWekaInstancesArray(centroidsWeka, false);
               
             // initialize the gradient history of shapelets
-            if (Shapelets[r] == null)
+            if (shapelets[r] == null)
                 print("P not set"); 
         }
     }
@@ -386,7 +427,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
         // precompute terms     
         for (int r = 0; r < R; r++) {
             //in most cases Shapelets[r].length == numLatentPatterns, this is not always true.
-            for (int k = 0; k < Shapelets[r].length; k++) { 
+            for (int k = 0; k < shapelets[r].length; k++) { 
                 for(int j = 0; j < numberOfSegments[r]; j++)
                 {
                     // precompute D
@@ -395,7 +436,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
 
                     for(int l = 0; l < L[r]; l++)
                     {
-                        err = series[j + l] - Shapelets[r][k][l];
+                        err = series[j + l] - shapelets[r][k][l];
                         D[r][k][j] += err*err; 
                     }
 
@@ -459,12 +500,12 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
 
         for (int r = 0; r < R; r++) {
 
-            for (int k = 0; k < Shapelets[r].length; k++) {
+            for (int k = 0; k < shapelets[r].length; k++) {
 
                 // update the weights
                 gradW_crk=dLdY*M_train[i][r][k] + regWConst*W[c][r][k];
-                GradHistW[c][r][k] += gradW_crk*gradW_crk;
-                W[c][r][k] -= (eta / ( Math.sqrt(GradHistW[c][r][k]) + eps))*gradW_crk; 
+                gradHistW[c][r][k] += gradW_crk*gradW_crk;
+                W[c][r][k] -= (eta / ( Math.sqrt(gradHistW[c][r][k]) + eps))*gradW_crk; 
 
                 // update the shapelets
                 
@@ -478,18 +519,18 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
 
                     tmp3 = 0;
                     for (int j = 0; j < numberOfSegments[r]; j++) 
-                        tmp3 += tmp2[r][j] * (Shapelets[r][k][l] - train[i][j + l]);
+                        tmp3 += tmp2[r][j] * (shapelets[r][k][l] - train[i][j + l]);
 
                     gradS_rkl =  dLdY * W[c][r][k] * tmp1 * tmp3;
-                    GradHistShapelets[r][k][l] += gradS_rkl*gradS_rkl;
-                    Shapelets[r][k][l] -= (eta / ( Math.sqrt(GradHistShapelets[r][k][l]) + eps))* gradS_rkl;
+                    gradHistShapelets[r][k][l] += gradS_rkl*gradS_rkl;
+                    shapelets[r][k][l] -= (eta / ( Math.sqrt(gradHistShapelets[r][k][l]) + eps))* gradS_rkl;
                 }
             }
         }
 
         gradBiasW_c = dLdY;
-        GradHistBiasW[c] += gradBiasW_c*gradBiasW_c;
-        biasW[c] -= (eta / ( Math.sqrt(GradHistBiasW[c]) + eps))*gradBiasW_c; 
+        gradHistBiasW[c] += gradBiasW_c*gradBiasW_c;
+        biasW[c] -= (eta / ( Math.sqrt(gradHistBiasW[c]) + eps))*gradBiasW_c; 
     }
             
     public void learnF() {       

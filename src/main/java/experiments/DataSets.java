@@ -58,7 +58,7 @@ public class DataSets {
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
         "ArticularyWordRecognition", //Index 0
-        "AtrialFibrillation",
+        "AtrialFibrillation",//1
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -67,7 +67,7 @@ public class DataSets {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-        "FaceDetection",
+        "FaceDetection",//10
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",
@@ -81,7 +81,7 @@ public class DataSets {
         "NATOPS",//20
         "PenDigits",
         "PEMS-SF",
-        "Phoneme",
+        "PhonemeSpectra",
         "RacketSports",
         "SelfRegulationSCP1",//25
         "SelfRegulationSCP2",
@@ -173,8 +173,8 @@ public class DataSets {
                         "MixedShapesRegularTrain",
                         "MixedShapesSmallTrain",
 			"MoteStrain", // 20,1252,84,2
-			"NonInvasiveFatalECGThorax1", // 1800,1965,750,42
-			"NonInvasiveFatalECGThorax2", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 			"OliveOil", // 30,30,570,4
 			"OSULeaf", // 200,242,427,6
 			"PhalangesOutlinesCorrect", // 1800,858,80,2
@@ -1063,7 +1063,7 @@ tiianic
 
 //Refactor when repo back 
     public static String[] ReducedUCI={"bank","blood","breast-cancer-wisc-diag",
-        "breast-tissue","cardiotocography-10clases",
+        "breast-tissue","cardiotocography-10clases", 
         "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
         "ecoli","glass","hill-valley",
         "image-segmentation","ionosphere","iris","libras","magic",
@@ -1076,7 +1076,16 @@ tiianic
             "wall-following","waveform-noise","wine-quality-white","yeast"};
  
     
-    
+        public static String[] twoClassProblems2018={"BeetleFly","BirdChicken","Chinatown",
+            "Coffee","Computers","DistalPhalanxOutlineCorrect","DodgerLoopGame",
+            "DodgerLoopWeekend","Earthquakes","ECG200","ECGFiveDays","FordA","FordB",
+            "FreezerRegularTrain","FreezerSmallTrain","GunPoint","GunPointAgeSpan",
+            "GunPointMaleVersusFemale","GunPointOldVersusYoung","Ham","HandOutlines",
+            "Herring","HouseTwenty","ItalyPowerDemand","Lightning2","MiddlePhalanxOutlineCorrect",
+                "MoteStrain","PhalangesOutlinesCorrect","PowerCons","ProximalPhalanxOutlineCorrect",
+                "SemgHandGenderCh2","ShapeletSim","SonyAIBORobotSurface1","SonyAIBORobotSurface2",
+                "Strawberry","ToeSegmentation1","ToeSegmentation2","TwoLeadECG","Wafer","Wine",
+                "WormsTwoClass","Yoga"};     
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 

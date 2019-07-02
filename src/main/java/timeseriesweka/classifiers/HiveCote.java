@@ -21,16 +21,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
+
+import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
-import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import vector_classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -59,7 +61,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * change hours amount with, e.g.
 * hc.setDayLimit(int), hc.setHourLimit(int), hc.setMinuteLimit(int)
 * or by default, to set hours,
-* hc.setTimeLimit(long) //breaking aarons interface, soz
+* hc.setTrainTimeLimit(long) //breaking aarons interface, soz
 * to remove any limits, call
 * hc.setContract(false)
 *
@@ -67,7 +69,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingInfo implements ContractClassifier{
+public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractClassifier,TechnicalInformationHandler{
 
 
     private ArrayList<Classifier> classifiers;
@@ -95,9 +97,10 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Cont
         this.classifiers = classifiers;
         this.names = classifierNames;
         if(contractTime){
-            setTimeLimit(TimeLimit.HOUR,contractHours);
+            setTrainTimeLimit(TimeUnit.HOURS,contractHours);
         }
     }
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -131,7 +134,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Cont
         CAWPE h = new CAWPE();
         DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
         if(contractTime){
-            setTimeLimit(TimeLimit.HOUR,contractHours);
+            setTrainTimeLimit(TimeUnit.HOURS,contractHours);
         }
         h.setTransform(st);
         
@@ -606,50 +609,23 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Cont
 
     }
 
-/** Assumes default time set to hours. It is set up to set it in millisecs,
- * but who the hell thinks in millisecs, except Aaron? :)
- * 
- * @param time in HOURS
- */    
     @Override
-    public void setTimeLimit(long time) {
-//Split the time up equally if contracted, if not we have no control  
-        contractTime=true;
-        contractHours=(int)time;
-        long used=0;
-        for(Classifier c:classifiers){
-            if(c instanceof ContractClassifier)
-                ((ContractClassifier) c).setTimeLimit(TimeLimit.HOUR,(int)(time/classifiers.size()));
-            used+=time/classifiers.size();    
-        }
-        long remaining = time-used;
-//Give any extra to first contracted, for no real reason othe than simplicity. 
-        if(remaining>0){
-            for(Classifier c:classifiers){
-                if(c instanceof ContractClassifier){
-                    ((ContractClassifier) c).setTimeLimit(TimeLimit.HOUR,(int)(time/classifiers.size()+remaining));
-                    break;
-                }
-            }
-        }
-    }
-    @Override
-    public void setTimeLimit(TimeLimit time, int amount) {
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
 //Split the time up equally if contracted, if not we have no control    
         contractTime=true;
-        int used=0;
+        long used=0;
         for(Classifier c:classifiers){
-            if(c instanceof ContractClassifier)
-                ((ContractClassifier) c).setTimeLimit(time, amount/classifiers.size());
+            if(c instanceof TrainTimeContractClassifier)
+                ((TrainTimeContractClassifier) c).setTrainTimeLimit(time, amount/classifiers.size());
             used+=amount/classifiers.size();    
         }
-        int remaining = amount-used;
+        long remaining = amount-used;
 //Give any extra to first contracted, 
 //for no real reason othe than simplicity and to avoid hidden randomization.       
         if(remaining>0){
             for(Classifier c:classifiers){
-                if(c instanceof ContractClassifier){
-                    ((ContractClassifier) c).setTimeLimit(time, amount/classifiers.size()+remaining);
+                if(c instanceof TrainTimeContractClassifier){
+                    ((TrainTimeContractClassifier) c).setTrainTimeLimit(time, amount/classifiers.size()+remaining);
                     break;
                 }
             }
