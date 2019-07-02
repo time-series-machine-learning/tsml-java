@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;

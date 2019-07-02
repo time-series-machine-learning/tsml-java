@@ -19,7 +19,7 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.*;
 
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;

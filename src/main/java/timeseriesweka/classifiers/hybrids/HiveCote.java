@@ -28,7 +28,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
 import utilities.ClassifierTools;

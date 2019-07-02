@@ -19,7 +19,7 @@ import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;

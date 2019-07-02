@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers.frequency_based;
 
 import fileIO.FullAccessOutFile;
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
+import timeseriesweka.classifiers.TrainTimeContractClassifier;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.FFT;
