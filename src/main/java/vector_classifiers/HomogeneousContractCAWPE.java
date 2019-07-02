@@ -1,8 +1,8 @@
 package vector_classifiers;
 
 import evaluation.storage.ClassifierResults;
-import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
+import vector_classifiers.ensembles.EnsembleModule;
+import vector_classifiers.ensembles.weightings.TrainAcc;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
