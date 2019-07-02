@@ -15,6 +15,15 @@
 package experiments;
 
 
+import timeseriesweka.classifiers.hybrids.FlatCote;
+import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.shapelet_based.FastShapelets;
+import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
+import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.interval_based.TSBF;
+import timeseriesweka.classifiers.interval_based.LPS;
+import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.dictionary_based.SAXVSM;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;

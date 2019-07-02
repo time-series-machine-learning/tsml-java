@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.frequency_based;
 /*
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -15,6 +15,9 @@ package timeseriesweka.classifiers;
  */
 import java.util.ArrayList;
 import java.util.Random;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.SubSampleTrain;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;

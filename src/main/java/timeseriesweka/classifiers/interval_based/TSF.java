@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.interval_based;
 
 import fileIO.OutFile;
 import java.util.ArrayList;
@@ -31,6 +31,8 @@ import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.Bagging;
 import weka.core.Capabilities;

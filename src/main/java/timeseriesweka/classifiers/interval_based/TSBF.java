@@ -12,13 +12,15 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.interval_based;
 
 import experiments.DataSets;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.Random;
-import timeseriesweka.classifiers.TSF.FeatureSet;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.ParameterSplittable;
+import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;

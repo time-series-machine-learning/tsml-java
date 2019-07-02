@@ -12,9 +12,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.hybrids;
 
 
+import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.io.File;
@@ -24,6 +26,7 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
 import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;

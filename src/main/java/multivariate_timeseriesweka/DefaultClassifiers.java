@@ -25,7 +25,7 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_D;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
 import multivariate_timeseriesweka.ensembles.IndependentDimensionEnsemble;
-import timeseriesweka.classifiers.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.MultilayerPerceptron;

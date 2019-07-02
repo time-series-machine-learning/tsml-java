@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.shapelet_based;
 
 import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
@@ -44,6 +44,8 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;

@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.frequency_based;
 
 import fileIO.FullAccessOutFile;
 import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.SaveParameterInfo;
 
 /**
  <!-- globalinfo-start -->
