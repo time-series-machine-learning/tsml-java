@@ -19,9 +19,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import multivariate_timeseriesweka.classifiers.ConcatenateClassifier;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.BOSS;
 import timeseriesweka.classifiers.ElasticEnsemble;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
+import timeseriesweka.classifiers.LearnShapelets;
 import timeseriesweka.classifiers.ShapeletTransformClassifier;
 
 /**

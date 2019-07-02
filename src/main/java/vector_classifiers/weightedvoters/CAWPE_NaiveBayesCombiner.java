@@ -14,8 +14,8 @@
  */
 package vector_classifiers.weightedvoters;
 
-import vector_classifiers.ensembles.voting.NaiveBayesCombiner;
-import vector_classifiers.ensembles.weightings.EqualWeighting;
+import timeseriesweka.classifiers.ensembles.voting.NaiveBayesCombiner;
+import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import vector_classifiers.CAWPE;
 
 /**

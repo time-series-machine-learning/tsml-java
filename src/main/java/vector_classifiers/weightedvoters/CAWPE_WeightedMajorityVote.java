@@ -14,8 +14,8 @@
  */
 package vector_classifiers.weightedvoters;
 
-import vector_classifiers.ensembles.voting.MajorityVote;
-import vector_classifiers.ensembles.weightings.TrainAcc;
+import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
+import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import vector_classifiers.CAWPE;
 
 /**

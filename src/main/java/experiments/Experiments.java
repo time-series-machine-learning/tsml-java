@@ -47,7 +47,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
-import vector_classifiers.ensembles.SaveableEnsemble;
+import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;

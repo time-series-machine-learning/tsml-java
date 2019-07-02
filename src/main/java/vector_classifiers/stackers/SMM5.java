@@ -14,8 +14,8 @@
  */
 package vector_classifiers.stackers;
 
-import vector_classifiers.ensembles.voting.stacking.StackingOnDists;
-import vector_classifiers.ensembles.weightings.EqualWeighting;
+import timeseriesweka.classifiers.ensembles.voting.stacking.StackingOnDists;
+import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
 import vector_classifiers.CAWPE;
 import vector_classifiers.MultiResponseModelTrees;
 
