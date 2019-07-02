@@ -14,8 +14,8 @@
  */
 package vector_classifiers.weightedvoters;
 
-import timeseriesweka.classifiers.ensembles.voting.BestIndividualTrain;
-import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
+import vector_classifiers.ensembles.voting.BestIndividualTrain;
+import vector_classifiers.ensembles.weightings.EqualWeighting;
 import vector_classifiers.CAWPE;
 
 /**

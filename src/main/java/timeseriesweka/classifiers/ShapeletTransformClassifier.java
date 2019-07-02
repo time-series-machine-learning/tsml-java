@@ -36,8 +36,8 @@ import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearc
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
-import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
-import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
+import vector_classifiers.ensembles.voting.MajorityConfidence;
+import vector_classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -45,8 +45,8 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
-import timeseriesweka.classifiers.ensembles.weightings.EqualWeighting;
+import vector_classifiers.ensembles.voting.MajorityVote;
+import vector_classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;

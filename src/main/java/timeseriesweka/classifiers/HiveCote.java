@@ -15,6 +15,9 @@
 package timeseriesweka.classifiers;
 
 
+import timeseriesweka.classifiers.frequency_based.RISE;
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.interval_based.TSF;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
