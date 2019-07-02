@@ -14,10 +14,10 @@
  */
 package timeseriesweka.examples;
 
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.distance_based.NN_CID;
@@ -47,7 +47,7 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.meta.RotationForest;
 import vector_classifiers.CAWPE;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import vector_classifiers.ensembles.SaveableEnsemble;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Instances;

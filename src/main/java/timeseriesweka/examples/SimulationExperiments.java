@@ -41,7 +41,7 @@ import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
 import vector_classifiers.CAWPE;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import vector_classifiers.ensembles.SaveableEnsemble;
 import vector_classifiers.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;

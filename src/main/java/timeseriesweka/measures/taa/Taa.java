@@ -1,10 +1,13 @@
 package timeseriesweka.measures.taa;
 
+import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.measures.DistanceMeasure;
+import weka.core.NormalizableDistance;
 
 import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 
-public class Taa extends DistanceMeasure {
+public class Taa extends NormalizableDistance implements SaveParameterInfo, TechnicalInformationHandler {
 
     private static final TAA_banded TAA = new TAA_banded();
 
