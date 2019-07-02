@@ -30,7 +30,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -47,17 +46,18 @@ import weka.filters.unsupervised.instance.RemovePercentage;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import timeseriesweka.classifiers.CheckpointClassifier;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
+import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 
 public class ContractRotationForest extends AbstractClassifier
 
-  implements SaveParameterInfo, TrainTimeContractClassifier, CheckpointClassifier, Serializable{
+  implements SaveParameterInfo, TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
     ArrayList<Classifier> classifiers;

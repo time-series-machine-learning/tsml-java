@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
@@ -36,13 +34,15 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
+import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner 
-        implements SaveEachParameter,CheckpointClassifier, TrainTimeContractClassifier {
+        implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
     private ParameterSearcher searcher = new GridSearcher();

@@ -28,7 +28,7 @@ import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.dictionary_based.SAXVSM;
-import timeseriesweka.classifiers.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import experiments.DataSets;

@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.contract_interfaces;
+package timeseriesweka.classifiers;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface TestTimeContractClassifier {
+public interface TestTimeContractable {
     default void setOneSecondLimit(){ setTestTimeLimit(TimeUnit.SECONDS, 1); }
 
     default void setOneMillisecondLimit(){ setTestTimeLimit(TimeUnit.MILLISECONDS, 1); }

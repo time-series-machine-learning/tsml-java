@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.contract_interfaces;
+package timeseriesweka.classifiers;
 
 /**
  * Interface that allows the user to impose a memory contract of a classifier that
@@ -21,7 +21,7 @@ package timeseriesweka.classifiers.contract_interfaces;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface MemoryContractClassifier {
+public interface MemoryContractable {
     enum DataUnit {BYTES, MEGABYTE, GIGABYTE}
 
     default void setSixGigabyteLimit(){ setMemoryLimit(DataUnit.GIGABYTE, 6); }

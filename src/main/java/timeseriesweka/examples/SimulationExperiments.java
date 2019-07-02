@@ -14,7 +14,7 @@
  */
 package timeseriesweka.examples;
 
-import timeseriesweka.classifiers.FlatCote;
+import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.interval_based.TSBF;
@@ -22,12 +22,12 @@ import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.distance_based.DTD_C;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.frequency_based.RISE;
-import timeseriesweka.classifiers.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.interval_based.LPS;
-import timeseriesweka.classifiers.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
-import timeseriesweka.classifiers.HiveCote;
+import timeseriesweka.classifiers.hybrids.HiveCote;
 import experiments.DataSets;
 import fileIO.OutFile;
 import statistics.simulators.Model;

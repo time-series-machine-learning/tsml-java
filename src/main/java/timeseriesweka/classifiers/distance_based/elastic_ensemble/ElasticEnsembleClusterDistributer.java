@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.distance_based.elastic_ensemble;
 
-import timeseriesweka.classifiers.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Scanner;

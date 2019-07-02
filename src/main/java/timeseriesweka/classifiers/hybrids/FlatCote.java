@@ -12,10 +12,12 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.hybrids;
 
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;

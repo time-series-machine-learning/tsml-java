@@ -35,7 +35,7 @@ number
 
  * @author Tony Bagnall 2018
  */
-public interface CheckpointClassifier extends Serializable{
+public interface Checkpointable extends Serializable{
 
     //Set the path where checkpointed versions will be stored
     public void setSavePath(String path);

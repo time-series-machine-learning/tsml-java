@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.contract_interfaces;
+package timeseriesweka.classifiers;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
     known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial)
  * @author raj09hxu
  */
-public interface TrainTimeContractClassifier {
+public interface TrainTimeContractable {
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }

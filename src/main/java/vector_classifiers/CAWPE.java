@@ -26,7 +26,7 @@ import vector_classifiers.ensembles.voting.ModuleVotingScheme;
 import java.io.File;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.DebugPrinting;

@@ -15,6 +15,10 @@
 package experiments;
 
 
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.hybrids.FlatCote;
+import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.frequency_based.RISE;

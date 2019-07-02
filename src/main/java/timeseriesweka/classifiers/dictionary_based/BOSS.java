@@ -19,8 +19,7 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.*;
 
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -39,13 +38,14 @@ import weka.core.*;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.CheckpointClassifier;
 
 import static utilities.InstanceTools.resample;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
+import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
@@ -61,7 +61,7 @@ import static weka.core.Utils.sum;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractClassifier, CheckpointClassifier, TechnicalInformationHandler {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractable, Checkpointable, TechnicalInformationHandler {
     
     private int ensembleSize = 50;
     private int seed = 0;
