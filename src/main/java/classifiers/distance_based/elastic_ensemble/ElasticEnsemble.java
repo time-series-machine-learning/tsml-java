@@ -32,10 +32,10 @@ import java.util.function.Function;
 
 public class ElasticEnsemble extends TemplateClassifier {
 
-    private final static String NUM_PARAMETER_SETS_KEY = "numParametersLimit";
-    private final static String NEIGHBOURHOOD_SIZE_KEY = "trainNeighbourhoodSizeLimit";
-    private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "numParametersLimitPercentage";
-    private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "neighbourhoodSizeLimitPercentage";
+    private final static String NUM_PARAMETER_SETS_KEY = "p";
+    private final static String NEIGHBOURHOOD_SIZE_KEY = "n";
+    private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "pp";
+    private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "np";
     private final List<Function<Instances, ParameterSpace>> parameterSpaceGetters = new ArrayList<>();
     private final List<ParameterSpace> parameterSpaces = new ArrayList<>();
     private final List<Candidate> candidates = new ArrayList<>();
@@ -208,7 +208,11 @@ public class ElasticEnsemble extends TemplateClassifier {
                 NUM_PARAMETER_SETS_KEY,
                 String.valueOf(getNumParametersLimit()),
                 NEIGHBOURHOOD_SIZE_KEY,
-                String.valueOf(getTrainNeighbourhoodSizeLimit())
+                String.valueOf(getTrainNeighbourhoodSizeLimit()),
+                NUM_PARAMETER_SETS_PERCENTAGE_KEY,
+                String.valueOf(getNumParametersLimitPercentage()),
+                NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
+                String.valueOf(getNeighbourhoodSizeLimitPercentage())
         });
     }
 
@@ -342,8 +346,10 @@ public class ElasticEnsemble extends TemplateClassifier {
             default:
                 throw new UnsupportedOperationException();
         }
-        while (trainNeighbours.size() < trainNeighbourhoodSizeLimit && neighboursIterator.hasNext()) {
+        neighboursIterator.addAll(trainSet);
+        while ((trainNeighbours.size() < trainNeighbourhoodSizeLimit || trainNeighbourhoodSizeLimit < 0) && neighboursIterator.hasNext()) {
             trainNeighbours.add(neighboursIterator.next());
+            neighboursIterator.remove();
         }
     }
 

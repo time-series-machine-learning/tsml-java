@@ -71,6 +71,15 @@ public abstract class TemplateClassifier
         return trainRandom;
     }
 
+    public void copyFrom(Object object) throws
+                                        Exception {
+        copyFromSerObject(object);
+    }
+
+    public boolean withinTrainContract() {
+        return remainingTrainContractNanos() > 0;
+    }
+
     @Override
     public abstract void buildClassifier(final Instances trainInstances) throws
                                                       Exception;
