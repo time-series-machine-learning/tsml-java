@@ -17,13 +17,16 @@
 
 package CawpeExtensionPaper;
 
+import static CawpeExtensionPaper.CAWPEClassifierList.allBaseClassifiers;
 import static CawpeExtensionPaper.CAWPEClassifierList.datasetList;
 import static CawpeExtensionPaper.CAWPEClassifierList.replaceLabelsForImages;
 import evaluation.MultipleClassifierEvaluation;
 import static CawpeExtensionPaper.CAWPEClassifierList.cawpeConfigs;
+import static CawpeExtensionPaper.CAWPEClassifierList.allTopLevelClassifiers;
 
 /**
- * Analysis setups to create/collate the results reported in the alcohol paper
+ * Analysis setups to create/collate the results reported in the CAWPE extension paper
+ * studying the effects of maintaining the CV-fold models
  *
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -35,18 +38,32 @@ public class CAWPEAnalysis {
     static int masterNumFolds = 30;
     
     public static void main(String[] args) throws Exception {
-        ana_firsPass();
+        ana_cawpeConfigsANDHomogeneous();
+        ana_memberTrainTestDiffs();
     }
     
-    public static void ana_firsPass() throws Exception { 
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "firstPass_diagrams", masterNumFolds);
+    public static void ana_cawpeConfigsANDHomogeneous() throws Exception { 
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "ana_cawpeConfigsANDHomogeneous", masterNumFolds);
         mce.setTestResultsOnly(true);
         mce.setBuildMatlabDiagrams(true);
         mce.setDatasets(datasetList);
         mce.setUseDefaultEvaluationStatistics();
-        mce.readInClassifiers(cawpeConfigs, replaceLabelsForImages(cawpeConfigs), resultsPath);
+        mce.readInClassifiers(allTopLevelClassifiers, replaceLabelsForImages(allTopLevelClassifiers), resultsPath);
         
         mce.runComparison();
     }
     
+    public static void ana_memberTrainTestDiffs() throws Exception { 
+        
+        // LONG EXECUTION TIME, TRAIN/TEST RESULTS FOR ALL INIDIVIDUALS AND FOLD CLASSIFIERS (i.e. 55 sets of results to load)
+        
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(analysisPath, "ana_memberTrainTestDiffs", masterNumFolds);
+        mce.setTestResultsOnly(false); // FALSE, want to compare train/test diffs of members
+        mce.setBuildMatlabDiagrams(false);
+        mce.setDatasets(datasetList);
+        mce.setUseDefaultEvaluationStatistics();
+        mce.readInClassifiers(allBaseClassifiers, replaceLabelsForImages(allBaseClassifiers), resultsPath);
+        
+        mce.runComparison();
+    }
 }

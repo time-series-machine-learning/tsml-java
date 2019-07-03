@@ -272,10 +272,35 @@ public class CAWPE_Extended extends CAWPE {
     
     
     public static void main(String[] args) throws Exception {
+        
+        exp_individualsWriting(args);
+        
 //        test_basic();
 //        test_smallComparison();
+//        test_expandedIndividualWriting();
+    }
+    
+    public static void exp_individualsWriting(String[] args) throws Exception { 
+        
+        //semi-manual experiment setup to get cawpe to write it's individuals predictions
+        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments(args);
+        exp.generateErrorEstimateOnTrainSet = false;
 
-        test_expandedIndividualWriting();
+        System.out.println(exp.toShortString());
+        
+        String fullWriteLoc = exp.resultsWriteLocation + exp.classifierName + "/Predictions/" + exp.datasetName + "/";
+        (new File(fullWriteLoc)).mkdirs();
+
+        CAWPE_Extended classifier = (CAWPE_Extended) CAWPEClassifierList.setClassifier(exp);
+        classifier.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+        classifier.setWriteIndividualsTrainResultsFiles(true);
+
+        Instances[] data = Experiments.sampleDataset(exp.dataReadLocation, exp.datasetName, exp.foldId);
+
+        Experiments.runExperiment(exp, data[0], data[1], classifier, fullWriteLoc);
+
+        classifier.writeIndividualTestFiles(data[1].attributeToDoubleArray(data[1].classIndex()), true);
+           
     }
     
     public static void test_expandedIndividualWriting() throws Exception { 
@@ -287,8 +312,8 @@ public class CAWPE_Extended extends CAWPE {
             Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
             exp.dataReadLocation = "C:/TSC Problems/";
             exp.resultsWriteLocation = "C:/Temp/cawpeExtensionTests/";
-            exp.classifierName = "CAWPE_retrain_foldWeight";
-//            exp.classifierName = "CAWPE_retrain_noWeight";
+//            exp.classifierName = "CAWPE_retrain_foldWeight";
+            exp.classifierName = "CAWPE_retrain_noWeight";
             exp.datasetName = "ItalyPowerDemand";
             exp.foldId = i;
             exp.generateErrorEstimateOnTrainSet = false;
