@@ -86,17 +86,25 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private boolean testResultsOnly;
     
     /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    private boolean evaluateDatasetsOverClassifiers;
+    
+    /**
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
      * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
-      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
- 
- 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
- 
- 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
- 
- 4) perform the normal grouping analysis based on those clusters
+     * e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+     * 
+     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+     * 
+     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+     * 
+     * 4) perform the normal grouping analysis based on those clusters
      */
     private boolean performPostHocDsetResultsClustering;
     
@@ -130,6 +138,16 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.classifiersResults = new HashMap<>();
         
         this.metrics = PerformanceMetric.getDefaultStatistics();
+    }
+
+    /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
+        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
     }
     
     /**
@@ -541,7 +559,73 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
+    private void transposeEverything() { 
+        //need to put the classifier names into the datasets list
+        //repalce the entries of the classifier results map with entries for each dataset
+        //to go from this:    Map<String/*classifierNames*/, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults; 
+        //           and a list of datasetnames 
+        //to this:            Map<String/*datasetNames*/, ClassifierResults[/* train/test */][/* classifier */][/* fold */]> classifiersResults; 
+        //           and a list of classifiernames
+        
+        int numClassifiers = classifiersResults.size();
+        int numDatasets = datasets.size();
+        
+        //going to pull everything out into parallel arrays and work that way... 
+        //innefficient, but far more likely to actually work
+        String[] origClassifierNames = new String[numClassifiers];
+        ClassifierResults[][][][] origClassifierResults = new ClassifierResults[numClassifiers][][][];
+        
+        int i = 0;
+        for (Map.Entry<String, ClassifierResults[][][]> origClassiiferResultsEntry : classifiersResults.entrySet()) {
+            origClassifierNames[i] = origClassiiferResultsEntry.getKey();
+            origClassifierResults[i] = origClassiiferResultsEntry.getValue();
+            i++;
+        }
+        
+        ClassifierResults[][][][] newDataseResultsArr = new ClassifierResults[numDatasets][2][numClassifiers][numFolds];
+        
+        
+        //do the transpose
+        for (int dset = 0; dset < numDatasets; dset++) {
+            
+            int splitStart = 0;
+            if (testResultsOnly) {
+                newDataseResultsArr[dset][0] = null; //no train results
+                splitStart = 1; //dont try and copythem over
+            }
+            
+            for (int split = splitStart; split < 2; split++) {
+                for (int classifier = 0; classifier < numClassifiers; classifier++) {
+                    //leaving commented for reference, but can skip this loop, and copy across fold array refs instead of individual fold refs
+                    //for (int fold = 0; fold < numFolds; fold++)
+                    //    newDataseResultsArr[dset][split][classifier][fold] = origClassifierResults[classifier][split][dset][fold];
+                    
+//                    System.out.println("newDataseResultsArr[dset]" + newDataseResultsArr[dset].toString().substring(0, 30));
+//                    System.out.println("newDataseResultsArr[dset][split]" + newDataseResultsArr[dset][split].toString().substring(0, 30));
+//                    System.out.println("newDataseResultsArr[dset][split][classifier]" + newDataseResultsArr[dset][split][classifier].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier]" + origClassifierResults[classifier].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier][split]" + origClassifierResults[classifier][split].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier][split][dset]" + origClassifierResults[classifier][split][dset].toString().substring(0, 30));
+                    
+                    newDataseResultsArr[dset][split][classifier] = origClassifierResults[classifier][split][dset];
+                }
+            }
+        }
+        
+        //and put back into a map
+        Map<String, ClassifierResults[][][]> newDsetResultsMap = new HashMap<>();
+        for (int dset = 0; dset < numDatasets; dset++)
+            newDsetResultsMap.put(datasets.get(dset), newDataseResultsArr[dset]);
+        
+        this.classifiersResults = newDsetResultsMap; 
+        this.datasets = Arrays.asList(origClassifierNames);
+    }
+    
     public void runComparison() {
+        if (evaluateDatasetsOverClassifiers) {
+            transposeEverything();
+        }
+        
         ArrayList<ClassifierResultsAnalysis.ClassifierEvaluation> results = new ArrayList<>(classifiersResults.size());
         for (Map.Entry<String, ClassifierResults[][][]> classifier : classifiersResults.entrySet())
             results.add(new ClassifierResultsAnalysis.ClassifierEvaluation(classifier.getKey(), classifier.getValue()[1], classifier.getValue()[0]));
@@ -611,24 +695,26 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         //The majority of this time is eaten up by reading the results from the server. If you have results on your local PC, this runs in a second.
         
         //to rerun this from a clean slate to check validity, delete any existing 'Example1' folder in here: 
-        String folderToWriteAnalysisTo = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
-        String nameOfAnalysisWhichWillBecomeFolderName = "Example4";
+        String folderToWriteAnalysisTo = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
+        String nameOfAnalysisWhichWillBecomeFolderName = "ExampleTranspose";
         int numberOfFoldsAKAResamplesOfEachDataset = 10;
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(folderToWriteAnalysisTo, nameOfAnalysisWhichWillBecomeFolderName, numberOfFoldsAKAResamplesOfEachDataset); //10 folds only to make faster... 
         
-        String aFileWithListOfDsetsToUse = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
+        String aFileWithListOfDsetsToUse = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
         mce.setDatasets(aFileWithListOfDsetsToUse);
         
-        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
-        String andAnother = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
+        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
+        String andAnother = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
         mce.addDatasetGroupingFromDirectory(aDirectoryContainingFilesThatDefineDatasetGroupings);
         mce.addDatasetGroupingFromDirectory(andAnother);
         
         mce.setPerformPostHocDsetResultsClustering(true); //will create 3rd data-driven grouping automatically
         
         String[] classifiers = new String[] {"1NN", "C4.5", "NB"};
-        String directoryWithResultsClassifierByClassifier =  "Z:/Results_7_2_19/FinalisedUCIContinuous/";
+        String directoryWithResultsClassifierByClassifier =  "Z:/Backups/Results_7_2_19/FinalisedUCIContinuous/";
         mce.readInClassifiers(classifiers, directoryWithResultsClassifierByClassifier);
+        
+//        mce.setEvaluateDatasetsOverClassifiers(true); //cannot use with the dataset groupings, in this example. could define classifier groupings though ! 
         
         mce.runComparison(); 
         
