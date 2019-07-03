@@ -161,7 +161,7 @@ public class ROCDiagramMaker {
             //function [f] = roccurves(filepathandname,classifierNames,classValues,posClassProbs,posClassLabel,visible)
             proxy.eval("roccurves(m_fname, m_cnames, m_cvals, m_posClassProbs, m_posClass, 'off')");
             proxy.eval("clear");
-
+            proxy.discconnectMatlab();
         } catch (Exception io) {
             System.out.println("matlab_buildROCDiagrams failed while building " +targetFile+ "\n" + io);
         }
