@@ -392,7 +392,7 @@ public class ElasticEnsemble extends TemplateClassifier {
                         knn.setTrainNeighbourhoodSizeLimit(trainNeighbourhoodSizeLimit);
 //                    }
                     knn.setEarlyAbandon(true);
-                    knn.setNeighbourSearchStrategy(neighbourSearchStrategy);
+                    knn.setTrainNeighbourSearchStrategy(neighbourSearchStrategy);
                     knn.setSeed(getTrainRandom().nextInt());
                     knn.setPredefinedTrainNeighbourhood(trainNeighbours);
                     knn.setTrainEstimateSetSizeLimit(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy

@@ -18,6 +18,13 @@ public abstract class TemplateClassifier
     extends AbstractClassifier
     implements TemplateClassifierInterface {
 
+
+    private final OptionSet optionSet = new OptionSet();
+
+    public OptionSet getOptionSet() {
+        return optionSet;
+    }
+
     private String savePath;
     private long trainContractNanos = -1;
     private Random trainRandom = new Random();
