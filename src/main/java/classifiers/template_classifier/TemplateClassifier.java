@@ -7,7 +7,6 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +20,7 @@ public abstract class TemplateClassifier
 
     private final OptionSet optionSet = new OptionSet();
 
-    public OptionSet getOptionSet() {
+    protected OptionSet getOptionSet() {
         return optionSet;
     }
 
@@ -33,6 +32,24 @@ public abstract class TemplateClassifier
     private Integer trainInstancesHash = null;
     private StopWatch trainStopWatch = new StopWatch();
     private StopWatch testStopWatch = new StopWatch();
+
+    public void setOption(String key, String value) {
+        optionSet.setOption(key, value);
+    }
+
+    public void setOptions(String[] options) throws
+                                             Exception {
+        optionSet.setOptions(options);
+    }
+
+    public String getOption(String key) {
+        return optionSet.getOption(key);
+    }
+
+    public String[] getOptions() {
+        return optionSet.getOptions();
+    }
+
 
     protected boolean trainSetChanged(Instances trainInstances) {
         int hash = trainInstances.hashCode();
@@ -80,7 +97,17 @@ public abstract class TemplateClassifier
 
     public void copyFrom(Object object) throws
                                         Exception {
-        copyFromSerObject(object);
+        TemplateClassifier other = (TemplateClassifier) object;
+        setSavePath(other.savePath);
+        trainStopWatch = other.trainStopWatch;
+        testStopWatch = other.testStopWatch;
+        setTrainResults(other.getTrainResults());
+        if(other.seed != null) {
+            setSeed(other.seed);
+        }
+        setTimeLimit(other.getTrainContractNanos());
+        testInstancesHash = other.testInstancesHash;
+        trainInstancesHash = other.trainInstancesHash;
     }
 
     public boolean withinTrainContract() {
@@ -99,17 +126,7 @@ public abstract class TemplateClassifier
     @Override
     public void copyFromSerObject(final Object obj) throws
                                                     Exception {
-        TemplateClassifier other = (TemplateClassifier) obj;
-        setSavePath(other.savePath);
-        trainStopWatch = other.trainStopWatch;
-        testStopWatch = other.testStopWatch;
-        setTrainResults(other.getTrainResults());
-        if(other.seed != null) {
-            setSeed(other.seed);
-        }
-        setTimeLimit(other.getTrainContractNanos());
-        testInstancesHash = other.testInstancesHash;
-        trainInstancesHash = other.trainInstancesHash;
+        copyFrom(obj);
     }
 
     @Override
