@@ -8,13 +8,14 @@ import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
 
 public class Knn
-    extends TemplateClassifier {
+    extends TemplateClassifier<Knn> {
 
     // configuration options
     private final Option<Integer> k = getOptionSet().new Option<>(1, "k", Integer::parseInt);
@@ -43,8 +44,14 @@ public class Knn
 
     public Knn() {}
 
-    public Knn(Knn other) {// todo
-        throw new UnsupportedOperationException();
+    public Knn(Knn other) throws
+                          Exception {
+        super(other);
+    }
+
+    @Override
+    public Capabilities getCapabilities() {
+        throw new UnsupportedOperationException("haven't done this yet!");
     }
 
     public List<Instance> getPredefinedTrainNeighbourhood() {
@@ -194,6 +201,8 @@ public class Knn
                 case FROM_TRAIN_NEIGHBOURHOOD:
                     // add the train neighbours as sampled from train set
                     break;
+                default:
+                    throw new IllegalStateException("train estimation source unknown");
             }
         }
     }
@@ -521,5 +530,4 @@ public class Knn
             searchTimeNanos += System.nanoTime() - startTime;
         }
     }
-
 }

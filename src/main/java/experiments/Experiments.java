@@ -37,7 +37,9 @@ import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import utilities.StringUtilities;
 import utilities.TrainAccuracyEstimate;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -100,28 +102,32 @@ public class Experiments  {
     public static int numCVFolds = 10;
     public static double proportionKeptForTraining = 0.5;
 
-    @Parameters(separators = "=")
+    @Parameters(separators = " ")
     public static class ExperimentalArguments implements Runnable {
 
-        @DynamicParameter(names={"-P"}, description = "List of parameters for the classifier, e.g. -Pkey=value")
-        public Map<String, String> options = new HashMap<>();
+        @Parameter(names={"-o", "--overwrite"}, arity=0, description = "Overwrite results")
+        public boolean overwriteResults = false;
 
-        @Parameter(names={"-cl", "--classifierLabel"}, required = true, description = "Label for the classifier")
-        public String classifierLabel;
+        @Parameter(names={"-p", "--parameter"}, arity = 2, description = "List of parameters for the classifier, e.g. -p \"key,value\"")
+        public List<String> parameters;
+
+        @Parameter(names={"-ip", "--incrementalParameter"}, arity = 2, description =
+            "List of incremental parameters for the classifier, e.g. -ip \"key,value\"")
+        public List<String> incrementalParameters;
+
+        @Parameter(names={"-c", "--classifierName"}, required = true, order=0, description = "Name of the classifier")
+        public String classifierName;
 
     //REQUIRED PARAMETERS
-        @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
+        @Parameter(names={"-dp","--dataPath"}, required=true, order=1, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
         
-        @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
+        @Parameter(names={"-r","--resultsPath"}, required=true, order=3, description = "(String) The parent directory to write the results of the evaluation to, in the form "
                 + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
         public String resultsWriteLocation = null;
         
-        @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
-        public String classifierName = null;
-        
-        @Parameter(names={"-dn","--datasetName"}, required=true, order=3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
+        @Parameter(names={"-dn","--datasetName"}, required=true, order=2, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
         public String datasetName = null;
         
@@ -134,14 +140,14 @@ public class Experiments  {
         private boolean help = false;
         
         //todo separate verbosity into it own thing
-        @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
+        @Parameter(names={"-d","--debug"}, arity=0, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
         public boolean debug = false;
         
-        @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
+        @Parameter(names={"-t","--genTrainFiles"}, arity=0, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
                 + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
         
-        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
+        @Parameter(names={"-cp","--checkpointing"}, arity=0, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
                 + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
         public boolean checkpointing = false;
         
@@ -409,66 +415,96 @@ public class Experiments  {
      * 6) If we're good to go, runs the experiment.
      */
     public static void setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
-        //todo: when we convert to e.g argparse4j for parameter passing, add a para 
-        //for location to log to file as well. for now, assuming console output is good enough
-        //for local running, and cluster output files are good enough on there. 
-//        LOGGER.addHandler(new FileHandler()); 
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else 
-            LOGGER.setLevel(Level.INFO);
-        LOGGER.log(Level.FINE, expSettings.toString());
-        
-        //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
-        //paths. would rather just use the expSettings to do it all though 
-        DataSets.resultsPath = expSettings.resultsWriteLocation;
-        experiments.DataSets.problemPath = expSettings.dataReadLocation;
-        
-        //Build/make the directory to write the train and/or testFold files to
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
-        File f = new File(fullWriteLocation);
-        if (!f.exists())
-            f.mkdirs();
-        
-        String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
-        
-        //Check whether fold already exists, if so, dont do it, just quit
-        if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-            return;
+        Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        if(expSettings.incrementalParameters == null) {
+            expSettings.incrementalParameters = new ArrayList<>();
         }
-        else {           
-//            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
-            Classifier classifier = ClassifierLists.setClassifier(expSettings);
-            Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
-        
-            //If needed, build/make the directory to write the train and/or testFold files to
-            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation;
-            
-            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished. 
-            // default builds a foldx/ dir in normal write dir
-//            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-//                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
-//            if (classifier instanceof FileProducer) {
-//                f = new File(expSettings.supportingFilePath);
-//                if (!f.exists())
-//                    f.mkdirs();
-//            }
-            
-            //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
-            if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
-                expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
-                
-                targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                    LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                    return;
+        if(expSettings.incrementalParameters.isEmpty()) {
+            expSettings.incrementalParameters.add("");
+            expSettings.incrementalParameters.add("");
+        }
+        for(int i = 0; i < expSettings.incrementalParameters.size(); i+=2) {
+            String[] incrementalParams = new String[] {expSettings.incrementalParameters.get(i), expSettings.incrementalParameters.get(i + 1)};
+            //todo: when we convert to e.g argparse4j for parameter passing, add a para
+            //for location to log to file as well. for now, assuming console output is good enough
+            //for local running, and cluster output files are good enough on there.
+            //        LOGGER.addHandler(new FileHandler());
+            if (debug)
+                LOGGER.setLevel(Level.FINEST);
+            else
+                LOGGER.setLevel(Level.INFO);
+            LOGGER.log(Level.FINE, expSettings.toString());
+
+            //TODO still setting these for now, since maybe certain classfiiers still use these "global"
+            //paths. would rather just use the expSettings to do it all though
+            DataSets.resultsPath = expSettings.resultsWriteLocation;
+            experiments.DataSets.problemPath = expSettings.dataReadLocation;
+
+            String paramString = "";
+            if(expSettings.parameters != null) {
+                StringBuilder paramBuilder = new StringBuilder();
+                paramBuilder.append("_");
+                paramBuilder.append(expSettings.incrementalParameters.get(i));
+                paramBuilder.append(",");
+                paramBuilder.append(expSettings.incrementalParameters.get(i + 1));
+                for (int j = 0; j < expSettings.parameters.size(); j += 2) {
+                    paramBuilder.append(",");
+                    paramBuilder.append(expSettings.parameters.get(j));
+                    paramBuilder.append(",");
+                    paramBuilder.append(expSettings.parameters.get(j + 1));
                 }
+                paramString = paramBuilder.toString();
             }
 
-            double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
+            //Build/make the directory to write the train and/or testFold files to
+            String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + paramString + "/Predictions/" + expSettings.datasetName + "/";
+            File f = new File(fullWriteLocation);
+            if (!f.exists())
+                f.mkdirs();
+
+            String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+
+            //Check whether fold already exists, if so, dont do it, just quit
+            if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + targetFileName + ", exiting.");
+                return;
+            } else {
+                //            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
+                if(expSettings.parameters != null) ((AbstractClassifier) classifier).setOptions(expSettings.parameters.toArray(new String[0]));
+                if(!incrementalParams[0].isEmpty()) ((AbstractClassifier) classifier).setOptions(incrementalParams);
+                System.out.println("Classifier configuration:");
+                System.out.println(StringUtilities.join(",", ((AbstractClassifier) classifier).getOptions()));
+
+                Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+
+                //If needed, build/make the directory to write the train and/or testFold files to
+                if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+                    expSettings.supportingFilePath = fullWriteLocation;
+
+                ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
+                // default builds a foldx/ dir in normal write dir
+                //            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+                //                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
+                //            if (classifier instanceof FileProducer) {
+                //                f = new File(expSettings.supportingFilePath);
+                //                if (!f.exists())
+                //                    f.mkdirs();
+                //            }
+
+                //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
+                if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
+                    expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
+
+                    targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
+                    if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                        LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID + ", already exists at " + targetFileName + ", exiting.");
+                        return;
+                    }
+                }
+
+                double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+                LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
+            }
         }
     }
     

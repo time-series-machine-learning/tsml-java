@@ -42,11 +42,11 @@ public class ElasticEnsemble extends TemplateClassifier {
     private final List<Candidate> constituents = new ArrayList<>();
     private boolean removeDuplicateParameterSets = true;
     private Selector<Candidate> candidateSelector = new BestPerTypeSelector<>(Candidate::getParameterSpace, (candidate, other) -> {
-        int comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
+        int comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit().get(), other.getKnn().getTrainNeighbourhoodSizeLimit().get());
         if (comparison != 0) {
             return comparison;
         }
-        comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
+        comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit().get(), other.getKnn().getTrainNeighbourhoodSizeLimit().get());
         if (comparison <= 0) {
             comparison = Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getKnn().getTrainResults(), other.getKnn().getTrainResults());
         }
@@ -389,13 +389,13 @@ public class ElasticEnsemble extends TemplateClassifier {
 //                    if(progressive) {
 //                        knn.setTrainNeighbourhoodSizeLimit(1);
 //                    } else {
-                        knn.setTrainNeighbourhoodSizeLimit(trainNeighbourhoodSizeLimit);
+                        knn.getTrainNeighbourhoodSizeLimit().set(trainNeighbourhoodSizeLimit);
 //                    }
-                    knn.setEarlyAbandon(true);
-                    knn.setTrainNeighbourSearchStrategy(neighbourSearchStrategy);
+                    knn.getEarlyAbandon().set(true);
+                    knn.getTrainNeighbourSearchStrategy().set(neighbourSearchStrategy);
                     knn.setSeed(getTrainRandom().nextInt());
                     knn.setPredefinedTrainNeighbourhood(trainNeighbours);
-                    knn.setTrainEstimateSetSizeLimit(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy
+                    knn.getTrainEstimateSetSizeLimit().set(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy
                     candidate = new Candidate(knn, parameterSpace);
                     candidates.add(candidate);
                     knnIndex = candidates.size() - 1;
@@ -404,12 +404,12 @@ public class ElasticEnsemble extends TemplateClassifier {
                     knnIndex = getTrainRandom().nextInt(candidates.size());
                     candidate = candidates.get(knnIndex);
                     knn = candidate.getKnn();
-                    int sampleSize = knn.getTrainNeighbourhoodSizeLimit() + 1;
-                    knn.setTrainNeighbourhoodSizeLimit(sampleSize);
+                    int sampleSize = knn.getTrainNeighbourhoodSizeLimit().get() + 1;
+                    knn.getTrainNeighbourhoodSizeLimit().set(sampleSize);
                 }
-                if ((knn.getTrainNeighbourhoodSizeLimit() + 1 > getTrainNeighbourhoodSizeLimit()
+                if ((knn.getTrainNeighbourhoodSizeLimit().get() + 1 > getTrainNeighbourhoodSizeLimit()
                         && getTrainNeighbourhoodSizeLimit() >= 0)
-                        || knn.getTrainNeighbourhoodSizeLimit() + 1 > trainSet.size()) {
+                        || knn.getTrainNeighbourhoodSizeLimit().get() + 1 > trainSet.size()) {
 //                    fullyTrainedCandidates.add(
                             candidates.remove(knnIndex);
 //                    );

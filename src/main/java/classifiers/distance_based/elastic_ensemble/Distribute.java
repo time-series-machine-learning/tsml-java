@@ -41,6 +41,7 @@ public class Distribute {
     Instances test = data[1];
 //    Knn cls = new Knn();
     ElasticEnsemble cls = new ElasticEnsemble();
+    cls.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.fromString(args[5]));
     cls.setSeed(seed);
     double pp = Double.parseDouble(args[4]);
     System.out.println(pp);

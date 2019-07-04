@@ -15,6 +15,7 @@
 package experiments;
 
 
+import classifiers.distance_based.knn.Knn;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -77,13 +78,8 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp) throws
                                                                                   Exception {
-        AbstractClassifier classifier = setClassifierClassic(exp.classifierLabel, exp.foldId);
-        List<String> options = new ArrayList<>();
-        for(Map.Entry<String, String> entry : exp.options.entrySet()) {
-            options.add(entry.getKey());
-            options.add(entry.getValue());
-        }
-        classifier.setOptions(options.toArray(new String[0]));
+        AbstractClassifier classifier = setClassifierClassic(exp.classifierName, exp.foldId);
+        if(exp.parameters != null) classifier.setOptions(exp.parameters.toArray(new String[0]));
         return classifier;
     }
     
@@ -97,6 +93,9 @@ public class ClassifierLists {
     public static AbstractClassifier setClassifierClassic(String classifier, int fold){
         AbstractClassifier c=null;
         switch(classifier){
+            case "DTW_KNN":
+                c = new Knn();
+                break;
             case "CEE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
                 ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);

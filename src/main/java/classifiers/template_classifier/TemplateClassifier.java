@@ -2,26 +2,43 @@ package classifiers.template_classifier;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
+import utilities.ArrayUtilities;
 import utilities.StopWatch;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Enumeration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.ArrayUtilities.argMax;
+import static utilities.ArrayUtilities.indexOfMax;
 import static utilities.StringUtilities.join;
 
-public abstract class TemplateClassifier
-    extends AbstractClassifier
+public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extends AbstractClassifier
     implements TemplateClassifierInterface {
 
 
     private final OptionSet optionSet = new OptionSet();
 
+    public TemplateClassifier(final A other) throws
+                                             Exception {
+        // copy constructor
+        copyFrom(other);
+    }
+
+    public TemplateClassifier() {
+        // default constructor
+    }
+
     protected OptionSet getOptionSet() {
         return optionSet;
+    }
+
+    @Override
+    public Enumeration listOptions() {
+        throw new UnsupportedOperationException();
     }
 
     private String savePath;
@@ -59,6 +76,12 @@ public abstract class TemplateClassifier
         } else {
             return false;
         }
+    }
+
+    @Override
+    public double classifyInstance(final Instance instance) throws
+                                                            Exception {
+        return ArrayUtilities.indexOfMax(distributionForInstance(instance), getTestRandom());
     }
 
     protected boolean testSetChanged(Instances testInstances) {
