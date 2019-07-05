@@ -47,7 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.converters.ArffSaver;

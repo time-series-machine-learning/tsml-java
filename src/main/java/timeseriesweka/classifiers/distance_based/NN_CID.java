@@ -16,7 +16,7 @@ package timeseriesweka.classifiers.distance_based;
 
 import experiments.DataSets;
 import utilities.ClassifierTools;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.EuclideanDistance;

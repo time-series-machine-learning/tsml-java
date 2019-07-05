@@ -22,7 +22,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.NormalizeAttribute;

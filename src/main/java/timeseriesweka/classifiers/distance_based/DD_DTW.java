@@ -17,7 +17,7 @@ package timeseriesweka.classifiers.distance_based;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.DenseInstance;

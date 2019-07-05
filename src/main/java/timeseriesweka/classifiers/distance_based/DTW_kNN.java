@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.distance_based;
 import java.io.FileReader;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 
 import weka.core.*;
 

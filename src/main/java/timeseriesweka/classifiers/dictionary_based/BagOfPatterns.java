@@ -17,7 +17,7 @@ package timeseriesweka.classifiers.dictionary_based;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.FastVector;
 import weka.core.Instance;
