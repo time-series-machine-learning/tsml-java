@@ -18,20 +18,20 @@ public class Knn
     extends TemplateClassifier<Knn> {
 
     // configuration options
-    private final Option<Integer> k = getOptionSet().new Option<>(1, "k", Integer::parseInt);
-    private final Option<DistanceMeasure> distanceMeasure = getOptionSet().new Option<>(new Dtw(0), "dm", DistanceMeasure::fromString);
-    private final Option<Boolean> earlyAbandon = getOptionSet().new Option<>(true, "ea", Boolean::parseBoolean);
+    private final Option<Integer> kOption = getOptionSet().new Option<>(1, "k", Integer::parseInt);
+    private final Option<DistanceMeasure> distanceMeasureOption = getOptionSet().new Option<>(new Dtw(0), "distanceMeasure", DistanceMeasure::fromString);
+    private final Option<Boolean> earlyAbandonOption = getOptionSet().new Option<>(true, "ea", Boolean::parseBoolean);
     // restriction options
-    private final Option<Integer> trainNeighbourhoodSizeLimit = getOptionSet().new Option<>(-1, "trnsl", Integer::parseInt);
-    private final Option<Double> trainNeighbourhoodSizeLimitPercentage = getOptionSet().new Option<>(-1d, "trnslp", Double::parseDouble);
-    private final Option<Integer> trainEstimateSetSizeLimit = getOptionSet().new Option<>(-1, "tressl", Integer::parseInt);
-    private final Option<Double> trainEstimateSetSizeLimitPercentage = getOptionSet().new Option<>(-1d, "tresslp", Double::parseDouble);
-    private final Option<Integer> testNeighbourhoodSizeLimit = getOptionSet().new Option<>(-1, "tensl", Integer::parseInt);
-    private final Option<Double> testNeighbourhoodSizeLimitPercentage = getOptionSet().new Option<>(-1d, "tenslp", Double::parseDouble);
+    private final Option<Integer> trainNeighbourhoodSizeLimitOption = getOptionSet().new Option<>(-1, "trnsl", Integer::parseInt);
+    private final Option<Double> trainNeighbourhoodSizeLimitPercentageOption = getOptionSet().new Option<>(-1d, "trnslp", Double::parseDouble);
+    private final Option<Integer> trainEstimateSetSizeLimitOption = getOptionSet().new Option<>(-1, "tressl", Integer::parseInt);
+    private final Option<Double> trainEstimateSetSizeLimitPercentageOption = getOptionSet().new Option<>(-1d, "tresslp", Double::parseDouble);
+    private final Option<Integer> testNeighbourhoodSizeLimitOption = getOptionSet().new Option<>(-1, "tensl", Integer::parseInt);
+    private final Option<Double> testNeighbourhoodSizeLimitPercentageOption = getOptionSet().new Option<>(-1d, "tenslp", Double::parseDouble);
     // iteration options
-    private final Option<NeighbourSearchStrategy> trainNeighbourSearchStrategy = getOptionSet().new Option<>(NeighbourSearchStrategy.RANDOM, "trnss", NeighbourSearchStrategy::fromString);
-    private final Option<TrainEstimationSource> trainEstimationSource = getOptionSet().new Option<>(TrainEstimationSource.FROM_TRAIN_SET, "trsss", TrainEstimationSource::fromString);
-    private final Option<TrainEstimationStrategy> trainEstimationStrategy = getOptionSet().new Option<>(TrainEstimationStrategy.RANDOM, "tres", TrainEstimationStrategy::fromString);
+    private final Option<NeighbourSearchStrategy> trainNeighbourSearchStrategyOption = getOptionSet().new Option<>(NeighbourSearchStrategy.RANDOM, "trnss", NeighbourSearchStrategy::fromString);
+    private final Option<TrainEstimationSource> trainEstimationSourceOption = getOptionSet().new Option<>(TrainEstimationSource.FROM_TRAIN_SET, "trsss", TrainEstimationSource::fromString);
+    private final Option<TrainEstimationStrategy> trainEstimationStrategyOption = getOptionSet().new Option<>(TrainEstimationStrategy.RANDOM, "tres", TrainEstimationStrategy::fromString);
     // sets
     private List<KNearestNeighbours> trainEstimate = null;
     private List<Instance> trainSet = null;
@@ -47,6 +47,15 @@ public class Knn
     public Knn(Knn other) throws
                           Exception {
         super(other);
+    }
+
+    @Override
+    public void setOption(String key, String value) {
+        try {
+            super.setOption(key, value);
+        } catch (IllegalArgumentException e) {
+            distanceMeasureOption.set(value);
+        }
     }
 
     @Override
@@ -70,54 +79,58 @@ public class Knn
         this.predefinedTrainEstimateSet = predefinedTrainEstimateSet;
     }
 
-    public double getTestNeighbourhoodSizeLimitPercentage() {
-        return testNeighbourhoodSizeLimitPercentage.get();
+    public double getTestNeighbourhoodSizeLimitPercentageOption() {
+        return testNeighbourhoodSizeLimitPercentageOption.get();
     }
-    public void setTestNeighbourhoodSizeLimitPercentage(double testNeighbourhoodSizeLimitPercentage) {
-        this.testNeighbourhoodSizeLimitPercentage.set(testNeighbourhoodSizeLimitPercentage);
-    }
-
-    public int getTestNeighbourhoodSizeLimit() {
-        return testNeighbourhoodSizeLimit.get();
-    }
-    public void setTestNeighbourhoodSizeLimit(int testNeighbourhoodSizeLimit) {
-        this.testNeighbourhoodSizeLimit.set(testNeighbourhoodSizeLimit);
+    public void setTestNeighbourhoodSizeLimitPercentageOption(double testNeighbourhoodSizeLimitPercentageOption) {
+        this.testNeighbourhoodSizeLimitPercentageOption.set(testNeighbourhoodSizeLimitPercentageOption);
     }
 
-    public Option<Integer> getK() {
-        return k;
+    public Option<TrainEstimationStrategy> getTrainEstimationStrategyOption() {
+        return trainEstimationStrategyOption;
     }
 
-    public Option<DistanceMeasure> getDistanceMeasure() {
-        return distanceMeasure;
+    public int getTestNeighbourhoodSizeLimitOption() {
+        return testNeighbourhoodSizeLimitOption.get();
+    }
+    public void setTestNeighbourhoodSizeLimitOption(int testNeighbourhoodSizeLimitOption) {
+        this.testNeighbourhoodSizeLimitOption.set(testNeighbourhoodSizeLimitOption);
     }
 
-    public Option<Boolean> getEarlyAbandon() {
-        return earlyAbandon;
+    public Option<Integer> getkOption() {
+        return kOption;
     }
 
-    public Option<Integer> getTrainNeighbourhoodSizeLimit() {
-        return trainNeighbourhoodSizeLimit;
+    public Option<DistanceMeasure> getDistanceMeasureOption() {
+        return distanceMeasureOption;
     }
 
-    public Option<Double> getTrainNeighbourhoodSizeLimitPercentage() {
-        return trainNeighbourhoodSizeLimitPercentage;
+    public Option<Boolean> getEarlyAbandonOption() {
+        return earlyAbandonOption;
     }
 
-    public Option<Integer> getTrainEstimateSetSizeLimit() {
-        return trainEstimateSetSizeLimit;
+    public Option<Integer> getTrainNeighbourhoodSizeLimitOption() {
+        return trainNeighbourhoodSizeLimitOption;
     }
 
-    public Option<Double> getTrainEstimateSetSizeLimitPercentage() {
-        return trainEstimateSetSizeLimitPercentage;
+    public Option<Double> getTrainNeighbourhoodSizeLimitPercentageOption() {
+        return trainNeighbourhoodSizeLimitPercentageOption;
     }
 
-    public Option<NeighbourSearchStrategy> getTrainNeighbourSearchStrategy() {
-        return trainNeighbourSearchStrategy;
+    public Option<Integer> getTrainEstimateSetSizeLimitOption() {
+        return trainEstimateSetSizeLimitOption;
     }
 
-    public Option<TrainEstimationSource> getTrainEstimationSource() {
-        return trainEstimationSource;
+    public Option<Double> getTrainEstimateSetSizeLimitPercentageOption() {
+        return trainEstimateSetSizeLimitPercentageOption;
+    }
+
+    public Option<NeighbourSearchStrategy> getTrainNeighbourSearchStrategyOption() {
+        return trainNeighbourSearchStrategyOption;
+    }
+
+    public Option<TrainEstimationSource> getTrainEstimationSourceOption() {
+        return trainEstimationSourceOption;
     }
 
     @Override
@@ -140,7 +153,7 @@ public class Knn
     }
 
     private void setupNeighbourSearchStrategy() {
-        switch (trainNeighbourSearchStrategy.get()) {
+        switch (trainNeighbourSearchStrategyOption.get()) {
             case RANDOM:
                 trainNeighbourIterator = new RandomSampler(getTrainRandom().nextLong());
                 break;
@@ -164,19 +177,19 @@ public class Knn
     }
 
     private void setupNeighbourhoodSize() {
-        if (trainNeighbourhoodSizeLimitPercentage.get() >= 0) {
-            trainNeighbourhoodSizeLimit.set((int) (trainSet.size() * trainNeighbourhoodSizeLimitPercentage.get()));
+        if (trainNeighbourhoodSizeLimitPercentageOption.get() >= 0) {
+            trainNeighbourhoodSizeLimitOption.set((int) (trainSet.size() * trainNeighbourhoodSizeLimitPercentageOption.get()));
         }
     }
 
     private void setupTrainEstimateSetSize() {
-        if (trainEstimateSetSizeLimitPercentage.get() >= 0) {
-            trainEstimateSetSizeLimit.set((int) (trainSet.size() * trainEstimateSetSizeLimitPercentage.get()));
+        if (trainEstimateSetSizeLimitPercentageOption.get() >= 0) {
+            trainEstimateSetSizeLimitOption.set((int) (trainSet.size() * trainEstimateSetSizeLimitPercentageOption.get()));
         }
     }
 
     private void setupTrainEstimationStrategy() {
-        switch (trainEstimationStrategy.get()) {
+        switch (trainEstimationStrategyOption.get()) {
             case RANDOM:
                 trainEstimatorIterator = new RandomSampler(getTrainRandom().nextLong()); // todo make the remainder of these use seed instead of random
                 break;
@@ -195,7 +208,7 @@ public class Knn
         if(predefinedTrainEstimateSet != null) {
             trainEstimatorIterator.addAll(predefinedTrainEstimateSet);
         } else {
-            switch (trainEstimationSource.get()) {
+            switch (trainEstimationSourceOption.get()) {
                 case FROM_TRAIN_SET:
                     trainEstimatorIterator.addAll(trainSet);
                     break;
@@ -211,16 +224,16 @@ public class Knn
 
     private boolean hasRemainingTrainEstimations() {
         return (
-                    trainEstimate.size() < trainEstimateSetSizeLimit.get() // if train estimate set under limit
-                    || trainEstimateSetSizeLimit.get() < 0 // if train estimate limit set
+                    trainEstimate.size() < trainEstimateSetSizeLimitOption.get() // if train estimate set under limit
+                    || trainEstimateSetSizeLimitOption.get() < 0 // if train estimate limit set
                )
                && trainEstimatorIterator.hasNext(); // if remaining train estimators
     }
 
     private boolean hasRemainingNeighbours() {
         return (
-                    trainNeighbourhood.size() < trainNeighbourhoodSizeLimit.get() // if within train neighbourhood size limit
-                    || trainNeighbourhoodSizeLimit.get() < 0 // if active train neighbourhood size limit
+                    trainNeighbourhood.size() < trainNeighbourhoodSizeLimitOption.get() // if within train neighbourhood size limit
+                    || trainNeighbourhoodSizeLimitOption.get() < 0 // if active train neighbourhood size limit
                )
                && trainNeighbourIterator.hasNext(); // if there are remaining neighbours
     }
@@ -240,7 +253,7 @@ public class Knn
         for (KNearestNeighbours trainEstimator : this.trainEstimate) {
             trainEstimator.add(trainNeighbour);
         }
-        if(trainEstimationSource.get() == TrainEstimationSource.FROM_TRAIN_NEIGHBOURHOOD) {
+        if(trainEstimationSourceOption.get() == TrainEstimationSource.FROM_TRAIN_NEIGHBOURHOOD) {
             trainEstimatorIterator.add(trainNeighbour);
         }
     }
@@ -313,17 +326,17 @@ public class Knn
         for (KNearestNeighbours KNearestNeighbours : other.trainEstimate) {
             trainEstimate.add(new KNearestNeighbours(KNearestNeighbours));
         }
-        getK().set(other.getK().get());
-        getDistanceMeasure().set(DistanceMeasure.fromString(other.getDistanceMeasure().toString()));
-//        distanceMeasure.setOptions(other.getDistanceMeasure()
+        getkOption().set(other.getkOption().get());
+        getDistanceMeasureOption().set(DistanceMeasure.fromString(other.getDistanceMeasureOption().toString()));
+//        distanceMeasureOption.setOptions(other.getDistanceMeasureOption()
 //                                        .getOptions()); todo!
-//        setEarlyAbandon(other.getEarlyAbandon());
-//        setTrainNeighbourhoodSizeLimit(other.getTrainNeighbourhoodSizeLimit());
-//        setTrainNeighbourSearchStrategy(other.getTrainNeighbourSearchStrategy());
-//        setTrainEstimateSetSizeLimitPercentage(other.getTrainEstimateSetSizeLimitPercentage());
-//        setTrainEstimateSetSizeLimit(other.getTrainEstimateSetSizeLimit());
-//        setTrainNeighbourhoodSizeLimitPercentage(other.getTrainNeighbourhoodSizeLimitPercentage());
-//        setTrainSetSampleStrategy(other.getTrainEstimationSource());
+//        setEarlyAbandon(other.getEarlyAbandonOption());
+//        setTrainNeighbourhoodSizeLimit(other.getTrainNeighbourhoodSizeLimitOption());
+//        setTrainNeighbourSearchStrategy(other.getTrainNeighbourSearchStrategyOption());
+//        setTrainEstimateSetSizeLimitPercentage(other.getTrainEstimateSetSizeLimitPercentageOption());
+//        setTrainEstimateSetSizeLimit(other.getTrainEstimateSetSizeLimitOption());
+//        setTrainNeighbourhoodSizeLimitPercentage(other.getTrainNeighbourhoodSizeLimitPercentageOption());
+//        setTrainSetSampleStrategy(other.getTrainEstimationSourceOption());
         trainNeighbourhood.clear();
         trainNeighbourhood.addAll(other.trainNeighbourhood);
         trainEstimatorIterator = other.trainEstimatorIterator.iterator();
@@ -437,7 +450,7 @@ public class Knn
 
         public void trim() {
             long startTime = System.nanoTime();
-            if(size <= k.get()) {
+            if(size <= kOption.get()) {
                 trimmedKNeighbours = kNeighbours;
             } else {
                 trimmedKNeighbours = new TreeMap<>();
@@ -448,7 +461,7 @@ public class Knn
                 }
                 if(furthestNeighbours != null) {
                     int size = furthestNeighbours.size();
-                    while (size > k.get()) {
+                    while (size > kOption.get()) {
                         size--;
                         int index = getTrainRandom().nextInt(furthestNeighbours.size());
                         furthestNeighbours.remove(index);
@@ -493,8 +506,8 @@ public class Knn
 
         public double add(Instance instance) {
             long startTime = System.nanoTime();
-            double maxDistance = earlyAbandon.get() ? furthestDistance : Double.POSITIVE_INFINITY;
-            double distance = distanceMeasure.get().distance(target, instance, maxDistance);
+            double maxDistance = earlyAbandonOption.get() ? furthestDistance : Double.POSITIVE_INFINITY;
+            double distance = distanceMeasureOption.get().distance(target, instance, maxDistance);
             searchTimeNanos += System.nanoTime() - startTime;
             add(instance, distance);
             return distance;
@@ -503,7 +516,7 @@ public class Knn
         public void add(Instance instance, double distance) {
             long startTime = System.nanoTime();
             if(!instance.equals(target)) {
-                if((distance <= furthestDistance || size < k.get()) && k.get() > 0) {
+                if((distance <= furthestDistance || size < kOption.get()) && kOption.get() > 0) {
                     Collection<Instance> equalDistanceNeighbours = kNeighbours.get(distance);
                     if (equalDistanceNeighbours == null) {
                         equalDistanceNeighbours = new ArrayList<>();
@@ -517,9 +530,9 @@ public class Knn
                     }
                     equalDistanceNeighbours.add(instance);
                     size++;
-                    if(distance < furthestDistance && size > k.get()) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
+                    if(distance < furthestDistance && size > kOption.get()) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
                         int numFurthestNeighbours = furthestNeighbours.size();
-                        if (size - k.get() >= numFurthestNeighbours) {
+                        if (size - kOption.get() >= numFurthestNeighbours) {
                             kNeighbours.pollLastEntry();
                             size -= numFurthestNeighbours;
                             Map.Entry<Double, Collection<Instance>> furthestNeighboursEntry = kNeighbours.lastEntry();

@@ -15,7 +15,9 @@
 package experiments;
 
 
+import classifiers.Tuned;
 import classifiers.distance_based.knn.Knn;
+import distances.time_domain.dtw.Dtw;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -93,7 +95,10 @@ public class ClassifierLists {
     public static AbstractClassifier setClassifierClassic(String classifier, int fold){
         AbstractClassifier c=null;
         switch(classifier){
-            case "DTW_KNN":
+            case "TUNED_DTW_KNN":
+                c = new Tuned(Knn::new, Dtw::allDiscreteParameterSpace);
+                break;
+            case "ED_KNN":
                 c = new Knn();
                 break;
             case "CEE":

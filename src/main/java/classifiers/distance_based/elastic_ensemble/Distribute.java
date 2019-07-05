@@ -168,7 +168,7 @@ public class Distribute {
 //        ElasticEnsemble ee = new ElasticEnsemble();
 //        ee.setNumParametersLimitPercentage(0.1);
 //        ee.setSeed(seed);
-//        ee.setNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.RANDOM);
+//        ee.setTrainNeighbourSearchStrategy(Knn.NeighbourSearchStrategy.RANDOM);
 //        int n = Integer.parseInt(args[4]);
 ////        n *= train.numClasses();
 ////        double pp = Double.parseDouble(args[4]);

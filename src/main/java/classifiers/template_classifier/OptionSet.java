@@ -78,7 +78,7 @@ public class OptionSet implements OptionHandler {
         if(options.length % 2 != 0) {
             throw new IllegalArgumentException("options must be an array of key value pairs, i.e. even in length");
         }
-        for(int i = 0; i < options.length; i++) {
+        for(int i = 0; i < options.length; i+=2) {
             setOption(options[i], options[i + 1]);
         }
     }
