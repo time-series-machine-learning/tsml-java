@@ -131,6 +131,7 @@ public class Knn
             getTrainStopWatch().reset();
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
+            trainNeighbourhood = new ArrayList<>();
             setupNeighbourhoodSize();
             setupTrainEstimateSetSize();
             setupNeighbourSearchStrategy();
@@ -276,6 +277,8 @@ public class Knn
                 choice = !choice;//getTrainRandom().nextBoolean(); // todo change to strategy
             } else if(remainingNeighbours) {
                 choice = false;
+            } else {
+                choice = true;
             }
             if(choice) {
 //            if(remainingTrainEstimations) {
