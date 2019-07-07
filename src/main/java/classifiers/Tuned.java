@@ -63,6 +63,16 @@ public class Tuned extends TemplateClassifier {
     }
 
     @Override
+    public void setOption(String key, String value) throws Exception {
+        // todo
+    }
+
+    @Override
+    public String[] getOptions() {
+        return new String[0]; // todo
+    }
+
+    @Override
     public void buildClassifier(Instances trainSet) throws Exception {
         ParameterSpace parameterSpace = parameterSpaceGetter.apply(trainSet);
         parameterSpace.removeDuplicateValues();
@@ -84,7 +94,9 @@ public class Tuned extends TemplateClassifier {
                 bestParameters.add(new ParameterBenchmark(classifier, parameterSet, trainResults));
             }
         }
-        this.classifier = bestParameters.get(getTrainRandom().nextInt(parameterSet.size())).getClassifier();
+        ParameterBenchmark bestParameter = bestParameters.get(getTrainRandom().nextInt(parameterSet.size()));
+        this.classifier = bestParameter.getClassifier();
+        setTrainResults(bestParameter.getTrainResults());
     }
 
     @Override

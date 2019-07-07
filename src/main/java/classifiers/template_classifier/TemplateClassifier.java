@@ -13,14 +13,10 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.ArrayUtilities.argMax;
-import static utilities.ArrayUtilities.indexOfMax;
 import static utilities.StringUtilities.join;
 
 public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extends AbstractClassifier
     implements TemplateClassifierInterface {
-
-
-    private final OptionSet optionSet = new OptionSet();
 
     public TemplateClassifier(final A other) throws
                                              Exception {
@@ -30,10 +26,6 @@ public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extend
 
     public TemplateClassifier() {
         // default constructor
-    }
-
-    protected OptionSet getOptionSet() {
-        return optionSet;
     }
 
     @Override
@@ -50,23 +42,22 @@ public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extend
     private StopWatch trainStopWatch = new StopWatch();
     private StopWatch testStopWatch = new StopWatch();
 
-    public void setOption(String key, String value) {
-        optionSet.setOption(key, value);
-    }
+    public abstract void setOption(String key, String value) throws Exception;
 
-    public void setOptions(String[] options) throws
+    public final void setOptions(String[] options) throws
                                              Exception {
-        optionSet.setOptions(options);
-    }
-
-    public String getOption(String key) {
-        return optionSet.getOption(key);
+        if(options.length % 2 != 0) {
+            throw new IllegalArgumentException("options is not correct length, must be key-value pairs");
+        }
+        for(int i = 0; i < options.length; i += 2) {
+            setOption(options[i], options[i + 1]);
+        }
     }
 
     public String[] getOptions() {
-        return optionSet.getOptions();
+        // todo!
+        return new String[0];
     }
-
 
     protected boolean trainSetChanged(Instances trainInstances) {
         int hash = trainInstances.hashCode();
