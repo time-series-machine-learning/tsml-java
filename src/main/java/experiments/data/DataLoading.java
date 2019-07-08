@@ -39,8 +39,17 @@ public class DataLoading {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
-    public static boolean debug = false;
+    private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
     
+    private static final String BAKED_IN_UCI_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "uci/";
+    private static final String BAKED_IN_TSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "tsc/";
+    private static final String BAKED_IN_MTSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "mtsc/";
+    
+    private static final String[] BAKED_IN_UCI_DATASETS = { "iris" };
+    private static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand" };
+    private static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
+       
+    public static boolean debug = false;
     
     public static void setDebug(boolean d) {
         debug = d;
@@ -188,4 +197,53 @@ public class DataLoading {
         }
     }
 
+    public static void main(String[] args) {
+        tests();
+    }
+    
+    /**
+     * Obvious candidate for moving over to proper unit tests when codebase updates 
+     * to incorporate them properly
+     */
+    public static void tests() {
+        
+        String dataPath = BAKED_IN_UCI_DATA_PATH + "iris/iris";
+        if (testARFFLoad(dataPath))
+            System.out.println("Passed: testARFFLoad("+dataPath+")");
+        
+        dataPath += ".arff"; //should both both with/without extension
+        if (testARFFLoad(dataPath))
+            System.out.println("Passed: testARFFLoad("+dataPath+")");
+        
+//        testUCILoad();
+//        testTSCLoad();
+//        testMTSCLoad();
+    }
+    
+    public static boolean testARFFLoad(String dataPath) { 
+        
+        Instances data = loadData(dataPath);
+                
+        assert(data != null);
+        assert(data.numInstances() == 150);
+        assert(data.numAttributes() == 5);
+        assert(data.numClasses() == 3);
+        assert(data.classIndex() == data.numAttributes()-1);
+        
+        return true;
+    }
+    
+//    public static boolean testUCILoad() { 
+//        
+//    }
+//    
+//    public static boolean testTSCLoad() { 
+//        
+//    }
+//    
+//    public static boolean testMTSCLoad() { 
+//        
+//    }
+    
+    
 }
