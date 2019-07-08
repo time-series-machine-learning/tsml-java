@@ -15,7 +15,7 @@
 package evaluation.storage;
 
 import evaluation.storage.ClassifierResultsCollection;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import evaluation.MultipleClassifierEvaluation;
 import java.io.File;
 import java.io.FilenameFilter;

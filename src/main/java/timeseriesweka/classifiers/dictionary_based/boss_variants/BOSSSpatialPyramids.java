@@ -46,7 +46,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 
 
 /**
@@ -577,8 +577,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
      public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BOSSSpatialPyramids();
         c.buildClassifier(train);
@@ -594,8 +594,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     public static void detailedFold0Test(String dset) {
         System.out.println("BOSSEnsembleSPDetailedTest\n");
         try {
-            Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BOSSSpatialPyramids boss = new BOSSSpatialPyramids();
@@ -630,8 +630,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BOSSSpatialPyramids();
          
@@ -1380,8 +1380,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
         public static void detailedFold0Test(String dset) {
             System.out.println("BOSSSpatialPyramidsIndividual DetailedTest\n");
             try {
-                Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-                Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+                Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+                Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
                 System.out.println(train.relationName());
 
                 int windowSize = 10;

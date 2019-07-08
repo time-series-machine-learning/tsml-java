@@ -42,7 +42,7 @@ import utilities.BitWord;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -562,8 +562,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "BeetleFly";
-        Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BOSSC45();
         c.buildClassifier(train);
@@ -579,8 +579,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void detailedFold0Test(String dset) {
         System.out.println("BOSSC45 DetailedTest\n");
         try {
-            Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BOSSC45 boss = new BOSSC45();
@@ -615,8 +615,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BOSSC45();
          

@@ -4,7 +4,7 @@
  */
 package timeseriesweka.elastic_distance_measures;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
@@ -247,7 +247,7 @@ public class BasicDTW extends EuclideanDistance{
     
     public static void main(String[] args){
 //Test BasicDTW
-        Instances test = DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\test\\Beef");
+        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\test\\Beef");
         BasicDTW dtw=new BasicDTW(test);
         EuclideanDistance ed=new EuclideanDistance(test);
         ed.setDontNormalize(true);

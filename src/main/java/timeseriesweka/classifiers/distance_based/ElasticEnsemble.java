@@ -37,7 +37,7 @@ import weka.core.Instances;
 import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
@@ -597,8 +597,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
-        Instances train = DataLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = DataLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        Instances train = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
+        Instances test = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
         
         int correct = 0;

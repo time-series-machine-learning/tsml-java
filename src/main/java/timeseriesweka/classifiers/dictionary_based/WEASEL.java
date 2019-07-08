@@ -23,7 +23,7 @@ import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.carrotsearch.hppc.cursors.LongFloatCursor;
 import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.*;
@@ -1675,8 +1675,8 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
         "TwoLeadECG",
         "MoteStrain",
         "ItalyPowerDemand"}) {
-      Instances train = DataLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TRAIN.arff");
-      Instances test = DataLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TEST.arff");
+      Instances train = DatasetLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TRAIN.arff");
+      Instances test = DatasetLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TEST.arff");
 
       Classifier c = new WEASEL();
       c.buildClassifier(train);

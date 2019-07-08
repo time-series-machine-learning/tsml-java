@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.frequency_based;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -884,8 +884,8 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         String problemName = "StarLightCurves";
         //String problemName = "InsectWingbeat";
 
-        train = DataLoading.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TRAIN.arff");
-        test = DataLoading.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TEST.arff");
+        train = DatasetLoading.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TRAIN.arff");
+        test = DatasetLoading.loadData("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TEST.arff");
         //instances = ClassifierTools.loadData("Z:\\Data\\TSCProblemsAudio2019\\InsectWingbeat\\InsectWingbeat.arff");
         //Instances[] data = InstanceTools.resampleInstances(instances, 0, 0.5);
         //train = data[0];

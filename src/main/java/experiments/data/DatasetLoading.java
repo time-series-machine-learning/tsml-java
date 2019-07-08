@@ -37,7 +37,7 @@ import weka.core.converters.ArffSaver;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class DataLoading {
+public class DatasetLoading {
 
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 

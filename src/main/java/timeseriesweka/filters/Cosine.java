@@ -14,8 +14,8 @@
  */ 
 package timeseriesweka.filters;
 
-import experiments.DataSets;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import utilities.ClassifierTools;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
@@ -95,8 +95,8 @@ public class Cosine extends SimpleBatchFilter {
             String s="Beef";
             OutFile of1 = new OutFile("C:\\Users\\ajb\\Dropbox\\test\\BeefCosine_TRAIN.arff");
             OutFile of2 = new OutFile("C:\\Users\\ajb\\Dropbox\\test\\BeefCosine_TEST.arff");
-            Instances test=DataLoading.loadData(DataSets.dropboxPath+s+"\\"+s+"_TEST");
-            Instances train=DataLoading.loadData(DataSets.dropboxPath+s+"\\"+s+"_TRAIN");			
+            Instances test=DatasetLoading.loadData(DatasetLists.dropboxPath+s+"\\"+s+"_TEST");
+            Instances train=DatasetLoading.loadData(DatasetLists.dropboxPath+s+"\\"+s+"_TRAIN");			
             Cosine cosTransform= new Cosine();
             Sine sinTransform=new Sine();
             Hilbert hilbertTransform= new Hilbert();

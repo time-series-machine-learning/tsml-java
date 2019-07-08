@@ -15,7 +15,7 @@
 package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -98,7 +98,7 @@ public class TransformExperiments {
         }
         else{
             SimpleBatchFilter transformer = TransformLists.setTransform(expSettings);
-            Instances[] data = DataLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
              
             runExperiment(expSettings, data[0], data[1], transformer, transformWriteLocation, additionalWriteLocation);
             LOGGER.log(Level.INFO, "Experiment finished {0}", expSettings.toShortString());

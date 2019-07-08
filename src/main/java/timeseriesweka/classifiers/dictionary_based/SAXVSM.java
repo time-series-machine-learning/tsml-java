@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -361,8 +361,8 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
     public static void basicTest() {
         System.out.println("SAXVSMBasicTest\n");
         try {
-            Instances train = DataLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
-            Instances test = DataLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
+            Instances train = DatasetLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
+            Instances test = DatasetLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
 //            Instances train = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TRAIN.arff");
 //            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TEST.arff");
 

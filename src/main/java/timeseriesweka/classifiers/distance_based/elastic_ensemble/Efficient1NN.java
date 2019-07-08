@@ -19,7 +19,7 @@ import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.Scanner;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
@@ -594,8 +594,8 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
         headerInfo.append(classifierIdentifier).append(System.lineSeparator());
         headerInfo.append(this.getParamInformationString()).append(System.lineSeparator());
         
-        Instances train = DataLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DataLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
         
         if(resampleId!=0){
             Instances[] temp = InstanceTools.resampleTrainAndTestInstances(train, test, resampleId);

@@ -19,7 +19,7 @@ import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import utilities.TrainAccuracyEstimate;
 import vector_classifiers.SaveEachParameter;
@@ -333,8 +333,8 @@ answer is to store those without the abandon in a hash table indexed by i and j,
             FastDTW_1NN c = new FastDTW_1NN();
             String path="C:\\Research\\Data\\Time Series Data\\Time Series Classification\\";
 
-            Instances test=DataLoading.loadData(path+"Coffee\\Coffee_TEST.arff");
-            Instances train=DataLoading.loadData(path+"Coffee\\Coffee_TRAIN.arff");
+            Instances test=DatasetLoading.loadData(path+"Coffee\\Coffee_TEST.arff");
+            Instances train=DatasetLoading.loadData(path+"Coffee\\Coffee_TRAIN.arff");
             train.setClassIndex(train.numAttributes()-1);
             c.buildClassifier(train);
 

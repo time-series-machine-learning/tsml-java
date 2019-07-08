@@ -1,6 +1,6 @@
 package timeseriesweka.clusterers;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -211,8 +211,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DataLoading.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DataLoading.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 

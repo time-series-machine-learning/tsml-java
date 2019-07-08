@@ -17,7 +17,7 @@ package timeseriesweka.filters;
 
 
 import experiments.SimulationExperiments;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -451,7 +451,7 @@ public class ACF extends SimpleBatchFilter {
  */
     public static void testTransform(){
 //    Test File ACF: Four AR(1) series, first two \phi_0=0.5, seconde two \phi_0=-0.5
-        Instances test=DataLoading.loadData("C:\\Research\\Data\\TestData\\ACFTest");
+        Instances test=DatasetLoading.loadData("C:\\Research\\Data\\TestData\\ACFTest");
         DecimalFormat df=new DecimalFormat("##.####");
         ACF acf=new ACF();
         acf.setMaxLag(test.numAttributes()-10);
@@ -469,7 +469,7 @@ public class ACF extends SimpleBatchFilter {
         }
     } 
     public static void testTrunctate(){
-        Instances test=DataLoading.loadData("C:\\Research\\Data\\TestData\\ACFTest");
+        Instances test=DatasetLoading.loadData("C:\\Research\\Data\\TestData\\ACFTest");
         DecimalFormat df=new DecimalFormat("##.####");
         ACF acf=new ACF();
         int[] cases={20,20};
@@ -503,7 +503,7 @@ public class ACF extends SimpleBatchFilter {
         String problemPath = "E:/TSCProblems/";
         String resultsPath="E:/Temp/";
         String datasetName="ItalyPowerDemand";
-        Instances train =DataLoading.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances train =DatasetLoading.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         ACF acf= new ACF();
         try {
             Instances trans=acf.process(train);

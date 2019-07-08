@@ -15,7 +15,7 @@
 package vector_classifiers;
 
 import experiments.CollateResults;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +28,7 @@ import vector_classifiers.ensembles.voting.MajorityVote;
 import vector_classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
@@ -353,7 +353,7 @@ public class EnsembleSelection extends CAWPE {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         
-        String[] dsets = DataSets.UCIContinuousFileNames;
+        String[] dsets = DatasetLists.UCIContinuousFileNames;
 //        String[] skipDsets = new String[] { "adult", "chess-krvk", "chess-krvkp", "connect-4", "miniboone", };
                 
 //        String[] dsets = new String[] { "hayes-roth" };
@@ -367,7 +367,7 @@ public class EnsembleSelection extends CAWPE {
             
             System.out.println(dset);
             
-            Instances all = DataLoading.loadData("C:/UCI Problems/" + dset + "/" + dset + ".arff");
+            Instances all = DatasetLoading.loadData("C:/UCI Problems/" + dset + "/" + dset + ".arff");
             
             for (int fold = 0; fold < numfolds; fold++) {
                 String predictions = resPath+classifier+"/Predictions/"+dset;

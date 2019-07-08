@@ -1,6 +1,6 @@
 package vector_clusterers;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -516,7 +516,7 @@ public class KMeans extends AbstractVectorClusterer{
         }
         
         for (int i = 0; i < datasets.length; i++){
-            Instances inst = DataLoading.loadData(datasets[i]);
+            Instances inst = DatasetLoading.loadData(datasets[i]);
             inst.setClassIndex(inst.numAttributes()-1);
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);

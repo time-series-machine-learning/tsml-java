@@ -14,7 +14,7 @@
  */
 package utilities.multivariate_tools;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.util.Arrays;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class CalculateDatasetsStats {
             
             OutFile out = new OutFile(multivariate_timeseriesweka.DataSets.dropboxPath + dataset +"_summarystats.txt");
             
-            Instances train = DataLoading.loadData(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff");
+            Instances train = DatasetLoading.loadData(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff");
             Instances[] channels = utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances(train);
             
             out.writeLine("num instances " + train.numInstances());

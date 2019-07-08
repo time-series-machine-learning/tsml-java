@@ -14,7 +14,7 @@
  */
 package utilities.multivariate_tools;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import static utilities.multivariate_tools.ConvertDatasets.buildArff;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -74,10 +74,10 @@ public class createMultivariateDatasetFromCSV {
         }
         
         for(int i=0; i<univariate_datasets.length; i++)
-            DataLoading.saveDataset(univariate_datasets[i], dir + name + "_" + i + "_"+ affix);
+            DatasetLoading.saveDataset(univariate_datasets[i], dir + name + "_" + i + "_"+ affix);
             
         Instances output = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(univariate_datasets);
-        DataLoading.saveDataset(output, dir + name + "_"+ affix);
+        DatasetLoading.saveDataset(output, dir + name + "_"+ affix);
     }
     
     static List<Data> loadDataset(File fname) throws FileNotFoundException{

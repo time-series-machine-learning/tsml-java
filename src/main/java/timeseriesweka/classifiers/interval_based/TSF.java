@@ -28,7 +28,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -723,8 +723,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         File f= new File(resultsLocation+problem);
         if(!f.isDirectory())
             f.mkdirs();
-        Instances train=DataLoading.loadData(dataLocation+problem+"\\"+problem+"_TRAIN");
-        Instances test=DataLoading.loadData(dataLocation+problem+"\\"+problem+"_TEST");
+        Instances train=DatasetLoading.loadData(dataLocation+problem+"\\"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadData(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.writeCVTrainToFile(resultsLocation+problem+"trainFold0.csv");
         double a;

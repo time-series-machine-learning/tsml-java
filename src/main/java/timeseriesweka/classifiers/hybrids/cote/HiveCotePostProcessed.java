@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.hybrids.cote;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import java.util.ArrayList;
 
 /**
@@ -177,7 +177,7 @@ public class HiveCotePostProcessed extends AbstractPostProcessedCote{
         classifiersToUse.add("TSF");
         System.out.println("votes");
         for(double alpha:alphas){
-            for(String datasetName: DataSets.tscProblems85){
+            for(String datasetName: DatasetLists.tscProblems85){
                 System.out.println(datasetName+" "+alpha);
                 for(int resample = 0; resample < 100; resample++){
                     try{

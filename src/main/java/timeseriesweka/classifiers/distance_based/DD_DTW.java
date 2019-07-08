@@ -19,7 +19,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import vector_classifiers.kNN;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
@@ -659,8 +659,8 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
 
             System.out.print(dataset+",");
 
-            train = DataLoading.loadData(dataDir+dataset+"/"+dataset+"_TRAIN");
-            test = DataLoading.loadData(dataDir+dataset+"/"+dataset+"_TEST");
+            train = DatasetLoading.loadData(dataDir+dataset+"/"+dataset+"_TRAIN");
+            test = DatasetLoading.loadData(dataDir+dataset+"/"+dataset+"_TEST");
 
             // instance resampling happens here, seed of 0 means that the standard train/test split is used
             if(seed!=0){
@@ -734,8 +734,8 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         try{
             if(option==1){
                 String dataName = "ItalyPowerDemand";
-                Instances train = DataLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
-                Instances test = DataLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TEST");
+                Instances train = DatasetLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
+                Instances test = DatasetLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TEST");
                 
                 // create the classifier, using DTW as the distance function as an example
                 DD_DTW nndw = new DD_DTW(DistanceType.DTW);;

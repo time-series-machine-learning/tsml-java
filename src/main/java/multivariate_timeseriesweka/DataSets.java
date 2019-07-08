@@ -14,7 +14,7 @@
  */
 package multivariate_timeseriesweka;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.IOException;
@@ -72,8 +72,8 @@ public class DataSets {
             Instances train;
             Instances test;
             try {
-                train = DataLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff"));
-                test = DataLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TEST.arff"));
+                train = DatasetLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff"));
+                test = DatasetLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TEST.arff"));
             } catch (IOException ex) {
                 continue; //if dataset doesn't exist move on.
             }

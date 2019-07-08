@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -694,8 +694,8 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
         String datasetLocation = dotdotSlash + dotdotSlash + "resampled data sets" + File.separator + datasetName + File.separator + datasetName;
 
         for (int i = 0; i < 100; i++) {
-            Instances train = DataLoading.loadData(datasetLocation + i + "_TRAIN");
-            Instances test = DataLoading.loadData(datasetLocation + i + "_TEST");
+            Instances train = DatasetLoading.loadData(datasetLocation + i + "_TRAIN");
+            Instances test = DatasetLoading.loadData(datasetLocation + i + "_TEST");
 
             FastShapelets fs = new FastShapelets();
 

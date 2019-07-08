@@ -14,7 +14,7 @@
  */
 package timeseriesweka.classifiers.distance_based.elastic_ensemble;
 
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import vector_classifiers.kNN;
@@ -135,8 +135,8 @@ public class WDTW1NN extends Efficient1NN{
 //        String datasetName = "SonyAiboRobotSurface1";
 
         double r = 0.1;
-        Instances train = DataLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DataLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TEST");
         
         // old version
         kNN knn = new kNN(); //efaults to k = 1 without any normalisation
@@ -194,7 +194,7 @@ public class WDTW1NN extends Efficient1NN{
 //            runComparison();
 //        }
 
-        Instances train = DataLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/SonyAiboRobotSurface1/SonyAiboRobotSurface1_TRAIN");
+        Instances train = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/SonyAiboRobotSurface1/SonyAiboRobotSurface1_TRAIN");
         
         Instance one, two;
         one = train.firstInstance();

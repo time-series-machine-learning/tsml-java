@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -39,7 +40,7 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLoading;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
@@ -366,7 +367,7 @@ public class Experiments  {
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DatasetLists.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
@@ -374,7 +375,7 @@ public class Experiments  {
                 settings[1]="-rp=E:/Results/";//Where to write results                
                 settings[2]="-gtf=false"; //Whether to generate train files or not               
                 settings[3]="-cn=TunedTSF"; //Classifier name
-//                for(String str:DataSets.tscProblems78){
+//                for(String str:DatasetLists.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                     settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
                 System.out.println("Manually set args:");
@@ -410,13 +411,13 @@ public class Experiments  {
             LOGGER.setLevel(Level.FINEST);
         else
             LOGGER.setLevel(Level.INFO);
-        DataLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
         //paths. would rather just use the expSettings to do it all though 
-        DataSets.resultsPath = expSettings.resultsWriteLocation;
-        experiments.DataSets.problemPath = expSettings.dataReadLocation;
+        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
+        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
         
         //2019_06_03: cases in the classifier can now change the classifier name to reflect 
         //paritcular parameters wanting to be represented as different classifiers
@@ -446,7 +447,7 @@ public class Experiments  {
             return;
         }
         else {     
-            Instances[] data = DataLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
@@ -481,12 +482,12 @@ public class Experiments  {
     /**
      * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
      * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
-     * a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
-     * set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
-     * values 1 to numUniqueFirstAttValues
-     * 
-     * TODO: potentially just move to experiments.DataSets once we clean up that
+ a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
+ set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
+ to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
+ values 1 to numUniqueFirstAttValues
+ 
+ TODO: potentially just move to experiments.DatasetLists once we clean up that
      * 
      * @return new Instances[] { trainSet, testSet };
      */

@@ -1,7 +1,7 @@
 package vector_classifiers;
 
-import experiments.DataSets;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.AttributeFilterBridge;
@@ -118,9 +118,9 @@ public class kNN extends IBk {
             knn.normalise(norm);
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
-            for(String s:DataSets.uciFileNames){
-                Instances train=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-train");
-                Instances test=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-test");
+            for(String s:DatasetLists.uciFileNames){
+                Instances train=DatasetLoading.loadData(DatasetLists.uciPath+s+"\\"+s+"-train");
+                Instances test=DatasetLoading.loadData(DatasetLists.uciPath+s+"\\"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);
@@ -136,7 +136,7 @@ public class kNN extends IBk {
                     System.exit(0);
                 }
             }
-             System.out.println("Total problems ="+DataSets.uciFileNames.length+" different on "+diff);
+             System.out.println("Total problems ="+DatasetLists.uciFileNames.length+" different on "+diff);
         }
         
         public static void testkNNvsIBk(boolean norm, boolean crossValidate){
@@ -156,9 +156,9 @@ public class kNN extends IBk {
             ibk.setCrossValidate(crossValidate);
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
-            for(String s:DataSets.uciFileNames){
-                Instances train=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-train");
-                Instances test=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-test");
+            for(String s:DatasetLists.uciFileNames){
+                Instances train=DatasetLoading.loadData(DatasetLists.uciPath+s+"\\"+s+"-train");
+                Instances test=DatasetLoading.loadData(DatasetLists.uciPath+s+"\\"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);
@@ -174,7 +174,7 @@ public class kNN extends IBk {
                     System.exit(0);
                 }
             }
-             System.out.println("Total problems ="+DataSets.uciFileNames.length+" different on "+diff);
+             System.out.println("Total problems ="+DatasetLists.uciFileNames.length+" different on "+diff);
         }
         
 	public static void main(String[] args){

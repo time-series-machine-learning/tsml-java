@@ -14,8 +14,8 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import experiments.DataSets;
-import experiments.data.DataLoading;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
@@ -277,15 +277,15 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     
  public static void compareToPublished() throws Exception{
      DecimalFormat df=new DecimalFormat("###.###");
-     OutFile res=new OutFile(DataSets.path+"recreatedLPS.csv");
+     OutFile res=new OutFile(DatasetLists.path+"recreatedLPS.csv");
      int b=0;
      int t=0;
      System.out.println("problem,recreated,published");
      for(int i=0;i<problems.length;i++){
          String s=problems[i];
         System.out.print(s+",");
-        Instances train = DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
         LPS l=new LPS();
         l.setParamSearch(false);
         l.buildClassifier(train);
@@ -545,8 +545,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         l.setParamSearch(false);
         String prob="ItalyPowerDemand"; 
         double mean=0;
-        Instances train = DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
-        Instances test = DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
+        Instances train = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
 //        Instances train = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Train.arff");
 //        Instances test = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Test.arff");
 //        train.setClassIndex(train.numAttributes()-1);
