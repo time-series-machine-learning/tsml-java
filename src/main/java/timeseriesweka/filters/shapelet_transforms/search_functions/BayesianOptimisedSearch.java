@@ -5,7 +5,7 @@
  */
 package timeseriesweka.filters.shapelet_transforms.search_functions;
 
-import static experiments.Experiments.sampleDataset;
+import experiments.data.DataLoading;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -161,7 +161,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
     public static void main(String[] args) throws Exception {
 
         String dir = "D:/Research TSC/Data/TSCProblems2018/";
-        Instances[] data = sampleDataset(dir, "ItalyPowerDemand", 1);
+        Instances[] data = DataLoading.sampleDataset(dir, "ItalyPowerDemand", 1);
 
         Instances train = data[0];
         Instances test = data[1];
