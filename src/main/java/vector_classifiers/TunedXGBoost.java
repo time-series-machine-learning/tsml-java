@@ -458,13 +458,13 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         cv.setNumFolds(cvFolds);
         cv.buildFolds(insts);
 
-        return cv.crossValidateWithStats(xg, insts);
+        return cv.evaluate(xg, insts);
     }
 
     @Override
     public void buildClassifier(Instances insts) throws Exception {
 //        long startTime=System.nanoTime(); 
-        long startTime=System.currentTimeMillis(); 
+        long startTime=System.nanoTime(); 
 
         booster = null;
         trainResults =new ClassifierResults();
@@ -486,7 +486,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         if(saveEachParaAcc)
             trainResults.setBuildTime(combinedBuildTime);
         else
-            trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+            trainResults.setBuildTime(System.nanoTime()-startTime);
 //            trainResults.buildTime=System.nanoTime()-startTime;
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
@@ -549,7 +549,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
 
     /**
      * TrainAccuracyEstimate interface
-     * @param string 
+     * @param train
      */
     public void writeCVTrainToFile(String train) {
         trainPath=train;

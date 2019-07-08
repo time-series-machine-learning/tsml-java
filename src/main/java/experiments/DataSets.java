@@ -56,8 +56,8 @@ public class DataSets {
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
-        "ArticularyWordRecognition",
-        "AtrialFibrilation",
+        "ArticularyWordRecognition", //Index 0
+        "AtrialFibrillation",//1
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -66,23 +66,23 @@ public class DataSets {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-        "FaceDetection",
+        "FaceDetection",//10
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",
         "Heartbeat",
-        "InsectWingbeat",
+        "InsectWingbeat",//15
 //        "KickVsPunch", Poorly formatted and very small train size
         "JapaneseVowels",
         "Libras",
         "LSST",
         "MotorImagery",
-        "NATOPS",
+        "NATOPS",//20
         "PenDigits",
         "PEMS-SF",
-        "Phoneme",
+        "PhonemeSpectra",
         "RacketSports",
-        "SelfRegulationSCP1",
+        "SelfRegulationSCP1",//25
         "SelfRegulationSCP2",
         "SpokenArabicDigits",
         "StandWalkJump",        
@@ -172,8 +172,8 @@ public class DataSets {
                         "MixedShapesRegularTrain",
                         "MixedShapesSmallTrain",
 			"MoteStrain", // 20,1252,84,2
-			"NonInvasiveFatalECGThorax1", // 1800,1965,750,42
-			"NonInvasiveFatalECGThorax2", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 			"OliveOil", // 30,30,570,4
 			"OSULeaf", // 200,242,427,6
 			"PhalangesOutlinesCorrect", // 1800,858,80,2
@@ -1075,7 +1075,16 @@ tiianic
             "wall-following","waveform-noise","wine-quality-white","yeast"};
  
     
-    
+        public static String[] twoClassProblems2018={"BeetleFly","BirdChicken","Chinatown",
+            "Coffee","Computers","DistalPhalanxOutlineCorrect","DodgerLoopGame",
+            "DodgerLoopWeekend","Earthquakes","ECG200","ECGFiveDays","FordA","FordB",
+            "FreezerRegularTrain","FreezerSmallTrain","GunPoint","GunPointAgeSpan",
+            "GunPointMaleVersusFemale","GunPointOldVersusYoung","Ham","HandOutlines",
+            "Herring","HouseTwenty","ItalyPowerDemand","Lightning2","MiddlePhalanxOutlineCorrect",
+                "MoteStrain","PhalangesOutlinesCorrect","PowerCons","ProximalPhalanxOutlineCorrect",
+                "SemgHandGenderCh2","ShapeletSim","SonyAIBORobotSurface1","SonyAIBORobotSurface2",
+                "Strawberry","ToeSegmentation1","ToeSegmentation2","TwoLeadECG","Wafer","Wine",
+                "WormsTwoClass","Yoga"};
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
@@ -1174,8 +1183,8 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
     DecimalFormat df = new DecimalFormat("###.######");
     for(String s:fileNames){
 //Load test train
-        Instances train= ClassifierTools.loadData(problemPath+s+"/"+s+"_TRAIN");
-        Instances test= ClassifierTools.loadData(problemPath+s+"/"+s+"_TEST");
+        Instances train=ClassifierTools.loadData(problemPath+s+"/"+s+"_TRAIN");
+        Instances test=ClassifierTools.loadData(problemPath+s+"/"+s+"_TEST");
 //Find summary 
         SummaryStats ss= new SummaryStats();
         train=ss.process(train);
@@ -1219,8 +1228,8 @@ public static void dataDescription(String[] fileNames){
                 
         for(int i=0;i<fileNames.length;i++){
             try{
-                Instances test= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
-                Instances train= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");
+                Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
+                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");
                 Instances allData =new Instances(test);
                 for(int j=0;j<train.numInstances();j++)
                     allData.add(train.instance(j));
@@ -1273,7 +1282,7 @@ public static void dataDescriptionDataNotSplit(String[] fileNames){
         f.writeLine("problem,numinstances,numAttributes,numClasses,classDistribution");
         try{
             for(int i=0;i<fileNames.length;i++){
-                Instances allData= ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]);
+                Instances allData=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]);
 //                allData.randomize(new Random());
 //                OutFile combo=new OutFile(problemPath+tscProblems85[i]+"/"+tscProblems85[i]+".arff");    
 //                combo.writeString(allData.toString());
@@ -1458,8 +1467,8 @@ public static void testArffs(String[] problems){
     
     for(String str:problems){
         System.out.println("Loading ARFF for "+str);
-       train= ClassifierTools.loadData(path+str+"\\"+str+"_TRAIN.arff");
-       test= ClassifierTools.loadData(path+str+"\\"+str+"_TEST.arff");
+       train=ClassifierTools.loadData(path+str+"\\"+str+"_TRAIN.arff");
+       test=ClassifierTools.loadData(path+str+"\\"+str+"_TEST.arff");
        Classifier c= new IBk();
        double acc = ClassifierTools.singleTrainTestSplitAccuracy(c, train, test);
         System.out.println(" 1NN acc on "+str +" = "+acc);

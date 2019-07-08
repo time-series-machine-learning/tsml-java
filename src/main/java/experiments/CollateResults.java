@@ -87,6 +87,7 @@ public class CollateResults {
     static DecimalFormat df=new DecimalFormat("##.######");
     static double[][] data;
     static boolean countPartials=false;
+    static boolean oldFormat=true;
   
 /** 
  * Arguments: 
@@ -731,7 +732,7 @@ public static void basicSummaryComparisons(){
  * 5. Prints results to arg[0]/QuickResults/TrainTest<classifierName>.csv, 
  */
     public static void singleClassifiervsReferenceResults(String[] args) throws Exception{
-        if(args.length<3){
+        if(args.length<4){
             String input="";
             for(String s:args)
                 input+=s+" ";
@@ -745,7 +746,8 @@ public static void basicSummaryComparisons(){
         String classifierName=temp[temp.length-1];
         System.out.println(" Primary Classifier = "+classifierName);
         boolean calcAcc=Boolean.parseBoolean(args[1]);
-        int folds=Integer.parseInt(args[2]);
+        folds=Integer.parseInt(args[2]);
+        oldFormat=Boolean.parseBoolean(args[3]);
         File f= new File(fullPath+"/QuickResults");
         f.mkdirs();
 //Get primary results
@@ -762,14 +764,23 @@ public static void basicSummaryComparisons(){
                 problems.add(t.getName());
             }
         }
+        Collections.sort(problems);
+        
         double[] trainTest= new double[problems.size()];
+        double[] trainTestTime= new double[problems.size()];
         double[] means= new double[problems.size()];
         double[][] allFolds= new double[problems.size()][folds];
+        double[] meansTime= new double[problems.size()];
+        double[][] allFoldsTime= new double[problems.size()][folds];
         OutFile trTsFile=new OutFile(fullPath+"/QuickResults/TrainTest"+classifierName+".csv");
         OutFile meansFile=new OutFile(fullPath+"/QuickResults/Average"+folds+classifierName+".csv");
         OutFile allFoldsFile=new OutFile(fullPath+"/QuickResults/AllFolds"+classifierName+".csv");
+        OutFile trTsTimesFile=new OutFile(fullPath+"/QuickResults/TimesTrainTest"+classifierName+".csv");
+        OutFile meanTimesFile=new OutFile(fullPath+"/QuickResults/TimeAverage"+folds+classifierName+".csv");
+        OutFile allFoldsTimesFile=new OutFile(fullPath+"/QuickResults/TimeAllFolds"+classifierName+".csv");
               
         InFile inf=null;
+        boolean readTimes=true;
         for(int i=0;i<trainTest.length;i++){
             System.out.println("Processing "+problems.get(i));
             boolean cont=true;
@@ -777,14 +788,35 @@ public static void basicSummaryComparisons(){
                 try{
                     inf=new InFile(fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
                     inf.readLine();//Ignore first two
-                    inf.readLine();
-                    double acc=inf.readDouble();//
+                    String secondLine=inf.readLine();
+                    String[] split;
+                    String[] secondSplit=secondLine.split(",");
+                    String thirdLine=inf.readLine();
+                    String[] thirdSplit=thirdLine.split(",");
+//Under the old format, the time is the second argument of line 2
+//Under the new format, the time is 
+                    double time=0;
+                    try{
+                        if(oldFormat){
+                            time=Double.parseDouble(secondSplit[1]);
+                        }else{
+                            time=Double.parseDouble(thirdSplit[1]);
+                        }
+                        
+                    }catch(Exception e){
+                        System.out.println("Error reading in times for base classifier, oldFormat="+oldFormat+" may be wrong");
+                        System.out.println("Continue without timing");
+                        readTimes=false;
+                    }
+                    
+                    double acc=Double.parseDouble(thirdSplit[0]);//
+                    
                     if(calcAcc){
                         String line=inf.readLine();
                         double a=0;
                         int count=0;
                         while(line!=null){
-                            String[] split=line.split(",");
+                            split=line.split(",");
                             count++;
                             if(split[0].equals(split[1]))
                                 a++;
@@ -798,9 +830,12 @@ public static void basicSummaryComparisons(){
                             System.exit(1);
                         }
                     }
-                    if(j==0)
+                    if(j==0){
                         trainTest[i]=acc;
+                        trainTestTime[i]=time;
+                    }
                     allFolds[i][j]=acc;
+                    allFoldsTime[i][j]=time;
                 }catch(Exception e){
                     missing.add(problems.get(i));
                     System.out.println("Some error processing "+fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
@@ -816,6 +851,7 @@ public static void basicSummaryComparisons(){
                 trTsFile.writeString(problems.get(i));
                 meansFile.writeString(problems.get(i));
                 allFoldsFile.writeString(problems.get(i));
+
                 trTsFile.writeString(","+trainTest[i]);
                 means[i]=0;
                 for(int j=0;j<allFolds[i].length;j++){
@@ -827,19 +863,35 @@ public static void basicSummaryComparisons(){
                 trTsFile.writeString("\n");
                 meansFile.writeString("\n");
                 allFoldsFile.writeString("\n");
+                if(readTimes){
+                    trTsTimesFile.writeString(problems.get(i));
+                    meanTimesFile.writeString(problems.get(i));
+                    allFoldsTimesFile.writeString(problems.get(i));
+                    trTsTimesFile.writeString(","+trainTestTime[i]);
+                    meansTime[i]=0;
+                    for(int j=0;j<allFolds[i].length;j++){
+                        allFoldsTimesFile.writeString(","+allFoldsTime[i][j]);
+                        meansTime[i]+=allFoldsTime[i][j];
+                    }                
+                    meansTime[i]/=folds;
+                    meanTimesFile.writeString(","+meansTime[i]);
+                    trTsTimesFile.writeString("\n");
+                    meanTimesFile.writeString("\n");
+                    allFoldsTimesFile.writeString("\n");
+                }
 
             }else{//Write trainTest if present
-                if(trainTest[i]>0) //Captured fold 0, lets use it
+                if(trainTest[i]>0){ //Captured fold 0, lets use it
                     trTsFile.writeLine(problems.get(i)+","+trainTest[i]);
-                
+                    if(readTimes)
+                        trTsTimesFile.writeString(problems.get(i));
+                }
             }
-            
-            
         }        
-        if(args.length>3){ //Going to compare to some others
-            String[] rc=new String[args.length-3];
-            for(int i=3;i<args.length;i++)
-                rc[i-3]=args[i];
+        if(args.length>4){ //Going to compare to some others
+            String[] rc=new String[args.length-4];
+            for(int i=4;i<args.length;i++)
+                rc[i-4]=args[i];
             System.out.println("Comparing "+classifierName+" to ");
             String[][] classifiers=new String[rc.length][];
             for(int i=0;i<rc.length;i++)
@@ -976,18 +1028,19 @@ public static void basicSummaryComparisons(){
         
         
     }
-    public static void quickStats(String primary, boolean calcAcc, int folds, String...others) throws Exception{
+    public static void quickStats(String primary, boolean calcAcc, int folds, boolean oldForm,String...others) throws Exception{
         String[] input;
         if(others==null)
-            input=new String[3];
+            input=new String[4];
         else 
-            input=new String[3+others.length];
+            input=new String[4+others.length];
         input[0]=primary;
         input[1]=calcAcc+"";
         input[2]=folds+"";
+        input[3]=oldForm+"";
         if(others!=null)
             for(int i=0;i<others.length;i++)
-                input[i+3]=others[i];
+                input[i+4]=others[i];
        singleClassifiervsReferenceResults(input);
         
     }
@@ -998,19 +1051,26 @@ public static void basicSummaryComparisons(){
         if (args.length == 0) {//Local run
             bakeOffPath=bakeOffPathBeast;
             hiveCotePath=hiveCotePathBeast;
- //TunedTSF
+            quickStats("E:/Results/UCR Debug/Python/PF",false,30,false,"Bakeoff,EE","HIVE-COTE,HIVE-COTE");
+//          quickStats("Z:/Results/BOSS variants/Univariate/RBOSS250",false,30,false,"HIVE-COTE,BOSS");
+//TunedTSF
  //           quickStats("E:/Results/UCR Debug/Java/TunedTSF",false,30,"Bakeoff,ST","Bakeoff,TSF","Bakeoff,BOSS","Bakeoff,DTWCV");
  //ProximityForest
-//            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,HIVE-COTE","HIVE-COTE,Flat-COTE");
- //REDUX: EE
+//            quickStats("E:/Results/UCR Debug/Java/ProximityForest",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+
+ //           quickStats("Z:/Results/Post Bakeoff Results/resnet/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+  //         quickStats("Z:/Results/Post Bakeoff Results/WEASEL/",false,30,"HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,TSF","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
+             
+
+//REDUX: EE
  //           quickStats("Z:/Results/Bakeoff Redux/Java/EE",false,30,"HIVE-COTE,EE","Bakeoff,EE");
  //REDUX: TSF
 //            quickStats("Z:/Results/Bakeoff Redux/Java/TSF",false,30,"HIVE-COTE,TSF","Bakeoff,TSF");
  //REDUX: BOSS
 //            quickStats("Z:/Results/Bakeoff Redux/Java/BOSS",false,30,"HIVE-COTE,BOSS","Bakeoff,BOSS");
  //REDUX: RISE
-
-            quickStats("E:/Results/UCR Debug/Java/RISE",false,30,"HIVE-COTE,RISE");
+  
+//            quickStats("E:/Results/UCR Debug/Python/TSF",false,30,"HIVE-COTE,TSF","HIVE-COTE,EE","HIVE-COTE,BOSS","HIVE-COTE,RISE","HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
  //           quickStats("Z:/Results/Bakeoff Redux/Java/RISE",false,30,"HIVE-COTE,RISE");
  //REDUX: ST
 //            quickStats("Z:/Results/Bakeoff Redux/Java/ST",false,30,"HIVE-COTE,ST","Bakeoff,ST");

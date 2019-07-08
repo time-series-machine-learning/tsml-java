@@ -493,6 +493,12 @@ public class ACF extends SimpleBatchFilter {
     }
 
     public static void main(String[] args) {
+        double[] x = {1,2,2,3,3,1,3,4,6,6,7,8};
+        double[] a = fitAutoCorrelations(x,2);
+        for(double d:a)
+            System.out.println(d);
+        System.exit(0);
+        
         String problemPath = "E:/TSCProblems/";
         String resultsPath="E:/Temp/";
         String datasetName="ItalyPowerDemand";

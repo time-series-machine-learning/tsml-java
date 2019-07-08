@@ -28,11 +28,12 @@ import weka.core.Instances;
  * @author Aaron
  */
 public class ImpRandomSearch extends RandomSearch{
-     protected Map<Integer, ArrayList<Triple<Integer,Integer, Integer>>> shapeletsToFind = new HashMap<>();
+    
+     protected Map<Integer, ArrayList<CandidateSearchData>> shapeletsToFind = new HashMap<>();
     
     int currentSeries =0;
     
-    public  Map<Integer, ArrayList<Triple<Integer,Integer, Integer>>> getShapeletsToFind(){
+    public  Map<Integer, ArrayList<CandidateSearchData>> getShapeletsToFind(){
         return shapeletsToFind;
     }
         
@@ -54,12 +55,12 @@ public class ImpRandomSearch extends RandomSearch{
             int position  = random.nextInt(seriesLength - length); // can only have valid start positions based on the length. (numAtts-1)-l+1
             int dimension = random.nextInt(numDimensions);
             //find the shapelets for that series.
-            ArrayList<Triple<Integer,Integer, Integer>> shapeletList = shapeletsToFind.get(series);
+            ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(series);
             if(shapeletList == null)
                 shapeletList = new ArrayList<>();
             
             //add the random shapelet to the length
-            shapeletList.add(new Triple(length, position, dimension));
+            shapeletList.add(new CandidateSearchData(position,length,dimension));
             //put back the updated version.
             
             shapeletsToFind.put(series, shapeletList);
@@ -71,7 +72,7 @@ public class ImpRandomSearch extends RandomSearch{
     public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
-        ArrayList<Triple<Integer,Integer, Integer>> shapeletList = shapeletsToFind.get(currentSeries);
+        ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(currentSeries);
         currentSeries++;
         
         //no shapelets to consider.
@@ -80,9 +81,9 @@ public class ImpRandomSearch extends RandomSearch{
         }
         
         //Only consider a fixed amount of shapelets.
-        for(Triple<Integer,Integer, Integer> shapelet : shapeletList){
+        for(CandidateSearchData shapelet : shapeletList){
             //position is in var2, and length is in var1
-            Shapelet shape = checkCandidate.process(getTimeSeries(timeSeries,shapelet.var3), shapelet.var1, shapelet.var2, shapelet.var3);
+            Shapelet shape = checkCandidate.process(getTimeSeries(timeSeries,shapelet.getDimension()), shapelet.getStartPosition(), shapelet.getLength(), shapelet.getDimension());
             if(shape != null)
                 seriesShapelets.add(shape);           
         }

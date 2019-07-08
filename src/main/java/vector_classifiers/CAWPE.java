@@ -17,16 +17,16 @@ package vector_classifiers;
 import experiments.CollateResults;
 import experiments.Experiments;
 import evaluation.MultipleClassifierEvaluation;
-import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
-import timeseriesweka.classifiers.ensembles.weightings.TrainAccByClass;
-import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
-import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
+import vector_classifiers.ensembles.weightings.TrainAcc;
+import vector_classifiers.ensembles.weightings.ModuleWeightingScheme;
+import vector_classifiers.ensembles.weightings.TrainAccByClass;
+import vector_classifiers.ensembles.voting.MajorityVote;
+import vector_classifiers.ensembles.voting.ModuleVotingScheme;
 
 import java.io.File;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.cote.HiveCoteModule;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.DebugPrinting;
@@ -36,7 +36,6 @@ import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.lazy.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
@@ -51,8 +50,8 @@ import evaluation.storage.ClassifierResults;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
+import vector_classifiers.ensembles.EnsembleModule;
+import vector_classifiers.ensembles.voting.MajorityConfidence;
 import timeseriesweka.filters.SAX;
 import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
@@ -131,7 +130,6 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
     //TrainAccuracyEstimate
     protected boolean writeEnsembleTrainingFile = false;
-    protected String outputEnsembleTrainingPathAndFile;
 
     protected boolean performEnsembleCV = true;
     protected CrossValidationEvaluator cv = null;
@@ -501,16 +499,26 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         
         if(this.performEnsembleCV) {
             ensembleTrainResults = doEnsembleCV(data); //combine modules to find overall ensemble trainpreds
-            
-            //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
-            //time unit has been set in doEnsembleCV(data);
-            ensembleTrainResults.turnOffZeroTimingsErrors();
-            ensembleTrainResults.setBuildTime(buildTime);
-            ensembleTrainResults.turnOnZeroTimingsErrors();
 
             if (writeEnsembleTrainingFile)
-                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+//                writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+                writeEnsembleTrainAccuracyEstimateResultsFile();
         }
+        else {
+            ensembleTrainResults = new ClassifierResults();
+            ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        }
+        
+        //HACK FOR CAWPE_EXTENSION PAPER: 
+        //since experiments expects us to make a train results object 
+        //and for us to record our build time, going to record it here instead of 
+        //editting experiments to record the buildtime at that level
+        
+        //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
+        //time unit has been set in doEnsembleCV(data);
+        ensembleTrainResults.turnOffZeroTimingsErrors();
+        ensembleTrainResults.setBuildTime(buildTime);
+        ensembleTrainResults.turnOnZeroTimingsErrors();
 
         this.testInstCounter = 0; //prep for start of testing
     }
@@ -697,6 +705,13 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             return file;
     }
 
+    //hack for handling train accuracy estimate. experiments is giving us the full path and filename
+    //to write to, instead of just the folder and expecting us to fill in the +classifierName+"/Predictions/"+datasetName+filename;
+    //when doing the interface overhaul, sort this stuff out.
+    protected void writeEnsembleTrainAccuracyEstimateResultsFile() throws Exception {
+        ensembleTrainResults.writeFullResultsToFile(writeResultsFilesDirectory);
+    }
+    
     protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws Exception {
         String fullPath = writeResultsFilesDirectory+classifierName+"/Predictions/"+datasetName;
         new File(fullPath).mkdirs();
@@ -800,6 +815,14 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         double acc = correct/numTrainInsts;
         double stddevOverFolds = StatisticalUtilities.standardDeviation(accPerFold, false, acc);
 
+        trainResults.setClassifierName(ensembleIdentifier);
+        if (datasetName == null || datasetName.equals(""))
+            datasetName = data.relationName();
+        trainResults.setDatasetName(datasetName);
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());
+        
         trainResults.stddev = stddevOverFolds;
         trainResults.finaliseResults();
         
@@ -975,11 +998,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
         this.transform = transform;
     }
 
-    @Override
+    @Override //TrainAccuracyEstimate
     public void writeCVTrainToFile(String path) {
-        outputEnsembleTrainingPathAndFile=path;
         performEnsembleCV=true;
         writeEnsembleTrainingFile=true;
+        
+        setResultsFileWritingLocation(path);
     }
     @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){

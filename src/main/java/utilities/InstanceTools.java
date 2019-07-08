@@ -684,6 +684,13 @@ public class InstanceTools {
         return result;
     }
 
+    public static void deleteClassAttribute(Instances data){
+        if (data.classIndex() >= 0){
+            int clsIndex = data.classIndex();
+            data.setClassIndex(-1);
+            data.deleteAttributeAt(clsIndex);
+        }
+    }
     public static List<Instances> instancesByClass(Instances instances) {
         List<Instances> instancesByClass = new ArrayList<>();
         int numClasses = instances.get(0).numClasses();
@@ -716,4 +723,29 @@ public class InstanceTools {
         normalise(distribution);
         return distribution;
     }
+    /**
+     * Concatenate features into a new Instances. Check is made that the class
+     * values are the same
+     * @param a
+     * @param b
+     * @return 
+     */
+    
+    
+    public static Instances concatenateInstances(Instances a, Instances b){
+        if(a.numInstances()!=b.numInstances())
+            throw new RuntimeException(" ERROR in concatenate Instances, number of cases unequal");
+        for(int i=0;i<a.numInstances();i++){
+            if(a.instance(i).classValue()!=b.instance(i).classValue())
+                throw new RuntimeException(" ERROR in concatenate Instances, class labels not alligned in case "+i+" class in a ="+a.instance(i).classValue()+" and in b equals "+b.instance(i).classValue());
+        }
+            //4. Merge them all together
+        Instances combo=new Instances(a);
+        combo.setClassIndex(-1);
+        combo.deleteAttributeAt(combo.numAttributes()-1); 
+        combo=Instances.mergeInstances(combo,b);
+        combo.setClassIndex(combo.numAttributes()-1);
+        return combo;
+    }
+    
 }
