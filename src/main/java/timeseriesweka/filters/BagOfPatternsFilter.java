@@ -47,7 +47,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
     private final int windowSize;
     private final int numIntervals;
     private final int alphabetSize;
-    private boolean useRealAttributes = true;
+    private boolean useRealAttributes = false;
     
     private boolean numerosityReduction = true; //can expand to different types of nr
     //like those in senin implementation later, if wanted

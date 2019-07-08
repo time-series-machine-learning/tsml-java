@@ -1088,7 +1088,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         int fold = 0;
 
         //Minimum working example
-        String dataset = "EOGVerticalSignal";
+        String dataset = "ItalyPowerDemand";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
