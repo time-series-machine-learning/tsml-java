@@ -418,6 +418,20 @@ public class Experiments  {
         DataSets.resultsPath = expSettings.resultsWriteLocation;
         experiments.DataSets.problemPath = expSettings.dataReadLocation;
         
+        //2019_06_03: cases in the classifier can now change the classifier name to reflect 
+        //paritcular parameters wanting to be represented as different classifiers
+        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the 
+        //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
+        //such that if the experimenter is looping over contract times, they need only create one case 
+        //in the setclassifier switch and pass one classifier name, but loop over contract time directly 
+        //
+        //so, the setClassifier has been moved to up here, previously only done after the check for 
+        //whether we abort due to the results file already existing. the instantiation of a classifier
+        //shouldn't be too much work, so despite it looking a little ugly, the call is 
+        //moved to here before the first proper usage of classifiername, such that it can 
+        //be updated first if need be
+        Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        
         //Build/make the directory to write the train and/or testFold files to
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
         File f = new File(fullWriteLocation);
@@ -431,10 +445,7 @@ public class Experiments  {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
-        else {           
-//            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
-            Classifier classifier = ClassifierLists.setClassifier(expSettings);
-            
+        else {     
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to
