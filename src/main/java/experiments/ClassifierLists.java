@@ -38,7 +38,6 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
 import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.FastWWS.FastDTWWrapper;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
@@ -60,7 +59,6 @@ import vector_classifiers.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
 /**
@@ -104,14 +102,14 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             case "XGBoostMultiThreaded":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 break;
             case "XGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 break;
             case "SmallTunedXGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
@@ -213,13 +211,13 @@ public class ClassifierLists {
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);                
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setAdvancedCAWPESettings();
                 break;
             case "CAWPEFROMFILE":
                 String[] classifiers={"XGBoost","RandF","RotF"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 
@@ -230,7 +228,7 @@ public class ClassifierLists {
             case "CAWPE_AS_COTE":
                 String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -241,7 +239,7 @@ public class ClassifierLists {
                 break;
             case "DTW":
                 c=new DTW1NN();
-                ((DTW1NN )c).setWindow(1);
+                ((DTW1NN)c).setWindow(1);
                 break;
             case "SLOWDTWCV":
 //                c=new DTW1NN();
@@ -303,13 +301,8 @@ public class ClassifierLists {
                 break;
             case "RBOSS":
                 c = new BOSS();
-                ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setMaxEnsembleSize(50);
-                ((BOSS) c).setRandomCVAccEnsemble(true);
-                ((BOSS) c).useCAWPE(true);
+                ((BOSS) c).useBestSettingsRBOSS();
                 ((BOSS) c).setSeed(fold);
-                ((BOSS) c).setReduceTrainInstances(true);
-                ((BOSS) c).setTrainProportion(0.7);
                 break;
             case "WEASEL":
                 c = new WEASEL();

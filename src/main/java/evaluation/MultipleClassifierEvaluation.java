@@ -479,7 +479,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNames Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */
@@ -490,7 +490,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNamesInOutput Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */

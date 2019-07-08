@@ -549,7 +549,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
 
     /**
      * TrainAccuracyEstimate interface
-     * @param string 
+     * @param train
      */
     public void writeCVTrainToFile(String train) {
         trainPath=train;

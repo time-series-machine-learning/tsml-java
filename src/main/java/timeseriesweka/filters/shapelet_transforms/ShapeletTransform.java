@@ -337,8 +337,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * Mutator method to set the minimum and maximum shapelet lengths for the
      * filter.
      *
-     * @param minShapeletLength minimum length of shapelets
-     * @param maxShapeletLength maximum length of shapelets
+     * @param min minimum length of shapelets
+     * @param max maximum length of shapelets
      */
     public void setShapeletMinAndMax(int min, int max) {
         searchFunction.setMinAndMax(min, max);

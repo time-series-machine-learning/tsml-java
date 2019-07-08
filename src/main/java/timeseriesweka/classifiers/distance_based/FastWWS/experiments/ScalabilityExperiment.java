@@ -309,8 +309,8 @@ public class ScalabilityExperiment {
 	
 	/**
 	 * Save results (search time) to csv
+	 * @param sampleSize
 	 * @param searchTime
-	 * @param error
 	 */
 	private static void saveSearchTime(int sampleSize, double searchTime) {
 		String fileName = resDir + "scaling_result_" + method + ".csv";

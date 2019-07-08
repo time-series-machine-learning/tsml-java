@@ -17,28 +17,27 @@ package experiments;
 
 import fileIO.InFile;
 import fileIO.OutFile;
+import timeseriesweka.filters.SummaryStats;
+import utilities.ClassifierTools;
+import weka.classifiers.Classifier;
+import weka.classifiers.lazy.IBk;
+import weka.core.Attribute;
+import weka.core.Instance;
+import weka.core.Instances;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 import java.util.TreeSet;
-import utilities.ClassifierTools;
-import weka.core.Attribute;
-import weka.core.Instance;
-import weka.core.Instances;
-import timeseriesweka.filters.SummaryStats;
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.*;
-import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import weka.classifiers.Classifier;
-import weka.classifiers.lazy.IBk;
+
 /**
  * Class containing lists of data sets in the UCR and UEA archive. 
  * @author ajb
@@ -1063,7 +1062,7 @@ tiianic
 
 //Refactor when repo back 
     public static String[] ReducedUCI={"bank","blood","breast-cancer-wisc-diag",
-        "breast-tissue","cardiotocography-10clases", 
+        "breast-tissue","cardiotocography-10clases",
         "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
         "ecoli","glass","hill-valley",
         "image-segmentation","ionosphere","iris","libras","magic",
@@ -1085,7 +1084,7 @@ tiianic
                 "MoteStrain","PhalangesOutlinesCorrect","PowerCons","ProximalPhalanxOutlineCorrect",
                 "SemgHandGenderCh2","ShapeletSim","SonyAIBORobotSurface1","SonyAIBORobotSurface2",
                 "Strawberry","ToeSegmentation1","ToeSegmentation2","TwoLeadECG","Wafer","Wine",
-                "WormsTwoClass","Yoga"};     
+                "WormsTwoClass","Yoga"};
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
@@ -1230,7 +1229,7 @@ public static void dataDescription(String[] fileNames){
         for(int i=0;i<fileNames.length;i++){
             try{
                 Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
-                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");			
+                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");
                 Instances allData =new Instances(test);
                 for(int j=0;j<train.numInstances();j++)
                     allData.add(train.instance(j));
