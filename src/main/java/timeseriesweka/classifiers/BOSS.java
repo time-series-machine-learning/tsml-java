@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import utilities.*;
 import utilities.samplers.*;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 import evaluation.storage.ClassifierResults;
 
@@ -134,6 +135,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     public Capabilities getCapabilities(){
         Capabilities result = super.getCapabilities();
         result.disableAll();
+
+        result.setMinimumNumberInstances(2);
 
         // attributes
         result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
@@ -787,6 +790,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return possibleParameters;
     }
 
+//    public int[] bayesianParameterSelection(ArrayList<int[]> parameterPool){
+//        GaussianProcesses gp = new GaussianProcesses();
+//        return null;
+//    }
+
     private Instances resampleData(Instances series, BOSSIndividual boss){
         Instances data;
         int newSize;
@@ -1094,7 +1102,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         BOSS c;
         double accuracy;
-        
+
         c = new BOSS();
         c.useBestSettingsRBOSS();
         c.setSeed(fold);
