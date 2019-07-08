@@ -359,6 +359,14 @@ public class ClassifierResultsCollection implements DebugPrinting {
         throw new Exception("SLICE ERROR: Attempted to slice " + str + " by " + key + " but that does not exist in " + Arrays.toString(arr));
     }
     
+    
+    /**
+     * Loads the splits, classifiers, datasets, and folds specified from disk into memory
+     * subject to the options set. 
+     * 
+     * @return the ClassifierResults[splits][classifiers][datasets][folds] loaded in, also accessible after the call with getAllResults()
+     * @throws Exception on any number of missing file if allowMissingResults is false
+     */
     public ClassifierResults[][][][] load() throws Exception { 
         confirmMinimalInfoGivenAndValid();
         
@@ -442,11 +450,26 @@ public class ClassifierResultsCollection implements DebugPrinting {
     
     
     
-    
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided split is returned for each classifier/dataset/fold
+     * 
+     * @param split split to keep
+     * @return new ClassifierResultsCollection with results for all classifiers/datasets/folds, but only the split given
+     * @throws java.lang.Exception if the split searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceSplit(String split) throws Exception { 
         return sliceSplits(new String[] { split });
     }
-        
+       
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided splits are returned for each classifier/dataset/fold
+     * 
+     * @param splitsToSlice splits to keep
+     * @return new ClassifierResultsCollection with results for all classifiers/datasets/folds, but only the splits given
+     * @throws java.lang.Exception if any of the splits were not loaded into this collection
+     */
     public ClassifierResultsCollection sliceSplits(String[] splitsToSlice) throws Exception {
         //perform existence checks before allocating the mem
         for (String split : splitsToSlice)
@@ -465,11 +488,27 @@ public class ClassifierResultsCollection implements DebugPrinting {
         newCol.setSplits(splitsToSlice); //checking the particular meta info sliced
         return newCol;
     }
-        
+       
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided classifier is returned for each split/dataset/fold
+     * 
+     * @param classifier to keep
+     * @return new ClassifierResultsCollection with results for all split/datasets/folds, but only the classifier given
+     * @throws java.lang.Exception if the classifier searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceClassifier(String classifier) throws Exception { 
         return sliceClassifiers(new String[] { classifier });
     }
     
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided classifiers are returned for each split/dataset/fold
+     * 
+     * @param classifiersToSlice classifiers to keep
+     * @return new ClassifierResultsCollection with results for all split/datasets/folds, but only the classifiers given
+     * @throws java.lang.Exception if the classifiers searched for were not loaded into this collection
+     */
     public ClassifierResultsCollection sliceClassifiers(String[] classifiersToSlice) throws Exception { 
         //perform existence checks before allocating the mem
         for (String classifier : classifiersToSlice)
@@ -491,10 +530,26 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return newCol;
     }
     
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided dataset is returned for each split/classifier/fold
+     * 
+     * @param dataset dataset to keep
+     * @return new ClassifierResultsCollection with results for all split/classifier/folds, but only the dataset given
+     * @throws java.lang.Exception if the dataset searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceDataset(String dataset) throws Exception { 
         return sliceDatasets(new String[] { dataset });
     }
     
+     /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided datasets are returned for each split/classifier/fold
+     * 
+     * @param datasetsToSlice datasets to keep
+     * @return new ClassifierResultsCollection with results for all split/classifier/folds, but only the datasets given
+     * @throws java.lang.Exception if the datasets searched for were not loaded into this collection
+     */
     public ClassifierResultsCollection sliceDatasets(String[] datasetsToSlice) throws Exception { 
         //perform existence checks before allocating the mem
         for (String dataset : datasetsToSlice)
@@ -518,14 +573,39 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return newCol;
     }
     
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the provided fold is returned for each split/classifier/dataset
+     * 
+     * @param fold fold to keep
+     * @return new ClassifierResultsCollection with results for all split/classifier/dataset, but only the fold given
+     * @throws java.lang.Exception if the fold searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceFold(int fold) throws Exception { 
         return sliceFolds(new int[] { fold });
     }
     
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the folds in the provided range are returned for each split/classifier/dataset
+     * 
+     * @param minFolds bottom of range, inclusive
+     * @param maxFolds top of range, exclusive
+     * @return new ClassifierResultsCollection with results for all split/classifier/datasets, but only the fold range given
+     * @throws java.lang.Exception if the fold range searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceFolds(int minFolds, int maxFolds) throws Exception { 
         return sliceFolds(buildRange(minFolds, maxFolds));
     }
     
+    /**
+     * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
+     * settings etc) aside from only the results of the folds provided are returned for each split/classifier/dataset
+     * 
+     * @param foldsToSlice individual fold ids to keep
+     * @return new ClassifierResultsCollection with results for all split/classifier/datasets, but only the folds given
+     * @throws java.lang.Exception if any of the folds searched for was not loaded into this collection
+     */
     public ClassifierResultsCollection sliceFolds(int[] foldsToSlice) throws Exception { 
         //perform existence checks before allocating the mem
         for (int fold : foldsToSlice)
