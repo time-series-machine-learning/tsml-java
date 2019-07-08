@@ -14,10 +14,13 @@
  */
 package evaluation.storage;
 
+import experiments.DataSets;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 
@@ -54,7 +57,7 @@ public class Collection_New implements DebugPrinting {
      * A path to a directory containing all the classifierNamesInStorage directories 
      * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
      */
-    public Path baseReadPath;
+    public String baseReadPath;
     
     
     
@@ -90,7 +93,7 @@ public class Collection_New implements DebugPrinting {
      */
     private boolean ignoreMissingDistributions = false;
     
-    public Collection_New() throws Exception {
+    public Collection_New() {
         
     }
     
@@ -156,7 +159,7 @@ public class Collection_New implements DebugPrinting {
      * in which {datasets}/{split}Fold{folds}.csv directories/files exist for each classifier,
      */
     public void setDatasets(String[] datasetNames) {
-        setClassifiers(datasetNames, datasetNames);
+        setDatasets(datasetNames, datasetNames);
     }
     
     /**
@@ -166,11 +169,12 @@ public class Collection_New implements DebugPrinting {
      * outputs. The two arrays should be parallel
      */
     public void setDatasets(String[] datasetNamesInStorage, String[] datasetNamesInOutput) {
-        if (datasetNamesInStorage.length != classifierNamesInOutput.length)
+        if (datasetNamesInStorage.length != datasetNamesInStorage.length)
             throw new IllegalArgumentException("Classifier datasetNamesInOutput lengths not equal, "
                     + "datasetNamesInStorage.length="+datasetNamesInStorage.length
                     + " datasetNamesInOutput.length="+datasetNamesInOutput.length);
         
+        this.numDatasets = datasetNamesInStorage.length;
         this.datasetNamesInStorage = datasetNamesInStorage;
         this.datasetNamesInOutput = datasetNamesInOutput;
     }
@@ -180,6 +184,7 @@ public class Collection_New implements DebugPrinting {
      */
     public void setSplit_Train() {
         this.splits = new String[] { "train" };
+        this.numSplits = 1;
     }
 
     /**
@@ -187,6 +192,7 @@ public class Collection_New implements DebugPrinting {
      */
     public void setSplit_Test() {
         this.splits = new String[] { "test" };
+        this.numSplits = 1;
     }
     
     /**
@@ -194,6 +200,7 @@ public class Collection_New implements DebugPrinting {
      */
     public void setSplit_TrainTest() {
         this.splits = new String[] { "train", "test" };
+        this.numSplits = 2;
     }
     
     /**
@@ -201,7 +208,11 @@ public class Collection_New implements DebugPrinting {
      * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
      */
     public void setBaseReadPath(String baseReadPath) {
-        this.baseReadPath = Paths.get(baseReadPath);
+        baseReadPath.replace("\\", "/");
+        if (baseReadPath.charAt(baseReadPath.length()-1) != '/')
+            baseReadPath += "/";
+        
+        this.baseReadPath = baseReadPath;
     }
     
     /**
@@ -209,19 +220,38 @@ public class Collection_New implements DebugPrinting {
      * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
      */
     public void setBaseReadPath(File baseReadPath) {
-        this.baseReadPath = Paths.get(baseReadPath.getAbsolutePath());
+        setBaseReadPath(baseReadPath.getAbsoluteFile());
     }
     
-    public boolean confirmMinimalInfoGivenAndValid() {
-        return false;
+    public void confirmMinimalInfoGivenAndValid() throws Exception {
+        ErrorReport err = new ErrorReport("Required results collection info missing:\n");
+        
+        if (baseReadPath == null)
+            err.log("\tBase path to read results from not set\n");
+        else if (!(new File(baseReadPath).exists()))
+            err.log("\tBase path to read results from cannot be found: " + baseReadPath + "\n");
+                    
+        if (classifierNamesInStorage == null || classifierNamesInStorage.length == 0)
+            err.log("\tClassifiers to read not set\n");
+        
+        if (datasetNamesInStorage == null || datasetNamesInStorage.length == 0)
+            err.log("\tDatasets to read not set\n");
+        
+        if (folds == null || folds.length == 0)
+            err.log("\tFolds to read not set\n");
+        
+        if (splits == null || splits.length == 0)
+            err.log("\tSplits to read not set\n");
+        
+        err.throwIfErrors();
     }
     
     
-    private String buildFileName(Path baseReadPath, String classifier, String dataset, String split, int fold) { 
+    private String buildFileName(String baseReadPath, String classifier, String dataset, String split, int fold) { 
         return baseReadPath + classifier + "/Predictions/" + dataset + "/" + split + "Fold" + fold + ".csv";
     }
     
-    public void load() throws Exception { 
+    public ClassifierResults[][][][] load() throws Exception { 
         confirmMinimalInfoGivenAndValid();
         
         ErrorReport masterError = new ErrorReport("Results files not found:\n");
@@ -241,7 +271,7 @@ public class Collection_New implements DebugPrinting {
             try {
 
                 int totalFnfs = 0;
-                ErrorReport perClassifierError = new ErrorReport("FileNotFoundExceptions thrown (### total):\n");
+                ErrorReport perClassifierError = new ErrorReport("FileNotFoundExceptions thrown:\n");
 
                 for (int d = 0; d < numDatasets; d++) {
                     String datasetStorage = datasetNamesInStorage[d];
@@ -282,7 +312,8 @@ public class Collection_New implements DebugPrinting {
                     printlnDebug("\t" + datasetStorage + "(" + datasetOutput + ") successfully read in");
                 }
 
-                perClassifierError.getLog().replace("###", totalFnfs+"");
+                if (!perClassifierError.isEmpty())
+                    perClassifierError.log("Total num errors for " + classifierStorage + ": " + totalFnfs);
                 perClassifierError.throwIfErrors();
                 printlnDebug(classifierStorage + "(" + classifierOutput + ") successfully read in");
             } catch (Exception e) {
@@ -291,6 +322,24 @@ public class Collection_New implements DebugPrinting {
         }
         
         masterError.throwIfErrors();
+        
+        return allResults;
     }
     
+    
+    public static void main(String[] args) throws Exception {
+        Collection_New col = new Collection_New();
+        col.setBaseReadPath("C:/JamesLPHD/CAWPEExtension/Results/");
+        col.setClassifiers(new String[] { "Logistic", "SVML", "MLP" });
+        col.setDatasets(Arrays.copyOfRange(DataSets.ReducedUCI, 0, 5));
+        col.setFolds(10);
+        col.setSplit_Test();
+        ClassifierResults[][][][] res = col.load();
+        
+        System.out.println(res.length);
+        System.out.println(res[0].length);
+        System.out.println(res[0][0].length);
+        System.out.println(res[0][0][0].length);        
+        System.out.println(res[0][0][0][0].getAcc());        
+    }
 }
