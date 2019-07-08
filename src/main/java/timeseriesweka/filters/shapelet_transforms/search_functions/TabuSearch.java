@@ -91,9 +91,9 @@ public class TabuSearch extends ImpRandomSearch{
         
         if(!seriesToConsider.get(currentSeries++)) return seriesShapelets;
         
-        Queue<Pair<Integer, Integer>> tabuList = new LinkedList<>();
+        Queue<CandidateSearchData> tabuList = new LinkedList<>();
         
-        Pair<Integer, Integer> shapelet;
+        CandidateSearchData shapelet;
         
         int numShapeletsEvaluated = 0;
 
@@ -103,17 +103,17 @@ public class TabuSearch extends ImpRandomSearch{
             //create the random shapelet.
             //if it's the first iteration and we've got a previous best shapelet.
             if(numShapeletsEvaluated == 0 && bsf_shapelet != null){
-               shapelet = new Pair(bsf_shapelet.length, bsf_shapelet.startPos) ;
+               shapelet = new CandidateSearchData(bsf_shapelet.startPos,bsf_shapelet.length) ;
                bsf_shapelet = null; //reset the best one for this series.
             }else{
                 shapelet = createRandomShapelet(timeSeries);
             }
             
-            ArrayList<Pair<Integer, Integer>> candidateList = new ArrayList<>();
+            ArrayList<CandidateSearchData> candidateList = new ArrayList<>();
             candidateList.add(shapelet);
             candidateList.addAll(createNeighbourhood(shapelet, timeSeries.numAttributes()));
             boolean inList = false;
-            for(Pair<Integer, Integer> neighbour : candidateList){
+            for(CandidateSearchData neighbour : candidateList){
                 //i think if we collide with the tabuList we should abandon the neighbourhood.
                 if(tabuList.contains(neighbour)){
                     inList = true;
@@ -126,10 +126,10 @@ public class TabuSearch extends ImpRandomSearch{
             }
 
             //find the best local candidate
-            Pair<Integer, Integer> bestLocal = null;
+            CandidateSearchData bestLocal = null;
             Shapelet local_bsf_shapelet = null;
-            for(Pair<Integer, Integer> shape : candidateList ){
-                Shapelet sh = checkCandidate.process(timeSeries, shape.var1, shape.var2);
+            for(CandidateSearchData shape : candidateList ){
+                Shapelet sh = checkCandidate.process(timeSeries, shape.getStartPosition(), shape.getLength());
                 numShapeletsEvaluated++;
 
                 //we've abandoned this shapelet, and therefore it is null.
@@ -172,12 +172,12 @@ public class TabuSearch extends ImpRandomSearch{
         return seriesShapelets;
     }
     
-    ArrayList<Pair<Integer,Integer>> createNeighbourhood(Pair<Integer,Integer> shapelet){
+    ArrayList<CandidateSearchData> createNeighbourhood(CandidateSearchData shapelet){
         return createNeighbourhood(shapelet, inputData.numAttributes()-1);
     }
     
-    ArrayList<Pair<Integer,Integer>> createNeighbourhood(Pair<Integer,Integer> shapelet, int m){
-        ArrayList<Pair<Integer,Integer>> neighbourhood = new ArrayList<>();
+    ArrayList<CandidateSearchData> createNeighbourhood(CandidateSearchData shapelet, int m){
+        ArrayList<CandidateSearchData> neighbourhood = new ArrayList<>();
         neighbourhood.add(shapelet); //add the shapelet to the neighbourhood.
         
         int halfWidth = (int)((double)neighbourhoodWidth / 2.0);
@@ -187,8 +187,8 @@ public class TabuSearch extends ImpRandomSearch{
                 if(len == 0 && pos == 0) continue;
                 
                 //need to prune impossible shapelets.
-                int newLen = shapelet.var1 + len;
-                int newPos = shapelet.var2 + pos;
+                int newLen = shapelet.getLength() + len;
+                int newPos = shapelet.getStartPosition() + pos;
                 
                 if(newLen < minShapeletLength || //don't allow length to be less than minShapeletLength. 
                    newLen > maxShapeletLength || //don't allow length to be more than maxShapeletLength.
@@ -196,18 +196,18 @@ public class TabuSearch extends ImpRandomSearch{
                    newPos >= (m-newLen))       //don't allow position to be greater than m-l+1.
                     continue;
                 
-                neighbourhood.add(new Pair(newLen, newPos));
+                neighbourhood.add(new CandidateSearchData(newPos,newLen));
             } 
         }
         
         return neighbourhood;
     }
     
-    private Pair<Integer, Integer> createRandomShapelet(Instance series){
+    private CandidateSearchData createRandomShapelet(Instance series){
         int numLengths = maxShapeletLength - minShapeletLength; //want max value to be inclusive.
         int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.
         int position  = random.nextInt(series.numAttributes() - length); // can only have valid start positions based on the length. (numAtts-1)-l+1
-        return new Pair(length, position);   
+        return new CandidateSearchData(position,length);   
     }
     
     
@@ -222,7 +222,7 @@ public class TabuSearch extends ImpRandomSearch{
         //length of m, and 
         for (int len = 3; len < 100; len++) {
             for(int pos=0; pos< 100-len+1; pos++){
-                ArrayList<Pair<Integer, Integer>> createNeighbourhood = tb.createNeighbourhood(new Pair(len, pos), 100);
+                ArrayList<CandidateSearchData> createNeighbourhood = tb.createNeighbourhood(new CandidateSearchData(pos,len), 100);
                 System.out.println(createNeighbourhood);
             }
         }

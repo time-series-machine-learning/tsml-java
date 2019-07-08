@@ -128,6 +128,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
             
             if (!(numerosityReduction && identicalPattern(pattern, prevPattern)))
                 patterns.add(pattern);
+                prevPattern = pattern;
         }
         
         return buildHistogram(patterns);

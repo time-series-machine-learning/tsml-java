@@ -17,15 +17,12 @@ package multivariate_timeseriesweka.classifiers;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.filters.shapelet_transforms.Shapelet;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
-import java.util.Map;
-import java.util.function.Function;
+import java.security.InvalidParameterException;
+import java.util.concurrent.TimeUnit;
+
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
@@ -33,15 +30,11 @@ import weka.classifiers.AbstractClassifier;
 import vector_classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
-import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
-import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import timeseriesweka.classifiers.cote.HiveCoteModule;
-import timeseriesweka.classifiers.ensembles.voting.MajorityConfidence;
-import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
+import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import vector_classifiers.ensembles.voting.MajorityConfidence;
+import vector_classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import utilities.TrainAccuracyEstimate;
@@ -53,6 +46,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  *
@@ -62,7 +56,7 @@ import weka.classifiers.trees.RandomForest;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, ContractClassifier, CheckpointClassifier{
+public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
@@ -174,19 +168,26 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         return null;
     }
     
-    //set any value in nanoseconds you like.
-    @Override
-    public void setTimeLimit(long time){
-        timeLimit = time;
-    }
-    
     //pass in an enum of hour, minut, day, and the amount of them. 
     @Override
-    public void setTimeLimit(TimeLimit time, int amount){
+    public void setTrainTimeLimit(TimeUnit time, long amount){
         //min,hour,day in longs.
-        long[] times = {ShapeletTransformTimingUtilities.dayNano/24/60, ShapeletTransformTimingUtilities.dayNano/24, ShapeletTransformTimingUtilities.dayNano};
-        
-        timeLimit = times[time.ordinal()] * amount;
+        switch(time){
+            case NANOSECONDS:
+                timeLimit = amount;
+                break;
+            case MINUTES:
+                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
+                break;
+            case HOURS:
+                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
+                break;
+            case DAYS:
+                timeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
+                break;
+            default:
+                throw new InvalidParameterException("Invalid time unit");
+        }
     }
     
     public void setNumberOfShapelets(long numS){

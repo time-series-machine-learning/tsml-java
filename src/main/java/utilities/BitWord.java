@@ -48,7 +48,7 @@ public class BitWord implements Comparable<BitWord>, Serializable {
     //ALPHABETSIZE CURRENTLY ASSUMED TO BE 4, THEREFORE 2 BITS PER LETTER, AND MAX WORD LENGTH 16
     public static final int WORD_SPACE = 32; //length of int
     public static final int BITS_PER_LETTER = 2;
-    public static final int MAX_LENGTH = WORD_SPACE/BITS_PER_LETTER;
+    public static final int MAX_LENGTH = 16; //WORD_SPACE/BITS_PER_LETTER;
     
     //masks
     private static final int POP_MASK = 0b11;

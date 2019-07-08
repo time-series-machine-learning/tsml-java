@@ -17,28 +17,27 @@ package experiments;
 
 import fileIO.InFile;
 import fileIO.OutFile;
+import timeseriesweka.filters.SummaryStats;
+import utilities.ClassifierTools;
+import weka.classifiers.Classifier;
+import weka.classifiers.lazy.IBk;
+import weka.core.Attribute;
+import weka.core.Instance;
+import weka.core.Instances;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 import java.util.TreeSet;
-import utilities.ClassifierTools;
-import weka.core.Attribute;
-import weka.core.Instance;
-import weka.core.Instances;
-import timeseriesweka.filters.SummaryStats;
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.*;
-import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import weka.classifiers.Classifier;
-import weka.classifiers.lazy.IBk;
+
 /**
  * Class containing lists of data sets in the UCR and UEA archive. 
  * @author ajb
@@ -57,8 +56,8 @@ public class DataSets {
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
-        "ArticularyWordRecognition",
-        "AtrialFibrillation",
+        "ArticularyWordRecognition", //Index 0
+        "AtrialFibrillation",//1
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -67,23 +66,23 @@ public class DataSets {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-        "FaceDetection",
+        "FaceDetection",//10
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",
         "Heartbeat",
-        "InsectWingbeat",
+        "InsectWingbeat",//15
 //        "KickVsPunch", Poorly formatted and very small train size
         "JapaneseVowels",
         "Libras",
         "LSST",
         "MotorImagery",
-        "NATOPS",
+        "NATOPS",//20
         "PenDigits",
         "PEMS-SF",
-        "Phoneme",
+        "PhonemeSpectra",
         "RacketSports",
-        "SelfRegulationSCP1",
+        "SelfRegulationSCP1",//25
         "SelfRegulationSCP2",
         "SpokenArabicDigits",
         "StandWalkJump",        
@@ -173,8 +172,8 @@ public class DataSets {
                         "MixedShapesRegularTrain",
                         "MixedShapesSmallTrain",
 			"MoteStrain", // 20,1252,84,2
-			"NonInvasiveFatalECGThorax1", // 1800,1965,750,42
-			"NonInvasiveFatalECGThorax2", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+			"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 			"OliveOil", // 30,30,570,4
 			"OSULeaf", // 200,242,427,6
 			"PhalangesOutlinesCorrect", // 1800,858,80,2
@@ -1076,7 +1075,16 @@ tiianic
             "wall-following","waveform-noise","wine-quality-white","yeast"};
  
     
-    
+        public static String[] twoClassProblems2018={"BeetleFly","BirdChicken","Chinatown",
+            "Coffee","Computers","DistalPhalanxOutlineCorrect","DodgerLoopGame",
+            "DodgerLoopWeekend","Earthquakes","ECG200","ECGFiveDays","FordA","FordB",
+            "FreezerRegularTrain","FreezerSmallTrain","GunPoint","GunPointAgeSpan",
+            "GunPointMaleVersusFemale","GunPointOldVersusYoung","Ham","HandOutlines",
+            "Herring","HouseTwenty","ItalyPowerDemand","Lightning2","MiddlePhalanxOutlineCorrect",
+                "MoteStrain","PhalangesOutlinesCorrect","PowerCons","ProximalPhalanxOutlineCorrect",
+                "SemgHandGenderCh2","ShapeletSim","SonyAIBORobotSurface1","SonyAIBORobotSurface2",
+                "Strawberry","ToeSegmentation1","ToeSegmentation2","TwoLeadECG","Wafer","Wine",
+                "WormsTwoClass","Yoga"};
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
@@ -1221,7 +1229,7 @@ public static void dataDescription(String[] fileNames){
         for(int i=0;i<fileNames.length;i++){
             try{
                 Instances test=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TEST");
-                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");			
+                Instances train=ClassifierTools.loadData(problemPath+fileNames[i]+"/"+fileNames[i]+"_TRAIN");
                 Instances allData =new Instances(test);
                 for(int j=0;j<train.numInstances();j++)
                     allData.add(train.instance(j));

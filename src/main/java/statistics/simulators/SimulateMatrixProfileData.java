@@ -7,7 +7,7 @@ import java.text.DecimalFormat;
 import timeseriesweka.filters.MatrixProfile;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import weka.core.Instances;
 import timeseriesweka.filters.NormalizeCase;
 

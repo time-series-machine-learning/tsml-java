@@ -47,7 +47,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import vector_classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
@@ -162,12 +162,12 @@ public class Experiments  {
                 + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
         public int classifierResultsFileFormat = 0;
 
-        @Parameter(names={"-ctrs","--contractTrainSecs"}, description = "(long) Defines a time limit, in seconds, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
+        @Parameter(names={"-ctrs","--contractTrainSecs"}, description = "(long) Defines a time limit, in seconds, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
                 + "no contract time. Only one of --contractTrainSecs, and --contractTrainHours should be supplied. If both are supplied, seconds takes preference over hours. "
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTrainTimeSeconds = 0;
         
-        @Parameter(names={"-ctrh","--contractTrainHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the ContractClassifier interface. Defaults to 0, which sets "
+        @Parameter(names={"-ctrh","--contractTrainHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
                 + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If both are supplied, seconds hours takes preference over hours."
                 + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTrainTimeHours = 0;
@@ -445,7 +445,7 @@ public class Experiments  {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
-        else {           
+        else {     
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to

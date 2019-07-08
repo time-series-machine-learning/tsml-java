@@ -120,6 +120,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private boolean ignoreMissingDistributions;
     
     /**
+     * if true, will close the matlab connected once analysis complete (if it was opened)
+     * if false, will allow for multiple stats runs in a single execution, but the 
+     * thread will not end while the matlab instance is open, so the connection must 
+     * be closed or execution terminated manually
+     */
+    private boolean closeMatlabConnectionWhenFinished = true;
+    
+    /**
      * @param experimentName forms the analysis directory name, and the prefix to most files
      */
     public MultipleClassifierEvaluation(String writePath, String experimentName, int numFolds) {
@@ -163,6 +171,16 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     public MultipleClassifierEvaluation setBuildMatlabDiagrams(boolean b) {
         buildMatlabDiagrams = b;
+        closeMatlabConnectionWhenFinished = true;
+        return this;
+    }
+    
+    /**
+     * if true, the relevant .m files must be located in the netbeans project directory
+     */
+    public MultipleClassifierEvaluation setBuildMatlabDiagrams(boolean b, boolean closeMatlabConnectionWhenFinished) {
+        buildMatlabDiagrams = b;
+        this.closeMatlabConnectionWhenFinished = closeMatlabConnectionWhenFinished;
         return this;
     }
     
@@ -381,7 +399,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
-    public MultipleClassifierEvaluation clearEvaluationStatistics(String statName) {
+    public MultipleClassifierEvaluation clearEvaluationStatistics() {
         metrics.clear();
         return this;
     }
@@ -517,7 +535,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNames Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */
@@ -528,7 +546,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNamesInOutput Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */
@@ -641,7 +659,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, metrics, results, datasets.toArray(new String[] { }), datasetGroupings);
         printlnDebug("Writing finished");
         
-        if (buildMatlabDiagrams)
+        if (buildMatlabDiagrams && closeMatlabConnectionWhenFinished)
             MatlabController.getInstance().discconnectMatlab();
     }
 

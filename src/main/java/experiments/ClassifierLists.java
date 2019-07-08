@@ -15,18 +15,35 @@
 package experiments;
 
 
+import timeseriesweka.classifiers.hybrids.FlatCote;
+import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.shapelet_based.FastShapelets;
+import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
+import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.interval_based.TSBF;
+import timeseriesweka.classifiers.interval_based.LPS;
+import timeseriesweka.classifiers.frequency_based.RISE;
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.dictionary_based.SAXVSM;
+import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
+import timeseriesweka.classifiers.dictionary_based.WEASEL;
+import timeseriesweka.classifiers.distance_based.SlowDTW_1NN;
+import timeseriesweka.classifiers.distance_based.NN_CID;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.DTD_C;
+import timeseriesweka.classifiers.distance_based.DD_DTW;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
 import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.*;
-import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.proximityForest.ProximityForestWeka;
+import timeseriesweka.classifiers.distance_based.FastWWS.FastDTWWrapper;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.distance_based.proximity_forest.ProximityForestWeka;
 import vector_classifiers.CAWPE;
 import vector_classifiers.PLSNominalClassifier;
 import vector_classifiers.TunedXGBoost;
@@ -38,11 +55,10 @@ import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
-import weka.classifiers.lazy.kNN;
+import vector_classifiers.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
 /**
@@ -103,14 +119,14 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             case "XGBoostMultiThreaded":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 break;
             case "XGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 break;
             case "SmallTunedXGBoost":
-                c = new TunedXGBoost(); 
+                c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
@@ -212,13 +228,13 @@ public class ClassifierLists {
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);                
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setAdvancedCAWPESettings();
                 break;
             case "CAWPEFROMFILE":
                 String[] classifiers={"XGBoost","RandF","RotF"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 
@@ -229,7 +245,7 @@ public class ClassifierLists {
             case "CAWPE_AS_COTE":
                 String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);  
+                ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
                 ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -240,7 +256,7 @@ public class ClassifierLists {
                 break;
             case "DTW":
                 c=new DTW1NN();
-                ((DTW1NN )c).setWindow(1);
+                ((DTW1NN)c).setWindow(1);
                 break;
             case "SLOWDTWCV":
 //                c=new DTW1NN();
@@ -281,10 +297,14 @@ public class ClassifierLists {
             case "FastShapelets": case "FS":
                 c=new FastShapelets();
                 break;
+            case "FullShapeletTransformClassifier":
+                c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setSeed(fold);
+                break;
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
-                ((ShapeletTransformClassifier)c).setOneDayLimit();
+//                ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
             case "TSBF":
@@ -296,64 +316,11 @@ public class ClassifierLists {
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
                 break;
-            case "BOSSMV":
+            case "RBOSS":
                 c = new BOSS();
-                ((BOSS) c).setSeed(fold);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                break;
-            case "RBOSSMV":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
+                ((BOSS) c).useBestSettingsRBOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
-            case "RBOSSMV250":
-                c = new BOSS();
-                ((BOSS) c).setRandomEnsembleSelection(true);
-                ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RCBOSSMV":
-                c = new BOSS();
-                ((BOSS) c).useCAWPE(true);
-                ((BOSS) c).setEnsembleSize(100);
-                ((BOSS) c).setNumCAWPEFolds(2);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RCBOSSMV250":
-                c = new BOSS();
-                ((BOSS) c).useCAWPE(true);
-                ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setNumCAWPEFolds(2);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted1Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted24Hour":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 24);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomBOSSContracted1HourMV":
-                c = new BOSS();
-                ((BOSS) c).setTimeLimit(ContractClassifier.TimeLimit.HOUR, 1);
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
-                break;
-            case "RandomRTreeBOSS":
-                c = new BOSS();
-                ((BOSS) c).setAlternateIndividualClassifier(new RandomTree());
-                ((BOSS) c).setSavePath("/gpfs/scratch/pfm15hbu/checkpointfiles");
-                ((BOSS) c).setSeed(fold);
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);

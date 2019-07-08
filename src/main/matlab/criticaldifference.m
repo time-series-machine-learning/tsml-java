@@ -188,6 +188,8 @@ for i=1:size(clique,1)
 
 end
 
+set(f, 'CreateFcn', 'set(gcbo,''Visible'',''on'')');
+
 saveas(f, name);
 % all done...
 
