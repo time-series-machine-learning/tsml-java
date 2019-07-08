@@ -79,13 +79,6 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * defaults to true
      */
     private boolean cleanResults = true;
-
-    /**
-     * if true, will not attempt to load trainFold results, and will not produce stats for train or traintestdiffs results
-     * 
-     * defaults to true
-     */
-    private boolean testResultsOnly = true;
     
     /**
      * if true, the returned lists are guaranteed to be of size numClassifiers*numDsets*numFolds*2,
@@ -134,7 +127,6 @@ public class ClassifierResultsCollection implements DebugPrinting {
         this.baseReadPath = other.baseReadPath;
 
         this.cleanResults = other.cleanResults;
-        this.testResultsOnly = other.testResultsOnly;
         this.allowMissingResults = other.allowMissingResults;
         this.ignoreMissingDistributions = other.ignoreMissingDistributions;
     }
@@ -152,7 +144,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * Will create a range of fold ids from minFolds(inclusive) to maxFolds(exclusive)
      */
     public void setFolds(int minFolds, int maxFolds) { 
-        folds = buildRange(minFolds, maxFolds);
+        setFolds(buildRange(minFolds, maxFolds));
     }
     
     /**
@@ -276,6 +268,37 @@ public class ClassifierResultsCollection implements DebugPrinting {
     public void setBaseReadPath(File baseReadPath) {
         setBaseReadPath(baseReadPath.getAbsoluteFile());
     }
+
+    /**
+     * if true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
+     * 
+     * defaults to true
+     */
+    public void setCleanResults(boolean cleanResults) {
+        this.cleanResults = cleanResults;
+    }
+
+    /**
+     * if true, the returned lists are guaranteed to be of size numClassifiers*numDsets*numFolds*2,
+     * but entries may be null;
+     * 
+     * defaults to false
+     */
+    public void setAllowMissingResults(boolean allowMissingResults) {
+        this.allowMissingResults = allowMissingResults;
+    }
+
+    /**
+     * if true, will fill in missing probability distributions with one-hot vectors
+     * for files read in that are missing them. intended for very old files, where you still 
+     * want to calc auroc etc (metrics that need dists) for all the other classifiers 
+     * that DO provide them, but also want to compare e.g accuracy with classifier that don't
+     * 
+     * defaults to false
+     */
+    public void setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
+        this.ignoreMissingDistributions = ignoreMissingDistributions;
+    }
     
     private void confirmMinimalInfoGivenAndValid() throws Exception {
         ErrorReport err = new ErrorReport("Required results collection info missing:\n");
@@ -386,8 +409,14 @@ public class ClassifierResultsCollection implements DebugPrinting {
                                 if (cleanResults)
                                     allResults[s][c][d][f].cleanPredictionInfo();
                             } catch (FileNotFoundException ex) {
-                                perClassifierError.log(fileName + "\n");
-                                totalFnfs++;
+                                if (allowMissingResults) {
+                                    allResults[s][c][d][f] = null;
+                                    System.out.println("Failed to load " + fileName);
+                                }
+                                else {
+                                    perClassifierError.log(fileName + "\n");
+                                    totalFnfs++;
+                                }
                             }
 
                             printlnDebug("\t\t\t" + split + " successfully read in");
@@ -556,6 +585,10 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return info;
     }
     
+    public ClassifierResults[][][][] getAllResults() { 
+        return allResults;
+    }
+    
     
     public static void main(String[] args) throws Exception {
         ClassifierResultsCollection col = new ClassifierResultsCollection();
@@ -571,6 +604,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println(res[0][0].length);
         System.out.println(res[0][0][0].length);        
         System.out.println(res[0][0][0][0].getAcc());      
+        System.out.println("");
         
         double[][][][] accs = col.getAccuracies();
         System.out.println(accs.length);
@@ -578,5 +612,33 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println(accs[0][0].length);
         System.out.println(accs[0][0][0].length);        
         System.out.println(accs[0][0][0][0]);  
+        System.out.println("");
+        
+        ClassifierResultsCollection subcol = col.sliceClassifier("Logistic");
+        ClassifierResults[][][][] subres = subcol.getAllResults();
+        System.out.println(subres.length);
+        System.out.println(subres[0].length);
+        System.out.println(subres[0][0].length);
+        System.out.println(subres[0][0][0].length);        
+        System.out.println(subres[0][0][0][0].getAcc());      
+        System.out.println("");
+        
+        subcol = col.sliceDataset(DataSets.ReducedUCI[0]);
+        subres = subcol.getAllResults();
+        System.out.println(subres.length);
+        System.out.println(subres[0].length);
+        System.out.println(subres[0][0].length);
+        System.out.println(subres[0][0][0].length);        
+        System.out.println(subres[0][0][0][0].getAcc());      
+        System.out.println("");
+        
+        subcol = col.sliceFolds(new int[] { 0, 3 });
+        subres = subcol.getAllResults();
+        System.out.println(subres.length);
+        System.out.println(subres[0].length);
+        System.out.println(subres[0][0].length);
+        System.out.println(subres[0][0][0].length);        
+        System.out.println(subres[0][0][0][0].getAcc());      
+        System.out.println("");
     }
 }
