@@ -302,6 +302,7 @@ public class ClassifierLists {
             case "RBOSS":
                 c = new BOSS();
                 ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setSeed(fold);
                 break;
             case "WEASEL":
                 c = new WEASEL();
