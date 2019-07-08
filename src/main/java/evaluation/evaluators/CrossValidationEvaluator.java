@@ -360,7 +360,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         String dset = "lenses";
 //        String dset = "balloons";
 //        String dset = "acute-inflammation";
-        Instances insts = ClassifierTools.loadData("C:/UCI Problems/"+dset+"/"+dset);
+        Instances insts = DataLoading.loadData("C:/UCI Problems/"+dset+"/"+dset);
         
         System.out.println("Full data:");
         System.out.println("numinsts="+insts.numInstances());

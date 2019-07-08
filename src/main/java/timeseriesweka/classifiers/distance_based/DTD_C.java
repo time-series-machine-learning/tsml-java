@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.distance_based;
 
+import experiments.data.DataLoading;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import vector_classifiers.kNN;
@@ -304,8 +305,8 @@ public class DTD_C extends DD_DTW{
         System.out.println("Dataset,fullCosDTW,fullSinDTW,fullHilDTW,weightedCosDTW,weightedSinDTW,weightedHilDTW");
         for(String dataset:PAPER_DATASETS){
             System.out.print(dataset+",");
-            train = ClassifierTools.loadData(DATA_DIR+dataset+"/"+dataset+"_TRAIN");
-            test = ClassifierTools.loadData(DATA_DIR+dataset+"/"+dataset+"_TEST");
+            train = DataLoading.loadData(DATA_DIR+dataset+"/"+dataset+"_TRAIN");
+            test = DataLoading.loadData(DATA_DIR+dataset+"/"+dataset+"_TEST");
             
             // DTW on only the transformed data first
             for(SimpleBatchFilter transform:transforms){
@@ -342,8 +343,8 @@ public class DTD_C extends DD_DTW{
         try{
             if(option==1){
                 String dataName = "ItalyPowerDemand";
-                Instances train = ClassifierTools.loadData(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
-                Instances test = ClassifierTools.loadData(DATA_DIR+dataName+"/"+dataName+"_TEST");
+                Instances train = DataLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
+                Instances test = DataLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TEST");
                 
                 // create the classifier, using cosine in the distance calculations as an example
                 DTD_C nntw = new DTD_C(TransformType.COS);

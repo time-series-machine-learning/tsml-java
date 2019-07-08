@@ -21,6 +21,7 @@ import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
+import experiments.data.DataLoading;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
@@ -275,8 +276,8 @@ answer is to store those without the abandon in a hash table indexed by i and j,
             SlowDTW_1NN c = new SlowDTW_1NN();
             String path="C:\\Research\\Data\\Time Series Data\\Time Series Classification\\";
 
-            Instances test=ClassifierTools.loadData(path+"Coffee\\Coffee_TEST.arff");
-            Instances train=ClassifierTools.loadData(path+"Coffee\\Coffee_TRAIN.arff");
+            Instances test=DataLoading.loadData(path+"Coffee\\Coffee_TEST.arff");
+            Instances train=DataLoading.loadData(path+"Coffee\\Coffee_TRAIN.arff");
             train.setClassIndex(train.numAttributes()-1);
             c.buildClassifier(train);
 

@@ -19,6 +19,7 @@ package experiments.data;
 
 import experiments.Experiments;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +28,7 @@ import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.Attribute;
 import weka.core.Instances;
+import weka.core.converters.ArffSaver;
 
 /**
  * Class for handling the loading of datasets, from disk and the baked-in example datasets
@@ -83,8 +85,8 @@ public class DataLoading {
         boolean predefinedSplitsExist = trainFile.exists() && testFile.exists();
         if (predefinedSplitsExist) {
             // CASE 1)
-            data[0] = ClassifierTools.loadData(trainFile);
-            data[1] = ClassifierTools.loadData(testFile);
+            data[0] = loadData(trainFile);
+            data[1] = loadData(testFile);
             LOGGER.log(Level.FINE, problem + " loaded from predfined folds.");
         } else {
             trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
@@ -92,8 +94,8 @@ public class DataLoading {
             boolean predefinedFold0Exists = trainFile.exists() && testFile.exists();
             if (predefinedFold0Exists) {
                 // CASE 2)
-                data[0] = ClassifierTools.loadData(trainFile);
-                data[1] = ClassifierTools.loadData(testFile);
+                data[0] = loadData(trainFile);
+                data[1] = loadData(testFile);
                 if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
                     data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
                 } else {
@@ -104,7 +106,7 @@ public class DataLoading {
                 // We only have a single file with all the data
                 Instances all = null;
                 try {
-                    all = ClassifierTools.loadDataThrowable(parentFolder + problem + "/" + problem);
+                    all = loadDataThrowable(parentFolder + problem + "/" + problem);
                 } catch (IOException io) {
                     String msg = "Could not find the dataset \"" + problem + "\" in any form at the path\n" + parentFolder + "\n" + "The IOException: " + io;
                     LOGGER.log(Level.SEVERE, msg, io);
@@ -126,6 +128,64 @@ public class DataLoading {
             }
         }
         return data;
+    }
+
+    public static Instances loadDataThrowable(String fullPath) throws IOException {
+        if (!fullPath.toLowerCase().endsWith(".arff")) {
+            fullPath += ".arff";
+        }
+        return loadData(new File(fullPath));
+    }
+
+    /**
+     * simply loads the file on path or exits the program
+     * @param fullPath source path for ARFF file WITHOUT THE EXTENSION for some reason
+     * @return Instances from path
+     */
+    public static Instances loadData(String fullPath) {
+        if (!fullPath.toLowerCase().endsWith(".arff")) {
+            fullPath += ".arff";
+        }
+        try {
+            return loadData(new File(fullPath));
+        } catch (IOException e) {
+            System.out.println("Unable to load data on path " + fullPath + " Exception thrown =" + e);
+            return null;
+        }
+    }
+
+    /**
+     * simply loads the instances from the file
+     * @param file the File pointer rather than the path. Useful if you use FilenameFilters.
+     * @return Instances from file.
+     */
+    public static Instances loadData(File file) throws IOException {
+        FileReader reader = new FileReader(file);
+        Instances inst = new Instances(reader);
+        inst.setClassIndex(inst.numAttributes() - 1);
+        reader.close();
+        return inst;
+    }
+
+    /**
+     *  Simple util to saveDatasets out. Useful for shapelet transform.
+     *
+     * @param dataSet
+     * @param fileName
+     */
+    public static void saveDataset(Instances dataSet, String fileName) {
+        try {
+            ArffSaver saver = new ArffSaver();
+            saver.setInstances(dataSet);
+            if (fileName.endsWith(".arff")) {
+                saver.setFile(new File(fileName));
+            } else {
+                saver.setFile(new File(fileName + ".arff"));
+            }
+            saver.writeBatch();
+        } catch (IOException ex) {
+            System.out.println("Error saving transformed dataset" + ex);
+        }
     }
 
 }

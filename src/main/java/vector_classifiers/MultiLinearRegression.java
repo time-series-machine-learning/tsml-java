@@ -14,6 +14,7 @@
  */
 package vector_classifiers;
 
+import experiments.data.DataLoading;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.AbstractClassifier;
@@ -123,7 +124,7 @@ public class MultiLinearRegression extends AbstractClassifier {
 
 //        Instances train = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TRAIN.arff");
 //        Instances test = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TEST.arff");
-        Instances all = ClassifierTools.loadData("Z:/Data/UCIContinuous/molec-biol-promoter/molec-biol-promoter.arff");
+        Instances all = DataLoading.loadData("Z:/Data/UCIContinuous/molec-biol-promoter/molec-biol-promoter.arff");
         
         int folds = 10;
         double acc = 0;

@@ -1,5 +1,6 @@
 package vector_clusterers;
 
+import experiments.data.DataLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -364,7 +365,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         }
         
         for (int i = 0; i < datasets.length; i++){
-            Instances inst = ClassifierTools.loadData(datasets[i]);
+            Instances inst = DataLoading.loadData(datasets[i]);
             inst.setClassIndex(inst.numAttributes()-1);
             DensityPeak dp = new DensityPeak();
             dp.setClusterCenterCutoff(cutoffs[i]);

@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.interval_based;
 
 import experiments.DataSets;
+import experiments.data.DataLoading;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -197,8 +198,8 @@ public static void recreatePublishedResults() throws Exception{
         double meanDiff=0;
         int publishedBetter=0;
     for(int i=0;i<problems.length;i++){
-        Instances train = ClassifierTools.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
-        Instances test = ClassifierTools.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TEST");
+        Instances train = DataLoading.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
+        Instances test = DataLoading.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TEST");
         TSBF tsbf=new TSBF();
         tsbf.searchParameters(true);
         double a=ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
@@ -774,8 +775,8 @@ public static void recreatePublishedResults() throws Exception{
     public static void main(String[] args) throws Exception {
         String s= "Beef";
         System.out.println(" PROBLEM ="+s);
-        Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-        Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+        Instances train=DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+        Instances test=DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
         TSBF tsbf=new TSBF();
         double a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
         System.out.println(" TEST Acc ="+a);
@@ -791,8 +792,8 @@ public static void recreatePublishedResults() throws Exception{
             for(int i=1;i<2;i++){
                 s="TwoLeadECG";
                 System.out.println(" PROBLEM ="+s);
-                train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-                test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+                train=DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+                test=DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
 //                RandomForest rf=new RandomForest();
  //               rf.buildClassifier(train);
 //                System.out.println(" bag percent ="+rf.getBaggingPercent()+" OOB error "+rf.measureOutOfBagError());

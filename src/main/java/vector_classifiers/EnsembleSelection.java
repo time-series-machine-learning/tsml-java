@@ -28,6 +28,7 @@ import vector_classifiers.ensembles.voting.MajorityVote;
 import vector_classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
+import experiments.data.DataLoading;
 import utilities.ClassifierTools;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
@@ -366,7 +367,7 @@ public class EnsembleSelection extends CAWPE {
             
             System.out.println(dset);
             
-            Instances all = ClassifierTools.loadData("C:/UCI Problems/" + dset + "/" + dset + ".arff");
+            Instances all = DataLoading.loadData("C:/UCI Problems/" + dset + "/" + dset + ".arff");
             
             for (int fold = 0; fold < numfolds; fold++) {
                 String predictions = resPath+classifier+"/Predictions/"+dset;

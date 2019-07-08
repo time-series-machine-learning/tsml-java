@@ -32,6 +32,7 @@ import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import experiments.DataSets;
+import experiments.data.DataLoading;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -214,8 +215,8 @@ public class ClassificationExamples {
         int fold=Integer.parseInt(args[2])-1;
    
         Classifier c=setClassifier(classifier);
-        Instances train=ClassifierTools.loadData(DataSets.problemPath+problem+"/"+problem+"_TRAIN");
-        Instances test=ClassifierTools.loadData(DataSets.problemPath+problem+"/"+problem+"_TEST");
+        Instances train=DataLoading.loadData(DataSets.problemPath+problem+"/"+problem+"_TRAIN");
+        Instances test=DataLoading.loadData(DataSets.problemPath+problem+"/"+problem+"_TEST");
         File f=new File(DataSets.resultsPath+classifier);
         if(!f.exists())
             f.mkdir();

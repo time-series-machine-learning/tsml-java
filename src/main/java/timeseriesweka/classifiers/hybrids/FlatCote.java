@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.hybrids;
 
+import experiments.data.DataLoading;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
@@ -174,8 +175,8 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
     public static void main(String[] args) throws Exception{
         
         FlatCote fc = new FlatCote();
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        Instances train = DataLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
+        Instances test = DataLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         fc.buildClassifier(train);
         
         int correct = 0;

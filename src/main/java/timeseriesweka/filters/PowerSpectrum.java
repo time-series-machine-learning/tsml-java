@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DataLoading;
 import fileIO.OutFile;
 import java.io.FileReader;
 import java.util.logging.Level;
@@ -213,7 +214,7 @@ public class PowerSpectrum extends FFT {
         String problemPath = "E:/TSCProblems/";
         String resultsPath="E:/Temp/";
         String datasetName="ItalyPowerDemand";
-        Instances train =ClassifierTools.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances train =DataLoading.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         PowerSpectrum ps= new PowerSpectrum();
         try {
             Instances trans=ps.process(train);

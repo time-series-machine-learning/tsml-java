@@ -17,8 +17,6 @@ package timeseriesweka.classifiers.hybrids.cote;
 import experiments.DataSets;
 import java.util.ArrayList;
 
-import static utilities.ClassifierTools.loadData;
-
 /**
  *
  * @author Jason Lines (j.lines@uea.ac.uk)

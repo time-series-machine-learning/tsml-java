@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
+import experiments.data.DataLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -85,7 +86,7 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
         System.out.println("BagofPatternsTest\n\n");
         
         try {
-            Instances all = ClassifierTools.loadData("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
+            Instances all = DataLoading.loadData("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
             all.deleteAttributeAt(0); //just name of bottle        
             
             Randomize rand = new Randomize();

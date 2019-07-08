@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DataLoading;
 import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -293,7 +294,7 @@ public class SAX extends SimpleBatchFilter {
         System.out.println("SAXtest\n\n");
         
         try {
-            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
+            Instances test = DataLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
             
             new NormalizeCase().standardNorm(test);
             

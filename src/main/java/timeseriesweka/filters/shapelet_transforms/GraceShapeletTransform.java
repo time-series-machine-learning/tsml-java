@@ -15,6 +15,7 @@
 package timeseriesweka.filters.shapelet_transforms;
 
 import experiments.DataSets;
+import experiments.data.DataLoading;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -281,8 +282,8 @@ public class GraceShapeletTransform extends ShapeletTransform {
 
         String fileExtension = File.separator + DataSets.tscProblemsSmall[0] + File.separator + DataSets.tscProblemsSmall[0];
 
-        Instances train = utilities.ClassifierTools.loadData(ucrLocation + fileExtension + "_TRAIN");
-        Instances test = utilities.ClassifierTools.loadData(ucrLocation + fileExtension + "_TEST");
+        Instances train = DataLoading.loadData(ucrLocation + fileExtension + "_TRAIN");
+        Instances test = DataLoading.loadData(ucrLocation + fileExtension + "_TEST");
 
         //first run: build the BSUB.
         //GraceFullShapeletTransform.buildGraceBSUB("../../"+DataSets.tscProblemsSmall[0], train.numInstances(), "raj09hxu", "SamplingExperiments/dist", "samplingExperiments", "long", 1000);

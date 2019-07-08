@@ -18,6 +18,7 @@ import experiments.DataSets;
 import utilities.ClassifierTools;
 import vector_classifiers.kNN;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DataLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -289,8 +290,8 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
             k2.useDTW();
-            Instances train=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DataLoading.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DataLoading.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);
@@ -307,8 +308,8 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         for(String s:DataSets.tscProblems46){
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
-            Instances train=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DataLoading.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DataLoading.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);

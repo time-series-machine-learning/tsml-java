@@ -32,6 +32,7 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DataLoading;
 import static utilities.GenericTools.indexOfMax;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
@@ -696,8 +697,8 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         
         String dataset = "ItalyPowerDemand";
         
-        Instances train = ClassifierTools.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-        Instances test = ClassifierTools.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+        Instances train = DataLoading.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+        Instances test = DataLoading.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TEST");
         
         int rs = 50;
         
@@ -752,7 +753,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         DecimalFormat df = new DecimalFormat("##.###");
         try{
             String dset = "balloons";             
-           Instances all=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
+           Instances all=DataLoading.loadData("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
             Instances[] split=InstanceTools.resampleInstances(all,1,0.5);
                 TunedRandomForest rf=new TunedRandomForest();
                 rf.debug(true);
@@ -800,8 +801,8 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     }
    
     public static void cheatOnMNIST(){
-        Instances train=ClassifierTools.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
-        Instances test=ClassifierTools.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
+        Instances train=DataLoading.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
+        Instances test=DataLoading.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
         RandomForest rf=new RandomForest();
         System.out.println("Data loaded ......");
         double a =ClassifierTools.singleTrainTestSplitAccuracy(rf, train, test);

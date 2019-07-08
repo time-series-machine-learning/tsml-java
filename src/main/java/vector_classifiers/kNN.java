@@ -1,6 +1,7 @@
 package vector_classifiers;
 
 import experiments.DataSets;
+import experiments.data.DataLoading;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.AttributeFilterBridge;
@@ -118,8 +119,8 @@ public class kNN extends IBk {
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
             for(String s:DataSets.uciFileNames){
-                Instances train=ClassifierTools.loadData(DataSets.uciPath+s+"\\"+s+"-train");
-                Instances test=ClassifierTools.loadData(DataSets.uciPath+s+"\\"+s+"-test");
+                Instances train=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-train");
+                Instances test=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);
@@ -156,8 +157,8 @@ public class kNN extends IBk {
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
             for(String s:DataSets.uciFileNames){
-                Instances train=ClassifierTools.loadData(DataSets.uciPath+s+"\\"+s+"-train");
-                Instances test=ClassifierTools.loadData(DataSets.uciPath+s+"\\"+s+"-test");
+                Instances train=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-train");
+                Instances test=DataLoading.loadData(DataSets.uciPath+s+"\\"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);
