@@ -4,6 +4,7 @@ import distances.DistanceMeasure;
 import evaluation.tuning.ParameterSpace;
 import utilities.Utilities;
 import weka.core.Instance;
+import weka.core.Instances;
 
 public class Wdtw
     extends DistanceMeasure {

@@ -17,12 +17,20 @@ import java.util.function.Supplier;
 public class Tuned extends TemplateClassifier {
     private final Supplier<AbstractClassifier> supplier;
     private final Function<Instances, ParameterSpace> parameterSpaceGetter;
+    private final Supplier<ParameterSpace> parameterSpaceSupplier;
     private Comparator<ClassifierResults> comparator = Comparator.comparingDouble(ClassifierResults::getAcc);
     private AbstractClassifier classifier;
 
     public Tuned(Supplier<AbstractClassifier> supplier, Function<Instances, ParameterSpace> parameterSpaceGetter) {
         this.supplier = supplier;
         this.parameterSpaceGetter = parameterSpaceGetter;
+        parameterSpaceSupplier = null;
+    }
+
+    public Tuned(Supplier<AbstractClassifier> supplier, Supplier<ParameterSpace> parameterSpaceSupplier) {
+        this.supplier = supplier;
+        this.parameterSpaceGetter = null;
+        this.parameterSpaceSupplier = parameterSpaceSupplier;
     }
 
     private static class ParameterBenchmark {
@@ -51,6 +59,7 @@ public class Tuned extends TemplateClassifier {
     }
 
     private ClassifierResults evaluateParameter(AbstractClassifier classifier, ParameterSet parameterSet, Instances trainSet) throws Exception {
+        System.out.println(parameterSet);
         classifier.setOptions(parameterSet.getOptions());
         ClassifierResults trainResults;
         if(classifier instanceof TemplateClassifier) {
@@ -74,7 +83,14 @@ public class Tuned extends TemplateClassifier {
 
     @Override
     public void buildClassifier(Instances trainSet) throws Exception {
-        ParameterSpace parameterSpace = parameterSpaceGetter.apply(trainSet);
+        ParameterSpace parameterSpace;
+        if(parameterSpaceGetter != null) {
+            parameterSpace = parameterSpaceGetter.apply(trainSet);
+        } else if(parameterSpaceSupplier != null) {
+            parameterSpace = parameterSpaceSupplier.get();
+        } else {
+            throw new IllegalStateException("no means of obtaining parameter space");
+        }
         parameterSpace.removeDuplicateValues();
         List<ParameterBenchmark> bestParameters = new ArrayList<>();
         AbstractClassifier classifier = supplier.get();

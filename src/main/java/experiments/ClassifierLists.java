@@ -17,7 +17,14 @@ package experiments;
 
 import classifiers.Tuned;
 import classifiers.distance_based.knn.Knn;
+import distances.derivative_time_domain.ddtw.Ddtw;
+import distances.derivative_time_domain.wddtw.Wddtw;
 import distances.time_domain.dtw.Dtw;
+import distances.time_domain.erp.Erp;
+import distances.time_domain.lcss.Lcss;
+import distances.time_domain.msm.Msm;
+import distances.time_domain.twe.Twe;
+import distances.time_domain.wdtw.Wdtw;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -97,6 +104,27 @@ public class ClassifierLists {
         switch(classifier){
             case "TUNED_DTW_KNN":
                 c = new Tuned(Knn::new, Dtw::allDiscreteParameterSpace);
+                break;
+            case "TUNED_LCSS_KNN":
+                c = new Tuned(Knn::new, Lcss::allDiscreteParameterSpace);
+                break;
+            case "TUNED_ERP_KNN":
+                c = new Tuned(Knn::new, Erp::allDiscreteParameterSpace);
+                break;
+            case "TUNED_WDTW_KNN":
+                c = new Tuned(Knn::new, Wdtw::discreteParameterSpace);
+                break;
+            case "TUNED_WDDTW_KNN":
+                c = new Tuned(Knn::new, Wddtw::discreteParameterSpace);
+                break;
+            case "TUNED_DDTW_KNN":
+                c = new Tuned(Knn::new, Ddtw::discreteParameterSpace);
+                break;
+            case "TUNED_TWE_KNN":
+                c = new Tuned(Knn::new, Twe::discreteParameterSpace);
+                break;
+            case "TUNED_MSM_KNN":
+                c = new Tuned(Knn::new, Msm::discreteParameterSpace);
                 break;
             case "ED_KNN":
                 c = new Knn();
