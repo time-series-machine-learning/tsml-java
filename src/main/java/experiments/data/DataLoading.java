@@ -17,6 +17,7 @@
 
 package experiments.data;
 
+import experiments.ClassifierLists;
 import experiments.Experiments;
 import java.io.File;
 import java.io.FileReader;
@@ -26,6 +27,7 @@ import java.util.logging.Logger;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
+import weka.classifiers.Classifier;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.converters.ArffSaver;
@@ -197,53 +199,187 @@ public class DataLoading {
         }
     }
 
-    public static void main(String[] args) {
+    
+    public static Instances[] sampleItalyPowerDemand(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
+    }
+    
+    public static Instances[] sampleBasicMotions(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
+    }
+    
+    public static Instances[] sampleIris(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public static void main(String[] args) throws Exception {
         tests();
+    }
+    
+    private static boolean quickEval(Instances insts) throws Exception { 
+        Classifier ed = ClassifierLists.setClassifierClassic("ED", 0);
+        ed.buildClassifier(insts);
+        return ClassifierTools.accuracy(insts, ed) == 1.0;
+    }
+    
+    private static void assert_t(boolean result) throws Exception {
+        if (!result) //todo reassess how the proper assert works...
+            throw new Exception("Hacky assert failed");
     }
     
     /**
      * Obvious candidate for moving over to proper unit tests when codebase updates 
      * to incorporate them properly
      */
-    public static void tests() {
+    public static void tests() throws Exception {
         
+        //should handle both with/without extension
         String dataPath = BAKED_IN_UCI_DATA_PATH + "iris/iris";
+        System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
-            System.out.println("Passed: testARFFLoad("+dataPath+")");
+            System.out.println("Passed: testARFFLoad("+dataPath+")\n");
         
-        dataPath += ".arff"; //should both both with/without extension
+        dataPath += ".arff"; 
+        System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
-            System.out.println("Passed: testARFFLoad("+dataPath+")");
+            System.out.println("Passed: testARFFLoad("+dataPath+")\n");
         
-//        testUCILoad();
-//        testTSCLoad();
-//        testMTSCLoad();
+        System.out.println("Testing: testUCILoad()");
+        if (testUCILoad())
+            System.out.println("Passed: testUCILoad()\n");
+        
+        // 0 loads default split, 1 will resample
+        System.out.println("Testing: testTSCLoad("+0+")");
+        if (testTSCLoad(0))
+            System.out.println("Passed: testTSCLoad("+0+")\n");
+        
+        System.out.println("Testing: testTSCLoad("+1+")");
+        if (testTSCLoad(1))
+            System.out.println("Passed: testTSCLoad("+1+")\n");
+        
+        System.out.println("Testing: testMTSCLoad("+0+")");
+        if (testMTSCLoad(0))
+            System.out.println("Passed: testMTSCLoad("+0+")\n");
+        
+        System.out.println("Testing: testMTSCLoad("+1+")");
+        if (testMTSCLoad(1))
+            System.out.println("Passed: testMTSCLoad("+1+")\n");
     }
     
-    public static boolean testARFFLoad(String dataPath) { 
+    public static boolean testARFFLoad(String dataPath) throws Exception { 
         
-        Instances data = loadData(dataPath);
+        Instances data = loadDataThrowable(dataPath);
                 
-        assert(data != null);
-        assert(data.numInstances() == 150);
-        assert(data.numAttributes() == 5);
-        assert(data.numClasses() == 3);
-        assert(data.classIndex() == data.numAttributes()-1);
+        assert_t(data != null);
+        assert_t(data.relationName().equals("iris"));
+        assert_t(data.numInstances() == 150);
+        assert_t(data.numAttributes() == 5);
+        assert_t(data.numClasses() == 3);
+        assert_t(data.classIndex() == data.numAttributes()-1);
+        
+        assert_t(quickEval(data));
         
         return true;
     }
     
-//    public static boolean testUCILoad() { 
-//        
-//    }
-//    
-//    public static boolean testTSCLoad() { 
-//        
-//    }
-//    
-//    public static boolean testMTSCLoad() { 
-//        
-//    }
+    public static boolean testUCILoad() throws Exception { 
+        Experiments.proportionKeptForTraining = 0.5;
+        Instances[] data = sampleIris(0);
+                
+        assert_t(data != null);
+        
+        assert_t(data[0] != null);
+        assert_t(data[0].relationName().equals("iris"));
+        assert_t(data[0].numInstances() == 75);
+        assert_t(data[0].numAttributes() == 5);
+        assert_t(data[0].numClasses() == 3);
+        assert_t(data[0].classIndex() == data[0].numAttributes()-1);
+        
+        assert_t(data[1] != null);
+        assert_t(data[1].relationName().equals("iris"));
+        assert_t(data[1].numInstances() == 75);
+        assert_t(data[1].numAttributes() == 5);
+        assert_t(data[1].numClasses() == 3);
+        assert_t(data[1].classIndex() == data[1].numAttributes()-1);
+        
+        assert_t(quickEval(data[0]));
+        assert_t(quickEval(data[1]));
+        
+        return true;
+    }
+    
+    public static boolean testTSCLoad(int seed) throws Exception { 
+        Instances[] data = sampleItalyPowerDemand(seed);
+                        
+        assert_t(data != null);
+        
+        assert_t(data[0] != null);
+        assert_t(data[0].relationName().equals("ItalyPowerDemand"));
+        assert_t(data[0].numInstances() == 67);
+        assert_t(data[0].numAttributes() == 25);
+        assert_t(data[0].numClasses() == 2);
+        assert_t(data[0].classIndex() == data[0].numAttributes()-1);
+        
+        assert_t(data[1] != null);
+        assert_t(data[1].relationName().equals("ItalyPowerDemand"));
+        assert_t(data[1].numInstances() == 1029);
+        assert_t(data[1].numAttributes() == 25);
+        assert_t(data[1].numClasses() == 2);
+        assert_t(data[1].classIndex() == data[1].numAttributes()-1);
+        
+        assert_t(quickEval(data[0]));
+        assert_t(quickEval(data[1]));
+        
+        return true;
+    }
+    
+    public static boolean testMTSCLoad(int seed) throws Exception { 
+        Instances[] data = sampleBasicMotions(seed);
+        
+        assert_t(data != null);
+        
+        assert_t(data[0] != null);
+        assert_t(data[0].relationName().equals("BasicMotions"));
+        assert_t(data[0].numInstances() == 40);
+        assert_t(data[0].attribute(0).isRelationValued());
+        assert_t(data[0].attribute(0).relation().numAttributes() == 100);
+        assert_t(data[0].numClasses() == 4);
+        assert_t(data[0].classIndex() == data[0].numAttributes()-1);
+        
+        assert_t(data[1] != null);
+        assert_t(data[1].relationName().equals("BasicMotions"));
+        assert_t(data[1].numInstances() == 40);
+        assert_t(data[1].attribute(0).isRelationValued());
+        assert_t(data[1].attribute(0).relation().numAttributes() == 100);
+        assert_t(data[1].numClasses() == 4);
+        assert_t(data[1].classIndex() == data[1].numAttributes()-1);
+        
+        assert_t(quickEval(data[0]));
+        assert_t(quickEval(data[1]));
+        
+        return true;
+    }
     
     
 }
