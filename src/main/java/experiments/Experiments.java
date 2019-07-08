@@ -88,7 +88,7 @@ import weka.core.Instances;
       If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
       directly, instead of building the String[] args and calling main like a lot of legacy code does.   
  * 
- * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+ * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
 public class Experiments  {
 
@@ -97,9 +97,7 @@ public class Experiments  {
     public static boolean debug = false;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
-    public static String LOXO_ATT_ID = "experimentsSplitAttribute";
     public static int numCVFolds = 10;
-    public static double proportionKeptForTraining = 0.5;
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {

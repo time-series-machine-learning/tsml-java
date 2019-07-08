@@ -50,7 +50,10 @@ public class DataLoading {
     private static final String[] BAKED_IN_UCI_DATASETS = { "iris" };
     private static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand" };
     private static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
-       
+    
+    public static String LOXO_ATT_ID = "experimentsSplitAttribute";
+    public static double proportionKeptForTraining = 0.5;
+    
     public static boolean debug = false;
     
     public static void setDebug(boolean d) {
@@ -64,6 +67,60 @@ public class DataLoading {
     public static boolean getDebug() {
         return debug;
     }
+    
+    
+    /**
+     * Helper function for loading the baked-in ItalyPowerDemand dataset, one of the 
+     * UCR datasets for TSC
+     *
+     * http://timeseriesclassification.com/description.php?Dataset=ItalyPowerDemand
+     * 
+     * UCR data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     * 
+     * @param seed the seed for resampling the data. 
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception 
+     */
+    public static Instances[] sampleItalyPowerDemand(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
+    }
+    
+    /**
+     * Helper function for loading the baked-in BasicMotions dataset, one of the 
+     * UEA datasets for MTSC
+     * 
+     * http://timeseriesclassification.com/description.php?Dataset=BasicMotions
+     * 
+     * UEA-MTSC data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     * 
+     * @param seed the seed for resampling the data
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception 
+     */
+    public static Instances[] sampleBasicMotions(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
+    }
+    
+    /**
+     * Helper function for loading the baked-in Iris dataset, one of the classical 
+     * UCI datasets for general classification
+     * 
+     * https://archive.ics.uci.edu/ml/datasets/iris
+     * 
+     * UCI data comes in a single file. The proportion of data kept for training is 
+     * defined by the static proportionKeptForTraining, default = 0.5
+     * 
+     * @param seed the seed for resampling the data.
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception 
+     */
+    public static Instances[] sampleIris(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
+    }
+    
+    
     
     /**
      * This method will return a train/test split of the problem, resampled with the fold ID given.
@@ -122,7 +179,7 @@ public class DataLoading {
                     String msg = "Could not find the dataset \"" + problem + "\" in any form at the path\n" + parentFolder + "\n" + "The IOException: " + io;
                     LOGGER.log(Level.SEVERE, msg, io);
                 }
-                boolean needToDefineLeaveOutOneXFold = all.attribute(0).name().toLowerCase().contains(Experiments.LOXO_ATT_ID.toLowerCase());
+                boolean needToDefineLeaveOutOneXFold = all.attribute(0).name().toLowerCase().contains(LOXO_ATT_ID.toLowerCase());
                 if (needToDefineLeaveOutOneXFold) {
                     // CASE 4)
                     data = Experiments.splitDatasetByFirstAttribute(all, fold);
@@ -130,9 +187,9 @@ public class DataLoading {
                 } else {
                     // CASE 3)
                     if (all.checkForAttributeType(Attribute.RELATIONAL)) {
-                        data = MultivariateInstanceTools.resampleMultivariateInstances(all, fold, Experiments.proportionKeptForTraining);
+                        data = MultivariateInstanceTools.resampleMultivariateInstances(all, fold, proportionKeptForTraining);
                     } else {
-                        data = InstanceTools.resampleInstances(all, fold, Experiments.proportionKeptForTraining);
+                        data = InstanceTools.resampleInstances(all, fold, proportionKeptForTraining);
                     }
                     LOGGER.log(Level.FINE, problem + " resampled from full data file.");
                 }
@@ -199,19 +256,6 @@ public class DataLoading {
         }
     }
 
-    
-    public static Instances[] sampleItalyPowerDemand(int seed) throws Exception {
-        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
-    }
-    
-    public static Instances[] sampleBasicMotions(int seed) throws Exception {
-        return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
-    }
-    
-    public static Instances[] sampleIris(int seed) throws Exception {
-        return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
-    }
-    
     
     
     
@@ -304,7 +348,7 @@ public class DataLoading {
     }
     
     public static boolean testUCILoad() throws Exception { 
-        Experiments.proportionKeptForTraining = 0.5;
+        proportionKeptForTraining = 0.5;
         Instances[] data = sampleIris(0);
                 
         assert_t(data != null);
