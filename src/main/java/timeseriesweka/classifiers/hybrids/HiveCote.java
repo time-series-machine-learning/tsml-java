@@ -661,8 +661,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         String datasetName = "ItalyPowerDemand";
 //        String datasetName = "MoteStrain";
         
-        Instances train = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
         HiveCote hive = new HiveCote();
         hive.makeShouty();

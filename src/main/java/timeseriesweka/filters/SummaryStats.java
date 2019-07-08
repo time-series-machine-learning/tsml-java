@@ -166,7 +166,7 @@ public Instances process(Instances inst) throws Exception {
 	
 		
             try{
-                Instances test=DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
+                Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
 //                Instances filter=new SummaryStats().process(test);
                SummaryStats m=new SummaryStats();
                m.setInputFormat(test);

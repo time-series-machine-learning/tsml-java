@@ -124,8 +124,8 @@ public class PowerSpectrum extends FFT {
         return output;		
     }
     public static void waferTest(){
-/*		Instances a=WekaMethods.loadData("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TRAIN");
-            Instances b=WekaMethods.loadData("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TEST");
+/*		Instances a=WekaMethods.loadDataThrowable("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TRAIN");
+            Instances b=WekaMethods.loadDataThrowable("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TEST");
             PowerSpectrum ps=new PowerSpectrum();
             try{
             Instances c=ps.process(a);
@@ -185,8 +185,8 @@ public class PowerSpectrum extends FFT {
 //Case 4:           0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1              
 /*            PowerSpectrum ps=new PowerSpectrum();
 
-        Instances test1=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test1");
-        Instances test2=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test2");
+        Instances test1=ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test1");
+        Instances test2=ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test2");
         Instances t2;
      try{
           t2=ps.process(test1);
@@ -214,7 +214,7 @@ public class PowerSpectrum extends FFT {
         String problemPath = "E:/TSCProblems/";
         String resultsPath="E:/Temp/";
         String datasetName="ItalyPowerDemand";
-        Instances train =DatasetLoading.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances train =DatasetLoading.loadDataNullable("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         PowerSpectrum ps= new PowerSpectrum();
         try {
             Instances trans=ps.process(train);

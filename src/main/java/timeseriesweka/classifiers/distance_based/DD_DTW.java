@@ -659,8 +659,8 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
 
             System.out.print(dataset+",");
 
-            train = DatasetLoading.loadData(dataDir+dataset+"/"+dataset+"_TRAIN");
-            test = DatasetLoading.loadData(dataDir+dataset+"/"+dataset+"_TEST");
+            train = DatasetLoading.loadDataNullable(dataDir+dataset+"/"+dataset+"_TRAIN");
+            test = DatasetLoading.loadDataNullable(dataDir+dataset+"/"+dataset+"_TEST");
 
             // instance resampling happens here, seed of 0 means that the standard train/test split is used
             if(seed!=0){
@@ -734,8 +734,8 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         try{
             if(option==1){
                 String dataName = "ItalyPowerDemand";
-                Instances train = DatasetLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
-                Instances test = DatasetLoading.loadData(DATA_DIR+dataName+"/"+dataName+"_TEST");
+                Instances train = DatasetLoading.loadDataNullable(DATA_DIR+dataName+"/"+dataName+"_TRAIN");
+                Instances test = DatasetLoading.loadDataNullable(DATA_DIR+dataName+"/"+dataName+"_TEST");
                 
                 // create the classifier, using DTW as the distance function as an example
                 DD_DTW nndw = new DD_DTW(DistanceType.DTW);;

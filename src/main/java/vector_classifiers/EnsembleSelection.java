@@ -367,7 +367,7 @@ public class EnsembleSelection extends CAWPE {
             
             System.out.println(dset);
             
-            Instances all = DatasetLoading.loadData("C:/UCI Problems/" + dset + "/" + dset + ".arff");
+            Instances all = DatasetLoading.loadDataNullable("C:/UCI Problems/" + dset + "/" + dset + ".arff");
             
             for (int fold = 0; fold < numfolds; fold++) {
                 String predictions = resPath+classifier+"/Predictions/"+dset;

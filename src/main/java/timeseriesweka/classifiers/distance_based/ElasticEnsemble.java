@@ -597,8 +597,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
-        Instances train = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = DatasetLoading.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
         
         int correct = 0;

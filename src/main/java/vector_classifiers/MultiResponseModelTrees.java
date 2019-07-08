@@ -108,9 +108,9 @@ public class MultiResponseModelTrees extends AbstractClassifier {
 
     
     public static void main(String[] args) throws Exception {
-//        Instances train = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TRAIN.arff");
-//        Instances test = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TEST.arff");
-        Instances all = DatasetLoading.loadData("Z:/Data/UCIContinuous/hayes-roth/hayes-roth.arff");
+//        Instances train = ClassifierTools.loadDataThrowable("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TRAIN.arff");
+//        Instances test = ClassifierTools.loadDataThrowable("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TEST.arff");
+        Instances all = DatasetLoading.loadDataNullable("Z:/Data/UCIContinuous/hayes-roth/hayes-roth.arff");
         
         int folds = 10;
         double acc = 0;

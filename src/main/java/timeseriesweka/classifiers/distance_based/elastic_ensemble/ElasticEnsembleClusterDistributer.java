@@ -191,7 +191,7 @@ public class ElasticEnsembleClusterDistributer {
             String classifier = args[3].trim();
             int paramId = Integer.parseInt(args[4].trim())-1;
             
-            Instances train = DatasetLoading.loadData(arffDir+datasetName+"_TRAIN");
+            Instances train = DatasetLoading.loadDataNullable(arffDir+datasetName+"_TRAIN");
             runCv(train, datasetName, resampleId, ElasticEnsemble.ConstituentClassifiers.valueOf(classifier), paramId);
             
         }else if(args[0].equalsIgnoreCase("parseCv")){ 
@@ -210,8 +210,8 @@ public class ElasticEnsembleClusterDistributer {
             int resampleId = 0;
             
             
-            Instances train = DatasetLoading.loadData(arffPath+datasetName+"/"+datasetName+"_TRAIN");
-            Instances test = DatasetLoading.loadData(arffPath+datasetName+"/"+datasetName+"_TEST");
+            Instances train = DatasetLoading.loadDataNullable(arffPath+datasetName+"/"+datasetName+"_TRAIN");
+            Instances test = DatasetLoading.loadDataNullable(arffPath+datasetName+"/"+datasetName+"_TEST");
             if(args.length > 4){
                 resampleId = Integer.parseInt(args[4].trim());
                 Instances temp[] = InstanceTools.resampleTrainAndTestInstances(train, test, resampleId);

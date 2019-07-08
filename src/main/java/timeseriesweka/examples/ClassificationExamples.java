@@ -215,8 +215,8 @@ public class ClassificationExamples {
         int fold=Integer.parseInt(args[2])-1;
    
         Classifier c=setClassifier(classifier);
-        Instances train=DatasetLoading.loadData(DatasetLists.problemPath+problem+"/"+problem+"_TRAIN");
-        Instances test=DatasetLoading.loadData(DatasetLists.problemPath+problem+"/"+problem+"_TEST");
+        Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TEST");
         File f=new File(DatasetLists.resultsPath+classifier);
         if(!f.exists())
             f.mkdir();

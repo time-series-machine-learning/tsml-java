@@ -130,8 +130,8 @@ public class LCSS1NN extends Efficient1NN{
 //        String datasetName = "SonyAiboRobotSurface1";
 
         
-        Instances train = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(tscProbDir+datasetName+"/"+datasetName+"_TEST");
         
         int delta = 10;
         double epsilon = 0.5;       

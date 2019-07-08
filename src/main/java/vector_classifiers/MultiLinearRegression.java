@@ -122,9 +122,9 @@ public class MultiLinearRegression extends AbstractClassifier {
 
 
 
-//        Instances train = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TRAIN.arff");
-//        Instances test = ClassifierTools.loadData("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TEST.arff");
-        Instances all = DatasetLoading.loadData("Z:/Data/UCIContinuous/molec-biol-promoter/molec-biol-promoter.arff");
+//        Instances train = ClassifierTools.loadDataThrowable("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TRAIN.arff");
+//        Instances test = ClassifierTools.loadDataThrowable("Z:/Data/TSCProblems/ItalyPowerDemand/ItalyPowerDemand_TEST.arff");
+        Instances all = DatasetLoading.loadDataNullable("Z:/Data/UCIContinuous/molec-biol-promoter/molec-biol-promoter.arff");
         
         int folds = 10;
         double acc = 0;

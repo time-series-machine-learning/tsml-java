@@ -442,8 +442,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BoTSWEnsemble();
         ((BoTSWEnsemble)c).dist = BoTSW.DistFunction.BOSS_DISTANCE;
@@ -460,8 +460,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
         public static void detailedFold0Test(String dset) {
         System.out.println("BoTSWEnsemble DetailedTest\n");
         try {
-            Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BoTSWEnsemble botsw = new BoTSWEnsemble();
@@ -497,8 +497,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BoTSWEnsemble();
          

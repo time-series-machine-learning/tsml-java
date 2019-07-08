@@ -439,7 +439,7 @@ public class Tuner
         tuner.setSeed(seed);
         
         String dataset = "hayes-roth";
-        Instances all = DatasetLoading.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+        Instances all = DatasetLoading.loadDataNullable("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
         Instances[] data = InstanceTools.resampleInstances(all, seed, 0.5);
         
         System.out.println(tuner.tune(svm, data[0], space));

@@ -464,8 +464,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         String datasetName = "FordA";
         int fold = 0;
         
-        Instances train= DatasetLoading.loadData(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
-        Instances test= DatasetLoading.loadData(dataLocation+datasetName+File.separator+datasetName+"_TEST");
+        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
+        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
         String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
         String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
         String preds=saveLocation+datasetName;

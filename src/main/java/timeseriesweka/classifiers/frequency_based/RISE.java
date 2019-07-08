@@ -411,8 +411,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     }
    
     public static void main(String[] arg) throws Exception{
-        Instances train=DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
-        Instances test=DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
+        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
         RISE rif = new RISE();
         rif.setTransforms("ACF","AR","AFC");
         for(Filter f: rif.filters)

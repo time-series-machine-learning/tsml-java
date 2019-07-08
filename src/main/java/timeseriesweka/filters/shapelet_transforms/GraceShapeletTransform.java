@@ -282,8 +282,8 @@ public class GraceShapeletTransform extends ShapeletTransform {
 
         String fileExtension = File.separator + DatasetLists.tscProblemsSmall[0] + File.separator + DatasetLists.tscProblemsSmall[0];
 
-        Instances train = DatasetLoading.loadData(ucrLocation + fileExtension + "_TRAIN");
-        Instances test = DatasetLoading.loadData(ucrLocation + fileExtension + "_TEST");
+        Instances train = DatasetLoading.loadDataNullable(ucrLocation + fileExtension + "_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(ucrLocation + fileExtension + "_TEST");
 
         //first run: build the BSUB.
         //GraceFullShapeletTransform.buildGraceBSUB("../../"+DatasetLists.tscProblemsSmall[0], train.numInstances(), "raj09hxu", "SamplingExperiments/dist", "samplingExperiments", "long", 1000);

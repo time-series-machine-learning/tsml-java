@@ -333,8 +333,8 @@ answer is to store those without the abandon in a hash table indexed by i and j,
             FastDTW_1NN c = new FastDTW_1NN();
             String path="C:\\Research\\Data\\Time Series Data\\Time Series Classification\\";
 
-            Instances test=DatasetLoading.loadData(path+"Coffee\\Coffee_TEST.arff");
-            Instances train=DatasetLoading.loadData(path+"Coffee\\Coffee_TRAIN.arff");
+            Instances test=DatasetLoading.loadDataNullable(path+"Coffee\\Coffee_TEST.arff");
+            Instances train=DatasetLoading.loadDataNullable(path+"Coffee\\Coffee_TRAIN.arff");
             train.setClassIndex(train.numAttributes()-1);
             c.buildClassifier(train);
 

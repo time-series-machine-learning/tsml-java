@@ -153,8 +153,8 @@ public class DatasetLoading {
         boolean predefinedSplitsExist = trainFile.exists() && testFile.exists();
         if (predefinedSplitsExist) {
             // CASE 1)
-            data[0] = loadData(trainFile);
-            data[1] = loadData(testFile);
+            data[0] = loadDataThrowable(trainFile);
+            data[1] = loadDataThrowable(testFile);
             LOGGER.log(Level.FINE, problem + " loaded from predfined folds.");
         } else {
             trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
@@ -162,8 +162,8 @@ public class DatasetLoading {
             boolean predefinedFold0Exists = trainFile.exists() && testFile.exists();
             if (predefinedFold0Exists) {
                 // CASE 2)
-                data[0] = loadData(trainFile);
-                data[1] = loadData(testFile);
+                data[0] = loadDataThrowable(trainFile);
+                data[1] = loadDataThrowable(testFile);
                 if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
                     data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
                 } else {
@@ -174,7 +174,7 @@ public class DatasetLoading {
                 // We only have a single file with all the data
                 Instances all = null;
                 try {
-                    all = loadDataThrowable(parentFolder + problem + "/" + problem);
+                    all = DatasetLoading.loadDataThrowable(parentFolder + problem + "/" + problem);
                 } catch (IOException io) {
                     String msg = "Could not find the dataset \"" + problem + "\" in any form at the path\n" + parentFolder + "\n" + "The IOException: " + io;
                     LOGGER.log(Level.SEVERE, msg, io);
@@ -198,43 +198,68 @@ public class DatasetLoading {
         return data;
     }
 
-    public static Instances loadDataThrowable(String fullPath) throws IOException {
-        if (!fullPath.toLowerCase().endsWith(".arff")) {
-            fullPath += ".arff";
-        }
-        return loadData(new File(fullPath));
-    }
-
     /**
-     * simply loads the file on path or exits the program
-     * @param fullPath source path for ARFF file WITHOUT THE EXTENSION for some reason
-     * @return Instances from path
-     */
-    public static Instances loadData(String fullPath) {
-        if (!fullPath.toLowerCase().endsWith(".arff")) {
-            fullPath += ".arff";
-        }
-        try {
-            return loadData(new File(fullPath));
-        } catch (IOException e) {
-            System.out.println("Unable to load data on path " + fullPath + " Exception thrown =" + e);
-            return null;
-        }
-    }
-
-    /**
-     * simply loads the instances from the file
-     * @param file the File pointer rather than the path. Useful if you use FilenameFilters.
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or throws IOException on any error.
+     * 
+     * @param fullPath path to the file to try and load
      * @return Instances from file.
+     * @throws java.io.IOException if cannot find the file, or file is malformed
      */
-    public static Instances loadData(File file) throws IOException {
-        FileReader reader = new FileReader(file);
+    public static Instances loadDataThrowable(String fullPath) throws IOException {
+        if (!fullPath.toLowerCase().endsWith(".arff"))
+            fullPath += ".arff";
+            
+        return loadDataThrowable(new File(fullPath));
+    }
+
+    /**
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or throws IOException on any error.
+     * 
+     * @param targetFile the file to try and load
+     * @return Instances from file.
+     * @throws java.io.IOException if cannot find the file, or file is malformed
+     */
+    public static Instances loadDataThrowable(File targetFile) throws IOException {
+        FileReader reader = new FileReader(targetFile);
         Instances inst = new Instances(reader);
         inst.setClassIndex(inst.numAttributes() - 1);
         reader.close();
         return inst;
     }
+    
+    
+    /**
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or returns null on any error, such as not finding the file or it being malformed
+     * 
+     * @param fullPath path to the file to try and load
+     * @return Instances from file.
+     */
+    public static Instances loadDataNullable(String fullPath) {
+        if (!fullPath.toLowerCase().endsWith(".arff"))
+            fullPath += ".arff";
+            
+        return loadDataNullable(new File(fullPath));
+    }
 
+    /**
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or returns null on any error, such as not finding the file or it being malformed
+     * 
+     * @param targetFile the file to try and load
+     * @return Instances from file.
+     */
+    public static Instances loadDataNullable(File targetFile) {
+        try {
+            return loadDataThrowable(targetFile);
+        } catch (IOException e) {
+            System.out.println("Unable to load data on path " + targetFile.getAbsolutePath() + " Exception thrown =" + e);
+            return null;
+        }
+    }
+    
     /**
      *  Simple util to saveDatasets out. Useful for shapelet transform.
      *
@@ -333,7 +358,7 @@ public class DatasetLoading {
     
     public static boolean testARFFLoad(String dataPath) throws Exception { 
         
-        Instances data = loadDataThrowable(dataPath);
+        Instances data = DatasetLoading.loadDataThrowable(dataPath);
                 
         assert_t(data != null);
         assert_t(data.relationName().equals("iris"));

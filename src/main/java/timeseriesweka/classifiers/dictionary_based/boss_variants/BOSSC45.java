@@ -562,8 +562,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "BeetleFly";
-        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BOSSC45();
         c.buildClassifier(train);
@@ -579,8 +579,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void detailedFold0Test(String dset) {
         System.out.println("BOSSC45 DetailedTest\n");
         try {
-            Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BOSSC45 boss = new BOSSC45();
@@ -615,8 +615,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BOSSC45();
          

@@ -1675,8 +1675,8 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
         "TwoLeadECG",
         "MoteStrain",
         "ItalyPowerDemand"}) {
-      Instances train = DatasetLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TRAIN.arff");
-      Instances test = DatasetLoading.loadData("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TEST.arff");
+      Instances train = DatasetLoading.loadDataNullable("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TRAIN.arff");
+      Instances test = DatasetLoading.loadDataNullable("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TEST.arff");
 
       Classifier c = new WEASEL();
       c.buildClassifier(train);

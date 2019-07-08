@@ -1170,8 +1170,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";
 
-        Instances train = DatasetLoading.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
         //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setDefaultCAWPESettings()
         CAWPE cawpe = new CAWPE();
@@ -1326,9 +1326,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             String dataset = "breast-cancer-wisc-prog";
     //        String dataset = "ItalyPowerDemand";
 
-            Instances all = DatasetLoading.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+            Instances all = DatasetLoading.loadDataNullable("C:/UCI Problems/"+dataset+"/"+dataset);
+    //        Instances train = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1368,9 +1368,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             String dataset = "breast-cancer-wisc-prog";
     //        String dataset = "ItalyPowerDemand";
 
-            Instances all = DatasetLoading.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+            Instances all = DatasetLoading.loadDataNullable("C:/UCI Problems/"+dataset+"/"+dataset);
+    //        Instances train = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1558,10 +1558,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 System.out.println(dset);
 
                 if (dataHeaders[archive].equals("UCI"))
-                    all = DatasetLoading.loadData(dataPaths[archive] + dset + "/" + dset + ".arff");
+                    all = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + ".arff");
                 else if ((dataHeaders[archive].contains("UCR"))) {
-                    train = DatasetLoading.loadData(dataPaths[archive] + dset + "/" + dset + "_TRAIN.arff");
-                    test = DatasetLoading.loadData(dataPaths[archive] + dset + "/" + dset + "_TEST.arff");
+                    train = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + "_TRAIN.arff");
+                    test = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + "_TEST.arff");
                 }
 
                 for (int fold = 0; fold < numFolds; fold++) {

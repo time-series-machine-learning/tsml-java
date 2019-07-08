@@ -694,8 +694,8 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
         String datasetLocation = dotdotSlash + dotdotSlash + "resampled data sets" + File.separator + datasetName + File.separator + datasetName;
 
         for (int i = 0; i < 100; i++) {
-            Instances train = DatasetLoading.loadData(datasetLocation + i + "_TRAIN");
-            Instances test = DatasetLoading.loadData(datasetLocation + i + "_TEST");
+            Instances train = DatasetLoading.loadDataNullable(datasetLocation + i + "_TRAIN");
+            Instances test = DatasetLoading.loadDataNullable(datasetLocation + i + "_TEST");
 
             FastShapelets fs = new FastShapelets();
 

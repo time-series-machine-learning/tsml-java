@@ -72,8 +72,8 @@ public class DataSets {
             Instances train;
             Instances test;
             try {
-                train = DatasetLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff"));
-                test = DatasetLoading.loadData(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TEST.arff"));
+                train = DatasetLoading.loadDataThrowable(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff"));
+                test = DatasetLoading.loadDataThrowable(new File(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TEST.arff"));
             } catch (IOException ex) {
                 continue; //if dataset doesn't exist move on.
             }

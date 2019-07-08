@@ -797,8 +797,8 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
         String samplePath = args[0] + fileExtension;
 
         //load the train and test.
-        Instances testSet = DatasetLoading.loadData(samplePath + "_TEST");
-        Instances trainSet = DatasetLoading.loadData(samplePath + "_TRAIN");        
+        Instances testSet = DatasetLoading.loadDataNullable(samplePath + "_TEST");
+        Instances trainSet = DatasetLoading.loadDataNullable(samplePath + "_TRAIN");        
 
         LearnShapelets ls = new LearnShapelets();
         ls.setSeed(0);

@@ -723,8 +723,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         File f= new File(resultsLocation+problem);
         if(!f.isDirectory())
             f.mkdirs();
-        Instances train=DatasetLoading.loadData(dataLocation+problem+"\\"+problem+"_TRAIN");
-        Instances test=DatasetLoading.loadData(dataLocation+problem+"\\"+problem+"_TEST");
+        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.writeCVTrainToFile(resultsLocation+problem+"trainFold0.csv");
         double a;

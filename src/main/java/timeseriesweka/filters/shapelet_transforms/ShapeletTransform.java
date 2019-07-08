@@ -1192,8 +1192,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         final int fold = 1;
         final String filePath = dataLocation + File.separator + dataset + File.separator + dataset;
         Instances test, train;
-        test = DatasetLoading.loadData(filePath + "_TEST");
-        train = DatasetLoading.loadData(filePath + "_TRAIN");
+        test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
          ShapeletSearchOptions searchOptions = new ShapeletSearchOptions.Builder()
                                             .setMin(3)
                                             .setMax(train.numAttributes()-1)
@@ -1236,8 +1236,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
             final int fold = 1;
             final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
             Instances test, train;
-            test = DatasetLoading.loadData(filePath + "_TEST");
-            train = DatasetLoading.loadData(filePath + "_TRAIN");
+            test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+            train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
             //use fold as the seed.
             //train = InstanceTools.subSample(train, 100, fold);
             

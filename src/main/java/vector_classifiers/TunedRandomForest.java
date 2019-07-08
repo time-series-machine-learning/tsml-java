@@ -697,8 +697,8 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         
         String dataset = "ItalyPowerDemand";
         
-        Instances train = DatasetLoading.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-        Instances test = DatasetLoading.loadData("c:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/"+dataset+"/"+dataset+"_TEST");
         
         int rs = 50;
         
@@ -753,7 +753,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         DecimalFormat df = new DecimalFormat("##.###");
         try{
             String dset = "balloons";             
-           Instances all=DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
+           Instances all=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
             Instances[] split=InstanceTools.resampleInstances(all,1,0.5);
                 TunedRandomForest rf=new TunedRandomForest();
                 rf.debug(true);
@@ -801,8 +801,8 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     }
    
     public static void cheatOnMNIST(){
-        Instances train=DatasetLoading.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
-        Instances test=DatasetLoading.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
+        Instances train=DatasetLoading.loadDataNullable("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
         RandomForest rf=new RandomForest();
         System.out.println("Data loaded ......");
         double a =ClassifierTools.singleTrainTestSplitAccuracy(rf, train, test);

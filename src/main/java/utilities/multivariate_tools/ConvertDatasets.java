@@ -54,9 +54,9 @@ public class ConvertDatasets {
         
         /*String dir = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\ArticularyWord\\";
         
-        Instances[] LL = splitMultivariateInstances(loadData(dir+"ArticularyWordLL")); 
-        Instances[] T1 = splitMultivariateInstances(loadData(dir+"ArticularyWordT1"));
-        Instances[] UL = splitMultivariateInstances(loadData(dir+"ArticularyWordUL"));
+        Instances[] LL = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordLL")); 
+        Instances[] T1 = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordT1"));
+        Instances[] UL = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordUL"));
         
         List<Instances> list = new ArrayList(LL.length+T1.length+UL.length);
         list.addAll(Arrays.asList(LL));
@@ -64,7 +64,7 @@ public class ConvertDatasets {
         list.addAll(Arrays.asList(UL));
         saveDataset(mergeToMultivariateInstances(list.toArray(new Instances[list.size()])), dir+"ArticularyWord");
         
-        Instances data = utilities.ClassifierTools.loadData(dir  + "ArticularyWord.arff");
+        Instances data = utilities.ClassifierTools.loadDataThrowable(dir  + "ArticularyWord.arff");
 
         Instances train, test;
 
@@ -77,13 +77,13 @@ public class ConvertDatasets {
         utilities.ClassifierTools.saveDataset(test, dir + "ArticularyWord" + "_TEST");*/
         
         /*saveDataset(mergeToMultivariateInstances(new Instances[]{
-            loadData("DTW_A_TEST/A_TRAIN"), 
-            loadData("DTW_A_TEST/B_TRAIN")}
+            loadDataThrowable("DTW_A_TEST/A_TRAIN"), 
+            loadDataThrowable("DTW_A_TEST/B_TRAIN")}
         ), "AB_TRAIN");
         
         saveDataset(mergeToMultivariateInstances(new Instances[]{
-            loadData("DTW_A_TEST/A_TEST"), 
-            loadData("DTW_A_TEST/B_TEST")}
+            loadDataThrowable("DTW_A_TEST/A_TEST"), 
+            loadDataThrowable("DTW_A_TEST/B_TEST")}
         ), "AB_TEST");*/
         
         
@@ -97,7 +97,7 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int i=0;
             for(String en : end){
-                data[i++] = utilities.ClassifierTools.loadData(dir + dataset + "\\" + dataset + type + en);
+                data[i++] = utilities.ClassifierTools.loadDataThrowable(dir + dataset + "\\" + dataset + type + en);
             }
             
             utilities.ClassifierTools.saveDataset(utilities.MultivariateInstanceTools.mergeToMultivariateInstances(data), dir + dataset + "\\" + dataset + type + Arrays.toString(end).replace("[", "").replace("]", "").replace(",", "").replace("\\s+", ""));
@@ -115,7 +115,7 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String en : end){
-                data[j++] = DatasetLoading.loadData(dir + dataset + "\\univariate\\" + dataset + "_"+i+"_" + en + "_TRAIN");
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset + "_"+i+"_" + en + "_TRAIN");
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
@@ -138,7 +138,7 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String end1 : end){
-                data[j++] = DatasetLoading.loadData(dir + dataset + "\\univariate\\" + dataset +end1+ LR);
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset +end1+ LR);
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
@@ -161,7 +161,7 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String end1 : end){
-                data[j++] = DatasetLoading.loadData(dir + dataset + "\\univariate\\" + dataset + LR+end1);
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset + LR+end1);
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
@@ -180,7 +180,7 @@ public class ConvertDatasets {
     public static void createVillar(){
         String dir = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\";
         String dataset = "VillarData";
-        Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(DatasetLoading.loadData(dir + dataset + "\\" + dataset), 0, 0.5);
+        Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(DatasetLoading.loadDataNullable(dir + dataset + "\\" + dataset), 0, 0.5);
         DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
         DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
     }
@@ -190,7 +190,7 @@ public class ConvertDatasets {
         
         //load up the MVMotion2 dataset. Split it into accelormeter and gyro data, then combine and split into 50/50 splits.
         String dir2 = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\Old data\\MVMotion\\MVMotion2.arff";
-        Instances data = DatasetLoading.loadData(dir2);
+        Instances data = DatasetLoading.loadDataNullable(dir2);
         Instances[] data_channels = utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances(data);
         
         

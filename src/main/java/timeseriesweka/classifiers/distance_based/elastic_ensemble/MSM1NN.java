@@ -238,8 +238,8 @@ public class MSM1NN extends Efficient1NN{
         String datasetName = "SonyAiboRobotSurface1";
 
         double c = 0.1;
-        Instances train = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadData(tscProbDir+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(tscProbDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(tscProbDir+datasetName+"/"+datasetName+"_TEST");
         
         // old version
         kNN knn = new kNN(); //efaults to k = 1 without any normalisation

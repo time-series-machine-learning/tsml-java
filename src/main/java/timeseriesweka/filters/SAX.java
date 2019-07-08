@@ -294,7 +294,7 @@ public class SAX extends SimpleBatchFilter {
         System.out.println("SAXtest\n\n");
         
         try {
-            Instances test = DatasetLoading.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
             
             new NormalizeCase().standardNorm(test);
             

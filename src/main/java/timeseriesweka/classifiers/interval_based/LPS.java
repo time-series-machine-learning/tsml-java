@@ -284,8 +284,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
      for(int i=0;i<problems.length;i++){
          String s=problems[i];
         System.out.print(s+",");
-        Instances train = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
         LPS l=new LPS();
         l.setParamSearch(false);
         l.buildClassifier(train);
@@ -545,10 +545,10 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         l.setParamSearch(false);
         String prob="ItalyPowerDemand"; 
         double mean=0;
-        Instances train = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
-//        Instances train = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Train.arff");
-//        Instances test = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Test.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
+//        Instances train = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Train.arff");
+//        Instances test = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Test.arff");
 //        train.setClassIndex(train.numAttributes()-1);
 //        test.setClassIndex(test.numAttributes()-1);
 //        System.out.println("Train = "+train);

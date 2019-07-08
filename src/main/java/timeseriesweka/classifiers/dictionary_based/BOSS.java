@@ -1090,15 +1090,15 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadData("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];

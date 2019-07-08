@@ -247,7 +247,7 @@ public class BasicDTW extends EuclideanDistance{
     
     public static void main(String[] args){
 //Test BasicDTW
-        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\test\\Beef");
+        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\test\\Beef");
         BasicDTW dtw=new BasicDTW(test);
         EuclideanDistance ed=new EuclideanDistance(test);
         ed.setDontNormalize(true);

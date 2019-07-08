@@ -471,7 +471,7 @@ public class PAM extends AbstractVectorClusterer{
         }
         
         for (int i = 0; i < datasets.length; i++){
-            Instances inst = DatasetLoading.loadData(datasets[i]);
+            Instances inst = DatasetLoading.loadDataNullable(datasets[i]);
             inst.setClassIndex(inst.numAttributes()-1);
             PAM pam = new PAM();
             pam.setFindBestK(true);

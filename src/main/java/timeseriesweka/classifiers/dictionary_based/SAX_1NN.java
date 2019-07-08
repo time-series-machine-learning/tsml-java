@@ -86,7 +86,7 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
         System.out.println("BagofPatternsTest\n\n");
         
         try {
-            Instances all = DatasetLoading.loadData("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
+            Instances all = DatasetLoading.loadDataNullable("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
             all.deleteAttributeAt(0); //just name of bottle        
             
             Randomize rand = new Randomize();

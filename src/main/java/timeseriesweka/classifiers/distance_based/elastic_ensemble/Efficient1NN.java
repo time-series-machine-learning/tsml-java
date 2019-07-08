@@ -242,8 +242,8 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
 //    public double writeLOOCVOutput(String tscProblemDir, String datasetName, int resampleId, String outputResultsDir, int paramId) throws Exception{
 //        new File(outputResultsDir+classifierIdentifier+"/Predictions/"+datasetName+"/loocvForParamOptions/").mkdirs();
 //        
-//        Instances train = ClassifierTools.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
-//        Instances test = ClassifierTools.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
+//        Instances train = ClassifierTools.loadDataThrowable(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
+//        Instances test = ClassifierTools.loadDataThrowable(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
 //        
 //        if(resampleId!=0){
 //            Instances[] temp = InstanceTools.resampleTrainAndTestInstances(train, test, resampleId);
@@ -594,8 +594,8 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
         headerInfo.append(classifierIdentifier).append(System.lineSeparator());
         headerInfo.append(this.getParamInformationString()).append(System.lineSeparator());
         
-        Instances train = DatasetLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadData(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(tscProblemDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(tscProblemDir+datasetName+"/"+datasetName+"_TEST");
         
         if(resampleId!=0){
             Instances[] temp = InstanceTools.resampleTrainAndTestInstances(train, test, resampleId);
