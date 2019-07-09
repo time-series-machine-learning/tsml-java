@@ -51,10 +51,28 @@ public class DatasetLoading {
     private static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand" };
     private static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
     
-    public static String LOXO_ATT_ID = "experimentsSplitAttribute";
-    public static double proportionKeptForTraining = 0.5;
+    private static String LOXO_ATT_ID = "experimentsSplitAttribute";
+    private static double proportionKeptForTraining = 0.5;
     
-    public static boolean debug = false;
+    private static boolean debug = false;
+
+    public static String getLeaveOneXOutAttributeID() {
+        return LOXO_ATT_ID;
+    }
+
+    public static void setLeaveOneXOutAttributeID(String LOXO_ATT_ID) {
+        DatasetLoading.LOXO_ATT_ID = LOXO_ATT_ID;
+    }
+    
+    public static double getProportionKeptForTraining() {
+        return proportionKeptForTraining;
+    }
+
+    public static void setProportionKeptForTraining(double proportionKeptForTraining) {
+        DatasetLoading.proportionKeptForTraining = proportionKeptForTraining;
+    }
+    
+    
     
     public static void setDebug(boolean d) {
         debug = d;
@@ -80,10 +98,27 @@ public class DatasetLoading {
      * 
      * @param seed the seed for resampling the data. 
      * @return new Instances[] { trainSet, testSet };
-     * @throws Exception 
+     * @throws Exception if data loading or sampling failed
      */
     public static Instances[] sampleItalyPowerDemand(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
+    }
+    
+    /**
+     * Helper function for loading the baked-in Beef dataset, one of the 
+     * UCR datasets for TSC
+     *
+     * http://timeseriesclassification.com/description.php?Dataset=Beef
+     * 
+     * UCR data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     * 
+     * @param seed the seed for resampling the data. 
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception if data loading or sampling failed
+     */
+    public static Instances[] sampleBeef(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "Beef", seed);
     }
     
     /**
@@ -97,7 +132,7 @@ public class DatasetLoading {
      * 
      * @param seed the seed for resampling the data
      * @return new Instances[] { trainSet, testSet };
-     * @throws Exception 
+     * @throws Exception if data loading or sampling failed
      */
     public static Instances[] sampleBasicMotions(int seed) throws Exception {
         return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
@@ -114,7 +149,7 @@ public class DatasetLoading {
      * 
      * @param seed the seed for resampling the data.
      * @return new Instances[] { trainSet, testSet };
-     * @throws Exception 
+     * @throws Exception if data loading or sampling failed
      */
     public static Instances[] sampleIris(int seed) throws Exception {
         return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
@@ -321,7 +356,7 @@ public class DatasetLoading {
      * Obvious candidate for moving over to proper unit tests when codebase updates 
      * to incorporate them properly
      */
-    public static void tests() throws Exception {
+    private static void tests() throws Exception {
         
         //should handle both with/without extension
         String dataPath = BAKED_IN_UCI_DATA_PATH + "iris/iris";
@@ -356,7 +391,7 @@ public class DatasetLoading {
             System.out.println("Passed: testMTSCLoad("+1+")\n");
     }
     
-    public static boolean testARFFLoad(String dataPath) throws Exception { 
+    private static boolean testARFFLoad(String dataPath) throws Exception { 
         
         Instances data = DatasetLoading.loadDataThrowable(dataPath);
                 
@@ -372,7 +407,7 @@ public class DatasetLoading {
         return true;
     }
     
-    public static boolean testUCILoad() throws Exception { 
+    private static boolean testUCILoad() throws Exception { 
         proportionKeptForTraining = 0.5;
         Instances[] data = sampleIris(0);
                 
@@ -398,7 +433,8 @@ public class DatasetLoading {
         return true;
     }
     
-    public static boolean testTSCLoad(int seed) throws Exception { 
+    private static boolean testTSCLoad(int seed) throws Exception { 
+        //2 class
         Instances[] data = sampleItalyPowerDemand(seed);
                         
         assert_t(data != null);
@@ -423,7 +459,7 @@ public class DatasetLoading {
         return true;
     }
     
-    public static boolean testMTSCLoad(int seed) throws Exception { 
+    private static boolean testMTSCLoad(int seed) throws Exception { 
         Instances[] data = sampleBasicMotions(seed);
         
         assert_t(data != null);
