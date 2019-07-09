@@ -33,10 +33,10 @@ import utilities.ErrorReport;
  *          Either use the big old ClassifierResults[][][][] returned, or interact with the 
  *          collection via the slice or getInfo methods 
  * 
- *      Afterwards, optionally use the slice...() methods to get subsets of the results 
+ *      Afterwards, optionally use the SLICE...() methods to get subsets of the results 
  *          already loaded into memory
- *      Or use the getInfo(...) method to get a particular stat from each results object
- *          getAccuracies() wraps the accuracies getter as a shortcut/example 
+ *      Or use the RETRIEVE...(...) methods to get a particular stats or info from each results object
+ *          retrieveAccuracies() wraps the accuracies getter as a shortcut/example 
  * 
  * 
  * @author James Large (james.large@uea.ac.uk)
@@ -48,53 +48,53 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * Split taken to be first dimension for easy retrieval of a single split if only one is loaded
      * and you want results in the 3d form [classifier][dataset][fold]
      */
-    public ClassifierResults[][][][] allResults;
+    private ClassifierResults[][][][] allResults;
 
-    public int numDatasets;
-    public String[] datasetNamesInStorage;
-    public String[] datasetNamesInOutput;
+    private int numDatasets;
+    private String[] datasetNamesInStorage;
+    private String[] datasetNamesInOutput;
     
-    public int numClassifiers;
-    public String[] classifierNamesInStorage;
-    public String[] classifierNamesInOutput;
+    private int numClassifiers;
+    private String[] classifierNamesInStorage;
+    private String[] classifierNamesInOutput;
     
-    public int numFolds;
-    public int[] folds;
+    private int numFolds;
+    private int[] folds;
     
-    public int numSplits;
-    public String[] splits;
+    private int numSplits;
+    private String[] splits;
     
     
     /**
      * A path to a directory containing all the classifierNamesInStorage directories 
      * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
      */
-    public String baseReadPath;
+    private String baseReadPath;
     
     
     
     /**
-     * if true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
+     * If true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
      * 
-     * defaults to true
+     * Defaults to true
      */
     private boolean cleanResults = true;
     
     /**
-     * if true, the returned lists are guaranteed to be of size numClassifiers*numDsets*numFolds*2,
+     * If true, the returned lists are guaranteed to be of size numClassifiers*numDsets*numFolds*2,
      * but entries may be null;
      * 
-     * defaults to false
+     * Defaults to false
      */
-    public boolean allowMissingResults = false;
+    private boolean allowMissingResults = false;
 
     /**
-     * if true, will fill in missing probability distributions with one-hot vectors
+     * If true, will fill in missing probability distributions with one-hot vectors
      * for files read in that are missing them. intended for very old files, where you still 
      * want to calc auroc etc (metrics that need dists) for all the other classifiers 
      * that DO provide them, but also want to compare e.g accuracy with classifier that don't
      * 
-     * defaults to false
+     * Defaults to false
      */
     private boolean ignoreMissingDistributions = false;
     
@@ -300,6 +300,81 @@ public class ClassifierResultsCollection implements DebugPrinting {
         this.ignoreMissingDistributions = ignoreMissingDistributions;
     }
     
+    public int getNumDatasets() {
+        return numDatasets;
+    }
+
+    public String[] getDatasetNamesInStorage() {
+        return datasetNamesInStorage;
+    }
+
+    public String[] getDatasetNamesInOutput() {
+        return datasetNamesInOutput;
+    }
+
+    public int getNumClassifiers() {
+        return numClassifiers;
+    }
+
+    public String[] getClassifierNamesInStorage() {
+        return classifierNamesInStorage;
+    }
+
+    public String[] getClassifierNamesInOutput() {
+        return classifierNamesInOutput;
+    }
+
+    public int getNumFolds() {
+        return numFolds;
+    }
+
+    public int[] getFolds() {
+        return folds;
+    }
+
+    public int getNumSplits() {
+        return numSplits;
+    }
+
+    public String[] getSplits() {
+        return splits;
+    }
+
+    public String getBaseReadPath() {
+        return baseReadPath;
+    }
+
+    /**
+     * If true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
+     * 
+     * Defaults to true
+     */
+    public boolean getCleanResults() {
+        return cleanResults;
+    }
+
+    /**
+     * If true, the returned lists are guaranteed to be of size numClassifiers*numDsets*numFolds*2,
+     * but entries may be null;
+     * 
+     * Defaults to false
+     */
+    public boolean getAllowMissingResults() {
+        return allowMissingResults;
+    }
+
+    /**
+     * If true, will fill in missing probability distributions with one-hot vectors
+     * for files read in that are missing them. intended for very old files, where you still 
+     * want to calc auroc etc (metrics that need dists) for all the other classifiers 
+     * that DO provide them, but also want to compare e.g accuracy with classifier that don't
+     * 
+     * Defaults to false
+     */
+    public boolean getIgnoreMissingDistributions() {
+        return ignoreMissingDistributions;
+    }
+    
     private void confirmMinimalInfoGivenAndValid() throws Exception {
         ErrorReport err = new ErrorReport("Required results collection info missing:\n");
         
@@ -364,7 +439,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * Loads the splits, classifiers, datasets, and folds specified from disk into memory
      * subject to the options set. 
      * 
-     * @return the ClassifierResults[splits][classifiers][datasets][folds] loaded in, also accessible after the call with getAllResults()
+     * @return the ClassifierResults[splits][classifiers][datasets][folds] loaded in, also accessible after the call with retrieveResults()
      * @throws Exception on any number of missing file if allowMissingResults is false
      */
     public ClassifierResults[][][][] load() throws Exception { 
@@ -493,6 +568,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
      * settings etc) aside from only the results of the provided classifier is returned for each split/dataset/fold
      * 
+     * If different names were provided for storage and output, the name in storage should be provided
+     * 
      * @param classifier to keep
      * @return new ClassifierResultsCollection with results for all split/datasets/folds, but only the classifier given
      * @throws java.lang.Exception if the classifier searched for was not loaded into this collection
@@ -504,6 +581,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
     /**
      * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
      * settings etc) aside from only the results of the provided classifiers are returned for each split/dataset/fold
+     * 
+     * If different names were provided for storage and output, the name in storage should be provided
      * 
      * @param classifiersToSlice classifiers to keep
      * @return new ClassifierResultsCollection with results for all split/datasets/folds, but only the classifiers given
@@ -534,6 +613,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
      * settings etc) aside from only the results of the provided dataset is returned for each split/classifier/fold
      * 
+     * If different names were provided for storage and output, the name in storage should be provided
+     * 
      * @param dataset dataset to keep
      * @return new ClassifierResultsCollection with results for all split/classifier/folds, but only the dataset given
      * @throws java.lang.Exception if the dataset searched for was not loaded into this collection
@@ -545,6 +626,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
      /**
      * Returns a new ClassifierResultsCollection that is identical to this one (in terms of
      * settings etc) aside from only the results of the provided datasets are returned for each split/classifier/fold
+     * 
+     * If different names were provided for storage and output, the name in storage should be provided
      * 
      * @param datasetsToSlice datasets to keep
      * @return new ClassifierResultsCollection with results for all split/classifier/folds, but only the datasets given
@@ -638,13 +721,29 @@ public class ClassifierResultsCollection implements DebugPrinting {
     
     
     
-    
-    public double[][][][] getAccuracies() {
-        return getInfo_double(ClassifierResults.GETTER_Accuracy);
+    /**
+     * Returns the accuracy of each result object loaded in as a large array 
+ double[split][classifier][dataset][fold]
+ 
+ Wrapper retrieveDoubles for accuracies
+     
+     * @return Array [split][classifier][dataset][fold] of doubles with accuracy from each result
+     */
+    public double[][][][] retrieveAccuracies() {
+        return retrieveDoubles(ClassifierResults.GETTER_Accuracy);
     }
 
-    //todo make generic
-    public double[][][][] getInfo_double(Function<ClassifierResults, Double> getter) {
+    /**
+     * Given a function that extracts information in the form of a double from a results object, 
+     * returns a big array [split][classifier][dataset][fold] of that information from 
+     * every result object loaded 
+     * 
+     * todo make generic
+     * 
+     * @param getter function that takes a ClassifierResults object, and returns a Double
+     * @return Array [split][classifier][dataset][fold] of doubles with info from each result
+     */
+    public double[][][][] retrieveDoubles(Function<ClassifierResults, Double> getter) {
         double[][][][] info = new double[numSplits][numClassifiers][numDatasets][numFolds];
         for (int i = 0; i < numSplits; i++)
             for (int j = 0; j < numClassifiers; j++)
@@ -654,8 +753,17 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return info;
     }
     
-    //todo make generic
-    public String[][][][] getInfo_String(Function<ClassifierResults, String> getter) {
+    /**
+     * Given a function that extracts information in the form of a String from a results object, 
+     * returns a big array [split][classifier][dataset][fold] of that information from 
+     * every result object loaded 
+     * 
+     * todo make generic
+     * 
+     * @param getter function that takes a ClassifierResults object, and returns a String
+     * @return Array [split][classifier][dataset][fold] of String with info from each result
+     */
+    public String[][][][] retrieveStrings(Function<ClassifierResults, String> getter) {
         String[][][][] info = new String[numSplits][numClassifiers][numDatasets][numFolds];
         for (int i = 0; i < numSplits; i++)
             for (int j = 0; j < numClassifiers; j++)
@@ -665,9 +773,25 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return info;
     }
     
-    public ClassifierResults[][][][] getAllResults() { 
+    /**
+     * Simply get all of the results in their raw/complete form. If allowMissingResults was set to true when loading results,
+     * one or more entries may be null, otherwise each should be complete (the loading would have failed
+     * otherwise). If cleanResults was set to true when loading results, each results object will contain the 
+     * evaluation statistics and meta info for that split/classifier/dataset/fold, but not the individual
+     * predictions.
+     * 
+     * @return the big ClassifierResults[split][classifier][dataset][fold] arrays in its raw form
+     */
+    public ClassifierResults[][][][] retrieveResults() { 
         return allResults;
     }
+    
+    
+    
+    
+    
+    
+    
     
     
     public static void main(String[] args) throws Exception {
@@ -686,7 +810,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println(res[0][0][0][0].getAcc());      
         System.out.println("");
         
-        double[][][][] accs = col.getAccuracies();
+        double[][][][] accs = col.retrieveAccuracies();
         System.out.println(accs.length);
         System.out.println(accs[0].length);
         System.out.println(accs[0][0].length);
@@ -695,7 +819,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println("");
         
         ClassifierResultsCollection subcol = col.sliceClassifier("Logistic");
-        ClassifierResults[][][][] subres = subcol.getAllResults();
+        ClassifierResults[][][][] subres = subcol.retrieveResults();
         System.out.println(subres.length);
         System.out.println(subres[0].length);
         System.out.println(subres[0][0].length);
@@ -704,7 +828,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println("");
         
         subcol = col.sliceDataset(DataSets.ReducedUCI[0]);
-        subres = subcol.getAllResults();
+        subres = subcol.retrieveResults();
         System.out.println(subres.length);
         System.out.println(subres[0].length);
         System.out.println(subres[0][0].length);
@@ -713,7 +837,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println("");
         
         subcol = col.sliceFolds(new int[] { 0, 3 });
-        subres = subcol.getAllResults();
+        subres = subcol.retrieveResults();
         System.out.println(subres.length);
         System.out.println(subres[0].length);
         System.out.println(subres[0][0].length);
