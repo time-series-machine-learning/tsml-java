@@ -40,6 +40,7 @@ import utilities.ErrorReport;
  *      RETRIEVE...(...) methods get a particular stat or info from each results object
  *          retrieveAccuracies() wraps the accuracies getter as a shortcut/example 
  * 
+ * todo integrate into multipleclassifierevaluation/classifierresultsanalysis
  * todo replace old DebugPrinting stuff with loggers if/when going full enterprise
  * todo proper missing results summaries, option to reduce to largest complete subset 
  *      of split/classifier/dataset/folds
