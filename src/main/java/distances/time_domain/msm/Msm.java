@@ -188,7 +188,7 @@ public class Msm
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace() {
+    public static ParameterSpace parameterSpace() {
         double[] penaltyValues = {
             // <editor-fold defaultstate="collapsed" desc="hidden for space">
             0.01,

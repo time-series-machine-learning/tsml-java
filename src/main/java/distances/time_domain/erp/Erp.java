@@ -160,7 +160,7 @@ public class Erp
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace(Instances instances) {
+    public static ParameterSpace parameterSpace(Instances instances) {
         double std = StatisticalUtilities.pStdDev(instances);
         double stdFloor = std*0.2;
         int[] warpingWindowValues = ArrayUtilities.incrementalRange(0, (instances.numAttributes() - 1) / 4, 10);

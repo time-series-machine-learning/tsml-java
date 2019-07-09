@@ -6,7 +6,6 @@ import utilities.ArrayUtilities;
 import utilities.FilterUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
 
 import static distances.derivative_time_domain.Derivative.DERIVATIVE_FILTER;
 
@@ -36,25 +35,25 @@ public class CachedDdtw extends Dtw {
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace(Instances instances) {
-        ParameterSpace parameterSpace = Dtw.discreteParameterSpace(instances);
+    public static ParameterSpace warpParameterSpace(Instances instances) {
+        ParameterSpace parameterSpace = Dtw.warpParameterSpace(instances);
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         return parameterSpace;
     }
 
-    public static ParameterSpace euclideanParameterSpace() {
-        ParameterSpace parameterSpace = Dtw.euclideanParameterSpace();
+    public static ParameterSpace edParameterSpace() {
+        ParameterSpace parameterSpace = Dtw.edParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         return parameterSpace;
     }
 
-    public static ParameterSpace fullWindowParameterSpace() {
-        ParameterSpace parameterSpace = Dtw.fullWindowParameterSpace();
+    public static ParameterSpace fullWarpParameterSpace() {
+        ParameterSpace parameterSpace = Dtw.fullWarpParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         return parameterSpace;
     }
 
-    public static ParameterSpace allDiscreteParameterSpace(Instances instances) {
+    public static ParameterSpace allWarpParameterSpace(Instances instances) {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 101));

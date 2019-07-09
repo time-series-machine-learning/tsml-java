@@ -108,7 +108,7 @@ public class Lcss extends Dtw {
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace(Instances instances) {
+    public static ParameterSpace parameterSpace(Instances instances) {
         double std = StatisticalUtilities.pStdDev(instances);
         double stdFloor = std*0.2;
         double[] toleranceValues = ArrayUtilities.incrementalRange(stdFloor, std, 10);

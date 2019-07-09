@@ -17,8 +17,9 @@ package experiments;
 
 import classifiers.Tuned;
 import classifiers.distance_based.knn.Knn;
+import distances.derivative_time_domain.ddtw.CachedDdtw;
 import distances.derivative_time_domain.ddtw.Ddtw;
-import distances.derivative_time_domain.wddtw.Wddtw;
+import distances.derivative_time_domain.wddtw.CachedWddtw;
 import distances.time_domain.dtw.Dtw;
 import distances.time_domain.erp.Erp;
 import distances.time_domain.lcss.Lcss;
@@ -54,10 +55,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -102,36 +99,48 @@ public class ClassifierLists {
     public static AbstractClassifier setClassifierClassic(String classifier, int fold){
         AbstractClassifier c=null;
         switch(classifier){
-            case "TUNED_DTW_KNN":
-                c = new Tuned(Knn::new, Dtw::allDiscreteParameterSpace);
-                break;
-            case "TUNED_LCSS_KNN":
-                c = new Tuned(Knn::new, Lcss::allDiscreteParameterSpace);
-                break;
-            case "TUNED_ERP_KNN":
-                c = new Tuned(Knn::new, Erp::allDiscreteParameterSpace);
-                break;
-            case "TUNED_WDTW_KNN":
-                c = new Tuned(Knn::new, Wdtw::discreteParameterSpace);
-                break;
-            case "TUNED_WDDTW_KNN":
-                c = new Tuned(Knn::new, Wddtw::discreteParameterSpace);
-                break;
-            case "TUNED_DDTW_KNN":
-                c = new Tuned(Knn::new, Ddtw::discreteParameterSpace);
-                break;
             case "TUNED_TWE_KNN":
-                c = new Tuned(Knn::new, Twe::discreteParameterSpace);
+                c = new Tuned(Knn::new, Twe::parameterSpace);
                 break;
             case "TUNED_MSM_KNN":
-                c = new Tuned(Knn::new, Msm::discreteParameterSpace);
+                c = new Tuned(Knn::new, Msm::parameterSpace);
+                break;
+            case "TUNED_LCSS_KNN":
+                c = new Tuned(Knn::new, Lcss::allWarpParameterSpace);
+                break;
+            case "TUNED_ERP_KNN":
+                c = new Tuned(Knn::new, Erp::allWarpParameterSpace);
                 break;
             case "ED_KNN":
-                c = new Knn();
+                c = new Tuned(Knn::new, Dtw::edParameterSpace);
                 break;
-            case "CEE":
+            case "DTW_KNN":
+                c = new Tuned(Knn::new, Dtw::fullWarpParameterSpace);
+                break;
+            case "TUNED_DTW_KNN":
+                c = new Tuned(Knn::new, Dtw::warpParameterSpace);
+                break;
+            case "DDTW_KNN":
+                c = new Tuned(Knn::new, Ddtw::fullWarpParameterSpace);
+                break;
+            case "TUNED_DDTW_KNN":
+                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace);
+                break;
+            case "TUNED_WDTW_KNN":
+                c = new Tuned(Knn::new, Wdtw::parameterSpace);
+                break;
+            case "TUNED_WDDTW_KNN":
+                c = new Tuned(Knn::new, CachedWddtw::parameterSpace);
+                break;
+            case "REE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
                 ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                break;
+            case "BREE":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizeLimitPercentage(0.1);
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0.5);
                 break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 

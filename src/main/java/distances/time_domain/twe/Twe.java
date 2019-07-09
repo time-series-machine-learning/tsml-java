@@ -199,7 +199,7 @@ public class Twe extends DistanceMeasure {
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace() {
+    public static ParameterSpace parameterSpace() {
         double[] stiffnessValues = {
             // <editor-fold defaultstate="collapsed" desc="hidden for space">
             0.00001,

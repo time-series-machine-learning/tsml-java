@@ -114,30 +114,30 @@ public class ElasticEnsemble extends TemplateClassifier {
 
     public static List<Function<Instances, ParameterSpace>> getClassicParameterSpaceGetters() {
         return new ArrayList<>(Arrays.asList(
-                instances -> Dtw.euclideanParameterSpace(),
-                instances -> Dtw.fullWindowParameterSpace(),
-                Dtw::discreteParameterSpace,
-                instances -> CachedDdtw.fullWindowParameterSpace(),
-                CachedDdtw::discreteParameterSpace,
-                instances -> Wdtw.discreteParameterSpace(),
-                instances -> CachedWddtw.discreteParameterSpace(),
-                Lcss::discreteParameterSpace,
-                Erp::discreteParameterSpace,
-                instances -> Msm.discreteParameterSpace(),
-                instances -> Twe.discreteParameterSpace()
+                instances -> Dtw.edParameterSpace(),
+                instances -> Dtw.fullWarpParameterSpace(),
+                Dtw::warpParameterSpace,
+                instances -> CachedDdtw.fullWarpParameterSpace(),
+                CachedDdtw::warpParameterSpace,
+                instances -> Wdtw.parameterSpace(),
+                instances -> CachedWddtw.parameterSpace(),
+                Lcss::parameterSpace,
+                Erp::parameterSpace,
+                instances -> Msm.parameterSpace(),
+                instances -> Twe.parameterSpace()
         ));
     }
 
     public static List<Function<Instances, ParameterSpace>> getDefaultParameterSpaceGetters() {
         return new ArrayList<>(Arrays.asList(
-                Dtw::allDiscreteParameterSpace,
-                CachedDdtw::allDiscreteParameterSpace,
-                instances -> Wdtw.discreteParameterSpace(),
-                instances -> CachedWddtw.discreteParameterSpace(),
-                Lcss::discreteParameterSpace,
-                Erp::discreteParameterSpace,
-                instances -> Msm.discreteParameterSpace(),
-                instances -> Twe.discreteParameterSpace()
+                Dtw::allWarpParameterSpace,
+                CachedDdtw::allWarpParameterSpace,
+                instances -> Wdtw.parameterSpace(),
+                instances -> CachedWddtw.parameterSpace(),
+                Lcss::parameterSpace,
+                Erp::parameterSpace,
+                instances -> Msm.parameterSpace(),
+                instances -> Twe.parameterSpace()
         ));
     }
 

@@ -34,8 +34,8 @@ public class Wddtw extends Wdtw {
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace() {
-        ParameterSpace parameterSpace = Wdtw.discreteParameterSpace();
+    public static ParameterSpace parameterSpace() {
+        ParameterSpace parameterSpace = Wdtw.parameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         return parameterSpace;
     }

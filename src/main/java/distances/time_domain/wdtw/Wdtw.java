@@ -127,7 +127,7 @@ public class Wdtw
         return NAME;
     }
 
-    public static ParameterSpace discreteParameterSpace() {
+    public static ParameterSpace parameterSpace() {
         double[] gValues = new double[100];
         for(int i = 0; i < gValues.length; i++) {
             gValues[i] = i / gValues.length;

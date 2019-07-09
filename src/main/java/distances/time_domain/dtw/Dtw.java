@@ -281,28 +281,28 @@ public class Dtw extends DistanceMeasure {
         return NAME;
     }
 
-    public static ParameterSpace euclideanParameterSpace() {
+    public static ParameterSpace edParameterSpace() {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, new int[] {0});
         return parameterSpace;
     }
 
-    public static ParameterSpace fullWindowParameterSpace() {
+    public static ParameterSpace fullWarpParameterSpace() {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, new int[] {-1});
         return parameterSpace;
     }
 
-    public static ParameterSpace discreteParameterSpace(Instances instances) {
+    public static ParameterSpace warpParameterSpace(Instances instances) {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 100));
         return parameterSpace;
     }
 
-    public static ParameterSpace allDiscreteParameterSpace(Instances instances) {
+    public static ParameterSpace allWarpParameterSpace(Instances instances) {
         ParameterSpace parameterSpace = new ParameterSpace();
         parameterSpace.addParameter(DISTANCE_MEASURE_KEY, new String[] {NAME});
         parameterSpace.addParameter(WARPING_WINDOW_KEY, ArrayUtilities.incrementalRange(0, instances.numAttributes() - 1, 101));
