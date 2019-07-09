@@ -25,19 +25,26 @@ import utilities.ErrorReport;
 /**
  * Essentially a loader for many results over a given set of classifiers, datasets, folds, and splits
  * 
+ * This as been implemented as barebones arrays instead of large collections for speed (of execution and implementation) 
+ * and memory efficiency, however depending on demand, use cases and time could be redone to be represented by e.g. maps underneath
+ * 
  * Usage: 
  *      Construct the object
  *      Set classifiers, datasets, folds and splits to read at MINIMUM
  *      Set any optional settings on how to read and store the results
- *      Call load()
+ *      Call LOAD()
  *          Either use the big old ClassifierResults[][][][] returned, or interact with the 
- *          collection via the slice or getInfo methods 
+ *          collection via the SLICE or RETRIEVE methods 
  * 
- *      Afterwards, optionally use the SLICE...() methods to get subsets of the results 
- *          already loaded into memory
- *      Or use the RETRIEVE...(...) methods to get a particular stats or info from each results object
+ *      SLICE...() methods get subsets of the results already loaded into memory
+ *      RETRIEVE...(...) methods get a particular stat or info from each results object
  *          retrieveAccuracies() wraps the accuracies getter as a shortcut/example 
  * 
+ * todo replace old DebugPrinting stuff with loggers if/when going full enterprise
+ * todo proper missing results summaries, option to reduce to largest complete subset 
+ *      of split/classifier/dataset/folds
+ * todo maybe use this class for other things to, e.g. instead of loading results, just check 
+ *      existence, large-scale zipping/copying/moving of results files, etc
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
