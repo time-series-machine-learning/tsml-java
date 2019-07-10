@@ -1,17 +1,3 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package timeseriesweka.classifiers;
 
 
@@ -19,8 +5,8 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.IntCursor;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.carrotsearch.hppc.cursors.LongFloatCursor;
+import com.carrotsearch.hppc.cursors.LongIntCursor;
 import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import fileIO.OutFile;
@@ -45,7 +31,6 @@ import weka.core.TechnicalInformationHandler;
  */
 public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate,TechnicalInformationHandler {
 
-  @Override
   public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -75,14 +60,14 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   public static double c = 1;
   public static SolverType solverType = SolverType.L2R_LR_DUAL;
 
-  private double trainAcc = -1;
+  //private double trainAcc = -1;
 
   public static int MIN_WINDOW_LENGTH = 2;
   public static int MAX_WINDOW_LENGTH = 350;
 
   // ten-fold cross validation
   private int folds = 10;
-  
+
   private String trainCVPath="";
   private boolean trainCV=false;
   private int seed=0;
@@ -93,20 +78,20 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
     trainCVPath=outputPathAndName;
     trainCV=true;
   }
-  
+
   @Override
   public void setFindTrainAccuracyEstimate(boolean setCV){
     trainCV=setCV;
   }
 
   @Override
-  public ClassifierResults getTrainResults() {     
+  public ClassifierResults getTrainResults() {
     return trainResults;
   }
-  
+
   public void setSeed(int s){
-      seed = s;
-      setSeed = true;
+    seed = s;
+    setSeed = true;
   }
 
   public static class WEASELModel {
@@ -142,7 +127,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   public WEASEL() {
     super();
   }
-  
+
   public WEASEL(int s) {
     super();
     seed = s;
@@ -181,7 +166,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   protected static double[] getLabels(final WEASELTransform.BagOfBigrams[] bagOfPatternsTestSamples) {
     double[] labels = new double[bagOfPatternsTestSamples.length];
     for (int i = 0; i < bagOfPatternsTestSamples.length; i++) {
-      labels[i] = Double.valueOf(bagOfPatternsTestSamples[i].label);
+      labels[i] = bagOfPatternsTestSamples[i].label;
     }
     return labels;
   }
@@ -191,27 +176,30 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       final WEASELTransform.Dictionary dict,
       final double bias) {
     Linear.resetRandom();
+    Linear.disableDebugOutput();
 
     Problem problem = new Problem();
     problem.bias = bias;
-    problem.n = dict.size() + 1;
     problem.y = getLabels(bob);
 
-    final FeatureNode[][] features = initLibLinear(bob, problem.n);
+    final FeatureNode[][] features = initLibLinear(bob, dict);
 
+    problem.n = dict.size() + 1;
     problem.l = features.length;
     problem.x = features;
     return problem;
   }
 
-  protected static FeatureNode[][] initLibLinear(final WEASELTransform.BagOfBigrams[] bob, int max_feature) {
+  protected static FeatureNode[][] initLibLinear(
+      final WEASELTransform.BagOfBigrams[] bob,
+      final WEASELTransform.Dictionary dict) {
     FeatureNode[][] featuresTrain = new FeatureNode[bob.length][];
     for (int j = 0; j < bob.length; j++) {
       WEASELTransform.BagOfBigrams bop = bob[j];
       ArrayList<FeatureNode> features = new ArrayList<>(bop.bob.size());
-      for (IntIntCursor word : bop.bob) {
-        if (word.value > 0 && word.key <= max_feature) {
-          features.add(new FeatureNode(word.key, (word.value)));
+      for (LongIntCursor word : bop.bob) {
+        if (word.value > 0) {
+          features.add(new FeatureNode(dict.getWordChi(word.key), (word.value)));
         }
       }
       FeatureNode[] featuresArray = features.toArray(new FeatureNode[]{});
@@ -303,18 +291,19 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   @Override
   public void buildClassifier(final Instances samples) throws Exception {
     long t1=System.currentTimeMillis();
-    
-    if(trainCV){
-        int numFolds=setNumberOfFolds(samples);
-        CrossValidationEvaluator cv = new CrossValidationEvaluator();
-        if (setSeed)
-            cv.setSeed(seed);
-        cv.setNumFolds(numFolds);
 
-        WEASEL weasel=new WEASEL();
-        trainResults=cv.crossValidateWithStats(weasel,samples);
+    if(trainCV){
+      int numFolds=setNumberOfFolds(samples);
+      CrossValidationEvaluator cv = new CrossValidationEvaluator();
+      if (setSeed) {
+        cv.setSeed(seed);
+      }
+      cv.setNumFolds(numFolds);
+
+      WEASEL weasel = new WEASEL();
+      trainResults=cv.crossValidateWithStats(weasel,samples);
     }
-    
+
     if (samples.classIndex() != samples.numAttributes()-1)
       throw new Exception("WEASEL_BuildClassifier: Class attribute not set as last attribute in dataset");
 
@@ -331,15 +320,23 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
 
         for (int f = minF; f <= maxF; f += 2) {
           model.dict.reset();
-          WEASELTransform.BagOfBigrams[] bop = model.createBagOfPatterns(words, samples, f);
-          model.filterChiSquared(bop, chi);
+
+          final WEASELTransform.BagOfBigrams[] bop = new WEASELTransform.BagOfBigrams[samples.size()];
+          final int ff = f;
+
+          for (int w = 0; w < model.windowLengths.length; w++) {
+            WEASELTransform.BagOfBigrams[] bobForOneWindow = fitOneWindow(
+                samples,
+                model.windowLengths, mean,
+                words[w], ff, w);
+            mergeBobs(bop, bobForOneWindow);
+          }
 
           // train liblinear
           final Problem problem = initLibLinearProblem(bop, model.dict, bias);
           int correct = trainLibLinear(problem, solverType, c, iterations, p, folds);
 
           if (correct > maxCorrect) {
-            //System.out.println(correct + "\t" + f);
             maxCorrect = correct;
             bestF = f;
             bestNorm = mean;
@@ -354,12 +351,18 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       int[] windowLengths = getWindowLengths(samples, bestNorm);
       WEASELTransform model = new WEASELTransform(maxF, maxS, windowLengths, bestNorm);
 
-      int[][][] words = model.createWords(samples);
-      WEASELTransform.BagOfBigrams[] bob = model.createBagOfPatterns(words, samples, bestF);
-      model.filterChiSquared(bob, chi);
+      final WEASELTransform.BagOfBigrams[] bop = new WEASELTransform.BagOfBigrams[samples.size()];
+      for (int w = 0; w < model.windowLengths.length; w++) {
+        int[][] words = model.createWords(samples, w);
+        WEASELTransform.BagOfBigrams[] bobForOneWindow = fitOneWindow(
+            samples,
+            model.windowLengths, bestNorm,
+            words, bestF, w);
+        mergeBobs(bop, bobForOneWindow);
+      }
 
       // train liblinear
-      Problem problem = initLibLinearProblem(bob, model.dict, bias);
+      Problem problem = initLibLinearProblem(bop, model.dict, bias);
       de.bwaldvogel.liblinear.Model linearModel = Linear.train(problem, new Parameter(solverType, c, iterations, p));
 
       this.classifier = new WEASELModel(
@@ -372,41 +375,68 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
     } catch (Exception e) {
       e.printStackTrace();
     }
-    
+
     long t2=System.currentTimeMillis();
     trainResults.setBuildTime(t2-t1);
-    
+
     if(trainCVPath!=""){
-        OutFile of=new OutFile(trainCVPath);
-        of.writeLine(samples.relationName()+",TSF,train");
-        of.writeLine(getParameters());
-        of.writeLine(trainResults.getAcc()+"");
-        double[] trueClassVals,predClassVals;
-        trueClassVals=trainResults.getTrueClassValsAsArray();
-        predClassVals=trainResults.getPredClassValsAsArray();
-        for(int i=0;i<samples.numInstances();i++){
-            //Basic sanity check
-            if(samples.instance(i).classValue()!=trueClassVals[i]){
-                throw new Exception("ERROR in TSF cross validation, class mismatch!");
-            }
-            of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-            for(double d:trainResults.getProbabilityDistribution(i))
-                of.writeString(","+d);
-            of.writeString("\n");
+      OutFile of=new OutFile(trainCVPath);
+      of.writeLine(samples.relationName()+",TSF,train");
+      of.writeLine(getParameters());
+      of.writeLine(trainResults.getAcc()+"");
+      double[] trueClassVals,predClassVals;
+      trueClassVals=trainResults.getTrueClassValsAsArray();
+      predClassVals=trainResults.getPredClassValsAsArray();
+      for(int i=0;i<samples.numInstances();i++){
+        //Basic sanity check
+        if(samples.instance(i).classValue()!=trueClassVals[i]){
+          throw new Exception("ERROR in TSF cross validation, class mismatch!");
         }
+        of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
+        for(double d:trainResults.getProbabilityDistribution(i))
+          of.writeString(","+d);
+        of.writeString("\n");
+      }
+    }
+  }
+
+  private WEASELTransform.BagOfBigrams[] fitOneWindow(
+      Instances samples,
+      int[] windowLengths, boolean mean,
+      int[][] word, int f, int w) {
+    WEASELTransform modelForWindow = new WEASELTransform(f, maxS, windowLengths, mean);
+    WEASELTransform.BagOfBigrams[] bopForWindow = modelForWindow.createBagOfPatterns(word, samples, w, f);
+    modelForWindow.trainChiSquared(bopForWindow, chi);
+    return bopForWindow;
+  }
+
+  private synchronized void mergeBobs(
+      WEASELTransform.BagOfBigrams[] bop,
+      WEASELTransform.BagOfBigrams[] bopForWindow) {
+    for (int i = 0; i < bop.length; i++) {
+      if (bop[i]==null) {
+        bop[i] = bopForWindow[i];
+      }
+      else {
+        bop[i].bob.putAll(bopForWindow[i].bob);
+      }
     }
   }
 
 
   @Override
   public double classifyInstance(Instance instance) throws Exception {
-    final int[][] wordsTest = classifier.weasel.createWords(instance);
-    WEASELTransform.BagOfBigrams[] bagTest = new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, classifier.features)};
+    // iterate each sample to classify
+    final WEASELTransform.BagOfBigrams[] bagTest = new WEASELTransform.BagOfBigrams[1];
+    for (int w = 0; w < classifier.weasel.windowLengths.length; w++) {
+      int[] wordsTest = classifier.weasel.createWords(instance, w);
+      WEASELTransform.BagOfBigrams[] bopForWindow =
+          new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
+      classifier.weasel.dict.filterChiSquared(bopForWindow);
+      mergeBobs(bagTest, bopForWindow);
+    }
 
-    // chi square changes key mappings => remap
-    classifier.weasel.dict.remap(bagTest);
-
-    FeatureNode[][] features = initLibLinear(bagTest, classifier.linearModel.getNrFeature());
+    FeatureNode[][] features = initLibLinear(bagTest, classifier.weasel.dict);
     return Linear.predict(classifier.linearModel, features[0]);
   }
 
@@ -414,16 +444,18 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   public double[] distributionForInstance(Instance instance) throws Exception {
     double[] classHist = new double[instance.numClasses()];
 
-    final int[][] wordsTest = classifier.weasel.createWords(instance);
-    WEASELTransform.BagOfBigrams[] bagTest = new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, classifier.features)};
+    // iterate each sample to classify
+    final WEASELTransform.BagOfBigrams[] bagTest = new WEASELTransform.BagOfBigrams[1];
+    for (int w = 0; w < classifier.weasel.windowLengths.length; w++) {
+      int[] wordsTest = classifier.weasel.createWords(instance, w);
+      WEASELTransform.BagOfBigrams[] bopForWindow =
+          new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
+      classifier.weasel.dict.filterChiSquared(bopForWindow);
+      mergeBobs(bagTest, bopForWindow);
+    }
 
-    // chi square changes key mappings => remap
-    classifier.weasel.dict.remap(bagTest);
-
-    FeatureNode[][] features = initLibLinear(bagTest, classifier.linearModel.getNrFeature());
-
+    FeatureNode[][] features = initLibLinear(bagTest, classifier.weasel.dict);
     double[] probabilities = new double[classifier.linearModel.getNrClass()];
-
     Linear.predictProbability(classifier.linearModel, features[0], probabilities);
 
     // TODO do we have to remap classes to indices???
@@ -521,11 +553,11 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
      * The WEASEL-model: a histogram of SFA word and bi-gram frequencies
      */
     public static class BagOfBigrams {
-      public IntIntHashMap bob;
+      public LongIntHashMap bob;
       public Double label;
 
       public BagOfBigrams(int size, Double label) {
-        this.bob = new IntIntHashMap(size);
+        this.bob = new LongIntHashMap(size);
         this.label = label;
       }
     }
@@ -536,31 +568,17 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
      * Condenses the SFA word space.
      */
     public static class Dictionary {
-      LongIntHashMap dict;
-      IntIntHashMap dictChi;
+      public LongIntHashMap dictChi;
 
       public Dictionary() {
-        this.dict = new LongIntHashMap();
-        this.dictChi = new IntIntHashMap();
+        this.dictChi = new LongIntHashMap();
       }
 
       public void reset() {
-        this.dict = new LongIntHashMap();
-        this.dictChi = new IntIntHashMap();
+        this.dictChi = new LongIntHashMap();
       }
 
-      public int getWord(long word) {
-        int index = 0;
-        if ((index = this.dict.indexOf(word)) > -1) {
-          return this.dict.indexGet(index);
-        } else {
-          int newWord = this.dict.size() + 1;
-          this.dict.put(word, newWord);
-          return newWord;
-        }
-      }
-
-      public int getWordChi(int word) {
+      public int getWordChi(long word) {
         int index = 0;
         if ((index = this.dictChi.indexOf(word)) > -1) {
           return this.dictChi.indexGet(index);
@@ -572,20 +590,16 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       }
 
       public int size() {
-        if (!this.dictChi.isEmpty()) {
-          return this.dictChi.size();
-        } else {
-          return this.dict.size();
-        }
+        return this.dictChi.size();
       }
 
-      public void remap(final BagOfBigrams[] bagOfPatterns) {
+      public void filterChiSquared(final BagOfBigrams[] bagOfPatterns) {
         for (int j = 0; j < bagOfPatterns.length; j++) {
-          IntIntHashMap oldMap = bagOfPatterns[j].bob;
-          bagOfPatterns[j].bob = new IntIntHashMap();
-          for (IntIntCursor word : oldMap) {
-            if (word.value > 0) {
-              bagOfPatterns[j].bob.put(getWordChi(word.key), word.value);
+          LongIntHashMap oldMap = bagOfPatterns[j].bob;
+          bagOfPatterns[j].bob = new LongIntHashMap();
+          for (LongIntCursor word : oldMap) {
+            if (this.dictChi.containsKey(word.key) && word.value > 0) {
+              bagOfPatterns[j].bob.put(word.key, word.value);
             }
           }
         }
@@ -593,7 +607,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
     }
 
     public WEASELTransform( int maxF, int maxS,
-                   int[] windowLengths, boolean normMean) {
+                            int[] windowLengths, boolean normMean) {
       this.maxF = maxF;
       this.alphabetSize = maxS;
       this.windowLengths = windowLengths;
@@ -638,7 +652,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
      * @param samples
      * @return
      */
-    private int[][] createWords(final Instances samples, final int index) {
+    protected int[][] createWords(final Instances samples, final int index) {
 
       // SFA quantization
       if (this.signature[index] == null) {
@@ -675,16 +689,16 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
      * Implementation based on:
      * https://github.com/scikit-learn/scikit-learn/blob/c957249/sklearn/feature_selection/univariate_selection.py#L170
      */
-    public void filterChiSquared(final BagOfBigrams[] bob, double chi_limit) {
+    public void trainChiSquared(final BagOfBigrams[] bob, double chi_limit) {
       // Chi2 Test
-      IntIntHashMap featureCount = new IntIntHashMap(bob[0].bob.size());
+      LongIntHashMap featureCount = new LongIntHashMap(bob[0].bob.size());
       LongFloatHashMap classProb = new LongFloatHashMap(10);
       LongIntHashMap observed = new LongIntHashMap(bob[0].bob.size());
 
       // count number of samples with this word
       for (BagOfBigrams bagOfPattern : bob) {
         long label = bagOfPattern.label.longValue();
-        for (IntIntCursor word : bagOfPattern.bob) {
+        for (LongIntCursor word : bagOfPattern.bob) {
           if (word.value > 0) {
             featureCount.putOrAdd(word.key, 1, 1);
             long key = label << 32 | word.key;
@@ -700,11 +714,11 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       }
 
       // chi-squared: observed minus expected occurrence
-      IntHashSet chiSquare = new IntHashSet(featureCount.size());
+      LongHashSet chiSquare = new LongHashSet(featureCount.size());
       for (LongFloatCursor prob : classProb) {
         prob.value /= bob.length; // (float) frequencies.get(prob.key);
 
-        for (IntIntCursor feature : featureCount) {
+        for (LongIntCursor feature : featureCount) {
           long key = prob.key << 32 | feature.key;
           float expected = prob.value * feature.value;
 
@@ -718,7 +732,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       }
 
       for (int j = 0; j < bob.length; j++) {
-        for (IntIntCursor cursor : bob[j].bob) {
+        for (LongIntCursor cursor : bob[j].bob) {
           if (!chiSquare.contains(cursor.key)) {
             bob[j].bob.values[cursor.index] = 0;
           }
@@ -726,17 +740,47 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
       }
 
       // chi-squared reduces keys substantially => remap
-      this.dict.remap(bob);
+      //this.dict.remap(bob);
+    }
+
+    /**
+     * Create words and bi-grams for all window lengths
+     */
+    public BagOfBigrams createBagOfPatterns(
+        final int[] words,
+        final Instance sample,
+        final int w,    // index of used windowSize
+        final int wordLength) {
+      BagOfBigrams bagOfPatterns = new BagOfBigrams(words.length * 2, sample.classValue());
+
+      final byte usedBits = (byte) binlog(this.alphabetSize);
+      final long mask = (1L << (usedBits * wordLength)) - 1L;
+      int highestBit = binlog(Integer.highestOneBit(MAX_WINDOW_LENGTH))+1;
+
+      // create subsequences
+      for (int offset = 0; offset < words.length; offset++) {
+        long word = (words[offset] & mask) << highestBit | (long) w;
+        bagOfPatterns.bob.putOrAdd(word, 1, 1);
+
+        // add 2 grams
+        if (offset - this.windowLengths[w] >= 0) {
+          long prevWord = (words[offset - this.windowLengths[w]] & mask);
+          long newWord = (prevWord << 32 | word ) << highestBit | (long) w;
+          bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+        }
+      }
+      return bagOfPatterns;
     }
 
     /**
      * Create words and bi-grams for all window lengths
      */
     public BagOfBigrams[] createBagOfPatterns(
-        final int[][][] words,
+        final int[][] wordsForWindowLength,
         final Instances samples,
+        final int w,    // index of used windowSize
         final int wordLength) {
-      BagOfBigrams[] bagOfPatterns = new BagOfBigrams[samples.numInstances()];
+      BagOfBigrams[] bagOfPatterns = new BagOfBigrams[samples.size()];
 
       final byte usedBits = (byte) binlog(this.alphabetSize);
       final long mask = (1L << (usedBits * wordLength)) - 1L;
@@ -744,55 +788,23 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
 
       // iterate all samples
       // and create a bag of pattern
-      for (int j = 0; j < samples.numInstances(); j++) {
-        bagOfPatterns[j] = new BagOfBigrams(words[0][j].length * 6, samples.get(j).classValue());
+      for (int j = 0; j < samples.size(); j++) {
+        bagOfPatterns[j] = new BagOfBigrams(wordsForWindowLength[j].length * 2, samples.get(j).classValue());
 
         // create subsequences
-        for (int w = 0; w < this.windowLengths.length; w++) {
-          for (int offset = 0; offset < words[w][j].length; offset++) {
-            int word = this.dict.getWord((words[w][j][offset] & mask) << highestBit | (long) w);
-            bagOfPatterns[j].bob.putOrAdd(word, 1, 1);
-
-            // add 2 grams
-            if (offset - this.windowLengths[w] >= 0) {
-              long prevWord = this.dict.getWord((words[w][j][offset - this.windowLengths[w]] & mask) << highestBit | (long) w);
-              int newWord = this.dict.getWord((prevWord << 32 | word ) << highestBit);
-              bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
-            }
-          }
-        }
-      }
-
-      return bagOfPatterns;
-    }
-
-    /**
-     * Create words and bi-grams for all window lengths
-     */
-    public BagOfBigrams createBagOfPatterns(
-        final int[][] words,
-        final Instance sample,
-        final int wordLength) {
-      final byte usedBits = (byte) binlog(this.alphabetSize);
-      final long mask = (1L << (usedBits * wordLength)) - 1L;
-      int highestBit = binlog(Integer.highestOneBit(MAX_WINDOW_LENGTH))+1;
-
-      BagOfBigrams bagOfPatterns = new BagOfBigrams(words[0].length * 6, sample.classValue());
-
-      // create subsequences
-      for (int w = 0; w < this.windowLengths.length; w++) {
-        for (int offset = 0; offset < words[w].length; offset++) {
-          int word = this.dict.getWord((words[w][offset] & mask) << highestBit | (long) w);
-          bagOfPatterns.bob.putOrAdd(word, 1, 1);
+        for (int offset = 0; offset < wordsForWindowLength[j].length; offset++) {
+          long word = (wordsForWindowLength[j][offset] & mask) << highestBit | (long) w;
+          bagOfPatterns[j].bob.putOrAdd(word, 1, 1);
 
           // add 2 grams
           if (offset - this.windowLengths[w] >= 0) {
-            long prevWord = this.dict.getWord((words[w][offset - this.windowLengths[w]] & mask) << highestBit | (long) w);
-            int newWord = this.dict.getWord((prevWord << 32 | word ) << highestBit);
-            bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+            long prevWord = (wordsForWindowLength[j][offset - this.windowLengths[w]] & mask);
+            long newWord = (prevWord << 32 | word)  << highestBit | (long) w;
+            bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
           }
         }
       }
+
       return bagOfPatterns;
     }
   }
@@ -803,8 +815,6 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
    * ones.
    */
   public static class SFASupervised {
-    private static final long serialVersionUID = -6435016083374045799L;
-
     // distribution of Fourier values
     public transient ArrayList<ValueLabel>[] orderLine;
 
