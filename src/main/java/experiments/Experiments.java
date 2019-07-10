@@ -186,7 +186,8 @@ public class Experiments  {
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
         
-        
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluation = false;
         
         
         
@@ -442,7 +443,7 @@ public class Experiments  {
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
@@ -599,10 +600,10 @@ public class Experiments  {
             //And now evaluate on the test set, if this wasn't a single parameter fold
             if (expSettings.singleParameterID == null) {
                 //This is checked before the buildClassifier also, but 
-                //a) another process may have been doign the same experiment 
+                //a) another process may have been doing the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
-                if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
+                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
