@@ -62,6 +62,10 @@ public class Ex04_ThoroughExperiments {
         // java -jar ueatsc.jar -dp=src/main/java/experiments/data/tsc/ ...
         
         
+        
+        
+        
+        
         ///////// Running a job from code: 
         
         // When running locally from code, it may be easier to just set up the 
@@ -76,6 +80,10 @@ public class Ex04_ThoroughExperiments {
         
         // here, we wont force the evaluation. see the difference
         Experiments.setupAndRunExperiment(exp);
+        
+        
+        
+        
         
         
         

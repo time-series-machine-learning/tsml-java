@@ -60,6 +60,8 @@ public class Ex01_Datahandling {
         
         
         
+        
+        
         ///////////// Loading method 2: sampling directly
         // DatasetLoading.sampleDataset(...)
         // Wraps the data loading and sampling performed above. Read in a dataset either
@@ -75,6 +77,8 @@ public class Ex01_Datahandling {
         
         
         
+        
+        
         ///////////// Loading method 3: sampling the built in dataset
         // DatasetLoading.sampleDataset(...)
         // Because ItalyPowerDemand is distributed with the codebase, there's a wrapper 
@@ -83,6 +87,8 @@ public class Ex01_Datahandling {
         trainTest = DatasetLoading.sampleItalyPowerDemand(seed);
         train = trainTest[0];
         test = trainTest[1];
+        
+        
         
         
         
@@ -100,6 +106,14 @@ public class Ex01_Datahandling {
         for (Instance inst : train)
             System.out.print(inst.classValue() + ", ");
         System.out.println("");
+        
+        
+        
+        
+        
+        
+        
+        
         
         // Often for speed we just want the data in a primitive array
         // We can go to and from them using this sort of procedure
