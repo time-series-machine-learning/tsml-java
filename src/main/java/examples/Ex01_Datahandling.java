@@ -32,7 +32,6 @@ public class Ex01_Datahandling {
     public static void main(String[] args) throws Exception {
         
         // We'll be loading the ItalyPowerDemand dataset which is distributed with this codebase
-        
         String basePath = "src/main/java/experiments/data/tsc/";
         String dataset = "ItalyPowerDemand";
         int seed = 1;
