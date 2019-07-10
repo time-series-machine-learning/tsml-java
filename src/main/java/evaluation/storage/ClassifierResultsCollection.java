@@ -14,7 +14,7 @@
  */
 package evaluation.storage;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
@@ -806,7 +806,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         ClassifierResultsCollection col = new ClassifierResultsCollection();
         col.setBaseReadPath("C:/JamesLPHD/CAWPEExtension/Results/");
         col.setClassifiers(new String[] { "Logistic", "SVML", "MLP" });
-        col.setDatasets(Arrays.copyOfRange(DataSets.ReducedUCI, 0, 5));
+        col.setDatasets(Arrays.copyOfRange(DatasetLists.ReducedUCI, 0, 5));
         col.setFolds(10);
         col.setSplit_Test();
         
@@ -835,7 +835,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println(subres[0][0][0][0].getAcc());      
         System.out.println("");
         
-        subcol = col.sliceDataset(DataSets.ReducedUCI[0]);
+        subcol = col.sliceDataset(DatasetLists.ReducedUCI[0]);
         subres = subcol.retrieveResults();
         System.out.println(subres.length);
         System.out.println(subres[0].length);

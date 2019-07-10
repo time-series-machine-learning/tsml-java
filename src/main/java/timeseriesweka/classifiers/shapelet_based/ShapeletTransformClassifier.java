@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
@@ -463,8 +464,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         String datasetName = "FordA";
         int fold = 0;
         
-        Instances train= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
-        Instances test= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TEST");
+        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
+        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
         String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
         String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
         String preds=saveLocation+datasetName;

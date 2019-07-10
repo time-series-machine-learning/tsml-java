@@ -28,7 +28,7 @@ import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import timeseriesweka.classifiers.hybrids.HiveCote;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
@@ -382,7 +382,7 @@ public class SimulationExperiments {
 
     
     public static void main(String[] args){
-        DataSets.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
+        DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
         runShapeletSimulatorExperiment();
     }
 }

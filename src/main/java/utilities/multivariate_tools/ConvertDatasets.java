@@ -14,6 +14,7 @@
  */
 package utilities.multivariate_tools;
 
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -27,9 +28,6 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instances;
-
-import static utilities.ClassifierTools.loadData;
-import weka.core.Instance;
 /**
  *
  * @author raj09hxu
@@ -56,9 +54,9 @@ public class ConvertDatasets {
         
         /*String dir = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\ArticularyWord\\";
         
-        Instances[] LL = splitMultivariateInstances(loadData(dir+"ArticularyWordLL")); 
-        Instances[] T1 = splitMultivariateInstances(loadData(dir+"ArticularyWordT1"));
-        Instances[] UL = splitMultivariateInstances(loadData(dir+"ArticularyWordUL"));
+        Instances[] LL = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordLL")); 
+        Instances[] T1 = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordT1"));
+        Instances[] UL = splitMultivariateInstances(loadDataThrowable(dir+"ArticularyWordUL"));
         
         List<Instances> list = new ArrayList(LL.length+T1.length+UL.length);
         list.addAll(Arrays.asList(LL));
@@ -66,7 +64,7 @@ public class ConvertDatasets {
         list.addAll(Arrays.asList(UL));
         saveDataset(mergeToMultivariateInstances(list.toArray(new Instances[list.size()])), dir+"ArticularyWord");
         
-        Instances data = utilities.ClassifierTools.loadData(dir  + "ArticularyWord.arff");
+        Instances data = utilities.ClassifierTools.loadDataThrowable(dir  + "ArticularyWord.arff");
 
         Instances train, test;
 
@@ -79,13 +77,13 @@ public class ConvertDatasets {
         utilities.ClassifierTools.saveDataset(test, dir + "ArticularyWord" + "_TEST");*/
         
         /*saveDataset(mergeToMultivariateInstances(new Instances[]{
-            loadData("DTW_A_TEST/A_TRAIN"), 
-            loadData("DTW_A_TEST/B_TRAIN")}
+            loadDataThrowable("DTW_A_TEST/A_TRAIN"), 
+            loadDataThrowable("DTW_A_TEST/B_TRAIN")}
         ), "AB_TRAIN");
         
         saveDataset(mergeToMultivariateInstances(new Instances[]{
-            loadData("DTW_A_TEST/A_TEST"), 
-            loadData("DTW_A_TEST/B_TEST")}
+            loadDataThrowable("DTW_A_TEST/A_TEST"), 
+            loadDataThrowable("DTW_A_TEST/B_TEST")}
         ), "AB_TEST");*/
         
         
@@ -99,7 +97,7 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int i=0;
             for(String en : end){
-                data[i++] = utilities.ClassifierTools.loadData(dir + dataset + "\\" + dataset + type + en);
+                data[i++] = utilities.ClassifierTools.loadDataThrowable(dir + dataset + "\\" + dataset + type + en);
             }
             
             utilities.ClassifierTools.saveDataset(utilities.MultivariateInstanceTools.mergeToMultivariateInstances(data), dir + dataset + "\\" + dataset + type + Arrays.toString(end).replace("[", "").replace("]", "").replace(",", "").replace("\\s+", ""));
@@ -117,16 +115,16 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String en : end){
-                data[j++] = utilities.ClassifierTools.loadData(dir + dataset + "\\univariate\\" + dataset + "_"+i+"_" + en + "_TRAIN");
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset + "_"+i+"_" + en + "_TRAIN");
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
-            utilities.ClassifierTools.saveDataset(merged, dir + dataset + "\\" + dataset + "_" +i);
+            DatasetLoading.saveDataset(merged, dir + dataset + "\\" + dataset + "_" +i);
         
             //split into train and test
             Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(merged, 0, 0.5);
-            utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + i + "_TRAIN");
-            utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + i + "_TEST");
+            DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + i + "_TRAIN");
+            DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + i + "_TEST");
         }
     }
     
@@ -140,16 +138,16 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String end1 : end){
-                data[j++] = utilities.ClassifierTools.loadData(dir + dataset + "\\univariate\\" + dataset +end1+ LR);
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset +end1+ LR);
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
-            utilities.ClassifierTools.saveDataset(merged, dir + dataset + "\\" + dataset + "_" + LR);
+            DatasetLoading.saveDataset(merged, dir + dataset + "\\" + dataset + "_" + LR);
         
             //split into train and test
             Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(merged, 0, 0.5);
-            utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + LR + "_TRAIN");
-            utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + LR + "_TEST");
+            DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + LR + "_TRAIN");
+            DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + LR + "_TEST");
         }
     }
     
@@ -163,16 +161,16 @@ public class ConvertDatasets {
             Instances[] data = new Instances[end.length];
             int j=0;
             for(String end1 : end){
-                data[j++] = utilities.ClassifierTools.loadData(dir + dataset + "\\univariate\\" + dataset + LR+end1);
+                data[j++] = DatasetLoading.loadDataNullable(dir + dataset + "\\univariate\\" + dataset + LR+end1);
             }
             
             Instances merged = utilities.multivariate_tools.MultivariateInstanceTools.mergeToMultivariateInstances(data);
-            utilities.ClassifierTools.saveDataset(merged, dir + dataset + "\\" + dataset + "_" + LR);
+            DatasetLoading.saveDataset(merged, dir + dataset + "\\" + dataset + "_" + LR);
         
             //split into train and test
             Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(merged, 0, 0.5);
-            utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + LR + "_TRAIN");
-            utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + LR + "_TEST");
+            DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_" + LR + "_TRAIN");
+            DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_" + LR + "_TEST");
         }
         
         
@@ -182,9 +180,9 @@ public class ConvertDatasets {
     public static void createVillar(){
         String dir = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\";
         String dataset = "VillarData";
-        Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(loadData(dir + dataset + "\\" + dataset), 0, 0.5);
-        utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
-        utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
+        Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(DatasetLoading.loadDataNullable(dir + dataset + "\\" + dataset), 0, 0.5);
+        DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
+        DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
     }
     
     public static void createMVMotion(){
@@ -192,7 +190,7 @@ public class ConvertDatasets {
         
         //load up the MVMotion2 dataset. Split it into accelormeter and gyro data, then combine and split into 50/50 splits.
         String dir2 = "E:\\LocalData\\Dropbox\\Multivariate TSC\\Aarons Official\\Old data\\MVMotion\\MVMotion2.arff";
-        Instances data = utilities.ClassifierTools.loadData(dir2);
+        Instances data = DatasetLoading.loadDataNullable(dir2);
         Instances[] data_channels = utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances(data);
         
         
@@ -206,21 +204,21 @@ public class ConvertDatasets {
         //create MVMotionA train test
         String dataset = "MVMotionA";
         Instances[] train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(accel, 0, 0.5);
-        utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
-        utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
+        DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
+        DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
         
         //create MVMotionAG train test
         dataset = "MVMotionAG";
         train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(data, 0, 0.5);
-        utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
-        utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
+        DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
+        DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
 
         //create MVMotionG train test and extract the G part from MVMotionG
         //create MVMotionA train test
         dataset = "MVMotionG";
         train_test = utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateInstances(gyro, 0, 0.5);
-        utilities.ClassifierTools.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
-        utilities.ClassifierTools.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
+        DatasetLoading.saveDataset(train_test[0], dir + dataset + "\\" + dataset + "_TRAIN");
+        DatasetLoading.saveDataset(train_test[1], dir + dataset + "\\" + dataset + "_TEST");
     }
 
     
@@ -230,7 +228,7 @@ public class ConvertDatasets {
         for(File f : dir.listFiles()){
             if(f.isDirectory()) continue;
             Instances data = createArff(f);
-            utilities.ClassifierTools.saveDataset(data, dir + "\\"+dirName+"_"+f.getName());
+            DatasetLoading.saveDataset(data, dir + "\\"+dirName+"_"+f.getName());
         }
     }
     

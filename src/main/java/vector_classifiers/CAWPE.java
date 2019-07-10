@@ -47,6 +47,7 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
 import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -1169,8 +1170,8 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";
 
-        Instances train = ClassifierTools.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = ClassifierTools.loadData("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
         //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setDefaultCAWPESettings()
         CAWPE cawpe = new CAWPE();
@@ -1325,9 +1326,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             String dataset = "breast-cancer-wisc-prog";
     //        String dataset = "ItalyPowerDemand";
 
-            Instances all = ClassifierTools.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+            Instances all = DatasetLoading.loadDataNullable("C:/UCI Problems/"+dataset+"/"+dataset);
+    //        Instances train = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1367,9 +1368,9 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
             String dataset = "breast-cancer-wisc-prog";
     //        String dataset = "ItalyPowerDemand";
 
-            Instances all = ClassifierTools.loadData("C:/UCI Problems/"+dataset+"/"+dataset);
-    //        Instances train = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
-    //        Instances test = ClassifierTools.loadData("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
+            Instances all = DatasetLoading.loadDataNullable("C:/UCI Problems/"+dataset+"/"+dataset);
+    //        Instances train = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TRAIN");
+    //        Instances test = ClassifierTools.loadDataThrowable("C:/tsc problems/"+dataset+"/"+dataset+"_TEST");
 
             Instances[] insts = InstanceTools.resampleInstances(all, fold, 0.5);
             Instances train = insts[0];
@@ -1557,10 +1558,10 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
                 System.out.println(dset);
 
                 if (dataHeaders[archive].equals("UCI"))
-                    all = ClassifierTools.loadData(dataPaths[archive] + dset + "/" + dset + ".arff");
+                    all = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + ".arff");
                 else if ((dataHeaders[archive].contains("UCR"))) {
-                    train = ClassifierTools.loadData(dataPaths[archive] + dset + "/" + dset + "_TRAIN.arff");
-                    test = ClassifierTools.loadData(dataPaths[archive] + dset + "/" + dset + "_TEST.arff");
+                    train = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + "_TRAIN.arff");
+                    test = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + "_TEST.arff");
                 }
 
                 for (int fold = 0; fold < numFolds; fold++) {

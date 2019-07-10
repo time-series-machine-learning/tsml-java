@@ -694,7 +694,7 @@ public static void basicSummaryComparisons(){
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
-            m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+            m.setDatasets(Arrays.copyOfRange(experiments.data.DatasetLists.UCIContinuousWithoutBigFour, 0, 117));
             m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
                     "E://Results/UCI/Tuned");
             m.runComparison(); 

@@ -14,7 +14,8 @@
  */
 package timeseriesweka.filters.shapelet_transforms;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -279,18 +280,18 @@ public class GraceShapeletTransform extends ShapeletTransform {
         final String ucrLocation = "../../time-series-datasets/TSC Problems";
         final String transformLocation = "../../";
 
-        String fileExtension = File.separator + DataSets.tscProblemsSmall[0] + File.separator + DataSets.tscProblemsSmall[0];
+        String fileExtension = File.separator + DatasetLists.tscProblemsSmall[0] + File.separator + DatasetLists.tscProblemsSmall[0];
 
-        Instances train = utilities.ClassifierTools.loadData(ucrLocation + fileExtension + "_TRAIN");
-        Instances test = utilities.ClassifierTools.loadData(ucrLocation + fileExtension + "_TEST");
+        Instances train = DatasetLoading.loadDataNullable(ucrLocation + fileExtension + "_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(ucrLocation + fileExtension + "_TEST");
 
         //first run: build the BSUB.
-        //GraceFullShapeletTransform.buildGraceBSUB("../../"+DataSets.tscProblemsSmall[0], train.numInstances(), "raj09hxu", "SamplingExperiments/dist", "samplingExperiments", "long", 1000);
+        //GraceFullShapeletTransform.buildGraceBSUB("../../"+DatasetLists.tscProblemsSmall[0], train.numInstances(), "raj09hxu", "SamplingExperiments/dist", "samplingExperiments", "long", 1000);
         
 
         GraceShapeletTransform st = new GraceShapeletTransform();
         st.setNumberOfShapelets(train.numInstances()*10);
-        st.setLogOutputFile(DataSets.tscProblemsSmall[0] + ".csv");
+        st.setLogOutputFile(DatasetLists.tscProblemsSmall[0] + ".csv");
 
         //set the params for your transform. length, shapelets etc.
         

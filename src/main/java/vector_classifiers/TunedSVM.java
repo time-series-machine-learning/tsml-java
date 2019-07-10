@@ -34,6 +34,7 @@ import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import weka.core.*;
 
 /*
@@ -1040,7 +1041,7 @@ this gives the option of finding one using 10xCV
 
             String dset = "zoo";
 //            int fold = 0;
-            Instances all=ClassifierTools.loadData("C:/UCI Problems/"+dset+"/"+dset);
+            Instances all=DatasetLoading.loadDataNullable("C:/UCI Problems/"+dset+"/"+dset);
             
             for (int fold = 0; fold < 30; fold++) {
                 
@@ -1107,7 +1108,7 @@ this gives the option of finding one using 10xCV
 
         String dset = "balloons";             
         svm.setSeed(0);
-       Instances all=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
+       Instances all=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\UCI Problems\\"+dset+"\\"+dset);        
         Instances[] split=InstanceTools.resampleInstances(all,1,0.5);
         svm.buildClassifier(split[0]);
     }
@@ -1144,7 +1145,7 @@ this gives the option of finding one using 10xCV
         String sourcePath="C:\\Users\\ajb\\Dropbox\\TSC Problems\\";
         String problemFile="ItalyPowerDemand";
         DecimalFormat df = new DecimalFormat("###.###");
-        Instances all=ClassifierTools.loadData(sourcePath+problemFile+"/"+problemFile+"_TRAIN");
+        Instances all=DatasetLoading.loadDataNullable(sourcePath+problemFile+"/"+problemFile+"_TRAIN");
         Instances[] split=InstanceTools.resampleInstances(all,0,0.5);
         Instances train=split[0];
         Instances test=split[1];
@@ -1223,8 +1224,8 @@ this gives the option of finding one using 10xCV
     }
    
     public static void cheatOnMNIST(){
-        Instances train=ClassifierTools.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
-        Instances test=ClassifierTools.loadData("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
+        Instances train=DatasetLoading.loadDataNullable("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\LargeProblems\\MNIST\\MNIST_TEST");
         SMO svm=new SMO();
         RBFKernel k=new RBFKernel();
         svm.setKernel(k);

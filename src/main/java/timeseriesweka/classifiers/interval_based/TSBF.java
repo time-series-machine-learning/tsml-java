@@ -14,7 +14,8 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -192,13 +193,13 @@ public class TSBF extends AbstractClassifierWithTrainingInfo implements Paramete
       //</editor-fold>  
     
 public static void recreatePublishedResults() throws Exception{
-        OutFile of=new OutFile(DataSets.resultsPath+"RecreateTSBF.csv");
+        OutFile of=new OutFile(DatasetLists.resultsPath+"RecreateTSBF.csv");
         System.out.println("problem,published,recreated");
         double meanDiff=0;
         int publishedBetter=0;
     for(int i=0;i<problems.length;i++){
-        Instances train = ClassifierTools.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
-        Instances test = ClassifierTools.loadData(DataSets.problemPath+problems[i]+"/"+problems[i]+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TEST");
         TSBF tsbf=new TSBF();
         tsbf.searchParameters(true);
         double a=ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
@@ -774,15 +775,15 @@ public static void recreatePublishedResults() throws Exception{
     public static void main(String[] args) throws Exception {
         String s= "Beef";
         System.out.println(" PROBLEM ="+s);
-        Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-        Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
         TSBF tsbf=new TSBF();
         double a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
         System.out.println(" TEST Acc ="+a);
 
         
-//        DataSets.resultsPath=DataSets.clusterPath+"Results/";
-//        DataSets.problemPath=DataSets.clusterPath+"TSC Problems/";        
+//        DatasetLists.resultsPath=DatasetLists.clusterPath+"Results/";
+//        DatasetLists.problemPath=DatasetLists.clusterPath+"TSC Problems/";        
 //        recreatePublishedResults();
   //      testBinMaker();
         System.exit(0);
@@ -791,8 +792,8 @@ public static void recreatePublishedResults() throws Exception{
             for(int i=1;i<2;i++){
                 s="TwoLeadECG";
                 System.out.println(" PROBLEM ="+s);
-                train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-                test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+                train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+                test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
 //                RandomForest rf=new RandomForest();
  //               rf.buildClassifier(train);
 //                System.out.println(" bag percent ="+rf.getBaggingPercent()+" OOB error "+rf.measureOutOfBagError());
