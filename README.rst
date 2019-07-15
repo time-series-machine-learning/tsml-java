@@ -1,8 +1,6 @@
 UEA Time Series Classification - CAWPE-Folds Stable Branch
 ===============================
 
-[![Build Status](https://travis-ci.com/goastler/uea-tsc.svg?branch=master)](https://travis-ci.com/goastler/uea-tsc)
-
 This is a stable branch in support of the paper 'Mixing hetero- and homogeneous models in weighted ensembles'. It is intended to provde a snapshot of the code at the time of submission, as well as a stable location for summaries of results. See the associated [website](http://www.timeseriesclassification.com/CAWPEFolds.php) for more details. 
 
 Supplementary Material
