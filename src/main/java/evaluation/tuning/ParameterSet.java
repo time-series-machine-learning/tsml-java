@@ -26,12 +26,21 @@ import java.util.Set;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ParameterSet implements OptionHandler {
+public class ParameterSet
+    implements OptionHandler {
     public Map<String, Object> parameterSet = new HashMap<>();
         
     private static String startParaLineDelimiter = "parasStart";
     private static String endParaLineDelimiter = "parasEnd";
-    
+
+    public ParameterSet(final String[] options) {
+        try {
+            setOptions(options);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public int size() {
         return parameterSet.size();
     }

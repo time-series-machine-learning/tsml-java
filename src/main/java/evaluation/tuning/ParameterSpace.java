@@ -18,7 +18,6 @@ import utilities.ArrayUtilities;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.Function;
 
 import static utilities.ArrayUtilities.removeDuplicatesInPlace;
 import static utilities.Utilities.fromPermutation;
@@ -139,7 +138,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<Object>>>{
             ParameterSet parameterSet = parameterSpace.get(i);
             System.out.println(parameterSet);
         }
-        parameterSpace.removeDuplicateValues();
+        parameterSpace.removeDuplicateParameterSets();
         System.out.println("----");
         size = parameterSpace.size();
         for(int i = 0; i < size; i++) {
@@ -149,7 +148,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<Object>>>{
     }
 
 
-    public void removeDuplicateValues() {
+    public void removeDuplicateParameterSets() {
         for(List<Object> values : parameterLists.values()) {
             removeDuplicatesInPlace(values);
         }

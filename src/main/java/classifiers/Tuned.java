@@ -1,6 +1,6 @@
 package classifiers;
 
-import classifiers.template_classifier.TemplateClassifier;
+import classifiers.template.TemplateClassifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;

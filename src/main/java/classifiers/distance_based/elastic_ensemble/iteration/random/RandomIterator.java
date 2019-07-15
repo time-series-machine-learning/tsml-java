@@ -20,6 +20,11 @@ public class RandomIterator<A> extends LinearIterator<A> {
         this(values, random.nextLong());
     }
 
+
+    public RandomIterator(final List<A> values, final Random random) {
+        this(values, random.nextLong());
+    }
+
     public RandomIterator(RandomIterator<A> other) {
         this(other.values, other.seed);
         index = other.index;
@@ -27,6 +32,10 @@ public class RandomIterator<A> extends LinearIterator<A> {
 
     public RandomIterator(long seed) {
         random.setSeed(seed);
+    }
+
+    public RandomIterator(Random random) {
+        this(random.nextLong());
     }
 
     @Override
