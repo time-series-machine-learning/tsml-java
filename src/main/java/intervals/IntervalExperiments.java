@@ -40,8 +40,6 @@ import weka.core.Instances;
  */
 public class IntervalExperiments {
 
-    public static final int maxNumIntervalPoints = 20; //so 21 values really, 0 .. 20 corresponding to props 0 .. 1 
-    public static final int maxNumIntervals = 210; 
     
     public static void zipTest() throws IOException {
         String dirToZip = "C:/Temp/intervalExpTest/ED_0.00_0.05/Predictions/ACSF1/";
@@ -160,7 +158,7 @@ public class IntervalExperiments {
         
         for (String dset : DataSets.tscProblems2018) {
             for (int f = 1; f <= 10; f++) {
-                for (int i = 227; i < maxNumIntervals; i++) {
+                for (int i = 227; i < IntervalHeirarchy.maxNumDifferentIntervals; i++) {
                     args=new String[9];
                     args[0]=""+norm;
                     args[1]=""+i;
@@ -178,16 +176,12 @@ public class IntervalExperiments {
         }
     }
     
-    public static String buildIntervalClassifierName(String classifier, double[] interval) {
-        return classifier + "_" + String.format("%.2f", interval[0]).split("\\.")[1] 
-                            + "_" + String.format("%.2f", interval[1]).split("\\.")[1];
-    }
     
     public static String runExperiment(String[] args) throws Exception {
         
         boolean normaliseInterval = Boolean.parseBoolean(args[0]);
         int intervalID = Integer.parseInt(args[1]) - 1;
-        double[] interval = defineInterval(intervalID);
+        double[] interval = IntervalHeirarchy.defineInterval(intervalID);
         args = Arrays.copyOfRange(args, 2, args.length);
         
         //semi-manual experiment setup to get cawpe to write it's individuals predictions
@@ -195,7 +189,7 @@ public class IntervalExperiments {
         System.out.println(exp.toShortString());
        
         Classifier classifier = ClassifierLists.setClassifier(exp);
-        exp.classifierName = buildIntervalClassifierName(exp.classifierName, interval);
+        exp.classifierName = IntervalHeirarchy.buildIntervalClassifierName(exp.classifierName, interval);
         
         
         if (new File(exp.resultsWriteLocation + exp.classifierName + "/" + classifier + ".zip").exists()) {
@@ -220,29 +214,6 @@ public class IntervalExperiments {
         return exp.classifierName;
     }
     
-    public static double[] defineInterval(int intID) throws Exception {
-        int startId = 0;
-        int endId = 1;
-
-        int c = 0;        
-        while (c != intID) { 
-            if (++endId > maxNumIntervalPoints) {
-                startId++;
-                endId = startId + 1;
-                
-                if (startId > maxNumIntervalPoints-1)
-                    throw new Exception("something wrong in interval defintion, startId=" + startId + " endId=" + endId + " intId=" + intID);
-            }
-            
-            c++;
-        }
-        
-        
-        double startProp = (double)startId / maxNumIntervalPoints;
-        double endProp = (double)endId / maxNumIntervalPoints;
-        
-        return new double[] { startProp, endProp };
-    }
     
     //maybe theres a filter that does what i want?... faster to just do it here
     public static Instances crop_proportional(Instances insts, double startProp, double endProp, boolean normalise) throws Exception { 

@@ -18,9 +18,6 @@
 package intervals;
 
 import evaluation.storage.ClassifierResults;
-import static intervals.IntervalExperiments.buildIntervalClassifierName;
-import static intervals.IntervalExperiments.defineInterval;
-import static intervals.IntervalExperiments.maxNumIntervals;
 
 /**
  *
@@ -80,10 +77,10 @@ public class IntervalAnalysis {
         String baseClassifier = "ED"; 
         int fold = 0;
         
-        ClassifierResults[] allIntervalsRes = new ClassifierResults[maxNumIntervals];
+        ClassifierResults[] allIntervalsRes = new ClassifierResults[IntervalHeirarchy.maxNumDifferentIntervals];
         
-        for (int i = 0; i < maxNumIntervals; i++) {
-            String cname = buildIntervalClassifierName(baseClassifier, defineInterval(i));
+        for (int i = 0; i < IntervalHeirarchy.maxNumDifferentIntervals; i++) {
+            String cname = IntervalHeirarchy.buildIntervalClassifierName(baseClassifier, IntervalHeirarchy.defineInterval(i));
             allIntervalsRes[i] = new ClassifierResults(baseResPath + cname + "/Predictions/" + dataset + "/testFold" + fold + ".csv");
         }
         
