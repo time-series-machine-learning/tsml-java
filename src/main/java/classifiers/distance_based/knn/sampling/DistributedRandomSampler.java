@@ -1,7 +1,6 @@
 package classifiers.distance_based.knn.sampling;
 
-import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
-import util.Sampler;
+import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
 import utilities.CollectionUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -10,12 +9,13 @@ import weka.core.Instances;
 import java.util.*;
 
 public class DistributedRandomSampler
-    extends DynamicIterator<Instance, DistributedRandomSampler> {
-    private final Random random;
+    extends AbstractIterator<Instance> {
+    private final Random random = new Random();
     private final Map<Double, List<Instance>> instancesByClass;
     private final List<ClassLikelihood> probabilities = new ArrayList<>();
     private List<Instance> instances;
     private int index = 0;
+    private double classValue;
 
     @Override
     public DistributedRandomSampler iterator() {
@@ -40,6 +40,11 @@ public class DistributedRandomSampler
             this.classDistributionProbability = classDistributionProbability;
         }
 
+        private ClassLikelihood(ClassLikelihood other) {
+            this(other.classValue, other.classDistributionProbability);
+            this.probability = other.probability;
+        }
+
         public void chosen() {
             probability--;
         }
@@ -54,8 +59,8 @@ public class DistributedRandomSampler
         }
     }
 
-    public DistributedRandomSampler(Instances instances, Random random) { // todo update to seeding system
-        this.random = random;
+    public DistributedRandomSampler(long seed, Collection<Instance> instances) {
+        random.setSeed(seed);
         instancesByClass = Utilities.instancesByClassValue(instances);
         for(Map.Entry<Double, List<Instance>> entry : instancesByClass.entrySet()) {
             double probability = (double) entry.getValue().size() / instances.size();
@@ -63,13 +68,25 @@ public class DistributedRandomSampler
         }
     }
 
+    public DistributedRandomSampler(long seed) {
+        this(seed, new ArrayList<>());
+    }
+
     public DistributedRandomSampler(Random random) {
-        this.random = random;
-        instancesByClass = null;
+        this(random.nextLong());
     }
 
     public DistributedRandomSampler(DistributedRandomSampler other) {
-        throw new UnsupportedOperationException();
+        this(other.random);
+        index = other.index;
+        for(Map.Entry<Double, List<Instance>> entry : other.instancesByClass.entrySet()) {
+            instancesByClass.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        for(ClassLikelihood classLikelihood : other.probabilities) {
+            probabilities.add(new ClassLikelihood(classLikelihood));
+        }
+        classValue = other.classValue;
+        instances = instancesByClass.get(classValue);
     }
 
     @Override
@@ -84,7 +101,8 @@ public class DistributedRandomSampler
         for(ClassLikelihood a : probabilities) {
             a.increment();
         }
-        instances = instancesByClass.get(classLikelihood.getClassValue());
+        classValue = classLikelihood.getClassValue();
+        instances = instancesByClass.get(classValue);
         index = random.nextInt(instances.size());
         return instances.get(index);
     }
@@ -96,7 +114,8 @@ public class DistributedRandomSampler
 
     @Override
     public void add(final Instance instance) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // todo
     }
+
 
 }

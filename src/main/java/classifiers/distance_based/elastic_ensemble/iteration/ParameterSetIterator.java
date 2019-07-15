@@ -3,24 +3,18 @@ package classifiers.distance_based.elastic_ensemble.iteration;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 
-import java.util.Iterator;
-
-public class ParameterSetIterator extends DynamicIterator<ParameterSet, ParameterSetIterator> {
+public class ParameterSetIterator extends AbstractIterator<ParameterSet> {
     private final ParameterSpace parameterSpace;
-    private final DynamicIterator<Integer, ?> iterator;
+    private final AbstractIterator<Integer> iterator;
 
     public ParameterSetIterator(final ParameterSpace parameterSpace,
-                                final DynamicIterator<Integer, ?> iterator) {
+                                final AbstractIterator<Integer> iterator) {
         this.parameterSpace = parameterSpace;
         this.iterator = iterator;
     }
 
-    public ParameterSetIterator() {
-        throw new UnsupportedOperationException();
-    }
-
     public ParameterSetIterator(ParameterSetIterator other) {
-        this(other.parameterSpace, other.iterator); // todo need to copy these!
+        this(other.parameterSpace, other.iterator.iterator()); // todo need to copy param space
     }
 
     @Override

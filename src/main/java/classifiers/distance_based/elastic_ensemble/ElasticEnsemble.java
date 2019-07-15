@@ -405,7 +405,7 @@ public class ElasticEnsemble extends TemplateClassifier {
     }
 
     private void setupNeighbourSearchStrategy() {
-        DynamicIterator<Instance, ?> neighboursIterator;
+        AbstractIterator<Instance, ?> neighboursIterator;
         switch (neighbourSearchStrategy) {
             case RANDOM:
                 neighboursIterator = new RandomSampler(getTrainRandom().nextLong());

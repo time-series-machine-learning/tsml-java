@@ -4,9 +4,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.ListIterator;
 
-public abstract class DynamicIterator<A, B extends DynamicIterator<A, B>>
+public abstract class AbstractIterator<A>
     implements ListIterator<A>, Iterable<A> {
-
 
     @Override
     public boolean hasPrevious() {
@@ -33,12 +32,12 @@ public abstract class DynamicIterator<A, B extends DynamicIterator<A, B>>
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public abstract B iterator();
-
     public void addAll(Collection<A> collection) {
         for(A item : collection) {
             add(item);
         }
     }
+
+    @Override
+    public abstract AbstractIterator<A> iterator();
 }

@@ -316,7 +316,7 @@ public class Utilities {
         return list;
     }
 
-    public static Map<Double, List<Instance>> instancesByClassValue(List<Instance> instances) {
+    public static Map<Double, List<Instance>> instancesByClassValue(Collection<Instance> instances) {
         Map<Double, List<Instance>> instancesByClassValue = new HashMap<>();
         for(Instance instance : instances) {
             List<Instance> homogeneousInstances = instancesByClassValue.computeIfAbsent(instance.classValue(), key -> new ArrayList<>());

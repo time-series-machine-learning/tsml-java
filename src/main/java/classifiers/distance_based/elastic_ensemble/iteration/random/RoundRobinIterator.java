@@ -1,10 +1,10 @@
 package classifiers.distance_based.elastic_ensemble.iteration.random;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
 
-public class RoundRobinIterator<A> extends AbstractRoundRobinIterator<A, RoundRobinIterator<A>> {
+import java.util.List;
+
+public class RoundRobinIterator<A> extends LinearIterator<A> {
 
     public RoundRobinIterator(final List<A> values) {
         super(values);
@@ -17,6 +17,11 @@ public class RoundRobinIterator<A> extends AbstractRoundRobinIterator<A, RoundRo
 
     public RoundRobinIterator() {
         super();
+    }
+
+    @Override
+    public A next() {
+        return values.get(index = (index + 1) % values.size());
     }
 
     @Override

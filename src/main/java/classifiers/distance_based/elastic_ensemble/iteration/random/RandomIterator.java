@@ -1,13 +1,23 @@
 package classifiers.distance_based.elastic_ensemble.iteration.random;
 
-import java.util.Collection;
+
+import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class RandomIterator<A> extends AbstractRandomIterator<A, RandomIterator<A>> {
+public class RandomIterator<A> extends LinearIterator<A> {
+    protected final Random random = new Random();
+    protected long seed;
 
     public RandomIterator(final List<A> values, final long seed) {
-        super(values, seed);
+        super(values);
+        random.setSeed(seed);
+    }
+
+    public RandomIterator(final List<A> values, final Random random) {
+        this(values, random.nextLong());
     }
 
     public RandomIterator(RandomIterator<A> other) {
@@ -16,7 +26,7 @@ public class RandomIterator<A> extends AbstractRandomIterator<A, RandomIterator<
     }
 
     public RandomIterator(long seed) {
-        super(seed);
+        random.setSeed(seed);
     }
 
     @Override
@@ -25,7 +35,11 @@ public class RandomIterator<A> extends AbstractRandomIterator<A, RandomIterator<
     }
 
     @Override
-    public boolean hasNext() {
-        return !values.isEmpty();
+    public A next() {
+        index = random.nextInt(values.size());
+        seed = random.nextLong();
+        random.setSeed(seed);
+        return values.get(index);
     }
+
 }

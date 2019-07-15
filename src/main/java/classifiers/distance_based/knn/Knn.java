@@ -1,6 +1,6 @@
 package classifiers.distance_based.knn;
 
-import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
 import classifiers.distance_based.knn.sampling.*;
 import classifiers.template_classifier.TemplateClassifier;
 import distances.DistanceMeasure;
@@ -133,8 +133,8 @@ public class Knn
     private List<Instance> predefinedTrainNeighbourhood = null;
     private List<Instance> predefinedTrainEstimateSet = null;
     // iterators for executing strategies
-    private DynamicIterator<Instance, ?> trainNeighbourIterator = null;
-    private DynamicIterator<Instance, ?> trainEstimatorIterator = null;
+    private AbstractIterator<Instance, ?> trainNeighbourIterator = null;
+    private AbstractIterator<Instance, ?> trainEstimatorIterator = null;
 
     public Knn() {}
 

@@ -1,16 +1,19 @@
 package classifiers.distance_based.elastic_ensemble.iteration.linear;
 
-import java.util.Collection;
-import java.util.List;
+import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
 
-public class LinearIterator<A> extends AbstractLinearIterator<A, LinearIterator<A>> {
+import java.util.*;
+
+public class LinearIterator<A> extends AbstractIterator<A> {
+    protected final List<A> values;
+    protected int index = 0;
 
     public LinearIterator(final List<A> values) {
-        super(values);
+        this.values = new ArrayList<>(values);
     }
 
     public LinearIterator() {
-        super();
+        this.values = new ArrayList<>();
     }
 
     public LinearIterator(LinearIterator<A> other) {
@@ -19,7 +22,31 @@ public class LinearIterator<A> extends AbstractLinearIterator<A, LinearIterator<
     }
 
     @Override
+    public void remove() {
+        values.remove(index);
+        index--;
+        if(index < 0) {
+            index = 0;
+        }
+    }
+
+    @Override
+    public void add(final A a) {
+        values.add(a);
+    }
+
+    @Override
+    public boolean hasNext() {
+        return index < values.size();
+    }
+
+    @Override
+    public A next() {
+        return values.get(index++);
+    }
+
+    @Override
     public LinearIterator<A> iterator() {
-        return new LinearIterator<>(this);
+        return new LinearIterator<A>(this);
     }
 }
