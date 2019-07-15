@@ -1,115 +1,20 @@
+# UEA Time Series Classification - CAWPE-Folds Stable Branch
 
+[![Build Status](https://travis-ci.com/goastler/uea-tsc.svg?branch=master)](https://travis-ci.com/goastler/uea-tsc)
 
-UEA Time Series Classification
-===============================
+This is a stable branch in support of the paper 'Mixing hetero- and homogeneous models in weighted ensembles'. It is intended to provde a snapshot of the code at the time of submission, as well as a stable location for summaries of results. See the associated [website](http://www.timeseriesclassification.com/CAWPEFolds.php) for more details. 
 
-.. image:: https://travis-ci.com/tonybagnall/uea-tsc.svg?branch=master
-    :target: https://travis-ci.com/tonybagnall/uea-tsc   
+### Supplementary Material
 
-Find more info on our `website <http://www.timeseriesclassification.com>`__.
+Results summaries can be found at [CAWPEResults/](https://github.com/TonyBagnall/uea-tsc/tree/paper/cawpeExtension/Results).
 
-A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>`__ compatible Java toolbox for
-time series classification, clustering and transformation. Eventually, we would like to support:
+Algorithmic code can be found in [src/main/java/CawpeExtensionPaper/CAWPE_Extended.java](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpeExtension/src/main/java/CawpeExtensionPaper/CAWPE_Extended.java). 
 
-Installation
-------------
-We are looking at getting this on Maven. For now there are two options:
+Experimental setup code can be found in [src/main/java/CawpeExtensionPaper/CAWPEClassifierList.java](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpeExtension/src/main/java/CawpeExtensionPaper/CAWPEClassifierList.java). 
 
-* download the `Jar File <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`__
-* download the source file and include in a project in your favourite IDE
-you can then construct your own experiment (see `BasicExamples.java <https://github.com/TonyBagnall/uea-tsc/blob/master/src/main/java/examples/BasicExamples.java>`__) or 
-the experimental structure we use (see `Experiments.java <https://github.com/TonyBagnall/uea-tsc/blob/master/src/main/java/experiments/Experiments.java>`__) 
+Code for using our analysis pipeline (constantly being updated) in order to produce the results for the paper is in [src/main/java/CawpeExtensionPaper/CAWPEAnalysis.java](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpeExtension/src/main/java/CawpeExtensionPaper/CAWPEAnalysis.java). 
 
-Classifiers
-------------
-We have implemented the following bespoke classifiers for univariate, equal length time series classification
+### Authors
 
-Distance Based
-
-* DD_DTW 
-* DTD_C
-* ElasticEnsemble
-* NN_CID
-* SAX_1NN
-* SAXVSM
-* ProximityForest
-
-Dictionary Based
-
-* BOSS
-* BOP
-* WEASEL
-
-Spectral Based
-
-* RISE
-* CRISE
-
-Shaplet Based
-
-* LearnShapelets
-* ShapeletTransformClassifier
-* FastShapelets
-
-(to do: recover original ShapeletTree)
-
-Interval Based
-
-* TSF
-* TSBF
-* LPS
-
-Ensembles
-
-* FlatCote
-* HiveCote
-
-We have implemented the following bespoke classifiers for multivariate, equal length time series classification
-
-* NN_ED_D
-* NN_ED_I
-* NN_DTW_D
-* NN_DTW_I
-* NN_DTW_A
-* MultivariateShapeletTransformClassifier
-* ConcatenateClassifier
-
-
-
-Clusterers
-------------
-Currently quite limited. Standard approach would be to perform an unsupervised 
-
-* UnsupervisedShapelets
-
-
-Filters/Transformations
-------------
-SimpleBatchFilters that take an Instances (the set of time series), transforms them
-and returns a new Instances object
-
-* ACF
-* ACF_PACF
-* ARMA
-* BagOfPatternsFilter
-* BinaryTransform
-* Clipping
-* Correlation
-* Cosine
-* DerivativeFilter
-* Differences
-* FFT
-* Hilbert
-* MatrixProfile
-* NormalizeAttribute
-* NormalizeCase
-* PAA
-* PACF
-* PowerCepstrum
-* PowerSepstrum
-* RankOrder
-* RunLength
-* SAX
-* Sine
-* SummaryStats
-
+* james.large@uea.ac.uk - lead author
+* ajb@uea.ac.uk - corresponding author
