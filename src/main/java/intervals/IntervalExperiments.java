@@ -97,7 +97,26 @@ public class IntervalExperiments {
 //        }
 
 //        args = new String[] { "true", "1", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
-        clusterExps(args);
+//        clusterExps(args);
+        
+        localGunPointExps(args);
+    }
+    
+    public static void localGunPointExps(String[] args) throws Exception {
+        for (int i = 1; i <= IntervalHeirarchy.maxNumDifferentIntervals; i++) {
+            String[] newArgs=new String[9];
+            newArgs[0]="false";
+            newArgs[1]=i+"";
+            newArgs[2]="-dp=Z:/Data/TSCProblems2018_Folds/";//Where to get data                
+            newArgs[3]="-rp=C:/Temp/intervalExpTest/";//Where to write results                
+            newArgs[4]="-gtf=true"; //Whether to generate train files or not               
+            newArgs[5]="-cn=ED"; //Classifier name
+            newArgs[6]="-dn=GunPoint"; //Problem file   
+            newArgs[7]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)   
+            newArgs[8]="-tb=true";
+
+            runExperiment(newArgs);
+        }
     }
     
     /**
@@ -108,8 +127,8 @@ public class IntervalExperiments {
      */
     public static void clusterExps(String[] args) throws Exception {
         int folds = 30;
-        String[] dsets = { "BeetleFly" };
-//        String[] dsets = DataSets.tscProblems2018;
+//        String[] dsets = { "BeetleFly" };
+        String[] dsets = DataSets.tscProblems2018;
 //        dsets = Arrays.copyOfRange(dsets, 0, 5);
         
         String classifier = null;
