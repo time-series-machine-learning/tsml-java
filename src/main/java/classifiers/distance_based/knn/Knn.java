@@ -433,15 +433,14 @@ public class Knn
     @Override
     public void copyFrom(final Object object) throws
                                                     Exception {
-        super.copyFromSerObject(object);
+        super.copyFrom(object);
         Knn other = (Knn) object;
-        trainEstimate.clear();
+        trainEstimate = new ArrayList<>();
         for (KNearestNeighbours KNearestNeighbours : other.trainEstimate) {
             trainEstimate.add(new KNearestNeighbours(KNearestNeighbours));
         }
         setOptions(other.getOptions());
-        trainNeighbourhood.clear();
-        trainNeighbourhood.addAll(other.trainNeighbourhood);
+        trainNeighbourhood = new ArrayList<>(other.trainNeighbourhood);
         trainEstimatorIterator = other.trainEstimatorIterator.iterator();
         trainNeighbourIterator = other.trainNeighbourIterator.iterator();
         trainSet = other.trainSet;

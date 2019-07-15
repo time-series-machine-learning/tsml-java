@@ -18,6 +18,7 @@ import utilities.ArrayUtilities;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 import static utilities.ArrayUtilities.removeDuplicatesInPlace;
 import static utilities.Utilities.fromPermutation;
@@ -151,6 +152,21 @@ public class ParameterSpace implements Iterable<Entry<String, List<Object>>>{
     public void removeDuplicateValues() {
         for(List<Object> values : parameterLists.values()) {
             removeDuplicatesInPlace(values);
+        }
+    }
+
+    public void addParameterValue(String key, Object value) {
+        List<Object> values = parameterLists.computeIfAbsent(key, s -> new ArrayList<>());
+        values.add(value);
+    }
+
+    public void addParameterValue(Map.Entry<String, Object> entry) {
+        addParameterValue(entry.getKey(), entry.getValue());
+    }
+
+    public void addParameter(ParameterSet parameterSet) {
+        for(Map.Entry<String, Object> entry : parameterSet.getAllParameters()) {
+            addParameterValue(entry);
         }
     }
 }

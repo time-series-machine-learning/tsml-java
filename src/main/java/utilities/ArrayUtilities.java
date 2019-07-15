@@ -227,6 +227,17 @@ public class ArrayUtilities {
         return result;
     }
 
+    public static <A extends Collection<Integer>> A sequence(int j, A collection) {
+        for(int i = 0; i < j; i++) {
+            collection.add(i);
+        }
+        return collection;
+    }
+
+    public static Collection<Integer> sequence(int j) {
+        return sequence(j, new ArrayList<>());
+    }
+
     public static Integer[] box(int[] array) {
         Integer[] boxed = new Integer[array.length];
         for(int i = 0; i < array.length; i++) {

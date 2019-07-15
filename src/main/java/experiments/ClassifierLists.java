@@ -106,10 +106,10 @@ public class ClassifierLists {
                 c = new Tuned(Knn::new, Msm::parameterSpace);
                 break;
             case "TUNED_LCSS_KNN":
-                c = new Tuned(Knn::new, Lcss::allWarpParameterSpace);
+                c = new Tuned(Knn::new, Lcss::parameterSpace);
                 break;
             case "TUNED_ERP_KNN":
-                c = new Tuned(Knn::new, Erp::allWarpParameterSpace);
+                c = new Tuned(Knn::new, Erp::parameterSpace);
                 break;
             case "ED_KNN":
                 c = new Tuned(Knn::new, Dtw::edParameterSpace);
@@ -131,6 +131,10 @@ public class ClassifierLists {
                 break;
             case "TUNED_WDDTW_KNN":
                 c = new Tuned(Knn::new, CachedWddtw::parameterSpace);
+                break;
+            case "FEE":
+                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
                 break;
             case "REE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();

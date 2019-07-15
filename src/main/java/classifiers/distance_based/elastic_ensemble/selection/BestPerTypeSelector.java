@@ -16,11 +16,12 @@ public class BestPerTypeSelector<A, B> implements Selector<A> {
     private final Map<B, List<A>> bestCandidateTypes = new HashMap<>();
 
     @Override
-    public void add(A candidate) {
+    public boolean add(A candidate) {
         B type = typeExtractor.apply(candidate);
         List<A> bestOfSameType = bestCandidateTypes.computeIfAbsent(type, key -> new ArrayList<>());
         if(bestOfSameType.isEmpty()) {
             bestOfSameType.add(candidate);
+            return true;
         } else {
             int comparison = comparator.compare(candidate, bestOfSameType.get(0));
             if(comparison >= 0) {
@@ -28,8 +29,10 @@ public class BestPerTypeSelector<A, B> implements Selector<A> {
                     bestOfSameType.clear();
                 }
                 bestOfSameType.add(candidate);
+                return true;
             }
         }
+        return false;
     }
 
     @Override

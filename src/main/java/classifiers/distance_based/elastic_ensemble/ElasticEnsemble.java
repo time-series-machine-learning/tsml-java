@@ -21,6 +21,7 @@ import distances.time_domain.msm.Msm;
 import distances.time_domain.twe.Twe;
 import distances.time_domain.wdtw.Wdtw;
 import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
@@ -32,11 +33,82 @@ import java.util.function.Function;
 
 public class ElasticEnsemble extends TemplateClassifier {
 
+    public class CandidateParameterSpaceIteratorBuilder {
+        private ParameterSpace parameterSpace;
+        private Function<Instances, ParameterSpace> parameterSpaceGetter;
+        private int threshold = -1;
+        private ParameterSetSearchStrategy parameterSearchStrategy = ParameterSetSearchStrategy.RANDOM;
+
+        public CandidateParameterSpaceIteratorBuilder setParameterSpaceGetter(Function<Instances, ParameterSpace> parameterSpaceGetter) {
+            this.parameterSpaceGetter = parameterSpaceGetter;
+            return this;
+        }
+
+        public CandidateParameterSpaceIteratorBuilder setParameterSpace(ParameterSpace parameterSpace) {
+            this.parameterSpace = parameterSpace;
+            return this;
+        }
+
+        public CandidateParameterSpaceIterator build(Instances instances) {
+            if(parameterSpaceGetter != null) {
+                parameterSpace = parameterSpaceGetter.apply(instances);
+            }
+            CandidateParameterSpaceIterator candidateParameterSpaceIterator = new CandidateParameterSpaceIterator();
+            candidateParameterSpaceIterator.threshold = threshold;
+            candidateParameterSpaceIterator.parameterSpace = parameterSpace;
+            candidateParameterSpaceIterator.iterator = buildParameterSetIterator(parameterSearchStrategy, parameterSpace);
+            return candidateParameterSpaceIterator;
+        }
+
+        public CandidateParameterSpaceIteratorBuilder setThreshold(int threshold) {
+            this.threshold = threshold;
+            return this;
+        }
+
+        public CandidateParameterSpaceIteratorBuilder setParameterSearchStrategy(ParameterSetSearchStrategy parameterSearchStrategy) {
+            this.parameterSearchStrategy = parameterSearchStrategy;
+            return this;
+        }
+    }
+
+    public class CandidateParameterSpaceIterator implements Iterator<ParameterSet> {
+        private ParameterSpace parameterSpace = null;
+        private int threshold = -1;
+        private int count = 0;
+        private Iterator<ParameterSet> iterator;
+
+        private CandidateParameterSpaceIterator() {}
+
+        public boolean withinThreshold() {
+            if(threshold < 0) {
+                return true;
+            } else {
+                return count < threshold;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return withinThreshold() && iterator.hasNext();
+        }
+
+        @Override
+        public ParameterSet next() {
+            count++;
+            return iterator.next();
+        }
+    }
+
     private final static String NUM_PARAMETER_SETS_KEY = "p";
     private final static String NEIGHBOURHOOD_SIZE_KEY = "n";
     private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "pp";
     private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "np";
+
+    private final List<CandidateParameterSpaceIteratorBuilder> candidateParameterSpaceIteratorBuilders = new ArrayList<>();
+    private final List<CandidateParameterSpaceIterator> candidateParameterSpaceIterators = new ArrayList<>();
+
     private final List<Function<Instances, ParameterSpace>> parameterSpaceGetters = new ArrayList<>();
+
     private final List<ParameterSpace> parameterSpaces = new ArrayList<>();
     private final List<Candidate> candidates = new ArrayList<>();
     private final List<Candidate> constituents = new ArrayList<>();
@@ -53,7 +125,7 @@ public class ElasticEnsemble extends TemplateClassifier {
         return comparison;
     });
     private ParameterSpacesIterationStrategy parameterSpaceIterationStrategy = ParameterSpacesIterationStrategy.RANDOM;
-    private DistanceMeasureSearchStrategy parameterSearchStrategy = DistanceMeasureSearchStrategy.RANDOM; // need to define this per param space
+    private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM; // need to define this per param space
     private Knn.NeighbourSearchStrategy neighbourSearchStrategy = Knn.NeighbourSearchStrategy.RANDOM; // need to define this per param space
     public final static int DEFAULT_NUM_PARAMETER_SETS = -1;
     private int numParametersLimit = DEFAULT_NUM_PARAMETER_SETS;
@@ -69,6 +141,9 @@ public class ElasticEnsemble extends TemplateClassifier {
     public final static int DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE = -1;
     private final List<Instance> trainNeighbours = new ArrayList<>();
     private boolean progressive = false;
+    private int parameterIterationThreshold = 15;
+    private int neighbourIterationThreshold = 10;
+    private Map<ParameterSpace, Integer> parameterIterationCounts = null;
 
     public int getTrainEstimateSetSize() {
         return trainEstimateSetSize;
@@ -80,7 +155,7 @@ public class ElasticEnsemble extends TemplateClassifier {
 
     private int trainEstimateSetSize = DEFAULT_TRAIN_SUB_SET_SIZE;
     private double trainEstimateSetSizePercentage = DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE;
-    private List<Instance> trainSet;
+    private Instances trainSet;
 
     public ElasticEnsemble() {
         this(getClassicParameterSpaceGetters());
@@ -204,12 +279,12 @@ public class ElasticEnsemble extends TemplateClassifier {
         this.parameterSpaceIterationStrategy = parameterSpaceIterationStrategy;
     }
 
-    public DistanceMeasureSearchStrategy getParameterSearchStrategy() {
-        return parameterSearchStrategy;
+    public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
+        return parameterSetSearchStrategy;
     }
 
-    public void setParameterSearchStrategy(final DistanceMeasureSearchStrategy parameterSearchStrategy) {
-        this.parameterSearchStrategy = parameterSearchStrategy;
+    public void setParameterSetSearchStrategy(final ParameterSetSearchStrategy parameterSetSearchStrategy) {
+        this.parameterSetSearchStrategy = parameterSetSearchStrategy;
     }
 
     public Knn.NeighbourSearchStrategy getNeighbourSearchStrategy() {
@@ -277,11 +352,11 @@ public class ElasticEnsemble extends TemplateClassifier {
     private ParameterSetIterator getParameterSetIterator(ParameterSpace parameterSpace) {
         ArrayList<Integer> values =
                 new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
-        switch (parameterSearchStrategy) {
+        switch (parameterSetSearchStrategy) {
             case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
 //            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
             case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
-            default: throw new IllegalStateException(parameterSearchStrategy.name() + " not implemented yet");
+            default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
         }
     }
 
@@ -305,10 +380,12 @@ public class ElasticEnsemble extends TemplateClassifier {
             candidateSelector.clear();
             parameterSpaces.clear();
             parameterCount = 0;
+            parameterIterationCounts = new HashMap<>();
             parameterSpaces.addAll(getParameterSpaces(trainSet, parameterSpaceGetters));
             if (removeDuplicateParameterSets) {
                 for (ParameterSpace parameterSpace : parameterSpaces) {
                     parameterSpace.removeDuplicateValues();
+                    parameterIterationCounts.put(parameterSpace, 0);
                 }
             }
             List<IterableParameterSpace> iterableParameterSpaces = new ArrayList<>();
@@ -352,6 +429,15 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
     }
 
+    private boolean evaluateCandidate(Candidate candidate) throws Exception {
+        Knn knn = candidate.getKnn();
+        knn.setTrainContractNanos(remainingTrainContractNanos());
+        knn.buildClassifier(trainSet);
+        Candidate trainedCandidate = candidate;//new Candidate(candidate);
+        boolean improvement = candidateSelector.add(trainedCandidate);
+        return improvement;
+    }
+
     @Override
     public void buildClassifier(final Instances trainSet) throws
             Exception {
@@ -380,7 +466,9 @@ public class ElasticEnsemble extends TemplateClassifier {
                     ParameterSpace parameterSpace = iterableParameterSpace.getParameterSpace();
                     String[] parameters = parameterSetIterator.next();
                     parameterSetIterator.remove();
-                    if (!parameterSetIterator.hasNext()) {
+                    int parameterIterationCount = parameterIterationCounts.get(parameterSpace);
+                    parameterIterationCounts.put(parameterSpace, parameterIterationCount + 1);
+                    if (!parameterSetIterator.hasNext() || parameterIterationCount > parameterIterationThreshold) {
                         parameterSpaceIterator.remove();
                     } // todo random guess if no params or constituents
                     knn = new Knn();
@@ -399,12 +487,17 @@ public class ElasticEnsemble extends TemplateClassifier {
                     candidates.add(candidate);
                     knnIndex = candidates.size() - 1;
                     parameterCount++;
+                    boolean improvement = evaluateCandidate(candidate);
+                    if(improvement) {
+                        parameterIterationCounts.put(parameterSpace, 0);
+                    }
                 } else {
                     knnIndex = getTrainRandom().nextInt(candidates.size());
                     candidate = candidates.get(knnIndex);
                     knn = candidate.getKnn();
                     int sampleSize = knn.getTrainNeighbourhoodSizeLimit() + 1;
                     knn.setTrainNeighbourhoodSizeLimit(sampleSize);
+                    evaluateCandidate(candidate);
                 }
                 if ((knn.getTrainNeighbourhoodSizeLimit() + 1 > getTrainNeighbourhoodSizeLimit()
                         && getTrainNeighbourhoodSizeLimit() >= 0)
@@ -413,10 +506,6 @@ public class ElasticEnsemble extends TemplateClassifier {
                             candidates.remove(knnIndex);
 //                    );
                 }
-                knn.setTrainContractNanos(remainingTrainContractNanos());
-                knn.buildClassifier(trainSet);
-                Candidate trainedCandidate = new Candidate(candidate);
-                candidateSelector.add(trainedCandidate);
                 remainingParameters = hasRemainingParameterSets();
                 remainingCandidates = !candidates.isEmpty();
                 getTrainStopWatch().lap();
@@ -504,19 +593,31 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
     }
 
-    public enum DistanceMeasureSearchStrategy {
+    public enum ParameterSetSearchStrategy {
         RANDOM,
         LINEAR,
         SPREAD;
 
-        public static DistanceMeasureSearchStrategy fromString(String str) {
-            for (DistanceMeasureSearchStrategy s : DistanceMeasureSearchStrategy.values()) {
+        public static ParameterSetSearchStrategy fromString(String str) {
+            for (ParameterSetSearchStrategy s : ParameterSetSearchStrategy.values()) {
                 if (s.name()
                         .equals(str)) {
                     return s;
                 }
             }
             throw new IllegalArgumentException("No enum value by the name of " + str);
+        }
+
+    }
+
+    public ParameterSetIterator buildParameterSetIterator(ParameterSetSearchStrategy parameterSetSearchStrategy, ParameterSpace parameterSpace) {
+        ArrayList<Integer> values =
+                new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
+        switch (parameterSetSearchStrategy) {
+            case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
+//            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
+            case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+            default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
         }
     }
 

@@ -1,10 +1,11 @@
 package classifiers.distance_based.elastic_ensemble.iteration;
 
+import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 
 import java.util.Iterator;
 
-public class ParameterSetIterator extends DynamicIterator<String[], ParameterSetIterator> {
+public class ParameterSetIterator extends DynamicIterator<ParameterSet, ParameterSetIterator> {
     private final ParameterSpace parameterSpace;
     private final DynamicIterator<Integer, ?> iterator;
 
@@ -28,8 +29,8 @@ public class ParameterSetIterator extends DynamicIterator<String[], ParameterSet
     }
 
     @Override
-    public void add(final String[] strings) {
-        throw new UnsupportedOperationException();
+    public void add(final ParameterSet parameterSet) {
+        parameterSpace.addParameter(parameterSet);
     }
 
     @Override
@@ -38,8 +39,8 @@ public class ParameterSetIterator extends DynamicIterator<String[], ParameterSet
     }
 
     @Override
-    public String[] next() {
-        return parameterSpace.get(iterator.next()).getOptions();
+    public ParameterSet next() {
+        return parameterSpace.get(iterator.next());
     }
 
     @Override
