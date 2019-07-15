@@ -96,7 +96,7 @@ public class IntervalExperiments {
 //            System.out.println(Arrays.toString(defineInterval(i)));
 //        }
 
-//        args = new String[] { "0", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
+//        args = new String[] { "true", "1", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
         clusterExps(args);
     }
     
@@ -108,7 +108,8 @@ public class IntervalExperiments {
      */
     public static void clusterExps(String[] args) throws Exception {
         int folds = 30;
-        String[] dsets = DataSets.tscProblems2018;
+        String[] dsets = { "BeetleFly" };
+//        String[] dsets = DataSets.tscProblems2018;
 //        dsets = Arrays.copyOfRange(dsets, 0, 5);
         
         String classifier = null;
@@ -130,7 +131,7 @@ public class IntervalExperiments {
             }
         }
         
-        String baseDir = args[2].split("=")[1];
+        String baseDir = args[3].split("=")[1];
         
         String dirToZip = baseDir + classifier + "/";
         String zipName = baseDir + classifier + ".zip";

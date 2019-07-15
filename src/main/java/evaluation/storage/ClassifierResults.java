@@ -1801,7 +1801,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         int mid = copy.size()/2;
         if (copy.size() % 2 == 0)
-            return (copy.get(mid) + copy.get(mid+1)) / 2;
+            return (copy.get(mid) + copy.get(mid-1)) / 2;
         else 
             return copy.get(mid);
     }
