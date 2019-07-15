@@ -1,0 +1,3 @@
+Due to the large number of classifiers in this comparison, the full size of the analysis is a bit too big to reasonably upload to github. Thus, a good amount of these particular results have been redacted, (TRAIN and TEST results specifically, leaving only the TRAINTESTDIFF), DIAGRAM helper files (since the automated diagrams weren't made in the first place) and the individual FOLD summary files. 
+
+If you specifically want access to these too, email james.large@uea.ac.uk
