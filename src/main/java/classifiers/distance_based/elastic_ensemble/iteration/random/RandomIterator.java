@@ -10,6 +10,11 @@ public class RandomIterator<A> extends AbstractRandomIterator<A, RandomIterator<
         super(values, seed);
     }
 
+
+    public RandomIterator(final List<A> values, final Random random) {
+        this(values, random.nextLong());
+    }
+
     public RandomIterator(RandomIterator<A> other) {
         this(other.values, other.seed);
         index = other.index;
@@ -17,6 +22,10 @@ public class RandomIterator<A> extends AbstractRandomIterator<A, RandomIterator<
 
     public RandomIterator(long seed) {
         super(seed);
+    }
+
+    public RandomIterator(Random random) {
+        this(random.nextLong());
     }
 
     @Override

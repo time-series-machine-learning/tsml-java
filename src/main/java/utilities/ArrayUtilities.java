@@ -291,4 +291,11 @@ public class ArrayUtilities {
         values.clear();
         values.addAll(set);
     }
+
+    public static <A> void addAllAndRemove(Collection<A> collection, Iterator<A> iterator) {
+        while (iterator.hasNext()) {
+            collection.add(iterator.next());
+            iterator.remove();
+        }
+    }
 }

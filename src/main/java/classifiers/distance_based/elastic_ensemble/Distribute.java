@@ -2,19 +2,12 @@ package classifiers.distance_based.elastic_ensemble;
 
 import classifiers.distance_based.knn.Knn;
 import evaluation.storage.ClassifierResults;
-import evaluation.tuning.ParameterSet;
-import evaluation.tuning.ParameterSpace;
 import utilities.Utilities;
-import weka.core.Instance;
 import weka.core.Instances;
 
-import javax.rmi.CORBA.Util;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static experiments.Experiments.sampleDataset;
 

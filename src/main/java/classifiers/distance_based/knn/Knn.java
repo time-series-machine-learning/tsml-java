@@ -3,6 +3,7 @@ package classifiers.distance_based.knn;
 import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
 import classifiers.distance_based.knn.sampling.*;
 import classifiers.template.TemplateClassifier;
+import classifiers.template.configuration.ConfigState;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
 import weka.core.Capabilities;
@@ -14,13 +15,12 @@ import java.util.*;
 public class Knn
     extends TemplateClassifier<Knn> {
 
-    public KnnConfiguration getConfiguration() {
-        return tempConfig;
+    public KnnConfig getConfig() {
+        return configState.getNextConfig();
     }
 
-    private KnnConfiguration tempConfig = new KnnConfiguration();
-    private KnnConfiguration config = new KnnConfiguration();
-    private KnnConfiguration previousConfig = new KnnConfiguration();
+    private final ConfigState<KnnConfig> configState = new ConfigState<>(KnnConfig::new);
+    private KnnConfig config = null;
     // sets
     private List<KNearestNeighbours> trainEstimate = null;
     private List<Instance> trainSet = null;
@@ -61,35 +61,36 @@ public class Knn
 
     private void setup(Instances trainSet) throws
                                            Exception {
-        previousConfig = config;
-        config = tempConfig;
-        tempConfig = new KnnConfiguration(config);
-        if (trainSetChanged(trainSet) || previousConfig.mustResetTrain(config)) {
+        configState.shift();
+        if (trainSetChanged(trainSet) || configState.mustResetTrain()) {
             getTrainStopWatch().reset();
+            config = configState.getCurrentConfig();
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
             trainNeighbourhood = new ArrayList<>();
             config.setupNeighbourhoodSize(trainSet);
             config.setupTrainEstimateSetSize(trainSet);
-            trainNeighbourIterator = buildNeighbourSearchStrategy(trainSet);
-            trainEstimatorIterator = buildTrainEstimationStrategy(trainSet);
+            config.setupTrainNeighbourhoodSizeThreshold(trainSet);
+            trainNeighbourIterator = buildNeighbourSearchStrategy(trainSet, getTrainRandom());
+            trainEstimatorIterator = buildTrainEstimationStrategy(trainSet, getTestRandom());
         }
     }
 
-    private DynamicIterator<Instance, ?> buildNeighbourSearchStrategy(Collection<Instance> trainSet) {
+
+    public DynamicIterator<Instance, ?> buildNeighbourSearchStrategy(Collection<Instance> trainSet, Random random) {
         DynamicIterator<Instance, ?> iterator;
         switch (config.getTrainNeighbourSearchStrategy()) {
             case RANDOM:
-                iterator = new RandomSampler(getTrainRandom());
+                iterator = new RandomSampler(random);
                 break;
             case LINEAR:
                 iterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(getTrainRandom());
+                iterator = new RoundRobinRandomSampler(random);
                 break;
             case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(getTrainRandom());
+                iterator = new DistributedRandomSampler(random);
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -102,20 +103,20 @@ public class Knn
         return iterator;
     }
 
-    private DynamicIterator<Instance, ?> buildTrainEstimationStrategy(Collection<Instance> trainSet) {
+    public DynamicIterator<Instance, ?> buildTrainEstimationStrategy(Collection<Instance> trainSet, Random random) {
         DynamicIterator<Instance, ?> iterator;
         switch (config.getTrainEstimationStrategy()) {
             case RANDOM:
-                iterator = new RandomSampler(getTrainRandom());
+                iterator = new RandomSampler(random);
                 break;
             case LINEAR:
                 iterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(getTrainRandom());
+                iterator = new RoundRobinRandomSampler(random);
                 break;
             case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(getTrainRandom());
+                iterator = new DistributedRandomSampler(random);
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -140,7 +141,7 @@ public class Knn
     private boolean hasRemainingTrainEstimations() {
         return (
                    trainEstimate.size() < config.getTrainEstimateSetSizeLimit() // if train estimate set under limit
-                   || config.getTrainEstimateSetSizeLimit() < 0 // if train estimate limit set
+                   && config.hasTrainEstimateSetSizeLimit() // if train estimate limit set
                )
                && trainEstimatorIterator.hasNext(); // if remaining train estimators
     }
@@ -148,7 +149,7 @@ public class Knn
     private boolean hasRemainingNeighbours() {
         return (
                    trainNeighbourhood.size() < config.getTrainNeighbourhoodSizeLimit() // if within train neighbourhood size limit
-                   || config.getTrainNeighbourhoodSizeLimit() < 0 // if active train neighbourhood size limit
+                   && config.hasTrainNeighbourhoodSizeLimit() // if active train neighbourhood size limit
                )
                && trainNeighbourIterator.hasNext(); // if there are remaining neighbours
     }
