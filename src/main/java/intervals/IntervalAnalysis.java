@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package experiments;
+package intervals;
 
 import evaluation.storage.ClassifierResults;
-import static experiments.IntervalExperiments.buildIntervalClassifierName;
-import static experiments.IntervalExperiments.defineInterval;
-import static experiments.IntervalExperiments.maxNumIntervals;
+import static intervals.IntervalExperiments.buildIntervalClassifierName;
+import static intervals.IntervalExperiments.defineInterval;
+import static intervals.IntervalExperiments.maxNumIntervals;
 
 /**
  *
@@ -73,6 +73,8 @@ public class IntervalAnalysis {
         //how does the selected interval from train data correspond to the above? 
         //draw some sort of heatmap figure relaying this info for paper
         
+        String baseWritePath = "E:/Intervals/GunpointExampleAna/";
+        
         String baseResPath = "";
         String dataset = "Gunpoint";
         String baseClassifier = "ED"; 
@@ -82,7 +84,6 @@ public class IntervalAnalysis {
         
         for (int i = 0; i < maxNumIntervals; i++) {
             String cname = buildIntervalClassifierName(baseClassifier, defineInterval(i));
-            
             allIntervalsRes[i] = new ClassifierResults(baseResPath + cname + "/Predictions/" + dataset + "/testFold" + fold + ".csv");
         }
         

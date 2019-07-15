@@ -15,8 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package experiments;
+package intervals;
 
+import experiments.ClassifierLists;
+import experiments.DataSets;
+import experiments.Experiments;
 import experiments.Experiments.ExperimentalArguments;
 import java.io.File;
 import java.io.IOException;
