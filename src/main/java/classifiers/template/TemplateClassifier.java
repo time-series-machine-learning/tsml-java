@@ -1,4 +1,4 @@
-package classifiers.template_classifier;
+package classifiers.template;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
@@ -16,7 +16,7 @@ import static utilities.ArrayUtilities.argMax;
 import static utilities.StringUtilities.join;
 
 public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extends AbstractClassifier
-    implements TemplateClassifierInterface {
+    implements TemplateClassifierInterface<A> {
 
     public TemplateClassifier(final A other) throws
                                              Exception {

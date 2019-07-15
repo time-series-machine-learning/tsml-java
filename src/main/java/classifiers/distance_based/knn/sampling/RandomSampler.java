@@ -16,4 +16,12 @@ public class RandomSampler extends RandomIterator<Instance> {
     public RandomSampler(long seed) {
         super(seed);
     }
+
+    public RandomSampler(Random random) {
+        super(random.nextLong());
+    }
+
+    public RandomSampler(final List<Instance> values, final Random random) {
+        this(values, random.nextLong());
+    }
 }

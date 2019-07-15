@@ -227,14 +227,14 @@ public class ArrayUtilities {
         return result;
     }
 
-    public static <A extends Collection<Integer>> A sequence(int j, A collection) {
+    public static <A extends List<Integer>> A sequence(int j, A list) {
         for(int i = 0; i < j; i++) {
-            collection.add(i);
+            list.add(i);
         }
-        return collection;
+        return list;
     }
 
-    public static Collection<Integer> sequence(int j) {
+    public static List<Integer> sequence(int j) {
         return sequence(j, new ArrayList<>());
     }
 

@@ -3,28 +3,17 @@ package classifiers.distance_based.elastic_ensemble;
 import classifiers.distance_based.elastic_ensemble.iteration.*;
 import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.random.RoundRobinIterator;
-import classifiers.distance_based.elastic_ensemble.selection.BestPerTypeSelector;
-import classifiers.distance_based.elastic_ensemble.selection.Selector;
-import classifiers.distance_based.knn.Knn;
+import classifiers.distance_based.knn.NeighbourSearchStrategy;
+import classifiers.distance_based.knn.TrainEstimationSource;
+import classifiers.distance_based.knn.TrainEstimationStrategy;
 import classifiers.distance_based.knn.sampling.DistributedRandomSampler;
 import classifiers.distance_based.knn.sampling.LinearSampler;
 import classifiers.distance_based.knn.sampling.RandomSampler;
 import classifiers.distance_based.knn.sampling.RoundRobinRandomSampler;
-import classifiers.template_classifier.TemplateClassifier;
-import distances.derivative_time_domain.ddtw.CachedDdtw;
-import distances.derivative_time_domain.wddtw.CachedWddtw;
-import distances.time_domain.dtw.Dtw;
-import distances.time_domain.erp.Erp;
-import distances.time_domain.lcss.Lcss;
-import distances.time_domain.msm.Msm;
-import distances.time_domain.twe.Twe;
-import distances.time_domain.wdtw.Wdtw;
-import evaluation.storage.ClassifierResults;
+import classifiers.template.TemplateClassifier;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -37,7 +26,7 @@ public class ElasticEnsemble extends TemplateClassifier {
         private ParameterSpace parameterSpace;
         private Function<Instances, ParameterSpace> parameterSpaceGetter;
         private int threshold = -1;
-        private ParameterSetSearchStrategy parameterSearchStrategy = ParameterSetSearchStrategy.RANDOM;
+        private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM;
 
         public CandidateParameterSpaceIteratorBuilder setParameterSpaceGetter(Function<Instances, ParameterSpace> parameterSpaceGetter) {
             this.parameterSpaceGetter = parameterSpaceGetter;
@@ -53,10 +42,13 @@ public class ElasticEnsemble extends TemplateClassifier {
             if(parameterSpaceGetter != null) {
                 parameterSpace = parameterSpaceGetter.apply(instances);
             }
+            if(removeDuplicateParameterSets) {
+                parameterSpace.removeDuplicateValues();
+            }
             CandidateParameterSpaceIterator candidateParameterSpaceIterator = new CandidateParameterSpaceIterator();
             candidateParameterSpaceIterator.threshold = threshold;
             candidateParameterSpaceIterator.parameterSpace = parameterSpace;
-            candidateParameterSpaceIterator.iterator = buildParameterSetIterator(parameterSearchStrategy, parameterSpace);
+            candidateParameterSpaceIterator.iterator = buildParameterSetIterator();
             return candidateParameterSpaceIterator;
         }
 
@@ -65,9 +57,35 @@ public class ElasticEnsemble extends TemplateClassifier {
             return this;
         }
 
-        public CandidateParameterSpaceIteratorBuilder setParameterSearchStrategy(ParameterSetSearchStrategy parameterSearchStrategy) {
-            this.parameterSearchStrategy = parameterSearchStrategy;
+        public CandidateParameterSpaceIteratorBuilder setParameterSetSearchStrategy(ParameterSetSearchStrategy parameterSetSearchStrategy) {
+            this.parameterSetSearchStrategy = parameterSetSearchStrategy;
             return this;
+        }
+
+        private ParameterSetIterator buildParameterSetIterator() {
+            List<Integer> values = ArrayUtilities.sequence(parameterSpace.size());
+            switch (parameterSetSearchStrategy) {
+                case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
+//            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
+                case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+                default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
+            }
+        }
+
+        public ParameterSpace getParameterSpace() {
+            return parameterSpace;
+        }
+
+        public Function<Instances, ParameterSpace> getParameterSpaceGetter() {
+            return parameterSpaceGetter;
+        }
+
+        public int getThreshold() {
+            return threshold;
+        }
+
+        public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
+            return parameterSetSearchStrategy;
         }
     }
 
@@ -99,289 +117,26 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
     }
 
-    private final static String NUM_PARAMETER_SETS_KEY = "p";
-    private final static String NEIGHBOURHOOD_SIZE_KEY = "n";
-    private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "pp";
-    private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "np";
-
     private final List<CandidateParameterSpaceIteratorBuilder> candidateParameterSpaceIteratorBuilders = new ArrayList<>();
     private final List<CandidateParameterSpaceIterator> candidateParameterSpaceIterators = new ArrayList<>();
-
-    private final List<Function<Instances, ParameterSpace>> parameterSpaceGetters = new ArrayList<>();
-
-    private final List<ParameterSpace> parameterSpaces = new ArrayList<>();
-    private final List<Candidate> candidates = new ArrayList<>();
-    private final List<Candidate> constituents = new ArrayList<>();
+    private Instances trainSet; // todo needed?
     private boolean removeDuplicateParameterSets = true;
-    private Selector<Candidate> candidateSelector = new BestPerTypeSelector<>(Candidate::getParameterSpace, (candidate, other) -> {
-        int comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
-        if (comparison != 0) {
-            return comparison;
-        }
-        comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
-        if (comparison <= 0) {
-            comparison = Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getKnn().getTrainResults(), other.getKnn().getTrainResults());
-        }
-        return comparison;
-    });
-    private ParameterSpacesIterationStrategy parameterSpaceIterationStrategy = ParameterSpacesIterationStrategy.RANDOM;
-    private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM; // need to define this per param space
-    private Knn.NeighbourSearchStrategy neighbourSearchStrategy = Knn.NeighbourSearchStrategy.RANDOM; // need to define this per param space
-    public final static int DEFAULT_NUM_PARAMETER_SETS = -1;
-    private int numParametersLimit = DEFAULT_NUM_PARAMETER_SETS;
-    private int parameterCount = 0;
-    public final static int DEFAULT_NEIGHBOURHOOD_SIZE = -1;
-    private int trainNeighbourhoodSizeLimit = DEFAULT_NEIGHBOURHOOD_SIZE;
-    public final static double DEFAULT_NUM_PARAMETER_SETS_PERCENTAGE = -1;
-    private double numParametersLimitPercentage = DEFAULT_NUM_PARAMETER_SETS_PERCENTAGE;
-    public final static double DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
-    private double neighbourhoodSizeLimitPercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
-    private Iterator<IterableParameterSpace> parameterSpaceIterator;
-    public final static int DEFAULT_TRAIN_SUB_SET_SIZE = -1;
-    public final static int DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE = -1;
-    private final List<Instance> trainNeighbours = new ArrayList<>();
-    private boolean progressive = false;
-    private int parameterIterationThreshold = 15;
-    private int neighbourIterationThreshold = 10;
-    private Map<ParameterSpace, Integer> parameterIterationCounts = null;
+    private NeighbourSearchStrategy neighbourSearchStrategy = NeighbourSearchStrategy.RANDOM;
+    private TrainEstimationSource trainEstimationSource = TrainEstimationSource.FROM_TRAIN_SET;
+    private TrainEstimationStrategy trainEstimationStrategy = TrainEstimationStrategy.RANDOM;
+    private DynamicIterator<Instance, ?> trainNeighboursIterator;
+    private int trainNeighbourhoodSizeLimit
 
-    public int getTrainEstimateSetSize() {
-        return trainEstimateSetSize;
-    }
-
-    public void setTrainEstimateSetSize(final int trainEstimateSetSize) {
-        this.trainEstimateSetSize = trainEstimateSetSize;
-    }
-
-    private int trainEstimateSetSize = DEFAULT_TRAIN_SUB_SET_SIZE;
-    private double trainEstimateSetSizePercentage = DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE;
-    private Instances trainSet;
-
-    public ElasticEnsemble() {
-        this(getClassicParameterSpaceGetters());
-    }
-
-    @Override
-    public void setOption(String key, String value) throws Exception {
-        switch (key) {
-            case NUM_PARAMETER_SETS_KEY:
-                setNumParametersLimit(Integer.parseInt(value));
-                break;
-            case NEIGHBOURHOOD_SIZE_KEY:
-                setTrainNeighbourhoodSizeLimit(Integer.parseInt(value));
-                break;
-            case NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY:
-                setNeighbourhoodSizeLimitPercentage(Double.parseDouble(value));
-                break;
-            case NUM_PARAMETER_SETS_PERCENTAGE_KEY:
-                setNumParametersLimitPercentage(Double.parseDouble(value));
-                break;
-        }
-    }
-
-    public ElasticEnsemble(Function<Instances, ParameterSpace>... parameterSpaceGetters) {
-        this(Arrays.asList(parameterSpaceGetters));
-    }
-
-    public ElasticEnsemble(List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
-        setParameterSpaceGetters(parameterSpaceGetters);
-    }
-
-    public static List<Function<Instances, ParameterSpace>> getClassicParameterSpaceGetters() {
-        return new ArrayList<>(Arrays.asList(
-                instances -> Dtw.edParameterSpace(),
-                instances -> Dtw.fullWarpParameterSpace(),
-                Dtw::warpParameterSpace,
-                instances -> CachedDdtw.fullWarpParameterSpace(),
-                CachedDdtw::warpParameterSpace,
-                instances -> Wdtw.parameterSpace(),
-                instances -> CachedWddtw.parameterSpace(),
-                Lcss::parameterSpace,
-                Erp::parameterSpace,
-                instances -> Msm.parameterSpace(),
-                instances -> Twe.parameterSpace()
-        ));
-    }
-
-    public static List<Function<Instances, ParameterSpace>> getDefaultParameterSpaceGetters() {
-        return new ArrayList<>(Arrays.asList(
-                Dtw::allWarpParameterSpace,
-                CachedDdtw::allWarpParameterSpace,
-                instances -> Wdtw.parameterSpace(),
-                instances -> CachedWddtw.parameterSpace(),
-                Lcss::parameterSpace,
-                Erp::parameterSpace,
-                instances -> Msm.parameterSpace(),
-                instances -> Twe.parameterSpace()
-        ));
-    }
-
-    public static List<ParameterSpace> getParameterSpaces(Instances instances, List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
-        List<ParameterSpace> parameterSpaces = new ArrayList<>();
-        for (Function<Instances, ParameterSpace> getter : parameterSpaceGetters) {
-            ParameterSpace parameterSpace = getter.apply(instances);
-            parameterSpaces.add(parameterSpace);
-        }
-        return parameterSpaces;
-    }
-
-    @Override
-    public String toString() {
-        return "ee";
-    }
-
-    public boolean isRemoveDuplicateParameterSets() {
-        return removeDuplicateParameterSets;
-    }
-
-    public void setRemoveDuplicateParameterSets(final boolean removeDuplicateParameterSets) {
-        this.removeDuplicateParameterSets = removeDuplicateParameterSets;
-    }
-
-    public int getTrainNeighbourhoodSizeLimit() {
-        return trainNeighbourhoodSizeLimit;
-    }
-
-    public void setTrainNeighbourhoodSizeLimit(final int trainNeighbourhoodSizeLimit) {
-        this.trainNeighbourhoodSizeLimit = trainNeighbourhoodSizeLimit;
-    }
-
-    public int getNumParametersLimit() {
-        return numParametersLimit;
-    }
-
-    public void setNumParametersLimit(final int numParametersLimit) {
-        this.numParametersLimit = numParametersLimit;
-    }
-
-    public List<Function<Instances, ParameterSpace>> getParameterSpaceGetters() {
-        return parameterSpaceGetters;
-    }
-
-    public void setParameterSpaceGetters(List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
-        this.parameterSpaceGetters.clear();
-        this.parameterSpaceGetters.addAll(parameterSpaceGetters);
-    }
-
-    public Selector<Candidate> getCandidateSelector() {
-        return candidateSelector;
-    }
-
-    public void setCandidateSelector(final Selector<Candidate> candidateSelector) {
-        this.candidateSelector = candidateSelector;
-    }
-
-    public ParameterSpacesIterationStrategy getParameterSpaceIterationStrategy() {
-        return parameterSpaceIterationStrategy;
-    }
-
-    public void setParameterSpaceIterationStrategy(final ParameterSpacesIterationStrategy parameterSpaceIterationStrategy) {
-        this.parameterSpaceIterationStrategy = parameterSpaceIterationStrategy;
-    }
-
-    public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
-        return parameterSetSearchStrategy;
-    }
-
-    public void setParameterSetSearchStrategy(final ParameterSetSearchStrategy parameterSetSearchStrategy) {
-        this.parameterSetSearchStrategy = parameterSetSearchStrategy;
-    }
-
-    public Knn.NeighbourSearchStrategy getNeighbourSearchStrategy() {
-        return neighbourSearchStrategy;
-    }
-
-    public void setNeighbourSearchStrategy(final Knn.NeighbourSearchStrategy neighbourSearchStrategy) {
-        this.neighbourSearchStrategy = neighbourSearchStrategy;
-    }
-
-    @Override
-    public String[] getOptions() { // todo update
-        return ArrayUtilities.concat(super.getOptions(), new String[]{
-                NUM_PARAMETER_SETS_KEY,
-                String.valueOf(getNumParametersLimit()),
-                NEIGHBOURHOOD_SIZE_KEY,
-                String.valueOf(getTrainNeighbourhoodSizeLimit()),
-                NUM_PARAMETER_SETS_PERCENTAGE_KEY,
-                String.valueOf(getNumParametersLimitPercentage()),
-                NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
-                String.valueOf(getNeighbourhoodSizeLimitPercentage())
-        });
-    }
-
-    private void setupNeighbourhoodSize() {
-        if (neighbourhoodSizeLimitPercentage >= 0) {
-            setTrainNeighbourhoodSizeLimit((int) (neighbourhoodSizeLimitPercentage * trainSet.size()));
-        }
-    }
-
-    private void setupNumParameterSets() {
-        if (numParametersLimitPercentage >= 0) {
-            int size = 0;
-            for (ParameterSpace parameterSpace : parameterSpaces) {
-                size += parameterSpace.size();
-            }
-            numParametersLimit = (int) (numParametersLimitPercentage * size);
-        }
-    }
-
-    public double getNumParametersLimitPercentage() {
-        return numParametersLimitPercentage;
-    }
-
-    public void setNumParametersLimitPercentage(final double numParametersLimitPercentage) {
-        this.numParametersLimitPercentage = numParametersLimitPercentage;
-    }
-
-    public double getNeighbourhoodSizeLimitPercentage() {
-        return neighbourhoodSizeLimitPercentage;
-    }
-
-    public void setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
-        this.neighbourhoodSizeLimitPercentage = neighbourhoodSizeLimitPercentage;
-    }
-
-    private Iterator<IterableParameterSpace> getParameterSpacesIterator(List<IterableParameterSpace> iterableParameterSpaces) {
-        switch (parameterSpaceIterationStrategy) {
-            case RANDOM: return parameterSpaceIterator = new RandomIterator<>(iterableParameterSpaces, getTrainRandom().nextLong());
-            case ROUND_ROBIN: return parameterSpaceIterator = new RoundRobinIterator<>(iterableParameterSpaces);
-            default: throw new IllegalStateException(parameterSpaceIterationStrategy.name() + " not implemented");
-        }
-    }
-
-    private ParameterSetIterator getParameterSetIterator(ParameterSpace parameterSpace) {
-        ArrayList<Integer> values =
-                new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
-        switch (parameterSetSearchStrategy) {
-            case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
-//            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
-            case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
-            default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
-        }
-    }
-
-    private boolean hasRemainingParameterSets() {
-        return (parameterCount < numParametersLimit || numParametersLimit < 0) && parameterSpaceIterator.hasNext();
-    }
-
-    private void setupTrainEstimateSetSize() {
-        if(trainEstimateSetSizePercentage >= 0) {
-            setTrainEstimateSetSize((int) (trainSet.size() * trainEstimateSetSizePercentage));
-        }
-    }
-
-    private void checkTrainSet(Instances trainSet) {
+    private void setup(Instances trainSet) {
         if (trainSetChanged(trainSet)) {
             getTrainStopWatch().reset();
             this.trainSet = trainSet;
-            candidates.clear();
+            candidateParameterSpaceIterators.clear();
+            trainNeighboursIterator = setupNeighbourSearchStrategy();
+
             trainNeighbours.clear();
             candidateSelector.setRandom(getTrainRandom()); // todo make this into enum system
             candidateSelector.clear();
-            parameterSpaces.clear();
-            parameterCount = 0;
-            parameterIterationCounts = new HashMap<>();
-            parameterSpaces.addAll(getParameterSpaces(trainSet, parameterSpaceGetters));
             if (removeDuplicateParameterSets) {
                 for (ParameterSpace parameterSpace : parameterSpaces) {
                     parameterSpace.removeDuplicateValues();
@@ -404,11 +159,11 @@ public class ElasticEnsemble extends TemplateClassifier {
         }
     }
 
-    private void setupNeighbourSearchStrategy() {
+    private DynamicIterator<Instance, ?> setupNeighbourSearchStrategy() {
         DynamicIterator<Instance, ?> neighboursIterator;
         switch (neighbourSearchStrategy) {
             case RANDOM:
-                neighboursIterator = new RandomSampler(getTrainRandom().nextLong());
+                neighboursIterator = new RandomSampler(getTrainRandom());
                 break;
             case LINEAR:
                 neighboursIterator = new LinearSampler();
@@ -427,239 +182,483 @@ public class ElasticEnsemble extends TemplateClassifier {
             trainNeighbours.add(neighboursIterator.next());
             neighboursIterator.remove();
         }
-    }
-
-    private boolean evaluateCandidate(Candidate candidate) throws Exception {
-        Knn knn = candidate.getKnn();
-        knn.setTrainContractNanos(remainingTrainContractNanos());
-        knn.buildClassifier(trainSet);
-        Candidate trainedCandidate = candidate;//new Candidate(candidate);
-        boolean improvement = candidateSelector.add(trainedCandidate);
-        return improvement;
+        return neighboursIterator;
     }
 
     @Override
     public void buildClassifier(final Instances trainSet) throws
-            Exception {
-        checkTrainSet(trainSet);
-        // todo fully trained candidates for setter changes post build
-        getTrainStopWatch().lap();
-        if (getTrainNeighbourhoodSizeLimit() != 0) {
-//            int count = 0;
-            boolean remainingParameters = hasRemainingParameterSets();
-            boolean remainingCandidates = !candidates.isEmpty();
-            while ((remainingParameters || remainingCandidates)) {
-//                System.out.println(count++);
-                Knn knn;
-                Candidate candidate;
-                int knnIndex;
-//                boolean choice = true;
-//                if (remainingParameters && remainingCandidates) {
-//                    choice = random.nextBoolean();
-//                } else if (remainingCandidates) {
-//                    choice = false;
-//                }
-//                if (choice) {
-                if (remainingParameters) {
-                    IterableParameterSpace iterableParameterSpace = parameterSpaceIterator.next();
-                    Iterator<String[]> parameterSetIterator = iterableParameterSpace.getIterator();
-                    ParameterSpace parameterSpace = iterableParameterSpace.getParameterSpace();
-                    String[] parameters = parameterSetIterator.next();
-                    parameterSetIterator.remove();
-                    int parameterIterationCount = parameterIterationCounts.get(parameterSpace);
-                    parameterIterationCounts.put(parameterSpace, parameterIterationCount + 1);
-                    if (!parameterSetIterator.hasNext() || parameterIterationCount > parameterIterationThreshold) {
-                        parameterSpaceIterator.remove();
-                    } // todo random guess if no params or constituents
-                    knn = new Knn();
-                    knn.setOptions(parameters);
-//                    if(progressive) {
-//                        knn.setTrainNeighbourhoodSizeLimit(1);
-//                    } else {
-                        knn.setTrainNeighbourhoodSizeLimit(trainNeighbourhoodSizeLimit);
+                                                                Exception {
+        setup(trainSet);
+    }
+
+    //    private final static String NUM_PARAMETER_SETS_KEY = "p";
+//    private final static String NEIGHBOURHOOD_SIZE_KEY = "n";
+//    private final static String NUM_PARAMETER_SETS_PERCENTAGE_KEY = "pp";
+//    private final static String NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY = "np";
+//
+//    private final List<CandidateParameterSpaceIteratorBuilder> candidateParameterSpaceIteratorBuilders = new ArrayList<>();
+//    private final List<CandidateParameterSpaceIterator> iterators = new ArrayList<>();
+//
+//    private final List<Function<Instances, ParameterSpace>> parameterSpaceGetters = new ArrayList<>();
+//
+//    private final List<ParameterSpace> parameterSpaces = new ArrayList<>();
+//    private final List<Candidate> candidates = new ArrayList<>();
+//    private final List<Candidate> constituents = new ArrayList<>();
+//    private boolean removeDuplicateParameterSets = true;
+//    private Selector<Candidate> candidateSelector = new BestPerTypeSelector<>(Candidate::getParameterSpace, (candidate, other) -> {
+//        int comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
+//        if (comparison != 0) {
+//            return comparison;
+//        }
+//        comparison = Integer.compare(candidate.getKnn().getTrainNeighbourhoodSizeLimit(), other.getKnn().getTrainNeighbourhoodSizeLimit());
+//        if (comparison <= 0) {
+//            comparison = Comparator.comparingDouble(ClassifierResults::getAcc).compare(candidate.getKnn().getTrainResults(), other.getKnn().getTrainResults());
+//        }
+//        return comparison;
+//    });
+//    private ParameterSpacesIterationStrategy parameterSpaceIterationStrategy = ParameterSpacesIterationStrategy.RANDOM;
+//    private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM; // need to define this per param space
+//    private Knn.NeighbourSearchStrategy neighbourSearchStrategy = Knn.NeighbourSearchStrategy.RANDOM; // need to define this per param space
+//    public final static int DEFAULT_NUM_PARAMETER_SETS = -1;
+//    private int numParametersLimit = DEFAULT_NUM_PARAMETER_SETS;
+//    private int parameterCount = 0;
+//    public final static int DEFAULT_NEIGHBOURHOOD_SIZE = -1;
+//    private int trainNeighbourhoodSizeLimit = DEFAULT_NEIGHBOURHOOD_SIZE;
+//    public final static double DEFAULT_NUM_PARAMETER_SETS_PERCENTAGE = -1;
+//    private double numParametersLimitPercentage = DEFAULT_NUM_PARAMETER_SETS_PERCENTAGE;
+//    public final static double DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE = -1;
+//    private double neighbourhoodSizeLimitPercentage = DEFAULT_NEIGHBOURHOOD_SIZE_PERCENTAGE;
+//    private Iterator<IterableParameterSpace> parameterSpaceIterator;
+//    public final static int DEFAULT_TRAIN_SUB_SET_SIZE = -1;
+//    public final static int DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE = -1;
+//    private final List<Instance> trainNeighbours = new ArrayList<>();
+//    private boolean progressive = false;
+//    private int parameterIterationThreshold = 15;
+//    private int neighbourIterationThreshold = 10;
+//    private Map<ParameterSpace, Integer> parameterIterationCounts = null;
+//
+//    public int getTrainEstimateSetSize() {
+//        return trainEstimateSetSize;
+//    }
+//
+//    public void setTrainEstimateSetSize(final int trainEstimateSetSize) {
+//        this.trainEstimateSetSize = trainEstimateSetSize;
+//    }
+//
+//    private int trainEstimateSetSize = DEFAULT_TRAIN_SUB_SET_SIZE;
+//    private double trainEstimateSetSizePercentage = DEFAULT_TRAIN_SUB_SET_SIZE_PERCENTAGE;
+//    private Instances trainSet;
+//
+//    public ElasticEnsemble() {
+//        this(getClassicParameterSpaceGetters());
+//    }
+//
+//    @Override
+//    public void setOption(String key, String value) throws Exception {
+//        switch (key) {
+//            case NUM_PARAMETER_SETS_KEY:
+//                setNumParametersLimit(Integer.parseInt(value));
+//                break;
+//            case NEIGHBOURHOOD_SIZE_KEY:
+//                setTrainNeighbourhoodSizeLimit(Integer.parseInt(value));
+//                break;
+//            case NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY:
+//                setNeighbourhoodSizeLimitPercentage(Double.parseDouble(value));
+//                break;
+//            case NUM_PARAMETER_SETS_PERCENTAGE_KEY:
+//                setNumParametersLimitPercentage(Double.parseDouble(value));
+//                break;
+//        }
+//    }
+//
+//    public ElasticEnsemble(Function<Instances, ParameterSpace>... parameterSpaceGetters) {
+//        this(Arrays.asList(parameterSpaceGetters));
+//    }
+//
+//    public ElasticEnsemble(List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
+//        setParameterSpaceGetters(parameterSpaceGetters);
+//    }
+//
+//    public static List<Function<Instances, ParameterSpace>> getClassicParameterSpaceGetters() {
+//        return new ArrayList<>(Arrays.asList(
+//                instances -> Dtw.edParameterSpace(),
+//                instances -> Dtw.fullWarpParameterSpace(),
+//                Dtw::warpParameterSpace,
+//                instances -> CachedDdtw.fullWarpParameterSpace(),
+//                CachedDdtw::warpParameterSpace,
+//                instances -> Wdtw.parameterSpace(),
+//                instances -> CachedWddtw.parameterSpace(),
+//                Lcss::parameterSpace,
+//                Erp::parameterSpace,
+//                instances -> Msm.parameterSpace(),
+//                instances -> Twe.parameterSpace()
+//        ));
+//    }
+//
+//    public static List<Function<Instances, ParameterSpace>> getDefaultParameterSpaceGetters() {
+//        return new ArrayList<>(Arrays.asList(
+//                Dtw::allWarpParameterSpace,
+//                CachedDdtw::allWarpParameterSpace,
+//                instances -> Wdtw.parameterSpace(),
+//                instances -> CachedWddtw.parameterSpace(),
+//                Lcss::parameterSpace,
+//                Erp::parameterSpace,
+//                instances -> Msm.parameterSpace(),
+//                instances -> Twe.parameterSpace()
+//        ));
+//    }
+//
+//    public static List<ParameterSpace> getParameterSpaces(Instances instances, List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
+//        List<ParameterSpace> parameterSpaces = new ArrayList<>();
+//        for (Function<Instances, ParameterSpace> getter : parameterSpaceGetters) {
+//            ParameterSpace parameterSpace = getter.apply(instances);
+//            parameterSpaces.add(parameterSpace);
+//        }
+//        return parameterSpaces;
+//    }
+//
+//    @Override
+//    public String toString() {
+//        return "ee";
+//    }
+//
+//    public boolean isRemoveDuplicateParameterSets() {
+//        return removeDuplicateParameterSets;
+//    }
+//
+//    public void setRemoveDuplicateParameterSets(final boolean removeDuplicateParameterSets) {
+//        this.removeDuplicateParameterSets = removeDuplicateParameterSets;
+//    }
+//
+//    public int getTrainNeighbourhoodSizeLimit() {
+//        return trainNeighbourhoodSizeLimit;
+//    }
+//
+//    public void setTrainNeighbourhoodSizeLimit(final int trainNeighbourhoodSizeLimit) {
+//        this.trainNeighbourhoodSizeLimit = trainNeighbourhoodSizeLimit;
+//    }
+//
+//    public int getNumParametersLimit() {
+//        return numParametersLimit;
+//    }
+//
+//    public void setNumParametersLimit(final int numParametersLimit) {
+//        this.numParametersLimit = numParametersLimit;
+//    }
+//
+//    public List<Function<Instances, ParameterSpace>> getParameterSpaceGetters() {
+//        return parameterSpaceGetters;
+//    }
+//
+//    public void setParameterSpaceGetters(List<Function<Instances, ParameterSpace>> parameterSpaceGetters) {
+//        this.parameterSpaceGetters.clear();
+//        this.parameterSpaceGetters.addAll(parameterSpaceGetters);
+//    }
+//
+//    public Selector<Candidate> getCandidateSelector() {
+//        return candidateSelector;
+//    }
+//
+//    public void setCandidateSelector(final Selector<Candidate> candidateSelector) {
+//        this.candidateSelector = candidateSelector;
+//    }
+//
+//    public ParameterSpacesIterationStrategy getParameterSpaceIterationStrategy() {
+//        return parameterSpaceIterationStrategy;
+//    }
+//
+//    public void setParameterSpaceIterationStrategy(final ParameterSpacesIterationStrategy parameterSpaceIterationStrategy) {
+//        this.parameterSpaceIterationStrategy = parameterSpaceIterationStrategy;
+//    }
+//
+//    public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
+//        return parameterSetSearchStrategy;
+//    }
+//
+//    public void setParameterSetSearchStrategy(final ParameterSetSearchStrategy parameterSetSearchStrategy) {
+//        this.parameterSetSearchStrategy = parameterSetSearchStrategy;
+//    }
+//
+//    public Knn.NeighbourSearchStrategy getNeighbourSearchStrategy() {
+//        return neighbourSearchStrategy;
+//    }
+//
+//    public void setNeighbourSearchStrategy(final Knn.NeighbourSearchStrategy neighbourSearchStrategy) {
+//        this.neighbourSearchStrategy = neighbourSearchStrategy;
+//    }
+//
+//    @Override
+//    public String[] getOptions() { // todo update
+//        return ArrayUtilities.concat(super.getOptions(), new String[]{
+//                NUM_PARAMETER_SETS_KEY,
+//                String.valueOf(getNumParametersLimit()),
+//                NEIGHBOURHOOD_SIZE_KEY,
+//                String.valueOf(getTrainNeighbourhoodSizeLimit()),
+//                NUM_PARAMETER_SETS_PERCENTAGE_KEY,
+//                String.valueOf(getNumParametersLimitPercentage()),
+//                NEIGHBOURHOOD_SIZE_PERCENTAGE_KEY,
+//                String.valueOf(getNeighbourhoodSizeLimitPercentage())
+//        });
+//    }
+//
+//    private void setupNeighbourhoodSize() {
+//        if (neighbourhoodSizeLimitPercentage >= 0) {
+//            setTrainNeighbourhoodSizeLimit((int) (neighbourhoodSizeLimitPercentage * trainSet.size()));
+//        }
+//    }
+//
+//    private void setupNumParameterSets() {
+//        if (numParametersLimitPercentage >= 0) {
+//            int size = 0;
+//            for (ParameterSpace parameterSpace : parameterSpaces) {
+//                size += parameterSpace.size();
+//            }
+//            numParametersLimit = (int) (numParametersLimitPercentage * size);
+//        }
+//    }
+//
+//    public double getNumParametersLimitPercentage() {
+//        return numParametersLimitPercentage;
+//    }
+//
+//    public void setNumParametersLimitPercentage(final double numParametersLimitPercentage) {
+//        this.numParametersLimitPercentage = numParametersLimitPercentage;
+//    }
+//
+//    public double getNeighbourhoodSizeLimitPercentage() {
+//        return neighbourhoodSizeLimitPercentage;
+//    }
+//
+//    public void setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
+//        this.neighbourhoodSizeLimitPercentage = neighbourhoodSizeLimitPercentage;
+//    }
+//
+//    private Iterator<IterableParameterSpace> getParameterSpacesIterator(List<IterableParameterSpace> iterableParameterSpaces) {
+//        switch (parameterSpaceIterationStrategy) {
+//            case RANDOM: return parameterSpaceIterator = new RandomIterator<>(iterableParameterSpaces, getTrainRandom().nextLong());
+//            case ROUND_ROBIN: return parameterSpaceIterator = new RoundRobinIterator<>(iterableParameterSpaces);
+//            default: throw new IllegalStateException(parameterSpaceIterationStrategy.name() + " not implemented");
+//        }
+//    }
+//
+//    private ParameterSetIterator getParameterSetIterator(ParameterSpace parameterSpace) {
+//        ArrayList<Integer> values =
+//                new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
+//        switch (parameterSetSearchStrategy) {
+//            case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
+////            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
+//            case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+//            default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
+//        }
+//    }
+//
+//    private boolean hasRemainingParameterSets() {
+//        return (parameterCount < numParametersLimit || numParametersLimit < 0) && parameterSpaceIterator.hasNext();
+//    }
+//
+//    private void setupTrainEstimateSetSize() {
+//        if(trainEstimateSetSizePercentage >= 0) {
+//            setTrainEstimateSetSize((int) (trainSet.size() * trainEstimateSetSizePercentage));
+//        }
+//    }
+//
+//
+//
+//
+//    private boolean evaluateCandidate(Candidate candidate) throws Exception {
+//        Knn knn = candidate.getKnn();
+//        knn.setTrainContractNanos(remainingTrainContractNanos());
+//        knn.buildClassifier(trainSet);
+//        Candidate trainedCandidate = candidate;//new Candidate(candidate);
+//        boolean improvement = candidateSelector.add(trainedCandidate);
+//        return improvement;
+//    }
+//
+//    @Override
+//    public void buildClassifier(final Instances trainSet) throws
+//            Exception {
+//        setup(trainSet);
+//        // todo fully trained candidates for setter changes post build
+//        getTrainStopWatch().lap();
+//        if (getTrainNeighbourhoodSizeLimit() != 0) {
+////            int count = 0;
+//            boolean remainingParameters = hasRemainingParameterSets();
+//            boolean remainingCandidates = !candidates.isEmpty();
+//            while ((remainingParameters || remainingCandidates)) {
+////                System.out.println(count++);
+//                Knn knn;
+//                Candidate candidate;
+//                int knnIndex;
+////                boolean choice = true;
+////                if (remainingParameters && remainingCandidates) {
+////                    choice = random.nextBoolean();
+////                } else if (remainingCandidates) {
+////                    choice = false;
+////                }
+////                if (choice) {
+//                if (remainingParameters) {
+//                    IterableParameterSpace iterableParameterSpace = parameterSpaceIterator.next();
+//                    Iterator<String[]> parameterSetIterator = iterableParameterSpace.getIterator();
+//                    ParameterSpace parameterSpace = iterableParameterSpace.getParameterSpace();
+//                    String[] parameters = parameterSetIterator.next();
+//                    parameterSetIterator.remove();
+//                    int parameterIterationCount = parameterIterationCounts.get(parameterSpace);
+//                    parameterIterationCounts.put(parameterSpace, parameterIterationCount + 1);
+//                    if (!parameterSetIterator.hasNext() || parameterIterationCount > parameterIterationThreshold) {
+//                        parameterSpaceIterator.remove();
+//                    } // todo random guess if no params or constituents
+//                    knn = new Knn();
+//                    knn.setOptions(parameters);
+////                    if(progressive) {
+////                        knn.setTrainNeighbourhoodSizeLimit(1);
+////                    } else {
+//                        knn.setTrainNeighbourhoodSizeLimit(trainNeighbourhoodSizeLimit);
+////                    }
+//                    knn.setEarlyAbandon(true);
+//                    knn.setTrainNeighbourSearchStrategy(neighbourSearchStrategy);
+//                    knn.setSeed(getTrainRandom().nextInt());
+//                    knn.setPredefinedTrainNeighbourhood(trainNeighbours);
+//                    knn.setTrainEstimateSetSizeLimit(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy
+//                    candidate = new Candidate(knn, parameterSpace);
+//                    candidates.add(candidate);
+//                    knnIndex = candidates.size() - 1;
+//                    parameterCount++;
+//                    boolean improvement = evaluateCandidate(candidate);
+//                    if(improvement) {
+//                        parameterIterationCounts.put(parameterSpace, 0);
 //                    }
-                    knn.setEarlyAbandon(true);
-                    knn.setTrainNeighbourSearchStrategy(neighbourSearchStrategy);
-                    knn.setSeed(getTrainRandom().nextInt());
-                    knn.setPredefinedTrainNeighbourhood(trainNeighbours);
-                    knn.setTrainEstimateSetSizeLimit(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy
-                    candidate = new Candidate(knn, parameterSpace);
-                    candidates.add(candidate);
-                    knnIndex = candidates.size() - 1;
-                    parameterCount++;
-                    boolean improvement = evaluateCandidate(candidate);
-                    if(improvement) {
-                        parameterIterationCounts.put(parameterSpace, 0);
-                    }
-                } else {
-                    knnIndex = getTrainRandom().nextInt(candidates.size());
-                    candidate = candidates.get(knnIndex);
-                    knn = candidate.getKnn();
-                    int sampleSize = knn.getTrainNeighbourhoodSizeLimit() + 1;
-                    knn.setTrainNeighbourhoodSizeLimit(sampleSize);
-                    evaluateCandidate(candidate);
-                }
-                if ((knn.getTrainNeighbourhoodSizeLimit() + 1 > getTrainNeighbourhoodSizeLimit()
-                        && getTrainNeighbourhoodSizeLimit() >= 0)
-                        || knn.getTrainNeighbourhoodSizeLimit() + 1 > trainSet.size()) {
-//                    fullyTrainedCandidates.add(
-                            candidates.remove(knnIndex);
-//                    );
-                }
-                remainingParameters = hasRemainingParameterSets();
-                remainingCandidates = !candidates.isEmpty();
-                getTrainStopWatch().lap();
-            }
-        }
-        constituents.clear();
-        constituents.addAll(candidateSelector.getSelected());
-        String savePath = getSavePath();
-        if (savePath != null) {
-            Utilities.mkdir(savePath);
-        }
-        if (savePath != null) {
-            for (int i = 0; i < constituents.size(); i++) {
-                Knn knn = constituents.get(i).getKnn();
-                ClassifierResults results = knn.getTrainResults();
-                results.writeFullResultsToFile(savePath + "/train" + i + ".csv");
-            }
-        }
-        ClassifierResults trainResults = new ClassifierResults();
-        setTrainResults(trainResults);
-        for (int i = 0; i < trainSet.size(); i++) {
-            long predictionTime = System.nanoTime();
-            double[] distribution = new double[trainSet.numClasses()];
-            for(Candidate constituent : constituents) {
-                Knn knn = constituent.getKnn();
-                double[] candidateDistribution;
-//                if(samplesTrainSet()) {
-                    candidateDistribution = knn.distributionForInstance(trainSet.get(i));
-//                } else { todo use pre-computed train results if not sampling train set in knns
-//                    ClassifierResults constituentTrainResults = knn.getTrainResults();
-//                    candidateDistribution = constituentTrainResults.getProbabilityDistribution(i);
-//                    predictionTime -= constituentTrainResults.getPredictionTimeInNanos(i);
+//                } else {
+//                    knnIndex = getTrainRandom().nextInt(candidates.size());
+//                    candidate = candidates.get(knnIndex);
+//                    knn = candidate.getKnn();
+//                    int sampleSize = knn.getTrainNeighbourhoodSizeLimit() + 1;
+//                    knn.setTrainNeighbourhoodSizeLimit(sampleSize);
+//                    evaluateCandidate(candidate);
 //                }
-                ArrayUtilities.multiply(candidateDistribution, knn.getTrainResults().getAcc());
-                ArrayUtilities.normaliseInplace(candidateDistribution);
-                ArrayUtilities.add(distribution, candidateDistribution);
-            }
-            ArrayUtilities.normaliseInplace(distribution);
-            predictionTime = System.nanoTime() - predictionTime;
-            trainResults.addPrediction(trainSet.get(i).classValue(), distribution, Utilities.argMax(distribution, getTrainRandom()), predictionTime, null);
-        }
-        getTrainStopWatch().lap();
-        setClassifierResultsMetaInfo(trainResults);
-    }
+//                if ((knn.getTrainNeighbourhoodSizeLimit() + 1 > getTrainNeighbourhoodSizeLimit()
+//                        && getTrainNeighbourhoodSizeLimit() >= 0)
+//                        || knn.getTrainNeighbourhoodSizeLimit() + 1 > trainSet.size()) {
+////                    fullyTrainedCandidates.add(
+//                            candidates.remove(knnIndex);
+////                    );
+//                }
+//                remainingParameters = hasRemainingParameterSets();
+//                remainingCandidates = !candidates.isEmpty();
+//                getTrainStopWatch().lap();
+//            }
+//        }
+//        constituents.clear();
+//        constituents.addAll(candidateSelector.getSelected());
+//        String savePath = getSavePath();
+//        if (savePath != null) {
+//            Utilities.mkdir(savePath);
+//        }
+//        if (savePath != null) {
+//            for (int i = 0; i < constituents.size(); i++) {
+//                Knn knn = constituents.get(i).getKnn();
+//                ClassifierResults results = knn.getTrainResults();
+//                results.writeFullResultsToFile(savePath + "/train" + i + ".csv");
+//            }
+//        }
+//        ClassifierResults trainResults = new ClassifierResults();
+//        setTrainResults(trainResults);
+//        for (int i = 0; i < trainSet.size(); i++) {
+//            long predictionTime = System.nanoTime();
+//            double[] distribution = new double[trainSet.numClasses()];
+//            for(Candidate constituent : constituents) {
+//                Knn knn = constituent.getKnn();
+//                double[] candidateDistribution;
+////                if(samplesTrainSet()) {
+//                    candidateDistribution = knn.distributionForInstance(trainSet.get(i));
+////                } else { todo use pre-computed train results if not sampling train set in knns
+////                    ClassifierResults constituentTrainResults = knn.getTrainResults();
+////                    candidateDistribution = constituentTrainResults.getProbabilityDistribution(i);
+////                    predictionTime -= constituentTrainResults.getPredictionTimeInNanos(i);
+////                }
+//                ArrayUtilities.multiply(candidateDistribution, knn.getTrainResults().getAcc());
+//                ArrayUtilities.normaliseInplace(candidateDistribution);
+//                ArrayUtilities.add(distribution, candidateDistribution);
+//            }
+//            ArrayUtilities.normaliseInplace(distribution);
+//            predictionTime = System.nanoTime() - predictionTime;
+//            trainResults.addPrediction(trainSet.get(i).classValue(), distribution, Utilities.argMax(distribution, getTrainRandom()), predictionTime, null);
+//        }
+//        getTrainStopWatch().lap();
+//        setClassifierResultsMetaInfo(trainResults);
+//    }
+//
+//    private boolean samplesTrainSet() {
+//        return trainEstimateSetSize >= 0 && trainEstimateSetSize < trainSet.size();
+//    }
+//
+//    @Override
+//    public double[] distributionForInstance(final Instance testInstance) throws
+//            Exception {
+//        double[] distribution = new double[testInstance.numClasses()];
+//        for(Candidate constituent : constituents) {
+//            Knn knn = constituent.getKnn();
+//            double[] candidateDistribution;
+//            candidateDistribution = knn.distributionForInstance(testInstance);
+//            ArrayUtilities.multiply(candidateDistribution, knn.getTrainResults().getAcc());
+//            ArrayUtilities.add(distribution, candidateDistribution);
+//        }
+//        ArrayUtilities.normaliseInplace(distribution);
+//        return distribution;
+//    }
+//
+//    public double getTrainEstimateSetSizePercentage() {
+//        return trainEstimateSetSizePercentage;
+//    }
+//
+//    public void setTrainEstimateSetSizePercentage(final double trainEstimateSetSizePercentage) {
+//        this.trainEstimateSetSizePercentage = trainEstimateSetSizePercentage;
+//    }
+//
 
-    private boolean samplesTrainSet() {
-        return trainEstimateSetSize >= 0 && trainEstimateSetSize < trainSet.size();
-    }
+//
 
-    @Override
-    public double[] distributionForInstance(final Instance testInstance) throws
-            Exception {
-        double[] distribution = new double[testInstance.numClasses()];
-        for(Candidate constituent : constituents) {
-            Knn knn = constituent.getKnn();
-            double[] candidateDistribution;
-            candidateDistribution = knn.distributionForInstance(testInstance);
-            ArrayUtilities.multiply(candidateDistribution, knn.getTrainResults().getAcc());
-            ArrayUtilities.add(distribution, candidateDistribution);
-        }
-        ArrayUtilities.normaliseInplace(distribution);
-        return distribution;
-    }
-
-    public double getTrainEstimateSetSizePercentage() {
-        return trainEstimateSetSizePercentage;
-    }
-
-    public void setTrainEstimateSetSizePercentage(final double trainEstimateSetSizePercentage) {
-        this.trainEstimateSetSizePercentage = trainEstimateSetSizePercentage;
-    }
-
-    public enum ParameterSpacesIterationStrategy {
-        RANDOM,
-        ROUND_ROBIN;
-
-        public static ParameterSpacesIterationStrategy fromString(String str) {
-            for (ParameterSpacesIterationStrategy s : ParameterSpacesIterationStrategy.values()) {
-                if (s.name()
-                        .equals(str)) {
-                    return s;
-                }
-            }
-            throw new IllegalArgumentException("No enum value by the name of " + str);
-        }
-    }
-
-    public enum ParameterSetSearchStrategy {
-        RANDOM,
-        LINEAR,
-        SPREAD;
-
-        public static ParameterSetSearchStrategy fromString(String str) {
-            for (ParameterSetSearchStrategy s : ParameterSetSearchStrategy.values()) {
-                if (s.name()
-                        .equals(str)) {
-                    return s;
-                }
-            }
-            throw new IllegalArgumentException("No enum value by the name of " + str);
-        }
-
-    }
-
-    public ParameterSetIterator buildParameterSetIterator(ParameterSetSearchStrategy parameterSetSearchStrategy, ParameterSpace parameterSpace) {
-        ArrayList<Integer> values =
-                new ArrayList<>(Arrays.asList(ArrayUtilities.box(ArrayUtilities.range(parameterSpace.size() - 1))));
-        switch (parameterSetSearchStrategy) {
-            case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, getTrainRandom().nextLong()));
-//            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
-            case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
-            default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
-        }
-    }
-
-    private static class IterableParameterSpace {
-        private final ParameterSpace parameterSpace;
-        private final Iterator<String[]> iterator;
-
-        private IterableParameterSpace(final ParameterSpace parameterSpace,
-                                       final Iterator<String[]> iterator) {
-            this.parameterSpace = parameterSpace;
-            this.iterator = iterator;
-        }
-
-        public Iterator<String[]> getIterator() {
-            return iterator;
-        }
-
-        public ParameterSpace getParameterSpace() {
-            return parameterSpace;
-        }
-    }
-
-    private class Candidate {
-        private final Knn knn;
-        private final ParameterSpace parameterSpace;
-
-        private Candidate(final Knn knn, final ParameterSpace parameterSpace) {
-            this.knn = knn;
-            this.parameterSpace = parameterSpace;
-        }
-
-        private Candidate(Candidate candidate) {
-            this(candidate.knn.copy(), candidate.parameterSpace);
-        }
-
-        public Knn getKnn() {
-            return knn;
-        }
-
-        public ParameterSpace getParameterSpace() {
-            return parameterSpace;
-        }
-
-    }
+//
+//
+//
+//    private static class IterableParameterSpace {
+//        private final ParameterSpace parameterSpace;
+//        private final Iterator<String[]> iterator;
+//
+//        private IterableParameterSpace(final ParameterSpace parameterSpace,
+//                                       final Iterator<String[]> iterator) {
+//            this.parameterSpace = parameterSpace;
+//            this.iterator = iterator;
+//        }
+//
+//        public Iterator<String[]> getIterator() {
+//            return iterator;
+//        }
+//
+//        public ParameterSpace getParameterSpace() {
+//            return parameterSpace;
+//        }
+//    }
+//
+//    private class Candidate {
+//        private final Knn knn;
+//        private final ParameterSpace parameterSpace;
+//
+//        private Candidate(final Knn knn, final ParameterSpace parameterSpace) {
+//            this.knn = knn;
+//            this.parameterSpace = parameterSpace;
+//        }
+//
+//        private Candidate(Candidate candidate) {
+//            this(candidate.knn.copy(), candidate.parameterSpace);
+//        }
+//
+//        public Knn getKnn() {
+//            return knn;
+//        }
+//
+//        public ParameterSpace getParameterSpace() {
+//            return parameterSpace;
+//        }
+//
+//    }
 }
