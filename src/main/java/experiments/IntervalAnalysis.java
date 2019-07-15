@@ -17,6 +17,11 @@
 
 package experiments;
 
+import evaluation.storage.ClassifierResults;
+import static experiments.IntervalExperiments.buildIntervalClassifierName;
+import static experiments.IntervalExperiments.defineInterval;
+import static experiments.IntervalExperiments.maxNumIntervals;
+
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -61,24 +66,26 @@ public class IntervalAnalysis {
         //todo
     }
     
-    public static void gunpointIntervalsExample() { 
+    public static void example_gunpointIntervals() throws Exception { 
         //take gunpoint in particular, a well-studied dataset where the useful intervals have been documented before
         //do the different interval test accuracies reflect the expected interval importances based on other works? 
         //how does the single 'oracle' interval correspond to the above? 
         //how does the selected interval from train data correspond to the above? 
         //draw some sort of heatmap figure relaying this info for paper
         
-        //todo
-    }
-    
-    public static void example_gunpointIntervals() { 
-        //take gunpoint in particular, a well-studied dataset where the useful intervals have been documented before
-        //do the different interval test accuracies reflect the expected interval importances based on other works? 
-        //how does the single 'oracle' interval correspond to the above? 
-        //how does the selected interval from train data correspond to the above? 
-        //draw some sort of heatmap figure relaying this info for paper
+        String baseResPath = "";
+        String dataset = "Gunpoint";
+        String baseClassifier = "ED"; 
+        int fold = 0;
         
-        //todo
+        ClassifierResults[] allIntervalsRes = new ClassifierResults[maxNumIntervals];
+        
+        for (int i = 0; i < maxNumIntervals; i++) {
+            String cname = buildIntervalClassifierName(baseClassifier, defineInterval(i));
+            
+            allIntervalsRes[i] = new ClassifierResults(baseResPath + cname + "/Predictions/" + dataset + "/testFold" + fold + ".csv");
+        }
+        
     }
     
     public static void example_AlcoholSpectra() { 

@@ -38,7 +38,7 @@ import weka.core.Instances;
 public class IntervalExperiments {
 
     public static final int maxNumIntervalPoints = 20; //so 21 values really, 0 .. 20 corresponding to props 0 .. 1 
-    public static final int maxNumIntervals = 230; 
+    public static final int maxNumIntervals = 210; 
     
     public static void zipTest() throws IOException {
         String dirToZip = "C:/Temp/intervalExpTest/ED_0.00_0.05/Predictions/ACSF1/";
@@ -91,6 +91,10 @@ public class IntervalExperiments {
 //        zipTest();
 //        localExps(args);
         
+//        for (int i = 0; i < 250; i++) {
+//            System.out.println(Arrays.toString(defineInterval(i)));
+//        }
+
 //        args = new String[] { "0", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
         clusterExps(args);
     }
@@ -130,9 +134,21 @@ public class IntervalExperiments {
         String dirToZip = baseDir + classifier + "/";
         String zipName = baseDir + classifier + ".zip";
         
+        
+        if (new File(dirToZip + classifier + ".zip").exists()) {
+            System.out.println("Zip exists, exiting");
+            return;
+        }
+            
+        
+        System.out.println("All files written");
         zip(dirToZip, zipName);
+        System.out.println("zipped");
         deleteContents(new File(dirToZip));
+        System.out.println("orig deleted");
         move(zipName, dirToZip);
+        System.out.println("zip moved");
+        System.out.println("end");
     }
     
     public static void localExps(String[] args) throws Exception {
@@ -159,10 +175,15 @@ public class IntervalExperiments {
         }
     }
     
+    public static String buildIntervalClassifierName(String classifier, double[] interval) {
+        return classifier + "_" + String.format("%.2f", interval[0]).split("\\.")[1] 
+                            + "_" + String.format("%.2f", interval[1]).split("\\.")[1];
+    }
+    
     public static String runExperiment(String[] args) throws Exception {
         
         boolean normaliseInterval = Boolean.parseBoolean(args[0]);
-        int intervalID = Integer.parseInt(args[1]);
+        int intervalID = Integer.parseInt(args[1]) - 1;
         double[] interval = defineInterval(intervalID);
         args = Arrays.copyOfRange(args, 2, args.length);
         
@@ -171,8 +192,13 @@ public class IntervalExperiments {
         System.out.println(exp.toShortString());
        
         Classifier classifier = ClassifierLists.setClassifier(exp);
-        exp.classifierName = exp.classifierName + "_" + String.format("%.2f", interval[0]).split("\\.")[1] 
-                                                + "_" + String.format("%.2f", interval[1]).split("\\.")[1]; 
+        exp.classifierName = buildIntervalClassifierName(exp.classifierName, interval);
+        
+        
+        if (new File(exp.resultsWriteLocation + exp.classifierName + "/" + classifier + ".zip").exists()) {
+            System.out.println("All resutls zip exists, exiting");
+            return exp.classifierName;
+        }
         
         String fullWriteLoc = exp.resultsWriteLocation + exp.classifierName + "/Predictions/" + exp.datasetName + "/";
         (new File(fullWriteLoc)).mkdirs();
@@ -197,7 +223,7 @@ public class IntervalExperiments {
 
         int c = 0;        
         while (c != intID) { 
-            if (endId++ > maxNumIntervalPoints) {
+            if (++endId > maxNumIntervalPoints) {
                 startId++;
                 endId = startId + 1;
                 
