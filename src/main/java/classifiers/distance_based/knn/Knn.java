@@ -37,6 +37,12 @@ public class Knn
         getReducedTrainSetConfig().setOption(key, value);
     }
 
+    @Override
+    public void setTrainSeed(final Long seed) {
+        super.setTrainSeed(seed);
+        getReducedTrainSetConfig().setSamplingSeed(seed);
+    }
+
     public KnnConfig getKnnConfig() {
         return knnConfigState.getNext();
     }
@@ -92,12 +98,13 @@ public class Knn
         reducedTrainSetConfigState.shift();
         if (trainSetChanged(trainSet) || knnConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
             getTrainStopWatch().reset();
+            resetTrainSeed();
             knnConfig = knnConfigState.getCurrent();
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
             trainNeighbourhood = new ArrayList<>();
             ReducedTrainSetConfig reducedTrainSetConfig = reducedTrainSetConfigState.getCurrent();
-            reducedTrainSetConfig.buildTrainIterators(trainSet, getTrainRandom());
+            reducedTrainSetConfig.buildTrainIterators(trainSet);
             trainSetIterator = reducedTrainSetConfig.getTrainSetIterator();
             trainEstimateSetIterator = reducedTrainSetConfig.getTrainEstimateSetIterator();
             getTrainStopWatch().lap();

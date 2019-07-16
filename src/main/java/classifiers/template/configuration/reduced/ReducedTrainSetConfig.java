@@ -14,8 +14,6 @@ import weka.core.Instances;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
 
 public class ReducedTrainSetConfig
     extends TemplateConfig {
@@ -26,13 +24,9 @@ public class ReducedTrainSetConfig
     private final static String TRAIN_ESTIMATE_SET_SIZE_LIMIT_PERCENTAGE = "tresslp";
     private final static String TRAIN_SET_SIZE_THRESHOLD = "trnst"; // todo change keys
     private final static String TRAIN_ESTIMATE_SET_SIZE_THRESHOLD = "tresst";
-    // iteration options
     private final static String TRAIN_SET_STRATEGY_KEY = "trnss";
     private final static String TRAIN_ESTIMATE_SET_SOURCE_KEY = "trsss";
     private final static String TRAIN_ESTIMATE_SET_STRATEGY_KEY = "tres";
-    // sets
-    private final static String PREDEFINED_TRAIN_SET_KEY = "pdtrs";
-    private final static String PREDEFINED_TRAIN_ESTIMATE_SET_KEY = "pdtres";
     public static Comparator<ReducedTrainSetConfig> TRAIN_CONFIG_COMPARATOR = (config, other) -> { // todo
 //            if(config.hasTrainEstimateSetSizeLimit() &&
 //               config.trainEstimateSetSizeLimit < other.trainEstimateSetSizeLimit) return 1;
@@ -51,11 +45,10 @@ public class ReducedTrainSetConfig
 //            if(config.hasTestSetSizeLimit() && config.testSetSizeLimit < other.testSetSizeLimit) return 1;
         return 0;
     };
-    // restriction options
-    private final Random trainSetSamplingRandom = new Random();
-    private final Random trainEstimateSetSamplingRandom = new Random();
+    private static final String SAMPLING_SEED_KEY = "ss";
+    private Long samplingSeed = null; // todo
     private int trainSetSizeLimit = -1;
-    private double trainSetSizeLimitPercentage = -1;
+    private double trainSetSizeLimitPercentage = -1; // todo use these limits in iterators!
     private int trainEstimateSetSizeLimit = -1;
     private double trainEstimateSetSizeLimitPercentage = -1;
     private int trainSetSizeThreshold = -1;
@@ -63,13 +56,17 @@ public class ReducedTrainSetConfig
     private NeighbourSearchStrategy trainSetStrategy = NeighbourSearchStrategy.RANDOM;
     private TrainEstimationSource trainEstimateSetSource = TrainEstimationSource.FROM_FULL_TRAIN_SET;
     private TrainEstimationStrategy trainEstimateSetStrategy = TrainEstimationStrategy.RANDOM;
-    private boolean expectPredefinedTrainSet = false;
-    private List<Instance> predefinedTrainSet = null; // todo keys
-    private boolean expectPredefinedTrainEstimateSet = false;
-    private List<Instance> predefinedTrainEstimateSet = null;
     // iterators for executing strategies
     private SiphonIterator<Instance> trainSetIterator = null;
     private AbstractIterator<Instance> trainEstimateSetIterator = null;
+
+    public Long getSamplingSeed() {
+        return samplingSeed;
+    }
+
+    public void setSamplingSeed(Long samplingSeed) {
+        this.samplingSeed = samplingSeed;
+    }
 
     public ReducedTrainSetConfig(final ReducedTrainSetConfig reducedTrainSetConfig) throws
                                                                                     Exception {
@@ -86,11 +83,11 @@ public class ReducedTrainSetConfig
         return trainSetSizeLimit >= 0;
     }
 
-    public void buildTrainIterators(Instances trainSet, Random random) {
+    public void buildTrainIterators(Instances trainSet) {
         setupTrainEstimateSetSize(trainSet);
         setupTrainSetSize(trainSet);
-        trainEstimateSetIterator = buildTrainEstimationStrategy(trainSet, random);
-        trainSetIterator = buildTrainSetStrategy(trainSet, random, trainEstimateSetIterator);
+        trainEstimateSetIterator = buildTrainEstimationStrategy(trainSet);
+        trainSetIterator = buildTrainSetStrategy(trainSet, trainEstimateSetIterator);
     }
 
     public void setupTrainEstimateSetSize(Collection<Instance> trainSet) {
@@ -112,70 +109,62 @@ public class ReducedTrainSetConfig
     }
 
     private AbstractIterator<Instance> buildTrainEstimationStrategy(Collection<Instance> trainSet) {
-        if (expectPredefinedTrainEstimateSet && predefinedTrainEstimateSet == null) {
-            throw new IllegalStateException("predefined train estimate set has not been given but was expected!");
-        }
         AbstractIterator<Instance> iterator;
+        if (samplingSeed == null) {
+            throw new IllegalStateException("seed not set");
+        }
         switch (getTrainEstimateSetStrategy()) {
             case RANDOM:
-                iterator = new RandomSampler(trainEstimateSetSamplingRandom);
+                iterator = new RandomSampler(samplingSeed);
                 break;
             case LINEAR:
                 iterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(trainEstimateSetSamplingRandom);
+                iterator = new RoundRobinRandomSampler(samplingSeed);
                 break;
             case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(trainEstimateSetSamplingRandom);
+                iterator = new DistributedRandomSampler(samplingSeed);
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
-        if (getPredefinedTrainEstimateSet() != null) {
-            iterator.addAll(getPredefinedTrainEstimateSet());
-        } else {
-            switch (getTrainEstimateSetSource()) {
-                case FROM_FULL_TRAIN_SET:
-                    iterator.addAll(trainSet);
-                    break;
-                case FROM_REDUCED_TRAIN_SET:
-                    // add the train neighbours as sampled from train set
-                    break;
-                default:
-                    throw new IllegalStateException("train estimation source unknown");
-            }
+        switch (getTrainEstimateSetSource()) {
+            case FROM_FULL_TRAIN_SET:
+                iterator.addAll(trainSet);
+                break;
+            case FROM_REDUCED_TRAIN_SET:
+                // add the train neighbours as sampled from train set
+                break;
+            default:
+                throw new IllegalStateException("train estimation source unknown");
         }
         return iterator;
     }
 
     private SiphonIterator<Instance> buildTrainSetStrategy(Collection<Instance> trainSet,
                                                            final AbstractIterator<Instance> trainEstimateSetIterator) {
-        if (expectPredefinedTrainSet && predefinedTrainSet == null) {
-            throw new IllegalStateException("predefined train set has not been given but was expected!");
-        }
         AbstractIterator<Instance> iterator;
+        if (samplingSeed == null) {
+            throw new IllegalStateException("seed not set");
+        }
         switch (getTrainSetStrategy()) { // todo factory?
             case RANDOM:
-                iterator = new RandomSampler(trainSetSamplingRandom);
+                iterator = new RandomSampler(samplingSeed);
                 break;
             case LINEAR:
                 iterator = new LinearSampler();
                 break;
             case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(trainSetSamplingRandom);
+                iterator = new RoundRobinRandomSampler(samplingSeed);
                 break;
             case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(trainSetSamplingRandom);
+                iterator = new DistributedRandomSampler(samplingSeed);
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
-        if (getPredefinedTrainSet() != null) {
-            iterator.addAll(getPredefinedTrainSet());
-        } else {
-            iterator.addAll(trainSet);
-        }
+        iterator.addAll(trainSet);
         SiphonIterator<Instance> siphonIterator = new SiphonIterator<>(iterator, null);
         if (getTrainEstimateSetSource().equals(TrainEstimationSource.FROM_REDUCED_TRAIN_SET)) {
             siphonIterator.setDestination(trainEstimateSetIterator);
@@ -187,28 +176,12 @@ public class ReducedTrainSetConfig
         return trainEstimateSetStrategy;
     }
 
-    public List<Instance> getPredefinedTrainEstimateSet() {
-        return predefinedTrainEstimateSet;
-    }
-
-    public void setPredefinedTrainEstimateSet(final List<Instance> predefinedTrainEstimateSet) {
-        this.predefinedTrainEstimateSet = predefinedTrainEstimateSet;
-    }
-
     public TrainEstimationSource getTrainEstimateSetSource() {
         return trainEstimateSetSource;
     }
 
     public NeighbourSearchStrategy getTrainSetStrategy() {
         return trainSetStrategy;
-    }
-
-    public List<Instance> getPredefinedTrainSet() {
-        return predefinedTrainSet;
-    }
-
-    public void setPredefinedTrainSet(final List<Instance> predefinedTrainSet) {
-        this.predefinedTrainSet = predefinedTrainSet;
     }
 
     public void setTrainSetStrategy(final NeighbourSearchStrategy trainSetStrategy) {
@@ -278,8 +251,6 @@ public class ReducedTrainSetConfig
                                               Exception {
         ReducedTrainSetConfig other = (ReducedTrainSetConfig) object;
         setOptions(other.getOptions());
-        predefinedTrainEstimateSet = other.predefinedTrainEstimateSet;
-        predefinedTrainSet = other.predefinedTrainSet;
         if (other.trainEstimateSetIterator != null) {
             trainEstimateSetIterator = other.trainEstimateSetIterator.iterator();
         }
@@ -319,10 +290,6 @@ public class ReducedTrainSetConfig
             case TRAIN_ESTIMATE_SET_SIZE_THRESHOLD:
                 setTrainEstimateSetSizeThreshold(Integer.parseInt(value));
                 break;
-            case PREDEFINED_TRAIN_ESTIMATE_SET_KEY:
-                expectPredefinedTrainEstimateSet = Boolean.parseBoolean(value);
-            case PREDEFINED_TRAIN_SET_KEY:
-                expectPredefinedTrainSet = Boolean.parseBoolean(value);
         }
     }
 
@@ -349,10 +316,6 @@ public class ReducedTrainSetConfig
             String.valueOf(trainSetSizeThreshold),
             TRAIN_ESTIMATE_SET_SIZE_THRESHOLD,
             String.valueOf(trainEstimateSetSizeThreshold),
-            PREDEFINED_TRAIN_ESTIMATE_SET_KEY,
-            String.valueOf(predefinedTrainEstimateSet),
-            PREDEFINED_TRAIN_SET_KEY,
-            String.valueOf(predefinedTrainSet)
         });
     }
 

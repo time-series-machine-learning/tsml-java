@@ -132,15 +132,12 @@ public class ClassifierLists {
                 break;
             case "FEE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
-                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
                 break;
             case "REE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
-                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
                 break;
             case "BREE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
-                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
 //                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c)
 //                .setNeighbourhoodSizeLimitPercentage(0.1);
 //                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0
@@ -388,7 +385,8 @@ public class ClassifierLists {
 //                throw new Exception("Unknown classifier "+classifier);
         }
         if (c instanceof TemplateClassifierInterface) {
-            ((TemplateClassifier) c).setSeed(fold);
+            ((TemplateClassifier) c).setTrainSeed((long) fold);
+            ((TemplateClassifier) c).setTestSeed((long) fold);
         }
         return c;
     }

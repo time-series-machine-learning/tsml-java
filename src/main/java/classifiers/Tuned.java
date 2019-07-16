@@ -105,7 +105,7 @@ public class Tuned
         List<ParameterBenchmark> bestParameters = new ArrayList<>(); // todo iterator
         AbstractClassifier classifier = supplier.get();
         if (classifier instanceof TemplateClassifierInterface) {
-            ((TemplateClassifierInterface) classifier).setSeed(getSeed());
+            ((TemplateClassifier) classifier).resetTrainSeed();
         }
         ParameterSet parameterSet = parameterSpace.get(0);
         ClassifierResults trainResults = evaluateParameter(classifier, parameterSet, trainSet);
@@ -113,7 +113,7 @@ public class Tuned
         for(int parameterSetIndex = 1; parameterSetIndex < parameterSpace.size(); parameterSetIndex++) {
             classifier = supplier.get();
             if (classifier instanceof TemplateClassifierInterface) {
-                ((TemplateClassifierInterface) classifier).setSeed(getSeed());
+                ((TemplateClassifier) classifier).resetTrainSeed();
             }
             parameterSet = parameterSpace.get(parameterSetIndex);
             classifier.setOptions(parameterSet.getOptions());

@@ -114,20 +114,7 @@ public abstract class TemplateClassifier
         return trainRandom;
     }
 
-    public void copyFrom(Object object) throws
-                                        Exception {
-        TemplateClassifier other = (TemplateClassifier) object;
-        setSavePath(other.savePath);
-        trainStopWatch = other.trainStopWatch;
-        testStopWatch = other.testStopWatch;
-        setTrainResults(other.getTrainResults());
-        if(other.seed != null) {
-            setSeed(other.seed);
-        }
-        setTimeLimit(other.getTrainContractNanos());
-        testInstancesHash = other.testInstancesHash;
-        trainInstancesHash = other.trainInstancesHash;
-    }
+    private Long trainSeed = null;
 
     public boolean withinTrainContract() {
         return remainingTrainContractNanos() > 0;
@@ -204,39 +191,21 @@ public abstract class TemplateClassifier
         throw new UnsupportedOperationException();
     }
 
-    public void resetTrainRandom() {
-        if(seed != null) {
-            trainRandom.setSeed(seed);
-        }
-    }
+    private Long testSeed = null;
 
-    public void resetTestRandom() {
-        if(seed != null) {
-            testRandom.setSeed(seed);
-        }
+    public void copyFrom(Object object) throws
+                                        Exception {
+        TemplateClassifier other = (TemplateClassifier) object;
+        setSavePath(other.savePath);
+        trainStopWatch = other.trainStopWatch;
+        testStopWatch = other.testStopWatch;
+        setTrainResults(other.getTrainResults());
+        trainSeed = other.trainSeed;
+        testSeed = other.testSeed;
+        setTimeLimit(other.getTrainContractNanos());
+        testInstancesHash = other.testInstancesHash;
+        trainInstancesHash = other.trainInstancesHash;
     }
-
-    public void resetRandom() {
-        resetTestRandom();
-        resetTrainRandom();
-    }
-
-    @Override
-    public void setSeed(final int seed) {
-        this.seed = seed;
-        resetRandom();
-    }
-
-    @Override
-    public int getSeed() {
-        if(seed == null) {
-            throw new IllegalStateException("seed not set");
-        } else {
-            return seed;
-        }
-    }
-
-    private Integer seed = null;
 
     public String getSavePath() {
         return savePath;
@@ -276,4 +245,36 @@ public abstract class TemplateClassifier
     public String getTrainResultsPath() {
         return trainResultsPath;
     }
+
+    public void resetTrainSeed() {
+        // todo null check
+        setTrainSeed(getTrainSeed());
+    }
+
+    @Override
+    public Long getTestSeed() {
+        return testSeed;
+    }
+
+    public void resetTestSeed() {
+        // todo null check
+        setTestSeed(getTestSeed());
+    }
+
+    public void setTestSeed(final Long testSeed) {
+        this.testSeed = testSeed;
+    }
+
+    @Override
+    public Long getTrainSeed() {
+        return trainSeed;
+    }
+
+    public void setTrainSeed(final Long trainSeed) {
+        this.trainSeed = trainSeed;
+    }
+
+
+
+
 }

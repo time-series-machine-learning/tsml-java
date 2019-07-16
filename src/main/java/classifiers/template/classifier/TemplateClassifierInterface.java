@@ -7,13 +7,11 @@ import utilities.Copyable;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.core.OptionHandler;
-import weka.core.Randomizable;
 
 import java.io.Serializable;
 
 public interface TemplateClassifierInterface
     extends Serializable,
-            Randomizable,
             SaveParameterInfo,
             CheckpointClassifier,
             ContractClassifier,
@@ -21,5 +19,11 @@ public interface TemplateClassifierInterface
             Classifier,
             OptionHandler,
             Copyable {
+    Long getTrainSeed();
 
+    void setTrainSeed(Long seed);
+
+    Long getTestSeed();
+
+    void setTestSeed(Long seed);
 }
