@@ -17,6 +17,8 @@ package experiments;
 
 import classifiers.Tuned;
 import classifiers.distance_based.knn.Knn;
+import classifiers.template.classifier.TemplateClassifier;
+import classifiers.template.classifier.TemplateClassifierInterface;
 import distances.derivative_time_domain.ddtw.CachedDdtw;
 import distances.derivative_time_domain.ddtw.Ddtw;
 import distances.derivative_time_domain.wddtw.CachedWddtw;
@@ -26,11 +28,7 @@ import distances.time_domain.lcss.Lcss;
 import distances.time_domain.msm.Msm;
 import distances.time_domain.twe.Twe;
 import distances.time_domain.wdtw.Wdtw;
-import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
-import multivariate_timeseriesweka.classifiers.NN_DTW_A;
-import multivariate_timeseriesweka.classifiers.NN_DTW_D;
-import multivariate_timeseriesweka.classifiers.NN_DTW_I;
-import multivariate_timeseriesweka.classifiers.NN_ED_I;
+import multivariate_timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
@@ -143,8 +141,10 @@ public class ClassifierLists {
             case "BREE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
                 ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setSeed(fold);
-                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNeighbourhoodSizeLimitPercentage(0.1);
-                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0.5);
+//                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c)
+//                .setNeighbourhoodSizeLimitPercentage(0.1);
+//                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0
+//                .5);
                 break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 
@@ -156,7 +156,7 @@ public class ClassifierLists {
             case "SmallTunedXGBoost":
                 c = new TunedXGBoost(); 
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
-                ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
+                TunedXGBoost.setSmallParaSearchSpace_64paras();
                 break;
             case "ProximityForest":
                 c = new ProximityForestWeka();
@@ -386,6 +386,9 @@ public class ClassifierLists {
                 System.out.println("UNKNOWN CLASSIFIER "+classifier);
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
+        }
+        if (c instanceof TemplateClassifierInterface) {
+            ((TemplateClassifier) c).setSeed(fold);
         }
         return c;
     }

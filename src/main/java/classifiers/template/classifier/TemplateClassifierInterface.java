@@ -1,4 +1,4 @@
-package classifiers.template;
+package classifiers.template.classifier;
 
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;

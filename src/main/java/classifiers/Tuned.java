@@ -1,6 +1,7 @@
 package classifiers;
 
-import classifiers.template.TemplateClassifier;
+import classifiers.template.classifier.TemplateClassifier;
+import classifiers.template.classifier.TemplateClassifierInterface;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -16,7 +17,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Tuned
-    extends TemplateClassifier<Tuned> {
+    extends TemplateClassifier {
     private final Supplier<AbstractClassifier> supplier;
     private final Function<Instances, ParameterSpace> parameterSpaceGetter;
     private final Supplier<ParameterSpace> parameterSpaceSupplier;
@@ -103,11 +104,17 @@ public class Tuned
         parameterSpace.removeDuplicateParameterSets();
         List<ParameterBenchmark> bestParameters = new ArrayList<>(); // todo iterator
         AbstractClassifier classifier = supplier.get();
+        if (classifier instanceof TemplateClassifierInterface) {
+            ((TemplateClassifierInterface) classifier).setSeed(getSeed());
+        }
         ParameterSet parameterSet = parameterSpace.get(0);
         ClassifierResults trainResults = evaluateParameter(classifier, parameterSet, trainSet);
         bestParameters.add(new ParameterBenchmark(classifier, parameterSet, trainResults));
         for(int parameterSetIndex = 1; parameterSetIndex < parameterSpace.size(); parameterSetIndex++) {
             classifier = supplier.get();
+            if (classifier instanceof TemplateClassifierInterface) {
+                ((TemplateClassifierInterface) classifier).setSeed(getSeed());
+            }
             parameterSet = parameterSpace.get(parameterSetIndex);
             classifier.setOptions(parameterSet.getOptions());
             trainResults = evaluateParameter(classifier, parameterSet, trainSet);
@@ -119,7 +126,7 @@ public class Tuned
                 bestParameters.add(new ParameterBenchmark(classifier, parameterSet, trainResults));
             }
         }
-        ParameterBenchmark bestParameter = bestParameters.get(getTrainRandom().nextInt(parameterSet.size()));
+        ParameterBenchmark bestParameter = bestParameters.get(getTrainRandom().nextInt(bestParameters.size()));
         this.classifier = bestParameter.getClassifier();
         setTrainResults(bestParameter.getTrainResults());
     }

@@ -18,12 +18,5 @@ public abstract class TemplateConfig
     public abstract TemplateConfig copy() throws
                                           Exception;
 
-    public boolean mustResetTrain(final A other) {
-        return false;
-    }
-
-    public boolean mustResetTest(final A other) {
-        return false;
-    }
 
 }

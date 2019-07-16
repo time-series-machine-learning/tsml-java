@@ -15,47 +15,38 @@
 package experiments;
 
 import classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
-import com.beust.jcommander.DynamicParameter;
+import classifiers.template.classifier.TemplateClassifierInterface;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
-import utilities.ClassifierTools;
-import evaluation.evaluators.CrossValidationEvaluator;
-import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
 import utilities.StringUtilities;
 import utilities.TrainAccuracyEstimate;
+import utilities.multivariate_tools.MultivariateInstanceTools;
+import vector_classifiers.SaveEachParameter;
+import vector_classifiers.TunedRandomForest;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import evaluation.storage.ClassifierResults;
-import evaluation.evaluators.SingleTestSetEvaluator;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
-import static utilities.GenericTools.indexOfMax;
-import utilities.multivariate_tools.MultivariateInstanceTools;
-import vector_classifiers.*;
 import weka.core.Attribute;
-import weka.core.Instance;
 import weka.core.Instances;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
@@ -360,7 +351,7 @@ public class Experiments  {
         System.out.println("Raw args:");
         for (String str : args)
             System.out.println("\t"+str);
-        System.out.println("");
+        System.out.println();
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
@@ -393,7 +384,7 @@ public class Experiments  {
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+settings);
-                System.out.println("");
+                System.out.println();
                     
                     ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                     setupAndRunExperiment(expSettings);
@@ -715,6 +706,11 @@ public class Experiments  {
                     }
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
+                if (classifier instanceof TemplateClassifierInterface) {
+                    writeResults(expSettings, classifier,
+                                 ((TemplateClassifierInterface) classifier).getTrainResults(),
+                                 resultsPath + trainFoldFilename, "train");
+                }
                 //else 
                 //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
             }
@@ -826,8 +822,9 @@ public class Experiments  {
         
         return trainResults;
     }
-    
-    public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws FileNotFoundException, IOException {
+
+    public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws
+                                                                                                     IOException {
         String filename = expSettings.supportingFilePath + expSettings.classifierName + "_" + expSettings.datasetName + "_" + expSettings.foldId + ".ser";
         
         LOGGER.log(Level.FINE, "Attempting classifier serialisation, to " + filename);

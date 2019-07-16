@@ -6,14 +6,13 @@ import classifiers.distance_based.elastic_ensemble.iteration.feedback.AbstractFe
 import classifiers.distance_based.elastic_ensemble.iteration.feedback.ThresholdIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.limited.LimitedIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.linear.RoundRobinIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
 import classifiers.distance_based.knn.Knn;
-import classifiers.distance_based.knn.TrainEstimationSource;
-import classifiers.template.TemplateClassifier;
-import classifiers.template.TemplateClassifierInterface;
+import classifiers.template.classifier.TemplateClassifier;
+import classifiers.template.classifier.TemplateClassifierInterface;
 import classifiers.template.configuration.ConfigState;
 import classifiers.template.configuration.TemplateConfig;
+import classifiers.template.configuration.reduced.ReducedTrainSetConfig;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -25,7 +24,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -43,56 +41,131 @@ public class ElasticEnsemble
     private AbstractIterator<CandidateIterator> candidateIteratorIterator = null;
 
     private Instances trainSet; // todo needed?
-    private final ConfigState<ElasticEnsembleConfig> configState = new ConfigState<>(ElasticEnsembleConfig::new);
-    private ElasticEnsembleConfig config = null;
-    private List<Instance> trainNeighbourhood = null;
-    private List<Instance> trainEstimateSet = null;
+    private final ConfigState<ElasticEnsembleConfig> elasticEnsembleConfigState =
+        new ConfigState<>(ElasticEnsembleConfig::new,
+                                                                                                    ElasticEnsembleConfig.TRAIN_CONFIG_COMPARATOR,
+                                                                                                    ElasticEnsembleConfig.TEST_CONFIG_COMPARATOR);
+    private final ConfigState<ReducedTrainSetConfig> reducedTrainSetConfigState =
+        new ConfigState<>(ReducedTrainSetConfig::new, ReducedTrainSetConfig.TRAIN_CONFIG_COMPARATOR,
+                          ReducedTrainSetConfig.TEST_CONFIG_COMPARATOR);
+    private ElasticEnsembleConfig elasticEnsembleConfig;
+    private ReducedTrainSetConfig reducedTrainSetConfig;
 
-    private void setupNeighbourSearchStrategy() {
-        AbstractIterator<Instance> neighboursIterator;
-        switch (config.getKnnConfiguration()
-                      .getTrainNeighbourSearchStrategy()) {
-            case RANDOM:
-                iterator = new RandomIterator<>(getTrainRandom());
-                break;
-            case ROUND_ROBIN:
-                iterator = new RoundRobinIterator<>();
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        for (CandidateIterator candidateParameterSetIterator : candidateParameterSetIterators) {
-            if (candidateParameterSetIterator.hasNext()) {
-                candidateIteratorIterator.add(candidateParameterSetIterator);
-            }
-        }
-        return iterator;
+    public ReducedTrainSetConfig getReducedTrainSetConfig() {
+        return reducedTrainSetConfigState.getNext();
     }
 
-    private void setup(Instances trainSet) {
-        configState.shift();
-        if (trainSetChanged(trainSet) || configState.mustResetTrain()) {
+    private void setup(Instances trainSet) throws
+                                           Exception {
+        elasticEnsembleConfigState.shift();
+        reducedTrainSetConfigState.shift();
+        if (trainSetChanged(trainSet) || elasticEnsembleConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
             getTrainStopWatch().reset();
-            config = configState.getCurrentConfig();
+            elasticEnsembleConfig = elasticEnsembleConfigState.getCurrent();
+            reducedTrainSetConfig = reducedTrainSetConfigState.getCurrent();
             this.trainSet = trainSet;
             List<CandidateIterator> candidateIterators = new ArrayList<>();
-            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
-            trainEstimateSet = buildTrainEstimateSet(trainSet);
-            for (CandidateIterator.Builder candidateIteratorBuilder : config.getCandidateIteratorBuilders()) {
+//            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
+//            trainEstimateSet = buildTrainEstimateSet(trainSet);
+            for (CandidateIterator.Builder candidateIteratorBuilder : elasticEnsembleConfig.getCandidateIteratorBuilders()) {
                 CandidateIterator candidateIterator = candidateIteratorBuilder.build(trainSet, getTrainRandom());
                 candidateIterators.add(candidateIterator);
             }
-            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
-            config.getKnnConfiguration()
-                  .setupNeighbourhoodSize(trainSet);
-            config.getKnnConfiguration()
-                  .setupTrainEstimateSetSize(trainSet);
+//            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
+//            elasticEnsembleConfig.getKnnConfiguration()
+//                  .setupNeighbourhoodSize(trainSet);
+//            elasticEnsembleConfig.getKnnConfiguration()
+//                  .setupTrainEstimateSetSize(trainSet);
+            getTrainStopWatch().lap();
+        }
+    }
+
+    private void evalNextCandidate() throws
+                                     Exception {
+        CandidateIterator candidateIterator = candidateIteratorIterator.next();
+        AbstractClassifier candidate = candidateIterator.next();
+        candidateIterator.remove();
+        if (!candidateIterator.hasNext()) {
+            candidateIteratorIterator.remove();
+        }
+        if (candidate instanceof Knn) { // todo build into candidate iterator? probs best
+//            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
+//            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainNeighbourhood);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+        if (candidate instanceof ContractClassifier) {
+            ((Knn) candidate).setTimeLimit(remainingTrainContractNanos());
+        }
+        candidate.buildClassifier(trainSet);
+        ClassifierResults trainResults;
+        if (candidate instanceof TemplateClassifierInterface) {
+            trainResults = ((Knn) candidate).getTrainResults();
+        } else {
+            throw new UnsupportedOperationException();
+        }
+        boolean improvement = candidateIterator.feedback(elasticEnsembleConfig.getTrainResultsMetricGetter()
+                                                                              .apply(trainResults));
+        if (improvement) {
+            // todo record best param
+            // todo dump all this in the tuners for individ dms
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    private boolean hasRemainingCandidateParameterSets() {
+        return candidateIteratorIterator.hasNext();
+    }
+
+    private List<Instance> buildTrainNeighbourhood() {
+        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
+        // .getReducedTrainSetConfig().getTrainSetIterator();
+        List<Instance> trainNeighbourhood = new ArrayList<>();
+        ArrayUtilities.addAllAndRemove(trainNeighbourhood, iterator);
+        return trainNeighbourhood;
+    }
+
+    private List<Instance> buildTrainEstimateSet() {
+        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
+        // .getReducedTrainSetConfig().getTrainEstimateSetIterator();
+        List<Instance> trainEstimateSet = new ArrayList<>();
+//        if(elasticEnsembleConfig.getKnnConfiguration().getTrainEstimationSource().equals(TrainEstimationSource
+//        .FROM_TRAIN_NEIGHBOURHOOD)) {
+//            trainEstimateSet.addAll(trainNeighbourhood);
+//        } else {
+//            ArrayUtilities.addAllAndRemove(trainEstimateSet, iterator);
+//        }
+        return trainEstimateSet;
+    }
+
+    @Override
+    public void setOption(final String key, final String value) throws
+                                                                Exception {
+        elasticEnsembleConfigState.getNext()
+                                  .setOption(key, value);
+    }
+
+    public boolean evaluateCandidate(AbstractClassifier classifier) {
+        if (classifier instanceof Knn) {
+//            ((Knn) classifier).getConfig().setPredefinedTrainNeighbourhood(trainNeighbourhood);
+//            ((Knn) classifier).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void buildClassifier(final Instances trainSet) throws
+                                                          Exception {
+        setup(trainSet);
+        while (hasRemainingCandidateParameterSets() && withinTrainContract()) {
+            evalNextCandidate();
             getTrainStopWatch().lap();
         }
     }
 
     public static class CandidateIterator
-        extends AbstractFeedbackIterator<AbstractClassifier, Double, Boolean> { // todo shift over to config struct
+        extends AbstractFeedbackIterator<AbstractClassifier, Double, Boolean> { // todo shift over to elasticEnsembleConfig struct
         public String getName() {
             return name;
         }
@@ -162,7 +235,7 @@ public class ElasticEnsemble
             iterator.remove();
         }
 
-        public static class Builder<A extends AbstractClassifier> {
+        public static class Builder {
             private final String name;
             private ParameterSpace parameterSpace;
             private Function<Instances, ParameterSpace> parameterSpaceGetter;
@@ -256,87 +329,6 @@ public class ElasticEnsemble
             }
 
         }
-    }
-
-
-    private boolean hasRemainingCandidateParameterSets() {
-        return candidateIteratorIterator.hasNext();
-    }
-
-    private void evalNextCandidate() throws
-                                     Exception {
-        CandidateIterator candidateIterator = candidateIteratorIterator.next();
-        AbstractClassifier candidate = candidateIterator.next();
-        candidateIterator.remove();
-        if(!candidateIterator.hasNext()) {
-            candidateIteratorIterator.remove();
-        }
-        if(candidate instanceof Knn) { // todo build into candidate iterator? probs best
-            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
-            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainNeighbourhood);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-        if(candidate instanceof ContractClassifier) {
-            ((Knn) candidate).setTimeLimit(remainingTrainContractNanos());
-        }
-        candidate.buildClassifier(trainSet);
-        ClassifierResults trainResults;
-        if(candidate instanceof TemplateClassifierInterface) {
-            trainResults = ((Knn) candidate).getTrainResults();
-        } else {
-            throw new UnsupportedOperationException();
-        }
-        boolean improvement = candidateIterator.feedback(config.getTrainResultsMetricGetter().apply(trainResults));
-        if(improvement) {
-            // todo record best param
-            // todo dump all this in the tuners for individ dms
-        }
-        throw new UnsupportedOperationException();
-    }
-
-    private List<Instance> buildTrainNeighbourhood(Collection<Instance> trainSet) {
-        DynamicIterator<Instance, ?> iterator = config.getKnnConfiguration()
-                                                      .buildNeighbourSearchStrategy(trainSet, getTrainRandom());
-        List<Instance> trainNeighbourhood = new ArrayList<>();
-        ArrayUtilities.addAllAndRemove(trainNeighbourhood, iterator);
-        return trainNeighbourhood;
-    }
-
-    private List<Instance> buildTrainEstimateSet(Collection<Instance> trainSet) {
-        DynamicIterator<Instance, ?> iterator = config.getKnnConfiguration()
-                                                       .buildTrainEstimationStrategy(trainSet, getTrainRandom());
-        List<Instance> trainEstimateSet = new ArrayList<>();
-        if(config.getKnnConfiguration().getTrainEstimationSource().equals(TrainEstimationSource.FROM_TRAIN_NEIGHBOURHOOD)) {
-            trainEstimateSet.addAll(trainNeighbourhood);
-        } else {
-            ArrayUtilities.addAllAndRemove(trainEstimateSet, iterator);
-        }
-        return trainEstimateSet;
-    }
-
-    @Override
-    public void setOption(final String key, final String value) throws
-                                                                Exception {
-
-    }
-
-    @Override
-    public void buildClassifier(final Instances trainSet) throws
-                                                                Exception {
-        setup(trainSet);
-        while (hasRemainingCandidateParameterSets() && withinTrainContract()) {
-            evalNextCandidate();
-            getTrainStopWatch().lap();
-        }
-    }
-
-    public boolean evaluateCandidate(AbstractClassifier classifier) {
-        if(classifier instanceof Knn) {
-            ((Knn) classifier).getConfig().setPredefinedTrainNeighbourhood(trainNeighbourhood);
-            ((Knn) classifier).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
-        }
-        throw new UnsupportedOperationException();
     }
 
     private static class TrainedCandidate {
@@ -684,7 +676,7 @@ public class ElasticEnsemble
 //                    knn.setEarlyAbandon(true);
 //                    knn.setTrainNeighbourSearchStrategy(neighbourSearchStrategy);
 //                    knn.setSeed(getTrainRandom().nextInt());
-//                    knn.setPredefinedTrainNeighbourhood(trainNeighbourhood);
+//                    knn.setPredefinedTrainSet(trainNeighbourhood);
 //                    knn.setTrainEstimateSetSizeLimit(trainEstimateSetSize); // todo make knn adapt when train set size changes / make enum strategy
 //                    candidate = new Candidate(knn, parameterSpace);
 //                    candidates.add(candidate);

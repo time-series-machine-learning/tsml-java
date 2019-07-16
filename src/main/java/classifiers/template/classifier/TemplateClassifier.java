@@ -1,4 +1,4 @@
-package classifiers.template;
+package classifiers.template.classifier;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;

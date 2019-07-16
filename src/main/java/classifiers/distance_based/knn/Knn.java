@@ -1,9 +1,9 @@
 package classifiers.distance_based.knn;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
-import classifiers.distance_based.knn.sampling.*;
-import classifiers.template.TemplateClassifier;
+import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.configuration.ConfigState;
+import classifiers.template.configuration.reduced.ReducedTrainSetConfig;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
 import weka.core.Capabilities;
@@ -13,23 +13,33 @@ import weka.core.Instances;
 import java.util.*;
 
 public class Knn
-    extends TemplateClassifier<Knn> {
+    extends TemplateClassifier {
 
-    public KnnConfig getConfig() {
-        return configState.getNextConfig();
-    }
+    private final ConfigState<KnnConfig> knnConfigState = new ConfigState<>(KnnConfig::new,
+                                                                            KnnConfig.TRAIN_CONFIG_COMPARATOR,
+                                                                            KnnConfig.TEST_CONFIG_COMPARATOR);
+    private final ConfigState<ReducedTrainSetConfig> reducedTrainSetConfigState =
+        new ConfigState<>(ReducedTrainSetConfig::new, ReducedTrainSetConfig.TRAIN_CONFIG_COMPARATOR,
+                          ReducedTrainSetConfig.TEST_CONFIG_COMPARATOR);
+    private KnnConfig knnConfig;
+    private AbstractIterator<Instance> trainSetIterator = null;
+    private AbstractIterator<Instance> trainEstimateSetIterator = null;
 
-    private final ConfigState<KnnConfig> configState = new ConfigState<>(KnnConfig::new);
-    private KnnConfig config = null;
     // sets
     private List<KNearestNeighbours> trainEstimate = null;
     private List<Instance> trainSet = null;
     private List<Instance> trainNeighbourhood = null;
-    // iterators for executing strategies
-    private AbstractIterator<Instance, ?> trainNeighbourIterator = null;
-    private AbstractIterator<Instance, ?> trainEstimatorIterator = null;
 
-    // todo if k <= 0 then use all neighbours
+    @Override
+    public void setOption(final String key, final String value) throws
+                                                                Exception {
+        getKnnConfig().setOption(key, value);
+        getReducedTrainSetConfig().setOption(key, value);
+    }
+
+    public KnnConfig getKnnConfig() {
+        return knnConfigState.getNext();
+    }
 
     public Knn() {}
 
@@ -38,15 +48,13 @@ public class Knn
         super(other);
     }
 
-    @Override
-    public void setOption(final String key, final String value) throws
-                                                                Exception {
-        config.setOption(key, value);
+    public ReducedTrainSetConfig getReducedTrainSetConfig() {
+        return reducedTrainSetConfigState.getNext();
     }
 
     @Override
     public String[] getOptions() {
-        return config.getOptions();
+        return ArrayUtilities.concat(getKnnConfig().getOptions(), getReducedTrainSetConfig().getOptions(), super.getOptions());
     }
 
     @Override
@@ -59,119 +67,58 @@ public class Knn
         return "KNN";
     }
 
+    @Override
+    public void copyFrom(final Object object) throws
+                                              Exception {
+        super.copyFrom(object);
+        Knn other = (Knn) object;
+        trainEstimate = new ArrayList<>();
+        for (KNearestNeighbours KNearestNeighbours : other.trainEstimate) {
+            trainEstimate.add(new KNearestNeighbours(KNearestNeighbours));
+        }
+        getKnnConfig().copyFrom(other.getKnnConfig());
+        getReducedTrainSetConfig().copyFrom(other.getReducedTrainSetConfig());
+        trainNeighbourhood = new ArrayList<>(other.trainNeighbourhood);
+        trainSet = other.trainSet;
+    }
+
     private void setup(Instances trainSet) throws
                                            Exception {
-        configState.shift();
-        if (trainSetChanged(trainSet) || configState.mustResetTrain()) {
+        for (int i = 0; i < trainSet.size(); i++) {
+            trainSet.get(i)
+                    .setWeight(i);
+        }
+        knnConfigState.shift();
+        reducedTrainSetConfigState.shift();
+        if (trainSetChanged(trainSet) || knnConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
             getTrainStopWatch().reset();
-            config = configState.getCurrentConfig();
+            knnConfig = knnConfigState.getCurrent();
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
             trainNeighbourhood = new ArrayList<>();
-            config.setupNeighbourhoodSize(trainSet);
-            config.setupTrainEstimateSetSize(trainSet);
-            config.setupTrainNeighbourhoodSizeThreshold(trainSet);
-            trainNeighbourIterator = buildNeighbourSearchStrategy(trainSet, getTrainRandom());
-            trainEstimatorIterator = buildTrainEstimationStrategy(trainSet, getTestRandom());
+            ReducedTrainSetConfig reducedTrainSetConfig = reducedTrainSetConfigState.getCurrent();
+            reducedTrainSetConfig.buildTrainIterators(trainSet, getTrainRandom());
+            trainSetIterator = reducedTrainSetConfig.getTrainSetIterator();
+            trainEstimateSetIterator = reducedTrainSetConfig.getTrainEstimateSetIterator();
+            getTrainStopWatch().lap();
         }
-    }
-
-
-    public DynamicIterator<Instance, ?> buildNeighbourSearchStrategy(Collection<Instance> trainSet, Random random) {
-        DynamicIterator<Instance, ?> iterator;
-        switch (config.getTrainNeighbourSearchStrategy()) {
-            case RANDOM:
-                iterator = new RandomSampler(random);
-                break;
-            case LINEAR:
-                iterator = new LinearSampler();
-                break;
-            case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(random);
-                break;
-            case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(random);
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        if(config.getPredefinedTrainNeighbourhood() != null) {
-            iterator.addAll(config.getPredefinedTrainNeighbourhood());
-        } else {
-            iterator.addAll(trainSet);
-        }
-        return iterator;
-    }
-
-    public DynamicIterator<Instance, ?> buildTrainEstimationStrategy(Collection<Instance> trainSet, Random random) {
-        DynamicIterator<Instance, ?> iterator;
-        switch (config.getTrainEstimationStrategy()) {
-            case RANDOM:
-                iterator = new RandomSampler(random);
-                break;
-            case LINEAR:
-                iterator = new LinearSampler();
-                break;
-            case ROUND_ROBIN_RANDOM:
-                iterator = new RoundRobinRandomSampler(random);
-                break;
-            case DISTRIBUTED_RANDOM:
-                iterator = new DistributedRandomSampler(random);
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        if(config.getPredefinedTrainEstimateSet() != null) {
-            iterator.addAll(config.getPredefinedTrainEstimateSet());
-        } else {
-            switch (config.getTrainEstimationSource()) {
-                case FROM_TRAIN_SET:
-                    iterator.addAll(trainSet);
-                    break;
-                case FROM_TRAIN_NEIGHBOURHOOD:
-                    // add the train neighbours as sampled from train set
-                    break;
-                default:
-                    throw new IllegalStateException("train estimation source unknown");
-            }
-        }
-        return iterator;
     }
 
     private boolean hasRemainingTrainEstimations() {
-        return (
-                   trainEstimate.size() < config.getTrainEstimateSetSizeLimit() // if train estimate set under limit
-                   && config.hasTrainEstimateSetSizeLimit() // if train estimate limit set
-               )
-               && trainEstimatorIterator.hasNext(); // if remaining train estimators
+        return trainEstimateSetIterator.hasNext(); // if remaining train estimators
     }
 
     private boolean hasRemainingNeighbours() {
-        return (
-                   trainNeighbourhood.size() < config.getTrainNeighbourhoodSizeLimit() // if within train neighbourhood size limit
-                   && config.hasTrainNeighbourhoodSizeLimit() // if active train neighbourhood size limit
-               )
-               && trainNeighbourIterator.hasNext(); // if there are remaining neighbours
+        return trainSetIterator.hasNext(); // if there are remaining neighbours
     }
 
     private void nextTrainEstimator() {
-        Instance instance = trainEstimatorIterator.next();
-        trainEstimatorIterator.remove();
+        Instance instance = trainEstimateSetIterator.next();
+        System.out.println(instance.weight());
+        trainEstimateSetIterator.remove();
         KNearestNeighbours kNearestNeighbours = new KNearestNeighbours(instance);
         trainEstimate.add(kNearestNeighbours);
         kNearestNeighbours.addAll(trainNeighbourhood);
-    }
-
-    private void nextNeighbourSearch() {
-        Instance trainNeighbour = trainNeighbourIterator.next();
-        trainNeighbourIterator.remove();
-        trainNeighbourhood.add(trainNeighbour);
-        for (KNearestNeighbours trainEstimator : this.trainEstimate) {
-            trainEstimator.add(trainNeighbour);
-        }
-        if(config.getTrainEstimationSource() == TrainEstimationSource.FROM_TRAIN_NEIGHBOURHOOD) {
-            trainEstimatorIterator.add(trainNeighbour);
-        }
     }
 
     private void buildTrainResults() throws Exception {
@@ -229,28 +176,21 @@ public class Knn
         }
     }
 
-    @Override
-    public void copyFrom(final Object object) throws
-                                                    Exception {
-        super.copyFrom(object);
-        Knn other = (Knn) object;
-        trainEstimate = new ArrayList<>();
-        for (KNearestNeighbours KNearestNeighbours : other.trainEstimate) {
-            trainEstimate.add(new KNearestNeighbours(KNearestNeighbours));
+    private void nextNeighbourSearch() {
+        Instance trainNeighbour = trainSetIterator.next();
+        trainSetIterator.remove();
+        trainNeighbourhood.add(trainNeighbour);
+        for (KNearestNeighbours trainEstimator : this.trainEstimate) {
+            trainEstimator.add(trainNeighbour);
         }
-        config.copyFrom(other.config);
-        trainNeighbourhood = new ArrayList<>(other.trainNeighbourhood);
-        trainEstimatorIterator = other.trainEstimatorIterator.iterator();
-        trainNeighbourIterator = other.trainNeighbourIterator.iterator();
-        trainSet = other.trainSet;
     }
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                          Exception {
         KNearestNeighbours testKNearestNeighbours = new KNearestNeighbours(testInstance);
-        testKNearestNeighbours.addAll(trainSet); // todo limited test neighbourhood
-        testKNearestNeighbours.trim(); // todo empty train set should be rand predict
+        testKNearestNeighbours.addAll(trainSet);
+        testKNearestNeighbours.trim();
         return testKNearestNeighbours.predict().getDistribution();
     }
 
@@ -301,7 +241,7 @@ public class Knn
 
         public void trim() {
             long startTime = System.nanoTime();
-            int k = config.getK();
+            int k = knnConfig.getK();
             if(size <= k) {
                 trimmedKNeighbours = kNeighbours;
             } else {
@@ -358,8 +298,11 @@ public class Knn
 
         public double add(Instance instance) {
             long startTime = System.nanoTime();
-            double maxDistance = config.isEarlyAbandon() ? furthestDistance : Double.POSITIVE_INFINITY;
-            double distance = config.getDistanceMeasure().distance(target, instance, maxDistance);
+            double maxDistance = knnConfig.isEarlyAbandon() ?
+                                 furthestDistance :
+                                 Double.POSITIVE_INFINITY;
+            double distance = knnConfig.getDistanceMeasure()
+                                       .distance(target, instance, maxDistance);
             searchTimeNanos += System.nanoTime() - startTime;
             add(instance, distance);
             return distance;
@@ -368,8 +311,8 @@ public class Knn
         public void add(Instance instance, double distance) {
             long startTime = System.nanoTime();
             if(!instance.equals(target)) {
-                int k = config.getK();
-                if((distance <= furthestDistance || size < k) && k > 0) {
+                int k = knnConfig.getK();
+                if ((distance <= furthestDistance || (size < k || k < 0))) {
                     Collection<Instance> equalDistanceNeighbours = kNeighbours.get(distance);
                     if (equalDistanceNeighbours == null) {
                         equalDistanceNeighbours = new ArrayList<>();
@@ -383,7 +326,7 @@ public class Knn
                     }
                     equalDistanceNeighbours.add(instance);
                     size++;
-                    if(distance < furthestDistance && size > k) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
+                    if (distance < furthestDistance && size > k && k > 0) { // if we've got too many neighbours AND just added a neighbour closer than the furthest then try and knock off the furthest lot
                         int numFurthestNeighbours = furthestNeighbours.size();
                         if (size - k >= numFurthestNeighbours) {
                             kNeighbours.pollLastEntry();

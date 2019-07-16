@@ -1,4 +1,4 @@
-package classifiers.distance_based.knn;
+package classifiers.template.configuration.reduced;
 
 public enum NeighbourSearchStrategy {
     RANDOM,

@@ -5,13 +5,13 @@ import classifiers.template.configuration.TemplateConfig;
 import evaluation.storage.ClassifierResults;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
 public class ElasticEnsembleConfig
-    extends TemplateConfig<ElasticEnsembleConfig> {
+    extends TemplateConfig {
     private final KnnConfig knnConfiguration = new KnnConfig();
-    private boolean removeDuplicateParameterSets = true;
     private final List<ElasticEnsemble.CandidateIterator.Builder> candidateIteratorBuilders = new ArrayList<>();
     private ParameterSpaceIterationStrategy parameterSpaceIterationStrategy = ParameterSpaceIterationStrategy.RANDOM;
     private Function<ClassifierResults, Double> trainResultsMetricGetter = ClassifierResults::getAcc;
@@ -29,15 +29,12 @@ public class ElasticEnsembleConfig
         return knnConfiguration;
     }
 
-    @Override
-    public boolean mustResetTrain(final ElasticEnsembleConfig other) {
-        return knnConfiguration.mustResetTrain(other.knnConfiguration);
-    }
+    public static Comparator<ElasticEnsembleConfig> TRAIN_CONFIG_COMPARATOR =
+        (config, other) -> KnnConfig.TRAIN_CONFIG_COMPARATOR.compare(config.knnConfiguration, other.knnConfiguration);
 
-    @Override
-    public boolean mustResetTest(final ElasticEnsembleConfig other) {
-        return knnConfiguration.mustResetTest(other.knnConfiguration);
-    }
+    public static Comparator<ElasticEnsembleConfig> TEST_CONFIG_COMPARATOR =
+        (config, other) -> KnnConfig.TEST_CONFIG_COMPARATOR.compare(config.knnConfiguration, other.knnConfiguration);
+
 
     @Override
     public ElasticEnsembleConfig copy() throws
@@ -56,14 +53,6 @@ public class ElasticEnsembleConfig
     public void setOption(final String key, final String value) {
         knnConfiguration.setOption(key, value);
     } // todo
-
-    public boolean isRemoveDuplicateParameterSets() {
-        return removeDuplicateParameterSets;
-    }
-
-    public void setRemoveDuplicateParameterSets(final boolean removeDuplicateParameterSets) {
-        this.removeDuplicateParameterSets = removeDuplicateParameterSets;
-    }
 
     public List<ElasticEnsemble.CandidateIterator.Builder> getCandidateIteratorBuilders() {
         return candidateIteratorBuilders;
