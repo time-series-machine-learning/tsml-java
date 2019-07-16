@@ -1,18 +1,13 @@
-package classifiers.distance_based.elastic_ensemble.iteration.wrapped.limited;
+package classifiers.distance_based.elastic_ensemble.iteration.limited;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.wrapped.AbstractWrappedIterator;
 
-public class LimitedIterator<A> extends AbstractWrappedIterator<A> {
+public class LimitedIterator<A>
+    extends AbstractIterator<A> {
 
     private final AbstractIterator<A> iterator;
     private final int limit;
     private int count = 0;
-
-    @Override
-    public AbstractIterator<A> getWrappedIterator() {
-        return iterator;
-    }
 
     public LimitedIterator(final AbstractIterator<A> iterator, final int limit) {this.iterator = iterator;
         this.limit = limit;

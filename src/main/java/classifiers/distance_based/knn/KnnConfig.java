@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Random;
 
 public class KnnConfig
-    extends TemplateConfig<KnnConfig> {
+    extends TemplateConfig {
     // configuration options
     private final static String K_KEY = "k";
     private int k = 1;
@@ -191,14 +191,14 @@ public class KnnConfig
         else if(!trainEstimationSource.equals(other.trainEstimationSource)) return true;
         else if(!trainEstimationStrategy.equals(other.trainEstimationStrategy)) return true;
         else if(!predefinedTrainEstimateSet.equals(other.predefinedTrainEstimateSet)) return true;
-        else if(!predefinedTrainNeighbourhood.equals(other.predefinedTrainNeighbourhood)) return true;
-        else if(hasTrainNeighbourhoodSizeThreshold() && trainNeighbourhoodSizeThreshold != other.trainNeighbourhoodSizeThreshold) return true;
-        return false;
+        else if (!predefinedTrainNeighbourhood.equals(other.predefinedTrainNeighbourhood)) return true;
+        else {
+            return hasTrainNeighbourhoodSizeThreshold() && trainNeighbourhoodSizeThreshold != other.trainNeighbourhoodSizeThreshold;
+        }
     }
 
     public boolean mustResetTest(KnnConfig other) {
-        if(hasTestNeighbourhoodSizeLimit() && testNeighbourhoodSizeLimit < other.testNeighbourhoodSizeLimit) return true;
-        return false;
+        return hasTestNeighbourhoodSizeLimit() && testNeighbourhoodSizeLimit < other.testNeighbourhoodSizeLimit;
     }
 
     public boolean hasTrainNeighbourhoodSizeThreshold() {

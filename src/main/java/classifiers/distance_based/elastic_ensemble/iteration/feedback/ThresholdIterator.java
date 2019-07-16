@@ -1,7 +1,7 @@
-package classifiers.distance_based.elastic_ensemble.iteration.wrapped.feedback;
+package classifiers.distance_based.elastic_ensemble.iteration.feedback;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.wrapped.limited.LimitedIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.limited.LimitedIterator;
 
 public class ThresholdIterator<A> extends AbstractFeedbackIterator<A, Double, Boolean> {
 
@@ -34,11 +34,6 @@ public class ThresholdIterator<A> extends AbstractFeedbackIterator<A, Double, Bo
             return true;
         }
         return false;
-    }
-
-    @Override
-    public AbstractIterator<A> getWrappedIterator() {
-        return iterator;
     }
 
     @Override

@@ -11,7 +11,7 @@ import weka.core.Randomizable;
 
 import java.io.Serializable;
 
-public interface TemplateClassifierInterface<A extends TemplateClassifierInterface<A>>
+public interface TemplateClassifierInterface
     extends Serializable,
             Randomizable,
             SaveParameterInfo,
@@ -20,6 +20,6 @@ public interface TemplateClassifierInterface<A extends TemplateClassifierInterfa
             TrainAccuracyEstimate,
             Classifier,
             OptionHandler,
-            Copyable<A> {
+            Copyable {
 
 }

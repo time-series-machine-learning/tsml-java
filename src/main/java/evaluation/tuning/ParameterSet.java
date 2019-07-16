@@ -41,6 +41,8 @@ public class ParameterSet
         }
     }
 
+    public ParameterSet() {}
+
     public int size() {
         return parameterSet.size();
     }

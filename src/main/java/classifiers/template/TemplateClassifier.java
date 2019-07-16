@@ -15,10 +15,11 @@ import java.util.concurrent.TimeUnit;
 import static utilities.ArrayUtilities.argMax;
 import static utilities.StringUtilities.join;
 
-public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extends AbstractClassifier
-    implements TemplateClassifierInterface<A> {
+public abstract class TemplateClassifier
+    extends AbstractClassifier
+    implements TemplateClassifierInterface {
 
-    public TemplateClassifier(final A other) throws
+    public TemplateClassifier(final Object other) throws
                                              Exception {
         // copy constructor
         copyFrom(other);
@@ -27,6 +28,10 @@ public abstract class TemplateClassifier<A extends TemplateClassifier<A>> extend
     public TemplateClassifier() {
         // default constructor
     }
+
+    @Override
+    public abstract TemplateClassifier copy() throws
+                                              Exception;
 
     @Override
     public Enumeration listOptions() {

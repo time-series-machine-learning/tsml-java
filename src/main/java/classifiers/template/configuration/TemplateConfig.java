@@ -3,16 +3,20 @@ package classifiers.template.configuration;
 import utilities.Copyable;
 import utilities.IndividualOptionHandler;
 
-public abstract class TemplateConfig<A extends TemplateConfig<A>>
+public abstract class TemplateConfig
     extends IndividualOptionHandler
-    implements Copyable<TemplateConfig<A>> {
+    implements Copyable {
 
     public TemplateConfig() {}
 
-    public TemplateConfig(A other) throws
+    public TemplateConfig(Object other) throws
                                           Exception {
         copyFrom(other);
     }
+
+    @Override
+    public abstract TemplateConfig copy() throws
+                                          Exception;
 
     public boolean mustResetTrain(final A other) {
         return false;

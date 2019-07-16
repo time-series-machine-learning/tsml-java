@@ -10,16 +10,19 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class Tuned extends TemplateClassifier {
+public class Tuned
+    extends TemplateClassifier<Tuned> {
     private final Supplier<AbstractClassifier> supplier;
     private final Function<Instances, ParameterSpace> parameterSpaceGetter;
     private final Supplier<ParameterSpace> parameterSpaceSupplier;
     private Comparator<ClassifierResults> comparator = Comparator.comparingDouble(ClassifierResults::getAcc);
     private AbstractClassifier classifier;
+    private Iterator<ParameterSet> parameterSetIterator;
 
     public Tuned(Supplier<AbstractClassifier> supplier, Function<Instances, ParameterSpace> parameterSpaceGetter) {
         this.supplier = supplier;
@@ -31,6 +34,12 @@ public class Tuned extends TemplateClassifier {
         this.supplier = supplier;
         this.parameterSpaceGetter = null;
         this.parameterSpaceSupplier = parameterSpaceSupplier;
+    }
+
+    @Override
+    public Tuned copy() throws
+                        Exception {
+        throw new UnsupportedOperationException();
     }
 
     private static class ParameterBenchmark {
@@ -91,8 +100,8 @@ public class Tuned extends TemplateClassifier {
         } else {
             throw new IllegalStateException("no means of obtaining parameter space");
         }
-        parameterSpace.removeDuplicateValues();
-        List<ParameterBenchmark> bestParameters = new ArrayList<>();
+        parameterSpace.removeDuplicateParameterSets();
+        List<ParameterBenchmark> bestParameters = new ArrayList<>(); // todo iterator
         AbstractClassifier classifier = supplier.get();
         ParameterSet parameterSet = parameterSpace.get(0);
         ClassifierResults trainResults = evaluateParameter(classifier, parameterSet, trainSet);

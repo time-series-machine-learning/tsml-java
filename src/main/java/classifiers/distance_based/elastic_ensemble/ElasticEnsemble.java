@@ -1,12 +1,13 @@
 package classifiers.distance_based.elastic_ensemble;
 
-import classifiers.distance_based.elastic_ensemble.iteration.*;
-import classifiers.distance_based.elastic_ensemble.iteration.wrapped.feedback.AbstractFeedbackIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.wrapped.feedback.ThresholdIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.wrapped.limited.LimitedIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.ParameterSetIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.feedback.AbstractFeedbackIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.feedback.ThresholdIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.limited.LimitedIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.linear.RoundRobinIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
 import classifiers.distance_based.knn.Knn;
 import classifiers.distance_based.knn.TrainEstimationSource;
 import classifiers.template.TemplateClassifier;
@@ -23,11 +24,15 @@ import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
+public class ElasticEnsemble
+    extends TemplateClassifier {
 
     @Override
     public ElasticEnsemble copy() throws
@@ -35,8 +40,59 @@ public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
         throw new UnsupportedOperationException();
     }
 
-    public static class CandidateIterator<A extends AbstractClassifier, B extends TemplateConfig<B>>
-        extends AbstractFeedbackIterator<A, CandidateIterator<A, B>, Double, Boolean> { // todo shift over to config struct
+    private AbstractIterator<CandidateIterator> candidateIteratorIterator = null;
+
+    private Instances trainSet; // todo needed?
+    private final ConfigState<ElasticEnsembleConfig> configState = new ConfigState<>(ElasticEnsembleConfig::new);
+    private ElasticEnsembleConfig config = null;
+    private List<Instance> trainNeighbourhood = null;
+    private List<Instance> trainEstimateSet = null;
+
+    private void setupNeighbourSearchStrategy() {
+        AbstractIterator<Instance> neighboursIterator;
+        switch (config.getKnnConfiguration()
+                      .getTrainNeighbourSearchStrategy()) {
+            case RANDOM:
+                iterator = new RandomIterator<>(getTrainRandom());
+                break;
+            case ROUND_ROBIN:
+                iterator = new RoundRobinIterator<>();
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        for (CandidateIterator candidateParameterSetIterator : candidateParameterSetIterators) {
+            if (candidateParameterSetIterator.hasNext()) {
+                candidateIteratorIterator.add(candidateParameterSetIterator);
+            }
+        }
+        return iterator;
+    }
+
+    private void setup(Instances trainSet) {
+        configState.shift();
+        if (trainSetChanged(trainSet) || configState.mustResetTrain()) {
+            getTrainStopWatch().reset();
+            config = configState.getCurrentConfig();
+            this.trainSet = trainSet;
+            List<CandidateIterator> candidateIterators = new ArrayList<>();
+            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
+            trainEstimateSet = buildTrainEstimateSet(trainSet);
+            for (CandidateIterator.Builder candidateIteratorBuilder : config.getCandidateIteratorBuilders()) {
+                CandidateIterator candidateIterator = candidateIteratorBuilder.build(trainSet, getTrainRandom());
+                candidateIterators.add(candidateIterator);
+            }
+            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
+            config.getKnnConfiguration()
+                  .setupNeighbourhoodSize(trainSet);
+            config.getKnnConfiguration()
+                  .setupTrainEstimateSetSize(trainSet);
+            getTrainStopWatch().lap();
+        }
+    }
+
+    public static class CandidateIterator
+        extends AbstractFeedbackIterator<AbstractClassifier, Double, Boolean> { // todo shift over to config struct
         public String getName() {
             return name;
         }
@@ -46,29 +102,79 @@ public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
             return iterator.feedback(value);
         }
 
+        private final Supplier<AbstractClassifier> supplier;
+        private final TemplateConfig config;
+        private final AbstractFeedbackIterator<ParameterSet, Double, Boolean> iterator;
+
+        private CandidateIterator(final Supplier<AbstractClassifier> supplier, final TemplateConfig config,
+                                  final String name, int threshold, int limit,
+                                  AbstractIterator<ParameterSet> iterator) {
+            this.supplier = supplier;
+            this.config = config;
+            this.name = name;
+            this.iterator = new ThresholdIterator<>(new LimitedIterator<>(iterator, limit), threshold);
+        }
+
+        private final String name;
+
+        private CandidateIterator(CandidateIterator other) throws
+                                                           Exception {
+            name = other.name;
+            iterator = other.iterator.iterator();
+            config = other.config.copy();
+            supplier = other.supplier;
+        }
+
         @Override
-        public CandidateIterator<A, B> iterator() {
+        public CandidateIterator iterator() {
             try {
-                return new CandidateIterator<>(this);
+                return new CandidateIterator(this);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
         }
 
+        @Override
+        public AbstractClassifier next() {
+            ParameterSet parameterSet = iterator.next();
+            AbstractClassifier classifier = supplier.get();
+            try {
+                classifier.setOptions(config.getOptions());
+                classifier.setOptions(parameterSet.getOptions());
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            return classifier;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public void add(final AbstractClassifier classifier) {
+            iterator.add(new ParameterSet(classifier.getOptions()));
+        }
+
+        @Override
+        public void remove() {
+            iterator.remove();
+        }
 
         public static class Builder<A extends AbstractClassifier> {
             private final String name;
             private ParameterSpace parameterSpace;
             private Function<Instances, ParameterSpace> parameterSpaceGetter;
             private int parameterSetCountThreshold = -1;
-            private final Supplier<A> supplier;
-            private final TemplateConfig<?> config;
+            private final Supplier<AbstractClassifier> supplier;
+            private final TemplateConfig config;
             private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM;
             private int parameterSetCountLimit = -1;
 
             public Builder(final String name,
-                           final Supplier<A> supplier,
-                           final TemplateConfig<?> config) {
+                           final Supplier<AbstractClassifier> supplier,
+                           final TemplateConfig config) {
                 this.name = name;
                 this.supplier = supplier;
                 this.config = config;
@@ -92,7 +198,7 @@ public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
                     parameterSpace = parameterSpaceGetter.apply(instances);
                 }
                 ParameterSetIterator iterator = buildParameterSetIterator(random);
-                return new CandidateIterator<>(supplier, config, name, parameterSetCountThreshold, parameterSetCountLimit, iterator);
+                return new CandidateIterator(supplier, config, name, parameterSetCountThreshold, parameterSetCountLimit, iterator);
             }
 
             public Builder setParameterSetCountThreshold(int parameterSetCountThreshold) {
@@ -108,7 +214,8 @@ public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
             public ParameterSetIterator buildParameterSetIterator(Random random) {
                 List<Integer> values = ArrayUtilities.sequence(parameterSpace.size());
                 switch (parameterSetSearchStrategy) {
-                    case RANDOM: return new ParameterSetIterator(parameterSpace, new RandomIterator<>(values, random));
+                    case RANDOM:
+                        return new ParameterSetIterator(parameterSpace, new RandomIterator<>(random, values));
 //            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
                     case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
                     default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
@@ -144,108 +251,11 @@ public class ElasticEnsemble extends TemplateClassifier<ElasticEnsemble> {
                 return this;
             }
 
-            public TemplateConfig<?> getConfig() {
+            public TemplateConfig getConfig() {
                 return config;
             }
 
         }
-
-        private final Supplier<A> supplier;
-        private final TemplateConfig<?> config;
-        private final String name;
-        private final AbstractFeedbackIterator<ParameterSet, ?, Double, Boolean> iterator;
-
-        private CandidateIterator(final Supplier<A> supplier, final TemplateConfig<?> config,
-                                  final String name, int threshold, int limit,
-                                  DynamicIterator<ParameterSet, ?> iterator) {
-            this.supplier = supplier;
-            this.config = config;
-            this.name = name;
-            this.iterator = new ThresholdIterator<>(new LimitedIterator<>(iterator, limit), threshold);
-        }
-
-        private CandidateIterator(CandidateIterator<A, B> other) throws
-                                                                 Exception {
-            name = other.name;
-            iterator = other.iterator.iterator();
-            config = other.config.copy();
-            supplier = other.supplier;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public A next() {
-            ParameterSet parameterSet = iterator.next();
-            A classifier = supplier.get();
-            try {
-                classifier.setOptions(config.getOptions());
-                classifier.setOptions(parameterSet.getOptions());
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-            return classifier;
-        }
-
-        @Override
-        public void remove() {
-            iterator.remove();
-        }
-
-        @Override
-        public void add(final A a) {
-            iterator.add(new ParameterSet(a.getOptions()));
-        }
-    }
-
-    private Instances trainSet; // todo needed?
-    private final ConfigState<ElasticEnsembleConfig> configState = new ConfigState<>(ElasticEnsembleConfig::new);
-    private ElasticEnsembleConfig config = null;
-    private List<Instance> trainNeighbourhood = null;
-    private List<Instance> trainEstimateSet = null;
-    private DynamicIterator<CandidateIterator, ?> candidateIteratorIterator = null;
-
-    private void setup(Instances trainSet) {
-        configState.shift();
-        if (trainSetChanged(trainSet) || configState.mustResetTrain()) {
-            getTrainStopWatch().reset();
-            config = configState.getCurrentConfig();
-            this.trainSet = trainSet;
-            List<CandidateIterator> candidateIterators = new ArrayList<>();
-            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
-            trainEstimateSet = buildTrainEstimateSet(trainSet);
-            for(CandidateIterator.Builder candidateIteratorBuilder : config.getCandidateIteratorBuilders()) {
-                CandidateIterator candidateIterator = candidateIteratorBuilder.build(trainSet, getTrainRandom());
-                candidateIterators.add(candidateIterator);
-            }
-            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
-            config.getKnnConfiguration().setupNeighbourhoodSize(trainSet);
-            config.getKnnConfiguration().setupTrainEstimateSetSize(trainSet);
-            getTrainStopWatch().lap();
-        }
-    }
-
-    private void setupNeighbourSearchStrategy() {
-        AbstractIterator<Instance, ?> neighboursIterator;
-        switch (neighbourSearchStrategy) {
-            case RANDOM:
-                iterator = new RandomIterator<>(getTrainRandom());
-                break;
-            case ROUND_ROBIN:
-                iterator = new RoundRobinIterator<>();
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        for(CandidateIterator candidateParameterSetIterator : candidateParameterSetIterators) {
-            if(candidateParameterSetIterator.hasNext()) {
-                candidateIteratorIterator.add(candidateParameterSetIterator);
-            }
-        }
-        return iterator;
     }
 
 
