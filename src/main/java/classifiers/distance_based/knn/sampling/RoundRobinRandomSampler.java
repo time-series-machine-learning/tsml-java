@@ -1,9 +1,8 @@
 package classifiers.distance_based.knn.sampling;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.random.RoundRobinIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.linear.RoundRobinIterator;
 import weka.core.Instance;
-import weka.core.Instances;
 
 import java.util.*;
 
@@ -14,29 +13,32 @@ public class RoundRobinRandomSampler
     private AbstractIterator<Instance> sampler;
     private final Map<Double, AbstractIterator<Instance>> samplers = new HashMap<>();
     private final Random random = new Random();
+    private long seed;
 
-    public RoundRobinRandomSampler(final Collection<Instance> instances, final Random random) { // todo update to seeding system
-        this(instances, random.nextLong());
+    public RoundRobinRandomSampler(final Random random, final Collection<Instance> instances) { // todo update to seeding system
+        this(random.nextLong(), instances);
     }
 
-    public RoundRobinRandomSampler(final Collection<Instance> instances, final long seed) {
-        this(seed);
+    public RoundRobinRandomSampler(final long seed, final Collection<Instance> instances) {
+        this.seed = seed;
+        random.setSeed(seed);
+        samplerIterator = new RoundRobinIterator<>();
         for(Instance instance : instances) {
             add(instance);
         }
     }
 
     public RoundRobinRandomSampler(long seed) {
-        this.random.setSeed(seed);
-        samplerIterator = new RoundRobinIterator<>();
+        this(seed, new ArrayList<>());
     }
 
     public RoundRobinRandomSampler(Random random) {
-        this(random.nextLong());
+        this(random, new ArrayList<>());
     }
 
     public RoundRobinRandomSampler(RoundRobinRandomSampler other) {
-        random.setSeed(other.random.nextLong());
+        random.setSeed(other.seed);
+        seed = other.seed;
         // todo make sure the copying of random iterators results in same pattern, or does this not matter as randomness is still random?
         sampler = other.sampler.iterator();
         for(Map.Entry<Double, AbstractIterator<Instance>> entry : other.samplers.entrySet()) {

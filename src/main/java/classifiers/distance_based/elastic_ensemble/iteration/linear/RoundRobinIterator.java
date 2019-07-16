@@ -1,6 +1,4 @@
-package classifiers.distance_based.elastic_ensemble.iteration.random;
-
-import classifiers.distance_based.elastic_ensemble.iteration.linear.LinearIterator;
+package classifiers.distance_based.elastic_ensemble.iteration.linear;
 
 import java.util.List;
 

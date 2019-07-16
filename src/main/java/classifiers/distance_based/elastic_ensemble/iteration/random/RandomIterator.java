@@ -11,31 +11,27 @@ public class RandomIterator<A> extends LinearIterator<A> {
     protected final Random random = new Random();
     protected long seed;
 
-    public RandomIterator(final List<A> values, final long seed) {
+    public RandomIterator(final long seed, final List<A> values) {
         super(values);
         random.setSeed(seed);
+        this.seed = seed;
     }
 
-    public RandomIterator(final List<A> values, final Random random) {
-        this(values, random.nextLong());
-    }
-
-
-    public RandomIterator(final List<A> values, final Random random) {
-        this(values, random.nextLong());
+    public RandomIterator(final Random random, final List<A> values) {
+        this(random.nextLong(), values);
     }
 
     public RandomIterator(RandomIterator<A> other) {
-        this(other.values, other.seed);
+        this(other.seed, other.values);
         index = other.index;
     }
 
     public RandomIterator(long seed) {
-        random.setSeed(seed);
+        this(seed, new ArrayList<>());
     }
 
     public RandomIterator(Random random) {
-        this(random.nextLong());
+        this(random.nextLong(), new ArrayList<>());
     }
 
     @Override

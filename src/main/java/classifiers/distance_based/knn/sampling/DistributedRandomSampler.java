@@ -11,6 +11,7 @@ import java.util.*;
 public class DistributedRandomSampler
     extends AbstractIterator<Instance> {
     private final Random random = new Random();
+    private long seed;
     private final Map<Double, List<Instance>> instancesByClass;
     private final List<ClassLikelihood> probabilities = new ArrayList<>();
     private List<Instance> instances;
@@ -61,6 +62,7 @@ public class DistributedRandomSampler
 
     public DistributedRandomSampler(long seed, Collection<Instance> instances) {
         random.setSeed(seed);
+        this.seed = seed;
         instancesByClass = Utilities.instancesByClassValue(instances);
         for(Map.Entry<Double, List<Instance>> entry : instancesByClass.entrySet()) {
             double probability = (double) entry.getValue().size() / instances.size();
@@ -77,7 +79,7 @@ public class DistributedRandomSampler
     }
 
     public DistributedRandomSampler(DistributedRandomSampler other) {
-        this(other.random);
+        this(other.seed);
         index = other.index;
         for(Map.Entry<Double, List<Instance>> entry : other.instancesByClass.entrySet()) {
             instancesByClass.put(entry.getKey(), new ArrayList<>(entry.getValue()));
@@ -104,6 +106,7 @@ public class DistributedRandomSampler
         classValue = classLikelihood.getClassValue();
         instances = instancesByClass.get(classValue);
         index = random.nextInt(instances.size());
+        seed = random.nextLong(); // todo make sure this seeding works as multiple calls to random.getXyz
         return instances.get(index);
     }
 

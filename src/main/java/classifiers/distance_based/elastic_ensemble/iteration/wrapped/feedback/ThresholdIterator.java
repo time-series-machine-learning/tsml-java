@@ -1,19 +1,19 @@
-package classifiers.distance_based.elastic_ensemble.iteration.feedback;
+package classifiers.distance_based.elastic_ensemble.iteration.wrapped.feedback;
 
-import classifiers.distance_based.elastic_ensemble.iteration.DynamicIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.limited.LimitedIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
+import classifiers.distance_based.elastic_ensemble.iteration.wrapped.limited.LimitedIterator;
 
-public class AbstractThresholdIterator<A, B extends AbstractThresholdIterator<A, B>> extends AbstractFeedbackIterator<A, AbstractThresholdIterator<A, B>, Double, Boolean> {
+public class ThresholdIterator<A> extends AbstractFeedbackIterator<A, Double, Boolean> {
 
     private Double best = null;
     private final LimitedIterator<A> iterator;
 
-    public AbstractThresholdIterator(final DynamicIterator<A, ?> iterator,
+    public ThresholdIterator(final AbstractIterator<A> iterator,
                                      final int threshold) {
         this.iterator = new LimitedIterator<>(iterator, threshold);
     }
 
-    public AbstractThresholdIterator(AbstractThresholdIterator<A, B> other) {
+    public ThresholdIterator(ThresholdIterator<A> other) {
         this.iterator = other.iterator.iterator();
         this.best = other.best;
     }
@@ -37,8 +37,13 @@ public class AbstractThresholdIterator<A, B extends AbstractThresholdIterator<A,
     }
 
     @Override
-    public AbstractThresholdIterator<A, B> iterator() {
-        return new AbstractThresholdIterator<>(this);
+    public AbstractIterator<A> getWrappedIterator() {
+        return iterator;
+    }
+
+    @Override
+    public ThresholdIterator<A> iterator() {
+        return new ThresholdIterator<>(this);
     }
 
     @Override
