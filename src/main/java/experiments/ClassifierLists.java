@@ -304,6 +304,143 @@ public class ClassifierLists {
                 ((BOSS) c).useBestSettingsRBOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
+            case "BayesianRBOSS":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "BayesianRBOSS1":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).initialRandomParameters = 1;
+                break;
+            case "BayesianRBOSS10":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).initialRandomParameters = 10;
+                break;
+            case "BayesianRBOSS30":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).initialRandomParameters = 30;
+                break;
+            case "BayesianRBOSS40":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).initialRandomParameters = 40;
+                break;
+            case "BayesianRBOSS50":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).initialRandomParameters = 50;
+                break;
+            case "BayesianRBOSSRBF":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).rbf = true;
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "BayesianRBOSSPoly":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).poly = true;
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "BayesianRBOSSHalf":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).decimate = true;
+                ((BOSS) c).setSeed(fold);
+                break;
+            case "BayesianRBOSSPoolNR":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).numRed = true;
+                break;
+            case "BayesianRBOSSLR":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).lr = true;
+                break;
+            case "BayesianRBOSSLWL":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).lwl = true;
+                break;
+            case "BayesianRBOSSM5P":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).m5p = true;
+                break;
+            case "BayesianRBOSSLWLTune":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).lwl = true;
+                ((BOSS) c).tune = true;
+                break;
+            case "BayesianRBOSSTune":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).tune = true;
+                break;
+            case "BayesianRBOSSRand":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).topnrandom = true;
+                break;
+            case "BayesianRBOSSK":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).kVals = new int[]{1,2,3,4,5,6,7,8,9,10};
+                break;
+            case "RBOSSK5":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).kVals = new int[]{5};
+                break;
+            case "RBOSSK10":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).kVals = new int[]{10};
+                break;
+            case "RBOSSK15":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).kVals = new int[]{15};
+                break;
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
