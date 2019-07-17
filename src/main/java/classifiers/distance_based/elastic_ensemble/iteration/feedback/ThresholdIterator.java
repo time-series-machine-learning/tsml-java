@@ -36,6 +36,14 @@ public class ThresholdIterator<A> extends AbstractFeedbackIterator<A, Double, Bo
         return false;
     }
 
+    public void setLimit(int limit) {
+        iterator.setLimit(limit);
+    }
+
+    public int getLimit() {
+        return iterator.getLimit();
+    }
+
     @Override
     public ThresholdIterator<A> iterator() {
         return new ThresholdIterator<>(this);

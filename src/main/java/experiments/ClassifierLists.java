@@ -98,42 +98,42 @@ public class ClassifierLists {
     public static AbstractClassifier setClassifierClassic(String classifier, int fold){
         AbstractClassifier c=null;
         switch(classifier){
-            case "TUNED_TWE_KNN":
-                c = new Tuned(Knn::new, Twe.parameterSpace(), new RandomIterator<>(fold));
-                break;
-            case "TUNED_MSM_KNN":
-                c = new Tuned(Knn::new, Msm.parameterSpace(), new RandomIterator<>(fold));
-                break;
-            case "TUNED_LCSS_KNN":
-                c = new Tuned(Knn::new, Lcss::parameterSpace, new RandomIterator<>(fold));
-                break;
-            case "TUNED_ERP_KNN":
-                c = new Tuned(Knn::new, Erp::parameterSpace, new RandomIterator<>(fold));
-                break;
-            case "ED_KNN":
-                c = new Knn();
-                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(0));
-                break;
-            case "DTW_KNN":
-                c = new Knn();
-                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(-1));
-                break;
-            case "TUNED_DTW_KNN":
-                c = new Tuned(Knn::new, Dtw::warpParameterSpace, new RandomIterator<>(fold));
-                break;
-            case "DDTW_KNN":
-                c = new Knn();
-                ((Knn) c).getKnnConfig().setDistanceMeasure(new CachedDdtw(-1));
-                break;
-            case "TUNED_DDTW_KNN":
-                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace, new RandomIterator<>(fold));
-                break;
-            case "TUNED_WDTW_KNN":
-                c = new Tuned(Knn::new, Wdtw.parameterSpace(), new RandomIterator<>(fold));
-                break;
-            case "TUNED_WDDTW_KNN":
-                c = new Tuned(Knn::new, CachedWddtw.parameterSpace(), new RandomIterator<>(fold));
-                break;
+//            case "TUNED_TWE_KNN":
+//                c = new Tuned(Knn::new, Twe.parameterSpace(), new RandomIterator<>(fold));
+//                break;
+//            case "TUNED_MSM_KNN":
+//                c = new Tuned(Knn::new, Msm.parameterSpace(), new RandomIterator<>(fold));
+//                break;
+//            case "TUNED_LCSS_KNN":
+//                c = new Tuned(Knn::new, Lcss::parameterSpace, new RandomIterator<>(fold));
+//                break;
+//            case "TUNED_ERP_KNN":
+//                c = new Tuned(Knn::new, Erp::parameterSpace, new RandomIterator<>(fold));
+//                break;
+//            case "ED_KNN":
+//                c = new Knn();
+//                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(0));
+//                break;
+//            case "DTW_KNN":
+//                c = new Knn();
+//                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(-1));
+//                break;
+//            case "TUNED_DTW_KNN":
+//                c = new Tuned(Knn::new, Dtw::warpParameterSpace, new RandomIterator<>(fold));
+//                break;
+//            case "DDTW_KNN":
+//                c = new Knn();
+//                ((Knn) c).getKnnConfig().setDistanceMeasure(new CachedDdtw(-1));
+//                break;
+//            case "TUNED_DDTW_KNN":
+//                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace, new RandomIterator<>(fold));
+//                break;
+//            case "TUNED_WDTW_KNN":
+//                c = new Tuned(Knn::new, Wdtw.parameterSpace(), new RandomIterator<>(fold));
+//                break;
+//            case "TUNED_WDDTW_KNN":
+//                c = new Tuned(Knn::new, CachedWddtw.parameterSpace(), new RandomIterator<>(fold));
+//                break;
             case "FEE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
                 break;

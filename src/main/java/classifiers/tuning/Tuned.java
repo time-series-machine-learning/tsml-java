@@ -2,13 +2,14 @@ package classifiers.tuning;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
 import classifiers.distance_based.elastic_ensemble.iteration.ParameterSetIterator;
-import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
 import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.classifier.TemplateClassifierInterface;
+import classifiers.template.config.TemplateConfig;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import timeseriesweka.classifiers.ContractClassifier;
+import utilities.ArrayUtilities;
 import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -16,42 +17,29 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Tuned
     extends TemplateClassifier {
     private AbstractClassifier bestClassifier; // todo make this multiple
-    private final TunerConfig config;
+    private final TunedConfig config = new TunedConfig();
+    private TemplateConfig classifierConfig = null;
     private AbstractIterator<AbstractClassifier> iterator;
     private ClassifierResults bestClassifierBenchmark;
     private final List<AbstractClassifier> bestClassifiers = new ArrayList<>();
 
-    public Tuned(Supplier<AbstractClassifier> supplier, Function<Instances, AbstractIterator<ParameterSet>> parameterSetIteratorGetter) {
-        config = new TunerConfig(instances -> new ClassifierIterator(supplier, parameterSetIteratorGetter.apply(instances)));
+    public TemplateConfig getClassifierConfig() {
+        return classifierConfig;
     }
 
-    public Tuned(Supplier<AbstractClassifier> supplier, AbstractIterator<ParameterSet> parameterSetIterator) {
-        config = new TunerConfig(new ClassifierIterator(supplier, parameterSetIterator));
+    public void setClassifierConfig(TemplateConfig classifierConfig) {
+        this.classifierConfig = classifierConfig;
     }
 
-//    public Tuned(Supplier<AbstractClassifier> supplier, ParameterSpace parameterSpace) {
-//        config = new TunerConfig(supplier, parameterSpace);
-//    }
-
-    public Tuned(Supplier<AbstractClassifier> supplier, Function<Instances, ParameterSpace> parameterSpaceGetter, AbstractIterator<Integer> iterator) {
-        this(supplier, instances -> {
-            ParameterSpace parameterSpace = parameterSpaceGetter.apply(instances);
-            return new ParameterSetIterator(parameterSpace, iterator);
-        });
-    }
-
-    public Tuned(Supplier<AbstractClassifier> supplier, ParameterSpace parameterSpace, AbstractIterator<Integer> iterator) {
-        this(supplier, new ParameterSetIterator(parameterSpace, iterator));
-    }
+    public Tuned() {}
 
     public Tuned(AbstractIterator<AbstractClassifier> iterator) {
-        config = new TunerConfig(iterator);
+        throw new UnsupportedOperationException();
     }
 
     public Tuned(Tuned other) {
@@ -76,19 +64,21 @@ public class Tuned
         return benchmarkResults;
     }
 
-    private final ParameterSet parameterSet = new ParameterSet();
-
     @Override
     public void setOption(String key, String value) throws Exception {
-        parameterSet.addParameter(key, value);
+        if(classifierConfig != null) {
+            classifierConfig.setOption(key, value);
+        }
+        config.setOption(key, value);
     }
 
     @Override
     public String[] getOptions() {
-        if(bestClassifier == null) {
-            return new String[0];
+        if(classifierConfig != null) {
+            return ArrayUtilities.concat(config.getOptions(), classifierConfig.getOptions());
+        } else {
+            return config.getOptions();
         }
-        return bestClassifier.getOptions();
     }
 
     private void setup(Instances trainSet) {
@@ -109,7 +99,7 @@ public class Tuned
             if(classifier instanceof ContractClassifier) {
                 ((ContractClassifier) classifier).setTimeLimit(remainingTrainContractNanos());
             }
-            classifier.setOptions(parameterSet.getOptions());
+            classifier.setOptions(classifierConfig.getOptions());
             if(classifier instanceof TemplateClassifierInterface) {
                 ((TemplateClassifierInterface) classifier).setTrainSeed(getTrainSeed());
             }

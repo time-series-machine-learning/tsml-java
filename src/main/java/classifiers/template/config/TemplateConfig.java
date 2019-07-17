@@ -4,8 +4,7 @@ import utilities.Copyable;
 import utilities.IndividualOptionHandler;
 
 public abstract class TemplateConfig
-    extends IndividualOptionHandler
-    implements Copyable {
+        implements Copyable, IndividualOptionHandler {
 
     public TemplateConfig() {}
 
@@ -18,7 +17,5 @@ public abstract class TemplateConfig
     public abstract TemplateConfig copy() throws
                                           Exception;
 
-    @Override
-    public abstract String[] getOptions();
 
 }

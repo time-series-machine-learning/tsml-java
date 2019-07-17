@@ -27,7 +27,7 @@ public class LimitedIterator<A>
 
     @Override
     public boolean hasNext() {
-        return iterator.hasNext() && count < limit;
+        return iterator.hasNext() && (count < limit || limit < 0);
     }
 
     @Override
