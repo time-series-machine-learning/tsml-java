@@ -11,6 +11,14 @@ import static distances.derivative_time_domain.Derivative.DERIVATIVE_FILTER;
 
 public class CachedDdtw extends Dtw {
 
+    public CachedDdtw() {
+
+    }
+
+    public CachedDdtw(int warp) {
+        super(warp);
+    }
+
     @Override
     public double distance(Instance first,
                            Instance second,

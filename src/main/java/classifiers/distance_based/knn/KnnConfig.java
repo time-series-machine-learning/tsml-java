@@ -1,6 +1,6 @@
 package classifiers.distance_based.knn;
 
-import classifiers.template.configuration.TemplateConfig;
+import classifiers.template.config.TemplateConfig;
 import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import utilities.ArrayUtilities;
@@ -9,7 +9,7 @@ import java.util.Comparator;
 
 public class KnnConfig
     extends TemplateConfig {
-    // configuration options
+    // config options
     private final static String K_KEY = "k";
     private int k = 1;
     private final static String DISTANCE_MEASURE_KEY = "dm";
@@ -60,7 +60,7 @@ public class KnnConfig
             String.valueOf(k),
             EARLY_ABANDON_KEY,
             String.valueOf(earlyAbandon),
-            }, super.getOptions());
+            });
     }
 
     public int getK() {

@@ -1,13 +1,13 @@
-package classifiers.template.configuration.reduced;
+package classifiers.template.config.reduced;
 
-public enum TrainEstimationStrategy {
+public enum NeighbourSearchStrategy {
     RANDOM,
     LINEAR,
     ROUND_ROBIN_RANDOM,
     DISTRIBUTED_RANDOM;
 
-    public static TrainEstimationStrategy fromString(String str) {
-        for (TrainEstimationStrategy s : values()) {
+    public static NeighbourSearchStrategy fromString(String str) {
+        for (NeighbourSearchStrategy s : NeighbourSearchStrategy.values()) {
             if (s.name()
                  .equals(str)) {
                 return s;

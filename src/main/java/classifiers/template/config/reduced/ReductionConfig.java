@@ -1,4 +1,4 @@
-package classifiers.template.configuration.reduced;
+package classifiers.template.config.reduced;
 
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
@@ -7,27 +7,26 @@ import classifiers.distance_based.knn.sampling.DistributedRandomSampler;
 import classifiers.distance_based.knn.sampling.LinearSampler;
 import classifiers.distance_based.knn.sampling.RandomSampler;
 import classifiers.distance_based.knn.sampling.RoundRobinRandomSampler;
-import classifiers.template.configuration.TemplateConfig;
-import utilities.ArrayUtilities;
+import classifiers.template.config.TemplateConfig;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.Collection;
 import java.util.Comparator;
 
-public class ReducedTrainSetConfig
+public class ReductionConfig
     extends TemplateConfig {
 
-    private final static String TRAIN_SET_SIZE_LIMIT_KEY = "trnsl";
-    private final static String TRAIN_SET_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
+    private final static String TRAIN_SET_SIZE_LIMIT_KEY = "trssl";
+    private final static String TRAIN_SET_SIZE_LIMIT_PERCENTAGE_KEY = "trsslp";
     private final static String TRAIN_ESTIMATE_SET_SIZE_LIMIT = "tressl";
     private final static String TRAIN_ESTIMATE_SET_SIZE_LIMIT_PERCENTAGE = "tresslp";
-    private final static String TRAIN_SET_SIZE_THRESHOLD = "trnst"; // todo change keys
+    private final static String TRAIN_SET_SIZE_THRESHOLD = "trsst"; // todo change keys
     private final static String TRAIN_ESTIMATE_SET_SIZE_THRESHOLD = "tresst";
-    private final static String TRAIN_SET_STRATEGY_KEY = "trnss";
-    private final static String TRAIN_ESTIMATE_SET_SOURCE_KEY = "trsss";
-    private final static String TRAIN_ESTIMATE_SET_STRATEGY_KEY = "tres";
-    public static Comparator<ReducedTrainSetConfig> TRAIN_CONFIG_COMPARATOR = (config, other) -> { // todo
+    private final static String TRAIN_SET_STRATEGY_KEY = "trsis";
+    private final static String TRAIN_ESTIMATE_SET_SOURCE_KEY = "tress";
+    private final static String TRAIN_ESTIMATE_SET_STRATEGY_KEY = "treis";
+    public static Comparator<ReductionConfig> TRAIN_CONFIG_COMPARATOR = (config, other) -> { // todo
 //            if(config.hasTrainEstimateSetSizeLimit() &&
 //               config.trainEstimateSetSizeLimit < other.trainEstimateSetSizeLimit) return 1;
 //            else if(config.hasTrainSetSizeLimit() &&
@@ -41,7 +40,7 @@ public class ReducedTrainSetConfig
 //                    config.trainSetSizeThreshold != other.trainSetSizeThreshold) return 1;
         return 0;
     };
-    public static Comparator<ReducedTrainSetConfig> TEST_CONFIG_COMPARATOR = (config, other) -> { // todo
+    public static Comparator<ReductionConfig> TEST_CONFIG_COMPARATOR = (config, other) -> { // todo
 //            if(config.hasTestSetSizeLimit() && config.testSetSizeLimit < other.testSetSizeLimit) return 1;
         return 0;
     };
@@ -68,12 +67,12 @@ public class ReducedTrainSetConfig
         this.samplingSeed = samplingSeed;
     }
 
-    public ReducedTrainSetConfig(final ReducedTrainSetConfig reducedTrainSetConfig) throws
+    public ReductionConfig(final ReductionConfig reductionConfig) throws
                                                                                     Exception {
-        super(reducedTrainSetConfig);
+        super(reductionConfig);
     }
 
-    public ReducedTrainSetConfig() {}
+    public ReductionConfig() {}
 
     public boolean hasTrainEstimateSetSizeLimit() {
         return trainEstimateSetSizeLimit >= 0;
@@ -241,15 +240,15 @@ public class ReducedTrainSetConfig
     }
 
     @Override
-    public ReducedTrainSetConfig copy() throws
+    public ReductionConfig copy() throws
                                         Exception {
-        return new ReducedTrainSetConfig(this);
+        return new ReductionConfig(this);
     }
 
     @Override
     public void copyFrom(final Object object) throws
                                               Exception {
-        ReducedTrainSetConfig other = (ReducedTrainSetConfig) object;
+        ReductionConfig other = (ReductionConfig) object;
         setOptions(other.getOptions());
         if (other.trainEstimateSetIterator != null) {
             trainEstimateSetIterator = other.trainEstimateSetIterator.iterator();
@@ -290,12 +289,14 @@ public class ReducedTrainSetConfig
             case TRAIN_ESTIMATE_SET_SIZE_THRESHOLD:
                 setTrainEstimateSetSizeThreshold(Integer.parseInt(value));
                 break;
+            case SAMPLING_SEED_KEY:
+                setSamplingSeed(Long.valueOf(value));
         }
     }
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(super.getOptions(), new String[] {
+        return new String[] {
             TRAIN_SET_SIZE_THRESHOLD,
             String.valueOf(trainSetSizeThreshold),
             TRAIN_SET_SIZE_LIMIT_KEY,
@@ -316,7 +317,9 @@ public class ReducedTrainSetConfig
             String.valueOf(trainSetSizeThreshold),
             TRAIN_ESTIMATE_SET_SIZE_THRESHOLD,
             String.valueOf(trainEstimateSetSizeThreshold),
-        });
+            SAMPLING_SEED_KEY,
+            String.valueOf(samplingSeed),
+        };
     }
 
     public AbstractIterator<Instance> getTrainSetIterator() {

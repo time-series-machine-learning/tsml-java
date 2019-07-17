@@ -10,9 +10,9 @@ import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterat
 import classifiers.distance_based.knn.Knn;
 import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.classifier.TemplateClassifierInterface;
-import classifiers.template.configuration.ConfigState;
-import classifiers.template.configuration.TemplateConfig;
-import classifiers.template.configuration.reduced.ReducedTrainSetConfig;
+import classifiers.template.config.ConfigState;
+import classifiers.template.config.TemplateConfig;
+import classifiers.template.config.reduced.ReductionConfig;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -31,324 +31,370 @@ import java.util.function.Supplier;
 
 public class ElasticEnsemble
     extends TemplateClassifier {
+    @Override
+    public TemplateClassifier copy() throws Exception {
+        return null;
+    }
 
     @Override
-    public ElasticEnsemble copy() throws
-                           Exception {
-        throw new UnsupportedOperationException();
+    public void setOption(String key, String value) throws Exception {
+
     }
 
-    private AbstractIterator<CandidateIterator> candidateIteratorIterator = null;
+    @Override
+    public void buildClassifier(Instances trainInstances) throws Exception {
 
-    private Instances trainSet; // todo needed?
-    private final ConfigState<ElasticEnsembleConfig> elasticEnsembleConfigState =
-        new ConfigState<>(ElasticEnsembleConfig::new,
-                                                                                                    ElasticEnsembleConfig.TRAIN_CONFIG_COMPARATOR,
-                                                                                                    ElasticEnsembleConfig.TEST_CONFIG_COMPARATOR);
-    private final ConfigState<ReducedTrainSetConfig> reducedTrainSetConfigState =
-        new ConfigState<>(ReducedTrainSetConfig::new, ReducedTrainSetConfig.TRAIN_CONFIG_COMPARATOR,
-                          ReducedTrainSetConfig.TEST_CONFIG_COMPARATOR);
-    private ElasticEnsembleConfig elasticEnsembleConfig;
-    private ReducedTrainSetConfig reducedTrainSetConfig;
-
-    public ReducedTrainSetConfig getReducedTrainSetConfig() {
-        return reducedTrainSetConfigState.getNext();
     }
-
-    private void setup(Instances trainSet) throws
-                                           Exception {
-        elasticEnsembleConfigState.shift();
-        reducedTrainSetConfigState.shift();
-        if (trainSetChanged(trainSet) || elasticEnsembleConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
-            getTrainStopWatch().reset();
-            elasticEnsembleConfig = elasticEnsembleConfigState.getCurrent();
-            reducedTrainSetConfig = reducedTrainSetConfigState.getCurrent();
-            this.trainSet = trainSet;
-            List<CandidateIterator> candidateIterators = new ArrayList<>();
-//            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
-//            trainEstimateSet = buildTrainEstimateSet(trainSet);
-            for (CandidateIterator.Builder candidateIteratorBuilder : elasticEnsembleConfig.getCandidateIteratorBuilders()) {
-                CandidateIterator candidateIterator = candidateIteratorBuilder.build(trainSet, getTrainRandom());
-                candidateIterators.add(candidateIterator);
-            }
-//            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
-//            elasticEnsembleConfig.getKnnConfiguration()
-//                  .setupNeighbourhoodSize(trainSet);
-//            elasticEnsembleConfig.getKnnConfiguration()
-//                  .setupTrainEstimateSetSize(trainSet);
-            getTrainStopWatch().lap();
-        }
-    }
-
-    private void evalNextCandidate() throws
-                                     Exception {
-        CandidateIterator candidateIterator = candidateIteratorIterator.next();
-        AbstractClassifier candidate = candidateIterator.next();
-        candidateIterator.remove();
-        if (!candidateIterator.hasNext()) {
-            candidateIteratorIterator.remove();
-        }
-        if (candidate instanceof Knn) { // todo build into candidate iterator? probs best
-//            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
-//            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainNeighbourhood);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-        if (candidate instanceof ContractClassifier) {
-            ((Knn) candidate).setTimeLimit(remainingTrainContractNanos());
-        }
-        candidate.buildClassifier(trainSet);
-        ClassifierResults trainResults;
-        if (candidate instanceof TemplateClassifierInterface) {
-            trainResults = ((Knn) candidate).getTrainResults();
-        } else {
-            throw new UnsupportedOperationException();
-        }
-        boolean improvement = candidateIterator.feedback(elasticEnsembleConfig.getTrainResultsMetricGetter()
-                                                                              .apply(trainResults));
-        if (improvement) {
-            // todo record best param
-            // todo dump all this in the tuners for individ dms
-        }
-        throw new UnsupportedOperationException();
-    }
-
-
-    private boolean hasRemainingCandidateParameterSets() {
-        return candidateIteratorIterator.hasNext();
-    }
-
-    private List<Instance> buildTrainNeighbourhood() {
-        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
-        // .getReducedTrainSetConfig().getTrainSetIterator();
-        List<Instance> trainNeighbourhood = new ArrayList<>();
-        ArrayUtilities.addAllAndRemove(trainNeighbourhood, iterator);
-        return trainNeighbourhood;
-    }
-
-    private List<Instance> buildTrainEstimateSet() {
-        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
-        // .getReducedTrainSetConfig().getTrainEstimateSetIterator();
-        List<Instance> trainEstimateSet = new ArrayList<>();
-//        if(elasticEnsembleConfig.getKnnConfiguration().getTrainEstimationSource().equals(TrainEstimationSource
-//        .FROM_TRAIN_NEIGHBOURHOOD)) {
-//            trainEstimateSet.addAll(trainNeighbourhood);
-//        } else {
-//            ArrayUtilities.addAllAndRemove(trainEstimateSet, iterator);
+//
+//    @Override
+//    public ElasticEnsemble copy() throws
+//                           Exception {
+//        throw new UnsupportedOperationException(); // todo
+//    }
+//
+//    private AbstractIterator<CandidateIterator> candidateIteratorIterator = null;
+//
+//    private Instances trainSet; // todo needed?
+//    private final ConfigState<ElasticEnsembleConfig> elasticEnsembleConfigState =
+//        new ConfigState<>(ElasticEnsembleConfig::new,
+//                            ElasticEnsembleConfig.TRAIN_CONFIG_COMPARATOR,
+//                            ElasticEnsembleConfig.TEST_CONFIG_COMPARATOR);
+//    private final ConfigState<ReductionConfig> reducedTrainSetConfigState =
+//        new ConfigState<>(ReductionConfig::new, ReductionConfig.TRAIN_CONFIG_COMPARATOR,
+//                          ReductionConfig.TEST_CONFIG_COMPARATOR);
+//    private ElasticEnsembleConfig elasticEnsembleConfig;
+//    private ReductionConfig reductionConfig;
+//
+//    public ReductionConfig getReductionConfig() {
+//        return reducedTrainSetConfigState.getNext();
+//    }
+//
+//    private void setup(Instances trainSet) throws
+//                                           Exception {
+//        elasticEnsembleConfigState.shift();
+//        reducedTrainSetConfigState.shift();
+//        if (trainSetChanged(trainSet) || elasticEnsembleConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
+//            getTrainStopWatch().reset();
+//            elasticEnsembleConfig = elasticEnsembleConfigState.getCurrent();
+//            reductionConfig = reducedTrainSetConfigState.getCurrent();
+//            this.trainSet = trainSet;
+//            List<CandidateIterator> candidateIterators = new ArrayList<>();
+////            trainNeighbourhood = buildTrainNeighbourhood(trainSet);
+////            trainEstimateSet = buildTrainEstimateSet(trainSet);
+//            for (CandidateIterator.Builder candidateIteratorBuilder : elasticEnsembleConfig.getCandidateIteratorBuilders()) {
+//                CandidateIterator candidateIterator = candidateIteratorBuilder.build(trainSet, getTrainRandom());
+//                candidateIterators.add(candidateIterator);
+//            }
+////            candidateIteratorIterator = buildCandidateIteratorIterator(candidateIterators);
+////            elasticEnsembleConfig.getKnnConfiguration()
+////                  .setupNeighbourhoodSize(trainSet);
+////            elasticEnsembleConfig.getKnnConfiguration()
+////                  .setupTrainEstimateSetSize(trainSet);
+//            getTrainStopWatch().lap();
 //        }
-        return trainEstimateSet;
-    }
+//    }
+//
+//    private void evalNextCandidate() throws
+//                                     Exception {
+//        CandidateIterator candidateIterator = candidateIteratorIterator.next();
+//        AbstractClassifier candidate = candidateIterator.next();
+//        candidateIterator.remove();
+//        if (!candidateIterator.hasNext()) {
+//            candidateIteratorIterator.remove();
+//        }
+//        if (candidate instanceof Knn) { // todo build into candidate iterator? probs best
+////            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
+////            ((Knn) candidate).getConfig().setPredefinedTrainEstimateSet(trainNeighbourhood);
+//        } else {
+//            throw new UnsupportedOperationException();
+//        }
+//        if (candidate instanceof ContractClassifier) {
+//            ((Knn) candidate).setTimeLimit(remainingTrainContractNanos());
+//        }
+//        candidate.buildClassifier(trainSet);
+//        ClassifierResults trainResults;
+//        if (candidate instanceof TemplateClassifierInterface) {
+//            trainResults = ((Knn) candidate).getTrainResults();
+//        } else {
+//            throw new UnsupportedOperationException();
+//        }
+//        boolean improvement = candidateIterator.feedback(elasticEnsembleConfig.getTrainResultsMetricGetter()
+//                                                                              .apply(trainResults));
+//        if (improvement) {
+//            // todo record best param
+//            // todo dump all this in the tuners for individ dms
+//        }
+//        throw new UnsupportedOperationException();
+//    }
+//
+//
+//    private boolean hasRemainingCandidateParameterSets() {
+//        return candidateIteratorIterator.hasNext();
+//    }
+//
+//    private List<Instance> buildTrainNeighbourhood() {
+//        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
+//        // .getReductionConfig().getTrainSetIterator();
+//        List<Instance> trainNeighbourhood = new ArrayList<>();
+//        ArrayUtilities.addAllAndRemove(trainNeighbourhood, iterator);
+//        return trainNeighbourhood;
+//    }
+//
+//    private List<Instance> buildTrainEstimateSet() {
+//        AbstractIterator<Instance> iterator = null;//elasticEnsembleConfig.getKnnConfiguration()
+//        // .getReductionConfig().getTrainEstimateSetIterator();
+//        List<Instance> trainEstimateSet = new ArrayList<>();
+////        if(elasticEnsembleConfig.getKnnConfiguration().getTrainEstimationSource().equals(TrainEstimationSource
+////        .FROM_TRAIN_NEIGHBOURHOOD)) {
+////            trainEstimateSet.addAll(trainNeighbourhood);
+////        } else {
+////            ArrayUtilities.addAllAndRemove(trainEstimateSet, iterator);
+////        }
+//        return trainEstimateSet;
+//    }
+//
+//    @Override
+//    public void setOption(final String key, final String value) throws
+//                                                                Exception {
+//        elasticEnsembleConfigState.getNext()
+//                                  .setOption(key, value);
+//    }
+//
+//    public boolean evaluateCandidate(AbstractClassifier classifier) {
+//        if (classifier instanceof Knn) {
+////            ((Knn) classifier).getConfig().setPredefinedTrainNeighbourhood(trainNeighbourhood);
+////            ((Knn) classifier).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
+//        }
+//        throw new UnsupportedOperationException();
+//    }
+//
+//    @Override
+//    public void buildClassifier(final Instances trainSet) throws
+//                                                          Exception {
+//        setup(trainSet);
+//        while (hasRemainingCandidateParameterSets() && withinTrainContract()) {
+//            evalNextCandidate();
+//            getTrainStopWatch().lap();
+//        }
+//    }
+//
+//    public static class CandidateIterator
+//        extends AbstractFeedbackIterator<AbstractClassifier, Double, Boolean> { // todo shift over to elasticEnsembleConfig struct
+//        public String getName() {
+//            return name;
+//        }
+//
+//        @Override
+//        public Boolean feedback(final Double value) {
+//            return iterator.feedback(value);
+//        }
+//
+//        private final Supplier<AbstractClassifier> supplier;
+//        private final TemplateConfig config;
+//        private final AbstractFeedbackIterator<ParameterSet, Double, Boolean> iterator;
+//
+//        private CandidateIterator(final Supplier<AbstractClassifier> supplier, final TemplateConfig config,
+//                                  final String name, int threshold, int limit,
+//                                  AbstractIterator<ParameterSet> iterator) {
+//            this.supplier = supplier;
+//            this.config = config;
+//            this.name = name;
+//            this.iterator = new ThresholdIterator<>(new LimitedIterator<>(iterator, limit), threshold);
+//        }
+//
+//        private final String name;
+//
+//        private CandidateIterator(CandidateIterator other) throws
+//                                                           Exception {
+//            name = other.name;
+//            iterator = other.iterator.iterator();
+//            config = other.config.copy();
+//            supplier = other.supplier;
+//        }
+//
+//        @Override
+//        public CandidateIterator iterator() {
+//            try {
+//                return new CandidateIterator(this);
+//            } catch (Exception e) {
+//                throw new IllegalStateException(e);
+//            }
+//        }
+//
+//        @Override
+//        public AbstractClassifier next() {
+//            ParameterSet parameterSet = iterator.next();
+//            AbstractClassifier classifier = supplier.get();
+//            try {
+//                classifier.setOptions(config.getOptions());
+//                classifier.setOptions(parameterSet.getOptions());
+//            } catch (Exception e) {
+//                throw new IllegalStateException(e);
+//            }
+//            return classifier;
+//        }
+//
+//        @Override
+//        public boolean hasNext() {
+//            return iterator.hasNext();
+//        }
+//
+//        @Override
+//        public void add(final AbstractClassifier classifier) {
+//            iterator.add(new ParameterSet(classifier.getOptions()));
+//        }
+//
+//        @Override
+//        public void remove() {
+//            iterator.remove();
+//        }
+//
+//        public static class Builder {
+//            private final String name;
+//            private ParameterSpace parameterSpace;
+//            private Function<Instances, ParameterSpace> parameterSpaceGetter;
+//            private int parameterSetCountThreshold = -1;
+//            private final Supplier<AbstractClassifier> supplier;
+//            private final TemplateConfig config;
+//            private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM;
+//            private int parameterSetCountLimit = -1;
+//
+//            public Builder(final String name,
+//                           final Supplier<AbstractClassifier> supplier,
+//                           final TemplateConfig config) {
+//                this.name = name;
+//                this.supplier = supplier;
+//                this.config = config;
+//            }
+//
+//            public Builder setParameterSpaceGetter(Function<Instances, ParameterSpace> parameterSpaceGetter) {
+//                this.parameterSpaceGetter = parameterSpaceGetter;
+//                return this;
+//            }
+//
+//            public Builder setParameterSpace(ParameterSpace parameterSpace) {
+//                this.parameterSpace = parameterSpace;
+//                return this;
+//            }
+//
+//            public CandidateIterator build(Instances instances, Random random) {
+//                if(parameterSpaceGetter != null) {
+//                    if(parameterSpace != null) {
+//                        throw new IllegalStateException("both parameter space and getter set, which should be used?!");
+//                    }
+//                    parameterSpace = parameterSpaceGetter.apply(instances);
+//                }
+//                ParameterSetIterator iterator = buildParameterSetIterator(random);
+//                return new CandidateIterator(supplier, config, name, parameterSetCountThreshold, parameterSetCountLimit, iterator);
+//            }
+//
+//            public Builder setParameterSetCountThreshold(int parameterSetCountThreshold) {
+//                this.parameterSetCountThreshold = parameterSetCountThreshold;
+//                return this;
+//            }
+//
+//            public Builder setParameterSetSearchStrategy(ParameterSetSearchStrategy parameterSetSearchStrategy) {
+//                this.parameterSetSearchStrategy = parameterSetSearchStrategy;
+//                return this;
+//            }
+//
+//            public ParameterSetIterator buildParameterSetIterator(Random random) {
+//                List<Integer> values = ArrayUtilities.sequence(parameterSpace.size());
+//                switch (parameterSetSearchStrategy) {
+//                    case RANDOM:
+//                        return new ParameterSetIterator(parameterSpace, new RandomIterator<>(random, values));
+////            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
+//                    case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
+//                    default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
+//                }
+//            }
+//
+//            public ParameterSpace getParameterSpace() {
+//                return parameterSpace;
+//            }
+//
+//            public Function<Instances, ParameterSpace> getParameterSpaceGetter() {
+//                return parameterSpaceGetter;
+//            }
+//
+//            public int getParameterSetCountThreshold() {
+//                return parameterSetCountThreshold;
+//            }
+//
+//            public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
+//                return parameterSetSearchStrategy;
+//            }
+//
+//            public String getName() {
+//                return name;
+//            }
+//
+//            public int getParameterSetCountLimit() {
+//                return parameterSetCountLimit;
+//            }
+//
+//            public Builder setParameterSetCountLimit(final int parameterSetCountLimit) {
+//                this.parameterSetCountLimit = parameterSetCountLimit;
+//                return this;
+//            }
+//
+//            public TemplateConfig getConfig() {
+//                return config;
+//            }
+//
+//        }
+//    }
+//
+//    private static class TrainedCandidate {
+//        private final ClassifierResults trainResults;
+//        private final Classifier classifier;
+//
+//        private TrainedCandidate(final ClassifierResults trainResults,
+//                                 final Classifier classifier) {
+//            this.trainResults = trainResults;
+//            this.classifier = classifier;
+//        }
+//
+//        public Classifier getClassifier() {
+//            return classifier;
+//        }
+//
+//        public ClassifierResults getTrainResults() {
+//            return trainResults;
+//        }
+//    }
 
-    @Override
-    public void setOption(final String key, final String value) throws
-                                                                Exception {
-        elasticEnsembleConfigState.getNext()
-                                  .setOption(key, value);
-    }
 
-    public boolean evaluateCandidate(AbstractClassifier classifier) {
-        if (classifier instanceof Knn) {
-//            ((Knn) classifier).getConfig().setPredefinedTrainNeighbourhood(trainNeighbourhood);
-//            ((Knn) classifier).getConfig().setPredefinedTrainEstimateSet(trainEstimateSet);
-        }
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public void buildClassifier(final Instances trainSet) throws
-                                                          Exception {
-        setup(trainSet);
-        while (hasRemainingCandidateParameterSets() && withinTrainContract()) {
-            evalNextCandidate();
-            getTrainStopWatch().lap();
-        }
-    }
 
-    public static class CandidateIterator
-        extends AbstractFeedbackIterator<AbstractClassifier, Double, Boolean> { // todo shift over to elasticEnsembleConfig struct
-        public String getName() {
-            return name;
-        }
 
-        @Override
-        public Boolean feedback(final Double value) {
-            return iterator.feedback(value);
-        }
 
-        private final Supplier<AbstractClassifier> supplier;
-        private final TemplateConfig config;
-        private final AbstractFeedbackIterator<ParameterSet, Double, Boolean> iterator;
 
-        private CandidateIterator(final Supplier<AbstractClassifier> supplier, final TemplateConfig config,
-                                  final String name, int threshold, int limit,
-                                  AbstractIterator<ParameterSet> iterator) {
-            this.supplier = supplier;
-            this.config = config;
-            this.name = name;
-            this.iterator = new ThresholdIterator<>(new LimitedIterator<>(iterator, limit), threshold);
-        }
 
-        private final String name;
 
-        private CandidateIterator(CandidateIterator other) throws
-                                                           Exception {
-            name = other.name;
-            iterator = other.iterator.iterator();
-            config = other.config.copy();
-            supplier = other.supplier;
-        }
 
-        @Override
-        public CandidateIterator iterator() {
-            try {
-                return new CandidateIterator(this);
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-        }
 
-        @Override
-        public AbstractClassifier next() {
-            ParameterSet parameterSet = iterator.next();
-            AbstractClassifier classifier = supplier.get();
-            try {
-                classifier.setOptions(config.getOptions());
-                classifier.setOptions(parameterSet.getOptions());
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-            return classifier;
-        }
 
-        @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
 
-        @Override
-        public void add(final AbstractClassifier classifier) {
-            iterator.add(new ParameterSet(classifier.getOptions()));
-        }
 
-        @Override
-        public void remove() {
-            iterator.remove();
-        }
 
-        public static class Builder {
-            private final String name;
-            private ParameterSpace parameterSpace;
-            private Function<Instances, ParameterSpace> parameterSpaceGetter;
-            private int parameterSetCountThreshold = -1;
-            private final Supplier<AbstractClassifier> supplier;
-            private final TemplateConfig config;
-            private ParameterSetSearchStrategy parameterSetSearchStrategy = ParameterSetSearchStrategy.RANDOM;
-            private int parameterSetCountLimit = -1;
 
-            public Builder(final String name,
-                           final Supplier<AbstractClassifier> supplier,
-                           final TemplateConfig config) {
-                this.name = name;
-                this.supplier = supplier;
-                this.config = config;
-            }
 
-            public Builder setParameterSpaceGetter(Function<Instances, ParameterSpace> parameterSpaceGetter) {
-                this.parameterSpaceGetter = parameterSpaceGetter;
-                return this;
-            }
 
-            public Builder setParameterSpace(ParameterSpace parameterSpace) {
-                this.parameterSpace = parameterSpace;
-                return this;
-            }
 
-            public CandidateIterator build(Instances instances, Random random) {
-                if(parameterSpaceGetter != null) {
-                    if(parameterSpace != null) {
-                        throw new IllegalStateException("both parameter space and getter set, which should be used?!");
-                    }
-                    parameterSpace = parameterSpaceGetter.apply(instances);
-                }
-                ParameterSetIterator iterator = buildParameterSetIterator(random);
-                return new CandidateIterator(supplier, config, name, parameterSetCountThreshold, parameterSetCountLimit, iterator);
-            }
 
-            public Builder setParameterSetCountThreshold(int parameterSetCountThreshold) {
-                this.parameterSetCountThreshold = parameterSetCountThreshold;
-                return this;
-            }
 
-            public Builder setParameterSetSearchStrategy(ParameterSetSearchStrategy parameterSetSearchStrategy) {
-                this.parameterSetSearchStrategy = parameterSetSearchStrategy;
-                return this;
-            }
 
-            public ParameterSetIterator buildParameterSetIterator(Random random) {
-                List<Integer> values = ArrayUtilities.sequence(parameterSpace.size());
-                switch (parameterSetSearchStrategy) {
-                    case RANDOM:
-                        return new ParameterSetIterator(parameterSpace, new RandomIterator<>(random, values));
-//            case SPREAD: return new ParameterSetIterator(parameterSpace, new SpreadIterator<>(values));
-                    case LINEAR: return new ParameterSetIterator(parameterSpace, new LinearIterator<>(values));
-                    default: throw new IllegalStateException(parameterSetSearchStrategy.name() + " not implemented yet");
-                }
-            }
 
-            public ParameterSpace getParameterSpace() {
-                return parameterSpace;
-            }
 
-            public Function<Instances, ParameterSpace> getParameterSpaceGetter() {
-                return parameterSpaceGetter;
-            }
 
-            public int getParameterSetCountThreshold() {
-                return parameterSetCountThreshold;
-            }
 
-            public ParameterSetSearchStrategy getParameterSetSearchStrategy() {
-                return parameterSetSearchStrategy;
-            }
 
-            public String getName() {
-                return name;
-            }
 
-            public int getParameterSetCountLimit() {
-                return parameterSetCountLimit;
-            }
 
-            public Builder setParameterSetCountLimit(final int parameterSetCountLimit) {
-                this.parameterSetCountLimit = parameterSetCountLimit;
-                return this;
-            }
 
-            public TemplateConfig getConfig() {
-                return config;
-            }
 
-        }
-    }
-
-    private static class TrainedCandidate {
-        private final ClassifierResults trainResults;
-        private final Classifier classifier;
-
-        private TrainedCandidate(final ClassifierResults trainResults,
-                                 final Classifier classifier) {
-            this.trainResults = trainResults;
-            this.classifier = classifier;
-        }
-
-        public Classifier getClassifier() {
-            return classifier;
-        }
-
-        public ClassifierResults getTrainResults() {
-            return trainResults;
-        }
-    }
+    // OLD OLD OLD STUFF
 
     //    private final static String NUM_PARAMETER_SETS_KEY = "p";
 //    private final static String NEIGHBOURHOOD_SIZE_KEY = "n";
@@ -522,11 +568,11 @@ public class ElasticEnsemble
 //        this.candidateSelector = candidateSelector;
 //    }
 //
-//    public ParameterSpacesIterationStrategy getParameterSpaceIterationStrategy() {
+//    public ParameterSpacesIterationStrategy getConstituentIterationStrategy() {
 //        return parameterSpaceIterationStrategy;
 //    }
 //
-//    public void setParameterSpaceIterationStrategy(final ParameterSpacesIterationStrategy parameterSpaceIterationStrategy) {
+//    public void setConstituentIterationStrategy(final ParameterSpacesIterationStrategy parameterSpaceIterationStrategy) {
 //        this.parameterSpaceIterationStrategy = parameterSpaceIterationStrategy;
 //    }
 //

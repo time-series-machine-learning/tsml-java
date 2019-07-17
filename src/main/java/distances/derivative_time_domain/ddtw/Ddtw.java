@@ -10,6 +10,14 @@ import weka.filters.Filter;
 
 public class Ddtw extends Dtw {
 
+    public Ddtw() {
+
+    }
+
+    public Ddtw(int warp) {
+        super(warp);
+    }
+
     private final Filter derivative = new DerivativeFilter();
 
     @Override

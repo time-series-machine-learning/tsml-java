@@ -1,4 +1,4 @@
-package classifiers.template.configuration;
+package classifiers.template.config;
 
 import java.util.Comparator;
 import java.util.function.Supplier;

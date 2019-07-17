@@ -414,7 +414,7 @@ public class Experiments  {
             expSettings.incrementalParameters.add("");
             expSettings.incrementalParameters.add("");
         }
-        for(int i = 0; i < expSettings.incrementalParameters.size(); i+=2) {
+        for(int i = 0; i < expSettings.incrementalParameters.size() || i < 1; i+=2) {
             String[] incrementalParams = new String[] {expSettings.incrementalParameters.get(i), expSettings.incrementalParameters.get(i + 1)};
             //todo: when we convert to e.g argparse4j for parameter passing, add a para
             //for location to log to file as well. for now, assuming console output is good enough
@@ -432,12 +432,11 @@ public class Experiments  {
             experiments.DataSets.problemPath = expSettings.dataReadLocation;
 
             String paramString = "";
+            if(!expSettings.incrementalParameters.isEmpty()) {
+                paramString = "," + incrementalParams[0] + "," + incrementalParams[1];
+            }
             if(expSettings.parameters != null) {
                 StringBuilder paramBuilder = new StringBuilder();
-                paramBuilder.append("_");
-                paramBuilder.append(expSettings.incrementalParameters.get(i));
-                paramBuilder.append(",");
-                paramBuilder.append(expSettings.incrementalParameters.get(i + 1));
                 for (int j = 0; j < expSettings.parameters.size(); j += 2) {
                     paramBuilder.append(",");
                     paramBuilder.append(expSettings.parameters.get(j));
@@ -463,7 +462,7 @@ public class Experiments  {
                 //            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
                 if(expSettings.parameters != null) ((AbstractClassifier) classifier).setOptions(expSettings.parameters.toArray(new String[0]));
                 if(!incrementalParams[0].isEmpty()) ((AbstractClassifier) classifier).setOptions(incrementalParams);
-                System.out.println("Classifier configuration:");
+                System.out.println("Classifier config:");
                 System.out.println(StringUtilities.join(",", ((AbstractClassifier) classifier).getOptions()));
 
                 Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);

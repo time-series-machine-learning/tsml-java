@@ -15,7 +15,8 @@
 package experiments;
 
 
-import classifiers.Tuned;
+import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
+import classifiers.tuning.Tuned;
 import classifiers.distance_based.knn.Knn;
 import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.classifier.TemplateClassifierInterface;
@@ -98,37 +99,40 @@ public class ClassifierLists {
         AbstractClassifier c=null;
         switch(classifier){
             case "TUNED_TWE_KNN":
-                c = new Tuned(Knn::new, Twe::parameterSpace);
+                c = new Tuned(Knn::new, Twe.parameterSpace(), new RandomIterator<>(fold));
                 break;
             case "TUNED_MSM_KNN":
-                c = new Tuned(Knn::new, Msm::parameterSpace);
+                c = new Tuned(Knn::new, Msm.parameterSpace(), new RandomIterator<>(fold));
                 break;
             case "TUNED_LCSS_KNN":
-                c = new Tuned(Knn::new, Lcss::parameterSpace);
+                c = new Tuned(Knn::new, Lcss::parameterSpace, new RandomIterator<>(fold));
                 break;
             case "TUNED_ERP_KNN":
-                c = new Tuned(Knn::new, Erp::parameterSpace);
+                c = new Tuned(Knn::new, Erp::parameterSpace, new RandomIterator<>(fold));
                 break;
             case "ED_KNN":
-                c = new Tuned(Knn::new, Dtw::edParameterSpace);
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(0));
                 break;
             case "DTW_KNN":
-                c = new Tuned(Knn::new, Dtw::fullWarpParameterSpace);
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(-1));
                 break;
             case "TUNED_DTW_KNN":
-                c = new Tuned(Knn::new, Dtw::warpParameterSpace);
+                c = new Tuned(Knn::new, Dtw::warpParameterSpace, new RandomIterator<>(fold));
                 break;
             case "DDTW_KNN":
-                c = new Tuned(Knn::new, Ddtw::fullWarpParameterSpace);
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new CachedDdtw(-1));
                 break;
             case "TUNED_DDTW_KNN":
-                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace);
+                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace, new RandomIterator<>(fold));
                 break;
             case "TUNED_WDTW_KNN":
-                c = new Tuned(Knn::new, Wdtw::parameterSpace);
+                c = new Tuned(Knn::new, Wdtw.parameterSpace(), new RandomIterator<>(fold));
                 break;
             case "TUNED_WDDTW_KNN":
-                c = new Tuned(Knn::new, CachedWddtw::parameterSpace);
+                c = new Tuned(Knn::new, CachedWddtw.parameterSpace(), new RandomIterator<>(fold));
                 break;
             case "FEE":
                 c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();

@@ -2,8 +2,8 @@ package classifiers.distance_based.knn;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
 import classifiers.template.classifier.TemplateClassifier;
-import classifiers.template.configuration.ConfigState;
-import classifiers.template.configuration.reduced.ReducedTrainSetConfig;
+import classifiers.template.config.ConfigState;
+import classifiers.template.config.reduced.ReductionConfig;
 import evaluation.storage.ClassifierResults;
 import utilities.ArrayUtilities;
 import weka.core.Capabilities;
@@ -15,13 +15,14 @@ import java.util.*;
 public class Knn
     extends TemplateClassifier {
 
-    private final ConfigState<KnnConfig> knnConfigState = new ConfigState<>(KnnConfig::new,
-                                                                            KnnConfig.TRAIN_CONFIG_COMPARATOR,
-                                                                            KnnConfig.TEST_CONFIG_COMPARATOR);
-    private final ConfigState<ReducedTrainSetConfig> reducedTrainSetConfigState =
-        new ConfigState<>(ReducedTrainSetConfig::new, ReducedTrainSetConfig.TRAIN_CONFIG_COMPARATOR,
-                          ReducedTrainSetConfig.TEST_CONFIG_COMPARATOR);
-    private KnnConfig knnConfig;
+//    private final ConfigState<KnnConfig> knnConfigState = new ConfigState<>(KnnConfig::new,
+//                                                                            KnnConfig.TRAIN_CONFIG_COMPARATOR,
+//                                                                            KnnConfig.TEST_CONFIG_COMPARATOR);
+//    private final ConfigState<ReductionConfig> reducedTrainSetConfigState =
+//        new ConfigState<>(ReductionConfig::new, ReductionConfig.TRAIN_CONFIG_COMPARATOR,
+//                          ReductionConfig.TEST_CONFIG_COMPARATOR);
+    private ReductionConfig reductionConfig = new ReductionConfig();
+    private KnnConfig knnConfig = new KnnConfig();
     private AbstractIterator<Instance> trainSetIterator = null;
     private AbstractIterator<Instance> trainEstimateSetIterator = null;
 
@@ -44,7 +45,7 @@ public class Knn
     }
 
     public KnnConfig getKnnConfig() {
-        return knnConfigState.getNext();
+        return knnConfig;//State.getNext();
     }
 
     public Knn() {}
@@ -54,8 +55,8 @@ public class Knn
         super(other);
     }
 
-    public ReducedTrainSetConfig getReducedTrainSetConfig() {
-        return reducedTrainSetConfigState.getNext();
+    public ReductionConfig getReducedTrainSetConfig() {
+        return reductionConfig;//State.getNext();
     }
 
     @Override
@@ -90,23 +91,25 @@ public class Knn
 
     private void setup(Instances trainSet) throws
                                            Exception {
-        for (int i = 0; i < trainSet.size(); i++) {
-            trainSet.get(i)
-                    .setWeight(i);
-        }
-        knnConfigState.shift();
-        reducedTrainSetConfigState.shift();
-        if (trainSetChanged(trainSet) || knnConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()) {
+//        for (int i = 0; i < trainSet.size(); i++) {
+//            trainSet.get(i)
+//                    .setWeight(i);
+//        }
+//        knnConfigState.shift();
+//        reducedTrainSetConfigState.shift();
+        if (trainSetChanged(trainSet)
+//                || knnConfigState.mustResetTrain() || reducedTrainSetConfigState.mustResetTrain()
+        ) {
             getTrainStopWatch().reset();
             resetTrainSeed();
-            knnConfig = knnConfigState.getCurrent();
+//            knnConfig = knnConfigState.getCurrent();
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
             trainNeighbourhood = new ArrayList<>();
-            ReducedTrainSetConfig reducedTrainSetConfig = reducedTrainSetConfigState.getCurrent();
-            reducedTrainSetConfig.buildTrainIterators(trainSet);
-            trainSetIterator = reducedTrainSetConfig.getTrainSetIterator();
-            trainEstimateSetIterator = reducedTrainSetConfig.getTrainEstimateSetIterator();
+//            ReductionConfig reductionConfig = reducedTrainSetConfigState.getCurrent();
+            reductionConfig.buildTrainIterators(trainSet);
+            trainSetIterator = reductionConfig.getTrainSetIterator();
+            trainEstimateSetIterator = reductionConfig.getTrainEstimateSetIterator();
             getTrainStopWatch().lap();
         }
     }
@@ -121,7 +124,7 @@ public class Knn
 
     private void nextTrainEstimator() {
         Instance instance = trainEstimateSetIterator.next();
-        System.out.println(instance.weight());
+//        System.out.println(instance.weight());
         trainEstimateSetIterator.remove();
         KNearestNeighbours kNearestNeighbours = new KNearestNeighbours(instance);
         trainEstimate.add(kNearestNeighbours);

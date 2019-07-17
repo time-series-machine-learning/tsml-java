@@ -1,20 +1,18 @@
 package classifiers.distance_based.elastic_ensemble;
 
-import classifiers.distance_based.knn.KnnConfig;
-import classifiers.template.configuration.TemplateConfig;
+import classifiers.template.config.TemplateConfig;
+import classifiers.tuning.Tuned;
 import evaluation.storage.ClassifierResults;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
 public class ElasticEnsembleConfig
     extends TemplateConfig {
-    private final KnnConfig knnConfiguration = new KnnConfig();
-    private final List<ElasticEnsemble.CandidateIterator.Builder> candidateIteratorBuilders = new ArrayList<>();
-    private ParameterSpaceIterationStrategy parameterSpaceIterationStrategy = ParameterSpaceIterationStrategy.RANDOM;
+    private ConstituentIterationStrategy constituentIterationStrategy = ConstituentIterationStrategy.RANDOM;
     private Function<ClassifierResults, Double> trainResultsMetricGetter = ClassifierResults::getAcc;
+    private final List<Tuned> constituents = new ArrayList<>();
 
     public ElasticEnsembleConfig() {
         super();
@@ -25,17 +23,6 @@ public class ElasticEnsembleConfig
         super(other);
     }
 
-    public KnnConfig getKnnConfiguration() {
-        return knnConfiguration;
-    }
-
-    public static Comparator<ElasticEnsembleConfig> TRAIN_CONFIG_COMPARATOR =
-        (config, other) -> KnnConfig.TRAIN_CONFIG_COMPARATOR.compare(config.knnConfiguration, other.knnConfiguration);
-
-    public static Comparator<ElasticEnsembleConfig> TEST_CONFIG_COMPARATOR =
-        (config, other) -> KnnConfig.TEST_CONFIG_COMPARATOR.compare(config.knnConfiguration, other.knnConfiguration);
-
-
     @Override
     public ElasticEnsembleConfig copy() throws
                                                Exception {
@@ -43,27 +30,27 @@ public class ElasticEnsembleConfig
     }
 
     @Override
+    public String[] getOptions() {
+        return null;
+    }
+
+    @Override
     public void copyFrom(final Object object) throws
                                               Exception {
         ElasticEnsembleConfig other = (ElasticEnsembleConfig) object; // todo
-        knnConfiguration.copyFrom(other.knnConfiguration);
     }
 
     @Override
     public void setOption(final String key, final String value) {
-        knnConfiguration.setOption(key, value);
-    } // todo
-
-    public List<ElasticEnsemble.CandidateIterator.Builder> getCandidateIteratorBuilders() {
-        return candidateIteratorBuilders;
+        // todo
     }
 
-    public ParameterSpaceIterationStrategy getParameterSpaceIterationStrategy() {
-        return parameterSpaceIterationStrategy;
+    public ConstituentIterationStrategy getConstituentIterationStrategy() {
+        return constituentIterationStrategy;
     }
 
-    public void setParameterSpaceIterationStrategy(final ParameterSpaceIterationStrategy parameterSpaceIterationStrategy) {
-        this.parameterSpaceIterationStrategy = parameterSpaceIterationStrategy;
+    public void setConstituentIterationStrategy(final ConstituentIterationStrategy constituentIterationStrategy) {
+        this.constituentIterationStrategy = constituentIterationStrategy;
     }
 
     public Function<ClassifierResults, Double> getTrainResultsMetricGetter() {
@@ -72,5 +59,9 @@ public class ElasticEnsembleConfig
 
     public void setTrainResultsMetricGetter(final Function<ClassifierResults, Double> trainResultsMetricGetter) {
         this.trainResultsMetricGetter = trainResultsMetricGetter;
+    }
+
+    public List<Tuned> getConstituents() {
+        return constituents;
     }
 }

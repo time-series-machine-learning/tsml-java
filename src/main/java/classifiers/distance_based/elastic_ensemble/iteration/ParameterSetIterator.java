@@ -2,6 +2,7 @@ package classifiers.distance_based.elastic_ensemble.iteration;
 
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
+import utilities.ArrayUtilities;
 
 public class ParameterSetIterator extends AbstractIterator<ParameterSet> {
     private final ParameterSpace parameterSpace;
@@ -11,6 +12,7 @@ public class ParameterSetIterator extends AbstractIterator<ParameterSet> {
                                 final AbstractIterator<Integer> iterator) {
         this.parameterSpace = parameterSpace;
         this.iterator = iterator;
+        iterator.addAll(ArrayUtilities.sequence(parameterSpace.size()));
     }
 
     public ParameterSetIterator(ParameterSetIterator other) {

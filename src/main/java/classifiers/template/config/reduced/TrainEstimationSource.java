@@ -1,4 +1,4 @@
-package classifiers.template.configuration.reduced;
+package classifiers.template.config.reduced;
 
 public enum TrainEstimationSource {
     FROM_FULL_TRAIN_SET,
