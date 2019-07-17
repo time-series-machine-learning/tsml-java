@@ -73,10 +73,21 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Se
         }
     }
 
-    public static final String DISTANCE_MEASURE_KEY = "distanceMeasure";
+    public static final String DISTANCE_MEASURE_KEY = "dm";
 
     @Override
     public String toString() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] getOptions() {
+        return new String[0];
+    }
+
+    @Override
+    public void setOptions(final String[] options) throws
+                                                   Exception {
+
     }
 }

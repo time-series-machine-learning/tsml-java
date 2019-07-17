@@ -443,7 +443,7 @@ public class Experiments  {
                     paramBuilder.append(",");
                     paramBuilder.append(expSettings.parameters.get(j + 1));
                 }
-                paramString = paramBuilder.toString();
+                paramString += paramBuilder.toString();
             }
 
             //Build/make the directory to write the train and/or testFold files to
@@ -465,7 +465,6 @@ public class Experiments  {
                 System.out.println("Classifier config:");
                 System.out.println(StringUtilities.join(",", ((AbstractClassifier) classifier).getOptions()));
 
-                Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
                 //If needed, build/make the directory to write the train and/or testFold files to
                 if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
@@ -492,6 +491,7 @@ public class Experiments  {
                     }
                 }
 
+                Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
                 double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
                 LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
             }
@@ -732,6 +732,7 @@ public class Experiments  {
                         assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
                     }
 
+                    testResults.findAllStatsOnce();
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
                     
@@ -768,7 +769,8 @@ public class Experiments  {
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            return -1; //error state
+            System.exit(1);
+            return -1;
         }
     }
     

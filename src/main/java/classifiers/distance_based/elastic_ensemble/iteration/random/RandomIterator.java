@@ -9,7 +9,16 @@ import java.util.Random;
 
 public class RandomIterator<A> extends LinearIterator<A> {
     protected final Random random = new Random();
-    protected long seed;
+    protected Long seed = null;
+
+    public long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(final long seed) {
+        this.seed = seed;
+        random.setSeed(seed);
+    }
 
     public RandomIterator(final long seed, final List<A> values) {
         super(values);
@@ -29,6 +38,8 @@ public class RandomIterator<A> extends LinearIterator<A> {
     public RandomIterator(long seed) {
         this(seed, new ArrayList<>());
     }
+
+    public RandomIterator() {}
 
     public RandomIterator(Random random) {
         this(random.nextLong(), new ArrayList<>());

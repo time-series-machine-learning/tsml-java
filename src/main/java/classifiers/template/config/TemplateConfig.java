@@ -1,10 +1,13 @@
 package classifiers.template.config;
 
 import utilities.Copyable;
-import utilities.IndividualOptionHandler;
+import weka.core.OptionHandler;
+
+import java.util.Enumeration;
 
 public abstract class TemplateConfig
-        implements Copyable, IndividualOptionHandler {
+        implements Copyable,
+                   OptionHandler {
 
     public TemplateConfig() {}
 
@@ -17,5 +20,8 @@ public abstract class TemplateConfig
     public abstract TemplateConfig copy() throws
                                           Exception;
 
-
+    @Override
+    public Enumeration listOptions() {
+        throw new UnsupportedOperationException();
+    }
 }

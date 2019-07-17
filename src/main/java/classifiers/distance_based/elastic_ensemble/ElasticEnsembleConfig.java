@@ -30,6 +30,12 @@ public class ElasticEnsembleConfig
     }
 
     @Override
+    public void setOptions(final String[] options) throws
+                                                   Exception {
+        // todo
+    }
+
+    @Override
     public String[] getOptions() {
         return null;
     }
@@ -40,10 +46,6 @@ public class ElasticEnsembleConfig
         ElasticEnsembleConfig other = (ElasticEnsembleConfig) object; // todo
     }
 
-    @Override
-    public void setOption(final String key, final String value) {
-        // todo
-    }
 
     public ConstituentIterationStrategy getConstituentIterationStrategy() {
         return constituentIterationStrategy;

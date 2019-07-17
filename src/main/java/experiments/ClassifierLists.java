@@ -16,19 +16,11 @@ package experiments;
 
 
 import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
+import classifiers.distance_based.knn.KnnConfig;
 import classifiers.tuning.Tuned;
-import classifiers.distance_based.knn.Knn;
 import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.classifier.TemplateClassifierInterface;
-import distances.derivative_time_domain.ddtw.CachedDdtw;
-import distances.derivative_time_domain.ddtw.Ddtw;
-import distances.derivative_time_domain.wddtw.CachedWddtw;
-import distances.time_domain.dtw.Dtw;
-import distances.time_domain.erp.Erp;
-import distances.time_domain.lcss.Lcss;
 import distances.time_domain.msm.Msm;
-import distances.time_domain.twe.Twe;
-import distances.time_domain.wdtw.Wdtw;
 import multivariate_timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
@@ -101,9 +93,12 @@ public class ClassifierLists {
 //            case "TUNED_TWE_KNN":
 //                c = new Tuned(Knn::new, Twe.parameterSpace(), new RandomIterator<>(fold));
 //                break;
-//            case "TUNED_MSM_KNN":
-//                c = new Tuned(Knn::new, Msm.parameterSpace(), new RandomIterator<>(fold));
-//                break;
+            case "TUNED_MSM_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpace(Msm.parameterSpace());
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
+                break;
 //            case "TUNED_LCSS_KNN":
 //                c = new Tuned(Knn::new, Lcss::parameterSpace, new RandomIterator<>(fold));
 //                break;

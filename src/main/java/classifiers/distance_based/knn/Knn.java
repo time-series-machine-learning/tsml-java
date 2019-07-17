@@ -21,7 +21,6 @@ public class Knn
 //    private final ConfigState<ReductionConfig> reducedTrainSetConfigState =
 //        new ConfigState<>(ReductionConfig::new, ReductionConfig.TRAIN_CONFIG_COMPARATOR,
 //                          ReductionConfig.TEST_CONFIG_COMPARATOR);
-    private ReductionConfig reductionConfig = new ReductionConfig();
     private KnnConfig knnConfig = new KnnConfig();
     private AbstractIterator<Instance> trainSetIterator = null;
     private AbstractIterator<Instance> trainEstimateSetIterator = null;
@@ -32,16 +31,16 @@ public class Knn
     private List<Instance> trainNeighbourhood = null;
 
     @Override
-    public void setOption(final String key, final String value) throws
+    public void setOptions(String[] options) throws
                                                                 Exception {
-        getKnnConfig().setOption(key, value);
-        getReducedTrainSetConfig().setOption(key, value);
+        getKnnConfig().setOptions(options);
     }
+
 
     @Override
     public void setTrainSeed(final Long seed) {
         super.setTrainSeed(seed);
-        getReducedTrainSetConfig().setSamplingSeed(seed);
+        getKnnConfig().getReductionConfig().setSamplingSeed(seed);
     }
 
     public KnnConfig getKnnConfig() {
@@ -55,13 +54,10 @@ public class Knn
         super(other);
     }
 
-    public ReductionConfig getReducedTrainSetConfig() {
-        return reductionConfig;//State.getNext();
-    }
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(getKnnConfig().getOptions(), getReducedTrainSetConfig().getOptions(), super.getOptions());
+        return ArrayUtilities.concat(getKnnConfig().getOptions(), super.getOptions());
     }
 
     @Override
@@ -84,7 +80,6 @@ public class Knn
             trainEstimate.add(new KNearestNeighbours(KNearestNeighbours));
         }
         getKnnConfig().copyFrom(other.getKnnConfig());
-        getReducedTrainSetConfig().copyFrom(other.getReducedTrainSetConfig());
         trainNeighbourhood = new ArrayList<>(other.trainNeighbourhood);
         trainSet = other.trainSet;
     }
@@ -106,6 +101,7 @@ public class Knn
             this.trainSet = trainSet;
             trainEstimate = new ArrayList<>();
             trainNeighbourhood = new ArrayList<>();
+            ReductionConfig reductionConfig = knnConfig.getReductionConfig();
 //            ReductionConfig reductionConfig = reducedTrainSetConfigState.getCurrent();
             reductionConfig.buildTrainIterators(trainSet);
             trainSetIterator = reductionConfig.getTrainSetIterator();

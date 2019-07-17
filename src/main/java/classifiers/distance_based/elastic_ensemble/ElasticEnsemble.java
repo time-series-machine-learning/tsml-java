@@ -37,7 +37,7 @@ public class ElasticEnsemble
     }
 
     @Override
-    public void setOption(String key, String value) throws Exception {
+    public void setOptions(String[] options) throws Exception {
 
     }
 

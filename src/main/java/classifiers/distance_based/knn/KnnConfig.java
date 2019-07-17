@@ -1,6 +1,11 @@
 package classifiers.distance_based.knn;
 
 import classifiers.template.config.TemplateConfig;
+import classifiers.template.config.reduced.NeighbourSearchStrategy;
+import classifiers.template.config.reduced.ReductionConfig;
+import classifiers.template.config.reduced.TrainEstimationSource;
+import classifiers.template.config.reduced.TrainEstimationStrategy;
+import classifiers.tuning.IterationStrategy;
 import distances.DistanceMeasure;
 import distances.time_domain.dtw.Dtw;
 import utilities.ArrayUtilities;
@@ -16,6 +21,7 @@ public class KnnConfig
     private DistanceMeasure distanceMeasure = new Dtw(0);
     private final static String EARLY_ABANDON_KEY = "ea";
     private boolean earlyAbandon = false;
+    private final ReductionConfig reductionConfig = new ReductionConfig();
 
     public KnnConfig() {
 
@@ -36,19 +42,26 @@ public class KnnConfig
         return 0;
     };
 
+
     @Override
-    public void setOption(String key, String value) {
-        switch (key) {
-            case K_KEY:
-                setK(Integer.parseInt(value));
-                break;
-            case DISTANCE_MEASURE_KEY:
-                setDistanceMeasure(DistanceMeasure.fromString(value));
-                break;
-            case EARLY_ABANDON_KEY:
-                setEarlyAbandon(Boolean.parseBoolean(value));
-                break;
-        }
+    public void setOptions(final String[] options) throws
+                                                   Exception {
+        ArrayUtilities.forEachPair(options, (key, value) -> {
+            switch (key) {
+                case K_KEY:
+                    setK(Integer.parseInt(value));
+                    break;
+                case DISTANCE_MEASURE_KEY:
+                    setDistanceMeasure(DistanceMeasure.fromString(value));
+                    break;
+                case EARLY_ABANDON_KEY:
+                    setEarlyAbandon(Boolean.parseBoolean(value));
+                    break;
+            }
+            return null;
+        });
+        distanceMeasure.setOptions(options);
+        reductionConfig.setOptions(options);
     }
 
     @Override
@@ -60,7 +73,7 @@ public class KnnConfig
             String.valueOf(k),
             EARLY_ABANDON_KEY,
             String.valueOf(earlyAbandon),
-            });
+            }, reductionConfig.getOptions());
     }
 
     public int getK() {
@@ -100,6 +113,10 @@ public class KnnConfig
                                               Exception {
         KnnConfig other = (KnnConfig) object;
         setOptions(other.getOptions());
+        getReductionConfig().copyFrom(other.getReductionConfig());
     }
 
+    public ReductionConfig getReductionConfig() {
+        return reductionConfig;
+    }
 }

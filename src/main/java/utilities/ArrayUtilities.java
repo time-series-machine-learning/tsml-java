@@ -1,8 +1,10 @@
 package utilities;
 
+import classifiers.tuning.IterationStrategy;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
@@ -296,6 +298,17 @@ public class ArrayUtilities {
         while (iterator.hasNext()) {
             collection.add(iterator.next());
             iterator.remove();
+        }
+    }
+
+    public static void forEachPair(String[] options, BiFunction<String, String, Void> function) {
+        if(options.length % 2 != 0) {
+            throw new IllegalArgumentException("options is not correct length, must be key-value pairs");
+        }
+        for(int i = 0; i < options.length; i += 2) {
+            String key = options[i];
+            String value = options[i + 1];
+            function.apply(key, value);
         }
     }
 

@@ -5,8 +5,26 @@ import evaluation.tuning.ParameterSpace;
 import utilities.ArrayUtilities;
 
 public class ParameterSetIterator extends AbstractIterator<ParameterSet> {
-    private final ParameterSpace parameterSpace;
-    private final AbstractIterator<Integer> iterator;
+    private ParameterSpace parameterSpace;
+    private AbstractIterator<Integer> iterator;
+
+    public ParameterSpace getParameterSpace() {
+        return parameterSpace;
+    }
+
+    public void setParameterSpace(final ParameterSpace parameterSpace) {
+        this.parameterSpace = parameterSpace;
+    }
+
+    public AbstractIterator<Integer> getIterator() {
+        return iterator;
+    }
+
+    public void setIterator(final AbstractIterator<Integer> iterator) {
+        this.iterator = iterator;
+    }
+
+    public ParameterSetIterator() {}
 
     public ParameterSetIterator(final ParameterSpace parameterSpace,
                                 final AbstractIterator<Integer> iterator) {

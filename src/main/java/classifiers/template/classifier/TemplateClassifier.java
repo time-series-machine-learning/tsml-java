@@ -47,17 +47,7 @@ public abstract class TemplateClassifier
     private StopWatch trainStopWatch = new StopWatch();
     private StopWatch testStopWatch = new StopWatch();
 
-    public abstract void setOption(String key, String value) throws Exception;
-
-    public final void setOptions(String[] options) throws
-                                             Exception {
-        if(options.length % 2 != 0) {
-            throw new IllegalArgumentException("options is not correct length, must be key-value pairs");
-        }
-        for(int i = 0; i < options.length; i += 2) {
-            setOption(options[i], options[i + 1]);
-        }
-    }
+    public abstract void setOptions(String[] options) throws Exception;
 
     public String[] getOptions() {
         // todo!

@@ -8,6 +8,8 @@ import classifiers.distance_based.knn.sampling.LinearSampler;
 import classifiers.distance_based.knn.sampling.RandomSampler;
 import classifiers.distance_based.knn.sampling.RoundRobinRandomSampler;
 import classifiers.template.config.TemplateConfig;
+import classifiers.tuning.IterationStrategy;
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -260,38 +262,46 @@ public class ReductionConfig
     }
 
     @Override
-    public void setOption(final String key, final String value) {
-        switch (key) {
-            case TRAIN_SET_SIZE_LIMIT_KEY:
-                setTrainSetSizeLimit(Integer.parseInt(value));
-                break;
-            case TRAIN_SET_SIZE_LIMIT_PERCENTAGE_KEY:
-                setTrainSetSizeLimitPercentage(Double.parseDouble(value));
-                break;
-            case TRAIN_ESTIMATE_SET_SIZE_LIMIT:
-                setTrainEstimateSetSizeLimit(Integer.parseInt(value));
-                break;
-            case TRAIN_ESTIMATE_SET_SIZE_LIMIT_PERCENTAGE:
-                setTrainEstimateSetSizeLimitPercentage(Double.parseDouble(value));
-                break;
-            case TRAIN_SET_STRATEGY_KEY:
-                setTrainSetStrategy(NeighbourSearchStrategy.fromString(value));
-                break;
-            case TRAIN_ESTIMATE_SET_SOURCE_KEY:
-                setTrainEstimateSetSource(TrainEstimationSource.fromString(value));
-                break;
-            case TRAIN_ESTIMATE_SET_STRATEGY_KEY:
-                setTrainEstimateSetStrategy(TrainEstimationStrategy.fromString(value));
-                break;
-            case TRAIN_SET_SIZE_THRESHOLD:
-                setTrainSetSizeThreshold(Integer.parseInt(value));
-                break;
-            case TRAIN_ESTIMATE_SET_SIZE_THRESHOLD:
-                setTrainEstimateSetSizeThreshold(Integer.parseInt(value));
-                break;
-            case SAMPLING_SEED_KEY:
-                setSamplingSeed(Long.valueOf(value));
-        }
+    public void setOptions(String[] options) {
+        ArrayUtilities.forEachPair(options, (key, value) -> {
+            switch (key) {
+                case TRAIN_SET_SIZE_LIMIT_KEY:
+                    setTrainSetSizeLimit(Integer.parseInt(value));
+                    break;
+                case TRAIN_SET_SIZE_LIMIT_PERCENTAGE_KEY:
+                    setTrainSetSizeLimitPercentage(Double.parseDouble(value));
+                    break;
+                case TRAIN_ESTIMATE_SET_SIZE_LIMIT:
+                    setTrainEstimateSetSizeLimit(Integer.parseInt(value));
+                    break;
+                case TRAIN_ESTIMATE_SET_SIZE_LIMIT_PERCENTAGE:
+                    setTrainEstimateSetSizeLimitPercentage(Double.parseDouble(value));
+                    break;
+                case TRAIN_SET_STRATEGY_KEY:
+                    setTrainSetStrategy(NeighbourSearchStrategy.fromString(value));
+                    break;
+                case TRAIN_ESTIMATE_SET_SOURCE_KEY:
+                    setTrainEstimateSetSource(TrainEstimationSource.fromString(value));
+                    break;
+                case TRAIN_ESTIMATE_SET_STRATEGY_KEY:
+                    setTrainEstimateSetStrategy(TrainEstimationStrategy.fromString(value));
+                    break;
+                case TRAIN_SET_SIZE_THRESHOLD:
+                    setTrainSetSizeThreshold(Integer.parseInt(value));
+                    break;
+                case TRAIN_ESTIMATE_SET_SIZE_THRESHOLD:
+                    setTrainEstimateSetSizeThreshold(Integer.parseInt(value));
+                    break;
+                case SAMPLING_SEED_KEY:
+                    if(value.equals("null")) {
+                        setSamplingSeed(null);
+                    } else {
+                        setSamplingSeed(Long.valueOf(value));
+                    }
+            }
+            return null;
+        });
+
     }
 
     @Override

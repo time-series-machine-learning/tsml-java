@@ -1,15 +1,28 @@
 package classifiers.distance_based.elastic_ensemble.iteration.limited;
 
 import classifiers.distance_based.elastic_ensemble.iteration.AbstractIterator;
-import utilities.IndividualOptionHandler;
 import weka.core.OptionHandler;
 
 public class LimitedIterator<A>
     extends AbstractIterator<A> {
 
-    private final AbstractIterator<A> iterator;
+    private AbstractIterator<A> iterator;
     private int limit;
     private int count = 0;
+
+    public AbstractIterator<A> getIterator() {
+        return iterator;
+    }
+
+    public void setIterator(final AbstractIterator<A> iterator) {
+        this.iterator = iterator;
+    }
+
+    public void setCount(final int count) {
+        this.count = count;
+    }
+
+    public LimitedIterator() {}
 
     public LimitedIterator(final AbstractIterator<A> iterator, final int limit) {this.iterator = iterator;
         this.limit = limit;

@@ -10,9 +10,27 @@ import java.util.function.Supplier;
 
 public class ClassifierIterator extends AbstractIterator<AbstractClassifier> {
 
-    private final AbstractIterator<ParameterSet> iterator;
-    private final Supplier<AbstractClassifier> supplier;
+    private AbstractIterator<ParameterSet> iterator;
+    private Supplier<AbstractClassifier> supplier;
     private final List<AbstractClassifier> added = new ArrayList<>();
+
+    public AbstractIterator<ParameterSet> getIterator() {
+        return iterator;
+    }
+
+    public void setIterator(final AbstractIterator<ParameterSet> iterator) {
+        this.iterator = iterator;
+    }
+
+    public Supplier<AbstractClassifier> getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(final Supplier<AbstractClassifier> supplier) {
+        this.supplier = supplier;
+    }
+
+    public ClassifierIterator() {}
 
     public ClassifierIterator(Supplier<AbstractClassifier> supplier, AbstractIterator<ParameterSet> iterator) {
         this.supplier = supplier;

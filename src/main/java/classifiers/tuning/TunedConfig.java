@@ -9,10 +9,12 @@ import classifiers.template.config.TemplateConfig;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
+import utilities.ArrayUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instances;
 
 import java.util.Comparator;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class TunedConfig extends TemplateConfig {
@@ -22,6 +24,7 @@ public class TunedConfig extends TemplateConfig {
     private Comparator<ClassifierResults> comparator = Comparator.comparingDouble(ClassifierResults::getAcc);
     private final static String LIMIT_KEY = "il";
     private int limit = -1;
+    private ParameterSet classifierParameterSet = new ParameterSet();
     private final static String LIMIT_PERCENTAGE_KEY = "ilp";
     private double limitPercentage = -1;
     private ParameterSpace parameterSpace;
@@ -29,7 +32,18 @@ public class TunedConfig extends TemplateConfig {
     private AbstractIterator<Integer> parameterSetIndexIterator;
     private final static String ITERATION_STRATEGY_KEY = "is";
     private IterationStrategy iterationStrategy = IterationStrategy.RANDOM;
+    private ParameterSetIterator parameterSetIterator = new ParameterSetIterator();
+    private RandomIterator<Integer> indexIterator = new RandomIterator<>();
+    private LimitedIterator<ParameterSet> limitedIterator = new LimitedIterator<>();
     private Long seed = null;
+
+    public ParameterSet getClassifierParameterSet() {
+        return classifierParameterSet;
+    }
+
+    public void setClassifierParameterSet(ParameterSet classifierParameterSet) {
+        this.classifierParameterSet = classifierParameterSet;
+    }
 
     public void setLimit(int limit) {
         this.limit = limit;
@@ -39,22 +53,43 @@ public class TunedConfig extends TemplateConfig {
         return limit;
     }
 
+
     @Override
-    public void setOption(final String key, final String value) {
-        if(key.equals(LIMIT_KEY)) setLimit(Integer.parseInt(value));
-        else if(key.equals(ITERATION_STRATEGY_KEY)) setIterationStrategy(IterationStrategy.fromString(value));
-        else if(key.equals(LIMIT_PERCENTAGE_KEY)) setLimitPercentage(Double.parseDouble(value));
+    public void setOptions(final String[] options) throws
+                                                   Exception {
+        ArrayUtilities.forEachPair(options, (key, value) -> {
+            switch (key) {
+                case LIMIT_KEY:
+                    setLimit(Integer.parseInt(value));
+                    break;
+                case ITERATION_STRATEGY_KEY:
+                    setIterationStrategy(IterationStrategy.fromString(value));
+                    break;
+                case LIMIT_PERCENTAGE_KEY:
+                    setLimitPercentage(Double.parseDouble(value));
+                    break;
+            }
+            return null;
+        });
+        if(classifierParameterSet != null) {
+            classifierParameterSet.setOptions(options);
+        }
     }
 
     @Override
     public String[] getOptions() {
-        return new String[] {LIMIT_KEY,
-                             String.valueOf(limit),
-                LIMIT_PERCENTAGE_KEY,
-                String.valueOf(limitPercentage),
-                ITERATION_STRATEGY_KEY,
-                String.valueOf(iterationStrategy)
+        String[] options = new String[] {LIMIT_KEY,
+                                         String.valueOf(limit),
+                                         LIMIT_PERCENTAGE_KEY,
+                                         String.valueOf(limitPercentage),
+                                         ITERATION_STRATEGY_KEY,
+                                         String.valueOf(iterationStrategy)
         };
+        if(classifierParameterSet != null) {
+            return ArrayUtilities.concat(classifierParameterSet.getOptions(), options);
+        } else {
+            return options;
+        }
     }
     // todo keep more than 1, perhaps they should then be ensembled?
 
@@ -76,25 +111,37 @@ public class TunedConfig extends TemplateConfig {
         throw new UnsupportedOperationException(); // todo
     }
 
-    private AbstractIterator<AbstractClassifier> classifierIterator;
+    private ClassifierIterator classifierIterator = new ClassifierIterator();
+
+    private boolean fullSetup = true;
 
     public void buildClassifierIterator(Instances trainSet) {
 //        if(classifierIteratorGetter != null) {
 //            classifierIterator = classifierIteratorGetter.apply(trainSet);
 //        } else {
 //        }
-        if(seed == null) {
-            throw new UnsupportedOperationException();
+        if(fullSetup) {
+            fullSetup = false;
+            if(seed == null) {
+                throw new UnsupportedOperationException();
+            }
+            if(parameterSpaceGetter != null && parameterSpace != null) {
+                parameterSpace = parameterSpaceGetter.apply(trainSet);
+            }
+            if(parameterSpace == null) {
+                throw new IllegalStateException();
+            }
+            parameterSpace.removeDuplicateParameterSets();
+            indexIterator.setSeed(seed);
+            parameterSetIterator.setParameterSpace(parameterSpace);
+            parameterSetIterator.setIterator(indexIterator);
+            limitedIterator.setIterator(parameterSetIterator);
+            classifierIterator.setIterator(limitedIterator);
+            classifierIterator.setSupplier(Knn::new);
+            indexIterator.addAll(ArrayUtilities.sequence(parameterSpace.size()));
         }
-        if(parameterSpaceGetter != null) {
-            parameterSpace = parameterSpaceGetter.apply(trainSet);
-        }
-        parameterSpace.removeDuplicateParameterSets();
         int size = (int) (parameterSpace.size() * limitPercentage);
-        AbstractIterator<Integer> indexIterator = new RandomIterator<>(seed);
-        AbstractIterator<ParameterSet> parameterSetIterator = new ParameterSetIterator(parameterSpace, indexIterator);
-        parameterSetIterator = new LimitedIterator<>(parameterSetIterator, size);
-        classifierIterator = new ClassifierIterator(Knn::new, parameterSetIterator);
+        limitedIterator.setLimit(size);
     }
 
     public Comparator<ClassifierResults> getComparator() {
