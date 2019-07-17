@@ -4,15 +4,15 @@ import weka.core.OptionHandler;
 
 import java.util.Enumeration;
 
-public abstract class IndividualOptionHandler
-    implements OptionHandler {
+public interface IndividualOptionHandler
+    extends OptionHandler {
     @Override
-    public Enumeration listOptions() {
+    default Enumeration listOptions() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setOptions(final String[] options) throws
+    default void setOptions(final String[] options) throws
                                                    Exception {
         if(options.length % 2 != 0) {
             throw new IllegalArgumentException("options must be array of even length of key pair values");
@@ -22,10 +22,8 @@ public abstract class IndividualOptionHandler
         }
     }
 
-    public abstract void setOption(String key, String value);
+    void setOption(String key, String value);
 
     @Override
-    public String[] getOptions() {
-        return new String[0];
-    }
+    String[] getOptions();
 }

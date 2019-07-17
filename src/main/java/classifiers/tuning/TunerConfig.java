@@ -19,6 +19,31 @@ public class TunerConfig extends TemplateConfig {
     private Function<Instances, AbstractIterator<AbstractClassifier>> classifierIteratorGetter;
     private AbstractIterator<AbstractClassifier> classifierIterator;
     private Comparator<ClassifierResults> comparator = Comparator.comparingDouble(ClassifierResults::getAcc);
+    private final static String LIMIT_KEY = "il";
+    private int limit = -1;
+    private ParameterSpace parameterSpace;
+    private Function<Instances, ParameterSpace> parameterSpaceGetter;
+    private AbstractIterator<Integer> parameterSetIndexIterator;
+
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    @Override
+    public void setOption(final String key, final String value) {
+        if(key.equals(LIMIT_KEY)) setLimit(Integer.parseInt(value));
+    }
+
+    @Override
+    public String[] getOptions() {
+        return new String[] {LIMIT_KEY,
+                             String.valueOf(limit)
+        };
+    }
     // todo keep more than 1, perhaps they should then be ensembled?
 
     public TunerConfig(Function<Instances, AbstractIterator<AbstractClassifier>> classifierIteratorGetter) {
@@ -43,19 +68,15 @@ public class TunerConfig extends TemplateConfig {
         throw new UnsupportedOperationException(); // todo
     }
 
-    @Override
-    public void setOption(String key, String value) {
-        // todo
-    }
-
-    @Override
-    public String[] getOptions() {
-        return new String[0];
-    }
 
     public void buildClassifierIterator(Instances trainSet) {
         if(classifierIteratorGetter != null) {
             classifierIterator = classifierIteratorGetter.apply(trainSet);
+        } else {
+            if(parameterSpaceGetter != null) {
+                parameterSpace = parameterSpaceGetter.apply(trainSet);
+            }
+
         }
     }
 
@@ -73,5 +94,21 @@ public class TunerConfig extends TemplateConfig {
 
     public void setClassifierIterator(AbstractIterator<AbstractClassifier> classifierIterator) {
         this.classifierIterator = classifierIterator;
+    }
+
+    public Function<Instances, ParameterSpace> getParameterSpaceGetter() {
+        return parameterSpaceGetter;
+    }
+
+    public void setParameterSpaceGetter(final Function<Instances, ParameterSpace> parameterSpaceGetter) {
+        this.parameterSpaceGetter = parameterSpaceGetter;
+    }
+
+    public ParameterSpace getParameterSpace() {
+        return parameterSpace;
+    }
+
+    public void setParameterSpace(final ParameterSpace parameterSpace) {
+        this.parameterSpace = parameterSpace;
     }
 }
