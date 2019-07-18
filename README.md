@@ -6,7 +6,7 @@ This is a stable branch in support of the paper 'Mixing hetero- and homogeneous 
 Supplementary Material
 ------------
 
-Results summaries can be found at [CAWPEResults/](https://github.com/TonyBagnall/uea-tsc/tree/paper/cawpeExtension/Results).
+Results summaries can be found at [Results/](https://github.com/TonyBagnall/uea-tsc/tree/paper/cawpeExtension/Results).
 
 Algorithmic code can be found in [src/main/java/CawpeExtensionPaper/CAWPE_Extended.java](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpeExtension/src/main/java/CawpeExtensionPaper/CAWPE_Extended.java). 
 
