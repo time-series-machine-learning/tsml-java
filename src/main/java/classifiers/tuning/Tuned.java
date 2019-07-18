@@ -58,7 +58,6 @@ public class Tuned
 
     @Override
     public void setOptions(String[] options) throws Exception {
-
         config.setOptions(options);
     }
 

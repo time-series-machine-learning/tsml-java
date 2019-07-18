@@ -16,11 +16,19 @@ package experiments;
 
 
 import classifiers.distance_based.elastic_ensemble.iteration.random.RandomIterator;
+import classifiers.distance_based.knn.Knn;
 import classifiers.distance_based.knn.KnnConfig;
 import classifiers.tuning.Tuned;
 import classifiers.template.classifier.TemplateClassifier;
 import classifiers.template.classifier.TemplateClassifierInterface;
+import distances.derivative_time_domain.ddtw.CachedDdtw;
+import distances.derivative_time_domain.wddtw.Wddtw;
+import distances.time_domain.dtw.Dtw;
+import distances.time_domain.erp.Erp;
+import distances.time_domain.lcss.Lcss;
 import distances.time_domain.msm.Msm;
+import distances.time_domain.twe.Twe;
+import distances.time_domain.wdtw.Wdtw;
 import multivariate_timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
@@ -90,58 +98,79 @@ public class ClassifierLists {
     public static AbstractClassifier setClassifierClassic(String classifier, int fold){
         AbstractClassifier c=null;
         switch(classifier){
-//            case "TUNED_TWE_KNN":
-//                c = new Tuned(Knn::new, Twe.parameterSpace(), new RandomIterator<>(fold));
-//                break;
+            case "TUNED_TWE_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpace(Twe.parameterSpace());
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
+                break;
             case "TUNED_MSM_KNN":
                 c = new Tuned();
                 ((Tuned) c).getConfig().setParameterSpace(Msm.parameterSpace());
                 ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
                 ((Tuned) c).getConfig().setSeed((long) fold);
                 break;
-//            case "TUNED_LCSS_KNN":
-//                c = new Tuned(Knn::new, Lcss::parameterSpace, new RandomIterator<>(fold));
-//                break;
-//            case "TUNED_ERP_KNN":
-//                c = new Tuned(Knn::new, Erp::parameterSpace, new RandomIterator<>(fold));
-//                break;
-//            case "ED_KNN":
-//                c = new Knn();
-//                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(0));
-//                break;
-//            case "DTW_KNN":
-//                c = new Knn();
-//                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(-1));
-//                break;
-//            case "TUNED_DTW_KNN":
-//                c = new Tuned(Knn::new, Dtw::warpParameterSpace, new RandomIterator<>(fold));
-//                break;
-//            case "DDTW_KNN":
-//                c = new Knn();
-//                ((Knn) c).getKnnConfig().setDistanceMeasure(new CachedDdtw(-1));
-//                break;
-//            case "TUNED_DDTW_KNN":
-//                c = new Tuned(Knn::new, CachedDdtw::warpParameterSpace, new RandomIterator<>(fold));
-//                break;
-//            case "TUNED_WDTW_KNN":
-//                c = new Tuned(Knn::new, Wdtw.parameterSpace(), new RandomIterator<>(fold));
-//                break;
-//            case "TUNED_WDDTW_KNN":
-//                c = new Tuned(Knn::new, CachedWddtw.parameterSpace(), new RandomIterator<>(fold));
-//                break;
-            case "FEE":
-                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+            case "TUNED_LCSS_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpaceGetter(Lcss::parameterSpace);
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
                 break;
-            case "REE":
-                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+            case "TUNED_ERP_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpaceGetter(Erp::parameterSpace);
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
                 break;
-            case "BREE":
-                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
-//                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c)
-//                .setNeighbourhoodSizeLimitPercentage(0.1);
-//                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0
-//                .5);
+            case "TUNED_DTW_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpaceGetter(Dtw::warpParameterSpace);
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
                 break;
+            case "TUNED_DDTW_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpaceGetter(CachedDdtw::warpParameterSpace);
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
+                break;
+            case "TUNED_WDTW_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpace(Wdtw.parameterSpace());
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
+                break;
+            case "TUNED_WDDTW_KNN":
+                c = new Tuned();
+                ((Tuned) c).getConfig().setParameterSpace(Wddtw.parameterSpace());
+                ((Tuned) c).getConfig().setParameterSetIndexIterator(new RandomIterator<>(fold));
+                ((Tuned) c).getConfig().setSeed((long) fold);
+                break;
+            case "ED_KNN":
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(0));
+                break;
+            case "DTW_KNN":
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new Dtw(-1));
+                break;
+            case "DDTW_KNN":
+                c = new Knn();
+                ((Knn) c).getKnnConfig().setDistanceMeasure(new CachedDdtw(-1));
+                break;
+//            case "FEE":
+//                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+//                break;
+//            case "REE":
+//                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+//                break;
+//            case "BREE":
+//                c = new classifiers.distance_based.elastic_ensemble.ElasticEnsemble();
+////                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c)
+////                .setNeighbourhoodSizeLimitPercentage(0.1);
+////                ((classifiers.distance_based.elastic_ensemble.ElasticEnsemble) c).setNumParametersLimitPercentage(0
+////                .5);
+//                break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 
                 break;

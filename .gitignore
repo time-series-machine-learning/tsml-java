@@ -41,3 +41,5 @@ defaultShapeletOutput.txt
 out/
 
 manifests/
+
+META-INF/

@@ -304,14 +304,18 @@ public class Knn
 
         public double add(Instance instance) {
             long startTime = System.nanoTime();
-            double maxDistance = knnConfig.isEarlyAbandon() ?
-                                 furthestDistance :
-                                 Double.POSITIVE_INFINITY;
-            double distance = knnConfig.getDistanceMeasure()
-                                       .distance(target, instance, maxDistance);
-            searchTimeNanos += System.nanoTime() - startTime;
-            add(instance, distance);
-            return distance;
+            if(!instance.equals(target)) {
+                double maxDistance = knnConfig.isEarlyAbandon() ?
+                        furthestDistance :
+                        Double.POSITIVE_INFINITY;
+                double distance = knnConfig.getDistanceMeasure()
+                        .distance(target, instance, maxDistance);
+                searchTimeNanos += System.nanoTime() - startTime;
+                add(instance, distance);
+                return distance;
+            } else {
+                return Double.POSITIVE_INFINITY;
+            }
         }
 
         public void add(Instance instance, double distance) {

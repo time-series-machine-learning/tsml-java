@@ -125,7 +125,7 @@ public class TunedConfig extends TemplateConfig {
             if(seed == null) {
                 throw new UnsupportedOperationException();
             }
-            if(parameterSpaceGetter != null && parameterSpace != null) {
+            if(parameterSpaceGetter != null) {
                 parameterSpace = parameterSpaceGetter.apply(trainSet);
             }
             if(parameterSpace == null) {
