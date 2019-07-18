@@ -22,12 +22,15 @@ import experiments.DataSets;
 import experiments.Experiments;
 import experiments.Experiments.ExperimentalArguments;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import timeseriesweka.filters.NormalizeCase;
 import utilities.FileHandlingTools;
@@ -78,6 +81,53 @@ public class IntervalExperiments {
         }
     }
     
+    //https://www.admfactory.com/how-to-decompress-files-from-zip-format-using-java/
+    public static void unzip(File zipFile, File output) {
+
+	byte[] buffer = new byte[1024];
+
+	try {
+	    if (!output.exists())
+		output.mkdirs();
+
+	    /** get the zip file content */
+	    ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+	    
+	    /** get the first zip file entry */
+	    ZipEntry ze = zis.getNextEntry();
+
+	    while (ze != null) {
+
+		String fileName = ze.getName();
+		File newFile = new File(output + File.separator + fileName);
+
+		System.out.println("file unzip: " + newFile.getAbsolutePath());
+
+		/** create all non exists parent folders */
+		newFile.getParentFile().mkdirs();
+
+		FileOutputStream fos = new FileOutputStream(newFile);
+
+		int len;
+		while ((len = zis.read(buffer)) > 0)
+		    fos.write(buffer, 0, len);
+
+		fos.close();
+		
+		/** get the next zip file entry */
+		ze = zis.getNextEntry();
+	    }
+
+	    zis.closeEntry();
+	    zis.close();
+	    System.out.println();
+	    System.out.println("Done!");
+
+	} catch (IOException ex) {
+	    ex.printStackTrace();
+	}
+    }
+    
     public static void move(String fullFileToMove, String dirToMoveTo) {
         try{
     	   File f =new File(fullFileToMove);
@@ -88,7 +138,22 @@ public class IntervalExperiments {
     	}
     }
     
+    public static void unzipIntervalResultsFromCluster(String basePath) { 
+        
+        for (File dir : FileHandlingTools.listDirectories(basePath)) {
+            File zip = new File(dir.getAbsoluteFile() + "/" + dir.getName() + ".zip");
+            File unzippedContents = new File(dir.getAbsoluteFile() + "/Predictions");
+            
+            if (zip.exists() && !unzippedContents.exists())
+                unzip(zip, dir);
+        }
+        
+    }
+    
     public static void main(String[] args) throws Exception {
+        String t = "E:/Intervals/BruteResults/Unnormed/";
+        unzipIntervalResultsFromCluster(t);
+        
 //        zipTest();
 //        localExps(args);
         
@@ -99,7 +164,7 @@ public class IntervalExperiments {
 //        args = new String[] { "true", "1", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
 //        clusterExps(args);
         
-        localGunPointExps(args);
+//        localGunPointExps(args);
     }
     
     public static void localGunPointExps(String[] args) throws Exception {
@@ -147,6 +212,11 @@ public class IntervalExperiments {
                 newArgs[8]="-tb=true";
 
                 classifier = runExperiment(newArgs);
+                
+                if (classifier.equals("zipped")) {
+                    System.out.println("end");
+                    return;
+                }
             }
         }
         
@@ -212,9 +282,9 @@ public class IntervalExperiments {
         exp.classifierName = IntervalHeirarchy.buildIntervalClassifierName(exp.classifierName, interval);
         
         
-        if (new File(exp.resultsWriteLocation + exp.classifierName + "/" + classifier + ".zip").exists()) {
+        if (new File(exp.resultsWriteLocation + exp.classifierName + "/" + exp.classifierName + ".zip").exists()) {
             System.out.println("All resutls zip exists, exiting");
-            return exp.classifierName;
+            return "zipped";
         }
         
         String fullWriteLoc = exp.resultsWriteLocation + exp.classifierName + "/Predictions/" + exp.datasetName + "/";

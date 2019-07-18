@@ -18,6 +18,8 @@
 package intervals;
 
 import evaluation.storage.ClassifierResults;
+import java.util.Arrays;
+import java.util.function.Function;
 
 /**
  *
@@ -103,43 +105,136 @@ public class IntervalHeirarchy {
             int[] inds = findHeirarchyIndices(interval.intervalPercents);
         
             if (resultsPath != null)
-                interval.res = new ClassifierResults(resultsPath + buildIntervalClassifierName(baseClassifier, interval.intervalPercents) + "/Predictions/" + dataset + "/testFold"+ fold + ".csv");
+                interval.res = new ClassifierResults(resultsPath + buildIntervalClassifierName(baseClassifier, interval.intervalPercents) + "/Predictions/" + dataset + "/"+split+"Fold"+ fold + ".csv");
             
-            heirarchy[inds[0]][inds[i]] = interval;
+            if (heirarchy[inds[0]][inds[1]] != null) {
+                throw new Exception("Same heirarchy position already populate, likely double precision error still");
+//                Interval lookatme = heirarchy[inds[0]][inds[1]];
+//                inds = findHeirarchyIndices(interval.intervalPercents);
+            }
+            heirarchy[inds[0]][inds[1]] = interval;
         }
     }
     
     
     public static int[] findHeirarchyIndices(double[] interval) {
-        double rawIntervalLength = interval[1] - interval[0];
+        double rawIntervalLength_precision = interval[1] - interval[0];
+        //can encounter double precision problems, e.g 0.15 - 0.1 = 0.499999999
+        //round to nearest 1/maxNumIntervalPoints, i.e. nearest 0.05 by default
+        double rawIntervalLength = Math.round(rawIntervalLength_precision * (double)maxNumIntervalPoints) / (double)maxNumIntervalPoints;
         
-        int normIntervalLength = (int)(rawIntervalLength / (1 / maxNumIntervalPoints));
-        int intervalStart = (int)(interval[0] / (1 / maxNumIntervalPoints));
+        int normIntervalLength = (int)(Math.round(rawIntervalLength * maxNumIntervalPoints));
+        int intervalStart = (int)(Math.round(interval[0] * maxNumIntervalPoints));
         
-        return new int[] { normIntervalLength, intervalStart };
+        return new int[] { normIntervalLength-1, intervalStart }; //-1 to zero-index
     }
     
     
     public String toString() { 
         StringBuilder sb = new StringBuilder();
         
+        //headings vals interleaved
         for (int i = maxNumIntervalPoints-1; i >= 0; i--) {
             for (int j = 0; j < heirarchy[i].length; j++)
-                sb.append(heirarchy[i][j].intervalStr).append(",");
+                sb.append(String.format("%8s, ", heirarchy[i][j].intervalStr));
             sb.append("\n");
             
             for (int j = 0; j < heirarchy[i].length; j++)
-                sb.append(heirarchy[i][j].res.getAcc()).append(",");
+                sb.append(String.format("%.6f, ", heirarchy[i][j].res.getAcc()));
             sb.append("\n\n");
+        }
+        sb.append("\n");
+        
+        //headings only
+        for (int i = maxNumIntervalPoints-1; i >= 0; i--) {
+            for (int j = 0; j < heirarchy[i].length; j++)
+                sb.append(String.format("%8s, ", heirarchy[i][j].intervalStr));
+            sb.append("\n");
+        }
+        sb.append("\n");
+        
+        //vals only
+        for (int i = maxNumIntervalPoints-1; i >= 0; i--) {
+            for (int j = 0; j < heirarchy[i].length; j++)
+                sb.append(String.format("%.6f, ", heirarchy[i][j].res.getAcc()));
+            sb.append("\n");
         }
         
         return sb.toString();
     }
     
+    public double[] getAvgImportances() { 
+        return getAvgImportances(ClassifierResults.GETTER_Accuracy);
+    }
     
+    public double[] getMinImportances() { 
+        return getMinImportances(ClassifierResults.GETTER_Accuracy);
+    }
     
+    public double[] getAvgImportances(Function<ClassifierResults, Double> metric) { 
+        double[] importances = new double[maxNumIntervalPoints];
+        int[] numTotalOccurences = new int[maxNumIntervalPoints]; //for dividing to find mean at end
+        
+        //init, highest resolution intervals align with the highest resolution importances we
+        //can ascribe, naturally
+        Interval[] smallestIntervals = heirarchy[0];
+        for (int j = 0; j < maxNumIntervalPoints; j++) {
+            importances[j] = metric.apply(smallestIntervals[j].res);
+            numTotalOccurences[j] = 1;
+        }
+        
+        for (int i = 1; i < maxNumIntervalPoints; i++) {
+            for (int j = 0; j < heirarchy[i].length; j++) {
+                Interval outer = heirarchy[i][j];
+                
+                for (int k = 0; k < maxNumIntervalPoints; k++) {
+                    Interval inner = smallestIntervals[k];
+                    
+                    if (containedWithin(inner, outer)) {
+                        importances[k] += metric.apply(outer.res);
+                        numTotalOccurences[k]++;
+                    }
+                }
+            }
+        }
+        
+        for (int i = 0; i < maxNumIntervalPoints; i++)
+            importances[i] /= numTotalOccurences[i];
+        
+        return importances;
+    }
     
+    public double[] getMinImportances(Function<ClassifierResults, Double> metric) { 
+        double[] importances = new double[maxNumIntervalPoints];
+        
+        //init, highest resolution intervals align with the highest resolution importances we
+        //can ascribe, naturally
+        Interval[] smallestIntervals = heirarchy[0];
+        for (int j = 0; j < maxNumIntervalPoints; j++)
+            importances[j] = metric.apply(smallestIntervals[j].res);
+        
+        for (int i = 1; i < maxNumIntervalPoints; i++) {
+            for (int j = 0; j < heirarchy[i].length; j++) {
+                Interval outer = heirarchy[i][j];
+                
+                for (int k = 0; k < maxNumIntervalPoints; k++) {
+                    Interval inner = smallestIntervals[k];
+                    
+                    if (containedWithin(inner, outer)) {
+                        double score = metric.apply(outer.res);
+                        if (score < importances[k])
+                            importances[k] = score;
+                    }
+                }
+            }
+        }
+        
+        return importances;
+    }
     
+    private boolean containedWithin(Interval inner, Interval outter) { 
+        return inner.startPercent >= outter.startPercent && inner.endPercent <= outter.endPercent;
+    }
     
     
     public static String buildIntervalStr(double[] interval) {
@@ -177,9 +272,16 @@ public class IntervalHeirarchy {
     
     
     public static void main(String[] args) throws Exception {
-        IntervalHeirarchy ih = new IntervalHeirarchy("test", "E:/Intervals/InitialResults/", "ED", "Gunpoint", 0);
+        IntervalHeirarchy ih = new IntervalHeirarchy("train", "E:/Intervals/GunpointExampleAna/locallyCreatedResults/", "ED", "Gunpoint", 0);
         
         System.out.println(ih);
+        
+        System.out.println("\n\n");
+        
+        System.out.println("avg");
+        System.out.println(Arrays.toString(ih.getAvgImportances()));
+        System.out.println("min");
+        System.out.println(Arrays.toString(ih.getMinImportances()));
     }
     
 }
