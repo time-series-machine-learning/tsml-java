@@ -769,7 +769,7 @@ public class Experiments  {
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            System.exit(1);
+//            System.exit(1);
             return -1;
         }
     }
