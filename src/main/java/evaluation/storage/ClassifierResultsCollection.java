@@ -14,7 +14,7 @@
  */
 package evaluation.storage;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
@@ -72,6 +72,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
     private int numSplits;
     private String[] splits;
     
+    private int numMissingResults;
     
     /**
      * A path to a directory containing all the classifierNamesInStorage directories 
@@ -352,6 +353,10 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return baseReadPath;
     }
 
+    public int getNumMissingResults() {
+        return numMissingResults;
+    }
+        
     /**
      * If true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
      * 
@@ -382,6 +387,27 @@ public class ClassifierResultsCollection implements DebugPrinting {
     public boolean getIgnoreMissingDistributions() {
         return ignoreMissingDistributions;
     }
+    
+    
+    public int getTotalNumResultsIgnoreMissing() { 
+        return (numSplits * numClassifiers * numDatasets * numFolds);
+    }
+        
+    public int getTotalNumResults() { 
+        return getTotalNumResultsIgnoreMissing() - numMissingResults;
+    }
+    
+    @Override
+    public String toString() { 
+        StringBuilder sb = new StringBuilder("ClassifierResultsCollection: " + getTotalNumResults() + " total, " + numMissingResults + " missing");
+        sb.append("\n\tSplits: ").append(Arrays.toString(splits));
+        sb.append("\n\tClassifiers: ").append(Arrays.toString(classifierNamesInOutput));
+        sb.append("\n\tDatasets: ").append(Arrays.toString(datasetNamesInOutput));
+        sb.append("\n\tFolds: ").append(Arrays.toString(folds));
+        
+        return sb.toString();
+    }
+    
     
     private void confirmMinimalInfoGivenAndValid() throws Exception {
         ErrorReport err = new ErrorReport("Required results collection info missing:\n");
@@ -456,7 +482,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
         ErrorReport masterError = new ErrorReport("Results files not found:\n");
 
         allResults = new ClassifierResults[numSplits][numClassifiers][numDatasets][numFolds];
-     
+        numMissingResults = 0;
+        
         //train files may be produced via TrainAccuracyEstimate, older code
         //while test files likely by experiments, but still might be a very old file
         //so having separate checks for each.
@@ -467,9 +494,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
             String classifierOutput = classifierNamesInOutput[c];
             printlnDebug(classifierStorage + "(" + classifierOutput + ") reading");
             
+            int classifierFnfs = 0;
             try {
-
-                int totalFnfs = 0;
                 ErrorReport perClassifierError = new ErrorReport("FileNotFoundExceptions thrown:\n");
 
                 for (int d = 0; d < numDatasets; d++) {
@@ -506,8 +532,9 @@ public class ClassifierResultsCollection implements DebugPrinting {
                                 }
                                 else {
                                     perClassifierError.log(fileName + "\n");
-                                    totalFnfs++;
                                 }
+                                
+                                classifierFnfs++;
                             }
 
                             printlnDebug("\t\t\t" + split + " successfully read in");
@@ -518,12 +545,14 @@ public class ClassifierResultsCollection implements DebugPrinting {
                 }
 
                 if (!perClassifierError.isEmpty())
-                    perClassifierError.log("Total num errors for " + classifierStorage + ": " + totalFnfs);
+                    perClassifierError.log("Total num errors for " + classifierStorage + ": " + classifierFnfs);
                 perClassifierError.throwIfErrors();
                 printlnDebug(classifierStorage + "(" + classifierOutput + ") successfully read in");
             } catch (Exception e) {
                 masterError.log("Classifier Errors: " + classifierNamesInStorage[c] + "\n" + e);
             }
+            
+            numMissingResults += classifierFnfs;
         }
         
         masterError.throwIfErrors();
@@ -806,7 +835,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         ClassifierResultsCollection col = new ClassifierResultsCollection();
         col.setBaseReadPath("C:/JamesLPHD/CAWPEExtension/Results/");
         col.setClassifiers(new String[] { "Logistic", "SVML", "MLP" });
-        col.setDatasets(Arrays.copyOfRange(DataSets.ReducedUCI, 0, 5));
+        col.setDatasets(Arrays.copyOfRange(DatasetLists.ReducedUCI, 0, 5));
         col.setFolds(10);
         col.setSplit_Test();
         
@@ -835,7 +864,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         System.out.println(subres[0][0][0][0].getAcc());      
         System.out.println("");
         
-        subcol = col.sliceDataset(DataSets.ReducedUCI[0]);
+        subcol = col.sliceDataset(DatasetLists.ReducedUCI[0]);
         subres = subcol.retrieveResults();
         System.out.println(subres.length);
         System.out.println(subres[0].length);

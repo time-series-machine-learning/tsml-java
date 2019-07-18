@@ -13,6 +13,7 @@ package timeseriesweka.classifiers.frequency_based;
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
@@ -410,8 +411,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     }
    
     public static void main(String[] arg) throws Exception{
-        Instances train=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
-        Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
+        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
         RISE rif = new RISE();
         rif.setTransforms("ACF","AR","AFC");
         for(Filter f: rif.filters)

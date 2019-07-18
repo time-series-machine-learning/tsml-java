@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -39,6 +40,7 @@ import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import experiments.data.DatasetLoading;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
@@ -87,7 +89,7 @@ import weka.core.Instances;
       If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
       directly, instead of building the String[] args and calling main like a lot of legacy code does.   
  * 
- * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+ * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
 public class Experiments  {
 
@@ -96,9 +98,7 @@ public class Experiments  {
     public static boolean debug = false;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
-    public static String LOXO_ATT_ID = "experimentsSplitAttribute";
     public static int numCVFolds = 10;
-    public static double proportionKeptForTraining = 0.5;
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
@@ -186,7 +186,8 @@ public class Experiments  {
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
         
-        
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluation = false;
         
         
         
@@ -367,7 +368,7 @@ public class Experiments  {
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DatasetLists.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
@@ -375,7 +376,7 @@ public class Experiments  {
                 settings[1]="-rp=E:/Results/";//Where to write results                
                 settings[2]="-gtf=false"; //Whether to generate train files or not               
                 settings[3]="-cn=TunedTSF"; //Classifier name
-//                for(String str:DataSets.tscProblems78){
+//                for(String str:DatasetLists.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                     settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
                 System.out.println("Manually set args:");
@@ -409,14 +410,15 @@ public class Experiments  {
 //        LOGGER.addHandler(new FileHandler()); 
         if (debug)
             LOGGER.setLevel(Level.FINEST);
-        else 
+        else
             LOGGER.setLevel(Level.INFO);
+        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
         //paths. would rather just use the expSettings to do it all though 
-        DataSets.resultsPath = expSettings.resultsWriteLocation;
-        experiments.DataSets.problemPath = expSettings.dataReadLocation;
+        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
+        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
         
         //2019_06_03: cases in the classifier can now change the classifier name to reflect 
         //paritcular parameters wanting to be represented as different classifiers
@@ -441,12 +443,12 @@ public class Experiments  {
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
         else {     
-            Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
@@ -479,99 +481,14 @@ public class Experiments  {
     }
     
     /**
-     * This method will return a train/test split of the problem, resampled with the fold ID given. 
-     * 
-     * Currently, there are four ways to load datasets. These will be attempted from 
-     * top to bottom, in an order designed to make the fewest assumptions 
-     * possible about the nature of the split, in terms of potential differences in class distributions,
-     * train and test set sizes, etc. 
-     * 
-     * 1) if predefined splits are found at the specified location, in the form dataLocation/dsetName/dsetName0_TRAIN and TEST,
-     *      these will be loaded and used as they are, OTHERWISE...
-     * 2) if a predefined fold0 split is given as in the UCR archive, and fold0 is being experimented on, the split exactly as it is defined will be used. 
-     *      For fold != 0, the fold0 split is combined and resampled, maintaining the original train and test distributions. OTHERWISE...
-     * 3) if only a single file is found containing all the data, this dataset is  stratified randomly resampled with proportionKeptForTraining (default=0.5)
-     *      instances reserved for the _TRAIN_ set. OTHERWISE...
-     * 4) if the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
-     *      then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
-     *      a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
-     *      set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     *      to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
-     *      values 1 to numUniqueFirstAttValues OTHERWISE...
-     * 5) error
-     * 
-     * TODO: potentially just move to development.experiments.DataSets once we clean up that
-     * 
-     * @return new Instances[] { trainSet, testSet };
-     */
-    public static Instances[] sampleDataset(String parentFolder, String problem, int fold) throws Exception {
-        Instances[] data = new Instances[2];
-
-        File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");
-        File testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.arff");
-        
-        boolean predefinedSplitsExist = (trainFile.exists() && testFile.exists());
-        if (predefinedSplitsExist) {
-            // CASE 1) 
-            data[0] = ClassifierTools.loadData(trainFile);
-            data[1] = ClassifierTools.loadData(testFile);
-            LOGGER.log(Level.FINE, problem + " loaded from predfined folds.");
-        } else {   
-            trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
-            testFile = new File(parentFolder + problem + "/" + problem + "_TEST.arff");
-            boolean predefinedFold0Exists = (trainFile.exists() && testFile.exists());
-            if (predefinedFold0Exists) {
-                // CASE 2) 
-                data[0] = ClassifierTools.loadData(trainFile);
-                data[1] = ClassifierTools.loadData(testFile);
-                if (data[0].checkForAttributeType(Attribute.RELATIONAL))
-                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
-                else
-                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
-                
-                LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
-            }
-            else { 
-                // We only have a single file with all the data
-                Instances all = null;
-                try {
-                    all = ClassifierTools.loadDataThrowable(parentFolder + problem + "/" + problem);
-                } catch (IOException io) {
-                    String msg = "Could not find the dataset \"" + problem + "\" in any form at the path\n"+
-                            parentFolder+"\n"
-                            +"The IOException: " + io;
-                    LOGGER.log(Level.SEVERE, msg, io);
-                }
-                 
-                
-                boolean needToDefineLeaveOutOneXFold = all.attribute(0).name().toLowerCase().contains(LOXO_ATT_ID.toLowerCase());
-                if (needToDefineLeaveOutOneXFold) {
-                    // CASE 4)
-                    data = splitDatasetByFirstAttribute(all, fold);
-                    LOGGER.log(Level.FINE, problem + " resampled from full data file.");
-                }
-                else { 
-                    // CASE 3) 
-                    if (all.checkForAttributeType(Attribute.RELATIONAL))
-                        data = MultivariateInstanceTools.resampleMultivariateInstances(all, fold, proportionKeptForTraining);
-                    else
-                        data = InstanceTools.resampleInstances(all, fold, proportionKeptForTraining);
-                    LOGGER.log(Level.FINE, problem + " resampled from full data file.");
-                }
-            }
-        }
-        return data;
-    }
-
-    /**
      * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
      * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
-     * a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
-     * set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
-     * values 1 to numUniqueFirstAttValues
-     * 
-     * TODO: potentially just move to experiments.DataSets once we clean up that
+ a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
+ set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
+ to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
+ values 1 to numUniqueFirstAttValues
+ 
+ TODO: potentially just move to experiments.DatasetLists once we clean up that
      * 
      * @return new Instances[] { trainSet, testSet };
      */
@@ -683,10 +600,10 @@ public class Experiments  {
             //And now evaluate on the test set, if this wasn't a single parameter fold
             if (expSettings.singleParameterID == null) {
                 //This is checked before the buildClassifier also, but 
-                //a) another process may have been doign the same experiment 
+                //a) another process may have been doing the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
-                if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
+                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);

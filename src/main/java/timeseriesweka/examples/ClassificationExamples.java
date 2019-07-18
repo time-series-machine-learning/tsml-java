@@ -31,7 +31,8 @@ import timeseriesweka.classifiers.dictionary_based.SAXVSM;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -191,21 +192,21 @@ public class ClassificationExamples {
     
 /** Run a given classifier/problem/fold combination with associated file set up
  @param args: 
- * args[0]: Classifier name. Create classifier with setClassifier
- * args[1]: Problem name
- * args[2]: Fold number. This is assumed to range from 1, hence we subtract 1
- * (this is because of the scripting we use to run the code on the cluster)
- *          the standard archive folds are always fold 0
- * 
- * NOTES: 
- * 1. this assumes you have set DataSets.problemPath to be where ever the 
- * data is, and assumes the data is in its own directory with two files, 
- * args[1]_TRAIN.arff and args[1]_TEST.arff 
- * 2. assumes you have set DataSets.resultsPath to where you want the results to
- * go It will NOT overwrite any existing results (i.e. if a file of non zero 
- * size exists)
- * 3. This method just does the file set up then calls the next method. If you 
- * just want to run the problem, go to the next method
+ args[0]: Classifier name. Create classifier with setClassifier
+ args[1]: Problem name
+ args[2]: Fold number. This is assumed to range from 1, hence we subtract 1
+ (this is because of the scripting we use to run the code on the cluster)
+          the standard archive folds are always fold 0
+ 
+ NOTES: 
+ 1. this assumes you have set DatasetLists.problemPath to be where ever the 
+ data is, and assumes the data is in its own directory with two files, 
+ args[1]_TRAIN.arff and args[1]_TEST.arff 
+ 2. assumes you have set DatasetLists.resultsPath to where you want the results to
+ go It will NOT overwrite any existing results (i.e. if a file of non zero 
+ size exists)
+ 3. This method just does the file set up then calls the next method. If you 
+ just want to run the problem, go to the next method
 * */
     public static void singleClassifierAndFold(String[] args){
 //first gives the problem file      
@@ -214,12 +215,12 @@ public class ClassificationExamples {
         int fold=Integer.parseInt(args[2])-1;
    
         Classifier c=setClassifier(classifier);
-        Instances train=ClassifierTools.loadData(DataSets.problemPath+problem+"/"+problem+"_TRAIN");
-        Instances test=ClassifierTools.loadData(DataSets.problemPath+problem+"/"+problem+"_TEST");
-        File f=new File(DataSets.resultsPath+classifier);
+        Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TEST");
+        File f=new File(DatasetLists.resultsPath+classifier);
         if(!f.exists())
             f.mkdir();
-        String predictions=DataSets.resultsPath+classifier+"/Predictions";
+        String predictions=DatasetLists.resultsPath+classifier+"/Predictions";
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -317,8 +318,8 @@ public class ClassificationExamples {
 //Example usage: 
         
 //1. Set up the paths
-        DataSets.problemPath=DataSets.dropboxPath+"TSC Problems/";
-        DataSets.resultsPath="C:/Temp/";
+        DatasetLists.problemPath=DatasetLists.dropboxPath+"TSC Problems/";
+        DatasetLists.resultsPath="C:/Temp/";
 //2. Set up the arguments: Classifier, Problem, Fold
         String[] paras={"BOSS","ItalyPowerDemand","1"};
 //3. Run a full experiment, saving the results

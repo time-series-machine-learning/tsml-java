@@ -19,7 +19,7 @@ import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
 import evaluation.MultipleClassifiersPairwiseTest;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import experiments.Experiments;
 import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 import fileIO.OutFile;

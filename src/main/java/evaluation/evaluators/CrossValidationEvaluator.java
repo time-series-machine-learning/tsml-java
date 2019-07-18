@@ -17,6 +17,7 @@ package evaluation.evaluators;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierLists;
 import experiments.Experiments;
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -325,7 +326,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         for (String classifierName : classifierNames) {
             System.out.println(classifierName);
             for (int resample = 0; resample < numResamples; resample++) {
-                Instances[] data = Experiments.sampleDataset(dataLoc, dset, resample);
+                Instances[] data = DatasetLoading.sampleDataset(dataLoc, dset, resample);
                 Classifier classifier = ClassifierLists.setClassifierClassic(classifierName, resample);
                 
                 CrossValidationEvaluator cv = new CrossValidationEvaluator(resample, true, false, true, true);
@@ -359,7 +360,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         String dset = "lenses";
 //        String dset = "balloons";
 //        String dset = "acute-inflammation";
-        Instances insts = ClassifierTools.loadData("C:/UCI Problems/"+dset+"/"+dset);
+        Instances insts = DatasetLoading.loadDataNullable("C:/UCI Problems/"+dset+"/"+dset);
         
         System.out.println("Full data:");
         System.out.println("numinsts="+insts.numInstances());

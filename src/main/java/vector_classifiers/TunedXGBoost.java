@@ -31,7 +31,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import experiments.CollateResults;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
@@ -733,12 +733,12 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
     public static void main(String[] args) throws Exception {
 
 //        for (int fold = 0; fold < 15; fold++) { 
-//            for (String dataset : DataSets.UCIContinuousFileNames) {
+//            for (String dataset : DatasetLists.UCIContinuousFileNames) {
 //                Experiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
 //            }
 //        }
 //        for (int fold = 15; fold < 30; fold++) { 
-//            for (String dataset : DataSets.UCIContinuousFileNames) {
+//            for (String dataset : DatasetLists.UCIContinuousFileNames) {
 //                Experiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
 //            }
 //        }
@@ -781,7 +781,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         String safetyWritePath = "C:/Temp/XGBoostTestBackups/";
 
 
-        for (String dataset : DataSets.UCIContinuousWithoutBigFour) {
+        for (String dataset : DatasetLists.UCIContinuousWithoutBigFour) {
             for (int fold = 0; fold < 30; fold++) {
                 File trainFile = new File(path + dataset + "/trainFold" + fold + ".csv");
                 try {
