@@ -295,8 +295,8 @@ public class IntervalExperiments {
             System.out.println(exp.toShortString() + " already exists at "+fullTargetFile+", exiting.");
         else {
             Instances[] data = Experiments.sampleDataset(exp.dataReadLocation, exp.datasetName, exp.foldId);
-            data[0] = crop_proportional(data[0], interval[0], interval[1], normaliseInterval);
-            data[1] = crop_proportional(data[1], interval[0], interval[1], normaliseInterval);
+            data[0] = IntervalCreation.crop_proportional(data[0], interval[0], interval[1], normaliseInterval);
+            data[1] = IntervalCreation.crop_proportional(data[1], interval[0], interval[1], normaliseInterval);
 
             Experiments.runExperiment(exp, data[0], data[1], classifier, fullWriteLoc);
         }
@@ -304,46 +304,6 @@ public class IntervalExperiments {
         return exp.classifierName;
     }
     
-    
-    //maybe theres a filter that does what i want?... faster to just do it here
-    public static Instances crop_proportional(Instances insts, double startProp, double endProp, boolean normalise) throws Exception { 
-//        System.out.println(insts.numAttributes());
-//        System.out.println(insts.numInstances());
-//        System.out.println(insts.numClasses());
-
-        int startTimePoint = (int) ((insts.numAttributes()-1) * startProp);
-        int endTimePoint = (int) ((insts.numAttributes()-1) * endProp);
-        
-//        System.out.println("");
-//        System.out.println("inteveral = " + startProp + " - " + endProp);
-//        System.out.println("startTimePoint = " + startTimePoint);
-//        System.out.println("endTimePoint = " + endTimePoint);
-//        System.out.println("");
-        
-        if (startTimePoint == endTimePoint) {//pathological case for very short series
-            if (endTimePoint < (insts.numAttributes()-2))
-                endTimePoint++;
-            else if (startTimePoint > 0)
-                startTimePoint--;
-            else 
-                throw new Exception("Interval wont work, " + insts.relationName() + " start=" + startProp + " end=" + endProp + " numAtts=" + insts.numAttributes());
-        }
-        
-        Instances cropped = new Instances(insts);
-
-        for (int ind = cropped.numAttributes()-2; ind >= 0; ind--)
-            if (ind < startTimePoint || ind > endTimePoint)
-                cropped.deleteAttributeAt(ind);
-        
-//        System.out.println(cropped.numAttributes());
-//        System.out.println(cropped.numInstances());
-//        System.out.println(cropped.numClasses());
-        
-        if (normalise)
-            return (new NormalizeCase()).process(cropped);
-        else
-            return cropped;
-    }
     
 }
 
