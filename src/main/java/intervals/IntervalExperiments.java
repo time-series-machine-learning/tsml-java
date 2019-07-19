@@ -197,7 +197,7 @@ public class IntervalExperiments {
     }
     
     /**
-     * @param args [ intervalID, dataPath, resPath, classifier ] 
+     * @param args [ intervalID, normaliseInterval?, dataPath, resPath, classifier ] 
      * 
      * will run all datasets (tsc128) and folds (10) of given interval/classifier,
      * zip the results and delete the original files
