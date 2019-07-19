@@ -28,13 +28,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
-import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
-import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
@@ -48,13 +45,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
+import utilities.InstanceTools;
 import vector_classifiers.ensembles.SaveableEnsemble;
-import static utilities.GenericTools.indexOfMax;
-import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
-import weka.core.Attribute;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -189,7 +182,9 @@ public class Experiments  {
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
         
-        
+        @Parameter(names={"--force"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
+        public String trainEstimateMethod = "cv_10";
         
         public ExperimentalArguments() {
             
@@ -688,12 +683,57 @@ public class Experiments  {
         else { 
             long trainBenchmark = findBenchmarkTime(exp);
             
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            cv.setSeed(fold);
-            int numFolds = Math.min(train.numInstances(), numCVFolds);
-            cv.setNumFolds(numFolds);
-            trainResults = cv.crossValidateWithStats(classifier, train);
-            trainResults.setBenchmarkTime(trainBenchmark);
+            //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
+            String[] parts = exp.trainEstimateMethod.split("_");
+            String method = parts[0];
+            
+            String para = null;
+            if (parts.length > 1) 
+                para = parts[1];
+            
+            long estimateTimeStart = System.nanoTime();
+                    
+            switch (method) {
+                case "cv":
+                case "CV": 
+                case "CrossValidationEvaluator":
+                    int numFolds = Experiments.numCVFolds;
+                    if (para != null)
+                        numFolds = Integer.parseInt(para);
+                    numFolds = Math.min(train.numInstances(), numFolds);
+                    
+                    CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                    cv.setSeed(fold);
+                    cv.setNumFolds(numFolds);
+                    trainResults = cv.crossValidateWithStats(classifier, train);
+                    break;
+                
+                case "hov":
+                case "HOV":
+                case "SingleTestSetEvaluator":
+                    double trainProp = DatasetLoading.getProportionKeptForTraining();
+                    if (para != null)
+                        trainProp = Double.parseDouble(para);
+                    
+                    Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
+                    classifier.buildClassifier(trainVal[0]);
+                    
+                    SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
+                    hov.setSeed(fold);
+                    trainResults = hov.evaluate(classifier, trainVal[1]);
+                    break;
+                  
+                default:
+                    throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
+            }
+            
+            
+            
+            long estimateTime = estimateTimeStart - System.nanoTime();
+                    
+            trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
+            trainResults.setErrorEstimateTime(estimateTime);
+            trainResults.setBenchmarkTime(trainBenchmark);      
         }
         
         return trainResults;
