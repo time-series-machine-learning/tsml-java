@@ -149,25 +149,36 @@ public class IntervalExperiments {
                 unzip(zip, dir);
         }
         
+    }   
+    
+    private static boolean deepContains(String[] args, String find) { 
+        for (String arg : args)
+            if (arg.contains(find))
+                return true;
+        return false;
     }
     
     public static void main(String[] args) throws Exception {
-        String t = "E:/Intervals/BruteResults/Unnormed/";
-        unzipIntervalResultsFromCluster(t);
+//        String t = "E:/Intervals/BruteResults/Unnormed/";
+//        unzipIntervalResultsFromCluster(t);
         
 //        zipTest();
 //        localExps(args);
+//        localGunPointExps(args);
         
 //        for (int i = 0; i < 250; i++) {
 //            System.out.println(Arrays.toString(defineInterval(i)));
 //        }
 
 //        args = new String[] { "true", "1", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
-//        clusterExps(args);
+
+        if (deepContains(args, "-dn")) 
+            manyClusterExps(args); //individual dset/fold given
+        else 
+            runExperiment(args); //loops over dsets/folds
         
-//        localGunPointExps(args);
     }
-    
+ 
     public static void localGunPointExps(String[] args) throws Exception {
         for (int i = 1; i <= IntervalHeirarchy.maxNumDifferentIntervals; i++) {
             String[] newArgs=new String[9];
@@ -191,7 +202,7 @@ public class IntervalExperiments {
      * will run all datasets (tsc128) and folds (10) of given interval/classifier,
      * zip the results and delete the original files
      */
-    public static void clusterExps(String[] args) throws Exception {
+    public static void manyClusterExps(String[] args) throws Exception {
         int folds = 30;
 //        String[] dsets = { "BeetleFly" };
         String[] dsets = DatasetLists.tscProblems2018;
@@ -199,8 +210,8 @@ public class IntervalExperiments {
         
         String classifier = null;
         
-        for (String dset : dsets) {
-            for (int f = 1; f <= folds; f++) {
+        for (int f = 1; f <= folds; f++) {
+            for (String dset : dsets) {
                 String[] newArgs=new String[9];
                 newArgs[0]=args[0];
                 newArgs[1]=args[1];
@@ -215,7 +226,7 @@ public class IntervalExperiments {
                 classifier = runExperiment(newArgs);
                 
                 if (classifier.equals("zipped")) {
-                    System.out.println("end");
+                    System.out.println("Zip exists, exiting");
                     return;
                 }
             }
@@ -225,13 +236,6 @@ public class IntervalExperiments {
         
         String dirToZip = baseDir + classifier + "/";
         String zipName = baseDir + classifier + ".zip";
-        
-        
-        if (new File(dirToZip + classifier + ".zip").exists()) {
-            System.out.println("Zip exists, exiting");
-            return;
-        }
-            
         
         System.out.println("All files written");
         zip(dirToZip, zipName);

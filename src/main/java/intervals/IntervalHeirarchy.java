@@ -286,7 +286,6 @@ public class IntervalHeirarchy implements Iterable<Interval> {
      * @return build time of the full series 'interval', in nanoseconds
      */
     public long getBuildTimeFullSeries() {
-        int i = maxNumIntervalPoints-1;
         return heirarchy[maxNumIntervalPoints-1][0].res.getBuildTimeInNanos();
     }
     

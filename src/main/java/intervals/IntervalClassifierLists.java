@@ -279,9 +279,7 @@ public class IntervalClassifierLists {
                 
             
             case "RISE":
-                RISE rise = new RISE();
-                rise.setSeed(fold);
-                rise.setTransforms("PS","ACF");
+                CRISE rise = new CRISE(fold);
                 return rise;
                 
             case "TSF":
