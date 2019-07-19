@@ -18,7 +18,22 @@
 package intervals;
 
 import experiments.Experiments.ExperimentalArguments;
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.SlowDTW_1NN;
+import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
+import timeseriesweka.classifiers.frequency_based.CRISE;
+import timeseriesweka.classifiers.frequency_based.RISE;
+import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
+import weka.classifiers.bayes.BayesNet;
+import weka.classifiers.functions.SMO;
+import weka.classifiers.functions.supportVector.PolyKernel;
+import weka.classifiers.meta.RotationForest;
+import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 
 /**
  *
@@ -161,14 +176,23 @@ public class IntervalClassifierLists {
     
     //replaceLabelsForImages() for final labels
     public static final String[] proxyClassifiers = {  
-        
+        "ED", "SVML", "SLOWDTWCV", "DTW", "C45", "BayesNet", "RandF", "RotF",
     };
     
-    public static final String[] targetClassifiers = {
-        
+    public static final String[] hiveCoteMembers_uncontracted = {
+        "TSF", "ST", "EE", "BOSS", "RISE",
     };
     
-    public static final String[] allClassifiers = arrConcat(proxyClassifiers, targetClassifiers);
+    public static final String[] hiveCoteMembers_contracted = {
+        "TSF", "cST", "cEE", "cBOSS", "cRISE",
+    };
+            
+    public static final String[] targetClassifiers_uncontracted = arrConcat(hiveCoteMembers_uncontracted, new String[] { "HIVE-COTE" });
+    
+    public static final String[] targetClassifiers_contracted = arrConcat(hiveCoteMembers_contracted, new String[] { "cHIVE-COTE" });
+    
+    
+    public static final int contractHourLimit = 1;
     
     
     
@@ -176,11 +200,29 @@ public class IntervalClassifierLists {
     
     
     
-    
-    
-    
-    public static Classifier setClassifier(ExperimentalArguments exp) {        
-        return setClassifier(exp.classifierName, exp.foldId);
+    public static Classifier setClassifier(ExperimentalArguments exp) {    
+        switch (exp.classifierName) {
+            
+            case "HIVE-COTE":
+                CAWPE hc = new CAWPE(); //proabilities weighted by exponentiated accuracy estimates
+                hc.setRandSeed(exp.foldId);
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                hc.setClassifiersNamesForFileRead(hiveCoteMembers_uncontracted);
+                return hc;
+             
+            case "cHIVE-COTE":
+                CAWPE chc = new CAWPE(); //proabilities weighted by exponentiated accuracy estimates
+                chc.setRandSeed(exp.foldId);
+                chc.setBuildIndividualsFromResultsFiles(true);
+                chc.setResultsFileLocationParameters(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                chc.setClassifiersNamesForFileRead(hiveCoteMembers_contracted);
+                return chc;
+                
+            default:
+                return setClassifier(exp.classifierName, exp.foldId);
+        }
+        
     }
     
     
@@ -191,45 +233,116 @@ public class IntervalClassifierLists {
             ///////////////// PROXIES
             
             case "ED":
-                return null;
+                return new ED1NN();
                 
             case "SVML":
-                return null;
+                SMO svml = new SMO();
+                PolyKernel p=new PolyKernel();
+                p.setExponent(1);
+                svml.setKernel(p);
+                svml.setRandomSeed(fold);
+                svml.setBuildLogisticModels(true);
+                return svml;
                 
             case "SLOWDTWCV":
-                return null;
+                SlowDTW_1NN dtwcv = new SlowDTW_1NN(); //slower, but more stable.
+                dtwcv.optimiseWindow(true);
+                return dtwcv;
                 
             case "DTW": //without cv-ing the warp window, just setting it to.. 0.2? ask jay/george
-                return null;
+                SlowDTW_1NN dtw = new SlowDTW_1NN();
+                dtw.setMaxPercentageWarp(20);
+                return dtw;
                 
             case "C45": 
-                return null;
+                return new J48();
              
             case "BayesNet":
-                return null;
+                return new BayesNet();
+                
+            case "RandF": 
+                RandomForest randf = new RandomForest();
+                randf.setNumTrees(500);
+                randf.setSeed(fold);
+                return randf;
+                
+            case "RotF":
+                RotationForest rotf = new RotationForest();
+                rotf.setNumIterations(50);
+                rotf.setSeed(fold);
+                return rotf;
             
-            //maybe more
+            //maybe more, depends on interim results
                 
                 
-            ///////////////// TARGETS
+            ///////////////// TARGETS 1: UNCONTRACTED
                 
-            case "RISE": 
-                return null;
+            
+            case "RISE":
+                RISE rise = new RISE();
+                rise.setSeed(fold);
+                rise.setTransforms("PS","ACF");
+                return rise;
                 
             case "TSF":
-                return null;
+                TSF tsf = new TSF();
+                tsf.setSeed(fold);
+                return tsf;
                 
             case "ST": 
-                return null;
+                //complete via TransformExperiments? does TransformExperiments record the time taken to transform too somewhere? 
+                //will only be using rotf as final classifier, dont necessarily care about saving the transforms themselves
+                //might need to end up contracting even in the 'uncontracted' version for feasibility, in that case can assume contract time (7 days e.g)
+                ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+                st.setSeed(fold);
+                return st;
                 
             case "BOSS":
-                return null;
+                BOSS boss = new BOSS();
+                boss.setSeed(fold);
+                return boss;
                 
             case "EE":
+                ElasticEnsemble ee = new ElasticEnsemble();
+                //seed? or is this deterministic, and the contract version is separate class? 
+                return ee;
+                
+//            case "HIVE-COTE":
+//                see the ExperimentalArgs overload of setClassifier
+//                return null;
+            
+                
+            ///////////////// TARGETS 2: CONTRACTED
+                
+            case "cRISE":
+                CRISE crise = new CRISE(fold);
+                crise.setHourLimit(contractHourLimit);
                 return null;
                 
-            case "HIVE-COTE":
+//            case "cTSF":
+//                does not exist? likely would not need anyway
+//                return null;
+                
+            case "cST": 
+                ShapeletTransformClassifier cst = new ShapeletTransformClassifier();
+                cst.setSeed(fold);
+                cst.setHourLimit(contractHourLimit);
+                return cst;
+                
+            case "cBOSS":
+                BOSS cboss = new BOSS();
+                cboss.setSeed(fold);
+                cboss.setHourLimit(contractHourLimit);
+                return cboss;
+                
+            case "cEE":
+                //???
                 return null;
+//                
+//            case "cHIVE-COTE":
+//                see the ExperimentalArgs overload of setClassifier
+//                return null;
+                
                 
             default:
                 System.out.println("UNKNOWN CLASSIFIER "+classifier);

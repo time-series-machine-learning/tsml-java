@@ -18,21 +18,23 @@
 package intervals;
 
 import evaluation.storage.ClassifierResults;
+import intervals.IntervalHeirarchy.Interval;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.function.Function;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class IntervalHeirarchy {
+public class IntervalHeirarchy implements Iterable<Interval> {
 
     public static final int maxNumDifferentIntervals = 210;
     public static final int maxNumIntervalPoints = 20; //so 21 values really, 0 .. 20 corresponding to props 0 .. 1
 
     
     Interval[][] heirarchy;
-    
+
     
     public class Interval {
         public int intervalID;
@@ -76,6 +78,42 @@ public class IntervalHeirarchy {
         }
     }
     
+    /**
+     * An iterator that starts at the highest resolution (smallest length) intervals,
+     * and then moves up in length. i.e. [0][0], [0][1] .... [1][0], [1][1] ... [maxNumIntervalPoints-1][0]
+     */
+    public class HeirarchyIterator implements Iterator<Interval> {
+
+        int intervalLengthInd = 0;
+        int intervalStartInd = 0;
+        
+        @Override
+        public boolean hasNext() {
+            return intervalLengthInd < heirarchy.length && intervalStartInd < heirarchy[intervalLengthInd].length;
+        }
+
+        @Override
+        public Interval next() {
+            Interval res = heirarchy[intervalLengthInd][intervalStartInd];
+            
+            if (++intervalStartInd == heirarchy[intervalLengthInd].length) {
+                intervalStartInd = 0;
+                intervalLengthInd++;
+            }
+            
+            return res;
+        }
+        
+    }
+    
+    @Override
+    public Iterator<Interval> iterator() {
+        return new HeirarchyIterator();
+    }
+
+
+
+
     
     public IntervalHeirarchy() throws Exception {
         buildHeirarchy();
@@ -232,6 +270,26 @@ public class IntervalHeirarchy {
         return importances;
     }
     
+    /**
+     * @return total build time of all intervals, in nanoseconds
+     */
+    public long getBuildTimeTotalHeirarchy() { 
+        long totalTime = 0;
+        
+        for (Interval interval : this)
+            totalTime += interval.res.getBuildTimeInNanos();
+        
+        return totalTime;
+    }
+    
+    /**
+     * @return build time of the full series 'interval', in nanoseconds
+     */
+    public long getBuildTimeFullSeries() {
+        int i = maxNumIntervalPoints-1;
+        return heirarchy[maxNumIntervalPoints-1][0].res.getBuildTimeInNanos();
+    }
+    
     private boolean containedWithin(Interval inner, Interval outter) { 
         return inner.startPercent >= outter.startPercent && inner.endPercent <= outter.endPercent;
     }
@@ -282,6 +340,11 @@ public class IntervalHeirarchy {
         System.out.println(Arrays.toString(ih.getAvgImportances()));
         System.out.println("min");
         System.out.println(Arrays.toString(ih.getMinImportances()));
+        
+        System.out.println("\n\n");
+        
+        System.out.println("Heirarchy build time: " + ih.getBuildTimeTotalHeirarchy());
+        System.out.println("Fullseries build time: " + ih.getBuildTimeFullSeries());
     }
     
 }
