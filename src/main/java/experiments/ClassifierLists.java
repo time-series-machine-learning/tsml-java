@@ -115,6 +115,7 @@ public class ClassifierLists {
                 break;
             case "ProximityForest":
                 c = new ProximityForestWeka();
+                ((ProximityForestWeka)c).setSeed(fold);
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();

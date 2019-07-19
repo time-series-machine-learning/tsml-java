@@ -167,7 +167,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     allFolds_distsForInsts[classifierIndex][instIndex] = dist;
                     allFolds_predTimes[classifierIndex][instIndex] = predTime;
 
-                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, dist[(int) indexOfMax(dist)], predTime, "");
+                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
                     else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
                 }    
                 
@@ -201,7 +201,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred;
 
-                if(REGRESSION_HACK) tiesResolvedRandomlyPred = allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
+                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
                 else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
 
                 results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
@@ -270,7 +270,11 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         }
         for (int i = 0; i < instanceIds.size(); ++i) {
             int instIndex = instanceIds.get(i);
-            int instClassVal = (int)dataset.instance(instIndex).classValue();
+            int instClassVal;
+
+            if (REGRESSION_HACK) instClassVal = 0;
+            else instClassVal = (int)dataset.instance(instIndex).classValue();
+
             byClass.get(instClassVal).add(dataset.instance(instIndex));
             byClassIndices.get(instClassVal).add(instIndex);
         }

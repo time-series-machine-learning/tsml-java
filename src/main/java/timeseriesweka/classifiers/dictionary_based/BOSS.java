@@ -1386,7 +1386,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         int fold = 0;
 
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "Fungi";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1407,8 +1407,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         c.useBestSettingsRBOSS();
         c.setSeed(fold);
         c.setBayesianParameterSelection(true);
-        //c.tune = true;
-        //c.kVals = new int[]{3};
+        c.tune = true;
+        c.kVals = new int[]{50};
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -2043,6 +2043,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                     bags.add(bag);
                 }
             }
+
+            if (bags.size() < k) k = 1;
 
             if (cleanAfterBuild) {
                 clean();
