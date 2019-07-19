@@ -677,7 +677,7 @@ public class Experiments  {
                     throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
             }
             
-            long estimateTime = estimateTimeStart - System.nanoTime();
+            long estimateTime = System.nanoTime() - estimateTimeStart;
                     
             trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
             trainResults.setErrorEstimateTime(estimateTime);
