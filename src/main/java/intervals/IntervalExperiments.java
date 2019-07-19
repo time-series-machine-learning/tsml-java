@@ -197,15 +197,16 @@ public class IntervalExperiments {
     }
     
     /**
-     * @param args [ intervalID, normaliseInterval?, dataPath, resPath, classifier ] 
+     * @param args [ normaliseInterval?, intervalID, dataPath, resPath, classifier ] 
      * 
      * will run all datasets (tsc128) and folds (10) of given interval/classifier,
      * zip the results and delete the original files
      */
     public static void manyClusterExps(String[] args) throws Exception {
-        int folds = 30;
+        int folds = 10;
 //        String[] dsets = { "BeetleFly" };
-        String[] dsets = DatasetLists.tscProblems2018;
+//        String[] dsets = DatasetLists.tscProblems2018;
+        String[] dsets = IntervalClassifierLists.datasets_SeriesLengthAtLeast100;
 //        dsets = Arrays.copyOfRange(dsets, 0, 5);
         
         String classifier = null;

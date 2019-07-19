@@ -41,142 +41,33 @@ import weka.classifiers.trees.RandomForest;
  */
 public class IntervalClassifierLists {
 
-    //copied from experiments.DataSets.tscProblems2018 to have as a permanantly fixed list here
-    public static final String[] datasetList = {
-        "ACSF1",
-        "Adiac",        // 390,391,176,37
-        "AllGestureWiimoteX",       
-        "AllGestureWiimoteY",       
-        "AllGestureWiimoteZ",       
-        "ArrowHead",    // 36,175,251,3
-        "Beef",         // 30,30,470,5
-        "BeetleFly",    // 20,20,512,2
-        "BirdChicken",  // 20,20,512,2
-        "BME",
-        "Car",          // 60,60,577,4
-        "CBF",                      // 30,900,128,3
-        "Chinatown",
-        "ChlorineConcentration",    // 467,3840,166,3
-        "CinCECGTorso", // 40,1380,1639,4
-        "Coffee", // 28,28,286,2
-        "Computers", // 250,250,720,2
-        "CricketX", // 390,390,300,12
-        "CricketY", // 390,390,300,12
-        "CricketZ", // 390,390,300,12
-        "Crop",
-        "DiatomSizeReduction", // 16,306,345,4
-        "DistalPhalanxOutlineAgeGroup", // 400,139,80,3
-        "DistalPhalanxOutlineCorrect", // 600,276,80,2
-        "DistalPhalanxTW", // 400,139,80,6
-        "DodgerLoopDay",
-        "DodgerLoopGame",
-        "DodgerLoopWeekend",
-        "Earthquakes", // 322,139,512,2
-        "ECG200",   //100, 100, 96
-        "ECG5000",  //4500, 500,140
-        "ECGFiveDays", // 23,861,136,2
-        "ElectricDevices", // 8926,7711,96,7
-        "EOGHorizontalSignal",
-        "EOGVerticalSignal",
-        "EthanolLevel",
-        "FaceAll", // 560,1690,131,14
-        "FaceFour", // 24,88,350,4
-        "FacesUCR", // 200,2050,131,14
-        "FiftyWords", // 450,455,270,50
-        "Fish", // 175,175,463,7
-        "FordA", // 3601,1320,500,2
-        "FordB", // 3636,810,500,2
-        "FreezerRegularTrain",
-        "FreezerSmallTrain",
-        "Fungi",
-        "GestureMidAirD1",
-        "GestureMidAirD2",
-        "GestureMidAirD3",
-        "GesturePebbleZ1",
-        "GesturePebbleZ2",                       
-        "GunPoint", // 50,150,150,2
-        "GunPointAgeSpan",
-        "GunPointMaleVersusFemale",
-        "GunPointOldVersusYoung",                        
-        "Ham",      //105,109,431
-        "HandOutlines", // 1000,370,2709,2
-        "Haptics", // 155,308,1092,5
-        "Herring", // 64,64,512,2
-        "HouseTwenty",
-        "InlineSkate", // 100,550,1882,7
-        "InsectEPGRegularTrain",
-        "InsectEPGSmallTrain",
-        "InsectWingbeatSound",//1980,220,256
-        "ItalyPowerDemand", // 67,1029,24,2
-        "LargeKitchenAppliances", // 375,375,720,3
-        "Lightning2", // 60,61,637,2
-        "Lightning7", // 70,73,319,7
-        "Mallat", // 55,2345,1024,8
-        "Meat",//60,60,448
-        "MedicalImages", // 381,760,99,10
-        "MelbournePedestrian",
-        "MiddlePhalanxOutlineAgeGroup", // 400,154,80,3
-        "MiddlePhalanxOutlineCorrect", // 600,291,80,2
-        "MiddlePhalanxTW", // 399,154,80,6
-        "MixedShapesRegularTrain",
-        "MixedShapesSmallTrain",
-        "MoteStrain", // 20,1252,84,2
-        "NonInvasiveFetalECGThorax1", // 1800,1965,750,42
-        "NonInvasiveFetalECGThorax2", // 1800,1965,750,42
-        "OliveOil", // 30,30,570,4
-        "OSULeaf", // 200,242,427,6
-        "PhalangesOutlinesCorrect", // 1800,858,80,2
-        "Phoneme",//1896,214, 1024
-        "PickupGestureWiimoteZ",
-        "PigAirwayPressure",
-        "PigArtPressure",
-        "PigCVP",
-        "PLAID",
-        "Plane", // 105,105,144,7
-        "PowerCons",
-        "ProximalPhalanxOutlineAgeGroup", // 400,205,80,3
-        "ProximalPhalanxOutlineCorrect", // 600,291,80,2
-        "ProximalPhalanxTW", // 400,205,80,6
-        "RefrigerationDevices", // 375,375,720,3
-        "Rock",
-        "ScreenType", // 375,375,720,3
-        "SemgHandGenderCh2",
-        "SemgHandMovementCh2",
-        "SemgHandSubjectCh2",
-        "ShakeGestureWiimoteZ",
-        "ShapeletSim", // 20,180,500,2
-        "ShapesAll", // 600,600,512,60
-        "SmallKitchenAppliances", // 375,375,720,3
-        "SmoothSubspace",
-        "SonyAIBORobotSurface1", // 20,601,70,2
-        "SonyAIBORobotSurface2", // 27,953,65,2
-        "StarLightCurves", // 1000,8236,1024,3
-        "Strawberry",//370,613,235
-        "SwedishLeaf", // 500,625,128,15
-        "Symbols", // 25,995,398,6
-        "SyntheticControl", // 300,300,60,6
-        "ToeSegmentation1", // 40,228,277,2
-        "ToeSegmentation2", // 36,130,343,2
-        "Trace", // 100,100,275,4
-        "TwoLeadECG", // 23,1139,82,2
-        "TwoPatterns", // 1000,4000,128,4
-        "UMD",
-        "UWaveGestureLibraryAll", // 896,3582,945,8
-        "UWaveGestureLibraryX", // 896,3582,315,8
-        "UWaveGestureLibraryY", // 896,3582,315,8
-        "UWaveGestureLibraryZ", // 896,3582,315,8
-        "Wafer", // 1000,6164,152,2
-        "Wine",//54	57	234
-        "WordSynonyms", // 267,638,270,25
-        "Worms", //77, 181,900,5
-        "WormsTwoClass",//77, 181,900,5
-        "Yoga" // 300,3000,426,2
+    // Fungi removed due to 1 case per class in train, and we need to do cv
+    public static final String[] datasets_SeriesLengthAtLeast100 = {
+        "ACSF1",	"Adiac",	"AllGestureWiimoteX",	"AllGestureWiimoteY",	"AllGestureWiimoteZ",	
+        "ArrowHead",	"Beef",	"BeetleFly",	"BirdChicken",	"BME",	"Car",	"CBF",	"ChlorineConcentration",	
+        "CinCECGTorso",	"Coffee",	"Computers",	"CricketX",	"CricketY",	"CricketZ",	
+        "DiatomSizeReduction",	"DodgerLoopDay",	"DodgerLoopGame",	"DodgerLoopWeekend",	"Earthquakes",	
+        "ECG5000",	"ECGFiveDays",	"EOGHorizontalSignal",	"EOGVerticalSignal",	"EthanolLevel",	"FaceAll",	
+        "FaceFour",	"FacesUCR",	"FiftyWords",	"Fish",	"FordA",	"FordB",	"FreezerRegularTrain",	
+        "FreezerSmallTrain",	/*"Fungi",*/	"GestureMidAirD1",	"GestureMidAirD2",	"GestureMidAirD3",	
+        "GesturePebbleZ1",	"GesturePebbleZ2",	"GunPoint",	"GunPointAgeSpan",	"GunPointMaleVersusFemale",	
+        "GunPointOldVersusYoung",	"Ham",	"HandOutlines",	"Haptics",	"Herring",	"HouseTwenty",	"InlineSkate",	
+        "InsectEPGRegularTrain",	"InsectEPGSmallTrain",	"InsectWingbeatSound",	"LargeKitchenAppliances",	
+        "Lightning2",	"Lightning7",	"Mallat",	"Meat",	"MixedShapesRegularTrain",	"MixedShapesSmallTrain",	
+        "NonInvasiveFatalECGThorax1",	"NonInvasiveFatalECGThorax2",	"OliveOil",	"OSULeaf",	"Phoneme",	
+        "PickupGestureWiimoteZ",	"PigAirwayPressure",	"PigArtPressure",	"PigCVP",	"PLAID",	
+        "Plane",	"PowerCons",	"RefrigerationDevices",	"Rock",	"ScreenType",	"SemgHandGenderCh2",	
+        "SemgHandMovementCh2",	"SemgHandSubjectCh2",	"ShakeGestureWiimoteZ",	"ShapeletSim",	"ShapesAll",	
+        "SmallKitchenAppliances",	"StarLightCurves",	"Strawberry",	"SwedishLeaf",	"Symbols",	
+        "ToeSegmentation1",	"ToeSegmentation2",	"Trace",	"TwoPatterns",	"UMD",	"UWaveGestureLibraryAll",	
+        "UWaveGestureLibraryX",	"UWaveGestureLibraryY",	"UWaveGestureLibraryZ",	"Wafer",	"Wine",	"WordSynonyms",	
+        "Worms",	"WormsTwoClass",	"Yoga",
     };
     
     
     //replaceLabelsForImages() for final labels
     public static final String[] proxyClassifiers = {  
-        "ED", "SVML", "SLOWDTWCV", "DTW", "C45", "BayesNet", "RandF", "RotF",
+        "ED", "SVML", "SLOWDTWCV", "DTW_20", "C45", "BayesNet", "RandF", "RotF",
     };
     
     public static final String[] hiveCoteMembers_uncontracted = {
@@ -249,7 +140,7 @@ public class IntervalClassifierLists {
                 dtwcv.optimiseWindow(true);
                 return dtwcv;
                 
-            case "DTW": //without cv-ing the warp window, just setting it to.. 0.2? ask jay/george
+            case "DTW_20": //without cv-ing the warp window, just setting it to.. 0.2? ask jay/george
                 SlowDTW_1NN dtw = new SlowDTW_1NN();
                 dtw.setMaxPercentageWarp(20);
                 return dtw;
@@ -402,7 +293,7 @@ public class IntervalClassifierLists {
     }
     
     public static void main(String[] args) {
-        System.out.println(datasetList.length);
+        System.out.println(datasets_SeriesLengthAtLeast100.length);
     }
     
 }
