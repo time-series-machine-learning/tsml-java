@@ -172,10 +172,12 @@ public class IntervalExperiments {
 
 //        args = new String[] { "true", "1", "-dp=Z:/Data/TSCProblems2018_Folds/", "-rp=C:/Temp/intervalExpTest/", "-cn=ED" };
 
-        if (deepContains(args, "-dn")) 
-            manyClusterExps(args); //individual dset/fold given
-        else 
-            runExperiment(args); //loops over dsets/folds
+        manyClusterExps(args); //individual dset/fold given
+
+//        if (deepContains(args, "-dn")) 
+//            manyClusterExps(args); //individual dset/fold given
+//        else 
+//            runExperiment(args); //loops over dsets/folds
         
     }
  

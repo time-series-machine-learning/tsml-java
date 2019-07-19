@@ -54,7 +54,7 @@ public class IntervalClassifierLists {
         "GunPointOldVersusYoung",	"Ham",	"HandOutlines",	"Haptics",	"Herring",	"HouseTwenty",	"InlineSkate",	
         "InsectEPGRegularTrain",	"InsectEPGSmallTrain",	"InsectWingbeatSound",	"LargeKitchenAppliances",	
         "Lightning2",	"Lightning7",	"Mallat",	"Meat",	"MixedShapesRegularTrain",	"MixedShapesSmallTrain",	
-        "NonInvasiveFatalECGThorax1",	"NonInvasiveFatalECGThorax2",	"OliveOil",	"OSULeaf",	"Phoneme",	
+        "NonInvasiveFetalECGThorax1",	"NonInvasiveFetalECGThorax2",	"OliveOil",	"OSULeaf",	"Phoneme",	
         "PickupGestureWiimoteZ",	"PigAirwayPressure",	"PigArtPressure",	"PigCVP",	"PLAID",	
         "Plane",	"PowerCons",	"RefrigerationDevices",	"Rock",	"ScreenType",	"SemgHandGenderCh2",	
         "SemgHandMovementCh2",	"SemgHandSubjectCh2",	"ShakeGestureWiimoteZ",	"ShapeletSim",	"ShapesAll",	
