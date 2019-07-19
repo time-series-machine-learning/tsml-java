@@ -14,7 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
-import utilities.ClassifierTools;
+import experiments.data.DatasetLoading;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
@@ -22,9 +22,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
-import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
-import weka.filters.unsupervised.attribute.Normalize;
 
 /**
  * Filter to reduce dimensionality of and discretise a time series into SAX form, 
@@ -295,7 +293,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         System.out.println("SAXtest\n\n");
         
         try {
-            Instances test = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
             
             new NormalizeCase().standardNorm(test);
             SAX sax = new SAX();
