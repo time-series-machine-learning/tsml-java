@@ -18,9 +18,10 @@
 package intervals;
 
 import experiments.ClassifierLists;
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import experiments.Experiments;
 import experiments.Experiments.ExperimentalArguments;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -193,7 +194,7 @@ public class IntervalExperiments {
     public static void clusterExps(String[] args) throws Exception {
         int folds = 30;
 //        String[] dsets = { "BeetleFly" };
-        String[] dsets = DataSets.tscProblems2018;
+        String[] dsets = DatasetLists.tscProblems2018;
 //        dsets = Arrays.copyOfRange(dsets, 0, 5);
         
         String classifier = null;
@@ -246,7 +247,7 @@ public class IntervalExperiments {
         
         boolean norm = false;
         
-        for (String dset : DataSets.tscProblems2018) {
+        for (String dset : DatasetLists.tscProblems2018) {
             for (int f = 1; f <= 10; f++) {
                 for (int i = 227; i < IntervalHeirarchy.maxNumDifferentIntervals; i++) {
                     args=new String[9];
@@ -294,7 +295,7 @@ public class IntervalExperiments {
         if (experiments.CollateResults.validateSingleFoldFile(fullTargetFile))
             System.out.println(exp.toShortString() + " already exists at "+fullTargetFile+", exiting.");
         else {
-            Instances[] data = Experiments.sampleDataset(exp.dataReadLocation, exp.datasetName, exp.foldId);
+            Instances[] data = DatasetLoading.sampleDataset(exp.dataReadLocation, exp.datasetName, exp.foldId);
             data[0] = IntervalCreation.crop_proportional(data[0], interval[0], interval[1], normaliseInterval);
             data[1] = IntervalCreation.crop_proportional(data[1], interval[0], interval[1], normaliseInterval);
 
