@@ -14,10 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-import evaluation.tuning.ParameterSpace;
-import evaluation.tuning.Tuner;
-import fileIO.OutFile;
-
 import java.security.InvalidParameterException;
 import java.util.*;
 
@@ -36,23 +32,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import utilities.*;
-import utilities.generic_storage.SingleComparablePair;
 import utilities.samplers.*;
-import vector_classifiers.TunedClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.GaussianProcesses;
-import weka.classifiers.functions.LinearRegression;
-import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.functions.supportVector.RBFKernel;
-import weka.classifiers.lazy.LWL;
-import weka.classifiers.trees.M5P;
 import weka.core.*;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 import timeseriesweka.classifiers.TrainTimeContractable;
@@ -72,22 +60,6 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
 public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
-
-    //2nd look over & clean (checkpointing)
-
-    public boolean numRed = false;
-    public boolean decimate = false;
-    public boolean rbf = false;
-    public boolean poly = false;
-    public boolean lr = false;
-    public boolean m5p = false;
-    public boolean lwl = false;
-    public boolean tune = false;
-    public boolean topnrandom = false;
-    public int[] kVals = {1};
-
-    public boolean untuned = true;
-    public String[] bestOptions;
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
@@ -128,7 +100,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
-    public int initialRandomParameters = 20;
+    private int initialRandomParameters = 20;
     private int[] initialParameterCount;
     private Instances[] parameterPool;
     private Instances[] prevParameters;
@@ -288,6 +260,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         System.out.println("Loading BOSS.ser");
 
         //copy over variables from serialised object
+        paramAccuracy = saved.paramAccuracy;
+        paramTime = saved.paramTime;
+        paramMemory = saved.paramMemory;
         ensembleSize = saved.ensembleSize;
         seed = saved.seed;
         ensembleSizePerChannel = saved.ensembleSizePerChannel;
@@ -303,7 +278,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         reduceTrainInstances = saved.reduceTrainInstances;
         trainProportion = saved.trainProportion;
         maxTrainInstances = saved.maxTrainInstances;
+        stratifiedSubsample = saved.stratifiedSubsample;
         cutoff = saved.cutoff;
+//        loadAndFinish = saved.loadAndFinish;
         numSeries = saved.numSeries;
         numClassifiers = saved.numClassifiers;
         currentSeries = saved.currentSeries;
@@ -317,11 +294,19 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         initialParameterCount = saved.initialParameterCount;
         parameterPool = saved.parameterPool;
         prevParameters = saved.prevParameters;
+//        checkpointPath = saved.checkpointPath;
+//        serPath = saved.serPath;
+//        checkpoint = saved.checkpoint;
         checkpointTime = saved.checkpointTime;
+//        checkpointTimeDiff = checkpointTimeDiff;
         cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
         contractTime = saved.contractTime;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
+        memoryLimit = saved.memoryLimit;
+        bytesUsed = saved.bytesUsed;
+        memoryContract = saved.memoryContract;
+        underMemoryLimit = saved.underMemoryLimit;
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
@@ -557,17 +542,17 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         //Estimate train accuracy
         if (trainCV) {
-            OutFile of=new OutFile(trainCVPath);
-            of.writeLine(data.relationName()+",BOSSEnsemble,train");
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            trainResults.setClassifierName(randomEnsembleSelection || randomCVAccEnsemble ? "RBOSS" : "BOSS");
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setFoldID(seed);
+            trainResults.setSplit("train");
+            trainResults.setParas(getParameters());
+            double result = findEnsembleTrainAcc(data);
+            trainResults.finaliseResults();
+            trainResults.writeFullResultsToFile(trainCVPath);
 
-            double[][] results = findEnsembleTrainAcc(data);
-            of.writeLine(getParameters());
-            of.writeLine(results[0][0]+"");
-            ensembleCvAcc = results[0][0];
-            for(int i=1;i<results[0].length;i++)
-                of.writeLine(results[0][i]+","+results[1][i]);
-            System.out.println("CV acc ="+results[0][0]);
-            trainCV = false;
+            System.out.println("CV acc ="+result);
         }
 
         //delete any serialised files and holding folder for checkpointing on completion
@@ -590,7 +575,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
             if ((trainTimeContract && !underContractTime) || (memoryContract && !underMemoryLimit) || parameters == null) break;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, parameters[4] == 0, (int)parameters[5], multiThread, numThreads);
+            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -673,7 +658,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
             if ((trainTimeContract && !underContractTime) || (memoryContract && !underMemoryLimit) || parameters == null) break;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, parameters[4] == 0, (int)parameters[5], multiThread, numThreads);
+            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -719,7 +704,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
             for (boolean normalise : normOptions) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
-                    BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize[0], winSize, normalise, true, 1, multiThread, numThreads);
+                    BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize[0], winSize, normalise, true, multiThread, numThreads);
                     boss.seed = seed;
                     boss.buildClassifier(series[n]); //initial setup for this windowsize, with max word length
 
@@ -856,7 +841,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
 
-    //TODO randomly break draws
     //[0] = index, [1] = acc
     private double[] findMinEnsembleAcc() {
         double minAcc = Double.MAX_VALUE;
@@ -876,21 +860,12 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         Instances[] parameterPool = new Instances[numSeries];
         ArrayList<double[]> possibleParameters = new ArrayList();
 
-        int ll = 1;
-        if (numRed){
-            ll = 2;
-        }
-
-        for (int numRed = 0; numRed < ll; numRed++) {
-            for (int normalise = 0; normalise < 2; normalise++) {
-                for (Integer alphSize : alphabetSize) {
-                    for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
-                        for (Integer wordLen : wordLengths) {
-                            for (Integer k : kVals) {
-                                double[] parameters = {wordLen, alphSize, winSize, normalise, numRed, k};
-                                possibleParameters.add(parameters);
-                            }
-                        }
+        for (int normalise = 0; normalise < 2; normalise++) {
+            for (Integer alphSize : alphabetSize) {
+                for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
+                    for (Integer wordLen : wordLengths) {
+                        double[] parameters = {wordLen, alphSize, winSize, normalise};
+                        possibleParameters.add(parameters);
                     }
                 }
             }
@@ -991,94 +966,22 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         if (bayesianParameterSelection) {
             if (initialParameterCount[currentSeries] < initialRandomParameters) {
                 initialParameterCount[currentSeries]++;
-                int randInt = rand.nextInt(parameterPool[currentSeries].size());
-                params =  parameterPool[currentSeries].remove(randInt);
+                params = parameterPool[currentSeries].remove(rand.nextInt(parameterPool[currentSeries].size()));
             } else {
                 for (int i = 0; i < paramAccuracy[currentSeries].size(); i++){
                     prevParameters[currentSeries].get(i).setClassValue(paramAccuracy[currentSeries].get(i));
                 }
 
                 AbstractClassifier gp = new GaussianProcesses();
-                if (tune && untuned) {
-                    ParameterSpace p = new ParameterSpace();
-
-                    if (lwl) {
-                        gp = new LWL();
-                        ((LWL) gp).setClassifier(new LinearRegression());
-                        int[] k = {1, 5, 10, -1};
-                        p.addParameter("K", k);
-                        int[] u = {0, 2, 4};
-                        p.addParameter("U", u);
-                    } else {
-                        double[] l = {100, 10, 1, 0.1, 0.01};
-                        p.addParameter("L", l);
-                        String[] k = {"weka.classifiers.functions.supportVector.PolyKernel", "weka.classifiers.functions.supportVector.RBFKernel"};
-                        p.addParameter("K", k);
-                    }
-
-                    Tuner t = new Tuner();
-                    t.setEvalMetric(ClassifierResults.NegMAA);
-                    TunedClassifier tc = new TunedClassifier(gp, p, t);
-                    tc.buildClassifier(prevParameters[currentSeries]);
-                    bestOptions = tc.getBestOptions();
-
-                    gp.setOptions(bestOptions);
-                    gp.buildClassifier(prevParameters[currentSeries]);
-                    untuned = false;
-                } else if (tune) {
-                    if (lwl) {
-                        gp = new LWL();
-                        ((LWL) gp).setClassifier(new LinearRegression());
-                    }
-                    gp.setOptions(bestOptions);
-                    gp.buildClassifier(prevParameters[currentSeries]);
-                } else {
-                    if (lr) {
-                        gp = new LinearRegression();
-                    }
-                    if (m5p) {
-                        gp = new M5P();
-                        ((M5P) gp).setBuildRegressionTree(true);
-                    }
-                    if (lwl) {
-                        gp = new LWL();
-                        ((LWL) gp).setClassifier(new LinearRegression());
-                    }
-                    if (rbf) {
-                        ((GaussianProcesses) gp).setKernel(new RBFKernel());
-                    }
-                    if (poly) {
-                        PolyKernel p = new PolyKernel();
-                        p.setExponent(2);
-                        ((GaussianProcesses) gp).setKernel(p);
-                    }
-                    gp.buildClassifier(prevParameters[currentSeries]);
-                }
-
-                PriorityQueue<SingleComparablePair<Double, Integer>> preds = new PriorityQueue<>(
-                        parameterPool[currentSeries].numInstances(), Collections.reverseOrder());
+                int bestIndex = 0;
+                double bestAcc = -1;
 
                 for (int i = 0; i < parameterPool[currentSeries].numInstances(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
-                    preds.add(new SingleComparablePair(pred, i));
-                }
 
-                int bestIndex = 0;
-                if (topnrandom) {
-                    int r = rand.nextInt(Math.min(5, preds.size())) + 1;
-                    for (int g = 0; g < r; g++) {
-                        bestIndex = preds.poll().var2;
-                    }
-                } else {
-                    bestIndex = preds.peek().var2;
-                }
-
-                if (decimate) {
-                    if (prevParameters[currentSeries].size() == initialRandomParameters * 2) {
-                        prevParameters[currentSeries].randomize(rand);
-                        for (int i = 0; i < initialRandomParameters; i++) {
-                            prevParameters[currentSeries].remove(0);
-                        }
+                    if (pred > bestAcc){
+                        bestIndex = i;
+                        bestAcc = pred;
                     }
                 }
 
@@ -1211,32 +1114,32 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         }
     }
 
-    private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
-        double[][] results = new double[2 + data.numClasses()][data.numInstances() + 1];
-
+    private double findEnsembleTrainAcc(Instances data) throws Exception {
         this.ensembleCvPreds = new double[data.numInstances()];
 
         double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
+            long predTime = System.nanoTime();
             double[] probs = distributionForInstance(i, data.numClasses());
+            predTime = System.nanoTime() - predTime;
 
             double c = 0;
             for (int j = 1; j < probs.length; j++)
                 if (probs[j] > probs[(int) c])
                     c = j;
+
             //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
             if (c == data.get(i).classValue())
                 ++correct;
-            results[0][i + 1] = data.get(i).classValue();
-            results[1][i + 1] = c;
-            for (int j = 0; j < probs.length; j++)
-                results[2 + j][i + 1] = probs[j];
+
             this.ensembleCvPreds[i] = c;
+
+            trainResults.addPrediction(data.get(i).classValue(), probs, c, predTime, "");
         }
 
-        results[0][0] = correct / data.numInstances();
+        double result = correct / data.numInstances();
 
-        return results;
+        return result;
     }
 
     public double getEnsembleCvAcc(){
@@ -1245,7 +1148,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         }
 
         try{
-            return this.findEnsembleTrainAcc(train)[0][0];
+            return this.findEnsembleTrainAcc(train);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -1386,7 +1289,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         int fold = 0;
 
         //Minimum working example
-        String dataset = "Fungi";
+        String dataset = "ItalyPowerDemand";
         Instances train = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1406,9 +1309,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         c = new BOSS();
         c.useBestSettingsRBOSS();
         c.setSeed(fold);
-        c.setBayesianParameterSelection(true);
-        c.tune = true;
-        c.kVals = new int[]{50};
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1549,7 +1449,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         protected int wordLength;
         protected int alphabetSize;
         protected boolean norm;
-        protected int k = 1;
         protected boolean numerosityReduction = true;
         protected boolean cleanAfterBuild = false;
 
@@ -1565,14 +1464,13 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         protected static final long serialVersionUID = 22551L;
 
-        public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise, boolean numerosityReduction, int k, boolean multiThread, int numThreads) {
+        public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise, boolean numerosityReduction, boolean multiThread, int numThreads) {
             this.wordLength = wordLength;
             this.alphabetSize = alphabetSize;
             this.windowSize = windowSize;
             this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
             this.norm = normalise;
             this.numerosityReduction = numerosityReduction;
-            this.k = k;
             this.multiThread = multiThread;
             this.numThreads = numThreads;
         }
@@ -1597,7 +1495,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             this.alphabetSize = boss.alphabetSize;
             this.norm = boss.norm;
             this.numerosityReduction = boss.numerosityReduction;
-            this.k = boss.k;
 
             this.SFAwords = boss.SFAwords;
             this.breakpoints = boss.breakpoints;
@@ -2044,8 +1941,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                 }
             }
 
-            if (bags.size() < k) k = 1;
-
             if (cleanAfterBuild) {
                 clean();
             }
@@ -2078,7 +1973,22 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         @Override
         public double classifyInstance(Instance instance) throws Exception{
-            return argMax(distributionForInstance(instance), rand);
+            BOSSIndividual.Bag testBag = BOSSTransform(instance);
+
+            //1NN BOSS distance
+            double bestDist = Double.MAX_VALUE;
+            double nn = -1;
+
+            for (int i = 0; i < bags.size(); ++i) {
+                double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    nn = bags.get(i).getClassVal();
+                }
+            }
+
+            return nn;
         }
 
         /**
@@ -2090,67 +2000,25 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
          * @return classification
          */
         public double classifyInstance(int testIndex) throws Exception{
-            return argMax(distributionForInstance(testIndex), rand);
-        }
+            BOSSIndividual.Bag testBag = bags.get(testIndex);
 
-        @Override
-        public double[] distributionForInstance(Instance instance) throws Exception {
-            Bag testBag = BOSSTransform(instance);
-
-            //kNN BOSS distance
-            PriorityQueue<SingleComparablePair<Double, Double>> nn = new PriorityQueue(k, Collections.reverseOrder());
-
-            for (int i = 0; i < bags.size(); ++i) {
-                double bestDist = nn.size() < k ? Double.MAX_VALUE : nn.peek().var1;
-                double dist = BOSSdistance(testBag, bags.get(i), bestDist);
-
-                if (dist < bestDist) {
-                    nn.add(new SingleComparablePair(dist, bags.get(i).getClassVal()));
-                    if (nn.size() > k) nn.remove();
-                }
-            }
-
-            double[] probas = new double[numClasses];
-            for (int i = 0; i < k; i++){
-                probas[nn.poll().var2.intValue()]++;
-            }
-
-            for (int i = 0; i < probas.length; i++){
-                probas[i] /= k;
-            }
-
-            return probas;
-        }
-
-        public double[] distributionForInstance(int testIndex) throws Exception {
-            Bag testBag = bags.get(testIndex);
-
-            //kNN BOSS distance
-            PriorityQueue<SingleComparablePair<Double, Double>> nn = new PriorityQueue(k, Collections.reverseOrder());
+            //1NN BOSS distance
+            double bestDist = Double.MAX_VALUE;
+            double nn = 0;
 
             for (int i = 0; i < bags.size(); ++i) {
                 if (i == testIndex) //skip 'this' one, leave-one-out
                     continue;
 
-                double bestDist = nn.size() < k ? Double.MAX_VALUE : nn.peek().var1;
                 double dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
-                    nn.add(new SingleComparablePair(dist, bags.get(i).getClassVal()));
-                    if (nn.size() > k) nn.remove();
+                    bestDist = dist;
+                    nn = bags.get(i).getClassVal();
                 }
             }
 
-            double[] probas = new double[numClasses];
-            for (int i = 0; i < k; i++){
-                probas[nn.poll().var2.intValue()]++;
-            }
-
-            for (int i = 0; i < probas.length; i++){
-                probas[i] /= k;
-            }
-
-            return probas;
+            return nn;
         }
 
         public class TestNearestNeighbourThread implements Runnable{
