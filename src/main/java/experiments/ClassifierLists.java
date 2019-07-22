@@ -243,8 +243,9 @@ public class ClassifierLists {
                 
                 break;
             case "CAWPE_AS_COTE":
-                String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
+                String[] cls={"TSF","ST","EE","BOSS","RISE"};
                 c=new CAWPE();
+                ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
@@ -354,7 +355,7 @@ public class ClassifierLists {
                 break;
 
            default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifier);
+                System.out.println("UNKNOWN CLASSIFIER "+classifier+" In ClassifierLists");
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
         }
