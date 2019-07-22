@@ -694,7 +694,7 @@ public static void basicSummaryComparisons(){
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
-            m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+            m.setDatasets(Arrays.copyOfRange(experiments.data.DatasetLists.UCIContinuousWithoutBigFour, 0, 117));
             m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
                     "E://Results/UCI/Tuned");
             m.runComparison(); 
@@ -756,7 +756,7 @@ public static void basicSummaryComparisons(){
         f=new File(fullPath+"/Predictions");
         System.out.println(fullPath+"/Predictions");
         File[] fileList=f.listFiles();
-        System.out.println("File names in primary : has "+f.length()+" files ");
+        System.out.println("File names in "+fullPath+"/Predictions  : has "+f.length()+" files ");
         for(File t:fileList){
             System.out.println("\t"+t.getName());
 
@@ -1051,7 +1051,8 @@ public static void basicSummaryComparisons(){
         if (args.length == 0) {//Local run
             bakeOffPath=bakeOffPathBeast;
             hiveCotePath=hiveCotePathBeast;
-            quickStats("E:/Results/UCR Debug/Python/PF",false,30,false,"Bakeoff,EE","HIVE-COTE,HIVE-COTE");
+            quickStats("C:/Temp/CNN/CNN10hours",false,1,false);
+            //,"HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
 //          quickStats("Z:/Results/BOSS variants/Univariate/RBOSS250",false,30,false,"HIVE-COTE,BOSS");
 //TunedTSF
  //           quickStats("E:/Results/UCR Debug/Java/TunedTSF",false,30,"Bakeoff,ST","Bakeoff,TSF","Bakeoff,BOSS","Bakeoff,DTWCV");
@@ -1088,7 +1089,7 @@ public static void basicSummaryComparisons(){
                 System.out.println(s);
             singleClassifiervsReferenceResults(args);
         }
-
+            
         System.exit(0);
         boolean singleClassifierStats=true;
         if(singleClassifierStats)

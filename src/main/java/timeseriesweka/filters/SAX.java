@@ -14,15 +14,15 @@
  */ 
 package timeseriesweka.filters;
 
-import utilities.ClassifierTools;
+import experiments.data.DatasetLoading;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
+import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 import weka.filters.SimpleBatchFilter;
-import weka.filters.unsupervised.attribute.Normalize;
 
 /**
  * Filter to reduce dimensionality of and discretise a time series into SAX form, 
@@ -35,7 +35,7 @@ import weka.filters.unsupervised.attribute.Normalize;
  *
  * @author James
  */
-public class SAX extends SimpleBatchFilter {
+public class SAX extends SimpleBatchFilter implements TechnicalInformationHandler {
 
     private int numIntervals = 8;
     private int alphabetSize = 4;
@@ -293,13 +293,13 @@ public class SAX extends SimpleBatchFilter {
         System.out.println("SAXtest\n\n");
         
         try {
-            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
+            Instances test = DatasetLoading.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
             
             new NormalizeCase().standardNorm(test);
-            
             SAX sax = new SAX();
-            sax.setNumIntervals(2);
-            sax.setAlphabetSize(3);     
+            
+            sax.setNumIntervals(8);
+            sax.setAlphabetSize(4);     
             sax.useRealValuedAttributes(false);
             Instances result = sax.process(test);
             
@@ -313,4 +313,21 @@ public class SAX extends SimpleBatchFilter {
         }
     }
 
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
+        TechnicalInformation 	result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.TITLE, "Experiencing SAX: a novel symbolic representation of time series");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "Jessica Lin, Eamonn Keogh, Li Wei and Stefano Lonardi");
+        result.setValue(TechnicalInformation.Field.YEAR, "2007");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
+        result.setValue(TechnicalInformation.Field.VOLUME, "15");
+        result.setValue(TechnicalInformation.Field.NUMBER, "2");
+        result.setValue(TechnicalInformation.Field.PAGES, "107-144");
+
+        return result;
+    }
+
+
+    
 }

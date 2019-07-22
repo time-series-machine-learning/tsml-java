@@ -93,7 +93,21 @@ public class SubSeqDistance implements Serializable{
     public double calculate(Instance timeSeries, int timeSeriesId){
         return calculate(timeSeries.toDoubleArray(), timeSeriesId);
     }
-           
+         
+    public double distanceToShapelet(Shapelet otherShapelet){
+        
+        double temp;
+        double sum = 0;
+        for (int j = 0; j < length; j++)
+        {
+            temp = (cand.getShapeletContent()[j] - otherShapelet.getContent().getShapeletContent()[j]);
+            sum = sum + (temp * temp);
+        }
+        double dist = (sum == 0.0) ? 0.0 : (1.0 / length * sum);
+        return dist;
+    }
+    
+    
     //we take in a start pos, but we also start from 0.
     public double calculate(double[] timeSeries, int timeSeriesId) 
     {

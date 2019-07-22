@@ -14,10 +14,11 @@
  */
 package timeseriesweka.classifiers.distance_based;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import utilities.ClassifierTools;
 import vector_classifiers.kNN;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -285,12 +286,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
     
     public static void recreateDTWDistance(){
         int c=0;
-        for(String s:DataSets.tscProblems46){
+        for(String s:DatasetLists.tscProblems46){
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
             k2.useDTW();
-            Instances train=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);
@@ -299,16 +300,16 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             if(a2>a1)
                 c++;
         }
-        System.out.println("CID Better on "+c+" out of "+DataSets.tscProblems46.length);
+        System.out.println("CID Better on "+c+" out of "+DatasetLists.tscProblems46.length);
     }
     
     public static void recreateEuclideanDistance(){
         int c=0;
-        for(String s:DataSets.tscProblems46){
+        for(String s:DatasetLists.tscProblems46){
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
-            Instances train=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=ClassifierTools.loadData(DataSets.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);
@@ -317,7 +318,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             if(a2>a1)
                 c++;
         }
-        System.out.println("CID Better on "+c+" out of "+DataSets.tscProblems46.length);
+        System.out.println("CID Better on "+c+" out of "+DatasetLists.tscProblems46.length);
     }
     public static void main(String[]args){
         recreateEuclideanDistance();

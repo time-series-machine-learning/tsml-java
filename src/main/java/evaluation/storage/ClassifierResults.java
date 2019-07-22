@@ -216,6 +216,30 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     private long memoryUsage = -1; 
  
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    private String errorEstimateMethod = "";
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    private long errorEstimateTime = -1;
+    
 //REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
     private ArrayList<Double> trueClassValues;
@@ -776,7 +800,63 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public void setBenchmarkTime(long benchmarkTime) {
         this.benchmarkTime = benchmarkTime;
     }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public String getErrorEstimateMethod() {
+        return errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public void setErrorEstimateMethod(String errorEstimateMethod) {
+        this.errorEstimateMethod = errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public long getErrorEstimateTime() {
+        return errorEstimateTime;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public void setErrorEstimateTime(long errorEstimateTime) {
+        this.errorEstimateTime = errorEstimateTime;
+    }
            
+    
+    
 
     /****************************
      *   
@@ -947,12 +1027,58 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         finalised = true;
     }
     
+    public boolean hasProbabilityDistributionInformation() { 
+        return predDistributions != null && 
+                !predDistributions.isEmpty() && 
+                predDistributions.size() == predClassValues.size() && 
+                predDistributions.get(0) != null;
+    }
     
-    
-    
-    
-    
-    
+    /**
+     * If this results object does not contain probability distributions but does 
+     * contain predicted classes, this will infer distributions as one-hot vectors 
+     * from the predicted class values, i.e if class 0 is predicted in a three class 
+     * problem, dist would be [ 1.0, 0.0, 0.0 ]  
+     * 
+     * If this object already contains distributions, this method will do nothing
+     * 
+     * Returns whether or not values were missing but have been populated
+     * 
+     * The number of classes is inferred from via length(unique(trueclassvalues)). As a 
+     * reminder of why this method should not generally be used unless you have a specific 
+     * reason, this may not be entirely correct, if e.g a particular cv fold of a particular 
+     * subsample does not contain instances of every class. And also in general it assumes 
+     * that the true class values supplied (as they would be if read from file) Consider yourself warned
+     * 
+     * Intended to help with old results files that may not have distributions stored. 
+     * Should not be used by default anywhere and everywhere to overcome laziness in 
+     * newly generated results, thus in part it's implementation as a single method applied
+     * to an already populated set of results. 
+     * 
+     * Intended usage:
+     * res.loadFromFile(someOldFilePotentiallyMissingDists);
+     * if (ignoreMissingDists) {
+     *   res.populateMissingDists();
+     * }
+     * // res.findAllStats() etcetcetc
+     */
+    public boolean populateMissingDists() { 
+        if (this.hasProbabilityDistributionInformation())
+            return false;
+        
+        if (this.numClasses <= 0) 
+            //ayyyy java8 being used for something
+            numClasses = (int) trueClassValues.stream().distinct().count();
+        
+        predDistributions = new ArrayList<>(predClassValues.size());
+        for (double d : predClassValues) {
+            double[] dist = new double[numClasses];
+            dist[(int)d] = 1;
+            predDistributions.add(dist);
+        }
+        
+        return true;
+    }   
     
     /******************************
     *
@@ -1423,6 +1549,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             memoryUsage = Long.parseLong(parts[4]);
         if (parts.length > 5) 
             numClasses = Integer.parseInt(parts[5]);
+        if (parts.length > 6) 
+            errorEstimateMethod = parts[6];
+        if (parts.length > 7) 
+            errorEstimateTime = Long.parseLong(parts[7]);
         
         return acc;
     }
@@ -1432,7 +1562,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + testTime
             + "," + benchmarkTime
             + "," + memoryUsage
-            + "," + numClasses();
+            + "," + numClasses()
+            + "," + errorEstimateMethod
+            + "," + errorEstimateTime;
+        
         return res;
     }
 
@@ -1763,7 +1896,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         int mid = copy.size()/2;
         if (copy.size() % 2 == 0)
-            return (copy.get(mid) + copy.get(mid+1)) / 2;
+            return (copy.get(mid) + copy.get(mid-1)) / 2;
         else 
             return copy.get(mid);
     }

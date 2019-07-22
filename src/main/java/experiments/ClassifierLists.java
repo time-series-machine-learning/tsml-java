@@ -88,7 +88,24 @@ public class ClassifierLists {
      * from the experimental args. 
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
-        return setClassifierClassic(exp.classifierName, exp.foldId);
+        switch(exp.classifierName) {
+            case "STContract":
+                long time = exp.contractTrainTimeSeconds;
+                Classifier st = null; //setup contracted ST
+                
+                String unit = "seconds";
+                if (time % 3600 == 0) {
+                    unit = "hours";
+                    time /= 3600;
+                }
+                exp.classifierName = "ST_" + time + unit;
+                //obviously edit for w/e formatting you want 
+                
+                return st;
+            
+            default:
+                return setClassifierClassic(exp.classifierName, exp.foldId);
+        }
     }
     
     /**
@@ -227,8 +244,9 @@ public class ClassifierLists {
                 
                 break;
             case "CAWPE_AS_COTE":
-                String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
+                String[] cls={"TSF","ST","EE","BOSS","RISE"};
                 c=new CAWPE();
+                ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
@@ -344,7 +362,7 @@ public class ClassifierLists {
                 break;
 
            default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifier);
+                System.out.println("UNKNOWN CLASSIFIER "+classifier+" In ClassifierLists");
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
         }

@@ -14,7 +14,7 @@
  */
 package vector_classifiers.weightedvoters;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import java.io.FileNotFoundException;
 import vector_classifiers.ensembles.voting.BestIndividualTrain;
@@ -165,7 +165,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         
-        String[] dsets = DataSets.UCIContinuousFileNames;
+        String[] dsets = DatasetLists.UCIContinuousFileNames;
         String classifier = "HESCA_TunedAlpha";
         
         //both dset by fold 

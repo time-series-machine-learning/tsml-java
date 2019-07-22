@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.hybrids;
 
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
@@ -660,8 +661,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         String datasetName = "ItalyPowerDemand";
 //        String datasetName = "MoteStrain";
         
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
         HiveCote hive = new HiveCote();
         hive.makeShouty();
