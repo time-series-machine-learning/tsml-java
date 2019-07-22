@@ -41,23 +41,18 @@ public class IntervalHierarchy implements Iterable<Interval> {
     
     public static Function<ClassifierResults, Double> defaultMetric = ClassifierResults.GETTER_Accuracy;
     
-    public class Interval implements Comparable<Interval> {
+    public static class Interval implements Comparable<Interval> {
         public int intervalID;
         
         public double[] intervalPercents;
         public double startPercent;
         public double endPercent;
+        public double intervalLength;
         
         public String intervalStr;
         
-        public int startInd;
-        public int endInd;
-        public int[] intervalInds;
-        
         public ClassifierResults res;
-        public double score;
-        
-        public boolean betterThanFullSeries;
+        public double relevance;
         
         public Interval() { 
             
@@ -80,19 +75,24 @@ public class IntervalHierarchy implements Iterable<Interval> {
             startPercent = intervalPercents[0];
             endPercent = intervalPercents[1];
             
+            intervalLength = endPercent - startPercent;
+            
             intervalStr = buildIntervalStr(intervalPercents);
             
         }
         
-        public boolean betterThanFullSeries(Interval fullSeriesInterval) {
-            return betterThanFullSeries(fullSeriesInterval, defaultMetric);
+        public void computeRelevance(Interval fullSeriesInterval) {
+            computeRelevance(fullSeriesInterval, defaultMetric);
         }
         
-        public boolean betterThanFullSeries(Interval fullSeriesInterval, Function<ClassifierResults, Double> metric) {
-            betterThanFullSeries = metric.apply(fullSeriesInterval.res) <= metric.apply(this.res);
-            return betterThanFullSeries;
+        public void computeRelevance(Interval fullSeriesInterval, Function<ClassifierResults, Double> metric) {
+            relevance = metric.apply(this.res) - metric.apply(fullSeriesInterval.res);
         }
 
+        public boolean equals(Interval o) {
+            return Arrays.equals(this.intervalPercents, o.intervalPercents);
+        }
+        
         @Override
         public int compareTo(Interval o) {
             // if 'less than' means lower quality, then... 
@@ -101,7 +101,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
             if (c != 0) // smaller accuracy means less than
                 return c;
             else        // same accuracy? then longer length means less than
-                return Double.compare(o.intervalPercents[1] - o.intervalPercents[0], this.intervalPercents[1] - this.intervalPercents[0]);
+                return Double.compare(o.intervalLength, this.intervalLength);
         }
     }
     
@@ -111,7 +111,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         
         public SingleHierarchyEval() { 
             for (Interval interval : orderedEvaluatedIntervals)
-                if (interval.betterThanFullSeries)
+                if (interval.relevance >= 0)
                     numIntervalsBetterThanFullSeries++;
             
             propIntervalsBetterThanFullSeries = (double) numIntervalsBetterThanFullSeries / orderedEvaluatedIntervals.size();
@@ -352,7 +352,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         Collections.reverse(orderedEvaluatedIntervals); //todo fix do do descending in one
         
         for (Interval interval : orderedEvaluatedIntervals)
-            interval.betterThanFullSeries(fullSeries);
+            interval.computeRelevance(fullSeries);
     }
     
     public SingleHierarchyEval getHierarchyEvaluation() { 
