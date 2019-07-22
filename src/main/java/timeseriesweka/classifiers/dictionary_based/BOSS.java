@@ -972,7 +972,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                     prevParameters[currentSeries].get(i).setClassValue(paramAccuracy[currentSeries].get(i));
                 }
 
-                AbstractClassifier gp = new GaussianProcesses();
+                GaussianProcesses gp = new GaussianProcesses();
+                gp.buildClassifier(prevParameters[currentSeries]);
                 int bestIndex = 0;
                 double bestAcc = -1;
 
@@ -1323,6 +1324,24 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
+        c.useBestSettingsRBOSS();
+        c.setBayesianParameterSelection(true);
+        c.setSeed(fold);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+
+        c = new BOSS();
+        c.useBestSettingsRBOSS();
+        c.setBayesianParameterSelection(true);
+        c.setSeed(fold);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+
+        c = new BOSS();
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1404,10 +1423,12 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
 
         System.out.println("BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 17/07/19
+        //Output 22/07/19
         /*
         CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.923226433430515 numClassifiers = [50]
         CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8851851851851852 numClassifiers = [50, 50, 50, 50]
+        Bayesian CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.9300291545189504 numClassifiers = [50]
+        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8851851851851852 numClassifiers = [50, 50, 50, 50]
         FastMax CVAcc BOSS accuracy on ItalyPowerDemand fold 0 = 0.8415937803692906 numClassifiers = [50]
         FastMax CVAcc BOSS accuracy on ERing fold 0 = 0.725925925925926 numClassifiers = [50, 50, 50, 50]
         CAWPE Subsample BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [80]
