@@ -40,8 +40,8 @@ import weka.core.Instances;
  */
 public class CrossValidationEvaluator extends SamplingEvaluator {
       
-    //cursed code, should be removed if we ever delve deeper into regression stuff
-    public static boolean REGRESSION_HACK = true;
+    //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
+    public static boolean REGRESSION_HACK = false;
 
     private String previousRelationName = "EmPtY";
     
