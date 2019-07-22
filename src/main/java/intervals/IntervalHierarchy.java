@@ -18,7 +18,7 @@
 package intervals;
 
 import evaluation.storage.ClassifierResults;
-import intervals.IntervalHeirarchy.Interval;
+import intervals.IntervalHierarchy.Interval;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Function;
@@ -27,7 +27,7 @@ import java.util.function.Function;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class IntervalHeirarchy implements Iterable<Interval> {
+public class IntervalHierarchy implements Iterable<Interval> {
 
     public static final int maxNumDifferentIntervals = 210;
     public static final int maxNumIntervalPoints = 20; //so 21 values really, 0 .. 20 corresponding to props 0 .. 1
@@ -115,11 +115,11 @@ public class IntervalHeirarchy implements Iterable<Interval> {
 
 
     
-    public IntervalHeirarchy() throws Exception {
+    public IntervalHierarchy() throws Exception {
         buildHeirarchy();
     }
     
-    public IntervalHeirarchy(String split, String baseResPath, String baseClassifier, String dataset, int fold) throws Exception {
+    public IntervalHierarchy(String split, String baseResPath, String baseClassifier, String dataset, int fold) throws Exception {
         buildHeirarchy(split, baseResPath, baseClassifier, dataset, fold);
     }
     
@@ -329,7 +329,7 @@ public class IntervalHeirarchy implements Iterable<Interval> {
     
     
     public static void main(String[] args) throws Exception {
-        IntervalHeirarchy ih = new IntervalHeirarchy("train", "E:/Intervals/GunpointExampleAna/locallyCreatedResults/", "ED", "Gunpoint", 0);
+        IntervalHierarchy ih = new IntervalHierarchy("train", "E:/Intervals/GunpointExampleAna/locallyCreatedResults/", "ED", "Gunpoint", 0);
         
         System.out.println(ih);
         

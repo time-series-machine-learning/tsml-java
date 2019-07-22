@@ -182,7 +182,7 @@ public class IntervalExperiments {
     }
  
     public static void localGunPointExps(String[] args) throws Exception {
-        for (int i = 1; i <= IntervalHeirarchy.maxNumDifferentIntervals; i++) {
+        for (int i = 1; i <= IntervalHierarchy.maxNumDifferentIntervals; i++) {
             String[] newArgs=new String[9];
             newArgs[0]="false";
             newArgs[1]=i+"";
@@ -256,7 +256,7 @@ public class IntervalExperiments {
         
         for (String dset : DatasetLists.tscProblems2018) {
             for (int f = 1; f <= 10; f++) {
-                for (int i = 227; i < IntervalHeirarchy.maxNumDifferentIntervals; i++) {
+                for (int i = 227; i < IntervalHierarchy.maxNumDifferentIntervals; i++) {
                     args=new String[9];
                     args[0]=""+norm;
                     args[1]=""+i;
@@ -279,7 +279,7 @@ public class IntervalExperiments {
         
         boolean normaliseInterval = Boolean.parseBoolean(args[0]);
         int intervalID = Integer.parseInt(args[1]) - 1;
-        double[] interval = IntervalHeirarchy.defineInterval(intervalID);
+        double[] interval = IntervalHierarchy.defineInterval(intervalID);
         args = Arrays.copyOfRange(args, 2, args.length);
         
         //semi-manual experiment setup to get cawpe to write it's individuals predictions
@@ -287,7 +287,7 @@ public class IntervalExperiments {
         System.out.println(exp.toShortString());
        
         Classifier classifier = ClassifierLists.setClassifier(exp);
-        exp.classifierName = IntervalHeirarchy.buildIntervalClassifierName(exp.classifierName, interval);
+        exp.classifierName = IntervalHierarchy.buildIntervalClassifierName(exp.classifierName, interval);
         
         
         if (new File(exp.resultsWriteLocation + exp.classifierName + "/" + exp.classifierName + ".zip").exists()) {

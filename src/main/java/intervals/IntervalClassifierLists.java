@@ -71,11 +71,11 @@ public class IntervalClassifierLists {
     };
     
     public static final String[] hiveCoteMembers_uncontracted = {
-        "TSF", "ST", "EE", "BOSS", "RISE",
+        "TSF", "ST5Day_RotF", "EE", "BOSS", "RISE",
     };
     
     public static final String[] hiveCoteMembers_contracted = {
-        "TSF", "cST", "cEE", "cBOSS", "cRISE",
+        "TSF", "cST_RotF", "cEE", "cBOSS", "cRISE",
     };
             
     public static final String[] targetClassifiers_uncontracted = arrConcat(hiveCoteMembers_uncontracted, new String[] { "HIVE-COTE" });
@@ -178,13 +178,15 @@ public class IntervalClassifierLists {
                 tsf.setSeed(fold);
                 return tsf;
                 
-            case "ST": 
-                //complete via TransformExperiments? does TransformExperiments record the time taken to transform too somewhere? 
-                //will only be using rotf as final classifier, dont necessarily care about saving the transforms themselves
+            case "ST5Day_RotF": 
+                //transforms saved via TransformExperiments. timings to be added on semi-manually
+                //will only be using rotf as final classifier, at least as good as cawpe  on average and less variable on timings/space reqs (logistic can be a massive pig)
                 //might need to end up contracting even in the 'uncontracted' version for feasibility, in that case can assume contract time (7 days e.g)
-                ShapeletTransformClassifier st = new ShapeletTransformClassifier();
-                st.setSeed(fold);
-                return st;
+                RotationForest strotf = new RotationForest();
+                strotf.setNumIterations(50);
+                strotf.setSeed(fold);
+                //todo find someway to load back the st timing files to add onto the rotf time.
+                return strotf;
                 
             case "BOSS":
                 BOSS boss = new BOSS();
@@ -212,11 +214,11 @@ public class IntervalClassifierLists {
 //                does not exist? likely would not need anyway
 //                return null;
                 
-            case "cST": 
-                ShapeletTransformClassifier cst = new ShapeletTransformClassifier();
-                cst.setSeed(fold);
-                cst.setHourLimit(contractHourLimit);
-                return cst;
+//            case "cST_RotF": 
+//                ShapeletTransformClassifier cst = new ShapeletTransformClassifier();
+//                cst.setSeed(fold);
+//                cst.setHourLimit(contractHourLimit);
+//                return cst;
                 
             case "cBOSS":
                 BOSS cboss = new BOSS();
