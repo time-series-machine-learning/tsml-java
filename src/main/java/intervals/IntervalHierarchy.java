@@ -19,7 +19,9 @@ package intervals;
 
 import evaluation.storage.ClassifierResults;
 import intervals.IntervalHierarchy.Interval;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
 
@@ -34,9 +36,12 @@ public class IntervalHierarchy implements Iterable<Interval> {
 
     
     Interval[][] heirarchy;
-
+    ArrayList<Interval> orderedEvaluatedIntervals;
+    SingleHierarchyEval hierEval;
     
-    public class Interval {
+    public static Function<ClassifierResults, Double> defaultMetric = ClassifierResults.GETTER_Accuracy;
+    
+    public class Interval implements Comparable<Interval> {
         public int intervalID;
         
         public double[] intervalPercents;
@@ -51,6 +56,8 @@ public class IntervalHierarchy implements Iterable<Interval> {
         
         public ClassifierResults res;
         public double score;
+        
+        public boolean betterThanFullSeries;
         
         public Interval() { 
             
@@ -75,6 +82,39 @@ public class IntervalHierarchy implements Iterable<Interval> {
             
             intervalStr = buildIntervalStr(intervalPercents);
             
+        }
+        
+        public boolean betterThanFullSeries(Interval fullSeriesInterval) {
+            return betterThanFullSeries(fullSeriesInterval, defaultMetric);
+        }
+        
+        public boolean betterThanFullSeries(Interval fullSeriesInterval, Function<ClassifierResults, Double> metric) {
+            betterThanFullSeries = metric.apply(fullSeriesInterval.res) <= metric.apply(this.res);
+            return betterThanFullSeries;
+        }
+
+        @Override
+        public int compareTo(Interval o) {
+            // if 'less than' means lower quality, then... 
+            
+            int c = Double.compare(defaultMetric.apply(this.res), defaultMetric.apply(o.res));
+            if (c != 0) // smaller accuracy means less than
+                return c;
+            else        // same accuracy? then longer length means less than
+                return Double.compare(o.intervalPercents[1] - o.intervalPercents[0], this.intervalPercents[1] - this.intervalPercents[0]);
+        }
+    }
+    
+    public class SingleHierarchyEval {
+        public int numIntervalsBetterThanFullSeries;
+        public double propIntervalsBetterThanFullSeries;
+        
+        public SingleHierarchyEval() { 
+            for (Interval interval : orderedEvaluatedIntervals)
+                if (interval.betterThanFullSeries)
+                    numIntervalsBetterThanFullSeries++;
+            
+            propIntervalsBetterThanFullSeries = (double) numIntervalsBetterThanFullSeries / orderedEvaluatedIntervals.size();
         }
     }
     
@@ -202,11 +242,11 @@ public class IntervalHierarchy implements Iterable<Interval> {
     }
     
     public double[] getAvgImportances() { 
-        return getAvgImportances(ClassifierResults.GETTER_Accuracy);
+        return getAvgImportances(defaultMetric);
     }
     
     public double[] getMinImportances() { 
-        return getMinImportances(ClassifierResults.GETTER_Accuracy);
+        return getMinImportances(defaultMetric);
     }
     
     public double[] getAvgImportances(Function<ClassifierResults, Double> metric) { 
@@ -286,7 +326,39 @@ public class IntervalHierarchy implements Iterable<Interval> {
      * @return build time of the full series 'interval', in nanoseconds
      */
     public long getBuildTimeFullSeries() {
-        return heirarchy[maxNumIntervalPoints-1][0].res.getBuildTimeInNanos();
+        return getFullSeriesInterval().res.getBuildTimeInNanos();
+    }
+    
+    public Interval getFullSeriesInterval() { 
+        return heirarchy[maxNumIntervalPoints-1][0];
+    }
+    
+    
+    public ArrayList<Interval> getOrderedIntervals() { 
+        if (orderedEvaluatedIntervals == null)
+            computeIntervalOrdering();
+        
+        return orderedEvaluatedIntervals;
+    }
+    
+    public void computeIntervalOrdering() {
+        Interval fullSeries = getFullSeriesInterval();
+        
+        orderedEvaluatedIntervals = new ArrayList<>();
+        for (Interval interval : this)
+            orderedEvaluatedIntervals.add(interval);
+        
+        Collections.sort(orderedEvaluatedIntervals);
+        Collections.reverse(orderedEvaluatedIntervals); //todo fix do do descending in one
+        
+        for (Interval interval : orderedEvaluatedIntervals)
+            interval.betterThanFullSeries(fullSeries);
+    }
+    
+    public SingleHierarchyEval getHierarchyEvaluation() { 
+        if (hierEval == null)
+            hierEval = new SingleHierarchyEval();
+        return hierEval;
     }
     
     private boolean containedWithin(Interval inner, Interval outter) { 
