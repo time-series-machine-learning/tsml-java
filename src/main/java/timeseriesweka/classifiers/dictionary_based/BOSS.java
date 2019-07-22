@@ -496,6 +496,16 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             }
         }
 
+        try{
+            SizeOf.deepSizeOf("test");
+        }
+        catch (IllegalStateException e){
+            if (memoryContract) {
+                throw new Exception("Unable to contract memory with SizeOf unavailable, " +
+                        "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
+            }
+        }
+
         this.train = data;
 
         if (multiThread && numThreads == 1){
@@ -572,8 +582,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
             long indivBuildTime = System.nanoTime();
             boolean checkpointChange = false;
             double[] parameters = selectParameters();
-
-            if ((trainTimeContract && !underContractTime) || (memoryContract && !underMemoryLimit) || parameters == null) break;
+            if (parameters == null) continue;
 
             BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
@@ -655,8 +664,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                 || sum(numClassifiers) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
             long indivBuildTime = System.nanoTime();
             double[] parameters = selectParameters();
-
-            if ((trainTimeContract && !underContractTime) || (memoryContract && !underMemoryLimit) || parameters == null) break;
+            if (parameters == null) continue;
 
             BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
@@ -817,20 +825,25 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         String name = datasetName + seed + "BOSS";
 
         if (trainTimeContract){
-            name += "TrainTimeContract" + contractTime;
+            name += ("TTC" + contractTime);
         }
         else if (isMultivariate && ensembleSizePerChannel > 0){
-            name += (ensembleSizePerChannel*numSeries);
-        }
-        else if (randomCVAccEnsemble) {
-            name += ensembleSize + "" + maxEnsembleSize;
+            name += ("PC" + (ensembleSizePerChannel*numSeries));
         }
         else{
-            name += ensembleSize;
+            name += ("S" + ensembleSize);
+        }
+
+        if (memoryContract){
+            name += ("MC" + memoryLimit);
+        }
+
+        if (randomCVAccEnsemble) {
+            name += ("M" + maxEnsembleSize);
         }
 
         if (useCAWPE){
-            name += "CAWPE";
+            name += "W";
         }
 
         return name;
@@ -924,7 +937,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                     prevParameters[currentSeries].get(i).setClassValue(paramTime[currentSeries].get(i));
                 }
 
-                AbstractClassifier gp = new GaussianProcesses();
+                GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
                 long remainingTime = contractTime - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
@@ -944,10 +957,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
                     prevParameters[currentSeries].get(i).setClassValue(paramMemory[currentSeries].get(i));
                 }
 
-                AbstractClassifier gp = new GaussianProcesses();
+                GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
-
-                long remainingMemory = 0;
+                long remainingMemory = memoryLimit - bytesUsed;
 
                 for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
@@ -1396,6 +1408,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         c = new BOSS();
         c.setRandomEnsembleSelection(true);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+        c.setCleanupCheckpointFiles(true);
+        c.setSavePath("D:\\");
         c.setSeed(fold);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
@@ -1405,11 +1419,31 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         c = new BOSS();
         c.setRandomEnsembleSelection(true);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+        c.setCleanupCheckpointFiles(true);
+        c.setSavePath("D:\\");
         c.setSeed(fold);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+
+        c = new BOSS();
+        c.setRandomEnsembleSelection(true);
+        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+        c.setSeed(fold);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+
+        c = new BOSS();
+        c.setRandomEnsembleSelection(true);
+        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+        c.setSeed(fold);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
         c.buildClassifier(train);
@@ -1435,6 +1469,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8592592592592593 numClassifiers = [25, 25, 25, 25]
         Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80]
         Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190]
+        Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7103984450923226 numClassifiers = [50]
+        Contract 500MB BOSS accuracy on ERing fold 0 = 0.4740740740740741 numClassifiers = [13, 13, 12, 12]
         BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [4]
         BOSS accuracy on ERing fold 0 = 0.7925925925925926 numClassifiers = [4, 1, 3, 6]
         */
