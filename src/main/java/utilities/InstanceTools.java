@@ -764,5 +764,27 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
-    
+
+    public static Instances shortenInstances(Instances data, double proportionRemaining){
+        if (proportionRemaining > 1 || proportionRemaining <= 0){
+            throw new RuntimeException("Remaining series length propotion must be greater than 0 and less than or equal to 1");
+        }
+        else if (data.classIndex() != data.numAttributes()-1){
+            throw new RuntimeException("Dataset class attribute must be the final attribute");
+        }
+
+        Instances shortenedData = new Instances(data);
+        if (proportionRemaining == 1) return shortenedData;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        for (int i = 0; i < data.numInstances(); i++){
+            for (int n = data.numAttributes()-2; n >= newSize; n--){
+                //shortenedData.get(i).setMissing(n);
+                shortenedData.get(i).setValue(n, 0);
+            }
+        }
+
+        return shortenedData;
+    }
 }

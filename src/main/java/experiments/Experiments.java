@@ -51,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import vector_classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
+import static utilities.InstanceTools.shortenInstances;
+
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
 import weka.core.Attribute;
@@ -188,8 +190,8 @@ public class Experiments  {
         
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
-        
-        
+
+
         
         public ExperimentalArguments() {
             
@@ -440,7 +442,7 @@ public class Experiments  {
         if (!f.exists())
             f.mkdirs();
         
-        String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+        String targetFileName = fullWriteLocation + "100%testFold" + expSettings.foldId + ".csv";
         
         //Check whether fold already exists, if so, dont do it, just quit
         if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
@@ -603,35 +605,38 @@ public class Experiments  {
                 //a) another process may have been doing the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
-                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    long testBenchmark = findBenchmarkTime(expSettings);
-                    
-                    testResults = evaluateClassifier(expSettings, classifier, testSet);
-                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
-                    
-                    testResults.turnOffZeroTimingsErrors();
-                    testResults.setBenchmarkTime(testBenchmark);
-                    
-                    if (classifier instanceof TrainAccuracyEstimate) {
-                        //if this classifier is recording it's own results, use the build time it found
-                        //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
-                        //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
-                        //schemes. that is more accurate than what experiments would measure, which would in fact be 
-                        //the i/o time for reading in the modules' results, + the ensemble scheme time
-                        //therefore the general assumption here is that the classifier knows its own buildtime 
-                        //better than we do here
-                        testResults.setBuildTime(((TrainAccuracyEstimate)classifier).getTrainResults().getBuildTime());
+                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + "100%" + testFoldFilename)) {
+                    for (double i = 0.05; i < 1.01; i += 0.05) {
+                        i = Math.round(i * 100.0) / 100.0;
+                        Instances shortData = shortenInstances(testSet, i);
+                        long testBenchmark = findBenchmarkTime(expSettings);
+
+                        testResults = evaluateClassifier(expSettings, classifier, shortData);
+                        assert (testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+
+                        testResults.turnOffZeroTimingsErrors();
+                        testResults.setBenchmarkTime(testBenchmark);
+
+                        if (classifier instanceof TrainAccuracyEstimate) {
+                            //if this classifier is recording it's own results, use the build time it found
+                            //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time
+                            //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
+                            //schemes. that is more accurate than what experiments would measure, which would in fact be
+                            //the i/o time for reading in the modules' results, + the ensemble scheme time
+                            //therefore the general assumption here is that the classifier knows its own buildtime
+                            //better than we do here
+                            testResults.setBuildTime(((TrainAccuracyEstimate) classifier).getTrainResults().getBuildTime());
+                        } else {
+                            //else use the buildtime calculated here in experiments
+                            testResults.setBuildTime(buildTime);
+                        }
+
+                        LOGGER.log(Level.FINE, "Testing complete");
+
+                        writeResults(expSettings, classifier, testResults, resultsPath + Math.round(100*i) + "%" + testFoldFilename, "test");
+                        LOGGER.log(Level.FINE, "Testing written");
                     }
-                    else {
-                        //else use the buildtime calculated here in experiments
-                        testResults.setBuildTime(buildTime);
-                    }
-                    
-                    LOGGER.log(Level.FINE, "Testing complete");
-                  
-                    writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
-                    LOGGER.log(Level.FINE, "Testing written");
-                } 
+                }
                 else {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);

@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -295,7 +296,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         System.out.println("SAXtest\n\n");
         
         try {
-            Instances test = ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
             
             new NormalizeCase().standardNorm(test);
             SAX sax = new SAX();
