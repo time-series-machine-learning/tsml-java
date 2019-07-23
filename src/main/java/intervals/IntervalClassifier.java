@@ -43,11 +43,11 @@ public class IntervalClassifier extends AbstractClassifier implements TrainAccur
 
     Classifier proxy;
     Classifier target;
-    boolean proxyAndTargetSame;    
+    boolean proxyAndTargetAreSame;    
     
     Evaluator eval;
     
-    IntervalHierarchy intervals;
+    IntervalHierarchy trainIntervals;
     Interval bestInterval;
     
     Instances trainHeader;
@@ -61,14 +61,14 @@ public class IntervalClassifier extends AbstractClassifier implements TrainAccur
         this.proxy = classifier;
         this.target = AbstractClassifier.makeCopy(classifier);
         
-        proxyAndTargetSame = true;
+        proxyAndTargetAreSame = true;
     }
     
     public IntervalClassifier(Classifier proxy, Classifier target) {
         this.proxy = proxy;
         this.target = target;
         
-        proxyAndTargetSame = false;
+        proxyAndTargetAreSame = false;
     }
 
     public int getSeed() {
@@ -84,16 +84,19 @@ public class IntervalClassifier extends AbstractClassifier implements TrainAccur
         trainHeader = new Instances(data, 0); //for cropping test instances
         
         eval= new CrossValidationEvaluator(seed, false, false, true, false);
-        ((CrossValidationEvaluator)eval).setNumFolds(5);
+        ((CrossValidationEvaluator)eval).setNumFolds(10);
         eval.setSeed(seed);
-        intervals = new IntervalHierarchy();
-        intervals.buildHeirarchy(eval, proxy, data, normaliseIntervals);
+        trainIntervals = new IntervalHierarchy();
+        trainIntervals.buildHeirarchy(eval, proxy, data, normaliseIntervals);
         
-        bestInterval = intervals.getBestInterval();
+        bestInterval = trainIntervals.getBestInterval();
+        
+        System.out.println(trainIntervals);
+        
         Instances intervalData = IntervalCreation.crop_proportional(data, bestInterval.startPercent, bestInterval.endPercent, normaliseIntervals);     
         
         if (TAE_estimateTargetError) {
-            if (proxyAndTargetSame)
+            if (proxyAndTargetAreSame)
                 TAE_targetTrainResults = bestInterval.results;
             else 
                 TAE_targetTrainResults = eval.evaluate(target, intervalData);
@@ -109,7 +112,8 @@ public class IntervalClassifier extends AbstractClassifier implements TrainAccur
     @Override
     public double[] distributionForInstance(Instance testInst) throws Exception {
         trainHeader.add(testInst);
-        Instance croppedTestInst = IntervalCreation.crop_proportional(trainHeader, bestInterval.startPercent, bestInterval.endPercent, normaliseIntervals).remove(0);     
+        Instance croppedTestInst = IntervalCreation.crop_proportional(trainHeader, bestInterval.startPercent, bestInterval.endPercent, normaliseIntervals).instance(0);     
+        trainHeader.remove(0);
         
         return target.distributionForInstance(croppedTestInst);
     }

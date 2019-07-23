@@ -207,6 +207,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
             int[] hierInds = findHeirarchyIndices(interval.intervalPercents);
             
             Instances intervalData = IntervalCreation.crop_proportional(trainData, interval.startPercent, interval.endPercent, normIntervals);     
+            intervalData.setRelationName(intervalData.relationName() + "_interval" + interval.intervalStr);
             
             ClassifierResults intervalRes = eval.evaluate(classifier, intervalData);
             interval.results = intervalRes;
