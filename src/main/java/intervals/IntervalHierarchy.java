@@ -81,7 +81,8 @@ public class IntervalHierarchy implements Iterable<Interval> {
             startPercent = intervalPercents[0];
             endPercent = intervalPercents[1];
             
-            intervalLength = endPercent - startPercent;
+            //rounds to counter precision issues
+            intervalLength = Math.round((endPercent - startPercent) * (double)maxNumIntervalPoints) / (double)maxNumIntervalPoints;
             
             intervalStr = buildIntervalStr(intervalPercents);
             
