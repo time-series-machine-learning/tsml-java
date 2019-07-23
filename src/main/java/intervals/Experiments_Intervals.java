@@ -42,7 +42,7 @@ import weka.core.Instances;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class IntervalExperiments {
+public class Experiments_Intervals {
 
     
     public static void zipTest() throws IOException {
@@ -208,7 +208,7 @@ public class IntervalExperiments {
         int folds = 10;
 //        String[] dsets = { "BeetleFly" };
 //        String[] dsets = DatasetLists.tscProblems2018;
-        String[] dsets = IntervalClassifierLists.datasets_SeriesLengthAtLeast100;
+        String[] dsets = ClassifierLists_Intervals.datasets_SeriesLengthAtLeast100;
 //        dsets = Arrays.copyOfRange(dsets, 0, 5);
         
         String classifier = null;

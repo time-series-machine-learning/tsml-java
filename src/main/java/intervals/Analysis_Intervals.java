@@ -23,7 +23,7 @@ import evaluation.storage.ClassifierResults;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class IntervalAnalysis {
+public class Analysis_Intervals {
 
     public static void main(String[] args) {
         

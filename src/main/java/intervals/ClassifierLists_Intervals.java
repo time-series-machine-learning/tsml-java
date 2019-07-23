@@ -39,7 +39,7 @@ import weka.classifiers.trees.RandomForest;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class IntervalClassifierLists {
+public class ClassifierLists_Intervals {
 
     // Fungi removed due to 1 case per class in train, and we need to do cv
     public static final String[] datasets_SeriesLengthAtLeast100 = {
