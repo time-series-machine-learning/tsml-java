@@ -35,7 +35,7 @@ public class BasicDTW extends EuclideanDistance{
     /** 
      * BasicDTW Constructor that allows enabling of early abandon
      * 
-     * @param earlyAbandon boolean value setting if early abandon is enabled
+     * //@param earlyAbandon boolean value setting if early abandon is enabled
      */
     public BasicDTW(Instances d) {	
         super(d);
@@ -166,8 +166,8 @@ public class BasicDTW extends EuclideanDistance{
     /**
      * Recursive method that finds and prints the minimum warped path
      * 
-     * @param int i position in distances, should be max of series
-     * @param int j position in distances, should be max of series
+     * @param i position in distances, should be max of series
+     * @param j position in distances, should be max of series
      * 
      * @return current position
      */

@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 
+import scala.tools.nsc.Global;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -764,5 +765,4 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
-    
 }

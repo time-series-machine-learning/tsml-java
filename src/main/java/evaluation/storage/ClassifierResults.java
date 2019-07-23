@@ -343,6 +343,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Recall = (ClassifierResults cr) -> {return cr.recall;};
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
+
+    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
+        double MAA = 0;
+        for (int i = 0; i < cr.numInstances; i++){
+            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
+        }
+        return -(MAA/cr.numInstances);
+    };
     
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
