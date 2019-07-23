@@ -17,6 +17,7 @@
 
 package intervals;
 
+import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import intervals.IntervalHierarchy.Interval;
