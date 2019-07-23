@@ -67,8 +67,8 @@ public class IntervalHierarchyComparisons {
         fullSeriesTrain = hierTrain.getFullSeriesInterval();
         fullSeriesTest = hierTest.getFullSeriesInterval();
         
-        Rtrain = hierTrain.getHierarchyEvaluation().numIntervalsBetterThanFullSeries;
-        Rtest = hierTest.getHierarchyEvaluation().numIntervalsBetterThanFullSeries;
+        Rtrain = hierTrain.getR();
+        Rtest = hierTest.getR();
     }
     
     

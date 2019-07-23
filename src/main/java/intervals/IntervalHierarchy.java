@@ -17,6 +17,7 @@
 
 package intervals;
 
+import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import intervals.IntervalHierarchy.Interval;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
+import weka.classifiers.Classifier;
+import weka.core.Instances;
 
 /**
  *
@@ -35,9 +38,11 @@ public class IntervalHierarchy implements Iterable<Interval> {
     public static final int maxNumIntervalPoints = 20; //so 21 values really, 0 .. 20 corresponding to props 0 .. 1
 
     
-    Interval[][] heirarchy;
-    ArrayList<Interval> orderedEvaluatedIntervals;
-    SingleHierarchyEval hierEval;
+    public Interval[][] heirarchy;
+    public ArrayList<Interval> orderedEvaluatedIntervals;
+    
+    public int numIntervalsBetterThanFullSeries; //aka R, in R-Precision etc
+    public double propIntervalsBetterThanFullSeries;
     
     public static Function<ClassifierResults, Double> defaultMetric = ClassifierResults.GETTER_Accuracy;
     
@@ -51,7 +56,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         
         public String intervalStr;
         
-        public ClassifierResults res;
+        public ClassifierResults results;
         public double relevance;
         
         public Interval() { 
@@ -86,7 +91,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         }
         
         public void computeRelevance(Interval fullSeriesInterval, Function<ClassifierResults, Double> metric) {
-            relevance = metric.apply(this.res) - metric.apply(fullSeriesInterval.res);
+            relevance = metric.apply(this.results) - metric.apply(fullSeriesInterval.results);
         }
 
         public boolean equals(Interval o) {
@@ -97,26 +102,14 @@ public class IntervalHierarchy implements Iterable<Interval> {
         public int compareTo(Interval o) {
             // if 'less than' means lower quality, then... 
             
-            int c = Double.compare(defaultMetric.apply(this.res), defaultMetric.apply(o.res));
+            int c = Double.compare(defaultMetric.apply(this.results), defaultMetric.apply(o.results));
             if (c != 0) // smaller accuracy means less than
                 return c;
             else        // same accuracy? then longer length means less than
                 return Double.compare(o.intervalLength, this.intervalLength);
         }
     }
-    
-    public class SingleHierarchyEval {
-        public int numIntervalsBetterThanFullSeries;
-        public double propIntervalsBetterThanFullSeries;
-        
-        public SingleHierarchyEval() { 
-            for (Interval interval : orderedEvaluatedIntervals)
-                if (interval.relevance >= 0)
-                    numIntervalsBetterThanFullSeries++;
-            
-            propIntervalsBetterThanFullSeries = (double) numIntervalsBetterThanFullSeries / orderedEvaluatedIntervals.size();
-        }
-    }
+
     
     /**
      * An iterator that starts at the highest resolution (smallest length) intervals,
@@ -163,34 +156,61 @@ public class IntervalHierarchy implements Iterable<Interval> {
         buildHeirarchy(split, baseResPath, baseClassifier, dataset, fold);
     }
     
+    /**
+     * Builds an empty hierarchy
+     */
     public void buildHeirarchy() throws Exception {
-        buildHeirarchy(null, null, null, null, 0);
+        initHierarchy();
     }
     
-    public void buildHeirarchy(String split, String resultsPath, String baseClassifier, String dataset, int fold) throws Exception {
-        
+    private void initHierarchy() {
         heirarchy = new Interval[maxNumIntervalPoints][];
         
         int size = maxNumIntervalPoints;
         for (int i = 0; i < maxNumIntervalPoints; i++) {
             heirarchy[i] = new Interval[size--];
         }
-        
-        
+    }
+    
+    /**
+     * Populates a hierarchy from results files
+     */
+    public void buildHeirarchy(String split, String resultsPath, String baseClassifier, String dataset, int fold) throws Exception {
+        initHierarchy();
         
         for (int i = 0; i < maxNumDifferentIntervals; i++) {
             Interval interval = new Interval(i);
-            int[] inds = findHeirarchyIndices(interval.intervalPercents);
+            int[] hierInds = findHeirarchyIndices(interval.intervalPercents);
         
             if (resultsPath != null)
-                interval.res = new ClassifierResults(resultsPath + buildIntervalClassifierName(baseClassifier, interval.intervalPercents) + "/Predictions/" + dataset + "/"+split+"Fold"+ fold + ".csv");
+                interval.results = new ClassifierResults(resultsPath + buildIntervalClassifierName(baseClassifier, interval.intervalPercents) + "/Predictions/" + dataset + "/"+split+"Fold"+ fold + ".csv");
             
-            if (heirarchy[inds[0]][inds[1]] != null) {
+            if (heirarchy[hierInds[0]][hierInds[1]] != null) {
                 throw new Exception("Same heirarchy position already populate, likely double precision error still");
 //                Interval lookatme = heirarchy[inds[0]][inds[1]];
 //                inds = findHeirarchyIndices(interval.intervalPercents);
             }
-            heirarchy[inds[0]][inds[1]] = interval;
+            heirarchy[hierInds[0]][hierInds[1]] = interval;
+        }
+    }
+    
+    
+    /**
+     * Builds and populates a hierarchy by evaluating the classifier on each sub-interval of the train set. 
+     */
+    public void buildHeirarchy(Evaluator eval, Classifier classifier, Instances trainData, boolean normIntervals) throws Exception {
+        initHierarchy();
+        
+        for (int i = 0; i < maxNumDifferentIntervals; i++) {
+            Interval interval = new Interval(i);
+            int[] hierInds = findHeirarchyIndices(interval.intervalPercents);
+            
+            Instances intervalData = IntervalCreation.crop_proportional(trainData, interval.startPercent, interval.endPercent, normIntervals);     
+            
+            ClassifierResults intervalRes = eval.evaluate(classifier, intervalData);
+            interval.results = intervalRes;
+            
+            heirarchy[hierInds[0]][hierInds[1]] = interval;
         }
     }
     
@@ -218,7 +238,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
             sb.append("\n");
             
             for (int j = 0; j < heirarchy[i].length; j++)
-                sb.append(String.format("%.6f, ", heirarchy[i][j].res.getAcc()));
+                sb.append(String.format("%.6f, ", heirarchy[i][j].results.getAcc()));
             sb.append("\n\n");
         }
         sb.append("\n");
@@ -234,7 +254,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         //vals only
         for (int i = maxNumIntervalPoints-1; i >= 0; i--) {
             for (int j = 0; j < heirarchy[i].length; j++)
-                sb.append(String.format("%.6f, ", heirarchy[i][j].res.getAcc()));
+                sb.append(String.format("%.6f, ", heirarchy[i][j].results.getAcc()));
             sb.append("\n");
         }
         
@@ -257,7 +277,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         //can ascribe, naturally
         Interval[] smallestIntervals = heirarchy[0];
         for (int j = 0; j < maxNumIntervalPoints; j++) {
-            importances[j] = metric.apply(smallestIntervals[j].res);
+            importances[j] = metric.apply(smallestIntervals[j].results);
             numTotalOccurences[j] = 1;
         }
         
@@ -269,7 +289,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
                     Interval inner = smallestIntervals[k];
                     
                     if (containedWithin(inner, outer)) {
-                        importances[k] += metric.apply(outer.res);
+                        importances[k] += metric.apply(outer.results);
                         numTotalOccurences[k]++;
                     }
                 }
@@ -289,7 +309,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
         //can ascribe, naturally
         Interval[] smallestIntervals = heirarchy[0];
         for (int j = 0; j < maxNumIntervalPoints; j++)
-            importances[j] = metric.apply(smallestIntervals[j].res);
+            importances[j] = metric.apply(smallestIntervals[j].results);
         
         for (int i = 1; i < maxNumIntervalPoints; i++) {
             for (int j = 0; j < heirarchy[i].length; j++) {
@@ -299,7 +319,7 @@ public class IntervalHierarchy implements Iterable<Interval> {
                     Interval inner = smallestIntervals[k];
                     
                     if (containedWithin(inner, outer)) {
-                        double score = metric.apply(outer.res);
+                        double score = metric.apply(outer.results);
                         if (score < importances[k])
                             importances[k] = score;
                     }
@@ -311,13 +331,31 @@ public class IntervalHierarchy implements Iterable<Interval> {
     }
     
     /**
-     * @return total build time of all intervals, in nanoseconds
+     * Intended for usage with the target's results. Does not include the time to estimate 
+     * the error of each interval, only the build time when doing a full build on each
+     * 
+     * @return the total build time of all intervals, in nanoseconds
      */
-    public long getBuildTimeTotalHeirarchy() { 
+    public long getTotalHeirarchyBuildTime() { 
         long totalTime = 0;
         
         for (Interval interval : this)
-            totalTime += interval.res.getBuildTimeInNanos();
+            totalTime += interval.results.getBuildTimeInNanos();
+        
+        return totalTime;
+    }
+    
+    /**
+     * Intended for usage with the proxy/surrogate's results. Does not include the time 
+     * to rebuild fully on the intervals
+     * 
+     * @return the total time to estimate performance of all intervals, in nanoseconds
+     */
+    public long getTotalHeirarchyEstimateTime() { 
+        long totalTime = 0;
+        
+        for (Interval interval : this)
+            totalTime += interval.results.getErrorEstimateTime();
         
         return totalTime;
     }
@@ -325,8 +363,15 @@ public class IntervalHierarchy implements Iterable<Interval> {
     /**
      * @return build time of the full series 'interval', in nanoseconds
      */
-    public long getBuildTimeFullSeries() {
-        return getFullSeriesInterval().res.getBuildTimeInNanos();
+    public long getFullSeriesBuildTime() {
+        return getFullSeriesInterval().results.getBuildTimeInNanos();
+    }
+    
+    /**
+     * @return time to estimate performance on the full series 'interval', in nanoseconds
+     */
+    public long getFullSeriesEstimateTime() {
+        return getFullSeriesInterval().results.getErrorEstimateTime();
     }
     
     public Interval getFullSeriesInterval() { 
@@ -336,12 +381,26 @@ public class IntervalHierarchy implements Iterable<Interval> {
     
     public ArrayList<Interval> getOrderedIntervals() { 
         if (orderedEvaluatedIntervals == null)
-            computeIntervalOrdering();
+            computeHierarchyEval();
         
         return orderedEvaluatedIntervals;
     }
     
-    public void computeIntervalOrdering() {
+    public int getR() {
+        if (orderedEvaluatedIntervals == null)
+            computeHierarchyEval();
+        
+        return numIntervalsBetterThanFullSeries;
+    }
+    
+    public Interval getBestInterval() {
+        if (orderedEvaluatedIntervals == null)
+            computeHierarchyEval();
+        
+        return orderedEvaluatedIntervals.get(0);
+    }
+    
+    public void computeHierarchyEval() {
         Interval fullSeries = getFullSeriesInterval();
         
         orderedEvaluatedIntervals = new ArrayList<>();
@@ -349,16 +408,15 @@ public class IntervalHierarchy implements Iterable<Interval> {
             orderedEvaluatedIntervals.add(interval);
         
         Collections.sort(orderedEvaluatedIntervals);
-        Collections.reverse(orderedEvaluatedIntervals); //todo fix do do descending in one
+        Collections.reverse(orderedEvaluatedIntervals); //todo fix to do descending in one
         
-        for (Interval interval : orderedEvaluatedIntervals)
+        numIntervalsBetterThanFullSeries = 0;
+        for (Interval interval : orderedEvaluatedIntervals) {
             interval.computeRelevance(fullSeries);
-    }
-    
-    public SingleHierarchyEval getHierarchyEvaluation() { 
-        if (hierEval == null)
-            hierEval = new SingleHierarchyEval();
-        return hierEval;
+            if (interval.relevance > 0)
+                numIntervalsBetterThanFullSeries++;
+        }
+        propIntervalsBetterThanFullSeries = (double) numIntervalsBetterThanFullSeries / orderedEvaluatedIntervals.size();
     }
     
     private boolean containedWithin(Interval inner, Interval outter) { 
@@ -414,8 +472,8 @@ public class IntervalHierarchy implements Iterable<Interval> {
         
         System.out.println("\n\n");
         
-        System.out.println("Heirarchy build time: " + ih.getBuildTimeTotalHeirarchy());
-        System.out.println("Fullseries build time: " + ih.getBuildTimeFullSeries());
+        System.out.println("Heirarchy build time: " + ih.getTotalHeirarchyBuildTime());
+        System.out.println("Fullseries build time: " + ih.getFullSeriesBuildTime());
     }
     
 }
