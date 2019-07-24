@@ -20,7 +20,8 @@ import java.util.concurrent.TimeUnit;
  * Interface that allows the user to impose a train time contract of a classifier that
     implements this interface
 
-    known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial)
+known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
+* BOSS (check), TSF (check)
  * @author raj09hxu
  */
 public interface TrainTimeContractable {

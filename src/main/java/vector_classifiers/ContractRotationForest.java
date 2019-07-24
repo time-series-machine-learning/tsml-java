@@ -18,6 +18,7 @@
  *    RotationForest.java
  *    Copyright (C) 2008 Juan Jose Rodriguez
  *    Copyright (C) 2008 University of Waikato, Hamilton, New Zealand
+ *      Contract Version by  Tony Bagnall, with enhancements by ?
  *
  */
 
@@ -56,7 +57,6 @@ import timeseriesweka.classifiers.TrainTimeContractable;
 
 
 public class ContractRotationForest extends AbstractClassifier
-
   implements SaveParameterInfo, TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
@@ -87,7 +87,7 @@ public class ContractRotationForest extends AbstractClassifier
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
 //Added features
-    double contractHours=1;    //Defaults to an approximate build time of 1 hour
+    double contractHours=1;    //Defaults to an approximate build time of 2 hours
     protected ClassifierResults res;
     double estSingleTree;
     int numTrees=0;
@@ -291,7 +291,7 @@ public class ContractRotationForest extends AbstractClassifier
         else
             random = new Random(seed);
 
-
+//This is from the RotationForest 
         removeUseless = new RemoveUseless();
         removeUseless.setInputFormat(data);
         data = Filter.useFilter(data, removeUseless);
@@ -399,7 +399,7 @@ public class ContractRotationForest extends AbstractClassifier
 //CASE 2 and 3: dont think we can build min number of trees        
         else{
             if(debug)
-                System.out.println("unable to build 50 trees in the time allowed ");
+                System.out.println("Dont think we can build 50 trees in the time allowed ");
 //If m > n: SAMPLE ATTRIBUTES
             if(m>n){
 //estimate maximum number of attributes allowed, x, to get minNumberOfTrees.                

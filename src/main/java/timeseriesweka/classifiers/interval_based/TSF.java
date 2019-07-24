@@ -108,7 +108,8 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
+public class TSF extends AbstractClassifierWithTrainingInfo 
+        implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
