@@ -25,7 +25,7 @@ import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
-import vector_classifiers.SaveEachParameter;
+import weka_uea.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;

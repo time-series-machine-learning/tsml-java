@@ -17,7 +17,7 @@ package timeseriesweka.classifiers.distance_based;
 import java.text.DecimalFormat;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import vector_classifiers.kNN;
+import weka_uea.classifiers.kNN;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;

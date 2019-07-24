@@ -22,7 +22,7 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
-import vector_classifiers.CAWPE;
+import weka_uea.classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;

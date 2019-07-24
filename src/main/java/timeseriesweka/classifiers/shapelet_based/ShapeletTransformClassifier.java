@@ -26,7 +26,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import vector_classifiers.CAWPE;
+import weka_uea.classifiers.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -36,8 +36,8 @@ import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearc
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
-import vector_classifiers.ensembles.voting.MajorityConfidence;
-import vector_classifiers.ensembles.weightings.TrainAcc;
+import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
+import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -47,8 +47,8 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
 
-import vector_classifiers.ensembles.voting.MajorityVote;
-import vector_classifiers.ensembles.weightings.EqualWeighting;
+import weka_uea.classifiers.ensembles.voting.MajorityVote;
+import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -58,7 +58,7 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import vector_classifiers.ContractRotationForest;
+import weka_uea.classifiers.ContractRotationForest;
 
 /**
  *
@@ -216,7 +216,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         getCapabilities().testWithFail(data);
         
         long startTime=System.nanoTime(); 
-        long transformTime=(timeLimit*2)/3;
+        long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
         System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
         shapeletData = doTransform ? createTransformData(data, transformTime) : data;
         transformBuildTime=System.nanoTime()-startTime;

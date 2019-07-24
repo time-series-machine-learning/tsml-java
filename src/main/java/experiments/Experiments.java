@@ -14,6 +14,8 @@
  */
 package experiments;
 
+import weka_uea.classifiers.SaveEachParameter;
+import weka_uea.classifiers.TunedRandomForest;
 import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
@@ -46,8 +48,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import utilities.InstanceTools;
-import vector_classifiers.ensembles.SaveableEnsemble;
-import vector_classifiers.*;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 
 /**

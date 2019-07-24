@@ -50,13 +50,13 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import vector_classifiers.CAWPE;
-import vector_classifiers.ensembles.SaveableEnsemble;
+import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import vector_classifiers.kNN;
+import weka_uea.classifiers.kNN;
 import weka.core.Instance;
 import timeseriesweka.filters.NormalizeCase;
 /*
