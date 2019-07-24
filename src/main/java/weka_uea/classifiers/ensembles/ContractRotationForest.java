@@ -23,7 +23,7 @@
  */
 
 
-package weka_uea.classifiers;
+package weka_uea.classifiers.ensembles;
 
 import java.io.File;
 import java.io.FileInputStream;

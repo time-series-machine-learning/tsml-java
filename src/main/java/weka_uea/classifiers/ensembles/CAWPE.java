@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers;
+package weka_uea.classifiers.ensembles;
 
 import experiments.CollateResults;
 import experiments.Experiments;
@@ -62,6 +62,7 @@ import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka.filters.Filter;
+import weka_uea.classifiers.kNN;
 
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.

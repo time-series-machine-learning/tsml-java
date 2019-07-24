@@ -15,7 +15,7 @@
 package experiments;
 
 import weka_uea.classifiers.SaveEachParameter;
-import weka_uea.classifiers.TunedRandomForest;
+import weka_uea.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;

@@ -27,7 +27,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;

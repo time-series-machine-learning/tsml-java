@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers;
+package weka_uea.classifiers.tuned;
 
 
 import experiments.CollateResults;
@@ -38,6 +38,7 @@ import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Instances;
 import weka.core.Utils;
+import weka_uea.classifiers.SaveEachParameter;
 
 /**
  *This classifier is enhanced so that classifier builds a random forest with the 

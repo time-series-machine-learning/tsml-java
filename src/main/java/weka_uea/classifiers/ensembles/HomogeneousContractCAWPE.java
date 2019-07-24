@@ -1,5 +1,6 @@
-package weka_uea.classifiers;
+package weka_uea.classifiers.ensembles;
 
+import weka_uea.classifiers.ensembles.CAWPE;
 import evaluation.storage.ClassifierResults;
 import weka_uea.classifiers.ensembles.EnsembleModule;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;

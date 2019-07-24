@@ -16,7 +16,7 @@ package weka_uea.classifiers.stackers;
 
 import weka_uea.classifiers.ensembles.voting.stacking.StackingOnDists;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 import weka_uea.classifiers.MultiResponseModelTrees;
 
 /**

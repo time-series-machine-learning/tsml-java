@@ -12,24 +12,25 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers.weightedvoters;
+package weka_uea.classifiers.ensembles.weightedvoters;
 
-import weka_uea.classifiers.ensembles.voting.MajorityVote;
-import weka_uea.classifiers.ensembles.weightings.TrainAcc;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.voting.NaiveBayesCombiner;
+import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
+import weka_uea.classifiers.ensembles.CAWPE;
 
 /**
  * Implemented as separate classifier for explicit comparison, from Kuncheva and Rodríguez (2014)
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class CAWPE_WeightedMajorityVote extends CAWPE {
-    public CAWPE_WeightedMajorityVote() { 
+public class CAWPE_NaiveBayesCombiner extends CAWPE {
+    public CAWPE_NaiveBayesCombiner() { 
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "HESCA_WeightedMajorityVote"; 
-        weightingScheme = new TrainAcc();
-        votingScheme = new MajorityVote();
-    } 
+        ensembleIdentifier = "CAWPE_NaiveBayesCombiner"; 
+        weightingScheme = new EqualWeighting();
+        votingScheme = new NaiveBayesCombiner();
+    }
+
 }

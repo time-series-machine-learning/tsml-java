@@ -26,7 +26,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -58,7 +58,7 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import weka_uea.classifiers.ContractRotationForest;
+import weka_uea.classifiers.ensembles.ContractRotationForest;
 
 /**
  *

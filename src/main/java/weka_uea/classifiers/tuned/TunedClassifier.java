@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers;
+package weka_uea.classifiers.tuned;
 
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterResults;
@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import weka_uea.classifiers.SaveEachParameter;
 
 /**
  * Given 

@@ -12,11 +12,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers.weightedvoters;
+package weka_uea.classifiers.ensembles.weightedvoters;
 
 import weka_uea.classifiers.ensembles.voting.MajorityVote;
 import weka_uea.classifiers.ensembles.weightings.RecallByClass;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 
 /**
  * Implemented as separate classifier for explicit comparison, from Kuncheva and Rodríguez (2014)

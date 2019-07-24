@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers;
+package weka_uea.classifiers.tuned;
 
 import experiments.CollateResults;
 import fileIO.OutFile;
@@ -36,6 +36,7 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.core.*;
+import weka_uea.classifiers.SaveEachParameter;
 
 /*
 Tony's attempt to see the effect of parameter setting on SVM.

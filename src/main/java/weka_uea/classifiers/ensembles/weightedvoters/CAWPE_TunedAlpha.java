@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers.weightedvoters;
+package weka_uea.classifiers.ensembles.weightedvoters;
 
 import experiments.data.DatasetLists;
 import fileIO.OutFile;
@@ -23,7 +23,7 @@ import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import evaluation.storage.ClassifierResults;
 import utilities.StatisticalUtilities;
-import weka_uea.classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 import weka.core.Instances;
 import weka.filters.Filter;
 

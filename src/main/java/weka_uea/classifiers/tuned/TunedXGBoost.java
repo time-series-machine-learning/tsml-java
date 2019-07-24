@@ -11,7 +11,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-package weka_uea.classifiers;
+package weka_uea.classifiers.tuned;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import weka_uea.classifiers.SaveEachParameter;
 
 
 /**
