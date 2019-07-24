@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import utilities.ClassifierTools;
-import weka_uea.vector_clusterers.KMeans;
+import weka_uea.clusterers.KMeans;
 import weka.core.Instance;
 import weka.core.Instances;
 

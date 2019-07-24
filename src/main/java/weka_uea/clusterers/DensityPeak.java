@@ -1,4 +1,4 @@
-package weka_uea.vector_clusterers;
+package weka_uea.clusterers;
 
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;

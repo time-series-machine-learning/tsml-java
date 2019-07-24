@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package weka_uea.vector_clusterers;
+package weka_uea.clusterers;
 
 import weka.clusterers.AbstractClusterer;
 import weka.core.DistanceFunction;
