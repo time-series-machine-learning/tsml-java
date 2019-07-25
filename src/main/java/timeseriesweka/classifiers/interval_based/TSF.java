@@ -26,7 +26,7 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;

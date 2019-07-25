@@ -24,7 +24,7 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka_uea.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;

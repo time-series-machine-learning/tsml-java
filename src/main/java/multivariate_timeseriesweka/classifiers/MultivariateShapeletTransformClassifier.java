@@ -38,7 +38,7 @@ import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;

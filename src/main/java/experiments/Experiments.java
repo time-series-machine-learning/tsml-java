@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;

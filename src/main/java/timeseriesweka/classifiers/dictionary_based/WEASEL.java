@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;

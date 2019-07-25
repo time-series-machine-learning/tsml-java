@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import java.security.InvalidParameterException;
 import java.util.*;
 

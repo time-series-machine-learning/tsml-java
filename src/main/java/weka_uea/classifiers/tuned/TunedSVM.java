@@ -28,7 +28,7 @@ import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;

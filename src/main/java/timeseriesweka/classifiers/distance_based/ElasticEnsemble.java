@@ -29,7 +29,7 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.TWE1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;

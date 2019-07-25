@@ -29,7 +29,7 @@ import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;

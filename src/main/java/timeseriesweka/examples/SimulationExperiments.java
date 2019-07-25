@@ -45,7 +45,7 @@ import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import weka_uea.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 
 /**
  * 

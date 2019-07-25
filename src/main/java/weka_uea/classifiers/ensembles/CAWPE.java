@@ -45,7 +45,7 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;

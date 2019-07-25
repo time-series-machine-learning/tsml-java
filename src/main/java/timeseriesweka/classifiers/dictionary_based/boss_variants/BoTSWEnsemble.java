@@ -25,7 +25,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
 import evaluation.storage.ClassifierResults;
