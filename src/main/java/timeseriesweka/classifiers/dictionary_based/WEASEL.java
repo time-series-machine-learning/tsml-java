@@ -15,7 +15,6 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
@@ -39,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformationHandler;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * WEASEL Classifier
@@ -46,7 +46,7 @@ import weka.core.TechnicalInformationHandler;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate,TechnicalInformationHandler {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimator,TechnicalInformationHandler {
 
   @Override
   public TechnicalInformation getTechnicalInformation() {

@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import java.security.InvalidParameterException;
 import java.util.*;
 
@@ -46,6 +45,7 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
@@ -61,7 +61,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;

@@ -45,7 +45,7 @@ import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import weka_uea.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * 
@@ -252,8 +252,8 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(c instanceof TrainAccuracyEstimate)
-            ((TrainAccuracyEstimate)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
+        if(c instanceof TrainAccuracyEstimator)
+            ((TrainAccuracyEstimator)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              

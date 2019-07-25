@@ -45,7 +45,6 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.StatisticalUtilities;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
@@ -63,6 +62,7 @@ import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka.filters.Filter;
 import weka_uea.classifiers.kNN;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
@@ -105,7 +105,7 @@ import weka_uea.classifiers.kNN;
  *
  */
 
-public class CAWPE extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, DebugPrinting, TrainAccuracyEstimate, TechnicalInformationHandler {
+public class CAWPE extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, TechnicalInformationHandler {
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -566,7 +566,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
 
         //or if any of the modules dont have cv data already
         for (EnsembleModule m : modules)
-            if (!(m.getClassifier() instanceof TrainAccuracyEstimate))
+            if (!(m.getClassifier() instanceof TrainAccuracyEstimator))
                 return true;
 
         return false;
@@ -575,11 +575,11 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     protected void trainModules() throws Exception {
 
         for (EnsembleModule module : modules) {
-            if (module.getClassifier() instanceof TrainAccuracyEstimate) {
+            if (module.getClassifier() instanceof TrainAccuracyEstimator) {
                 module.getClassifier().buildClassifier(trainInsts);
 
                 //these train results should also include the buildtime
-                module.trainResults = ((TrainAccuracyEstimate)module.getClassifier()).getTrainResults();
+                module.trainResults = ((TrainAccuracyEstimator)module.getClassifier()).getTrainResults();
                 module.trainResults.finaliseResults();
                 
                 if (writeIndividualsResults) { //if we're doing trainFold# file writing

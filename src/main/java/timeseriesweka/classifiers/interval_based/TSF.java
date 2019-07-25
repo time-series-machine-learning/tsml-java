@@ -26,7 +26,6 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;
@@ -41,6 +40,7 @@ import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /** 
   <!-- globalinfo-start -->
@@ -109,7 +109,7 @@ import weka.core.Utils;
 **/ 
 
 public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
+        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;

@@ -21,7 +21,6 @@ import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka_uea.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -29,6 +28,7 @@ import weka.core.*;
 import java.lang.instrument.*;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /* 
  * The reason for specialising is this class has the option of searching for 
@@ -66,7 +66,7 @@ CHECK THIS: For implementation reasons, a window size of 1
 is equivalent to Euclidean distance (rather than a window size of 0
  */
 
-public class FastDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable{
+public class FastDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;

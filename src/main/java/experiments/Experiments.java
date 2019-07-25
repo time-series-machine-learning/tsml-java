@@ -35,7 +35,6 @@ import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -50,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import utilities.InstanceTools;
 import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
@@ -531,7 +531,7 @@ public class Experiments  {
             
             //Write train results
             if (expSettings.generateErrorEstimateOnTrainSet) {
-                if (!(classifier instanceof TrainAccuracyEstimate)) {
+                if (!(classifier instanceof TrainAccuracyEstimator)) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
@@ -558,7 +558,7 @@ public class Experiments  {
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
                     
-                    if (classifier instanceof TrainAccuracyEstimate) {
+                    if (classifier instanceof TrainAccuracyEstimator) {
                         //if this classifier is recording it's own results, use the build time it found
                         //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
                         //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
@@ -566,7 +566,7 @@ public class Experiments  {
                         //the i/o time for reading in the modules' results, + the ensemble scheme time
                         //therefore the general assumption here is that the classifier knows its own buildtime 
                         //better than we do here
-                        testResults.setBuildTime(((TrainAccuracyEstimate)classifier).getTrainResults().getBuildTime());
+                        testResults.setBuildTime(((TrainAccuracyEstimator)classifier).getTrainResults().getBuildTime());
                     }
                     else {
                         //else use the buildtime calculated here in experiments
@@ -624,9 +624,9 @@ public class Experiments  {
     private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
         ClassifierResults trainResults = null;
         
-        if (classifier instanceof TrainAccuracyEstimate) { 
+        if (classifier instanceof TrainAccuracyEstimator) { 
             //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimate) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
+            ((TrainAccuracyEstimator) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
             File f = new File(fullTrainWritingPath);
             if (f.exists())
                 f.setWritable(true, false);

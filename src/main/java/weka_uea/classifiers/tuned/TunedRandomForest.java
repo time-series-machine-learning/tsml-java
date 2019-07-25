@@ -29,7 +29,6 @@ import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.meta.Bagging;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
@@ -39,6 +38,7 @@ import weka.classifiers.trees.RandomTree;
 import weka.core.Instances;
 import weka.core.Utils;
 import weka_uea.classifiers.SaveEachParameter;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *This classifier is enhanced so that classifier builds a random forest with the 
@@ -66,7 +66,7 @@ import weka_uea.classifiers.SaveEachParameter;
     grid search is then just 55 values and because it uses OOB no CV is required 
  * @author aj
  */
-public class TunedRandomForest extends RandomForest implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable{
+public class TunedRandomForest extends RandomForest implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     boolean tuneParameters=true;
     int[] paraSpace1;//Maximum tree depth, m_MaxDepth
     int[] paraSpace2;//Number of features per tree,m_numFeatures

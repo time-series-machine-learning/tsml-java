@@ -29,7 +29,6 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.TWE1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -41,6 +40,7 @@ import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * A new Elastic Ensemble for sharing with others
@@ -56,7 +56,7 @@ import weka.core.TechnicalInformationHandler;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate,TechnicalInformationHandler{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
 
     
     @Override

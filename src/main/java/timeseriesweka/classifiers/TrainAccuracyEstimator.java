@@ -31,7 +31,7 @@ import weka.core.Instances;
 * 
  * @author ajb
  */
-public interface TrainAccuracyEstimate {
+public interface TrainAccuracyEstimator {
 
     
     void setFindTrainAccuracyEstimate(boolean setCV);

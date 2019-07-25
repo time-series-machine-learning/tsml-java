@@ -21,7 +21,6 @@ import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -33,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_uea.classifiers.SaveEachParameter;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * Given 
@@ -58,7 +58,7 @@ import weka_uea.classifiers.SaveEachParameter;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class TunedClassifier extends AbstractClassifier 
-        implements SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
+        implements SaveParameterInfo,TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
     int seed;
     ParameterSpace space = null;

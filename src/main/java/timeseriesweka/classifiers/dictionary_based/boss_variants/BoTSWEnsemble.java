@@ -25,7 +25,6 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
 import evaluation.storage.ClassifierResults;
@@ -39,6 +38,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.core.TechnicalInformation;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -64,7 +64,7 @@ import weka.core.TechnicalInformation;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;

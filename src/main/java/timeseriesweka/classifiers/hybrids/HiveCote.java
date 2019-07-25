@@ -185,8 +185,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         for(int i = 0; i < classifiers.size(); i++){
             
             
-            // if classifier is an implementation of HiveCoteModule, no need to cv for ensemble accuracy as it can self-report
-            // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
+// if classifier is an implementation of HiveCoteModule, no need to cv for ensemble accuracy as it can self-report
+// e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
             if(classifiers.get(i) instanceof HiveCoteModule){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);

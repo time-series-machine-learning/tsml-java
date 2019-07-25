@@ -28,7 +28,6 @@ import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -37,6 +36,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.core.*;
 import weka_uea.classifiers.SaveEachParameter;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /*
 Tony's attempt to see the effect of parameter setting on SVM.
@@ -62,7 +62,7 @@ m_C
  2. Could use libSVM instead
  * 
  */
-public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable{
+public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     boolean setSeed=false;
     int seed;
     int minC=-16;//These search values are used for all kernels with C. It is also used for Gamma in RBF, but not for the Polynomial exponent search

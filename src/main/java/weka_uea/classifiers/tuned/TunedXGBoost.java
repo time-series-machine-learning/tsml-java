@@ -26,7 +26,6 @@ import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.DebugPrinting;
-import timeseriesweka.classifiers.TrainAccuracyEstimate;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -38,6 +37,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka_uea.classifiers.SaveEachParameter;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -63,7 +63,7 @@ import weka_uea.classifiers.SaveEachParameter;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedXGBoost extends AbstractClassifier implements SaveParameterInfo,DebugPrinting, TrainAccuracyEstimate, SaveEachParameter, ParameterSplittable {
+public class TunedXGBoost extends AbstractClassifier implements SaveParameterInfo,DebugPrinting, TrainAccuracyEstimator, SaveEachParameter, ParameterSplittable {
     int seed = 0;
 //    Random rng = null;
 
