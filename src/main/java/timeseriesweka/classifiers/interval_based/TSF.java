@@ -205,7 +205,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
  * @param train 
  */    
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainAccuracyEst=true;
     }
@@ -727,7 +727,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
-        tsf.writeCVTrainToFile(resultsLocation+problem+"trainFold0.csv");
+        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);

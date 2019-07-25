@@ -245,7 +245,7 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }

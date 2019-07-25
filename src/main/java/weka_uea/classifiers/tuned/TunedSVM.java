@@ -124,7 +124,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
     }
     
  @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         findTrainAcc=true;
         trainPath=train;
     }    

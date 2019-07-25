@@ -253,7 +253,7 @@ public class SimulationExperiments {
 
 // hack here to save internal CV for further ensembling   
         if(c instanceof TrainAccuracyEstimate)
-            ((TrainAccuracyEstimate)c).writeCVTrainToFile(preds+"/trainFold"+sample+".csv");
+            ((TrainAccuracyEstimate)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              

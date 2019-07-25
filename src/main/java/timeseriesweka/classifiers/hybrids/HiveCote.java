@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka_uea.classifiers.ensembles.CAWPE;
@@ -190,11 +190,11 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             if(classifiers.get(i) instanceof HiveCoteModule){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
-                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((HiveCoteModule) classifiers.get(i)).getEnsembleCvAcc());
+                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((HiveCoteModule) classifiers.get(i)).getTrainAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((HiveCoteModule)(modules[i].classifier)).getEnsembleCvPreds(), this.fileOutputDataset, modules[i].classifierName, ((HiveCoteModule)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((HiveCoteModule)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((HiveCoteModule)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 

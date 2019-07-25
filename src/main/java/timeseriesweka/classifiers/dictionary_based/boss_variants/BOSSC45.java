@@ -252,7 +252,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }

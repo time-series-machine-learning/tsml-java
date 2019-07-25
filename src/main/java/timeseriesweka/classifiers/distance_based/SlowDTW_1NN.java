@@ -62,7 +62,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
         saveEachParaAcc=b;
     }
  @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainPath=train;
     }  
     @Override

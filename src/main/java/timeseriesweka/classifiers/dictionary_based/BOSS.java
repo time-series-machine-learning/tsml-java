@@ -20,7 +20,7 @@ import java.util.*;
 
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.MemoryContractable;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -343,7 +343,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     }
 
     @Override
-    public void writeCVTrainToFile(String outputPathAndName){
+    public void writeTrainEstimatesToFile(String outputPathAndName){
         trainCVPath = outputPathAndName;
         trainCV = true;
     }
@@ -1159,7 +1159,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return result;
     }
 
-    public double getEnsembleCvAcc(){
+    public double getTrainAcc(){
         if(ensembleCvAcc>=0){
             return this.ensembleCvAcc;
         }
@@ -1172,7 +1172,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return -1;
     }
 
-    public double[] getEnsembleCvPreds(){
+    public double[] getTrainPreds(){
         if(this.ensembleCvPreds==null){
             try{
                 this.findEnsembleTrainAcc(train);

@@ -626,7 +626,7 @@ public class Experiments  {
         
         if (classifier instanceof TrainAccuracyEstimate) { 
             //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimate) classifier).writeCVTrainToFile(fullTrainWritingPath);
+            ((TrainAccuracyEstimate) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
             File f = new File(fullTrainWritingPath);
             if (f.exists())
                 f.setWritable(true, false);

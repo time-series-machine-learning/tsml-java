@@ -215,7 +215,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         paraSpace2=d;
     }
  @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainPath=train;
         estimateAcc=true;
     }    

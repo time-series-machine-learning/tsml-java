@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.hybrids.cote;
+package timeseriesweka.classifiers;
 
 
 /**
@@ -21,8 +21,8 @@ package timeseriesweka.classifiers.hybrids.cote;
  */
 public interface HiveCoteModule{ 
         
-    public double getEnsembleCvAcc();
-    public double[] getEnsembleCvPreds();
+    public double getTrainAcc();
+    public double[] getTrainPreds();
     public String getParameters();
     
     

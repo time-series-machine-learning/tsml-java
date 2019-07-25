@@ -313,7 +313,7 @@ public class TunedClassifier extends AbstractClassifier
     }
 
     @Override //TrainAccuracyEstimate
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         this.TAE_trainAccWritePath = train;
         this.TAE_writeTrainAcc = true;
     }

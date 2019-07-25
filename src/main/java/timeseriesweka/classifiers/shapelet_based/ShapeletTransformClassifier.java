@@ -35,7 +35,7 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
@@ -156,16 +156,16 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     @Override
-    public double getEnsembleCvAcc() {
+    public double getTrainAcc() {
         if(classifier instanceof HiveCoteModule)
-            return ((HiveCoteModule)classifier).getEnsembleCvAcc();
+            return ((HiveCoteModule)classifier).getTrainAcc();
         throw new RuntimeException(" ERRROR, the classifier is not a HiveCoteModule so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
 
     @Override
-    public double[] getEnsembleCvPreds() {
+    public double[] getTrainPreds() {
         if(classifier instanceof HiveCoteModule)
-            return ((HiveCoteModule)classifier).getEnsembleCvPreds();
+            return ((HiveCoteModule)classifier).getTrainPreds();
         throw new RuntimeException(" ERRROR, the classifier is not a HiveCoteModule so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     

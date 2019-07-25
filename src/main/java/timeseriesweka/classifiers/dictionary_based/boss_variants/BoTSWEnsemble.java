@@ -139,7 +139,7 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }

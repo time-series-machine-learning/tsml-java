@@ -26,7 +26,7 @@ import weka_uea.classifiers.ensembles.voting.ModuleVotingScheme;
 import java.io.File;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.DebugPrinting;
@@ -875,12 +875,12 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     @Override
-    public double[] getEnsembleCvPreds() {
+    public double[] getTrainPreds() {
         return ensembleTrainResults.getPredClassValsAsArray();
     }
 
     @Override
-    public double getEnsembleCvAcc() {
+    public double getTrainAcc() {
         return ensembleTrainResults.getAcc();
     }
 
@@ -963,7 +963,7 @@ public class CAWPE extends AbstractClassifier implements HiveCoteModule, SavePar
     }
 
     @Override //TrainAccuracyEstimate
-    public void writeCVTrainToFile(String path) {
+    public void writeTrainEstimatesToFile(String path) {
         performEnsembleCV=true;
         writeEnsembleTrainingFile=true;
         

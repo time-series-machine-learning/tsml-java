@@ -32,7 +32,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
@@ -118,8 +118,8 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
 
     @Override
-    public void writeCVTrainToFile(String train) {
-        ensemble.writeCVTrainToFile(train);
+    public void writeTrainEstimatesToFile(String train) {
+        ensemble.writeTrainEstimatesToFile(train);
     }
 @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){
@@ -145,13 +145,13 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
     
     @Override
-    public double getEnsembleCvAcc() {
-        return ensemble.getEnsembleCvAcc();
+    public double getTrainAcc() {
+        return ensemble.getTrainAcc();
     }
 
     @Override
-    public double[] getEnsembleCvPreds() {
-        return ensemble.getEnsembleCvPreds();
+    public double[] getTrainPreds() {
+        return ensemble.getTrainPreds();
     }
     
     public void doSTransform(boolean b){

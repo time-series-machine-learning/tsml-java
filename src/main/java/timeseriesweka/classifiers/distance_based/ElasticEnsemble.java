@@ -19,7 +19,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.HiveCoteModule;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ERP1NN;
@@ -144,17 +144,17 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
 
     @Override
-    public double getEnsembleCvAcc() {
+    public double getTrainAcc() {
         if(this.ensembleCvAcc != -1 && this.ensembleCvPreds!=null){
             return this.ensembleCvAcc;
         }
         
-        this.getEnsembleCvPreds();
+        this.getTrainPreds();
         return this.ensembleCvAcc;
     }
 
 //    @Override
-    public double[] getEnsembleCvPreds() {
+    public double[] getTrainPreds() {
         if(this.ensembleCvPreds!=null){
             return this.ensembleCvPreds;
         }
@@ -274,7 +274,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
     
     @Override
-    public void writeCVTrainToFile(String outputPathAndName){
+    public void writeTrainEstimatesToFile(String outputPathAndName){
         this.writeEnsembleTrainingFile = true;
         ensembleTrainFilePathAndName = outputPathAndName;
     }
@@ -377,11 +377,11 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             if(this.writeEnsembleTrainingFile){
                 StringBuilder output = new StringBuilder();
                 
-                double[] ensembleCvPreds = this.getEnsembleCvPreds();
+                double[] ensembleCvPreds = this.getTrainPreds();
                 
                 output.append(train.relationName()).append(",EE,train\n");
                 output.append(this.getParameters()).append("\n");
-                output.append(this.getEnsembleCvAcc()).append("\n");
+                output.append(this.getTrainAcc()).append("\n");
                 
                 for(int i = 0; i < train.numInstances(); i++){
                     output.append(train.instance(i).classValue()).append(",").append(ensembleCvPreds[i]).append("\n");
@@ -609,7 +609,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         }
         System.out.println("correct: "+correct+"/"+test.numInstances());
         System.out.println((double)correct/test.numInstances());
-        System.out.println(ee.getEnsembleCvAcc());
+        System.out.println(ee.getTrainAcc());
     }
 }
 
