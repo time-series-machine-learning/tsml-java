@@ -26,7 +26,6 @@ import weka_uea.classifiers.ensembles.voting.ModuleVotingScheme;
 import java.io.File;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.HiveCoteModule;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import utilities.DebugPrinting;
@@ -105,7 +104,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  *
  */
 
-public class CAWPE extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, TechnicalInformationHandler {
+public class CAWPE extends AbstractClassifier implements SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, TechnicalInformationHandler {
 
     @Override
     public TechnicalInformation getTechnicalInformation() {

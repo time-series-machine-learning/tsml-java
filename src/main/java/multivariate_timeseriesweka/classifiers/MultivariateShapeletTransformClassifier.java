@@ -32,7 +32,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.classifiers.HiveCoteModule;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
@@ -57,7 +56,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements SaveParameterInfo, TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;

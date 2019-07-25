@@ -31,7 +31,7 @@ import weka.core.Instances;
 * 
  * @author ajb
  */
-public interface TrainAccuracyEstimator {
+public interface TrainAccuracyEstimator extends SaveParameterInfo{
 
     
     void setFindTrainAccuracyEstimate(boolean setCV);
@@ -67,7 +67,12 @@ public interface TrainAccuracyEstimator {
     default int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }
+//Temp comment: porting these from     
+    default public double getTrainAcc(){
+        throw new RuntimeException("getTrainAcc not implemented!");
+    }
 
-
-
+    default public double[] getTrainPreds(){
+        throw new RuntimeException("getTrainAcc not implemented!");
+    }
 }

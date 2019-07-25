@@ -25,7 +25,6 @@ import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
-import timeseriesweka.classifiers.HiveCoteModule;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
@@ -46,7 +45,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimator,TechnicalInformationHandler {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,TechnicalInformationHandler {
 
   @Override
   public TechnicalInformation getTechnicalInformation() {

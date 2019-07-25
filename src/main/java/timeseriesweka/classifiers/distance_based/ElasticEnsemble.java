@@ -19,7 +19,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
-import timeseriesweka.classifiers.HiveCoteModule;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ERP1NN;
@@ -56,7 +55,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
 
     
     @Override

@@ -35,7 +35,6 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import timeseriesweka.classifiers.HiveCoteModule;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
@@ -46,6 +45,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 import weka_uea.classifiers.ensembles.voting.MajorityVote;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
@@ -67,7 +67,7 @@ import weka_uea.classifiers.ensembles.ContractRotationForest;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, SaveParameterInfo, TrainTimeContractable {
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable {
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -155,18 +155,18 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     
-    @Override
+//    @Override
     public double getTrainAcc() {
-        if(classifier instanceof HiveCoteModule)
-            return ((HiveCoteModule)classifier).getTrainAcc();
-        throw new RuntimeException(" ERRROR, the classifier is not a HiveCoteModule so cannot be accessed in this way: in ShapeletTransformClassifier");
+        if(classifier instanceof TrainAccuracyEstimator)
+            return ((TrainAccuracyEstimator)classifier).getTrainAcc();
+        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
 
-    @Override
+//    @Override
     public double[] getTrainPreds() {
-        if(classifier instanceof HiveCoteModule)
-            return ((HiveCoteModule)classifier).getTrainPreds();
-        throw new RuntimeException(" ERRROR, the classifier is not a HiveCoteModule so cannot be accessed in this way: in ShapeletTransformClassifier");
+        if(classifier instanceof TrainAccuracyEstimator)
+            return ((TrainAccuracyEstimator)classifier).getTrainPreds();
+        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
     public void doSTransform(boolean b){

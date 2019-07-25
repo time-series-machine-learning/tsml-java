@@ -19,7 +19,6 @@ import java.util.*;
 
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.MemoryContractable;
-import timeseriesweka.classifiers.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -61,7 +60,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;

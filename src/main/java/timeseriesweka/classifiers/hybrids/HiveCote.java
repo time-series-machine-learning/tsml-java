@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.HiveCoteModule;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka_uea.classifiers.ensembles.CAWPE;
@@ -185,16 +185,16 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         for(int i = 0; i < classifiers.size(); i++){
             
             
-// if classifier is an implementation of HiveCoteModule, no need to cv for ensemble accuracy as it can self-report
+// if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
 // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
-            if(classifiers.get(i) instanceof HiveCoteModule){
+            if(classifiers.get(i) instanceof TrainAccuracyEstimator){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
-                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((HiveCoteModule) classifiers.get(i)).getTrainAcc());
+                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((HiveCoteModule)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((HiveCoteModule)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((TrainAccuracyEstimator)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 
