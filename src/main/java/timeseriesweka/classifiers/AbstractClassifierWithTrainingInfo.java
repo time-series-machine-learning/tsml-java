@@ -22,8 +22,8 @@ import weka.core.Capabilities;
  *
 Extends the AbstractClassifier to store information about the training phase of 
 the classifier. The minimium any classifier that extends this should store
-is the build time in buildClassifier, through calls to System.currentTimeMillis()  
-at the start and end. 
+is the build time in buildClassifier, through calls to System.currentTimeMillis()
+or nanoTime() at the start and end. 
 
 the method getParameters() can be enhanced to include any parameter info for the 
 final classifier. getParameters() is called to store information on the second line

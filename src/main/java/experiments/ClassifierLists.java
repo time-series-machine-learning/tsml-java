@@ -15,6 +15,7 @@
 package experiments;
 
 
+import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -66,73 +67,50 @@ import weka.core.EuclideanDistance;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ClassifierLists {
-    //leaving in for now, in case particular classifiers require it.
-    //eventually should be removed in favour of using the info in the experimental settings passed 
-    //in the newer setClassifier
-    public static String horribleGlobalPath="";
-    public static String nastyGlobalDatasetName="";  
-
     public static String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
     public static String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
     
     /**
-     * This method is currently a placeholder that simply call setClassifierClassic(classifierName, fold),
-     * exactly where to take this newer method is still up for debate
      * 
-     * This shall be the start of the newer setClassifier, which take the experimental 
+     * setClassifier, which takes the experimental 
      * arguments themselves and therefore the classifiers can take from them whatever they 
      * need, e.g the dataset name, the fold id, separate checkpoint paths, etc. 
      * 
      * To take this idea further, to be honest each of the TSC-specific classifiers
      * could/should have a constructor and/or factory that builds the classifier
-     * from the experimental args. 
+     * from the experimental args.
+     * 
+     * previous usage was setClassifier(String classifier name, int fold).
+     * this can be reproduced with setClassifierClassic below. 
+     * 
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
-        switch(exp.classifierName) {
-            case "STContract":
-                long time = exp.contractTrainTimeSeconds;
-                Classifier st = null; //setup contracted ST
-                
-                String unit = "seconds";
-                if (time % 3600 == 0) {
-                    unit = "hours";
-                    time /= 3600;
-                }
-                exp.classifierName = "ST_" + time + unit;
-                //obviously edit for w/e formatting you want 
-                
-                return st;
-            
-            default:
-                return setClassifierClassic(exp.classifierName, exp.foldId);
+        String classifier=exp.classifierName;
+        int fold=exp.foldId;
+        String resultsPath="", dataset="";
+        boolean canLoadFromFile=true;
+        if(exp.resultsWriteLocation==null || exp.datasetName==null)
+            canLoadFromFile=false;
+        else{
+            resultsPath=exp.resultsWriteLocation;
+            dataset=exp.datasetName;
         }
-    }
-    
-    /**
-     * This is the method exactly as it was in old experiments.java. 
-     * 
-     * @param classifier
-     * @param fold
-     * @return 
-     */
-    public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
             case "XGBoostMultiThreaded":
-                c = new TunedXGBoost();
+                c = new TunedXGBoost(); 
                 break;
             case "XGBoost":
-                c = new TunedXGBoost();
+                c = new TunedXGBoost(); 
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 break;
             case "SmallTunedXGBoost":
-                c = new TunedXGBoost();
+                c = new TunedXGBoost(); 
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
             case "ProximityForest":
                 c = new ProximityForestWeka();
-                ((ProximityForestWeka)c).setSeed(fold);
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -229,36 +207,59 @@ public class ClassifierLists {
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);
+                ((CAWPE)c).setRandSeed(fold);                
                 ((CAWPE)c).setAdvancedCAWPESettings();
                 break;
             case "CAWPEFROMFILE":
-                String[] classifiers={"XGBoost","RandF","RotF"};
-                c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);
-                ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
-                
-                ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
-                
-                
+                if(canLoadFromFile){
+                    String[] classifiers={"TSF","BOSS","RISE","ST"};
+                    c=new CAWPE();
+                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: Cannot load CAWPE from file since no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
             case "CAWPE_AS_COTE":
-                String[] cls={"TSF","ST","EE","BOSS","RISE"};
-                c=new CAWPE();
-                ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                ((CAWPE)c).setRandSeed(fold);
-                ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
-                ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                if(canLoadFromFile){
+                    String[] cls={"TSF","BOSS","RISE","ST","ElasticEnsemble"};//RotF for ST
+                    c=new CAWPE();
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
+            case "CAWPE_AS_COTE_NO_EE":
+                if(canLoadFromFile){
+                    String[] cls2={"TSF","BOSS","RISE","ST"};
+                    c=new CAWPE();
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls2);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+
+
 //ELASTIC CLASSIFIERS     
             case "EE": case "ElasticEnsemble":
                 c=new ElasticEnsemble();
                 break;
             case "DTW":
                 c=new DTW1NN();
-                ((DTW1NN)c).setWindow(1);
+                ((DTW1NN )c).setWindow(1);
                 break;
             case "SLOWDTWCV":
 //                c=new DTW1NN();
@@ -299,14 +300,8 @@ public class ClassifierLists {
             case "FastShapelets": case "FS":
                 c=new FastShapelets();
                 break;
-            case "FullShapeletTransformClassifier":
-                c=new ShapeletTransformClassifier();
-                ((ShapeletTransformClassifier)c).setSeed(fold);
-                break;
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
-//Default to 1 day max run: could do this better
-//                ((ShapeletTransformClassifier)c).setOneDayLimit();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
             case "TSBF":
@@ -320,14 +315,13 @@ public class ClassifierLists {
                 break;
             case "RBOSS":
                 c = new BOSS();
-                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setEnsembleSize(250);
+                ((BOSS) c).setMaxEnsembleSize(50);
+                ((BOSS) c).setRandomCVAccEnsemble(true);
+                ((BOSS) c).useCAWPE(true);
                 ((BOSS) c).setSeed(fold);
-                break;
-            case "BayesianRBOSS":
-                c = new BOSS();
-                ((BOSS) c).useBestSettingsRBOSS();
-                ((BOSS) c).setBayesianParameterSelection(true);
-                ((BOSS) c).setSeed(fold);
+                ((BOSS) c).setReduceTrainInstances(true);
+                ((BOSS) c).setTrainProportion(0.7);
                 break;
             case "WEASEL":
                 c = new WEASEL();
@@ -362,11 +356,27 @@ public class ClassifierLists {
                 break;
 
            default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifier+" In ClassifierLists");
+                System.out.println("UNKNOWN CLASSIFIER IN LocalClassifierLists"+classifier);
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
         }
-        return c;
+        return c;    
+    }    
+    /**
+     * This method redproduces the old usage exactly as it was in old experiments.java. 
+     * If you try build any classifier that uses any experimental info other than  
+     * exp.classifierName or exp.foldID, an exception will be thrown.
+     * In particular, any classifier that needs access to the results from others
+     * e.g. CAWPEFROMFILE, will throw an UnsupportedOperationException if you try use it like this.
+     *      * @param classifier
+     * @param fold
+     * @return 
+     */
+    public static Classifier setClassifierClassic(String classifier, int fold){
+        Experiments.ExperimentalArguments exp=new ExperimentalArguments();
+        exp.classifierName=classifier;
+        exp.foldId=fold;
+        return setClassifier(exp);
     }
 
     public static void main(String[] args) throws Exception {
