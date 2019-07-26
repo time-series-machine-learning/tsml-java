@@ -69,10 +69,10 @@ public interface TrainAccuracyEstimator extends SaveParameterInfo{
     }
 //Temp comment: porting these from     
     default public double getTrainAcc(){
-        throw new RuntimeException("getTrainAcc not implemented!");
+        throw new UnsupportedOperationException("getTrainAcc not implemented in class "+this.getClass());
     }
 
     default public double[] getTrainPreds(){
-        throw new RuntimeException("getTrainAcc not implemented!");
+        throw new UnsupportedOperationException("getTrainPreds not implemented  in class "+this.getClass());
     }
 }
