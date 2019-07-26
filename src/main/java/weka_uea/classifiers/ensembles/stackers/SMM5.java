@@ -12,25 +12,26 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers.stackers;
+package weka_uea.classifiers.ensembles.stackers;
 
 import weka_uea.classifiers.ensembles.voting.stacking.StackingOnDists;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import weka_uea.classifiers.ensembles.CAWPE;
-import weka_uea.classifiers.MultiLinearRegression;
+import weka_uea.classifiers.MultiResponseModelTrees;
 
 /**
- * Stacking with multi-response linear regression (MLR), Ting and Witten (1999) 
+ * Stacking with multi-response model trees. M5 is used to induce the
+ * model trees at the meta level. Dzeroski and Zenko (2004)
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class SMLR extends CAWPE {
-    public SMLR() { 
+public class SMM5 extends CAWPE {
+    public SMM5() { 
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "SMLR"; 
+        ensembleIdentifier = "SMM5"; 
         weightingScheme = new EqualWeighting();
-        votingScheme = new StackingOnDists(new MultiLinearRegression());
-    }     
+        votingScheme = new StackingOnDists(new MultiResponseModelTrees());
+    }  
 }

@@ -1467,9 +1467,9 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     public static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
         //init, edit the paths for local running ofc
         String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
+        String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest25/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest001/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1504,17 +1504,18 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             "PB", "MV", "WMV", "RC", "NBC"
         };
 
+        String pkg = "weka_uea.classifiers.ensembles.";
         Class[] ensembleClasses = {
-            Class.forName("vector_classifiers.CAWPE"),
-            Class.forName("vector_classifiers.EnsembleSelection"),
-            Class.forName("vector_classifiers.stackers.SMLR"),
-            Class.forName("vector_classifiers.stackers.SMLRE"),
-            Class.forName("vector_classifiers.stackers.SMM5"),
-            Class.forName("vector_classifiers.weightedvoters.CAWPE_PickBest"),
-            Class.forName("vector_classifiers.weightedvoters.CAWPE_MajorityVote"),
-            Class.forName("vector_classifiers.weightedvoters.CAWPE_WeightedMajorityVote"),
-            Class.forName("vector_classifiers.weightedvoters.CAWPE_RecallCombiner"),
-            Class.forName("vector_classifiers.weightedvoters.CAWPE_NaiveBayesCombiner"),
+            Class.forName(pkg + "CAWPE"),
+            Class.forName(pkg + "EnsembleSelection"),
+            Class.forName(pkg + "stackers.SMLR"),
+            Class.forName(pkg + "stackers.SMLRE"),
+            Class.forName(pkg + "stackers.SMM5"),
+            Class.forName(pkg + "weightedvoters.CAWPE_PickBest"),
+            Class.forName(pkg + "weightedvoters.CAWPE_MajorityVote"),
+            Class.forName(pkg + "weightedvoters.CAWPE_WeightedMajorityVote"),
+            Class.forName(pkg + "weightedvoters.CAWPE_RecallCombiner"),
+            Class.forName(pkg + "weightedvoters.CAWPE_NaiveBayesCombiner"),
         };
 
         for (int ensemble = 0; ensemble < ensembleIDsInStorage.length; ensemble++)

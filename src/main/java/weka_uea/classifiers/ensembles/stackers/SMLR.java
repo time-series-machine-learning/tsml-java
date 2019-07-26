@@ -12,25 +12,25 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package weka_uea.classifiers.stackers;
+package weka_uea.classifiers.ensembles.stackers;
 
-import weka_uea.classifiers.ensembles.voting.stacking.StackingOnExtendedSetOfFeatures;
+import weka_uea.classifiers.ensembles.voting.stacking.StackingOnDists;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import weka_uea.classifiers.ensembles.CAWPE;
 import weka_uea.classifiers.MultiLinearRegression;
 
 /**
- * Stacking with MLR and an extended set of meta-level attributes, Dzeroski and Zenko (2004)
+ * Stacking with multi-response linear regression (MLR), Ting and Witten (1999) 
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class SMLRE extends CAWPE{
-    public SMLRE() { 
+public class SMLR extends CAWPE {
+    public SMLR() { 
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "SMLRE"; 
+        ensembleIdentifier = "SMLR"; 
         weightingScheme = new EqualWeighting();
-        votingScheme = new StackingOnExtendedSetOfFeatures(new MultiLinearRegression());
-    }   
+        votingScheme = new StackingOnDists(new MultiLinearRegression());
+    }     
 }
