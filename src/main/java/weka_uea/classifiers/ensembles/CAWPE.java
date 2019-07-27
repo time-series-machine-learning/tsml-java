@@ -29,6 +29,7 @@ import java.util.Arrays;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
+import evaluation.evaluators.SamplingEvaluator;
 import utilities.DebugPrinting;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -44,11 +45,8 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.StatisticalUtilities;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import weka_uea.classifiers.ensembles.EnsembleModule;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
@@ -134,7 +132,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     protected boolean writeEnsembleTrainingFile = false;
 
     protected boolean estimateEnsemblePerformance = true;
-    protected Evaluator trainEstimator = null;
+    protected SamplingEvaluator trainEstimator = null;
     
     protected ClassifierResults ensembleTrainResults = null;//data generated during buildclassifier if above = true
     protected ClassifierResults ensembleTestResults = null;//data generated during testing
@@ -502,21 +500,17 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         if (readIndividualsResults) {
             //we need to sum the modules' reported build time as well as the weight
             //and voting definition time
-            for (EnsembleModule module : modules)
-                buildTime += module.testResults.getPredictionTimeInNanos(testInstCounter);
+            for (EnsembleModule module : modules) {
+                buildTime += module.trainResults.getBuildTimeInNanos();
+                buildTime += module.trainResults.getErrorEstimateTime();
+            }
         }
         
-        if(this.estimateEnsemblePerformance) {
+        ensembleTrainResults = new ClassifierResults();
+        ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        
+        if(estimateEnsemblePerformance)
             ensembleTrainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
-
-            if (writeEnsembleTrainingFile)
-//                writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
-                writeEnsembleTrainAccuracyEstimateResultsFile();
-        }
-        else {
-            ensembleTrainResults = new ClassifierResults();
-            ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        }
         
         //HACK FOR CAWPE_EXTENSION PAPER: 
         //since experiments expects us to make a train results object 
@@ -528,7 +522,10 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         ensembleTrainResults.turnOffZeroTimingsErrors();
         ensembleTrainResults.setBuildTime(buildTime);
         ensembleTrainResults.turnOnZeroTimingsErrors();
-
+        
+        if (writeEnsembleTrainingFile)
+            writeEnsembleTrainAccuracyEstimateResultsFile();
+        
         this.testInstCounter = 0; //prep for start of testing
     }
 
@@ -730,6 +727,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         ClassifierResults trainResults = new ClassifierResults(data.numClasses());
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
+        long estimateTimeStart = System.nanoTime();
+        
         //for each train inst
         for (int i = 0; i < numTrainInsts; i++) {
             long startTime = System.nanoTime();
@@ -745,6 +744,10 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             trainResults.addPrediction(actual, dist, pred, predTime, "");
             trainResults.turnOnZeroTimingsErrors();
         }
+        
+        long estimateTime = System.nanoTime() - estimateTimeStart;
+        for (EnsembleModule module : modules)
+            estimateTime += module.trainResults.getErrorEstimateTime();
 
         trainResults.setClassifierName(ensembleName);
         if (datasetName == null || datasetName.equals(""))
@@ -753,6 +756,9 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");
         trainResults.setParas(getParameters());
+        
+        trainResults.setErrorEstimateTime(estimateTime);
+        trainResults.setErrorEstimateMethod(modules[0].trainResults.getErrorEstimateMethod());
         
         trainResults.finaliseResults();
         
@@ -833,7 +839,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         return trainEstimator;
     }
     
-    public void setTrainEstimator(Evaluator trainEstimator) {
+    public void setTrainEstimator(SamplingEvaluator trainEstimator) {
         this.trainEstimator = trainEstimator;
     }
 
@@ -1410,7 +1416,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest004/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest006/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;

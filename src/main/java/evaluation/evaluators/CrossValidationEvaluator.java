@@ -118,7 +118,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         //cv has finished
         double[][][] allFolds_distsForInsts = new double[classifiers.length][dataset.numInstances()][];
         long[][] allFolds_predTimes = new long[classifiers.length][dataset.numInstances()];
-        long[] totalBuildTimes = new long[classifiers.length];
+        long[] totalEstimateTimes = new long[classifiers.length];
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
@@ -131,7 +131,6 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
 
             //for each classifier in ensemble
             for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
-                long t1 = System.nanoTime();
                 
                 // get the classifier instance to be used this fold
                 Classifier foldClassifier = classifiers[classifierIndex];
@@ -139,7 +138,10 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     //use the clone instead
                     foldClassifier = foldClassifiers[classifierIndex][fold];
                
+                long foldEstimateTimeStart = System.nanoTime(); //for errorEstimateTime of the full results object
+                long foldBuildTime = foldEstimateTimeStart;         //for the buildtime of this fold's results object 
                 foldClassifier.buildClassifier(trainTest[0]);
+                foldBuildTime = System.nanoTime() - foldBuildTime;
                 
                 // init the classifierXfold results object
                 ClassifierResults classifierFoldRes = new ClassifierResults(dataset.numClasses());
@@ -149,6 +151,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                 classifierFoldRes.setFoldID(seed);
                 classifierFoldRes.setSplit("train"); 
                 classifierFoldRes.turnOffZeroTimingsErrors();
+                classifierFoldRes.setBuildTime(foldBuildTime);
 
                 //for each test instance on this fold
                 for(int i = 0; i < trainTest[1].numInstances(); i++){
@@ -172,10 +175,9 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
                 }    
                 
-                long foldBuildTime = System.nanoTime() - t1;
-                totalBuildTimes[classifierIndex] += foldBuildTime;
+                long foldEstimateTime = System.nanoTime() - foldEstimateTimeStart;
+                totalEstimateTimes[classifierIndex] += foldEstimateTime;
                 
-                classifierFoldRes.setBuildTime(foldBuildTime);
                 classifierFoldRes.turnOnZeroTimingsErrors();
                 classifierFoldRes.finaliseResults();
                 if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
@@ -198,7 +200,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
             
             results[c].turnOffZeroTimingsErrors();
-            results[c].setBuildTime(totalBuildTimes[c]);
+            results[c].setErrorEstimateTime(totalEstimateTimes[c]); 
             for (int i = 0; i < dataset.numInstances(); i++) {
                 double tiesResolvedRandomlyPred;
 
