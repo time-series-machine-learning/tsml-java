@@ -132,6 +132,7 @@ public class ClassifierLists {
                 break;
             case "ProximityForest":
                 c = new ProximityForestWeka();
+                ((ProximityForestWeka)c).setSeed(fold);
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -243,8 +244,9 @@ public class ClassifierLists {
                 
                 break;
             case "CAWPE_AS_COTE":
-                String[] cls={"TSF","ST","SLOWDTWCV","BOSS"};
+                String[] cls={"TSF","ST","EE","BOSS","RISE"};
                 c=new CAWPE();
+                ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((CAWPE)c).setRandSeed(fold);
                 ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                 ((CAWPE)c).setResultsFileLocationParameters(horribleGlobalPath, nastyGlobalDatasetName, fold);
@@ -321,6 +323,12 @@ public class ClassifierLists {
                 ((BOSS) c).useBestSettingsRBOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
+            case "BayesianRBOSS":
+                c = new BOSS();
+                ((BOSS) c).useBestSettingsRBOSS();
+                ((BOSS) c).setBayesianParameterSelection(true);
+                ((BOSS) c).setSeed(fold);
+                break;
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);
@@ -354,7 +362,7 @@ public class ClassifierLists {
                 break;
 
            default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifier);
+                System.out.println("UNKNOWN CLASSIFIER "+classifier+" In ClassifierLists");
                 System.exit(0);
 //                throw new Exception("Unknown classifier "+classifier);
         }

@@ -28,6 +28,7 @@ import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
@@ -64,6 +65,7 @@ public class TunedClassifier extends AbstractClassifier
     AbstractClassifier classifier = null;
 
     ParameterSet bestParas = null;
+    String[] bestOptions = null;
 
     ////////// start interface variables
     
@@ -120,7 +122,9 @@ public class TunedClassifier extends AbstractClassifier
     public void setCloneClassifierForEachParameterEval(boolean clone) {
         tuner.setCloneClassifierForEachParameterEval(clone);
     }
-    
+
+    public String[] getBestOptions() { return bestOptions; }
+
     public ParameterSpace getSpace() {
         return space;
     }
@@ -213,6 +217,7 @@ public class TunedClassifier extends AbstractClassifier
         
         //apply best paras and build final classifier on full train data
         String[] options = best.paras.toOptionsList();
+        bestOptions = Arrays.copyOf(options, options.length);
         classifier.setOptions(options);
         classifier.buildClassifier(data);
     }

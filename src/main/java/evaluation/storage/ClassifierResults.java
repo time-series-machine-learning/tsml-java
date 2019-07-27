@@ -216,6 +216,30 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     private long memoryUsage = -1; 
  
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    private String errorEstimateMethod = "";
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    private long errorEstimateTime = -1;
+    
 //REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
     private ArrayList<Double> trueClassValues;
@@ -319,6 +343,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Recall = (ClassifierResults cr) -> {return cr.recall;};
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
+
+    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
+        double MAA = 0;
+        for (int i = 0; i < cr.numInstances; i++){
+            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
+        }
+        return -(MAA/cr.numInstances);
+    };
     
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -768,7 +800,63 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public void setBenchmarkTime(long benchmarkTime) {
         this.benchmarkTime = benchmarkTime;
     }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public String getErrorEstimateMethod() {
+        return errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public void setErrorEstimateMethod(String errorEstimateMethod) {
+        this.errorEstimateMethod = errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public long getErrorEstimateTime() {
+        return errorEstimateTime;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public void setErrorEstimateTime(long errorEstimateTime) {
+        this.errorEstimateTime = errorEstimateTime;
+    }
            
+    
+    
 
     /****************************
      *   
@@ -1461,6 +1549,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             memoryUsage = Long.parseLong(parts[4]);
         if (parts.length > 5) 
             numClasses = Integer.parseInt(parts[5]);
+        if (parts.length > 6) 
+            errorEstimateMethod = parts[6];
+        if (parts.length > 7) 
+            errorEstimateTime = Long.parseLong(parts[7]);
         
         return acc;
     }
@@ -1470,7 +1562,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + testTime
             + "," + benchmarkTime
             + "," + memoryUsage
-            + "," + numClasses();
+            + "," + numClasses()
+            + "," + errorEstimateMethod
+            + "," + errorEstimateTime;
+        
         return res;
     }
 
@@ -1801,7 +1896,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         int mid = copy.size()/2;
         if (copy.size() % 2 == 0)
-            return (copy.get(mid) + copy.get(mid+1)) / 2;
+            return (copy.get(mid) + copy.get(mid-1)) / 2;
         else 
             return copy.get(mid);
     }

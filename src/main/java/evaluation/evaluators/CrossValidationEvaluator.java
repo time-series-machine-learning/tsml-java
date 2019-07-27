@@ -39,7 +39,10 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class CrossValidationEvaluator extends SamplingEvaluator {
-            
+      
+    //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
+    public static boolean REGRESSION_HACK = false;
+
     private String previousRelationName = "EmPtY";
     
     private ArrayList<Instances> folds;
@@ -78,7 +81,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
     @Override
     public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         ClassifierResults res = crossValidateWithStats(classifier, dataset);
-        res.findAllStatsOnce();
+        if (!REGRESSION_HACK) res.findAllStatsOnce();
         return res;
     }
     
@@ -164,8 +167,9 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                     
                     allFolds_distsForInsts[classifierIndex][instIndex] = dist;
                     allFolds_predTimes[classifierIndex][instIndex] = predTime;
-                    
-                    classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+
+                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
+                    else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
                 }    
                 
                 long foldBuildTime = System.nanoTime() - t1;
@@ -174,7 +178,7 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
                 classifierFoldRes.setBuildTime(foldBuildTime);
                 classifierFoldRes.turnOnZeroTimingsErrors();
                 classifierFoldRes.finaliseResults();
-                classifierFoldRes.findAllStatsOnce(); 
+                if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
                 resultsPerFold[classifierIndex][fold] = classifierFoldRes;
                 
                 if (cloneClassifiers && !maintainClassifiers)
@@ -196,7 +200,11 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
             results[c].turnOffZeroTimingsErrors();
             results[c].setBuildTime(totalBuildTimes[c]);
             for (int i = 0; i < dataset.numInstances(); i++) {
-                double tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+                double tiesResolvedRandomlyPred;
+
+                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
+                else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+
                 results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
             }
             results[c].turnOnZeroTimingsErrors();
@@ -263,7 +271,11 @@ public class CrossValidationEvaluator extends SamplingEvaluator {
         }
         for (int i = 0; i < instanceIds.size(); ++i) {
             int instIndex = instanceIds.get(i);
-            int instClassVal = (int)dataset.instance(instIndex).classValue();
+            int instClassVal;
+
+            if (REGRESSION_HACK) instClassVal = 0;
+            else instClassVal = (int)dataset.instance(instIndex).classValue();
+
             byClass.get(instClassVal).add(dataset.instance(instIndex));
             byClassIndices.get(instClassVal).add(instIndex);
         }

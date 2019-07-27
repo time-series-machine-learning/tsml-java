@@ -28,13 +28,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
-import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
-import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
@@ -48,15 +45,13 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
+import utilities.InstanceTools;
 import vector_classifiers.ensembles.SaveableEnsemble;
 import static utilities.GenericTools.indexOfMax;
 import static utilities.InstanceTools.shortenInstances;
 
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import vector_classifiers.*;
-import weka.core.Attribute;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -190,8 +185,10 @@ public class Experiments  {
         
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
-
-
+        
+        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
+        public String trainEstimateMethod = "cv_10";
         
         public ExperimentalArguments() {
             
@@ -481,57 +478,7 @@ public class Experiments  {
             LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
         }
     }
-    
-    /**
-     * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
-     * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
- a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
- set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
- to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
- values 1 to numUniqueFirstAttValues
- 
- TODO: potentially just move to experiments.DatasetLists once we clean up that
-     * 
-     * @return new Instances[] { trainSet, testSet };
-     */
-    public static Instances[] splitDatasetByFirstAttribute(Instances all, int foldId) {        
-        TreeMap<Double, Integer> splitVariables = new TreeMap<>();
-        for (int i = 0; i < all.numInstances(); i++) {
-            //even if it's a string attribute, this val corresponds to the index into the array of possible strings for this att
-            double key= all.instance(i).value(0);
-            Integer val = splitVariables.get(key);
-            if (val == null)
-                val = 0;
-            splitVariables.put(key, ++val); 
-        }
 
-        //find the split attribute value to keep for testing this fold
-        double idToReserveForTestSet = -1;
-        int testSize = -1;
-        int c = 0;
-        for (Map.Entry<Double, Integer> splitVariable : splitVariables.entrySet()) {
-            if (c++ == foldId) {
-                idToReserveForTestSet = splitVariable.getKey();
-                testSize = splitVariable.getValue();
-            }
-        }
-
-        //make the split
-        Instances train = new Instances(all, all.size() - testSize);
-        Instances test  = new Instances(all, testSize);
-        for (int i = 0; i < all.numInstances(); i++)
-            if (all.instance(i).value(0) == idToReserveForTestSet)
-                test.add(all.instance(i));
-        train.addAll(all);
-
-        //delete the split attribute
-        train.deleteAttributeAt(0);
-        test.deleteAttributeAt(0);
-        
-        return new Instances[] { train, test };
-    }
-    
-        
     /**
      * Perform an actual experiment, using the loaded classifier and resampled dataset given, writing to the specified results location. 
      * 
@@ -693,11 +640,54 @@ public class Experiments  {
         else { 
             long trainBenchmark = findBenchmarkTime(exp);
             
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            cv.setSeed(fold);
-            int numFolds = Math.min(train.numInstances(), numCVFolds);
-            cv.setNumFolds(numFolds);
-            trainResults = cv.crossValidateWithStats(classifier, train);
+            //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
+            String[] parts = exp.trainEstimateMethod.split("_");
+            String method = parts[0];
+
+            String para = null;
+            if (parts.length > 1)
+                para = parts[1];
+
+            long estimateTimeStart = System.nanoTime();
+
+            switch (method) {
+                case "cv":
+                case "CV":
+                case "CrossValidationEvaluator":
+                    int numFolds = Experiments.numCVFolds;
+                    if (para != null)
+                        numFolds = Integer.parseInt(para);
+                    numFolds = Math.min(train.numInstances(), numFolds);
+
+                    CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                    cv.setSeed(fold);
+                    cv.setNumFolds(numFolds);
+                    trainResults = cv.crossValidateWithStats(classifier, train);
+                    break;
+
+                case "hov":
+                case "HOV":
+                case "SingleTestSetEvaluator":
+                    double trainProp = DatasetLoading.getProportionKeptForTraining();
+                    if (para != null)
+                        trainProp = Double.parseDouble(para);
+
+                    Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
+                    classifier.buildClassifier(trainVal[0]);
+
+                    SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
+                    hov.setSeed(fold);
+                    trainResults = hov.evaluate(classifier, trainVal[1]);
+                    break;
+
+                default:
+                    throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
+            }
+
+            long estimateTime = System.nanoTime() - estimateTimeStart;
+
+            trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
+            trainResults.setErrorEstimateTime(estimateTime);
             trainResults.setBenchmarkTime(trainBenchmark);
         }
         

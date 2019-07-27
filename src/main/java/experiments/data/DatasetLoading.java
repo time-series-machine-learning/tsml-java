@@ -22,6 +22,8 @@ import experiments.Experiments;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import utilities.ClassifierTools;
@@ -217,7 +219,7 @@ public class DatasetLoading {
                 boolean needToDefineLeaveOutOneXFold = all.attribute(0).name().toLowerCase().contains(LOXO_ATT_ID.toLowerCase());
                 if (needToDefineLeaveOutOneXFold) {
                     // CASE 4)
-                    data = Experiments.splitDatasetByFirstAttribute(all, fold);
+                    data = splitDatasetByFirstAttribute(all, fold);
                     LOGGER.log(Level.FINE, problem + " resampled from full data file.");
                 } else {
                     // CASE 3)
@@ -233,6 +235,54 @@ public class DatasetLoading {
         return data;
     }
 
+        /**
+     * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
+     * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
+     * a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
+     * set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
+     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
+     * values 1 to numUniqueFirstAttValues
+     * 
+     * @return new Instances[] { trainSet, testSet };
+     */
+    public static Instances[] splitDatasetByFirstAttribute(Instances all, int foldId) {        
+        TreeMap<Double, Integer> splitVariables = new TreeMap<>();
+        for (int i = 0; i < all.numInstances(); i++) {
+            //even if it's a string attribute, this val corresponds to the index into the array of possible strings for this att
+            double key= all.instance(i).value(0);
+            Integer val = splitVariables.get(key);
+            if (val == null)
+                val = 0;
+            splitVariables.put(key, ++val); 
+        }
+
+        //find the split attribute value to keep for testing this fold
+        double idToReserveForTestSet = -1;
+        int testSize = -1;
+        int c = 0;
+        for (Map.Entry<Double, Integer> splitVariable : splitVariables.entrySet()) {
+            if (c++ == foldId) {
+                idToReserveForTestSet = splitVariable.getKey();
+                testSize = splitVariable.getValue();
+            }
+        }
+
+        //make the split
+        Instances train = new Instances(all, all.size() - testSize);
+        Instances test  = new Instances(all, testSize);
+        for (int i = 0; i < all.numInstances(); i++)
+            if (all.instance(i).value(0) == idToReserveForTestSet)
+                test.add(all.instance(i));
+        train.addAll(all);
+
+        //delete the split attribute
+        train.deleteAttributeAt(0);
+        test.deleteAttributeAt(0);
+        
+        return new Instances[] { train, test };
+    }
+    
+    
     /**
      * Loads the arff file at the target location and sets the last attribute to be the class value, 
      * or throws IOException on any error.
