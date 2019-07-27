@@ -29,7 +29,7 @@ public class SMLR extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "SMLR"; 
+        ensembleName = "SMLR"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new StackingOnDists(new MultiLinearRegression());
     }     

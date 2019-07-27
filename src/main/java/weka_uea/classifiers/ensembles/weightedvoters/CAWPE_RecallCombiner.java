@@ -28,7 +28,7 @@ public class CAWPE_RecallCombiner extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "CAWPE_RecallCombiner"; 
+        ensembleName = "CAWPE_RecallCombiner"; 
         weightingScheme = new RecallByClass();
         votingScheme = new MajorityVote();
     }

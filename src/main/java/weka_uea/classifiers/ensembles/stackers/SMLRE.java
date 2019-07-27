@@ -29,7 +29,7 @@ public class SMLRE extends CAWPE{
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "SMLRE"; 
+        ensembleName = "SMLRE"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new StackingOnExtendedSetOfFeatures(new MultiLinearRegression());
     }   

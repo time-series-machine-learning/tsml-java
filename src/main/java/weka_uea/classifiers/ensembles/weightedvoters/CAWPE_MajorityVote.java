@@ -28,7 +28,7 @@ public class CAWPE_MajorityVote extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "CAWPE_MajorityVote"; 
+        ensembleName = "CAWPE_MajorityVote"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new MajorityVote();
     }   

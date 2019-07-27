@@ -30,7 +30,7 @@ public class SMM5 extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "SMM5"; 
+        ensembleName = "SMM5"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new StackingOnDists(new MultiResponseModelTrees());
     }  

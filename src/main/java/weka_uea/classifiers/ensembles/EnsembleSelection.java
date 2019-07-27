@@ -95,7 +95,7 @@ public class EnsembleSelection extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "EnsembleSelection"; 
+        ensembleName = "EnsembleSelection"; 
 //        votingScheme = new MajorityConfidence();
         votingScheme = new MajorityVote();
         weightingScheme = new EqualWeighting();

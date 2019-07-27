@@ -208,7 +208,7 @@ public class ClassifierLists {
             case "CAWPEPLUS":
                 c=new CAWPE();
                 ((CAWPE)c).setRandSeed(fold);                
-                ((CAWPE)c).setAdvancedCAWPESettings();
+                ((CAWPE)c).setupAdvancedCAWPESettings();
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){

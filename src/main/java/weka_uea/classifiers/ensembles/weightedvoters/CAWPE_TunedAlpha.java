@@ -45,7 +45,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "HESCA_TunedAlpha"; 
+        ensembleName = "HESCA_TunedAlpha"; 
     }   
     
     @Override
@@ -91,7 +91,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         //(less chance of overfitting) than going towards pick best
         for (int i = 0; i < alphaParaRange.length; i++) {
             initCombinationSchemes(alphaParaRange[i]);
-            alphaResults[i] = doEnsembleCV(data); 
+            alphaResults[i] = crossValidateEnsemble(data); 
             alphaParaAccs[i] = alphaResults[i].getAcc();
             
             if (alphaResults[i].getAcc() > maxAcc) { 
@@ -107,7 +107,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         ensembleTrainResults.setBuildTime(buildTime);
             
         if (writeEnsembleTrainingFile)
-            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+            writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
         
         
         this.testInstCounter = 0; //prep for start of testing
