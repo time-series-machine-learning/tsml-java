@@ -23,8 +23,12 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Simply gathers predictions from the (assumed to have already been built/trained) passed classifier
- * on the data given, assumed to have already been sampled/set up as desired. 
+ * Simply gathers predictions from an already built/trained classifier on the data given
+ * 
+ * As much meta info as possible shall be inferred (e.g. classifier name based on the class name),
+ * but the calling function should explicitely set/check any meta info it wants to if accuracy is 
+ * important or the values non-standard (e.g. in this context you want the classifier name to 
+ * include some specific parameter identifier)
  * 
  * distributionForInstance(Instance) MUST be defined, even if the classifier only really returns 
  * a one-hot distribution
@@ -50,6 +54,10 @@ public class SingleTestSetEvaluator extends Evaluator {
         
         ClassifierResults res = new ClassifierResults(insts.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
+        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setDatasetName(dataset.relationName());
+        res.setFoldID(seed);
+        res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
         
         res.turnOffZeroTimingsErrors();
         for (Instance testinst : insts) {
@@ -62,8 +70,8 @@ public class SingleTestSetEvaluator extends Evaluator {
             long predTime = System.nanoTime() - startTime;
             res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
-        res.turnOnZeroTimingsErrors();
         
+        res.turnOnZeroTimingsErrors();
         res.findAllStatsOnce(); 
         return res;
     }

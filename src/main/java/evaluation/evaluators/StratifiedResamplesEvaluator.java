@@ -32,7 +32,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class StratifiedResamplesEvaluator extends SamplingEvaluator {
+public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
     double propInstancesInTrain;
     
     public StratifiedResamplesEvaluator() {
@@ -68,7 +68,7 @@ public class StratifiedResamplesEvaluator extends SamplingEvaluator {
      * for each resample, i.e the predictions are ordered as all predictions for the 
      * test set of fold0, then the predictions for fold1, etc. 
      * 
-     * Therefore, if you're evaluating multiple classifier on the same dataset using this 
+     * Therefore, if you're evaluating multiple classifiers on the same dataset using this 
      * evaluator, the predictions will all line up to each other (assuming they are seeded the
      * same to produce the same resamples). Each prediction will refer to the same test 
      * case being predicted after being trained on the same data. 
@@ -77,7 +77,7 @@ public class StratifiedResamplesEvaluator extends SamplingEvaluator {
      * reported calculated by ClassifierResults are automatically the stats averaged 
      * over the resamples
      * 
-     * If you want to access the classifier resutls objects for each fold, these are 
+     * If you want to access the classifier results objects for each fold, these are 
      * also stored in this evaluator object, call getResultsOfEachSample()
      * 
      * @param classifier
