@@ -213,12 +213,12 @@ public class EnsembleSelection extends CAWPE {
             
             if (numOfTopModelsToInitialiseBagWith!=null && numOfTopModelsToInitialiseBagWith > 0) {
                 int lastInd = bagOfModels.size()-1;
-                EnsembleModule model = bagOfModels.get(lastInd); //best in cv
+                EnsembleModule model = bagOfModels.get(lastInd); //best in trainEstimator
                 subensemble.add(model);
                 subEnsembleResults = model.trainResults;
                 
                 for (int i = 1; i < numOfTopModelsToInitialiseBagWith; i++) {
-                    model = bagOfModels.get(lastInd - i); //next highest cv score
+                    model = bagOfModels.get(lastInd - i); //next highest trainEstimator score
                     subensemble.add(model);
                     
                     subEnsembleResults = combinePredictions(subEnsembleResults, i, model.trainResults);
@@ -393,7 +393,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
                     c.setRandSeed(fold);
-                    c.setPerformCV(true);
+                    c.setEstimateEnsemblePerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
                     Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

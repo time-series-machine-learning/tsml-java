@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.Evaluator;
 import utilities.DebugPrinting;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
@@ -85,7 +86,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
    Vote: MajorityVote
 
  EXPERIMENTAL USAGE:
- By default will build/cv members normally, and perform no file reading/writing.
+ By default will build/trainEstimator members normally, and perform no file reading/writing.
  To turn on file handling of any kind, call
           setResultsFileLocationParameters(...)
  1) Can build ensemble and classify from results files of its members, call
@@ -132,8 +133,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     //TrainAccuracyEstimate
     protected boolean writeEnsembleTrainingFile = false;
 
-    protected boolean performEnsembleCV = true;
-    protected CrossValidationEvaluator cv = null;
+    protected boolean estimateEnsemblePerformance = true;
+    protected Evaluator trainEstimator = null;
     
     protected ClassifierResults ensembleTrainResults = null;//data generated during buildclassifier if above = true
     protected ClassifierResults ensembleTestResults = null;//data generated during testing
@@ -255,6 +256,10 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     public final void setupOriginalHESCASettings(){
         this.weightingScheme = new TrainAcc();
         this.votingScheme = new MajorityVote();
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
 
         Classifier[] classifiers = new Classifier[8];
         String[] classifierNames = new String[8];
@@ -323,6 +328,10 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     public final void setupDefaultCAWPESettings(){
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
 
         Classifier[] classifiers = new Classifier[5];
         String[] classifierNames = new String[5];
@@ -366,7 +375,11 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     public final void setupDefaultCAWPESettings_NoLogistic(){
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
-
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
+        
         Classifier[] classifiers = new Classifier[4];
         String[] classifierNames = new String[4];
 
@@ -401,6 +414,10 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     public final void setupAdvancedCAWPESettings(){
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
 
         Classifier[] classifiers = new Classifier[3];
         String[] classifierNames = new String[3];
@@ -429,8 +446,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
 
 
 
-    public void setPerformCV(boolean b) {
-        performEnsembleCV = b;
+    public void setEstimateEnsemblePerformance(boolean b) {
+        estimateEnsemblePerformance = b;
     }
 
     public void setRandSeed(int seed){
@@ -489,8 +506,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
                 buildTime += module.testResults.getPredictionTimeInNanos(testInstCounter);
         }
         
-        if(this.performEnsembleCV) {
-            ensembleTrainResults = crossValidateEnsemble(data); //combine modules to find overall ensemble trainpreds
+        if(this.estimateEnsemblePerformance) {
+            ensembleTrainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
 
             if (writeEnsembleTrainingFile)
 //                writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
@@ -506,8 +523,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         //and for us to record our build time, going to record it here instead of 
         //editting experiments to record the buildtime at that level
         
-        //buildTime does not include the ensemble's cv in any case, only the work required to be ready for testing
-        //time unit has been set in crossValidateEnsemble(data);
+        //buildTime does not include the ensemble's trainEstimator in any case, only the work required to be ready for testing
+        //time unit has been set in estimateEnsemblePerformance(data);
         ensembleTrainResults.turnOffZeroTimingsErrors();
         ensembleTrainResults.setBuildTime(buildTime);
         ensembleTrainResults.turnOnZeroTimingsErrors();
@@ -516,17 +533,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     }
 
     protected void initialiseModules() throws Exception {
-        //prep cv
-        if (willNeedToDoCV()) {
-            //int numFolds = setNumberOfFolds(train); //through TrainAccuracyEstimate interface
-
-            cv = new CrossValidationEvaluator();
-            if (setSeed)
-                cv.setSeed(seed);
-            cv.setNumFolds(10);
-            cv.buildFolds(trainInsts);
-        }
-
         //currently will only have file reading ON or OFF (not load some files, train the rest)
         //having that creates many, many, many annoying issues, especially when classifying test cases
         if (readIndividualsResults) {
@@ -549,19 +555,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         }
     }
 
-    protected boolean willNeedToDoCV() {
-        //if we'll need ensemble cv, we want the cv fold info
-        if (performEnsembleCV)
-            return true;
-
-        //or if any of the modules dont have cv data already
-        for (EnsembleModule m : modules)
-            if (!(m.getClassifier() instanceof TrainAccuracyEstimator))
-                return true;
-
-        return false;
-    }
-
     protected void trainModules() throws Exception {
 
         for (EnsembleModule module : modules) {
@@ -581,8 +574,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
                 }
             }
             else {
-                printlnDebug(module.getModuleName() + " performing cv...");
-                module.trainResults = cv.crossValidateWithStats(module.getClassifier(), trainInsts);
+                printlnDebug(module.getModuleName() + " estimateing performance...");
+                module.trainResults = trainEstimator.evaluate(module.getClassifier(), trainInsts);
                 module.trainResults.finaliseResults();
                 
                 //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
@@ -648,7 +641,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     }
 
     protected boolean needIndividualTrainPreds() {
-        return performEnsembleCV || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
+        return estimateEnsemblePerformance || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
     }
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
@@ -730,7 +723,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             readIndividualsResults = false;
     }
     
-    protected ClassifierResults crossValidateEnsemble(Instances data) throws Exception {
+    protected ClassifierResults estimateEnsemblePerformance(Instances data) throws Exception {
         double actual, pred;
         double[] dist;
 
@@ -825,7 +818,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
                 return; //do nothing
         }
 
-        if (ensembleTrainResults != null) //performed cv
+        if (ensembleTrainResults != null) //performed trainEstimator
             writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
 
         this.ensembleTestResults.finaliseResults(testSetClassVals);
@@ -836,8 +829,12 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         return modules;
     }
 
-    public CrossValidationEvaluator getCrossValidator() {
-        return cv;
+    public Evaluator getTrainEstimator() {
+        return trainEstimator;
+    }
+    
+    public void setTrainEstimator(Evaluator trainEstimator) {
+        this.trainEstimator = trainEstimator;
     }
 
     public String[] getClassifierNames() {
@@ -897,7 +894,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         this.weightingScheme = weightingScheme;
     }
 
-    public double[] getIndividualCvAccs() {
+    public double[] getIndividualAccEstimates() {
         double [] accs = new double[modules.length];
         for (int i = 0; i < modules.length; i++)
             accs[i] = modules[i].trainResults.getAcc();
@@ -927,7 +924,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
            modules[i].priorWeight = 1.0;
     }
 
-    public double[][] getIndividualCvPredictions() {
+    public double[][] getIndividualEstimatePredictions() {
         double [][] preds = new double[modules.length][];
         for (int i = 0; i < modules.length; i++)
             preds[i] = modules[i].trainResults.getPredClassValsAsArray();
@@ -944,18 +941,18 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
 
     @Override //TrainAccuracyEstimate
     public void writeTrainEstimatesToFile(String path) {
-        performEnsembleCV=true;
+        estimateEnsemblePerformance=true;
         writeEnsembleTrainingFile=true;
         
         setResultsFileWritingLocation(path);
     }
     @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        performEnsembleCV=setCV;
+    public void setFindTrainAccuracyEstimate(boolean estimatePerformance){
+        estimateEnsemblePerformance=estimatePerformance;
     }
 
     @Override
-    public boolean findsTrainAccuracyEstimate(){ return performEnsembleCV;}
+    public boolean findsTrainAccuracyEstimate(){ return estimateEnsemblePerformance;}
 
     @Override
     public ClassifierResults getTrainResults(){
@@ -969,12 +966,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     @Override
     public String getParameters(){
         StringBuilder out = new StringBuilder();
-
-//        if (ensembleTrainResults != null) //cv performed
-//            out.append("BuildTime,").append(ensembleTrainResults.buildTime).append(",Trainacc,").append(ensembleTrainResults.acc).append(",");
-//        else
-//            out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
-
         out.append(weightingScheme.toString()).append(",").append(votingScheme.toString()).append(",");
 
         for(int m = 0; m < modules.length; m++){
@@ -1287,7 +1278,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/JamesLPHD/CAWPETests"+testID+"/", dataset, fold);
             cawpe.setWriteIndividualsTrainResultsFiles(true);
-            cawpe.setPerformCV(true); //now defaults to true
+            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
             cawpe.setRandSeed(fold);
 
             cawpe.buildClassifier(train);
@@ -1329,7 +1320,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/JamesLPHD/CAWPETests"+testID+"/", dataset, fold);
             cawpe.setBuildIndividualsFromResultsFiles(true);
-            cawpe.setPerformCV(true); //now defaults to true
+            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
             cawpe.setRandSeed(fold);
 
             cawpe.buildClassifier(train);
@@ -1374,7 +1365,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
                     for (int fold = 0; fold < numFolds; fold++) {
                           /*1: Problem path args[0]
                             2. Results path args[1]
-                            3. booleanwWhether to CV to generate train files (true/false)
+                            3. booleanw Whether to generate train files (true/false)
                             4. Classifier =args[3];
                             5. String problem=args[4];
                             6. int fold=Integer.parseInt(args[5])-1;
@@ -1419,7 +1410,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest003/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest004/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -1545,7 +1536,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
                         c.setBuildIndividualsFromResultsFiles(true);
                         c.setResultsFileLocationParameters(writePath, dset, fold);
                         c.setRandSeed(fold);
-                        c.setPerformCV(true);
+                        c.setEstimateEnsemblePerformance(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
                         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

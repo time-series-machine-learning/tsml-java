@@ -91,7 +91,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         //(less chance of overfitting) than going towards pick best
         for (int i = 0; i < alphaParaRange.length; i++) {
             initCombinationSchemes(alphaParaRange[i]);
-            alphaResults[i] = crossValidateEnsemble(data); 
+            alphaResults[i] = estimateEnsemblePerformance(data); 
             alphaParaAccs[i] = alphaResults[i].getAcc();
             
             if (alphaResults[i].getAcc() > maxAcc) { 
