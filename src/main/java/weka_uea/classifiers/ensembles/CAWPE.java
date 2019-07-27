@@ -110,10 +110,12 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
         result.setValue(TechnicalInformation.Field.AUTHOR, "J. Large, J. Lines and A. Bagnall");
-        result.setValue(TechnicalInformation.Field.YEAR, "2017");
-        result.setValue(TechnicalInformation.Field.TITLE, "The Heterogeneous Ensembles of Standard Classification Algorithms (HESCA): the Whole is Greater than the Sum of its Parts");
-        result.setValue(TechnicalInformation.Field.PUBLISHER, "arXiv");
-        result.setValue(TechnicalInformation.Field.URL, "https://arxiv.org/abs/1710.09220");
+        result.setValue(TechnicalInformation.Field.YEAR, "2019");
+        result.setValue(TechnicalInformation.Field.MONTH, "June");
+        result.setValue(TechnicalInformation.Field.TITLE, "A probabilistic classifier ensemble weighting scheme based on cross-validated accuracy estimates");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
+        result.setValue(TechnicalInformation.Field.URL, "https://link.springer.com/article/10.1007/s10618-019-00638-y");
+        result.setValue(TechnicalInformation.Field.ISSN, "1573-756X");
 
         return result;
     }
@@ -122,7 +124,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     protected ModuleVotingScheme votingScheme = new MajorityConfidence();
     protected EnsembleModule[] modules;
 
-    protected boolean setSeed = true;
     protected int seed = 0;
 
     protected SimpleBatchFilter transform;
@@ -280,8 +281,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         PolyKernel kl = new PolyKernel();
         kl.setExponent(1);
         svml.setKernel(kl);
-        if(setSeed)
-            svml.setRandomSeed(seed);
+        svml.setRandomSeed(seed);
         classifiers[3] = svml;
         classifierNames[3] = "SVML";
 
@@ -291,23 +291,20 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         PolyKernel kq = new PolyKernel();
         kq.setExponent(2);
         svmq.setKernel(kq);
-        if(setSeed)
-           svmq.setRandomSeed(seed);
+        svmq.setRandomSeed(seed);
         classifiers[4] =svmq;
         classifierNames[4] = "SVMQ";
 
         RandomForest r=new RandomForest();
         r.setNumTrees(500);
-        if(setSeed)
-           r.setSeed(seed);
+        r.setSeed(seed);
         classifiers[5] = r;
         classifierNames[5] = "RandF";
 
 
         RotationForest rf=new RotationForest();
         rf.setNumIterations(50);
-        if(setSeed)
-           rf.setSeed(seed);
+        rf.setSeed(seed);
         classifiers[6] = rf;
         classifierNames[6] = "RotF";
 
@@ -340,8 +337,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         PolyKernel kl = new PolyKernel();
         kl.setExponent(1);
         smo.setKernel(kl);
-        if (setSeed)
-            smo.setRandomSeed(seed);
+        smo.setRandomSeed(seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVML";
 
@@ -387,8 +383,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         PolyKernel kl = new PolyKernel();
         kl.setExponent(1);
         smo.setKernel(kl);
-        if (setSeed)
-            smo.setRandomSeed(seed);
+        smo.setRandomSeed(seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVML";
 
@@ -426,8 +421,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         PolyKernel kl = new PolyKernel();
         kl.setExponent(2);
         smo.setKernel(kl);
-        if (setSeed)
-            smo.setRandomSeed(seed);
+        smo.setRandomSeed(seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVMQ";
         RandomForest rf= new RandomForest();
@@ -449,7 +443,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     }
 
     public void setRandSeed(int seed){
-        this.setSeed = true;
         this.seed = seed;
     }
 
@@ -1387,7 +1380,8 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     }
 
     /**
-     * This method would build all the results files leading up to figure 3,
+     * This method would build all the results files leading up to figure 3 of 
+     * https://link.springer.com/article/10.1007/s10618-019-00638-y,
      * the heterogeneous ensemble comparison on the basic classifiers.
      *
      * It would take a long time to run, almost all of which is comprised of
@@ -1416,7 +1410,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest006/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest007/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
