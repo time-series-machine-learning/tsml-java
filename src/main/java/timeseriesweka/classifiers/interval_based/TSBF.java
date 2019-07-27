@@ -25,7 +25,7 @@ import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import vector_classifiers.TunedRandomForest;
+import weka_uea.classifiers.tuned.TunedRandomForest;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

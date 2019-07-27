@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.SubSampleTrain;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -39,6 +38,7 @@ import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
+import timeseriesweka.classifiers.SubSampleTrainer;
 
 /**
  * Development code for RISE
@@ -94,7 +94,7 @@ import weka.filters.SimpleFilter;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrain, Randomizable,TechnicalInformationHandler{
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrainer, Randomizable,TechnicalInformationHandler{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */    

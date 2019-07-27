@@ -24,18 +24,18 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
-import vector_classifiers.SaveEachParameter;
+import weka_uea.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /* 
 This classifier does the full 101 parameter searches for window. 
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -62,7 +62,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
         saveEachParaAcc=b;
     }
  @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainPath=train;
     }  
     @Override

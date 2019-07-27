@@ -40,12 +40,12 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import vector_classifiers.CAWPE;
-import vector_classifiers.ensembles.SaveableEnsemble;
-import vector_classifiers.TunedRandomForest;
+import weka_uea.classifiers.ensembles.CAWPE;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
+import weka_uea.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * 
@@ -252,8 +252,8 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(c instanceof TrainAccuracyEstimate)
-            ((TrainAccuracyEstimate)c).writeCVTrainToFile(preds+"/trainFold"+sample+".csv");
+        if(c instanceof TrainAccuracyEstimator)
+            ((TrainAccuracyEstimator)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              

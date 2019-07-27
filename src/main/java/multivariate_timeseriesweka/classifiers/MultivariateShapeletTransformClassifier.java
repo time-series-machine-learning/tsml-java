@@ -27,18 +27,16 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
-import vector_classifiers.CAWPE;
+import weka_uea.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
-import vector_classifiers.ensembles.voting.MajorityConfidence;
-import vector_classifiers.ensembles.weightings.TrainAcc;
+import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
+import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -48,6 +46,7 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *
@@ -57,7 +56,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements HiveCoteModule, SaveParameterInfo, TrainAccuracyEstimate, TrainTimeContractable, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements SaveParameterInfo, TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
@@ -118,8 +117,8 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
 
     @Override
-    public void writeCVTrainToFile(String train) {
-        ensemble.writeCVTrainToFile(train);
+    public void writeTrainEstimatesToFile(String train) {
+        ensemble.writeTrainEstimatesToFile(train);
     }
 @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){
@@ -145,13 +144,13 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
     
     @Override
-    public double getEnsembleCvAcc() {
-        return ensemble.getEnsembleCvAcc();
+    public double getTrainAcc() {
+        return ensemble.getTrainAcc();
     }
 
     @Override
-    public double[] getEnsembleCvPreds() {
-        return ensemble.getEnsembleCvPreds();
+    public double[] getTrainPreds() {
+        return ensemble.getTrainPreds();
     }
     
     public void doSTransform(boolean b){

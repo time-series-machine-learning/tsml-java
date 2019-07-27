@@ -431,7 +431,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
     protected void inputCheck(Instances dataInst) throws IllegalArgumentException {
         if (numShapelets < 1) {
-            throw new IllegalArgumentException("Number of shapelets initialised incorrectly - please select value of k (Usage: setNumberOfShapelets");
+            throw new IllegalArgumentException("Number of shapelets initialised incorrectly to "+numShapelets+" - please select value of k (Usage: setNumberOfShapelets");
         }
 
         int maxPossibleLength;

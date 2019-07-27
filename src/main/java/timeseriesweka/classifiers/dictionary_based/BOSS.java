@@ -19,7 +19,6 @@ import java.util.*;
 
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.MemoryContractable;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,6 +44,7 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
@@ -60,7 +60,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
@@ -342,7 +342,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
     }
 
     @Override
-    public void writeCVTrainToFile(String outputPathAndName){
+    public void writeTrainEstimatesToFile(String outputPathAndName){
         trainCVPath = outputPathAndName;
         trainCV = true;
     }
@@ -1164,7 +1164,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return result;
     }
 
-    public double getEnsembleCvAcc(){
+    public double getTrainAcc(){
         if(ensembleCvAcc>=0){
             return this.ensembleCvAcc;
         }
@@ -1177,7 +1177,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements HiveCote
         return -1;
     }
 
-    public double[] getEnsembleCvPreds(){
+    public double[] getTrainPreds(){
         if(this.ensembleCvPreds==null){
             try{
                 this.findEnsembleTrainAcc(train);

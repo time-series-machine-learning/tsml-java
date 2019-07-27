@@ -39,14 +39,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import utilities.ClassifierTools;
-import utilities.BitWord;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.dictionary_based.BitWord;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -64,7 +64,7 @@ import experiments.data.DatasetLoading;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -245,7 +245,7 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }

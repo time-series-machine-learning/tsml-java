@@ -14,6 +14,8 @@
  */
 package experiments;
 
+import weka_uea.classifiers.SaveEachParameter;
+import weka_uea.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
@@ -24,8 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -46,13 +45,11 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import utilities.InstanceTools;
-import vector_classifiers.ensembles.SaveableEnsemble;
-import static utilities.GenericTools.indexOfMax;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import static utilities.InstanceTools.shortenInstances;
 
-import utilities.multivariate_tools.MultivariateInstanceTools;
-import vector_classifiers.*;
 import weka.core.Instances;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
@@ -534,7 +531,7 @@ public class Experiments  {
             
             //Write train results
             if (expSettings.generateErrorEstimateOnTrainSet) {
-                if (!(classifier instanceof TrainAccuracyEstimate)) {
+                if (!(classifier instanceof TrainAccuracyEstimator)) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
@@ -564,7 +561,7 @@ public class Experiments  {
                         testResults.turnOffZeroTimingsErrors();
                         testResults.setBenchmarkTime(testBenchmark);
 
-                        if (classifier instanceof TrainAccuracyEstimate) {
+                        if (classifier instanceof TrainAccuracyEstimator) {
                             //if this classifier is recording it's own results, use the build time it found
                             //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time
                             //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
@@ -572,7 +569,7 @@ public class Experiments  {
                             //the i/o time for reading in the modules' results, + the ensemble scheme time
                             //therefore the general assumption here is that the classifier knows its own buildtime
                             //better than we do here
-                            testResults.setBuildTime(((TrainAccuracyEstimate) classifier).getTrainResults().getBuildTime());
+                            testResults.setBuildTime(((TrainAccuracyEstimator) classifier).getTrainResults().getBuildTime());
                         } else {
                             //else use the buildtime calculated here in experiments
                             testResults.setBuildTime(buildTime);
@@ -630,9 +627,9 @@ public class Experiments  {
     private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
         ClassifierResults trainResults = null;
         
-        if (classifier instanceof TrainAccuracyEstimate) { 
+        if (classifier instanceof TrainAccuracyEstimator) {
             //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimate) classifier).writeCVTrainToFile(fullTrainWritingPath);
+            ((TrainAccuracyEstimator) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
             File f = new File(fullTrainWritingPath);
             if (f.exists())
                 f.setWritable(true, false);
@@ -643,52 +640,52 @@ public class Experiments  {
             //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
             String[] parts = exp.trainEstimateMethod.split("_");
             String method = parts[0];
-
+            
             String para = null;
-            if (parts.length > 1)
+            if (parts.length > 1) 
                 para = parts[1];
-
+            
             long estimateTimeStart = System.nanoTime();
-
+                    
             switch (method) {
                 case "cv":
-                case "CV":
+                case "CV": 
                 case "CrossValidationEvaluator":
                     int numFolds = Experiments.numCVFolds;
                     if (para != null)
                         numFolds = Integer.parseInt(para);
                     numFolds = Math.min(train.numInstances(), numFolds);
-
+                    
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
                     cv.setSeed(fold);
                     cv.setNumFolds(numFolds);
                     trainResults = cv.crossValidateWithStats(classifier, train);
                     break;
-
+                
                 case "hov":
                 case "HOV":
                 case "SingleTestSetEvaluator":
                     double trainProp = DatasetLoading.getProportionKeptForTraining();
                     if (para != null)
                         trainProp = Double.parseDouble(para);
-
+                    
                     Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
                     classifier.buildClassifier(trainVal[0]);
-
+                    
                     SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
                     hov.setSeed(fold);
                     trainResults = hov.evaluate(classifier, trainVal[1]);
                     break;
-
+                  
                 default:
                     throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
             }
-
+            
             long estimateTime = System.nanoTime() - estimateTimeStart;
-
+                    
             trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
             trainResults.setErrorEstimateTime(estimateTime);
-            trainResults.setBenchmarkTime(trainBenchmark);
+            trainResults.setBenchmarkTime(trainBenchmark);      
         }
         
         return trainResults;

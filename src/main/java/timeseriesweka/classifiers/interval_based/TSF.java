@@ -26,7 +26,6 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;
@@ -41,6 +40,7 @@ import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /** 
   <!-- globalinfo-start -->
@@ -108,7 +108,8 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
+public class TSF extends AbstractClassifierWithTrainingInfo 
+        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -204,7 +205,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
  * @param train 
  */    
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainAccuracyEst=true;
     }
@@ -726,7 +727,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
-        tsf.writeCVTrainToFile(resultsLocation+problem+"trainFold0.csv");
+        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);

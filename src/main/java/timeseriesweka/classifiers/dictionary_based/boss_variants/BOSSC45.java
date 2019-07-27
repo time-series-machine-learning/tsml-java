@@ -38,9 +38,8 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
-import utilities.BitWord;
+import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.classifiers.trees.J48;
@@ -49,6 +48,7 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
  
 /**
  * BOSS + C45 tree classifier with parameter search and ensembling, if parameters are 
@@ -72,7 +72,7 @@ import weka.core.Instances;
  * BOSS implementation based on the algorithm described in getTechnicalInformation()
  * C45 done using the WEKA implementation 'weka.classifiers.trees.J48'
  */
-public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -252,7 +252,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }

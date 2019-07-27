@@ -25,7 +25,6 @@ import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
@@ -38,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformationHandler;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * WEASEL Classifier
@@ -45,7 +45,7 @@ import weka.core.TechnicalInformationHandler;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, TrainAccuracyEstimate,TechnicalInformationHandler {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,TechnicalInformationHandler {
 
   @Override
   public TechnicalInformation getTechnicalInformation() {
@@ -91,7 +91,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   boolean setSeed=false;
 
   @Override
-  public void writeCVTrainToFile(String outputPathAndName) {
+  public void writeTrainEstimatesToFile(String outputPathAndName) {
     trainCVPath=outputPathAndName;
     trainCV=true;
   }
@@ -437,12 +437,12 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
 
 
   @Override
-  public double getEnsembleCvAcc() {
+  public double getTrainAcc() {
     return 0;
   }
 
   @Override
-  public double[] getEnsembleCvPreds() {
+  public double[] getTrainPreds() {
     return new double[0];
   }
 
