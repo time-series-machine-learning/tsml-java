@@ -40,10 +40,19 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         super(seed, cloneData, setClassMissing);
     }
 
+    public double getPropInstancesInTrain() {
+        return propInstancesInTrain;
+    }
+
+    public void setPropInstancesInTrain(double propInstancesInTrain) {
+        this.propInstancesInTrain = propInstancesInTrain;
+    }
+    
     @Override
     public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         Instances[] trainTest = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
         
+        long estimateTime = System.nanoTime();
         long buildTime = System.nanoTime();
         classifier.buildClassifier(trainTest[0]);
         buildTime = System.nanoTime() - buildTime;
@@ -53,6 +62,7 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         
         //eval should have set everything else 
         res.setBuildTime(buildTime);
+        res.setErrorEstimateTime(System.nanoTime() - estimateTime);
         
         return res;
     }

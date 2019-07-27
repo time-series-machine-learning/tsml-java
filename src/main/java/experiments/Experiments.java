@@ -34,10 +34,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleSampleEvaluator;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
 import experiments.data.DatasetLoading;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -638,50 +640,66 @@ public class Experiments  {
             String[] parts = exp.trainEstimateMethod.split("_");
             String method = parts[0];
             
-            String para = null;
+            String para1 = null;
             if (parts.length > 1) 
-                para = parts[1];
+                para1 = parts[1];
             
-            long estimateTimeStart = System.nanoTime();
-                    
+            String para2 = null;
+            if (parts.length > 2) 
+                para2 = parts[2];
+            
             switch (method) {
                 case "cv":
                 case "CV": 
                 case "CrossValidationEvaluator":
-                    int numFolds = Experiments.numCVFolds;
-                    if (para != null)
-                        numFolds = Integer.parseInt(para);
-                    numFolds = Math.min(train.numInstances(), numFolds);
+                    int numCVFolds = Experiments.numCVFolds;
+                    if (para1 != null)
+                        numCVFolds = Integer.parseInt(para1);
+                    numCVFolds = Math.min(train.numInstances(), numCVFolds);
                     
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
                     cv.setSeed(fold);
-                    cv.setNumFolds(numFolds);
+                    cv.setNumFolds(numCVFolds);
                     trainResults = cv.crossValidateWithStats(classifier, train);
                     break;
                 
                 case "hov":
                 case "HOV":
                 case "SingleTestSetEvaluator":
-                    double trainProp = DatasetLoading.getProportionKeptForTraining();
-                    if (para != null)
-                        trainProp = Double.parseDouble(para);
+                    double trainPropHov = DatasetLoading.getProportionKeptForTraining();
+                    if (para1 != null)
+                        trainPropHov = Double.parseDouble(para1);
                     
-                    Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
-                    classifier.buildClassifier(trainVal[0]);
-                    
-                    SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
+                    SingleSampleEvaluator hov = new SingleSampleEvaluator();
                     hov.setSeed(fold);
-                    trainResults = hov.evaluate(classifier, trainVal[1]);
+                    hov.setPropInstancesInTrain(trainPropHov);
+                    trainResults = hov.evaluate(classifier, train);
+                    break;
+                    
+                case "sr":
+                case "SR":
+                case "StratifiedResamplesEvaluator":
+                    int numSRFolds = 30;
+                    if (para1 != null)
+                        numSRFolds = Integer.parseInt(para1);
+                                
+                    double trainPropSRR = DatasetLoading.getProportionKeptForTraining();
+                    if (para2 != null)
+                        trainPropSRR = Double.parseDouble(para2);
+                    
+                    StratifiedResamplesEvaluator srr = new StratifiedResamplesEvaluator();
+                    srr.setSeed(fold);
+                    srr.setNumFolds(numSRFolds);
+                    srr.setUseEachResampleIdAsSeed(true);
+                    srr.setPropInstancesInTrain(trainPropSRR);
+                    trainResults = srr.evaluate(classifier, train);
                     break;
                   
                 default:
                     throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
             }
-            
-            long estimateTime = System.nanoTime() - estimateTimeStart;
                     
             trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
-            trainResults.setErrorEstimateTime(estimateTime);
             trainResults.setBenchmarkTime(trainBenchmark);      
         }
         

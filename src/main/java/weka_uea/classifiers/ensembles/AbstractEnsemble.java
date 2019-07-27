@@ -243,6 +243,12 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
                 module.trainResults = ((TrainAccuracyEstimator)module.getClassifier()).getTrainResults();
                 module.trainResults.finaliseResults();
                 
+                // TODO: should errorEstimateTime be forced to zero? by the intention of the interface,
+                // the estimate should have been produced during the normal process of building
+                // the classifier, but depending on how it was programmatically produced, 
+                // the reported estimate time may have already been accounted for in the 
+                // build time. Investigate when use cases arise
+                
                 if (writeIndividualsResults) { //if we're doing trainFold# file writing
                     String params = module.getParameters();
                     if (module.getClassifier() instanceof SaveParameterInfo)
