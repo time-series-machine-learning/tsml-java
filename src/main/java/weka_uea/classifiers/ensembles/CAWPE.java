@@ -134,6 +134,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
 
     protected boolean performEnsembleCV = true;
     protected CrossValidationEvaluator cv = null;
+    
     protected ClassifierResults ensembleTrainResults = null;//data generated during buildclassifier if above = true
     protected ClassifierResults ensembleTestResults = null;//data generated during testing
 
@@ -190,12 +191,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     protected String ensembleName = "CAWPE";
     protected int resampleIdentifier;
     protected String datasetName;
-
-    protected int numCVFolds = 10;
-
-    public void setNumCVFolds(int i){
-        numCVFolds = i;
-    }
 
     public CAWPE() {
         this.ensembleName = "CAWPE";
@@ -444,7 +439,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
     }
 
     @Override
-    public void buildClassifier(Instances data) throws Exception {
+    public void buildClassifier(Instances data) throws Exception {        
         printlnDebug("**CAWPE TRAIN**");
         
         long startTime = System.nanoTime();
@@ -528,7 +523,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
             cv = new CrossValidationEvaluator();
             if (setSeed)
                 cv.setSeed(seed);
-            cv.setNumFolds(numCVFolds);
+            cv.setNumFolds(10);
             cv.buildFolds(trainInsts);
         }
 
@@ -734,45 +729,29 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         if (b)
             readIndividualsResults = false;
     }
-
+    
     protected ClassifierResults crossValidateEnsemble(Instances data) throws Exception {
-        double[] accPerFold = new double[cv.getNumFolds()]; //for variance
-
-        double actual, pred, correct = 0;
+        double actual, pred;
         double[] dist;
 
         ClassifierResults trainResults = new ClassifierResults(data.numClasses());
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
         //for each train inst
-        for (int fold = 0; fold < cv.getNumFolds(); fold++) {
-            for (int i = 0; i < cv.getFoldIndices().get(fold).size(); i++) {
-                int instIndex = cv.getFoldIndices().get(fold).get(i);
+        for (int i = 0; i < numTrainInsts; i++) {
+            long startTime = System.nanoTime();
+            dist = votingScheme.distributionForTrainInstance(modules, i);
+            long predTime = System.nanoTime()- startTime; //time for ensemble to form vote
+            for (EnsembleModule module : modules) //                 +time for each member's predictions
+                predTime += module.trainResults.getPredictionTime(i);
 
-                long startTime = System.nanoTime();
-                dist = votingScheme.distributionForTrainInstance(modules, instIndex);
-                long predTime = System.nanoTime()- startTime; //time for ensemble to form vote
-                for (EnsembleModule module : modules) //                 +time for each member's predictions
-                    predTime += module.trainResults.getPredictionTime(instIndex);
-                
-                pred = utilities.GenericTools.indexOfMax(dist);
-                actual = data.instance(instIndex).classValue();
-                
-                trainResults.turnOffZeroTimingsErrors();
-                trainResults.addPrediction(actual, dist, pred, predTime, "");
-                trainResults.turnOnZeroTimingsErrors();
-                
-                if(pred==actual) {
-                    correct++;
-                    accPerFold[fold]++;
-                }
-            }
+            pred = utilities.GenericTools.indexOfMax(dist);
+            actual = data.instance(i).classValue();
 
-            accPerFold[fold] /= cv.getFoldIndices().get(fold).size();
+            trainResults.turnOffZeroTimingsErrors();
+            trainResults.addPrediction(actual, dist, pred, predTime, "");
+            trainResults.turnOnZeroTimingsErrors();
         }
-
-        double acc = correct/numTrainInsts;
-        double stddevOverFolds = StatisticalUtilities.standardDeviation(accPerFold, false, acc);
 
         trainResults.setClassifierName(ensembleName);
         if (datasetName == null || datasetName.equals(""))
@@ -782,7 +761,6 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         trainResults.setSplit("train");
         trainResults.setParas(getParameters());
         
-        trainResults.stddev = stddevOverFolds;
         trainResults.finaliseResults();
         
         return trainResults;
@@ -1441,7 +1419,7 @@ public class CAWPE extends AbstractClassifier implements SaveParameterInfo, Debu
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest001/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest003/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
