@@ -48,8 +48,7 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         classifier.buildClassifier(trainTest[0]);
         buildTime = System.nanoTime() - buildTime;
         
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
-        eval.setSeed(seed);
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(this.seed, this.cloneData, this.setClassMissing);
         ClassifierResults res = eval.evaluate(classifier, trainTest[1]);
         
         //eval should have set everything else 

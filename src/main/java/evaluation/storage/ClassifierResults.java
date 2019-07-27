@@ -129,7 +129,7 @@ import utilities.InstanceTools;
  * @date 19/02/19
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
-        
+       
 //LINE 1: meta info, set by user
     private String classifierName = "";
     private String datasetName = "";
@@ -2044,6 +2044,63 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw e;
         }
     }
+    
+    
+    
+    /**
+     * Concatenates the predictions of classifiers made on different folds on the data
+     * into one results object
+     *
+     * If ClassifierResults ever gets split into separate classes for prediction and meta info,
+     * this obviously gets cleaned up a lot
+     *
+     * @param cresults ClassifierResults[fold]
+     * @return         single ClassifierResults object
+     */
+    public static ClassifierResults concatenateClassifierResults( /*fold*/ ClassifierResults[] cresults) throws Exception {
+        return concatenateClassifierResults(new ClassifierResults[][]{cresults})[0];
+    }
+
+    /**
+     * Concatenates the predictions of classifiers made on different folds on the data
+     * into one results object per classifier.
+     *
+     * If ClassifierResults ever gets split into separate classes for prediction and meta info,
+     * this obviously gets cleaned up a lot
+     *
+     * @param cresults ClassifierResults[classifier][fold]
+     * @return         ClassifierResults[classifier]
+     */
+    public static ClassifierResults[] concatenateClassifierResults( /*classiifer*/ /*fold*/ ClassifierResults[][] cresults) throws Exception {
+        ClassifierResults[] concatenatedResults = new ClassifierResults[cresults.length];
+        for (int classifierid = 0; classifierid < cresults.length; classifierid++) {
+            if (cresults[classifierid].length == 1) {
+                concatenatedResults[classifierid] = cresults[classifierid][0];
+            } else {
+                ClassifierResults newCres = new ClassifierResults();
+                for (int foldid = 0; foldid < cresults[classifierid].length; foldid++) {
+                    ClassifierResults foldCres = cresults[classifierid][foldid];
+                    for (int predid = 0; predid < foldCres.numInstances(); predid++) {
+                        newCres.addPrediction(foldCres.getTrueClassValue(predid), foldCres.getProbabilityDistribution(predid), foldCres.getPredClassValue(predid), foldCres.getPredictionTime(predid), foldCres.getPredDescription(predid));
+                        // TODO previously didnt copy of pred times and predictions
+                        // not sure if there was any particular reason why i didnt,
+                        // aside from saving space?
+                    }
+                }
+                concatenatedResults[classifierid] = newCres;
+            }
+        }
+        return concatenatedResults;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     public static void main(String[] args) throws Exception {
         readWriteTest();

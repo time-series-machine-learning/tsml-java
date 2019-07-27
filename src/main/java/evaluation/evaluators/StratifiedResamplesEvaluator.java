@@ -15,6 +15,7 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
@@ -35,6 +36,22 @@ import weka.core.Instances;
 public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
     double propInstancesInTrain;
     
+    /**
+     * If true, the seeds used to generate each resample shall simply be id 
+     * of the resample in the loop, i.e. the values 0 to numFolds-1
+     * 
+     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This also means that the seed of this StratifiedResamplesEvaluator object
+     * has no real use, aside from it would be stored as the fold id in the meta data
+     * of the concatenated results object. 
+     * 
+     * Otherwise if false, the data resample seeds shall be randomly generated 
+     * via the seed of this object. So still reproducable, but likely not aligned with  
+     * resamples produced semi manually by just looping over numFolds and using i 
+     * as the seed
+     */
+    boolean useEachResampleIdAsSeed;
+    
     public StratifiedResamplesEvaluator() {
         super(0,false,false,false,false);
         
@@ -48,7 +65,43 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         this.numFolds = 30;
         this.propInstancesInTrain = 0.5;
     }
-
+    
+    /**
+     * If true, the seeds used to generate each resample shall simply be id 
+     * of the resample in the loop, i.e. the values 0 to numFolds-1
+     * 
+     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This also means that the seed of this StratifiedResamplesEvaluator object
+     * has no real use, aside from it would be stored as the fold id in the meta data
+     * of the concatenated results object. 
+     * 
+     * Otherwise if false, the data resample seeds shall be randomly generated 
+     * via the seed of this object. So still reproducable, but likely not aligned with  
+     * resamples produced semi manually by just looping over numFolds and using i 
+     * as the seed
+     */
+    public boolean getUseEachResampleIdAsSeed() { 
+        return useEachResampleIdAsSeed;
+    }
+        
+    /**
+     * If true, the seeds used to generate each resample shall simply be id 
+     * of the resample in the loop, i.e. the values 0 to numFolds-1
+     * 
+     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This also means that the seed of this StratifiedResamplesEvaluator object
+     * has no real use, aside from it would be stored as the fold id in the meta data
+     * of the concatenated results object. 
+     * 
+     * Otherwise if false, the data resample seeds shall be randomly generated 
+     * via the seed of this object. So still reproducable, but likely not aligned with  
+     * resamples produced semi manually by just looping over numFolds and using i 
+     * as the seed
+     */
+    public void setUseEachResampleIdAsSeed(boolean useEachResampleIdAsSeed) { 
+        this.useEachResampleIdAsSeed = useEachResampleIdAsSeed;
+    }
+    
     public double getPropInstancesInTrain() {
         return propInstancesInTrain;
     }
@@ -112,52 +165,100 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
-        ClassifierResults[] concatenatedResamplesResults = new ClassifierResults[classifiers.length] ;
+        ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length] ;
         
         for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
             
-            ClassifierResults concResults = new ClassifierResults(dataset.numClasses());
-            concResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            concResults.turnOffZeroTimingsErrors();
+            //rebuild for each classifier so resamples are aligned
+            //ignored if useEachResampleIdAsSeed == true
+            Random classifierRng = new Random(seed); 
+            
+            long estimateTimeStart = System.nanoTime();
             
             for (int fold = 0; fold < numFolds; fold++) {
-                Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
-
                 Classifier foldClassifier = classifiers[classifierIndex];
                 if (cloneClassifiers)
                     //use the clone instead
                     foldClassifier = foldClassifiers[classifierIndex][fold];
                 
-                foldClassifier.buildClassifier(resampledData[0]);
-                ClassifierResults foldResults = new ClassifierResults(dataset.numClasses());
-                foldResults.setTimeUnit(TimeUnit.NANOSECONDS);
-                foldResults.turnOffZeroTimingsErrors();
-
-                //todo, implement this loop via SingleTestSetEvluator            
-                for (Instance testInst : resampledData[1]) {
-                    double classVal = testInst.classValue(); //save in case we're deleting next line
-                    if (setClassMissing)
-                        testInst.setClassMissing();
-
-                    long startTime = System.nanoTime();
-                    double[] dist = foldClassifier.distributionForInstance(testInst);
-                    long predTime = System.nanoTime()- startTime;
-
-                    foldResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-                    concResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-                }
-
-                foldResults.turnOnZeroTimingsErrors();
-                foldResults.findAllStatsOnce(); 
-                
-                resultsPerFold[classifierIndex][fold] = foldResults;
+                int resampleSeed = useEachResampleIdAsSeed ? fold : classifierRng.nextInt();
+                    
+                SingleSampleEvaluator eval = new SingleSampleEvaluator(resampleSeed, this.cloneData, this.setClassMissing);
+                resultsPerFold[classifierIndex][fold] = eval.evaluate(foldClassifier, dataset);
             }
             
-            concResults.turnOnZeroTimingsErrors();
-            concatenatedResamplesResults[classifierIndex] = concResults;
+            long estimateTime = System.nanoTime() - estimateTimeStart;
+            
+            ClassifierResults concatenatedClassifierRes = ClassifierResults.concatenateClassifierResults(resultsPerFold[classifierIndex]);
+            concatenatedClassifierRes.setTimeUnit(TimeUnit.NANOSECONDS);
+            concatenatedClassifierRes.setClassifierName(classifiers[classifierIndex].getClass().getSimpleName());
+            concatenatedClassifierRes.setDatasetName(dataset.relationName());
+            concatenatedClassifierRes.setFoldID(seed);
+            concatenatedClassifierRes.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
+            
+            concatenatedClassifierRes.setErrorEstimateTime(estimateTime);
+            
+            allConcatenatedClassifierRes[classifierIndex] = concatenatedClassifierRes;
         }
    
-        return concatenatedResamplesResults;
+        return allConcatenatedClassifierRes;
     }
+    
+    
+//    public ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
+//        if (cloneData)
+//            dataset = new Instances(dataset);
+//        if (cloneClassifiers)
+//            cloneClassifiers(classifiers);
+//        
+//        resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
+//        
+//        ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length] ;
+//        
+//        for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
+//            
+//            ClassifierResults concatenatedClassifierRes = new ClassifierResults(dataset.numClasses());
+//            concatenatedClassifierRes.setTimeUnit(TimeUnit.NANOSECONDS);
+//            concatenatedClassifierRes.turnOffZeroTimingsErrors();
+//            
+//            for (int fold = 0; fold < numFolds; fold++) {
+//                Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
+//
+//                Classifier foldClassifier = classifiers[classifierIndex];
+//                if (cloneClassifiers)
+//                    //use the clone instead
+//                    foldClassifier = foldClassifiers[classifierIndex][fold];
+//                
+//                foldClassifier.buildClassifier(resampledData[0]);
+//                ClassifierResults foldResults = new ClassifierResults(dataset.numClasses());
+//                foldResults.setTimeUnit(TimeUnit.NANOSECONDS);
+//                foldResults.turnOffZeroTimingsErrors();
+//
+//                //todo, implement this loop via SingleTestSetEvluator            
+//                for (Instance testInst : resampledData[1]) {
+//                    double classVal = testInst.classValue(); //save in case we're deleting next line
+//                    if (setClassMissing)
+//                        testInst.setClassMissing();
+//
+//                    long startTime = System.nanoTime();
+//                    double[] dist = foldClassifier.distributionForInstance(testInst);
+//                    long predTime = System.nanoTime()- startTime;
+//
+//                    foldResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+//                    concatenatedClassifierRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+//                }
+//
+//                foldResults.turnOnZeroTimingsErrors();
+//                foldResults.findAllStatsOnce(); 
+//                
+//                resultsPerFold[classifierIndex][fold] = foldResults;
+//            }
+//            
+//            concatenatedClassifierRes.turnOnZeroTimingsErrors();
+//            allConcatenatedClassifierRes[classifierIndex] = concatenatedClassifierRes;
+//        }
+//   
+//        return allConcatenatedClassifierRes;
+//    }
 }
 
