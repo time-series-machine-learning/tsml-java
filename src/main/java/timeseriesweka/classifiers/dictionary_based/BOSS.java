@@ -256,6 +256,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         }
     }
 
+    @Override
+    public int getNumUtilisableThreads() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     //Set the path where checkpointed versions will be stored
     @Override
     public void setSavePath(String path){
