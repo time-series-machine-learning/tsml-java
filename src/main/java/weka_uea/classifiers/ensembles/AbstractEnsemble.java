@@ -298,14 +298,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             // the classifier, but depending on how it was programmatically produced, 
             // the reported estimate time may have already been accounted for in the 
             // build time. Investigate when use cases arise
-
-            if (writeIndividualsResults) { //if we're doing trainFold# file writing
-                String params = module.getParameters();
-                if (module.getClassifier() instanceof SaveParameterInfo)
-                    params = ((SaveParameterInfo)module.getClassifier()).getParameters();
-                writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
-                printlnDebug(module.getModuleName() + " writing train file data gotten through TrainAccuracyEstimate...");
-            }
         }
         else {
             printlnDebug(module.getModuleName() + " estimateing performance...");
@@ -318,11 +310,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             module.getClassifier().buildClassifier(trainInsts);
             module.trainResults.setBuildTime(System.nanoTime() - startTime);
             module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-
-            if (writeIndividualsResults) { //if we're doing trainFold# file writing
-                writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
-                printlnDebug(module.getModuleName() + " writing train file with full preds from scratch...");
-            }
         }
     }
     
@@ -334,16 +321,17 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     }
     
     protected void trainModules() throws Exception {
-        if (!multiThread)
-            for (EnsembleModule module : modules) 
+        if (!multiThread) {
+            for (EnsembleModule module : modules)
                 trainModule(module, 1);
+        }
         else {
             int[] threadsPerClassifier = new int[modules.length];
-            int threadsRemaining = numThreads;
-            for (int t : threadsPerClassifier) {
+            for (int t : threadsPerClassifier)
                 t = 1;
-                threadsRemaining--;
-            }
+            
+            //can legitimately be negative, e.g. 5 base classifiers but 3 threads given
+            int threadsRemaining = numThreads - modules.length;
             
             if (this.hasThreadableBaseClassifiers()) {
                 //spread any extra threads remaining evenly among threadable base classifiers
@@ -379,6 +367,16 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
 
             executor.shutdown();
             while (!executor.isTerminated()) {
+            }
+        }
+        
+        for (EnsembleModule module : modules) {
+            if (writeIndividualsResults) { //if we're doing trainFold# file writing
+                String params = module.getParameters();
+                if (module.getClassifier() instanceof SaveParameterInfo)
+                    params = ((SaveParameterInfo)module.getClassifier()).getParameters();
+                writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
+                printlnDebug(module.getModuleName() + " writing train file data gotten through TrainAccuracyEstimate...");
             }
         }
     }
@@ -997,7 +995,16 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         }
     }
 
-    
+    @Override //MultiThreadable
+    public int getNumUtilisableThreads() {
+        int nThreads = modules.length;
+        for (EnsembleModule module : modules)
+            if (module.getClassifier() instanceof MultiThreadable)
+                nThreads += ((MultiThreadable) module.getClassifier()).getNumUtilisableThreads();
+            
+        //todo update for evaluator threads if really wanted
+        return nThreads;
+    }
     
     
     
