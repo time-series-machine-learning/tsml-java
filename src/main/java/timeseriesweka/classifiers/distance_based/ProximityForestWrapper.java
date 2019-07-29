@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package timeseriesweka.classifiers.distance_based.proximity_forest;
+package timeseriesweka.classifiers.distance_based;
 
 import core.AppContext;
 import core.contracts.Dataset;
@@ -81,7 +81,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ProximityForestWeka extends AbstractClassifier {
+public class ProximityForestWrapper extends AbstractClassifier {
 
     //from paper, pg18-19: 
     /*
@@ -102,7 +102,7 @@ public class ProximityForestWeka extends AbstractClassifier {
     private int numClasses;
     Instances header;
     
-    public ProximityForestWeka() { 
+    public ProximityForestWrapper() { 
     }
 
     public int getNum_trees() {

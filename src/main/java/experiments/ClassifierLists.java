@@ -39,12 +39,12 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
 import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.distance_based.FastWWS.FastDTWWrapper;
+import timeseriesweka.classifiers.distance_based.FastDTW;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.distance_based.proximity_forest.ProximityForestWeka;
+import timeseriesweka.classifiers.distance_based.ProximityForestWrapper;
 import weka_uea.classifiers.ensembles.CAWPE;
 import weka_uea.classifiers.PLSNominalClassifier;
 import weka_uea.classifiers.tuned.TunedXGBoost;
@@ -110,7 +110,7 @@ public class ClassifierLists {
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
             case "ProximityForest":
-                c = new ProximityForestWeka();
+                c = new ProximityForestWrapper();
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -272,7 +272,7 @@ public class ClassifierLists {
 //                ((FastDTW_1NN)c).optimiseWindow(true);
 //                break;
 //            case "FastDTWWrapper":
-                c= new FastDTWWrapper();
+                c= new FastDTW();
                 break;
             case "DD_DTW":
                 c=new DD_DTW();
