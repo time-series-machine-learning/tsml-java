@@ -312,16 +312,12 @@ public class ClassifierLists {
                 break;
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RBOSS":
                 c = new BOSS();
-                ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setMaxEnsembleSize(50);
-                ((BOSS) c).setRandomCVAccEnsemble(true);
-                ((BOSS) c).useCAWPE(true);
                 ((BOSS) c).setSeed(fold);
-                ((BOSS) c).setReduceTrainInstances(true);
-                ((BOSS) c).setTrainProportion(0.7);
+                ((BOSS) c).useRecommendedSettingsRBOSS();
                 break;
             case "WEASEL":
                 c = new WEASEL();

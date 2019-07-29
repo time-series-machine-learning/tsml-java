@@ -18,7 +18,8 @@ import java.security.InvalidParameterException;
 import java.util.*;
 
 import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.MemoryContractable;
+import timeseriesweka.classifiers.*;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -37,14 +38,10 @@ import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.Checkpointable;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
-import timeseriesweka.classifiers.TrainTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
@@ -60,19 +57,19 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler {
+public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
     private ArrayList<Double>[] paramMemory;
 
     private int ensembleSize = 50;
-    private int seed = 0;
     private int ensembleSizePerChannel = -1;
+    private int seed = 0;
     private Random rand;
     private boolean randomEnsembleSelection = false;
     private boolean randomCVAccEnsemble = false;
-    private boolean useCAWPE = false;
+    private boolean useWeights = false;
 
     private boolean useFastTrainEstimate = false;
     private int maxEvalPerClass = -1;
@@ -87,7 +84,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     private boolean stratifiedSubsample = false;
 
     private boolean cutoff = false;
-    private boolean loadAndFinish = false;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
     private int numSeries;
@@ -97,6 +93,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     private final int[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int[] alphabetSize = { 4 };
+    private final boolean[] normOptions = { true, false };
     private final double correctThreshold = 0.92;
     private int maxEnsembleSize = 500;
 
@@ -112,6 +109,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
     private boolean cleanupCheckpointFiles = true;
+    private boolean loadAndFinish = false;
 
     private long contractTime = 0;
     private boolean trainTimeContract = false;
@@ -193,13 +191,14 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         return sb.toString();
     }
 
-    public void useBestSettingsRBOSS(){
+    public void useRecommendedSettingsRBOSS(){
         ensembleSize = 250;
         maxEnsembleSize = 50;
         randomCVAccEnsemble = true;
-        useCAWPE = true;
+        useWeights = true;
         reduceTrainInstances = true;
         trainProportion = 0.7;
+        bayesianParameterSelection = true;
     }
 
     //pass in an enum of hour, minute, day, and the amount of them.
@@ -245,6 +244,18 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         memoryContract = true;
     }
 
+    @Override
+    public void setThreadAllowance(int numThreads) {
+        if (numThreads > 1) {
+            this.numThreads = numThreads;
+            multiThread = true;
+        }
+        else{
+            this.numThreads = 1;
+            multiThread = false;
+        }
+    }
+
     //Set the path where checkpointed versions will be stored
     @Override
     public void setSavePath(String path){
@@ -270,7 +281,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         rand = saved.rand;
         randomEnsembleSelection = saved.randomEnsembleSelection;
         randomCVAccEnsemble = saved.randomCVAccEnsemble;
-        useCAWPE = saved.useCAWPE;
+        useWeights = saved.useWeights;
         useFastTrainEstimate = saved.useFastTrainEstimate;
         maxEvalPerClass = saved.maxEvalPerClass;
         maxEval = saved.maxEval;
@@ -381,32 +392,12 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         randomCVAccEnsemble = b;
     }
 
-    public void useCAWPE(boolean b) {
-        useCAWPE = b;
+    public void useWeights(boolean b) {
+        useWeights = b;
     }
 
     public void setFastTrainEstimate(boolean b){
         useFastTrainEstimate = b;
-    }
-
-    public void setReduceTrainInstances(boolean b){
-        reduceTrainInstances = b;
-    }
-
-    public void setTrainProportion(double d){
-        trainProportion = d;
-    }
-
-    public void setCleanupCheckpointFiles(boolean b) {
-        cleanupCheckpointFiles = b;
-    }
-
-    public void setCutoff(boolean b) {
-        cutoff = b;
-    }
-
-    public void setMaxTrainInstances(int i){
-        maxTrainInstances = i;
     }
 
     public void setMaxEval(int i) {
@@ -417,6 +408,34 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         maxEvalPerClass = i;
     }
 
+    public void setReduceTrainInstances(boolean b){
+        reduceTrainInstances = b;
+    }
+
+    public void setTrainProportion(double d){
+        trainProportion = d;
+    }
+
+    public void setMaxTrainInstances(int i){
+        maxTrainInstances = i;
+    }
+
+    public void setCleanupCheckpointFiles(boolean b) {
+        cleanupCheckpointFiles = b;
+    }
+
+    public void setCutoff(boolean b) {
+        cutoff = b;
+    }
+
+    public void cleanupCheckpointFiles(boolean b){
+        cleanupCheckpointFiles = b;
+    }
+
+    public void loadAndFinish(boolean b) {
+        loadAndFinish = b;
+    }
+
     public void setMaxWinLenProportion(double d){
         maxWinLenProportion = d;
     }
@@ -425,7 +444,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         maxWinSearchProportion = d;
     }
 
-    public void setBayesianParameterSelection(boolean b) { bayesianParameterSelection = b; }
+    public void setBayesianParameterSelection(boolean b) {
+        bayesianParameterSelection = b;
+    }
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
@@ -587,14 +608,14 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
+            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
             boss.buildClassifier(data);
             boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
-            if (useCAWPE){
+            if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = 1;
             }
@@ -669,7 +690,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 0, true, multiThread, numThreads);
+            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, true, multiThread, numThreads);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -677,7 +698,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             classifiers[currentSeries].add(boss);
             numClassifiers[currentSeries]++;
 
-            if (useCAWPE){
+            if (useWeights){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = 1;
@@ -710,8 +731,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
             //the acc of the worst member to make it into the final ensemble as it stands
             double minMaxAcc = -1.0;
-
-            boolean[] normOptions = {true, false};
 
             for (boolean normalise : normOptions) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
@@ -845,7 +864,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             name += ("M" + maxEnsembleSize);
         }
 
-        if (useCAWPE){
+        if (useWeights){
             name += "W";
         }
 
@@ -876,11 +895,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         Instances[] parameterPool = new Instances[numSeries];
         ArrayList<double[]> possibleParameters = new ArrayList();
 
-        for (int normalise = 0; normalise < 2; normalise++) {
+        for (Boolean normalise: normOptions) {
             for (Integer alphSize : alphabetSize) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
                     for (Integer wordLen : wordLengths) {
-                        double[] parameters = {wordLen, alphSize, winSize, normalise};
+                        double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0};
                         possibleParameters.add(parameters);
                     }
                 }
@@ -1323,7 +1342,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         double accuracy;
 
         c = new BOSS();
-        c.useBestSettingsRBOSS();
+        c.useRecommendedSettingsRBOSS();
+        c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
@@ -1331,7 +1351,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
-        c.useBestSettingsRBOSS();
+        c.useRecommendedSettingsRBOSS();
+        c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
@@ -1339,7 +1360,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
-        c.useBestSettingsRBOSS();
+        c.useRecommendedSettingsRBOSS();
         c.setBayesianParameterSelection(true);
         c.setSeed(fold);
         c.buildClassifier(train);
@@ -1348,7 +1369,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
-        c.useBestSettingsRBOSS();
+        c.useRecommendedSettingsRBOSS();
         c.setBayesianParameterSelection(true);
         c.setSeed(fold);
         c.buildClassifier(train2);
@@ -1387,7 +1408,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         c = new BOSS();
         c.ensembleSize = 100;
         c.randomEnsembleSelection = true;
-        c.useCAWPE(true);
+        c.useWeights(true);
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
@@ -1399,7 +1420,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         c = new BOSS();
         c.ensembleSize = 100;
         c.randomEnsembleSelection = true;
-        c.useCAWPE(true);
+        c.useWeights(true);
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
