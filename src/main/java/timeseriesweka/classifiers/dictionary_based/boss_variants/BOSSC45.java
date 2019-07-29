@@ -28,6 +28,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.Capabilities;
@@ -656,7 +658,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
      * 
      * @author James Large
      */
-    public static class BOSSC45Individual extends BOSS.BOSSIndividual {
+    public static class BOSSC45Individual extends BOSSIndividual {
 
         public boolean buildBags = true;
         public boolean buildForest = true;
