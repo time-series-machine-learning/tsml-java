@@ -45,7 +45,7 @@ public class SingleTestSetEvaluator extends Evaluator {
     }
     
     @Override
-    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         Instances insts = null;
         if (cloneData)
             insts = new Instances(dataset);

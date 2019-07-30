@@ -79,13 +79,13 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     }
 
     @Override
-    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         ClassifierResults res = crossValidateWithStats(classifier, dataset);
         if (!REGRESSION_HACK) res.findAllStatsOnce();
         return res;
     }
     
-    public ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
         return crossValidateWithStats(new Classifier[] { classifier }, dataset)[0];
     }
     
@@ -103,7 +103,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
      * 
      * @return double[classifier][prediction]
      */
-    public ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
+    public synchronized ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
         
         if (folds == null || !previousRelationName.equals(dataset.relationName()))
             buildFolds(dataset);

@@ -49,7 +49,7 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
     }
     
     @Override
-    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         Instances[] trainTest = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
         
         long estimateTime = System.nanoTime();

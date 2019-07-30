@@ -139,7 +139,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * @throws Exception 
      */
     @Override
-    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         
         //todo revisit, suppose numFolds = 30, propInTrain = 0.5, numInstances = 20, 20 choose 10 = 184756 >>>>> 30...
 //        if (dataset.numInstances() <= numFolds) {
@@ -153,11 +153,11 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         return res;
     }
     
-    public ClassifierResults stratifiedResampleWithStats(Classifier classifier, Instances dataset) throws Exception {
+    public synchronized ClassifierResults stratifiedResampleWithStats(Classifier classifier, Instances dataset) throws Exception {
         return stratifiedResampleWithStats(new Classifier[] { classifier }, dataset)[0];
     }
     
-    public ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
+    public synchronized ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
         if (cloneData)
             dataset = new Instances(dataset);
         if (cloneClassifiers)
