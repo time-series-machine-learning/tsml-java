@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.TrainTimeContractable;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
@@ -70,7 +71,7 @@ import weka_uea.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class AbstractEnsemble extends AbstractClassifier implements SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, MultiThreadable {
+public abstract class AbstractEnsemble extends AbstractClassifier implements SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, MultiThreadable, TrainTimeContractable {
 
     //Main ensemble design decisions/variables
     protected String ensembleName;
@@ -105,9 +106,14 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected boolean writeIndividualsResults = false;
     protected boolean resultsFilesParametersInitialised;
     
-    //multithreadable
+    //MultiThreadable
     protected int numThreads = 1;
     protected boolean multiThread = false;
+    
+    //TrainTimeContractable
+    protected boolean contractingTrainTime = false;
+    protected long contractTrainTime = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
+    protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     
     /**
      * An annoying compromise to deal with base classfiers that dont produce dists 
@@ -148,6 +154,25 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         setupDefaultSettings();
     }
     
+    
+    /**
+     * Defines the default setup of any particular instantiation of this class, called in the
+     * constructor.
+     * 
+     * Minimum requirements for implementations of this method: 
+     *      - A default name for this ensemble, as a String (e.g. "CAWPE", "HIVE-COTE")
+     *      - A ModuleWeightingScheme. If classifiers do not need to be weighted,
+     *          use EqualWeighting.
+     *      - A ModuleVotingScheme, to define how the base classifier outputs should be 
+     *          combined. 
+     *      - An Evaluator, to define the method of performance estimation on the train 
+     *          set. If not required, either 
+     *              TODO: set a dummy evaluator that performs no real work
+     *              TODO: or leave as null, so long as the ModuleWeightingScheme does not require train estimates
+     *      - Classifiers and their names, passed to setClassifiers(...)
+     * 
+     * See CAWPE and HIVE-COTE for examples of particular instantiations of this method.
+     */
     public abstract void setupDefaultSettings();
     
     
@@ -1006,9 +1031,44 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         return nThreads;
     }
     
-    
-    
-    
+    /**
+     * Will split time given evenly among the contractable base classifiers. 
+     * 
+     * This is currently very naive, and likely innaccurate. Consider these TODO s
+     * 
+     *  1) If there are any non-contractable base classifiers, these are ignored in 
+     *      the contract setting. The full time is allocated among the contractable 
+     *      base classifiers, instead of trying to any wonky guessing of how long the 
+     *      non-contractable ones might take
+     *  2) Currently, generating accuracy estimates (if needed) is not considered in the contract.
+     *      If there are any non-TrainAccuracyEstimating classifiers, the estimation procedure (e.g.
+     *      a 10fold cv) will very likely overshoot the contract, since the classifier would be
+     *      trying to keep to contract on each fold and the full build individually, not in total. 
+     *  3) The contract currently does not consider whether the ensemble is being threaded,
+     *      i.e. even if it can run the building of two or more classifiers in parallel, 
+     *      this will still naively set the contract per classifier as amount/numClassifiers
+     */
+    @Override //TrainTimeContractable
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
+        contractingTrainTime=true;
+        contractTrainTime = amount;
+        contractTrainTimeUnit = time;
+        
+        int numContractableBaseClassifiers = 0;
+        
+        for (EnsembleModule module : modules) {
+            if(module.getClassifier() instanceof TrainTimeContractable)
+                numContractableBaseClassifiers++;
+            else 
+                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " is not contractable");
+        }
+        
+        long timePerClassifier = amount / numContractableBaseClassifiers;
+        
+        for (EnsembleModule module : modules)
+            if(module.getClassifier() instanceof TrainTimeContractable)
+                ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(time, timePerClassifier);
+    }
     
     public String produceEnsembleReport(boolean printPreds, boolean builtFromFile) {
         StringBuilder sb = new StringBuilder();

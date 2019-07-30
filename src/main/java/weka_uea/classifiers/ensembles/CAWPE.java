@@ -105,11 +105,139 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     }
     
     
-
     public CAWPE() {
         super();
     }
 
+
+    /**
+     * Uses the 'basic UCI' set up:
+     * Comps: SVML, MLP, NN, Logistic, C4.5
+     * Weight: TrainAcc(4) (train accuracies to the power 4)
+     * Vote: MajorityConfidence (summing probability distributions)
+     */
+    public final void setupDefaultSettings(){
+        this.ensembleName = "CAWPE";
+        
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        this.transform = null;
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
+
+        Classifier[] classifiers = new Classifier[5];
+        String[] classifierNames = new String[5];
+
+        SMO smo = new SMO();
+        smo.turnChecksOff();
+        smo.setBuildLogisticModels(true);
+        PolyKernel kl = new PolyKernel();
+        kl.setExponent(1);
+        smo.setKernel(kl);
+        smo.setRandomSeed(seed);
+        classifiers[0] = smo;
+        classifierNames[0] = "SVML";
+
+        kNN k=new kNN(100);
+        k.setCrossValidate(true);
+        k.normalise(false);
+        k.setDistanceFunction(new EuclideanDistance());
+        classifiers[1] = k;
+        classifierNames[1] = "NN";
+
+        classifiers[2] = new J48();
+        classifierNames[2] = "C4.5";
+
+        classifiers[3] = new Logistic();
+        classifierNames[3] = "Logistic";
+
+        classifiers[4] = new MultilayerPerceptron();
+        classifierNames[4] = "MLP";
+
+        setClassifiers(classifiers, classifierNames, null);
+    }
+
+    /**
+     * Uses the 'basic UCI' set up:
+     * Comps: SVML, MLP, NN, Logistic, C4.5
+     * Weight: TrainAcc(4) (train accuracies to the power 4)
+     * Vote: MajorityConfidence (summing probability distributions)
+     */
+    public final void setupDefaultSettings_NoLogistic(){
+        this.ensembleName = "CAWPE-NoLogistic";
+        
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
+        
+        Classifier[] classifiers = new Classifier[4];
+        String[] classifierNames = new String[4];
+
+        SMO smo = new SMO();
+        smo.turnChecksOff();
+        smo.setBuildLogisticModels(true);
+        PolyKernel kl = new PolyKernel();
+        kl.setExponent(1);
+        smo.setKernel(kl);
+        smo.setRandomSeed(seed);
+        classifiers[0] = smo;
+        classifierNames[0] = "SVML";
+
+        kNN k=new kNN(100);
+        k.setCrossValidate(true);
+        k.normalise(false);
+        k.setDistanceFunction(new EuclideanDistance());
+        classifiers[1] = k;
+        classifierNames[1] = "NN";
+
+        classifiers[2] = new J48();
+        classifierNames[2] = "C4.5";
+
+        classifiers[3] = new MultilayerPerceptron();
+        classifierNames[3] = "MLP";
+
+        setClassifiers(classifiers, classifierNames, null);
+    }
+
+
+    public final void setupAdvancedSettings(){
+        this.ensembleName = "CAWPE-A";
+        
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
+
+        Classifier[] classifiers = new Classifier[3];
+        String[] classifierNames = new String[3];
+
+        SMO smo = new SMO();
+        smo.turnChecksOff();
+        smo.setBuildLogisticModels(true);
+        PolyKernel kl = new PolyKernel();
+        kl.setExponent(2);
+        smo.setKernel(kl);
+        smo.setRandomSeed(seed);
+        classifiers[0] = smo;
+        classifierNames[0] = "SVMQ";
+        RandomForest rf= new RandomForest();
+        rf.setNumTrees(500);
+        classifiers[1] = rf;
+        classifierNames[1] = "RandF";
+        RotationForest rotf=new RotationForest();
+        rotf.setNumIterations(200);
+        classifiers[2] = rotf;
+        classifierNames[2] = "RotF";
+
+        setClassifiers(classifiers, classifierNames, null);
+    }
 
 
     /**
@@ -120,6 +248,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * As used originally in ST_HESCA, COTE.
      */
     public final void setupOriginalHESCASettings(){
+        this.ensembleName = "HESCA";
+        
         this.weightingScheme = new TrainAcc();
         this.votingScheme = new MajorityVote();
         
@@ -180,132 +310,6 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         setClassifiers(classifiers, classifierNames, null);
     }
-
-    /**
-     * Uses the 'basic UCI' set up:
-     * Comps: SVML, MLP, NN, Logistic, C4.5
-     * Weight: TrainAcc(4) (train accuracies to the power 4)
-     * Vote: MajorityConfidence (summing probability distributions)
-     */
-    public final void setupDefaultSettings(){
-        this.ensembleName = "CAWPE";
-        
-        this.weightingScheme = new TrainAcc(4);
-        this.votingScheme = new MajorityConfidence();
-        this.transform = null;
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
-        cv.setNumFolds(10);
-        this.trainEstimator = cv; 
-
-        Classifier[] classifiers = new Classifier[5];
-        String[] classifierNames = new String[5];
-
-        SMO smo = new SMO();
-        smo.turnChecksOff();
-        smo.setBuildLogisticModels(true);
-        PolyKernel kl = new PolyKernel();
-        kl.setExponent(1);
-        smo.setKernel(kl);
-        smo.setRandomSeed(seed);
-        classifiers[0] = smo;
-        classifierNames[0] = "SVML";
-
-        kNN k=new kNN(100);
-        k.setCrossValidate(true);
-        k.normalise(false);
-        k.setDistanceFunction(new EuclideanDistance());
-        classifiers[1] = k;
-        classifierNames[1] = "NN";
-
-        classifiers[2] = new J48();
-        classifierNames[2] = "C4.5";
-
-        classifiers[3] = new Logistic();
-        classifierNames[3] = "Logistic";
-
-        classifiers[4] = new MultilayerPerceptron();
-        classifierNames[4] = "MLP";
-
-        setClassifiers(classifiers, classifierNames, null);
-    }
-
-    /**
-     * Uses the 'basic UCI' set up:
-     * Comps: SVML, MLP, NN, Logistic, C4.5
-     * Weight: TrainAcc(4) (train accuracies to the power 4)
-     * Vote: MajorityConfidence (summing probability distributions)
-     */
-    public final void setupDefaultSettings_NoLogistic(){
-        this.weightingScheme = new TrainAcc(4);
-        this.votingScheme = new MajorityConfidence();
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
-        cv.setNumFolds(10);
-        this.trainEstimator = cv; 
-        
-        Classifier[] classifiers = new Classifier[4];
-        String[] classifierNames = new String[4];
-
-        SMO smo = new SMO();
-        smo.turnChecksOff();
-        smo.setBuildLogisticModels(true);
-        PolyKernel kl = new PolyKernel();
-        kl.setExponent(1);
-        smo.setKernel(kl);
-        smo.setRandomSeed(seed);
-        classifiers[0] = smo;
-        classifierNames[0] = "SVML";
-
-        kNN k=new kNN(100);
-        k.setCrossValidate(true);
-        k.normalise(false);
-        k.setDistanceFunction(new EuclideanDistance());
-        classifiers[1] = k;
-        classifierNames[1] = "NN";
-
-        classifiers[2] = new J48();
-        classifierNames[2] = "C4.5";
-
-        classifiers[3] = new MultilayerPerceptron();
-        classifierNames[3] = "MLP";
-
-        setClassifiers(classifiers, classifierNames, null);
-    }
-
-
-    public final void setupAdvancedSettings(){
-        this.weightingScheme = new TrainAcc(4);
-        this.votingScheme = new MajorityConfidence();
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
-        cv.setNumFolds(10);
-        this.trainEstimator = cv; 
-
-        Classifier[] classifiers = new Classifier[3];
-        String[] classifierNames = new String[3];
-
-        SMO smo = new SMO();
-        smo.turnChecksOff();
-        smo.setBuildLogisticModels(true);
-        PolyKernel kl = new PolyKernel();
-        kl.setExponent(2);
-        smo.setKernel(kl);
-        smo.setRandomSeed(seed);
-        classifiers[0] = smo;
-        classifierNames[0] = "SVMQ";
-        RandomForest rf= new RandomForest();
-        rf.setNumTrees(500);
-        classifiers[1] = rf;
-        classifierNames[1] = "RandF";
-        RotationForest rotf=new RotationForest();
-        rotf.setNumIterations(200);
-        classifiers[2] = rotf;
-        classifierNames[2] = "RotF";
-
-        setClassifiers(classifiers, classifierNames, null);
-    }
-
 
 
     
