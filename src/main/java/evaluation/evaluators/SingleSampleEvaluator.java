@@ -30,7 +30,7 @@ import weka.core.Instances;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class SingleSampleEvaluator extends SamplingEvaluator {
-    double propInstancesInTrain;
+    double propInstancesInTrain = 0.5;
     
     public SingleSampleEvaluator() {
         super(0, false, false);
@@ -61,8 +61,10 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         ClassifierResults res = eval.evaluate(classifier, trainTest[1]);
         
         //eval should have set everything else 
+        res.turnOffZeroTimingsErrors();
         res.setBuildTime(buildTime);
         res.setErrorEstimateTime(System.nanoTime() - estimateTime);
+        res.turnOnZeroTimingsErrors();
         
         return res;
     }

@@ -15,7 +15,14 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
+import experiments.ClassifierLists;
+import experiments.data.DatasetLoading;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
@@ -157,15 +164,26 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         return stratifiedResampleWithStats(new Classifier[] { classifier }, dataset)[0];
     }
     
-    public synchronized ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
-        if (cloneData)
-            dataset = new Instances(dataset);
+    public synchronized ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances data) throws Exception {
+        
+        final Instances dataset = cloneData ? new Instances(data) : data;
+       
         if (cloneClassifiers)
             cloneClassifiers(classifiers);
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
+        ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length];
         
-        ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length] ;
+        //TODO obviously clean up this garbage once actual design is decided on 
+        List<List<Future<ClassifierResults>>> futureResultsPerFold = new ArrayList<>(classifiers.length); //generic arrays... 
+        for (int i = 0; i < classifiers.length; i++) {
+            futureResultsPerFold.add(new ArrayList<>(numFolds));
+            for (int j = 0; j < numFolds; j++)
+                futureResultsPerFold.get(i).add(null);
+        }
+        if (multiThread)
+            executor = Executors.newFixedThreadPool(numThreads);
+        
         
         for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
             
@@ -176,15 +194,41 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             long estimateTimeStart = System.nanoTime();
             
             for (int fold = 0; fold < numFolds; fold++) {
-                Classifier foldClassifier = classifiers[classifierIndex];
-                if (cloneClassifiers)
-                    //use the clone instead
-                    foldClassifier = foldClassifiers[classifierIndex][fold];
+                final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
                 
                 int resampleSeed = useEachResampleIdAsSeed ? fold : classifierRng.nextInt();
                     
                 SingleSampleEvaluator eval = new SingleSampleEvaluator(resampleSeed, this.cloneData, this.setClassMissing);
-                resultsPerFold[classifierIndex][fold] = eval.evaluate(foldClassifier, dataset);
+                eval.setPropInstancesInTrain(this.propInstancesInTrain);
+                
+                if (!multiThread) {
+                    //compute the result now
+                    resultsPerFold[classifierIndex][fold] = eval.evaluate(foldClassifier, dataset);
+                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
+                    
+                    if (cloneClassifiers && !maintainClassifiers)
+                        foldClassifiers[classifierIndex][fold] = null; //free the memory
+                }
+                else {
+                    //spawn a job to compute the result, will collect it later
+                    Callable<ClassifierResults> foldEval = () -> {
+                        return eval.evaluate(foldClassifier, dataset);
+                    };
+
+                    futureResultsPerFold.get(classifierIndex).set(fold, executor.submit(foldEval));
+                    System.out.println("Fold " + fold + " spawned");
+                }
+            }
+            
+            if (multiThread) {
+                //collect results from futures, this method will not continue until all folds done
+                for (int fold = 0; fold < numFolds; fold++) {
+                    resultsPerFold[classifierIndex][fold] = futureResultsPerFold.get(classifierIndex).get(fold).get();
+                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
+
+                    if (cloneClassifiers && !maintainClassifiers)
+                        foldClassifiers[classifierIndex][fold] = null; //free the memory
+                }
             }
             
             long estimateTime = System.nanoTime() - estimateTimeStart;
@@ -200,7 +244,10 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             
             allConcatenatedClassifierRes[classifierIndex] = concatenatedClassifierRes;
         }
-   
+            
+        if (multiThread)
+            executor.shutdown();
+        
         return allConcatenatedClassifierRes;
     }
     
@@ -260,5 +307,37 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
 //   
 //        return allConcatenatedClassifierRes;
 //    }
+    
+    public static void main(String[] args) throws Exception {
+        int seed = 0;
+        Classifier classifier = ClassifierLists.setClassifierClassic("RotF", seed);
+        Instances data = DatasetLoading.sampleBeef(seed)[0];
+        
+        StratifiedResamplesEvaluator evalSingleThread = new StratifiedResamplesEvaluator();
+        evalSingleThread.setSeed(seed);
+        evalSingleThread.setCloneClassifiers(true); //to keep the classifier instance clean for multithreaded eval, i.e. not cloning a built classifier
+//        evalSingleThread.setNumFolds(200);
+        evalSingleThread.setThreadAllowance(0);
+        
+        StratifiedResamplesEvaluator evalMultiThread = new StratifiedResamplesEvaluator();
+        evalMultiThread.setSeed(seed);
+        evalMultiThread.setCloneClassifiers(true); //would be set in setThreadAllowance anyway, but for clarity
+//        evalMultiThread.setNumFolds(200);
+        evalMultiThread.setThreadAllowance(Runtime.getRuntime().availableProcessors()-1);
+        System.out.println("num cores = " + (Runtime.getRuntime().availableProcessors()-1));
+        
+        StratifiedResamplesEvaluator[] evals = {
+            evalSingleThread,
+            evalMultiThread,
+        };
+        
+        for (StratifiedResamplesEvaluator eval : evals) {
+            long t1 = System.currentTimeMillis();
+            ClassifierResults res = eval.evaluate(classifier, data);
+            double t2 = (double)(System.currentTimeMillis() - t1) / 1000.0;
+            System.out.println("Computed acc: " + res.getAcc() + " in time: " + t2);
+        }
+        
+    }
 }
 

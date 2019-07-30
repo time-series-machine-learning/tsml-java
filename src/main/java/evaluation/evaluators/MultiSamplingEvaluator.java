@@ -18,6 +18,9 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import timeseriesweka.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 
@@ -30,9 +33,23 @@ import weka.classifiers.Classifier;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class MultiSamplingEvaluator extends SamplingEvaluator {
+public abstract class MultiSamplingEvaluator extends SamplingEvaluator implements MultiThreadable {
 
-    int numFolds;
+    /** 
+     * TODO this should be replaced with some globally-aware (singleton?) thread managing 
+     * service, instead of having everything spawning it's own service. That will be handled
+     * in future/with discussion though
+     */
+    protected ExecutorService executor = null;
+    protected int numThreads = 1;
+    protected boolean multiThread = false;
+    
+    /**
+     * The number of folds (aka resamples, depending on the context of the 
+     * particular MultiSamplingEvaluator implementation) to produce, evaluate on,
+     * and concatenate/average over
+     */
+    protected int numFolds;
     
     /**
      * If true, the classifiers shall be cloned when building and predicting on each fold. 
@@ -119,10 +136,60 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator {
         return foldClassifiers;
     }
     
+    /**
+     * If true, will keep the classifiers trained on each fold in memory
+     * 
+     * When set to true, will force clone classifier to also be true. Note - this will naturally 
+     * come with a large cost to required memory, (size of trained classifier) * numFolds
+     */
     public void setMaintainClassifiers(boolean maintainClassifiers) { 
         this.maintainClassifiers = maintainClassifiers;
         if (maintainClassifiers)
             this.cloneClassifiers = true;
+    }
+    
+    /**
+     * If true, will keep the classifiers trained on each fold in memory
+     * 
+     * When set to true, will force clone classifier to also be true. Note - this will naturally 
+     * come with a large cost to required memory, (size of trained classifier) * numFolds
+     */
+    public boolean getMaintainClassifiers() { 
+        return maintainClassifiers;
+    }
+    
+    /**
+     * If true, the classifiers shall be cloned when building and predicting on each fold. 
+     * 
+     * This is achieved via AbstractClassifier.makeCopy(...), and therefore the classifier
+     * and all relevant/wanted info/hyperparamters that may have been set up prior to giving 
+     * the classifier to the evaluator must be properly (de-)serialisable.
+     * 
+     * Useful if a particular classifier maintains information after one buildclassifier that 
+     * might not be replaced or effect the next call to buildclassifier. Ideally, this 
+     * should not be the case, but this option will make sure either way
+     * 
+     * If maintainClassifiers == true, clone classifiers is forced to true
+     */    
+    public boolean getCloneClassifiers() {
+        return cloneClassifiers;
+    }
+    
+    /**
+     * If true, the classifiers shall be cloned when building and predicting on each fold. 
+     * 
+     * This is achieved via AbstractClassifier.makeCopy(...), and therefore the classifier
+     * and all relevant/wanted info/hyperparamters that may have been set up prior to giving 
+     * the classifier to the evaluator must be properly (de-)serialisable.
+     * 
+     * Useful if a particular classifier maintains information after one buildclassifier that 
+     * might not be replaced or effect the next call to buildclassifier. Ideally, this 
+     * should not be the case, but this option will make sure either way
+     * 
+     * If maintainClassifiers == true, clone classifiers is forced to true
+     */
+    public void setCloneClassifiers(boolean cloneClassifiers) {
+        this.cloneClassifiers = cloneClassifiers;
     }
     
     protected void cloneClassifier(Classifier classifier) throws Exception {
@@ -139,4 +206,27 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator {
         for (int c = 0; c < classifiers.length; ++c)
             foldClassifiers[c] = AbstractClassifier.makeCopies(classifiers[c], numFolds);
     }
+    
+    /**
+     * NOTE: multithreading (numThreads > 1) forces cloneClassifiers to true for 
+     * concurrency reasons.
+     */
+    @Override //MultiThreadable
+    public void setThreadAllowance(int numThreads) {
+        if (numThreads > 1) {
+            this.numThreads = numThreads;
+            this.multiThread = true;
+            this.cloneClassifiers = true;
+        }
+        else{
+            this.numThreads = 1;
+            this.multiThread = false;
+        }
+    }
+    
+    @Override //MultiThreadable
+    public int getNumUtilisableThreads() {
+        return numFolds;
+    }
+
 }
