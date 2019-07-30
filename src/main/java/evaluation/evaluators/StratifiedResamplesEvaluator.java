@@ -338,6 +338,103 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             System.out.println("Computed acc: " + res.getAcc() + " in time: " + t2);
         }
         
+        /*
+            run:
+            num cores = 7
+            Fold 0 eval: 0.8
+            Fold 1 eval: 0.7333333333333333
+            Fold 2 eval: 0.5333333333333333
+            Fold 3 eval: 0.5333333333333333
+            Fold 4 eval: 0.5333333333333333
+            Fold 5 eval: 0.8666666666666667
+            Fold 6 eval: 0.5333333333333333
+            Fold 7 eval: 0.4
+            Fold 8 eval: 0.6
+            Fold 9 eval: 0.5333333333333333
+            Fold 10 eval: 0.8
+            Fold 11 eval: 0.6666666666666666
+            Fold 12 eval: 0.6666666666666666
+            Fold 13 eval: 0.8
+            Fold 14 eval: 0.4666666666666667
+            Fold 15 eval: 0.6
+            Fold 16 eval: 0.7333333333333333
+            Fold 17 eval: 0.6
+            Fold 18 eval: 0.6666666666666666
+            Fold 19 eval: 0.5333333333333333
+            Fold 20 eval: 0.6
+            Fold 21 eval: 0.6666666666666666
+            Fold 22 eval: 0.7333333333333333
+            Fold 23 eval: 0.6666666666666666
+            Fold 24 eval: 0.8666666666666667
+            Fold 25 eval: 0.6
+            Fold 26 eval: 0.5333333333333333
+            Fold 27 eval: 0.6666666666666666
+            Fold 28 eval: 0.8
+            Fold 29 eval: 0.6666666666666666
+            Computed acc: 0.6466666666666666 in time: 33.757
+            Fold 0 spawned
+            Fold 1 spawned
+            Fold 2 spawned
+            Fold 3 spawned
+            Fold 4 spawned
+            Fold 5 spawned
+            Fold 6 spawned
+            Fold 7 spawned
+            Fold 8 spawned
+            Fold 9 spawned
+            Fold 10 spawned
+            Fold 11 spawned
+            Fold 12 spawned
+            Fold 13 spawned
+            Fold 14 spawned
+            Fold 15 spawned
+            Fold 16 spawned
+            Fold 17 spawned
+            Fold 18 spawned
+            Fold 19 spawned
+            Fold 20 spawned
+            Fold 21 spawned
+            Fold 22 spawned
+            Fold 23 spawned
+            Fold 24 spawned
+            Fold 25 spawned
+            Fold 26 spawned
+            Fold 27 spawned
+            Fold 28 spawned
+            Fold 29 spawned
+            Fold 0 eval: 0.8
+            Fold 1 eval: 0.7333333333333333
+            Fold 2 eval: 0.5333333333333333
+            Fold 3 eval: 0.5333333333333333
+            Fold 4 eval: 0.5333333333333333
+            Fold 5 eval: 0.8666666666666667
+            Fold 6 eval: 0.5333333333333333
+            Fold 7 eval: 0.4
+            Fold 8 eval: 0.6
+            Fold 9 eval: 0.5333333333333333
+            Fold 10 eval: 0.8
+            Fold 11 eval: 0.6666666666666666
+            Fold 12 eval: 0.6666666666666666
+            Fold 13 eval: 0.8
+            Fold 14 eval: 0.4666666666666667
+            Fold 15 eval: 0.6
+            Fold 16 eval: 0.7333333333333333
+            Fold 17 eval: 0.6
+            Fold 18 eval: 0.6666666666666666
+            Fold 19 eval: 0.5333333333333333
+            Fold 20 eval: 0.6
+            Fold 21 eval: 0.6666666666666666
+            Fold 22 eval: 0.7333333333333333
+            Fold 23 eval: 0.6666666666666666
+            Fold 24 eval: 0.8666666666666667
+            Fold 25 eval: 0.6
+            Fold 26 eval: 0.5333333333333333
+            Fold 27 eval: 0.6666666666666666
+            Fold 28 eval: 0.8
+            Fold 29 eval: 0.6666666666666666
+            Computed acc: 0.6466666666666666 in time: 14.678
+            BUILD SUCCESSFUL (total time: 49 seconds)
+         */
     }
 }
 
