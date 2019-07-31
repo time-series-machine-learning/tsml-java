@@ -593,12 +593,12 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         System.out.println("test_basic()");
         
         int seed = 0;
-//        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
-        Instances[] data = DatasetLoading.sampleBeef(seed);
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+//        Instances[] data = DatasetLoading.sampleBeef(seed);
         
         StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
-        trainEval.setNumFolds(10);
-        trainEval.setPropInstancesInTrain(0.9);
+        trainEval.setNumFolds(30);
+        trainEval.setPropInstancesInTrain(0.5);
         trainEval.setSeed(seed);
         
         CAWPE c = new CAWPE();
@@ -614,20 +614,20 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         ClassifierResults res = eval.evaluate(c, data[1]);
         System.out.println("acc="+res.getAcc() 
                 + " buildtime="+t1);
-        System.out.println("shouldbe: " + 0.9650145772594753);
-        System.out.println("shouldbe(StratifiedResample): " + 0.8333333333333334);
+        System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
+        System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
     
     public static void test_threaded() throws Exception {
         System.out.println("test_threaded()");
         
         int seed = 0;
-//        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
-        Instances[] data = DatasetLoading.sampleBeef(seed);
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+//        Instances[] data = DatasetLoading.sampleBeef(seed);
         
         StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
-        trainEval.setNumFolds(10);
-        trainEval.setPropInstancesInTrain(0.9);
+        trainEval.setNumFolds(30);
+        trainEval.setPropInstancesInTrain(0.5);
         trainEval.setSeed(seed);
         
         CAWPE c = new CAWPE();
@@ -644,8 +644,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         ClassifierResults res = eval.evaluate(c, data[1]);
         System.out.println("acc="+res.getAcc() 
                 + " buildtime="+t1);
-        System.out.println("shouldbe(CV): " + 0.9650145772594753);
-        System.out.println("shouldbe(StratifiedResample): " + 0.9650145772594753);
+        System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
+        System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
 
     public static void main(String[] args) throws Exception {

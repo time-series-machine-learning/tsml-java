@@ -21,8 +21,11 @@ import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -115,6 +118,16 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
+        //TODO obviously clean up this garbage once actual design is decided on 
+        List<List<Future<ClassifierResults>>> futureResultsPerFold = new ArrayList<>(classifiers.length); //generic arrays... 
+        for (int i = 0; i < classifiers.length; i++) {
+            futureResultsPerFold.add(new ArrayList<>(numFolds));
+            for (int j = 0; j < numFolds; j++)
+                futureResultsPerFold.get(i).add(null);
+        }
+        if (multiThread)
+            executor = Executors.newFixedThreadPool(numThreads);
+        
         //for each fold as test
         for(int fold = 0; fold < numFolds; fold++){
             Instances[] trainTest = buildTrainTestSet(fold);
@@ -128,11 +141,11 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
                 
                 // get the classifier instance to be used this fold
                 final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
-                final SingleTestSetEvaluator eval = new SingleTestSetEvaluator(seed, cloneData, setClassMissing);
+                final SingleTestSetEvaluator tester = new SingleTestSetEvaluator(seed, cloneData, setClassMissing);
                 
-                BuildTestEvaluation estimate = new BuildTestEvaluation(eval, train, test, foldClassifier);
+                BuildTestEvaluation estimate = new BuildTestEvaluation(tester, train, test, foldClassifier);
                 
-                Callable<ClassifierResults> call = () -> {
+                Callable<ClassifierResults> eval = () -> {
                     long estimateTime = System.nanoTime();
                     ClassifierResults res = estimate.evaluate();
                     estimateTime = System.nanoTime() - estimateTime;
@@ -141,12 +154,30 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
                     return res;
                 };
                 
-                resultsPerFold[classifierIndex][fold] = call.call();
-                
-                if (cloneClassifiers && !maintainClassifiers)
-                    foldClassifiers[classifierIndex][fold] = null; //free the memory
+                if (!multiThread) {
+                    //compute the result now
+                    resultsPerFold[classifierIndex][fold] = eval.call();                    
+                    if (cloneClassifiers && !maintainClassifiers)
+                        foldClassifiers[classifierIndex][fold] = null; //free the memory
+                }
+                else {
+                    futureResultsPerFold.get(classifierIndex).set(fold, executor.submit(eval));
+                }
             }
         }
+        
+        if (multiThread) {
+            //collect results from futures, this method will not continue until all folds done
+            for (int fold = 0; fold < numFolds; fold++) {
+                for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
+                    resultsPerFold[classifierIndex][fold] = futureResultsPerFold.get(classifierIndex).get(fold).get();
+                    if (cloneClassifiers && !maintainClassifiers)
+                        foldClassifiers[classifierIndex][fold] = null; //free the memory
+                }
+            }
+            executor.shutdown();
+        }
+        
         
         //shove concatenated fold data into ClassifierResults objects, the singular form
         //to represent the entire cv process (trainFoldX)
@@ -174,7 +205,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 
         res.turnOffZeroTimingsErrors();
 
-        double[][] dists = new double[foldResults[0].numClasses()][];
+        double[][] dists = new double[trueClassVals.length][];
         double[] preds = new double[trueClassVals.length];
         long[] times = new long[trueClassVals.length];
         String[] descs = new String[trueClassVals.length];
