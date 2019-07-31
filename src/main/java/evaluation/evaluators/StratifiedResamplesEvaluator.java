@@ -305,7 +305,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
     
     public static void main(String[] args) throws Exception {
         int seed = 0;
-        Classifier classifier = ClassifierLists.setClassifierClassic("RotF", seed);
+        Classifier classifier = ClassifierLists.setClassifierClassic("RandF", seed);
         Instances data = DatasetLoading.sampleBeef(seed)[0];
         
         StratifiedResamplesEvaluator evalSingleThread = new StratifiedResamplesEvaluator();
@@ -331,9 +331,14 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             ClassifierResults res = eval.evaluate(classifier, data);
             double t2 = (double)(System.currentTimeMillis() - t1) / 1000.0;
             System.out.println("Computed acc: " + res.getAcc() + " in time: " + t2);
+            
+            System.out.print("Folds: ");
+            for (ClassifierResults foldResult : eval.getFoldResults(0))
+                System.out.print(foldResult.getAcc() + ",");
+            System.out.println("");
         }
         
-        /*
+        /* ROTF:
             run:
             num cores = 7
             Fold 0 eval: 0.8
