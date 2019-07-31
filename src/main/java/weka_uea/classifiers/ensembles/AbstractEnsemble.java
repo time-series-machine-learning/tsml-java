@@ -22,9 +22,13 @@ import evaluation.evaluators.SamplingEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -308,7 +312,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
 //        }
 //    }
 
-    protected synchronized void trainModule(EnsembleModule module, int numThreads) throws Exception {
+    protected synchronized void trainModule(EnsembleModule module) throws Exception {
         //todo give numThreads to module's classifier if it implements Threadable and numthreads > 1 
         
         if (module.getClassifier() instanceof TrainAccuracyEstimator) {
@@ -337,8 +341,8 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         }
     }
-    
-    public boolean hasThreadableBaseClassifiers() { 
+        
+    protected boolean hasThreadableBaseClassifiers() { 
         for (EnsembleModule module : modules)
             if (module.getClassifier() instanceof MultiThreadable)
                 return true;
@@ -348,51 +352,105 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected void trainModules() throws Exception {
         if (!multiThread) {
             for (EnsembleModule module : modules)
-                trainModule(module, 1);
+                trainModule(module); //use the much clearer old definition of training modules
         }
         else {
-            int[] threadsPerClassifier = new int[modules.length];
-            for (int t : threadsPerClassifier)
-                t = 1;
+            //TODO this can be optimised A LOT, but dont have the brain power right now
+            //just give all the threads to the estimator, and let's get the estimates back
             
-            //can legitimately be negative, e.g. 5 base classifiers but 3 threads given
-            int threadsRemaining = numThreads - modules.length;
+            //Give all the threads to the estimator, gather non-self-generated estimates first
+            if (trainEstimator instanceof MultiThreadable)
+                ((MultiThreadable)trainEstimator).setThreadAllowance(numThreads);
             
-            if (this.hasThreadableBaseClassifiers()) {
-                //spread any extra threads remaining evenly among threadable base classifiers
-                //TODO more intelligent ways to do this, and should look to re-allocate threads 
-                //once faster classifiers finish to slower ones, but this will do for now
-                int moduleInd = 0;
-                while (threadsRemaining > 0) {
-                    if (modules[moduleInd].getClassifier() instanceof MultiThreadable) {
-                        threadsPerClassifier[moduleInd]++;
-                        threadsRemaining--;
-                    }
-
-                    moduleInd++;
-                }
-            }
-            
-            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
             for (int i = 0; i < modules.length; i++) {
-                final EnsembleModule module = modules[i];
-                final int classifierThreads = threadsPerClassifier[i];
-                
-                executor.execute(new Runnable() { 
-                    @Override
-                    public void run() {
-                        try {
-                            trainModule(module, classifierThreads);
-                        } catch (Exception ex) {
-                            Logger.getLogger(AbstractEnsemble.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-                });
+                Classifier clf = modules[i].getClassifier();
+                if (!(clf instanceof TrainAccuracyEstimator))
+                    modules[i].trainResults = trainEstimator.evaluate(clf, trainInsts);
             }
-
+            
+            //Have easily threadable estimates
+            //Now build all classifiers, individually threaded
+            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+            List<Future<Long>> buildTimes = new ArrayList<>();
+            for (int i = 0; i < modules.length; i++) {
+                final Classifier clf = modules[i].getClassifier();
+                
+                Callable<Long> call = () -> {
+                    Long buildTime = System.nanoTime();
+                    clf.buildClassifier(trainInsts);
+                    return System.nanoTime() - buildTime;
+                };
+                
+                buildTimes.add(executor.submit(call));
+            }
+   
+            
+            //All built/building, now to wait and get the train estimates of the modules that 
+            //didnt have them built separately earlier
+            for (int i = 0; i < modules.length; i++) {
+                Classifier clf = modules[i].getClassifier();
+                if ((clf instanceof TrainAccuracyEstimator)) { 
+                    // The trainResults should have the classifiers'own recorded 
+                    // build time in it, just need to get the results. This is 
+                    // however the easiest way to wait for completion of the thread/build process
+                    buildTimes.get(i).get();
+                    modules[i].trainResults = ((TrainAccuracyEstimator)clf).getTrainResults();
+                }
+                else {
+                    // Have the estimate results, just need to get the build time
+                    modules[i].trainResults.setBuildTime(buildTimes.get(i).get());
+                    modules[i].trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+                }
+                modules[i].trainResults.finaliseResults();
+            }
+            
+                    
             executor.shutdown();
             while (!executor.isTerminated()) {
             }
+            
+//            int[] threadsPerClassifier = new int[modules.length];
+//            for (int t : threadsPerClassifier)
+//                t = 1;
+//            
+//            //can legitimately be negative, e.g. 5 base classifiers but 3 threads given
+//            int threadsRemaining = numThreads - modules.length;
+//            
+//            if (this.hasThreadableBaseClassifiers()) {
+//                //spread any extra threads remaining evenly among threadable base classifiers
+//                //TODO more intelligent ways to do this, and should look to re-allocate threads 
+//                //once faster classifiers finish to slower ones, but this will do for now
+//                int moduleInd = 0;
+//                while (threadsRemaining > 0) {
+//                    if (modules[moduleInd].getClassifier() instanceof MultiThreadable) {
+//                        threadsPerClassifier[moduleInd]++;
+//                        threadsRemaining--;
+//                    }
+//
+//                    moduleInd++;
+//                }
+//            }
+//            
+//            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+//            for (int i = 0; i < modules.length; i++) {
+//                final EnsembleModule module = modules[i];
+//                final int classifierThreads = threadsPerClassifier[i];
+//                
+//                executor.execute(new Runnable() { 
+//                    @Override
+//                    public void run() {
+//                        try {
+//                            trainModule(module, classifierThreads);
+//                        } catch (Exception ex) {
+//                            Logger.getLogger(AbstractEnsemble.class.getName()).log(Level.SEVERE, null, ex);
+//                        }
+//                    }
+//                });
+//            }
+//
+//            executor.shutdown();
+//            while (!executor.isTerminated()) {
+//            }
         }
         
         for (EnsembleModule module : modules) {
@@ -653,7 +711,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         return modules;
     }
 
-    public Evaluator getTrainEstimator() {
+    public SamplingEvaluator getTrainEstimator() {
         return trainEstimator;
     }
     
@@ -762,7 +820,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     public void setTransform(SimpleBatchFilter transform){
         this.transform = transform;
     }
-
+    
     @Override //TrainAccuracyEstimate
     public void writeTrainEstimatesToFile(String path) {
         estimateEnsemblePerformance=true;
@@ -904,6 +962,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             writeEnsembleTrainAccuracyEstimateResultsFile();
         
         this.testInstCounter = 0; //prep for start of testing
+        this.prevTestInstance = null;
     }
 
     

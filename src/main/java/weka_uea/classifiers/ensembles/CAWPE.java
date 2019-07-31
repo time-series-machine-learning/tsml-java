@@ -25,6 +25,9 @@ import java.io.File;
 
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
+import evaluation.storage.ClassifierResults;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -445,7 +448,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest009/";
+        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest010/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -586,13 +589,68 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         }
     }
 
-
+    public static void test_basic() throws Exception {
+        int seed = 0;
+//        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+        Instances[] data = DatasetLoading.sampleBeef(seed);
+        
+        StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
+        trainEval.setNumFolds(10);
+        trainEval.setPropInstancesInTrain(0.9);
+        trainEval.setSeed(seed);
+        
+        CAWPE c = new CAWPE();
+        c.setRandSeed(seed);
+        c.setTrainEstimator(trainEval);
+        
+        long t1 = System.currentTimeMillis();
+        c.buildClassifier(data[0]);
+        t1 = System.currentTimeMillis() - t1;
+        
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
+        eval.setSeed(seed);
+        ClassifierResults res = eval.evaluate(c, data[1]);
+        System.out.println("acc="+res.getAcc() 
+                + " buildtime="+t1);
+        System.out.println("shouldbe: " + 0.9650145772594753);
+        System.out.println("shouldbe(StratifiedResample): " + 0.9650145772594753);
+    }
+    
+    public static void test_threaded() throws Exception {
+        int seed = 0;
+//        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+        Instances[] data = DatasetLoading.sampleBeef(seed);
+        
+        StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
+        trainEval.setNumFolds(10);
+        trainEval.setPropInstancesInTrain(0.9);
+        trainEval.setSeed(seed);
+        
+        CAWPE c = new CAWPE();
+        c.setRandSeed(seed);
+        c.setTrainEstimator(trainEval);
+        c.setThreadAllowance(7);
+        
+        long t1 = System.currentTimeMillis();
+        c.buildClassifier(data[0]);
+        t1 = System.currentTimeMillis() - t1;
+        
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
+        eval.setSeed(seed);
+        ClassifierResults res = eval.evaluate(c, data[1]);
+        System.out.println("acc="+res.getAcc() 
+                + " buildtime="+t1);
+        System.out.println("shouldbe(CV): " + 0.9650145772594753);
+        System.out.println("shouldbe(StratifiedResample): " + 0.9650145772594753);
+    }
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
 
-        buildCAWPEPaper_AllResultsForFigure3();
-
+//        buildCAWPEPaper_AllResultsForFigure3();
+        test_basic();
+        test_threaded();
+        
 //        testBuildingInds(3);
 //        testLoadingInds(2);
     }

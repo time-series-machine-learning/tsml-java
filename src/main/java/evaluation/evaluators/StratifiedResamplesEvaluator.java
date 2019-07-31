@@ -204,7 +204,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
                 if (!multiThread) {
                     //compute the result now
                     resultsPerFold[classifierIndex][fold] = eval.evaluate(foldClassifier, dataset);
-                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
+//                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
                     
                     if (cloneClassifiers && !maintainClassifiers)
                         foldClassifiers[classifierIndex][fold] = null; //free the memory
@@ -216,7 +216,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
                     };
 
                     futureResultsPerFold.get(classifierIndex).set(fold, executor.submit(foldEval));
-                    System.out.println("Fold " + fold + " spawned");
+//                    System.out.println("Fold " + fold + " spawned");
                 }
             }
             
@@ -224,7 +224,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
                 //collect results from futures, this method will not continue until all folds done
                 for (int fold = 0; fold < numFolds; fold++) {
                     resultsPerFold[classifierIndex][fold] = futureResultsPerFold.get(classifierIndex).get(fold).get();
-                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
+//                    System.out.println("Fold " + fold + " eval: " + resultsPerFold[classifierIndex][fold].getAcc());
 
                     if (cloneClassifiers && !maintainClassifiers)
                         foldClassifiers[classifierIndex][fold] = null; //free the memory
