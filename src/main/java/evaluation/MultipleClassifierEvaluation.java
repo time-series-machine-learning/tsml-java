@@ -86,19 +86,38 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private boolean testResultsOnly;
     
     /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    private boolean evaluateDatasetsOverClassifiers;
+    
+    /**
      * if true, will perform xmeans clustering on the classifierXdataset results, to find data-driven datasetgroupings, as well
      * as any extra dataset groupings you've defined.
      * 
      * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
-      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
- 
- 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
- 
- 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
- 
- 4) perform the normal grouping analysis based on those clusters
+     * e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 } 
+     * 
+     * 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+     * 
+     * 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+     * 
+     * 4) perform the normal grouping analysis based on those clusters
      */
     private boolean performPostHocDsetResultsClustering;
+    
+    
+    /**
+     * if true, will fill in missing probability distributions with one-hot vectors
+     * for files read in that are missing them. intended for very old files, where you still 
+     * want to calc auroc etc (metrics that need dists) for all the other classifiers 
+     * that DO provide them, but also want to compare e.g accuracy with classifier that don't
+     * 
+     * defaults to false
+     */
+    private boolean ignoreMissingDistributions;
     
     /**
      * if true, will close the matlab connected once analysis complete (if it was opened)
@@ -120,12 +139,23 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.cleanResults = true;
         this.testResultsOnly = true;
         this.performPostHocDsetResultsClustering = false;
-
+        this.ignoreMissingDistributions = false;
+        
         this.datasets = new ArrayList<>();
         this.datasetGroupings = new HashMap<>();
         this.classifiersResults = new HashMap<>();
         
         this.metrics = PerformanceMetric.getDefaultStatistics();
+    }
+
+    /**
+     * if true, will basically just transpose the results, and swap the dataset names for the classifiernames. 
+     * ranks, sig tests, etc, will then compare the 'performance of datasets'. Intended use when comparing 
+     * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
+     * are evaluated on each.
+     */
+    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
+        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
     }
     
     /**
@@ -159,6 +189,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     public MultipleClassifierEvaluation setCleanResults(boolean b) {
         cleanResults = b;
+        return this;
+    }
+    
+    public MultipleClassifierEvaluation setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
+        this.ignoreMissingDistributions = ignoreMissingDistributions;
         return this;
     }
     
@@ -438,6 +473,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         if (testResultsOnly)
             results[0]=null; //crappy but w/e
      
+        //train files may be produced via TrainAccuracyEstimate, older code
+        //while test files likely by experiments, but still might be a very old file
+        //so having separate checks for each.
+        boolean ignoringDistsFirstTimeFlagTrain = true;
+        boolean ignoringDistsFirstTimeFlagTest = true;
         
         for (int d = 0; d < datasets.size(); d++) {
             for (int f = 0; f < numFolds; f++) {
@@ -446,6 +486,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                     String trainFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/trainFold" + f + ".csv";
                     try {
                         results[0][d][f] = new ClassifierResults(trainFile);
+                        if (ignoreMissingDistributions) {
+                            boolean wasMissing = results[0][d][f].populateMissingDists();
+                            if (wasMissing && ignoringDistsFirstTimeFlagTrain) {
+                                System.out.println("---------Probability distributions missing, but ignored: " 
+                                        + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - train");
+                                ignoringDistsFirstTimeFlagTrain = false;
+                            }
+                        }
                         results[0][d][f].findAllStatsOnce();
                         if (cleanResults)
                             results[0][d][f].cleanPredictionInfo();
@@ -458,6 +506,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                 String testFile = baseReadPath + classifierNameInStorage + "/Predictions/" + datasets.get(d) + "/testFold" + f + ".csv";
                 try {
                     results[1][d][f] = new ClassifierResults(testFile);
+                    if (ignoreMissingDistributions) {
+                        boolean wasMissing = results[1][d][f].populateMissingDists();
+                        if (wasMissing && ignoringDistsFirstTimeFlagTest) {
+                            System.out.println("---------Probability distributions missing, but ignored: " 
+                                    + classifierNameInStorage + " - " + datasets.get(d) + " - " + f + " - test");
+                            ignoringDistsFirstTimeFlagTest = false;
+                        }
+                    }
                     results[1][d][f].findAllStatsOnce();
                     if (cleanResults)
                         results[1][d][f].cleanPredictionInfo();
@@ -479,7 +535,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNames Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */
@@ -490,7 +546,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     /**
      * Read in the results from file from a common base path
      * 
-     * @param classifierName Should exactly match the directory name of the results to use
+     * @param classifierNamesInOutput Should exactly match the directory name of the results to use
      * @param baseReadPath Should be a directory containing subdirectories with the names in classifierNames 
      * @return 
      */
@@ -521,7 +577,73 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
+    private void transposeEverything() { 
+        //need to put the classifier names into the datasets list
+        //repalce the entries of the classifier results map with entries for each dataset
+        //to go from this:    Map<String/*classifierNames*/, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults; 
+        //           and a list of datasetnames 
+        //to this:            Map<String/*datasetNames*/, ClassifierResults[/* train/test */][/* classifier */][/* fold */]> classifiersResults; 
+        //           and a list of classifiernames
+        
+        int numClassifiers = classifiersResults.size();
+        int numDatasets = datasets.size();
+        
+        //going to pull everything out into parallel arrays and work that way... 
+        //innefficient, but far more likely to actually work
+        String[] origClassifierNames = new String[numClassifiers];
+        ClassifierResults[][][][] origClassifierResults = new ClassifierResults[numClassifiers][][][];
+        
+        int i = 0;
+        for (Map.Entry<String, ClassifierResults[][][]> origClassiiferResultsEntry : classifiersResults.entrySet()) {
+            origClassifierNames[i] = origClassiiferResultsEntry.getKey();
+            origClassifierResults[i] = origClassiiferResultsEntry.getValue();
+            i++;
+        }
+        
+        ClassifierResults[][][][] newDataseResultsArr = new ClassifierResults[numDatasets][2][numClassifiers][numFolds];
+        
+        
+        //do the transpose
+        for (int dset = 0; dset < numDatasets; dset++) {
+            
+            int splitStart = 0;
+            if (testResultsOnly) {
+                newDataseResultsArr[dset][0] = null; //no train results
+                splitStart = 1; //dont try and copythem over
+            }
+            
+            for (int split = splitStart; split < 2; split++) {
+                for (int classifier = 0; classifier < numClassifiers; classifier++) {
+                    //leaving commented for reference, but can skip this loop, and copy across fold array refs instead of individual fold refs
+                    //for (int fold = 0; fold < numFolds; fold++)
+                    //    newDataseResultsArr[dset][split][classifier][fold] = origClassifierResults[classifier][split][dset][fold];
+                    
+//                    System.out.println("newDataseResultsArr[dset]" + newDataseResultsArr[dset].toString().substring(0, 30));
+//                    System.out.println("newDataseResultsArr[dset][split]" + newDataseResultsArr[dset][split].toString().substring(0, 30));
+//                    System.out.println("newDataseResultsArr[dset][split][classifier]" + newDataseResultsArr[dset][split][classifier].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier]" + origClassifierResults[classifier].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier][split]" + origClassifierResults[classifier][split].toString().substring(0, 30));
+//                    System.out.println("origClassifierResults[classifier][split][dset]" + origClassifierResults[classifier][split][dset].toString().substring(0, 30));
+                    
+                    newDataseResultsArr[dset][split][classifier] = origClassifierResults[classifier][split][dset];
+                }
+            }
+        }
+        
+        //and put back into a map
+        Map<String, ClassifierResults[][][]> newDsetResultsMap = new HashMap<>();
+        for (int dset = 0; dset < numDatasets; dset++)
+            newDsetResultsMap.put(datasets.get(dset), newDataseResultsArr[dset]);
+        
+        this.classifiersResults = newDsetResultsMap; 
+        this.datasets = Arrays.asList(origClassifierNames);
+    }
+    
     public void runComparison() {
+        if (evaluateDatasetsOverClassifiers) {
+            transposeEverything();
+        }
+        
         ArrayList<ClassifierResultsAnalysis.ClassifierEvaluation> results = new ArrayList<>(classifiersResults.size());
         for (Map.Entry<String, ClassifierResults[][][]> classifier : classifiersResults.entrySet())
             results.add(new ClassifierResultsAnalysis.ClassifierEvaluation(classifier.getKey(), classifier.getValue()[1], classifier.getValue()[0]));
@@ -591,24 +713,26 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         //The majority of this time is eaten up by reading the results from the server. If you have results on your local PC, this runs in a second.
         
         //to rerun this from a clean slate to check validity, delete any existing 'Example1' folder in here: 
-        String folderToWriteAnalysisTo = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
-        String nameOfAnalysisWhichWillBecomeFolderName = "Example4";
+        String folderToWriteAnalysisTo = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/";
+        String nameOfAnalysisWhichWillBecomeFolderName = "ExampleTranspose";
         int numberOfFoldsAKAResamplesOfEachDataset = 10;
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(folderToWriteAnalysisTo, nameOfAnalysisWhichWillBecomeFolderName, numberOfFoldsAKAResamplesOfEachDataset); //10 folds only to make faster... 
         
-        String aFileWithListOfDsetsToUse = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
+        String aFileWithListOfDsetsToUse = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt";
         mce.setDatasets(aFileWithListOfDsetsToUse);
         
-        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
-        String andAnother = "Z:/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
+        String aDirectoryContainingFilesThatDefineDatasetGroupings = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/evenAndOddDsets/";
+        String andAnother = "Z:/Backups/Results_7_2_19/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroupings/topAndBotHalves/";
         mce.addDatasetGroupingFromDirectory(aDirectoryContainingFilesThatDefineDatasetGroupings);
         mce.addDatasetGroupingFromDirectory(andAnother);
         
         mce.setPerformPostHocDsetResultsClustering(true); //will create 3rd data-driven grouping automatically
         
         String[] classifiers = new String[] {"1NN", "C4.5", "NB"};
-        String directoryWithResultsClassifierByClassifier =  "Z:/Results_7_2_19/FinalisedUCIContinuous/";
+        String directoryWithResultsClassifierByClassifier =  "Z:/Backups/Results_7_2_19/FinalisedUCIContinuous/";
         mce.readInClassifiers(classifiers, directoryWithResultsClassifierByClassifier);
+        
+//        mce.setEvaluateDatasetsOverClassifiers(true); //cannot use with the dataset groupings, in this example. could define classifier groupings though ! 
         
         mce.runComparison(); 
         

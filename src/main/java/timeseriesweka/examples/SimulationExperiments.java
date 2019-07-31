@@ -14,21 +14,21 @@
  */
 package timeseriesweka.examples;
 
-import timeseriesweka.classifiers.FlatCote;
-import timeseriesweka.classifiers.LearnShapelets;
-import timeseriesweka.classifiers.FastShapelets;
-import timeseriesweka.classifiers.TSBF;
-import timeseriesweka.classifiers.TSF;
-import timeseriesweka.classifiers.DTD_C;
-import timeseriesweka.classifiers.BOSS;
-import timeseriesweka.classifiers.RISE;
-import timeseriesweka.classifiers.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.LPS;
-import timeseriesweka.classifiers.ElasticEnsemble;
-import timeseriesweka.classifiers.DD_DTW;
-import timeseriesweka.classifiers.BagOfPatterns;
-import timeseriesweka.classifiers.HiveCote;
-import experiments.DataSets;
+import timeseriesweka.classifiers.hybrids.FlatCote;
+import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
+import timeseriesweka.classifiers.shapelet_based.FastShapelets;
+import timeseriesweka.classifiers.interval_based.TSBF;
+import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.distance_based.DTD_C;
+import timeseriesweka.classifiers.dictionary_based.BOSS;
+import timeseriesweka.classifiers.frequency_based.RISE;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import timeseriesweka.classifiers.interval_based.LPS;
+import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
+import timeseriesweka.classifiers.distance_based.DD_DTW;
+import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
+import timeseriesweka.classifiers.hybrids.HiveCote;
+import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
@@ -38,14 +38,14 @@ import statistics.simulators.SimulateShapeletData;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.FastDTW_1NN;
+import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import vector_classifiers.CAWPE;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
-import vector_classifiers.TunedRandomForest;
+import weka_uea.classifiers.ensembles.CAWPE;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
+import weka_uea.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * 
@@ -252,8 +252,8 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(c instanceof TrainAccuracyEstimate)
-            ((TrainAccuracyEstimate)c).writeCVTrainToFile(preds+"/trainFold"+sample+".csv");
+        if(c instanceof TrainAccuracyEstimator)
+            ((TrainAccuracyEstimator)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              
@@ -382,7 +382,7 @@ public class SimulationExperiments {
 
     
     public static void main(String[] args){
-        DataSets.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
+        DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
         runShapeletSimulatorExperiment();
     }
 }

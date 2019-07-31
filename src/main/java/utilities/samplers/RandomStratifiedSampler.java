@@ -11,7 +11,7 @@ import static utilities.InstanceTools.classDistribution;
 import static utilities.InstanceTools.instancesByClass;
 import static utilities.Utilities.argMax;
 
-public class RandomStratifiedSampler {
+public class RandomStratifiedSampler implements Sampler{
 
     private List<Instances> instancesByClass;
     private double[] classDistribution;

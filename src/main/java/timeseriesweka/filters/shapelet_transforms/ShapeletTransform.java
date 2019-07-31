@@ -14,6 +14,7 @@
  */   
 package timeseriesweka.filters.shapelet_transforms;
 
+import experiments.data.DatasetLoading;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -83,6 +84,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     //Variables for experiments
     protected static long subseqDistOpCount;
     private boolean removeSelfSimilar = true;
+    private boolean pruneMatchingShapelets;
     
     @Override
     public String globalInfo() {
@@ -337,8 +339,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * Mutator method to set the minimum and maximum shapelet lengths for the
      * filter.
      *
-     * @param minShapeletLength minimum length of shapelets
-     * @param maxShapeletLength maximum length of shapelets
+     * @param min minimum length of shapelets
+     * @param max maximum length of shapelets
      */
     public void setShapeletMinAndMax(int min, int max) {
         searchFunction.setMinAndMax(min, max);
@@ -429,7 +431,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
     protected void inputCheck(Instances dataInst) throws IllegalArgumentException {
         if (numShapelets < 1) {
-            throw new IllegalArgumentException("Number of shapelets initialised incorrectly - please select value of k (Usage: setNumberOfShapelets");
+            throw new IllegalArgumentException("Number of shapelets initialised incorrectly to "+numShapelets+" - please select value of k (Usage: setNumberOfShapelets");
         }
 
         int maxPossibleLength;
@@ -581,7 +583,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         outputPrint("Processing data: ");
 
         int dataSize = data.numInstances();
-        
+      
         //for all possible time series.
         for(; casesSoFar < dataSize; casesSoFar++) {
             outputPrint("data : " + casesSoFar);
@@ -706,34 +708,77 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
             //one list is expired keep adding the other list until we reach K.
             if (shapelet1Null) {
-                newBestSoFar.add(shapelet2);
+                //even if the list has expired don't just add shapelets without considering they may be dupes.
+                AddToBestSoFar(shapelet2, newBestSoFar);
                 tssPtr++;
                 continue;
             }
 
             //one list is expired keep adding the other list until we reach K.
             if (shapelet2Null) {
-                newBestSoFar.add(shapelet1);
+                //even if the list has expired don't just add shapelets without considering they may be dupes.
+                AddToBestSoFar(shapelet1, newBestSoFar);
                 bsfPtr++;
                 continue;
             }
 
             //if both lists are fine then we need to compare which one to use.
-            if (shapeletComparator.compare(shapelet1, shapelet2) == -1) {
-                newBestSoFar.add(shapelet1);
+            int compare = shapeletComparator.compare(shapelet1, shapelet2);
+            if (compare < 0) {
+                AddToBestSoFar(shapelet1, newBestSoFar);
                 bsfPtr++;
                 shapelet1 = null;
-            } else {
-                newBestSoFar.add(shapelet2);
+            } else{
+                AddToBestSoFar(shapelet2, newBestSoFar);
                 tssPtr++;
                 shapelet2 = null;
-            }
             
-            
+            }             
         }
 
         return newBestSoFar;
     }
+
+    private void AddToBestSoFar(Shapelet shapelet1, ArrayList<Shapelet> newBestSoFar) {
+        boolean containsMatchingShapelet = false;
+        if(pruneMatchingShapelets)
+            containsMatchingShapelet = containsMatchingShapelet(shapelet1, newBestSoFar);
+        
+        if(!containsMatchingShapelet)
+            newBestSoFar.add(shapelet1);
+    }
+
+    private boolean containsMatchingShapelet(Shapelet shapelet, ArrayList<Shapelet> newBestSoFar){
+        //we're going to be comparing all the shapelets we have to shapelet.
+        this.subseqDistance.setShapelet(shapelet);
+
+        //go backwards from where we're at until we stop matching. List is sorted.
+        for(int index=newBestSoFar.size()-1;index>=0; index--){
+            Shapelet shape = newBestSoFar.get(index);
+            int compare2 = shapeletComparator.compare(shape, shapelet);
+            //if we are not simply equal to the shapelet that we're looking at then abandon ship.
+            if(compare2 != 0){
+                return false; // stop evaluating. we no longer have any matches.
+            }
+            
+            System.out.println("matched length and IG.");
+
+            //if we're here then evaluate the shapelet distance. if they're equal in the comparator it means same length, same IG.
+            double dist = this.subseqDistance.distanceToShapelet(shape);
+            //if we hit a shapelet we nearly match with 1e-6 match with stop checking.  
+            if(isNearlyEqual(dist, 0.0)){
+                return true; //this means we should not add the shapelet.
+            }
+        }
+                    
+        return false;    
+    }
+    
+    private static boolean isNearlyEqual(double a, double b){
+        double eps = 1e-6;
+        return Math.abs(a - b) < eps;
+    }
+    
 
     /**
      * protected method to remove self-similar shapelets from an ArrayList (i.e.
@@ -1191,8 +1236,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         final int fold = 1;
         final String filePath = dataLocation + File.separator + dataset + File.separator + dataset;
         Instances test, train;
-        test = utilities.ClassifierTools.loadData(filePath + "_TEST");
-        train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
+        test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
          ShapeletSearchOptions searchOptions = new ShapeletSearchOptions.Builder()
                                             .setMin(3)
                                             .setMax(train.numAttributes()-1)
@@ -1230,13 +1275,13 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     }
     public static void main(String[] args){
         try {
-            final String resampleLocation = "../../Dropbox//TSC Problems";
-            final String dataset = "ItalyPowerDemand";
+            final String resampleLocation = "D:\\Research TSC\\Data\\TSCProblems2018";
+            final String dataset = "Yoga";
             final int fold = 1;
             final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
             Instances test, train;
-            test = utilities.ClassifierTools.loadData(filePath + "_TEST");
-            train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
+            test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+            train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
             //use fold as the seed.
             //train = InstanceTools.subSample(train, 100, fold);
             
@@ -1251,6 +1296,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
             transform.setNumberOfShapelets(train.numInstances() * 10);
             transform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
             transform.supressOutput();
+            transform.setPruneMatchingShapelets(true);
             
             long startTime = System.nanoTime();
            
@@ -1316,6 +1362,20 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      */
         public void setRemoveSelfSimilar(boolean removeSelfSimilar) {
         this.removeSelfSimilar = removeSelfSimilar;
+    }
+
+    /**
+     * @return the pruneMatchingShapelets
+     */
+    public boolean isPruneMatchingShapelets() {
+        return pruneMatchingShapelets;
+    }
+
+    /**
+     * @param pruneMatchingShapelets the pruneMatchingShapelets to set
+     */
+    public void setPruneMatchingShapelets(boolean pruneMatchingShapelets) {
+        this.pruneMatchingShapelets = pruneMatchingShapelets;
     }
              
 }

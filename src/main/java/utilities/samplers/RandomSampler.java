@@ -6,10 +6,10 @@ import weka.core.Instances;
 import java.util.List;
 import java.util.Random;
 
-public class RandomSampler{
+public class RandomSampler implements Sampler{
 
     private Instances instances;
-    private Random random = new Random();
+    private Random random;
 
     public RandomSampler(Random random){
         this.random = random;
@@ -19,7 +19,7 @@ public class RandomSampler{
         random = new Random();
     }
 
-    public void setInstances(Instances instances) { this.instances = instances; }
+    public void setInstances(Instances instances) { this.instances = new Instances(instances); }
 
     public boolean hasNext() { return !instances.isEmpty(); }
 

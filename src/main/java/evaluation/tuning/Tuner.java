@@ -19,6 +19,7 @@ import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,23 +27,23 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.contract_interfaces.TrainTimeContractClassifier;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import vector_classifiers.SaveEachParameter;
+import weka_uea.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
+import timeseriesweka.classifiers.Checkpointable;
+import timeseriesweka.classifiers.TrainTimeContractable;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner 
-        implements SaveEachParameter,CheckpointClassifier, TrainTimeContractClassifier {
+        implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
     private ParameterSearcher searcher = new GridSearcher();
@@ -438,7 +439,7 @@ public class Tuner
         tuner.setSeed(seed);
         
         String dataset = "hayes-roth";
-        Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+        Instances all = DatasetLoading.loadDataNullable("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
         Instances[] data = InstanceTools.resampleInstances(all, seed, 0.5);
         
         System.out.println(tuner.tune(svm, data[0], space));

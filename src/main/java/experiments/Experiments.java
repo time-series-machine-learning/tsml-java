@@ -14,6 +14,9 @@
  */
 package experiments;
 
+import weka_uea.classifiers.SaveEachParameter;
+import weka_uea.classifiers.tuned.TunedRandomForest;
+import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -27,18 +30,15 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
-import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
-import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import experiments.data.DatasetLoading;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
@@ -46,14 +46,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import timeseriesweka.classifiers.ensembles.SaveableEnsemble;
-import static utilities.GenericTools.indexOfMax;
-import utilities.multivariate_tools.MultivariateInstanceTools;
-import vector_classifiers.*;
-import weka.core.Attribute;
-import weka.core.Instance;
+import utilities.InstanceTools;
+import weka_uea.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is 
@@ -87,7 +83,7 @@ import weka.core.Instances;
       If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
       directly, instead of building the String[] args and calling main like a lot of legacy code does.   
  * 
- * @author Tony Bagnall (anthony.bagnall@uea.ac.uk), James Large (james.large@uea.ac.uk)
+ * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
 public class Experiments  {
 
@@ -96,9 +92,7 @@ public class Experiments  {
     public static boolean debug = false;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
-    public static String LOXO_ATT_ID = "experimentsSplitAttribute";
     public static int numCVFolds = 10;
-    public static double proportionKeptForTraining = 0.5;
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
@@ -186,9 +180,12 @@ public class Experiments  {
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
         
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluation = false;
         
-        
-        
+        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
+        public String trainEstimateMethod = "cv_10";
         
         public ExperimentalArguments() {
             
@@ -367,7 +364,7 @@ public class Experiments  {
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DataSets.tscProblems78,0,folds);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DatasetLists.tscProblems78,0,folds);
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
@@ -375,7 +372,7 @@ public class Experiments  {
                 settings[1]="-rp=E:/Results/";//Where to write results                
                 settings[2]="-gtf=false"; //Whether to generate train files or not               
                 settings[3]="-cn=TunedTSF"; //Classifier name
-//                for(String str:DataSets.tscProblems78){
+//                for(String str:DatasetLists.tscProblems78){
                     settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                     settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
                 System.out.println("Manually set args:");
@@ -409,14 +406,29 @@ public class Experiments  {
 //        LOGGER.addHandler(new FileHandler()); 
         if (debug)
             LOGGER.setLevel(Level.FINEST);
-        else 
+        else
             LOGGER.setLevel(Level.INFO);
+        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
         //paths. would rather just use the expSettings to do it all though 
-        DataSets.resultsPath = expSettings.resultsWriteLocation;
-        experiments.DataSets.problemPath = expSettings.dataReadLocation;
+        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
+        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
+        
+        //2019_06_03: cases in the classifier can now change the classifier name to reflect 
+        //paritcular parameters wanting to be represented as different classifiers
+        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the 
+        //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
+        //such that if the experimenter is looping over contract times, they need only create one case 
+        //in the setclassifier switch and pass one classifier name, but loop over contract time directly 
+        //
+        //so, the setClassifier has been moved to up here, previously only done after the check for 
+        //whether we abort due to the results file already existing. the instantiation of a classifier
+        //shouldn't be too much work, so despite it looking a little ugly, the call is 
+        //moved to here before the first proper usage of classifiername, such that it can 
+        //be updated first if need be
+        Classifier classifier = ClassifierLists.setClassifier(expSettings);
         
         //Build/make the directory to write the train and/or testFold files to
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
@@ -427,15 +439,12 @@ public class Experiments  {
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
-        else {           
-//            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
-            Classifier classifier = ClassifierLists.setClassifier(expSettings);
-            
-            Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+        else {     
+            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
@@ -467,141 +476,6 @@ public class Experiments  {
         }
     }
     
-    /**
-     * This method will return a train/test split of the problem, resampled with the fold ID given. 
-     * 
-     * Currently, there are four ways to load datasets. These will be attempted from 
-     * top to bottom, in an order designed to make the fewest assumptions 
-     * possible about the nature of the split, in terms of potential differences in class distributions,
-     * train and test set sizes, etc. 
-     * 
-     * 1) if predefined splits are found at the specified location, in the form dataLocation/dsetName/dsetName0_TRAIN and TEST,
-     *      these will be loaded and used as they are, OTHERWISE...
-     * 2) if a predefined fold0 split is given as in the UCR archive, and fold0 is being experimented on, the split exactly as it is defined will be used. 
-     *      For fold != 0, the fold0 split is combined and resampled, maintaining the original train and test distributions. OTHERWISE...
-     * 3) if only a single file is found containing all the data, this dataset is  stratified randomly resampled with proportionKeptForTraining (default=0.5)
-     *      instances reserved for the _TRAIN_ set. OTHERWISE...
-     * 4) if the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
-     *      then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
-     *      a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
-     *      set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     *      to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
-     *      values 1 to numUniqueFirstAttValues OTHERWISE...
-     * 5) error
-     * 
-     * TODO: potentially just move to development.experiments.DataSets once we clean up that
-     * 
-     * @return new Instances[] { trainSet, testSet };
-     */
-    public static Instances[] sampleDataset(String parentFolder, String problem, int fold) throws Exception {
-        Instances[] data = new Instances[2];
-
-        File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");
-        File testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.arff");
-        
-        boolean predefinedSplitsExist = (trainFile.exists() && testFile.exists());
-        if (predefinedSplitsExist) {
-            // CASE 1) 
-            data[0] = ClassifierTools.loadData(trainFile);
-            data[1] = ClassifierTools.loadData(testFile);
-            LOGGER.log(Level.FINE, problem + " loaded from predfined folds.");
-        } else {   
-            trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
-            testFile = new File(parentFolder + problem + "/" + problem + "_TEST.arff");
-            boolean predefinedFold0Exists = (trainFile.exists() && testFile.exists());
-            if (predefinedFold0Exists) {
-                // CASE 2) 
-                data[0] = ClassifierTools.loadData(trainFile);
-                data[1] = ClassifierTools.loadData(testFile);
-                if (data[0].checkForAttributeType(Attribute.RELATIONAL))
-                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
-                else
-                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
-                
-                LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
-            }
-            else { 
-                // We only have a single file with all the data
-                Instances all = null;
-                try {
-                    all = ClassifierTools.loadDataThrowable(parentFolder + problem + "/" + problem);
-                } catch (IOException io) {
-                    String msg = "Could not find the dataset \"" + problem + "\" in any form at the path\n"+
-                            parentFolder+"\n"
-                            +"The IOException: " + io;
-                    LOGGER.log(Level.SEVERE, msg, io);
-                }
-                 
-                
-                boolean needToDefineLeaveOutOneXFold = all.attribute(0).name().toLowerCase().contains(LOXO_ATT_ID.toLowerCase());
-                if (needToDefineLeaveOutOneXFold) {
-                    // CASE 4)
-                    data = splitDatasetByFirstAttribute(all, fold);
-                    LOGGER.log(Level.FINE, problem + " resampled from full data file.");
-                }
-                else { 
-                    // CASE 3) 
-                    if (all.checkForAttributeType(Attribute.RELATIONAL))
-                        data = MultivariateInstanceTools.resampleMultivariateInstances(all, fold, proportionKeptForTraining);
-                    else
-                        data = InstanceTools.resampleInstances(all, fold, proportionKeptForTraining);
-                    LOGGER.log(Level.FINE, problem + " resampled from full data file.");
-                }
-            }
-        }
-        return data;
-    }
-
-    /**
-     * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
-     * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
-     * a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
-     * set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
-     * values 1 to numUniqueFirstAttValues
-     * 
-     * TODO: potentially just move to experiments.DataSets once we clean up that
-     * 
-     * @return new Instances[] { trainSet, testSet };
-     */
-    public static Instances[] splitDatasetByFirstAttribute(Instances all, int foldId) {        
-        TreeMap<Double, Integer> splitVariables = new TreeMap<>();
-        for (int i = 0; i < all.numInstances(); i++) {
-            //even if it's a string attribute, this val corresponds to the index into the array of possible strings for this att
-            double key= all.instance(i).value(0);
-            Integer val = splitVariables.get(key);
-            if (val == null)
-                val = 0;
-            splitVariables.put(key, ++val); 
-        }
-
-        //find the split attribute value to keep for testing this fold
-        double idToReserveForTestSet = -1;
-        int testSize = -1;
-        int c = 0;
-        for (Map.Entry<Double, Integer> splitVariable : splitVariables.entrySet()) {
-            if (c++ == foldId) {
-                idToReserveForTestSet = splitVariable.getKey();
-                testSize = splitVariable.getValue();
-            }
-        }
-
-        //make the split
-        Instances train = new Instances(all, all.size() - testSize);
-        Instances test  = new Instances(all, testSize);
-        for (int i = 0; i < all.numInstances(); i++)
-            if (all.instance(i).value(0) == idToReserveForTestSet)
-                test.add(all.instance(i));
-        train.addAll(all);
-
-        //delete the split attribute
-        train.deleteAttributeAt(0);
-        test.deleteAttributeAt(0);
-        
-        return new Instances[] { train, test };
-    }
-    
-        
     /**
      * Perform an actual experiment, using the loaded classifier and resampled dataset given, writing to the specified results location. 
      * 
@@ -657,7 +531,7 @@ public class Experiments  {
             
             //Write train results
             if (expSettings.generateErrorEstimateOnTrainSet) {
-                if (!(classifier instanceof TrainAccuracyEstimate)) {
+                if (!(classifier instanceof TrainAccuracyEstimator)) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
@@ -672,10 +546,10 @@ public class Experiments  {
             //And now evaluate on the test set, if this wasn't a single parameter fold
             if (expSettings.singleParameterID == null) {
                 //This is checked before the buildClassifier also, but 
-                //a) another process may have been doign the same experiment 
+                //a) another process may have been doing the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
-                if (!CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
+                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
@@ -684,7 +558,7 @@ public class Experiments  {
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
                     
-                    if (classifier instanceof TrainAccuracyEstimate) {
+                    if (classifier instanceof TrainAccuracyEstimator) {
                         //if this classifier is recording it's own results, use the build time it found
                         //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
                         //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
@@ -692,7 +566,7 @@ public class Experiments  {
                         //the i/o time for reading in the modules' results, + the ensemble scheme time
                         //therefore the general assumption here is that the classifier knows its own buildtime 
                         //better than we do here
-                        testResults.setBuildTime(((TrainAccuracyEstimate)classifier).getTrainResults().getBuildTime());
+                        testResults.setBuildTime(((TrainAccuracyEstimator)classifier).getTrainResults().getBuildTime());
                     }
                     else {
                         //else use the buildtime calculated here in experiments
@@ -750,9 +624,9 @@ public class Experiments  {
     private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
         ClassifierResults trainResults = null;
         
-        if (classifier instanceof TrainAccuracyEstimate) { 
+        if (classifier instanceof TrainAccuracyEstimator) { 
             //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimate) classifier).writeCVTrainToFile(fullTrainWritingPath);
+            ((TrainAccuracyEstimator) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
             File f = new File(fullTrainWritingPath);
             if (f.exists())
                 f.setWritable(true, false);
@@ -760,12 +634,55 @@ public class Experiments  {
         else { 
             long trainBenchmark = findBenchmarkTime(exp);
             
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            cv.setSeed(fold);
-            int numFolds = Math.min(train.numInstances(), numCVFolds);
-            cv.setNumFolds(numFolds);
-            trainResults = cv.crossValidateWithStats(classifier, train);
-            trainResults.setBenchmarkTime(trainBenchmark);
+            //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
+            String[] parts = exp.trainEstimateMethod.split("_");
+            String method = parts[0];
+            
+            String para = null;
+            if (parts.length > 1) 
+                para = parts[1];
+            
+            long estimateTimeStart = System.nanoTime();
+                    
+            switch (method) {
+                case "cv":
+                case "CV": 
+                case "CrossValidationEvaluator":
+                    int numFolds = Experiments.numCVFolds;
+                    if (para != null)
+                        numFolds = Integer.parseInt(para);
+                    numFolds = Math.min(train.numInstances(), numFolds);
+                    
+                    CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                    cv.setSeed(fold);
+                    cv.setNumFolds(numFolds);
+                    trainResults = cv.crossValidateWithStats(classifier, train);
+                    break;
+                
+                case "hov":
+                case "HOV":
+                case "SingleTestSetEvaluator":
+                    double trainProp = DatasetLoading.getProportionKeptForTraining();
+                    if (para != null)
+                        trainProp = Double.parseDouble(para);
+                    
+                    Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
+                    classifier.buildClassifier(trainVal[0]);
+                    
+                    SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
+                    hov.setSeed(fold);
+                    trainResults = hov.evaluate(classifier, trainVal[1]);
+                    break;
+                  
+                default:
+                    throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
+            }
+            
+            long estimateTime = System.nanoTime() - estimateTimeStart;
+                    
+            trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
+            trainResults.setErrorEstimateTime(estimateTime);
+            trainResults.setBenchmarkTime(trainBenchmark);      
         }
         
         return trainResults;

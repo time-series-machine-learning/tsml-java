@@ -15,6 +15,7 @@
 package timeseriesweka.filters;
 
 
+import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -165,7 +166,7 @@ public Instances process(Instances inst) throws Exception {
 	
 		
             try{
-                Instances test=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
+                Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
 //                Instances filter=new SummaryStats().process(test);
                SummaryStats m=new SummaryStats();
                m.setInputFormat(test);

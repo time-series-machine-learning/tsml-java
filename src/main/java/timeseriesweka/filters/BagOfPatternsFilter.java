@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -128,6 +129,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
             
             if (!(numerosityReduction && identicalPattern(pattern, prevPattern)))
                 patterns.add(pattern);
+                prevPattern = pattern;
         }
         
         return buildHistogram(patterns);
@@ -244,7 +246,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
         System.out.println("BoPtest\n\n");
 
         try {
-            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
             test.deleteAttributeAt(0); //just name of bottle
           
             BagOfPatternsFilter bop = new BagOfPatternsFilter(8,4,50);  
