@@ -319,7 +319,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             trainResults.setParas(getParameters());
             double result = findEnsembleTrainAcc(data);
             trainResults.finaliseResults();
-            trainResults.writeFullResultsToFile(trainCVPath);
+            if (trainCVPath != null)
+                trainResults.writeFullResultsToFile(trainCVPath);
 
             System.out.println("CV acc ="+result);
 
@@ -574,6 +575,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         double accuracy;
 
         c = new BOSS();
+        c.trainCV = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 

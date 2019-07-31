@@ -314,7 +314,6 @@ public class ClassifierLists {
             case "RBOSS":
                 c = new RBOSS();
                 ((RBOSS) c).setSeed(fold);
-                ((RBOSS) c).useRecommendedSettingsRBOSS();
                 break;
             case "WEASEL":
                 c = new WEASEL();

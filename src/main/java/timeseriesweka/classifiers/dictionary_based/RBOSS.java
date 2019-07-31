@@ -101,7 +101,6 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private Instances[] prevParameters;
 
     private String checkpointPath;
-    private String serPath;
     private boolean checkpoint = false;
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
@@ -124,6 +123,13 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     private String trainCVPath;
     private boolean trainCV = false;
+    private boolean fullTrainCVEstimate = false;
+    private double[][] trainDistributions;
+    private int[] idxSubsampleCount;
+    private ArrayList<Integer> latestTrainPreds;
+    private ArrayList<Integer> latestTrainIdx;
+    private ArrayList<ArrayList>[] filterTrainPreds;
+    private ArrayList<ArrayList>[] filterTrainIdx;
 
     private transient Instances train;
     private double ensembleCvAcc = -1;
@@ -135,7 +141,9 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     protected static final long serialVersionUID = 22554L;
 
-    public RBOSS() {}
+    public RBOSS() {
+        useRecommendedSettingsRBOSS();
+    }
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -188,7 +196,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         return sb.toString();
     }
 
-    public void useRecommendedSettingsRBOSS(){
+    private void useRecommendedSettingsRBOSS(){
         ensembleSize = 250;
         maxEnsembleSize = 50;
         randomCVAccEnsemble = true;
@@ -320,6 +328,13 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         lowestAcc = saved.lowestAcc;
         trainCVPath = saved.trainCVPath;
         trainCV = saved.trainCV;
+        fullTrainCVEstimate = saved.fullTrainCVEstimate;
+        trainDistributions = saved.trainDistributions;
+        idxSubsampleCount = saved.idxSubsampleCount;
+        latestTrainPreds = saved.latestTrainPreds;
+        latestTrainIdx = saved.latestTrainIdx;
+        filterTrainPreds = saved.filterTrainPreds;
+        filterTrainIdx = saved.filterTrainIdx;
         trainResults = saved.trainResults;
         ensembleCvAcc = saved.ensembleCvAcc;
         ensembleCvPreds = saved.ensembleCvPreds;
@@ -333,7 +348,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             for (int i = 0; i < saved.numClassifiers[n]; i++) {
                 System.out.println("Loading BOSSIndividual" + n + "-" + i + ".ser");
 
-                FileInputStream fis = new FileInputStream(serPath + "BOSSIndividual" + n + "-" + i + ".ser");
+                FileInputStream fis = new FileInputStream(checkpointPath + "BOSSIndividual" + n + "-" + i + ".ser");
                 try (ObjectInputStream in = new ObjectInputStream(fis)) {
                     Object indv = in.readObject();
 
@@ -416,6 +431,10 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         cleanupCheckpointFiles = b;
     }
 
+    public void setFullTrainCVEstimate(boolean b){
+        fullTrainCVEstimate = b;
+    }
+
     public void setCutoff(boolean b) {
         cutoff = b;
     }
@@ -447,33 +466,33 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
 
-        if(data.checkForAttributeType(Attribute.RELATIONAL)){
+        if (data.checkForAttributeType(Attribute.RELATIONAL)) {
             isMultivariate = true;
         }
 
-        //path checkpoint files will be saved to
-        serPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
-        File f = new File(serPath + "BOSS.ser");
-
         //Window length settings
-        int seriesLength = isMultivariate ? channelLength(data)-1 : data.numAttributes()-1; //minus class attribute
+        int seriesLength = isMultivariate ? channelLength(data) - 1 : data.numAttributes() - 1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = (int)(seriesLength*maxWinLenProportion);
-        if (maxWindow < minWindow) minWindow = maxWindow/2;
+        int maxWindow = (int) (seriesLength * maxWinLenProportion);
+        if (maxWindow < minWindow) minWindow = maxWindow / 2;
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength*maxWinSearchProportion;
-        int winInc = (int)((maxWindow - minWindow) / maxWindowSearches);
+        double maxWindowSearches = seriesLength * maxWinSearchProportion;
+        int winInc = (int) ((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
+        //path checkpoint files will be saved to
+        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
+        File f = new File(checkpointPath + "BOSS.ser");
+
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && f.exists()){
+        if (checkpoint && f.exists()) {
             long time = System.nanoTime();
-            loadFromFile(serPath + "BOSS.ser");
+            loadFromFile(checkpointPath + "BOSS.ser");
             System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
         }
         //initialise variables
         else {
-            if (data.classIndex() != data.numAttributes()-1)
+            if (data.classIndex() != data.numAttributes() - 1)
                 throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
             //Multivariate
@@ -481,26 +500,26 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 numSeries = numChannels(data);
                 classifiers = new LinkedList[numSeries];
 
-                for (int n = 0; n < numSeries; n++){
+                for (int n = 0; n < numSeries; n++) {
                     classifiers[n] = new LinkedList<>();
                 }
 
                 numClassifiers = new int[numSeries];
 
-                if (ensembleSizePerChannel > 0){
-                    ensembleSize = ensembleSizePerChannel*numSeries;
+                if (ensembleSizePerChannel > 0) {
+                    ensembleSize = ensembleSizePerChannel * numSeries;
                 }
             }
             //Univariate
-            else{
+            else {
                 numSeries = 1;
                 classifiers = new LinkedList[1];
                 classifiers[0] = new LinkedList<>();
                 numClassifiers = new int[1];
             }
 
-            if (maxEvalPerClass > 0){
-                maxEval = data.numClasses()*maxEvalPerClass;
+            if (maxEvalPerClass > 0) {
+                maxEval = data.numClasses() * maxEvalPerClass;
             }
 
             rand = new Random(seed);
@@ -508,17 +527,21 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
         }
 
-        try{
+        try {
             SizeOf.deepSizeOf("test");
-        }
-        catch (IllegalStateException e){
+        } catch (IllegalStateException e) {
             if (memoryContract) {
                 throw new Exception("Unable to contract memory with SizeOf unavailable, " +
                         "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
             }
         }
 
-        this.train = data;
+        train = data;
+
+        if (trainCV){
+            trainDistributions = new double[data.numInstances()][data.numClasses()];
+            idxSubsampleCount = new int[data.numInstances()];
+        }
 
         if (multiThread && numThreads == 1){
             numThreads = Runtime.getRuntime().availableProcessors();
@@ -561,16 +584,17 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         //Estimate train accuracy
         if (trainCV) {
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            trainResults.setClassifierName("RBOSS");
+            trainResults.setClassifierName("BOSS");
             trainResults.setDatasetName(data.relationName());
             trainResults.setFoldID(seed);
             trainResults.setSplit("train");
             trainResults.setParas(getParameters());
-            double result = findEnsembleTrainAcc(data);
+            ensembleCvAcc = findEnsembleTrainAcc(data);
             trainResults.finaliseResults();
-            trainResults.writeFullResultsToFile(trainCVPath);
+            if (trainCVPath != null)
+                trainResults.writeFullResultsToFile(trainCVPath);
 
-            System.out.println("CV acc ="+result);
+            System.out.println("CV acc =" + ensembleCvAcc);
 
             trainCV = false;
         }
@@ -586,6 +610,15 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         lowestAccIdx = new int[numSeries];
         lowestAcc = new double[numSeries];
         for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
+
+        if (trainCV){
+            filterTrainPreds = new ArrayList[numSeries];
+            filterTrainIdx  = new ArrayList[numSeries];
+            for (int n = 0; n < numSeries; n++){
+                filterTrainPreds[n] = new ArrayList();
+                filterTrainIdx[n] = new ArrayList();
+            }
+        }
 
         //build classifiers up to a set size
         while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
@@ -617,6 +650,11 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 }
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
+
+                if (trainCV){
+                    filterTrainPreds[currentSeries].add(latestTrainPreds);
+                    filterTrainIdx[currentSeries].add(latestTrainIdx);
+                }
             }
             else if (boss.accuracy > lowestAcc[currentSeries]) {
                 double[] newLowestAcc = findMinEnsembleAcc();
@@ -625,6 +663,14 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
                 classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
                 classifiers[currentSeries].add(lowestAccIdx[currentSeries], boss);
+
+                if (trainCV){
+                    filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
+                    filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
+                    filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
+                    filterTrainIdx[currentSeries].add(lowestAccIdx[currentSeries], latestTrainIdx);
+                }
+
                 checkpointChange = true;
             }
 
@@ -660,9 +706,42 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     BOSSIndividual b = classifiers[n].get(i);
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
+
+                        if (trainCV){
+                            filterTrainPreds[n].remove(i);
+                            filterTrainIdx[n].remove(i);
+                        }
+
                         numClassifiers[n]--;
                         i--;
                     }
+                }
+            }
+        }
+
+        if (trainCV){
+            for (int n = 0; n < numSeries; n++) {
+                for (int i = 0; i < filterTrainIdx[n].size(); i++) {
+                    ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
+                    ArrayList<Integer> trainPreds = filterTrainPreds[n].get(i);
+                    for (int g = 0; g < trainIdx.size(); g++) {
+                        idxSubsampleCount[trainIdx.get(g)]++;
+                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)]++;
+                    }
+                }
+            }
+
+            filterTrainPreds = null;
+            filterTrainIdx = null;
+            latestTrainPreds = null;
+            latestTrainIdx = null;
+
+            for (int i = 0; i < trainDistributions.length; i++){
+                if (idxSubsampleCount[i] > 0) {
+                    for (int n = 0; n < trainDistributions[i].length; n++) {
+                        trainDistributions[i][n] /= idxSubsampleCount[i];
+                    }
+                    //System.out.println(Arrays.toString(trainDistributions[i]));
                 }
             }
         }
@@ -697,6 +776,13 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
             if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
+            if (trainCV){
+                for (int i = 0; i < latestTrainIdx.size(); i++){
+                    idxSubsampleCount[latestTrainIdx.get(i)]++;
+                    trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)]++;
+                }
+            }
+
             int prev = currentSeries;
             if (isMultivariate){
                 nextSeries();
@@ -708,12 +794,25 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
             checkContracts();
         }
+
+        if (trainCV){
+            latestTrainPreds = null;
+            latestTrainIdx = null;
+
+            for (int i = 0; i < trainDistributions.length; i++){
+                if (idxSubsampleCount[i] > 0) {
+                    for (int n = 0; n < trainDistributions[i].length; n++) {
+                        trainDistributions[i][n] /= idxSubsampleCount[i];
+                    }
+                }
+            }
+        }
     }
 
     private void checkpoint(int seriesNo, int classifierNo){
         if(checkpointPath!=null){
             try{
-                File f = new File(serPath);
+                File f = new File(checkpointPath);
                 if(!f.isDirectory())
                     f.mkdirs();
                 //time the checkpoint occured
@@ -725,7 +824,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     //save the last build individual classifier
                     BOSSIndividual indiv = classifiers[seriesNo].get(classifierNo);
 
-                    FileOutputStream fos = new FileOutputStream(serPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
+                    FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
                     try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                         out.writeObject(indiv);
                         out.close();
@@ -738,10 +837,10 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 checkpointTime = System.nanoTime();
 
                 //save this, classifiers and train data not included
-                saveToFile(serPath + "RandomBOSStemp.ser");
+                saveToFile(checkpointPath + "RandomBOSStemp.ser");
 
-                File file = new File(serPath + "RandomBOSStemp.ser");
-                File file2 = new File(serPath + "BOSS.ser");
+                File file = new File(checkpointPath + "RandomBOSStemp.ser");
+                File file2 = new File(checkpointPath + "BOSS.ser");
                 file2.delete();
                 file.renameTo(file2);
 
@@ -749,13 +848,13 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
             catch(Exception e){
                 e.printStackTrace();
-                System.out.println("Serialisation to "+serPath+" FAILED");
+                System.out.println("Serialisation to "+checkpointPath+" FAILED");
             }
         }
     }
 
     private void checkpointCleanup(){
-        File f = new File(serPath);
+        File f = new File(checkpointPath);
         String[] files = f.list();
 
         for (String file: files){
@@ -995,6 +1094,11 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
+        if (trainCV){
+            latestTrainPreds = new ArrayList();
+            latestTrainIdx = new ArrayList();
+        }
+
         if (useFastTrainEstimate && maxEval < series.numInstances()){
             RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
             sampler.setInstances(series);
@@ -1034,6 +1138,11 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 if (t.nn == series.get(t.testIndex).classValue()) {
                     ++correct;
                 }
+
+                if (trainCV){
+                    latestTrainPreds.add((int)t.nn);
+                    latestTrainIdx.add(t.testIndex);
+                }
             }
         }
         else {
@@ -1045,6 +1154,11 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 double c = boss.classifyInstance(indicies[i]); //classify series i, while ignoring its corresponding histogram i
                 if (c == series.get(indicies[i]).classValue()) {
                     ++correct;
+                }
+
+                if (trainCV){
+                    latestTrainPreds.add((int)c);
+                    latestTrainIdx.add(indicies[i]);
                 }
             }
         }
@@ -1063,34 +1177,39 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     private double findEnsembleTrainAcc(Instances data) throws Exception {
         this.ensembleCvPreds = new double[data.numInstances()];
-
+        int totalClassifers = sum(numClassifiers);
         double correct = 0;
+
+        if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
+
         for (int i = 0; i < data.numInstances(); ++i) {
-            long predTime = System.nanoTime();
-            double[] probs = distributionForInstance(i, data.numClasses());
-            predTime = System.nanoTime() - predTime;
+            double[] probs;
+
+            if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)){
+                probs = trainDistributions[i];
+            }
+            else {
+                probs = distributionForInstance(i, data.numClasses());
+            }
 
             double c = 0;
             for (int j = 1; j < probs.length; j++)
                 if (probs[j] > probs[(int) c])
                     c = j;
 
-            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
             if (c == data.get(i).classValue())
                 ++correct;
 
             this.ensembleCvPreds[i] = c;
 
-            trainResults.addPrediction(data.get(i).classValue(), probs, c, predTime, "");
+            trainResults.addPrediction(data.get(i).classValue(), probs, c, -1, "");
         }
 
-        double result = correct / data.numInstances();
-
-        return result;
+        return correct / data.numInstances();
     }
 
     public double getTrainAcc(){
-        if(ensembleCvAcc>=0){
+        if(ensembleCvAcc >= 0){
             return this.ensembleCvAcc;
         }
 
@@ -1099,11 +1218,12 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         }catch(Exception e){
             e.printStackTrace();
         }
+
         return -1;
     }
 
     public double[] getTrainPreds(){
-        if(this.ensembleCvPreds==null){
+        if(this.ensembleCvPreds == null){
             try{
                 this.findEnsembleTrainAcc(train);
             }catch(Exception e){
@@ -1116,8 +1236,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     //potentially scuffed when train set is subsampled, will have to revisit and discuss if this is a viable option
     //for estimation anyway.
-    private double[] distributionForInstance(int test, int numclasses) throws Exception {
-        double[][] classHist = new double[numSeries][numclasses];
+    private double[] distributionForInstance(int test, int numClasses) throws Exception {
+        double[][] classHist = new double[numSeries][numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
         double sum[] = new double[numSeries];
@@ -1133,7 +1253,12 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     classification = classifier.classifyInstance(classifier.subsampleIndices.indexOf(test));
                 }
                 else{
-                    classification = classifier.classifyInstance(train.get(test));
+                    if (fullTrainCVEstimate){
+                        classification = classifier.classifyInstance(train.get(test));
+                    }
+                    else{
+                        continue;
+                    }
                 }
 
                 classHist[n][(int) classification] += classifier.weight;
@@ -1141,12 +1266,17 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
         }
 
-        double[] distributions = new double[numclasses];
+        double[] distributions = new double[numClasses];
 
         for (int n = 0; n < numSeries; n++){
-            if (sum[n] != 0)
+            if (sum[n] != 0) {
                 for (int i = 0; i < classHist[n].length; ++i)
                     distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+            }
+            else{
+                for (int i = 0; i < classHist[n].length; ++i)
+                    distributions[i] += (1 / numClasses) / numSeries;
+            }
         }
 
         return distributions;
@@ -1257,6 +1387,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.useRecommendedSettingsRBOSS();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1266,6 +1397,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.useRecommendedSettingsRBOSS();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1344,6 +1476,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1354,6 +1487,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
