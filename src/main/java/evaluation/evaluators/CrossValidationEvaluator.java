@@ -40,9 +40,6 @@ import weka.core.Instances;
  */
 public class CrossValidationEvaluator extends MultiSamplingEvaluator {
       
-    //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
-    public static boolean REGRESSION_HACK = false;
-
     private String previousRelationName = "EmPtY";
     
     private ArrayList<Instances> folds;
@@ -103,84 +100,60 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
      * 
      * @return double[classifier][prediction]
      */
-    public synchronized ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
+    public synchronized ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, final Instances dataset) throws Exception {
         
         if (folds == null || !previousRelationName.equals(dataset.relationName()))
             buildFolds(dataset);
+        
+        if (cloneClassifiers)
+            cloneClassifiers(classifiers);
         
         //store for later storage of results, in case we want to set the class values missing
         //on each instance at predict time
         double[] trueClassVals = dataset.attributeToDoubleArray(dataset.classIndex());
         
-        //these will store dists and preds for instance AS THEY ARE ORDERED IN THE DATASET GIVEN
-        //as opposed to instances in the order that they are predicted, after having been split into the k folds.
-        //storing them here in order, then adding into the classifierresults objects in order after the actual 
-        //cv has finished
-        double[][][] allFolds_distsForInsts = new double[classifiers.length][dataset.numInstances()][];
-        long[][] allFolds_predTimes = new long[classifiers.length][dataset.numInstances()];
         long[] totalEstimateTimes = new long[classifiers.length];
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         
-        if (cloneClassifiers)
-            cloneClassifiers(classifiers);
-        
         //for each fold as test
         for(int fold = 0; fold < numFolds; fold++){
             Instances[] trainTest = buildTrainTestSet(fold);
-
+            final Instances train = trainTest[0];
+            final Instances test = trainTest[1];
+            
+            String foldStr = "cvFold"+fold;
+            
             //for each classifier in ensemble
             for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
                 
                 // get the classifier instance to be used this fold
-                Classifier foldClassifier = classifiers[classifierIndex];
-                if (cloneClassifiers)
-                    //use the clone instead
-                    foldClassifier = foldClassifiers[classifierIndex][fold];
+                final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
                
                 long foldEstimateTimeStart = System.nanoTime(); //for errorEstimateTime of the full results object
                 long foldBuildTime = foldEstimateTimeStart;         //for the buildtime of this fold's results object 
-                foldClassifier.buildClassifier(trainTest[0]);
+                foldClassifier.buildClassifier(train);
                 foldBuildTime = System.nanoTime() - foldBuildTime;
                 
+                SingleTestSetEvaluator eval = new SingleTestSetEvaluator(seed, cloneData, setClassMissing);
+                
                 // init the classifierXfold results object
-                ClassifierResults classifierFoldRes = new ClassifierResults(dataset.numClasses());
+                ClassifierResults classifierFoldRes = eval.evaluate(foldClassifier, test);
                 classifierFoldRes.setTimeUnit(TimeUnit.NANOSECONDS);
                 classifierFoldRes.setClassifierName(foldClassifier.getClass().getSimpleName());
-                classifierFoldRes.setDatasetName(dataset.relationName()+"_cvfold"+fold);
+                classifierFoldRes.setDatasetName(dataset.relationName()+"_"+foldStr);
                 classifierFoldRes.setFoldID(seed);
                 classifierFoldRes.setSplit("train"); 
                 classifierFoldRes.turnOffZeroTimingsErrors();
                 classifierFoldRes.setBuildTime(foldBuildTime);
 
-                //for each test instance on this fold
-                for(int i = 0; i < trainTest[1].numInstances(); i++){
-                    int instIndex = getOriginalInstIndex(fold, i);
-                    
-                    Instance testInst = trainTest[1].instance(i);
-                    
-                    double classVal = testInst.classValue(); //save in case we're deleting next line
-                    if (setClassMissing)
-                        testInst.setClassMissing();
-                    
-                    //classify and store prediction
-                    long startTime = System.nanoTime();
-                    double[] dist = foldClassifier.distributionForInstance(testInst);
-                    long predTime = System.nanoTime()- startTime;
-                    
-                    allFolds_distsForInsts[classifierIndex][instIndex] = dist;
-                    allFolds_predTimes[classifierIndex][instIndex] = predTime;
-
-                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
-                    else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-                }    
                 
                 long foldEstimateTime = System.nanoTime() - foldEstimateTimeStart;
                 totalEstimateTimes[classifierIndex] += foldEstimateTime;
                 
                 classifierFoldRes.turnOnZeroTimingsErrors();
                 classifierFoldRes.finaliseResults();
-                if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
+                
                 resultsPerFold[classifierIndex][fold] = classifierFoldRes;
                 
                 if (cloneClassifiers && !maintainClassifiers)
@@ -190,6 +163,9 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
         
         //shove concatenated fold data into ClassifierResults objects, the singular form
         //to represent the entire cv process (trainFoldX)
+        //and get predictions for instances as ordered in original train set, instead of 
+        //the order predicted in 
+        //todo maybe implement flag to turn this off/on, bespoke to cv really
         ClassifierResults[] results = new ClassifierResults[classifiers.length];
         for (int c = 0; c < classifiers.length; c++) {
             results[c] = new ClassifierResults(dataset.numClasses());
@@ -201,14 +177,40 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
             
             results[c].turnOffZeroTimingsErrors();
             results[c].setErrorEstimateTime(totalEstimateTimes[c]); 
-            for (int i = 0; i < dataset.numInstances(); i++) {
-                double tiesResolvedRandomlyPred;
-
-                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
-                else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
-
-                results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
+            
+            double[][] dists = new double[dataset.numInstances()][];
+            double[] preds = new double[dataset.numInstances()];
+            long[] times = new long[dataset.numInstances()];
+            String[] descs = new String[dataset.numInstances()];
+            
+            for (int fold = 0; fold < numFolds; fold++) {
+                String foldStr = "cvFold"+fold;
+                
+                //has the preds in order predicted for this fold
+                ClassifierResults foldRes = resultsPerFold[c][fold];
+                for (int i = 0; i < foldRes.numInstances(); i++) {
+                    //get them out as original order in train set
+                    int originalIndex = getOriginalInstIndex(fold, i);
+                    
+                    double[] dist = foldRes.getProbabilityDistribution(i);
+                    dists[originalIndex] = dist;
+                    times[originalIndex] = foldRes.getPredictionTime(i);
+                    descs[originalIndex] = foldStr+foldRes.getPredDescription(i);
+                    
+                    //crossvalidator always resolved ties randomly, continued for reproducability
+                    //even if the lower-level evaluator resolved ties e.g. naively per fold
+                    //todo review
+                    double tiesResolvedRandomlyPred;
+                    if(REGRESSION_HACK) 
+                        tiesResolvedRandomlyPred = Double.isNaN(dist[0]) ? 0 : dist[(int)indexOfMax(dist)];
+                    else 
+                        tiesResolvedRandomlyPred = indexOfMax(dist);
+                    
+                    preds[originalIndex] = tiesResolvedRandomlyPred;
+                }
             }
+            
+            results[c].addAllPredictions(trueClassVals, preds, dists, times, descs);
             results[c].turnOnZeroTimingsErrors();
             
             results[c].finaliseResults(trueClassVals);
@@ -216,6 +218,122 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 
         return results;
     }
+    
+//    public synchronized ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, final Instances dataset) throws Exception {
+//        
+//        if (folds == null || !previousRelationName.equals(dataset.relationName()))
+//            buildFolds(dataset);
+//        
+//        if (cloneClassifiers)
+//            cloneClassifiers(classifiers);
+//        
+//        //store for later storage of results, in case we want to set the class values missing
+//        //on each instance at predict time
+//        double[] trueClassVals = dataset.attributeToDoubleArray(dataset.classIndex());
+//        
+//        //these will store dists and preds for instance AS THEY ARE ORDERED IN THE DATASET GIVEN
+//        //as opposed to instances in the order that they are predicted, after having been split into the k folds.
+//        //storing them here in order, then adding into the classifierresults objects in order after the actual 
+//        //cv has finished
+//        double[][][] allFolds_distsForInsts = new double[classifiers.length][dataset.numInstances()][];
+//        long[][] allFolds_predTimes = new long[classifiers.length][dataset.numInstances()];
+//        long[] totalEstimateTimes = new long[classifiers.length];
+//        
+//        resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
+//        
+//        //for each fold as test
+//        for(int fold = 0; fold < numFolds; fold++){
+//            Instances[] trainTest = buildTrainTestSet(fold);
+//            final Instances train = trainTest[0];
+//            final Instances test = trainTest[1];
+//
+//            //for each classifier in ensemble
+//            for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
+//                
+//                // get the classifier instance to be used this fold
+//                Classifier foldClassifier = classifiers[classifierIndex];
+//                if (cloneClassifiers)
+//                    //use the clone instead
+//                    foldClassifier = foldClassifiers[classifierIndex][fold];
+//               
+//                long foldEstimateTimeStart = System.nanoTime(); //for errorEstimateTime of the full results object
+//                long foldBuildTime = foldEstimateTimeStart;         //for the buildtime of this fold's results object 
+//                foldClassifier.buildClassifier(train);
+//                foldBuildTime = System.nanoTime() - foldBuildTime;
+//                
+//                // init the classifierXfold results object
+//                ClassifierResults classifierFoldRes = new ClassifierResults(dataset.numClasses());
+//                classifierFoldRes.setTimeUnit(TimeUnit.NANOSECONDS);
+//                classifierFoldRes.setClassifierName(foldClassifier.getClass().getSimpleName());
+//                classifierFoldRes.setDatasetName(dataset.relationName()+"_cvfold"+fold);
+//                classifierFoldRes.setFoldID(seed);
+//                classifierFoldRes.setSplit("train"); 
+//                classifierFoldRes.turnOffZeroTimingsErrors();
+//                classifierFoldRes.setBuildTime(foldBuildTime);
+//
+//                //for each test instance on this fold
+//                for(int i = 0; i < test.numInstances(); i++){
+//                    int instIndex = getOriginalInstIndex(fold, i);
+//                    
+//                    Instance testInst = test.instance(i);
+//                    
+//                    double classVal = testInst.classValue(); //save in case we're deleting next line
+//                    if (setClassMissing)
+//                        testInst.setClassMissing();
+//                    
+//                    //classify and store prediction
+//                    long startTime = System.nanoTime();
+//                    double[] dist = foldClassifier.distributionForInstance(testInst);
+//                    long predTime = System.nanoTime()- startTime;
+//                    
+//                    allFolds_distsForInsts[classifierIndex][instIndex] = dist;
+//                    allFolds_predTimes[classifierIndex][instIndex] = predTime;
+//
+//                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
+//                    else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+//                }    
+//                
+//                long foldEstimateTime = System.nanoTime() - foldEstimateTimeStart;
+//                totalEstimateTimes[classifierIndex] += foldEstimateTime;
+//                
+//                classifierFoldRes.turnOnZeroTimingsErrors();
+//                classifierFoldRes.finaliseResults();
+//                if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
+//                resultsPerFold[classifierIndex][fold] = classifierFoldRes;
+//                
+//                if (cloneClassifiers && !maintainClassifiers)
+//                    foldClassifiers[classifierIndex][fold] = null; //free the memory
+//            }
+//        }
+//        
+//        //shove concatenated fold data into ClassifierResults objects, the singular form
+//        //to represent the entire cv process (trainFoldX)
+//        ClassifierResults[] results = new ClassifierResults[classifiers.length];
+//        for (int c = 0; c < classifiers.length; c++) {
+//            results[c] = new ClassifierResults(dataset.numClasses());
+//            results[c].setTimeUnit(TimeUnit.NANOSECONDS);
+//            results[c].setClassifierName(classifiers[c].getClass().getSimpleName());
+//            results[c].setDatasetName(dataset.relationName());
+//            results[c].setFoldID(seed);
+//            results[c].setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
+//            
+//            results[c].turnOffZeroTimingsErrors();
+//            results[c].setErrorEstimateTime(totalEstimateTimes[c]); 
+//            for (int i = 0; i < dataset.numInstances(); i++) {
+//                double tiesResolvedRandomlyPred;
+//
+//                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
+//                else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+//
+//                results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
+//            }
+//            results[c].turnOnZeroTimingsErrors();
+//            
+//            results[c].finaliseResults(trueClassVals);
+//        }
+//
+//        return results;
+//    }
     
 
     /**
@@ -275,8 +393,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
             int instIndex = instanceIds.get(i);
             int instClassVal;
 
-            if (REGRESSION_HACK) instClassVal = 0;
-            else instClassVal = (int)dataset.instance(instIndex).classValue();
+            instClassVal = (int)dataset.instance(instIndex).classValue();
 
             byClass.get(instClassVal).add(dataset.instance(instIndex));
             byClassIndices.get(instClassVal).add(instIndex);

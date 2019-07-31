@@ -66,6 +66,8 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         res.setErrorEstimateTime(System.nanoTime() - estimateTime);
         res.turnOnZeroTimingsErrors();
         
+        if (!REGRESSION_HACK) res.findAllStatsOnce();
+        
         return res;
     }
 

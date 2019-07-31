@@ -1705,7 +1705,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public void findAllStatsOnce(){
         if (finalised && allStatsFound) {
-            System.out.println("Stats already found, ignoring findAllStatsOnce()");
+            printlnDebug("Stats already found, ignoring findAllStatsOnce()");
             return;
         } 
         else {
