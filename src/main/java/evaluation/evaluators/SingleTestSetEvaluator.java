@@ -89,4 +89,21 @@ public class SingleTestSetEvaluator extends Evaluator {
         return res;
     }
 
+    /**
+     * Utility method, will build on the classifier on the train set and evaluate on the test set 
+     */
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances train, Instances test) throws Exception {
+        long buildTime = System.nanoTime();
+        classifier.buildClassifier(train);
+        buildTime = System.nanoTime() - buildTime;
+        
+        ClassifierResults res = evaluate(classifier, test);
+        
+        res.turnOffZeroTimingsErrors();
+        res.setBuildTime(buildTime);
+        res.turnOnZeroTimingsErrors();
+        
+        return res;
+    }
+    
 }

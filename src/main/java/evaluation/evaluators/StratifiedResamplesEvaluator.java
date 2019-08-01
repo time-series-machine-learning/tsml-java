@@ -197,23 +197,29 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
                 final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
                 
                 int resampleSeed = useEachResampleIdAsSeed ? fold : classifierRng.nextInt();
-                    
+                String foldStr = "resample"+resampleSeed;    
+                
                 SingleSampleEvaluator eval = new SingleSampleEvaluator(resampleSeed, this.cloneData, this.setClassMissing);
                 eval.setPropInstancesInTrain(this.propInstancesInTrain);
                 
+                Callable<ClassifierResults> foldEvalFunc = () -> {
+                    long estimateTime = System.nanoTime();
+                    ClassifierResults res = eval.evaluate(foldClassifier, dataset);
+                    estimateTime = System.nanoTime() - estimateTime;
+                    res.setErrorEstimateTime(estimateTime);
+                    res.setDatasetName(res.getDatasetName()+"_"+foldStr);
+                    return res;
+                };
+                
                 if (!multiThread) {
                     //compute the result now
-                    resultsPerFold[classifierIndex][fold] = eval.evaluate(foldClassifier, dataset);                    
+                    resultsPerFold[classifierIndex][fold] = foldEvalFunc.call();             
                     if (cloneClassifiers && !maintainClassifiers)
                         foldClassifiers[classifierIndex][fold] = null; //free the memory
                 }
                 else {
                     //spawn a job to compute the result, will collect it later
-                    Callable<ClassifierResults> foldEval = () -> {
-                        return eval.evaluate(foldClassifier, dataset);
-                    };
-
-                    futureResultsPerFold.get(classifierIndex).set(fold, executor.submit(foldEval));
+                    futureResultsPerFold.get(classifierIndex).set(fold, executor.submit(foldEvalFunc));
                 }
             }
             

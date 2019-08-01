@@ -51,24 +51,9 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         Instances[] trainTest = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
-        
-        long estimateTime = System.nanoTime();
-        long buildTime = System.nanoTime();
-        classifier.buildClassifier(trainTest[0]);
-        buildTime = System.nanoTime() - buildTime;
-        
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator(this.seed, this.cloneData, this.setClassMissing);
-        ClassifierResults res = eval.evaluate(classifier, trainTest[1]);
         
-        //eval should have set everything else 
-        res.turnOffZeroTimingsErrors();
-        res.setBuildTime(buildTime);
-        res.setErrorEstimateTime(System.nanoTime() - estimateTime);
-        res.turnOnZeroTimingsErrors();
-        
-        if (!REGRESSION_HACK) res.findAllStatsOnce();
-        
-        return res;
+        return eval.evaluate(classifier, trainTest[0], trainTest[1]);
     }
 
 }

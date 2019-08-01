@@ -603,7 +603,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         
         CAWPE c = new CAWPE();
         c.setRandSeed(seed);
-        c.setTrainEstimator(trainEval);
+//        c.setTrainEstimator(trainEval);
         
         long t1 = System.currentTimeMillis();
         c.buildClassifier(data[0]);
@@ -612,8 +612,13 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
         eval.setSeed(seed);
         ClassifierResults res = eval.evaluate(c, data[1]);
+        
         System.out.println("acc="+res.getAcc() 
-                + " buildtime="+t1);
+                + " buildtime="+t1+"ms");
+        System.out.print("BaseClassifier train accs: ");
+        for (EnsembleModule module : c.getModules())
+            System.out.print(module.getModuleName() + ":" +module.trainResults.getAcc() + ", ");
+        System.out.println("");
         System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
         System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
@@ -632,7 +637,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         
         CAWPE c = new CAWPE();
         c.setRandSeed(seed);
-        c.setTrainEstimator(trainEval);
+//        c.setTrainEstimator(trainEval);
         c.setThreadAllowance(7);
         
         long t1 = System.currentTimeMillis();
@@ -643,7 +648,11 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         eval.setSeed(seed);
         ClassifierResults res = eval.evaluate(c, data[1]);
         System.out.println("acc="+res.getAcc() 
-                + " buildtime="+t1);
+                + " buildtime="+t1+"ms");
+        System.out.print("BaseClassifier train accs: ");
+        for (EnsembleModule module : c.getModules())
+            System.out.print(module.getModuleName() + ":" +module.trainResults.getAcc() + ", ");
+        System.out.println("");
         System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
         System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
@@ -653,6 +662,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
 //        buildCAWPEPaper_AllResultsForFigure3();
         test_basic();
+        System.out.println("");
         test_threaded();
         
 //        testBuildingInds(3);

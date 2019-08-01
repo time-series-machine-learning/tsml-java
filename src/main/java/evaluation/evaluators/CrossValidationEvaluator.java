@@ -143,11 +143,9 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
                 final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
                 final SingleTestSetEvaluator tester = new SingleTestSetEvaluator(seed, cloneData, setClassMissing);
                 
-                BuildTestEvaluation estimate = new BuildTestEvaluation(tester, train, test, foldClassifier);
-                
                 Callable<ClassifierResults> eval = () -> {
                     long estimateTime = System.nanoTime();
-                    ClassifierResults res = estimate.evaluate();
+                    ClassifierResults res = tester.evaluate(foldClassifier, train, test);
                     estimateTime = System.nanoTime() - estimateTime;
                     res.setErrorEstimateTime(estimateTime);
                     res.setDatasetName(res.getDatasetName()+"_"+foldStr);
