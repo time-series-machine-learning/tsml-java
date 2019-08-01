@@ -319,7 +319,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             trainResults.setParas(getParameters());
             double result = findEnsembleTrainAcc(data);
             trainResults.finaliseResults();
-            trainResults.writeFullResultsToFile(trainCVPath);
+            if (trainCVPath != null)
+                trainResults.writeFullResultsToFile(trainCVPath);
 
             System.out.println("CV acc ="+result);
 
@@ -574,20 +575,24 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         double accuracy;
 
         c = new BOSS();
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 22/07/19
+        //Output 01/08/19
         /*
+        CV acc =0.9402985074626866
         BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [4]
+        CV acc =0.8333333333333334
         BOSS accuracy on ERing fold 0 = 0.7925925925925926 numClassifiers = [4, 1, 3, 6]
         */
     }
