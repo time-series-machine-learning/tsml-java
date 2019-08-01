@@ -130,6 +130,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private ArrayList<Integer> latestTrainIdx;
     private ArrayList<ArrayList>[] filterTrainPreds;
     private ArrayList<ArrayList>[] filterTrainIdx;
+    private Instances seriesHeader;
 
     private transient Instances train;
     private double ensembleCvAcc = -1;
@@ -141,9 +142,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     protected static final long serialVersionUID = 22554L;
 
-    public RBOSS() {
-        useRecommendedSettingsRBOSS();
-    }
+    public RBOSS(){}
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -335,6 +334,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         latestTrainIdx = saved.latestTrainIdx;
         filterTrainPreds = saved.filterTrainPreds;
         filterTrainIdx = saved.filterTrainIdx;
+        seriesHeader = saved.seriesHeader;
         trainResults = saved.trainResults;
         ensembleCvAcc = saved.ensembleCvAcc;
         ensembleCvPreds = saved.ensembleCvPreds;
@@ -486,6 +486,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         //if checkpointing and serialised files exist load said files
         if (checkpoint && f.exists()) {
+            System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "BOSS.ser");
             System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
@@ -553,6 +554,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         //Multivariate
         if (isMultivariate) {
             series = splitMultivariateInstances(data);
+            seriesHeader = new Instances(series[0], 0);
         }
         //Univariate
         else{
@@ -724,9 +726,10 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 for (int i = 0; i < filterTrainIdx[n].size(); i++) {
                     ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
                     ArrayList<Integer> trainPreds = filterTrainPreds[n].get(i);
+                    double weight = classifiers[n].get(i).weight;
                     for (int g = 0; g < trainIdx.size(); g++) {
-                        idxSubsampleCount[trainIdx.get(g)]++;
-                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)]++;
+                        idxSubsampleCount[trainIdx.get(g)] += weight;
+                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
                     }
                 }
             }
@@ -776,10 +779,10 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
             if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (trainCV){
+            if (trainCV && latestTrainIdx != null){
                 for (int i = 0; i < latestTrainIdx.size(); i++){
-                    idxSubsampleCount[latestTrainIdx.get(i)]++;
-                    trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)]++;
+                    idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
+                    trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
                 }
             }
 
@@ -1189,7 +1192,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 probs = trainDistributions[i];
             }
             else {
-                probs = distributionForInstance(i, data.numClasses());
+                probs = distributionForInstance(i);
             }
 
             double c = 0;
@@ -1236,11 +1239,12 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     //potentially scuffed when train set is subsampled, will have to revisit and discuss if this is a viable option
     //for estimation anyway.
-    private double[] distributionForInstance(int test, int numClasses) throws Exception {
-        double[][] classHist = new double[numSeries][numClasses];
+    private double[] distributionForInstance(int test) throws Exception {
+        int numClasses = train.numClasses();
+        double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
-        double sum[] = new double[numSeries];
+        double sum = 0;
 
         for (int n = 0; n < numSeries; n++) {
             for (BOSSIndividual classifier : classifiers[n]) {
@@ -1252,31 +1256,32 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 else if (classifier.subsampleIndices.contains(test)){
                     classification = classifier.classifyInstance(classifier.subsampleIndices.indexOf(test));
                 }
+                else if (fullTrainCVEstimate) {
+                    Instance series = train.get(test);
+                    if (isMultivariate){
+                        series = splitMultivariateInstance(series)[n];
+                        series.setDataset(seriesHeader);
+                    }
+                    classification = classifier.classifyInstance(series);
+                }
                 else{
-                    if (fullTrainCVEstimate){
-                        classification = classifier.classifyInstance(train.get(test));
-                    }
-                    else{
-                        continue;
-                    }
+                    continue;
                 }
 
-                classHist[n][(int) classification] += classifier.weight;
-                sum[n] += classifier.weight;
+                classHist[(int) classification] += classifier.weight;
+                sum += classifier.weight;
             }
         }
 
         double[] distributions = new double[numClasses];
 
-        for (int n = 0; n < numSeries; n++){
-            if (sum[n] != 0) {
-                for (int i = 0; i < classHist[n].length; ++i)
-                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
-            }
-            else{
-                for (int i = 0; i < classHist[n].length; ++i)
-                    distributions[i] += (1 / numClasses) / numSeries;
-            }
+        if (sum != 0) {
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += (classHist[i] / sum);
+        }
+        else{
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += 1 / numClasses;
         }
 
         return distributions;
@@ -1304,10 +1309,11 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        double[][] classHist = new double[numSeries][instance.numClasses()];
+        int numClasses = train.numClasses();
+        double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
-        double sum[] = new double[numSeries];
+        double sum = 0;
 
         Instance[] series;
 
@@ -1337,26 +1343,29 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             while (!ex.isTerminated());
 
             for (BOSSIndividual.TestNearestNeighbourThread t: threads){
-                classHist[t.series][(int)t.nn] += t.weight;
-                sum[t.series] += t.weight;
+                classHist[(int)t.nn] += t.weight;
+                sum += t.weight;
             }
         }
         else {
             for (int n = 0; n < numSeries; n++) {
                 for (BOSSIndividual classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
-                    classHist[n][(int) classification] += classifier.weight;
-                    sum[n] += classifier.weight;
+                    classHist[(int) classification] += classifier.weight;
+                    sum += classifier.weight;
                 }
             }
         }
 
         double[] distributions = new double[instance.numClasses()];
 
-        for (int n = 0; n < numSeries; n++){
-            if (sum[n] != 0)
-                for (int i = 0; i < classHist[n].length; ++i)
-                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+        if (sum != 0) {
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += classHist[i] / sum;
+        }
+        else{
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += 1 / numClasses;
         }
 
         return distributions;
@@ -1405,8 +1414,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         c = new RBOSS();
         c.useRecommendedSettingsRBOSS();
-        c.setBayesianParameterSelection(true);
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1414,8 +1423,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         c = new RBOSS();
         c.useRecommendedSettingsRBOSS();
-        c.setBayesianParameterSelection(true);
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1430,6 +1439,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.reduceTrainInstances = true;
         c.setMaxEvalPerClass(50);
         c.setMaxTrainInstances(500);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1444,6 +1454,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.reduceTrainInstances = true;
         c.setMaxEvalPerClass(50);
         c.setMaxTrainInstances(500);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1455,6 +1466,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1466,6 +1478,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1496,6 +1509,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new RBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1504,24 +1518,38 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new RBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 22/07/19
+        //Output 01/08/19
         /*
+        JAVAGENT: call premain instrumentation for class SizeOf
+        CV acc =0.9552238805970149
         CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.923226433430515 numClassifiers = [50]
+        CV acc =0.7666666666666667
         CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8851851851851852 numClassifiers = [50, 50, 50, 50]
+        CV acc =0.9402985074626866
         Bayesian CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.9300291545189504 numClassifiers = [50]
-        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8851851851851852 numClassifiers = [50, 50, 50, 50]
+        CV acc =0.9
+        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8888888888888888 numClassifiers = [50, 50, 50, 50]
+        CV acc =0.8955223880597015
         FastMax CVAcc BOSS accuracy on ItalyPowerDemand fold 0 = 0.8415937803692906 numClassifiers = [50]
+        CV acc =0.4
         FastMax CVAcc BOSS accuracy on ERing fold 0 = 0.725925925925926 numClassifiers = [50, 50, 50, 50]
+        CV acc =0.9552238805970149
         CAWPE Subsample BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [80]
+        CV acc =0.7
         CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8592592592592593 numClassifiers = [25, 25, 25, 25]
+        CV acc =0.6716417910447762
         Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80]
+        CV acc =0.3
         Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190]
+        CV acc =0.6716417910447762
         Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7103984450923226 numClassifiers = [50]
+        CV acc =0.3
         Contract 500MB BOSS accuracy on ERing fold 0 = 0.4740740740740741 numClassifiers = [13, 13, 12, 12]
         */
     }
