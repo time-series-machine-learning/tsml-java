@@ -120,6 +120,15 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     
     /**
+     * Utility if we want to be conservative while contracting with the overhead 
+     * of the ensemble and any variance with the base classifiers' abilities to adhere 
+     * to the contract. Give the base classifiers a (very large not not full) proportion
+     * of the contract time given, and allow some extra time for the ensemble overhead,
+     * potential threading overhead, etc
+     */
+    protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
+    
+    /**
      * An annoying compromise to deal with base classfiers that dont produce dists 
      * while getting their train estimate. Off by default, shouldnt be turned on for 
      * mass-experiments, intended for cases where user knows that dists are missing
@@ -846,9 +855,9 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     public void buildClassifier(Instances data) throws Exception {        
         printlnDebug("**ENSEMBLE TRAIN: " + ensembleName + "**");
         
-        long startTime = System.nanoTime();
-
         //housekeeping
+        setupContracting();
+        
         if (resultsFilesParametersInitialised) {
             if (readResultsFilesDirectories.length > 1)
                 if (readResultsFilesDirectories.length != modules.length)
@@ -859,10 +868,11 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
+        long startTime = System.nanoTime();
+        
         //transform data if specified
         if(this.transform==null){
             this.trainInsts = data;
-//            this.trainInsts = new Instances(data);
         }else{
            transform.setInputFormat(data);
            this.trainInsts = Filter.useFilter(data,transform);
@@ -1054,40 +1064,62 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     /**
      * Will split time given evenly among the contractable base classifiers. 
      * 
-     * This is currently very naive, and likely innaccurate. Consider these TODO s
+     * This is currently very naive, and likely innaccurate. Consider these TODOs
      * 
      *  1) If there are any non-contractable base classifiers, these are ignored in 
      *      the contract setting. The full time is allocated among the contractable 
-     *      base classifiers, instead of trying to any wonky guessing of how long the 
+     *      base classifiers, instead of trying to do any wonky guessing of how long the 
      *      non-contractable ones might take
      *  2) Currently, generating accuracy estimates (if needed) is not considered in the contract.
      *      If there are any non-TrainAccuracyEstimating classifiers, the estimation procedure (e.g.
      *      a 10fold cv) will very likely overshoot the contract, since the classifier would be
      *      trying to keep to contract on each fold and the full build individually, not in total. 
+     *      This is an active research question moreso than an implementation question
      *  3) The contract currently does not consider whether the ensemble is being threaded,
      *      i.e. even if it can run the building of two or more classifiers in parallel, 
      *      this will still naively set the contract per classifier as amount/numClassifiers
      */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(TimeUnit time, long amount) {
-        contractingTrainTime=true;
+        contractingTrainTime = true;
         contractTrainTime = amount;
         contractTrainTimeUnit = time;
+    }
+    
+    /**
+     * Sets up the ensemble for contracting, to be called at the start of build classifier,
+     * i.e. when parameters can no longer be changed.
+     */
+    protected void setupContracting() {
+        //splits the ensemble contract time between this many classifiers
+        int numContractableClassifiers = 0; 
         
-        int numContractableBaseClassifiers = 0;
+        //in future, the number of classifiers we need to separately eval and custom-contract for
+        int numNonTrainEstimatingClassifiers = 0; 
         
         for (EnsembleModule module : modules) {
             if(module.getClassifier() instanceof TrainTimeContractable)
-                numContractableBaseClassifiers++;
+                numContractableClassifiers++;
             else 
-                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " is not contractable");
+                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " is not contractable, "
+                        + "and is therefore not considered in the contract. The ensemble as a whole will very likely not meet the contract.");
+            
+            if(!(module.getClassifier() instanceof TrainAccuracyEstimator)) {
+                numNonTrainEstimatingClassifiers++;
+                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " does not estimate its own accuracy. "
+                        + "Performing a separate evaluation on the train set currently is not considered in the contract, and therefore the ensemble as a whole will very "
+                        + "likely not meet the contract.");
+            }
         }
         
-        long timePerClassifier = amount / numContractableBaseClassifiers;
+        //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
+        TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
+        long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(contractTrainTime, contractTrainTimeUnit));
+        long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
         
         for (EnsembleModule module : modules)
             if(module.getClassifier() instanceof TrainTimeContractable)
-                ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(time, timePerClassifier);
+                ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
     }
     
     public String produceEnsembleReport(boolean printPreds, boolean builtFromFile) {
