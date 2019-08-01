@@ -70,7 +70,7 @@ public class MultivariateIndependentDistance extends MultivariateDistance implem
             subseq = new double[length];
             System.arraycopy(timeSeries, i, subseq, 0, length);
             
-            subseq = zNormalise(subseq, false); // Z-NORM HERE
+            subseq = seriesRescaler.rescaleSeries(subseq, false); // Z-NORM HERE
             for (int j = 0; j < length; j++)
             {
                 //count ops

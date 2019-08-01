@@ -14,13 +14,15 @@
  */   
 package timeseriesweka.filters.shapelet_transforms;
 
+import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 import static timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
-import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQualityMeasure;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType;
 import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.NORMAL;
+import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.RescalerType;
+import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.RescalerType.NORMALISATION;
 
 /**
  *
@@ -38,6 +40,7 @@ public class ShapeletTransformFactoryOptions {
     private final DistanceType distance;
     private final ShapeletQualityChoice qualityChoice;
     private final ShapeletSearchOptions searchOptions;
+    private final RescalerType rescalerType;
     
     
     private ShapeletTransformFactoryOptions(Builder options){
@@ -51,8 +54,13 @@ public class ShapeletTransformFactoryOptions {
         searchOptions = options.searchOptions;
         roundRobin = options.roundRobin;
         candidatePruning = options.candidatePruning;
+        rescalerType = options.rescalerType;
     }
 
+    public RescalerType  getRescalerType(){
+        return rescalerType;
+    }
+    
     public boolean isBalanceClasses() {
         return balanceClasses;
     }
@@ -110,6 +118,7 @@ public class ShapeletTransformFactoryOptions {
         private DistanceType dist;
         private ShapeletQualityChoice qualityChoice;
         private ShapeletSearchOptions searchOptions;
+        private RescalerType rescalerType;
         
         
         public Builder useRoundRobin(){
@@ -164,10 +173,17 @@ public class ShapeletTransformFactoryOptions {
             return this;
         }
         
+                
+        public Builder setRescalerType(RescalerType type){
+            rescalerType = type;
+            return this;
+        }
+        
         public ShapeletTransformFactoryOptions build(){
             setDefaults();
             return new ShapeletTransformFactoryOptions(this);
         }
+
         
         private void setDefaults(){            
             //if there is no search options. use default params;
@@ -183,6 +199,9 @@ public class ShapeletTransformFactoryOptions {
                 qualityChoice = INFORMATION_GAIN;
             }
             
+            if(rescalerType == null){
+                rescalerType = NORMALISATION;
+            }
             
             if(dist == null){
                 dist =  NORMAL;
