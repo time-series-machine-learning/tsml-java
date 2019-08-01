@@ -779,7 +779,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
             if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (trainCV && latestTrainIdx != null){
+            if (trainCV){
+                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 for (int i = 0; i < latestTrainIdx.size(); i++){
                     idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
                     trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
