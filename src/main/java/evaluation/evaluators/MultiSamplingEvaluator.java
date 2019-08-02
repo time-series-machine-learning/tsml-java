@@ -223,10 +223,4 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
             this.multiThread = false;
         }
     }
-    
-    @Override //MultiThreadable
-    public int getNumUtilisableThreads() {
-        return numFolds;
-    }
-
 }
