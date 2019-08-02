@@ -40,9 +40,7 @@ import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import utilities.ThreadingUtilities;
-import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -375,13 +373,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             module.trainResults.findAllStatsOnce();
         }
     }
-
-    protected boolean hasThreadableBaseClassifiers() { 
-        for (EnsembleModule module : modules)
-            if (module.getClassifier() instanceof MultiThreadable)
-                return true;
-        return false;
-    }
     
     protected synchronized void trainModules() throws Exception {
         
@@ -427,7 +418,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         }
         
         
-        //gather back the train results
+        //gather back the train results, write them if needed 
         for (int i = 0; i < modules.length; i++) {
             modules[i].trainResults = results.get(i);
             
@@ -1079,7 +1070,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     }
     
     @Override //MultiThreadable
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             this.multiThread = true;

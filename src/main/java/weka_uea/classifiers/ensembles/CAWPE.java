@@ -638,7 +638,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         CAWPE c = new CAWPE();
         c.setSeed(seed);
 //        c.setTrainEstimator(trainEval);
-        c.setThreadAllowance(7);
+        c.enableMultiThreading();
         
         long t1 = System.currentTimeMillis();
         c.buildClassifier(data[0]);

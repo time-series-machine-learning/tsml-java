@@ -250,7 +250,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;

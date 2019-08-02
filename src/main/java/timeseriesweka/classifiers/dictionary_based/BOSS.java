@@ -126,7 +126,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;

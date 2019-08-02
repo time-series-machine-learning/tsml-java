@@ -110,7 +110,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         this.numThreads = numThreads;
     }
 

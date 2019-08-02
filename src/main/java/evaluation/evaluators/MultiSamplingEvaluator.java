@@ -211,7 +211,7 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
      * concurrency reasons.
      */
     @Override //MultiThreadable
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             this.multiThread = true;
