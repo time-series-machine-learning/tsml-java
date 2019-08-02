@@ -64,7 +64,6 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     private int ensembleSize = 50;
     private int ensembleSizePerChannel = -1;
-    private int seed = 0;
     private Random rand;
     private boolean randomCVAccEnsemble = false;
     private boolean useWeights = false;
@@ -391,10 +390,6 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     public void setMaxEnsembleSize(int size) {
         maxEnsembleSize = size;
-    }
-
-    public void setSeed(int i) {
-        seed = i;
     }
 
     public void setRandomCVAccEnsemble(boolean b){

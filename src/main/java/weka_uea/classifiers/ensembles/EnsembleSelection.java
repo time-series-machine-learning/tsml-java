@@ -125,8 +125,8 @@ public class EnsembleSelection extends CAWPE {
     }
     
     @Override
-    public void setRandSeed(int seed) {
-        super.setRandSeed(seed);
+    public void setSeed(int seed) {
+        super.setSeed(seed);
         rng = new Random(seed);
     }
     
@@ -281,14 +281,14 @@ public class EnsembleSelection extends CAWPE {
         }
 //END OF THE ACTUAL SELECTION STUFF   
 
-        ensembleTrainResults = globalEnsembleResults;
-        ensembleTrainResults.setClassifierName("EnsembleSelection");
-        ensembleTrainResults.setDatasetName(datasetName);
-        ensembleTrainResults.setFoldID(seed);
-        ensembleTrainResults.setSplit("train");
+        trainResults = globalEnsembleResults;
+        trainResults.setClassifierName("EnsembleSelection");
+        trainResults.setDatasetName(datasetName);
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
         
         long buildTime = System.nanoTime() - startTime; 
-        ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
+        trainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
             writeEnsembleTrainAccuracyEstimateResultsFile();
         
@@ -389,7 +389,7 @@ public class EnsembleSelection extends CAWPE {
                     
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
-                    c.setRandSeed(fold);
+                    c.setSeed(fold);
                     c.setEstimateEnsemblePerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         

@@ -204,7 +204,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             format = doTransform ? createTransformData(data, timeLimit) : data;
             transformBuildTime=System.currentTimeMillis()-startTime;
             if(setSeed)
-                ensemble.setRandSeed((int) seed);
+                ensemble.setSeed((int) seed);
 
             redundantFeatures=InstanceTools.removeRedundantTrainAttributes(format);
 

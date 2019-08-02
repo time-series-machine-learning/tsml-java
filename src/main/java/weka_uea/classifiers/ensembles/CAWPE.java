@@ -346,7 +346,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         cawpe.setupDefaultEnsembleSettings();
 
         int resampleID = 0;
-        cawpe.setRandSeed(resampleID);
+        cawpe.setSeed(resampleID);
 
         //File handling
         cawpe.setResultsFileLocationParameters("CAWPETest/", datasetName, resampleID); //use this to set the location for any results file reading/writing
@@ -573,7 +573,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         c.setClassifiers(null, baseClassifiers, null);
                         c.setBuildIndividualsFromResultsFiles(true);
                         c.setResultsFileLocationParameters(writePath, dset, fold);
-                        c.setRandSeed(fold);
+                        c.setSeed(fold);
                         c.setEstimateEnsemblePerformance(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
@@ -602,7 +602,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         trainEval.setSeed(seed);
         
         CAWPE c = new CAWPE();
-        c.setRandSeed(seed);
+        c.setSeed(seed);
 //        c.setTrainEstimator(trainEval);
         
         long t1 = System.currentTimeMillis();
@@ -636,7 +636,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         trainEval.setSeed(seed);
         
         CAWPE c = new CAWPE();
-        c.setRandSeed(seed);
+        c.setSeed(seed);
 //        c.setTrainEstimator(trainEval);
         c.setThreadAllowance(7);
         

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.SaveParameterInfo;
@@ -41,6 +42,7 @@ import utilities.InstanceTools;
 import utilities.ThreadingUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -74,7 +76,7 @@ import weka_uea.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class AbstractEnsemble extends AbstractClassifier implements SaveParameterInfo, DebugPrinting, TrainAccuracyEstimator, MultiThreadable, TrainTimeContractable {
+public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInfo implements DebugPrinting, TrainAccuracyEstimator, MultiThreadable, TrainTimeContractable {
 
     //Main ensemble design decisions/variables
     protected String ensembleName;
@@ -84,12 +86,11 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected SamplingEvaluator trainEstimator;
     protected SimpleBatchFilter transform;
 
-    protected int seed = 0;
     protected Instances trainInsts;
     protected boolean estimateEnsemblePerformance = true;
 
-    protected ClassifierResults ensembleTrainResults;//data generated during buildclassifier if above = true
-    protected ClassifierResults ensembleTestResults;//data generated during testing
+    //protected ClassifierResults trainResults; inherited from AbstractClassifierWithTrainingInfo data generated during buildclassifier if above = true
+    protected ClassifierResults testResults;//data generated during testing
 
     //saved after building so that it can be added to our test results, even if for some reason 
     //we're not building/writing train results
@@ -163,6 +164,8 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected String datasetName;
 
     public AbstractEnsemble() {
+        fullyNestedEstimates = false;
+        
         setupDefaultEnsembleSettings();
     }
     
@@ -283,10 +286,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         }
     }
 
-
-    
-    
-    
     
     
     
@@ -356,11 +355,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         estimateEnsemblePerformance = b;
     }
 
-    public void setRandSeed(int seed){
-        this.seed = seed;
-    }
-    
-    
     protected void initialiseModules() throws Exception {
         //currently will only have file reading ON or OFF (not load some files, train the rest)
         //having that creates many, many, many annoying issues, especially when classifying test cases
@@ -388,84 +382,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
                 return true;
         return false;
     }
-    
-//    protected void trainModules() throws Exception {
-//        if (!multiThread)
-//            trainModules_unThreaded(); //use the much clearer old definition of training modules
-//        else {
-//            trainModules_threaded();
-//        }
-//        
-//        for (EnsembleModule module : modules) {
-//            if (writeIndividualsResults) { //if we're doing trainFold# file writing
-//                String params = module.getParameters();
-//                if (module.getClassifier() instanceof SaveParameterInfo)
-//                    params = ((SaveParameterInfo)module.getClassifier()).getParameters();
-//                writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
-//            }
-//        }
-//    }
-    
-    
-//    protected synchronized void trainModules_threaded() throws Exception {
-//        //TODO can be optimised a lot, but still giving big speedup over single thread
-//        //so leaving for now.
-//        //In future, set off trainaccestimators first to run in background, then group 
-//        //non-trainaccestimators and pass to evaluator in one go, then build 
-//        //non-trainaccestimators in their own threads, then collect back all estimates from 
-//        //trainaccestimators
-//
-//        //Give all the threads to the estimator, gather non-self-generated estimates first
-//        if (trainEstimator instanceof MultiThreadable)
-//            ((MultiThreadable)trainEstimator).setThreadAllowance(numThreads);
-//
-//        for (int i = 0; i < modules.length; i++) {
-//            Classifier clf = modules[i].getClassifier();
-//            if (!(clf instanceof TrainAccuracyEstimator))
-//                modules[i].trainResults = trainEstimator.evaluate(clf, trainInsts);
-//        }
-//
-//        //Have easily threadable estimates
-//        //Now build all classifiers, individually threaded
-//        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-//        List<Future<Long>> buildTimes = new ArrayList<>();
-//        for (int i = 0; i < modules.length; i++) {
-//            final Classifier clf = modules[i].getClassifier();
-//
-//            Callable<Long> call = () -> {
-//                Long buildTime = System.nanoTime();
-//                clf.buildClassifier(trainInsts);
-//                return System.nanoTime() - buildTime;
-//            };
-//
-//            buildTimes.add(executor.submit(call));
-//        }
-//
-//
-//        //All built/building, now to wait and get the train estimates of the modules that 
-//        //didnt have them built separately earlier
-//        for (int i = 0; i < modules.length; i++) {
-//            Classifier clf = modules[i].getClassifier();
-//            if ((clf instanceof TrainAccuracyEstimator)) { 
-//                // The trainResults should have the classifiers'own recorded 
-//                // build time in it, just need to get the results. This is 
-//                // however the easiest way to wait for completion of the thread/build process
-//                buildTimes.get(i).get();
-//                modules[i].trainResults = ((TrainAccuracyEstimator)clf).getTrainResults();
-//            }
-//            else {
-//                // Have the estimate results, just need to get the build time
-//                modules[i].trainResults.setBuildTime(buildTimes.get(i).get());
-//                modules[i].trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-//            }
-//            modules[i].trainResults.finaliseResults();
-//        }
-//
-//
-//        executor.shutdown();
-//        while (!executor.isTerminated()) {
-//        }
-//    }
     
     protected synchronized void trainModules() throws Exception {
         
@@ -619,7 +535,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     //to write to, instead of just the folder and expecting us to fill in the +classifierName+"/Predictions/"+datasetName+filename;
     //when doing the interface overhaul, sort this stuff out.
     protected void writeEnsembleTrainAccuracyEstimateResultsFile() throws Exception {
-        ensembleTrainResults.writeFullResultsToFile(writeResultsFilesDirectory);
+        trainResults.writeFullResultsToFile(writeResultsFilesDirectory);
     }
     
     protected void writeResultsFile(String classifierName, String parameters, ClassifierResults results, String trainOrTest) throws Exception {
@@ -751,7 +667,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
      * is made public only so that results can be accessed from memory during the same run if wanted
      */
     public void finaliseEnsembleTestResults(double[] testSetClassVals) throws Exception {
-        this.ensembleTestResults.finaliseResults(testSetClassVals);
+        this.testResults.finaliseResults(testSetClassVals);
     }
 
     /**
@@ -790,11 +706,11 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
                 return; //do nothing
         }
 
-        if (ensembleTrainResults != null) //performed trainEstimator
-            writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
+        if (trainResults != null) //performed trainEstimator
+            writeResultsFile(ensembleName, getParameters(), trainResults, "train");
 
-        this.ensembleTestResults.finaliseResults(testSetClassVals);
-        writeResultsFile(ensembleName, getParameters(), ensembleTestResults, "test");
+        this.testResults.finaliseResults(testSetClassVals);
+        writeResultsFile(ensembleName, getParameters(), testResults, "test");
     }
 
     public EnsembleModule[] getModules() {
@@ -818,12 +734,12 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
 
     @Override
     public double[] getTrainPreds() {
-        return ensembleTrainResults.getPredClassValsAsArray();
+        return trainResults.getPredClassValsAsArray();
     }
 
     @Override
     public double getTrainAcc() {
-        return ensembleTrainResults.getAcc();
+        return trainResults.getAcc();
     }
 
     public String getEnsembleName() {
@@ -928,11 +844,11 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
 
     @Override
     public ClassifierResults getTrainResults(){
-        return ensembleTrainResults;
+        return trainResults;
     }
 
     public ClassifierResults getTestResults(){
-        return ensembleTestResults;
+        return testResults;
     }
 
     @Override
@@ -989,6 +905,9 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
+        // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        
         long startTime = System.nanoTime();
         
         //transform data if specified
@@ -1033,11 +952,11 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             }
         }
         
-        ensembleTrainResults = new ClassifierResults();
-        ensembleTrainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults = new ClassifierResults();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
         if(estimateEnsemblePerformance)
-            ensembleTrainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
+            trainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
         
         //HACK FOR CAWPE_EXTENSION PAPER: 
         //since experiments expects us to make a train results object 
@@ -1046,9 +965,9 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         
         //buildTime does not include the ensemble's trainEstimator in any case, only the work required to be ready for testing
         //time unit has been set in estimateEnsemblePerformance(data);
-        ensembleTrainResults.turnOffZeroTimingsErrors();
-        ensembleTrainResults.setBuildTime(buildTime);
-        ensembleTrainResults.turnOnZeroTimingsErrors();
+        trainResults.turnOffZeroTimingsErrors();
+        trainResults.setBuildTime(buildTime);
+        trainResults.turnOnZeroTimingsErrors();
         
         if (writeEnsembleTrainingFile)
             writeEnsembleTrainAccuracyEstimateResultsFile();
@@ -1074,12 +993,12 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             ins = converted.instance(0);
         }
 
-        if (ensembleTestResults == null || (testInstCounter == 0 && prevTestInstance == null)) {//definitely the first call, not e.g the first inst being classified for the second time
+        if (testResults == null || (testInstCounter == 0 && prevTestInstance == null)) {//definitely the first call, not e.g the first inst being classified for the second time
             printlnDebug("\n**TEST**");
 
-            ensembleTestResults = new ClassifierResults(numClasses);
-            ensembleTestResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            ensembleTestResults.setBuildTime(buildTime);
+            testResults = new ClassifierResults(numClasses);
+            testResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            testResults.setBuildTime(buildTime);
         }
 
         if (readIndividualsResults && testInstCounter >= numTestInsts) //if no test files loaded, numTestInsts == -1
@@ -1099,9 +1018,9 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             predTime = System.nanoTime() - startTime;
         }
         
-        ensembleTestResults.turnOffZeroTimingsErrors();
-        ensembleTestResults.addPrediction(dist, indexOfMax(dist), predTime, "");
-        ensembleTestResults.turnOnZeroTimingsErrors();
+        testResults.turnOffZeroTimingsErrors();
+        testResults.addPrediction(dist, indexOfMax(dist), predTime, "");
+        testResults.turnOnZeroTimingsErrors();
         
         if (prevTestInstance != instance)
             ++testInstCounter;
@@ -1244,8 +1163,8 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         sb.append("\nvote scheme: ").append(votingScheme);
         sb.append("\ndataset: ").append(datasetName);
         sb.append("\nfold: ").append(resampleIdentifier);
-        sb.append("\ntrain acc: ").append(ensembleTrainResults.getAcc());
-        sb.append("\ntest acc: ").append(builtFromFile ? ensembleTestResults.getAcc() : "NA");
+        sb.append("\ntrain acc: ").append(trainResults.getAcc());
+        sb.append("\ntest acc: ").append(builtFromFile ? testResults.getAcc() : "NA");
 
         int precision = 4;
         int numWidth = precision+2;
@@ -1268,15 +1187,15 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
 
         if (printPreds) {
             sb.append("\n\nensemble train preds: ");
-            sb.append("\ntrain acc: ").append(ensembleTrainResults.getAcc());
+            sb.append("\ntrain acc: ").append(trainResults.getAcc());
             sb.append("\n");
-            for(int i = 0; i < ensembleTrainResults.numInstances();i++)
+            for(int i = 0; i < trainResults.numInstances();i++)
                 sb.append(produceEnsemblePredsLine(true, i)).append("\n");
 
             sb.append("\n\nensemble test preds: ");
-            sb.append("\ntest acc: ").append(builtFromFile ? ensembleTestResults.getAcc() : "NA");
+            sb.append("\ntest acc: ").append(builtFromFile ? testResults.getAcc() : "NA");
             sb.append("\n");
-            for(int i = 0; i < ensembleTestResults.numInstances();i++)
+            for(int i = 0; i < testResults.numInstances();i++)
                 sb.append(produceEnsemblePredsLine(false, i)).append("\n");
         }
 
@@ -1294,17 +1213,17 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         StringBuilder sb = new StringBuilder();
 
         if (train) //pred
-            sb.append(modules[0].trainResults.getTrueClassValue(index)).append(",").append(ensembleTrainResults.getPredClassValue(index)).append(",");
+            sb.append(modules[0].trainResults.getTrueClassValue(index)).append(",").append(trainResults.getPredClassValue(index)).append(",");
         else
-            sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(ensembleTestResults.getPredClassValue(index)).append(",");
+            sb.append(modules[0].testResults.getTrueClassValue(index)).append(",").append(testResults.getPredClassValue(index)).append(",");
 
         if (train){ //dist
-            double[] pred=ensembleTrainResults.getProbabilityDistribution(index);
+            double[] pred=trainResults.getProbabilityDistribution(index);
             for (int j = 0; j < pred.length; j++)
                 sb.append(",").append(pred[j]);
         }
         else{
-            double[] pred=ensembleTestResults.getProbabilityDistribution(index);
+            double[] pred=testResults.getProbabilityDistribution(index);
             for (int j = 0; j < pred.length; j++)
                 sb.append(",").append(pred[j]);
         }
@@ -1370,7 +1289,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setWriteIndividualsTrainResultsFiles(true);
             cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
-            cawpe.setRandSeed(fold);
+            cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);
 
@@ -1412,7 +1331,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setBuildIndividualsFromResultsFiles(true);
             cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
-            cawpe.setRandSeed(fold);
+            cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);
 

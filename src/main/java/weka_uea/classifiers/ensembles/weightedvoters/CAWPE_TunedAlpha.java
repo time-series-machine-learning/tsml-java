@@ -101,13 +101,13 @@ public class CAWPE_TunedAlpha extends CAWPE {
         }
         this.alpha = alphaParaRange[maxAccInd];
         initCombinationSchemes(alpha);
-        ensembleTrainResults = alphaResults[maxAccInd];
+        trainResults = alphaResults[maxAccInd];
         
         long buildTime = System.currentTimeMillis() - startTime; 
-        ensembleTrainResults.setBuildTime(buildTime);
+        trainResults.setBuildTime(buildTime);
             
         if (writeEnsembleTrainingFile)
-            writeResultsFile(ensembleName, getParameters(), ensembleTrainResults, "train");
+            writeResultsFile(ensembleName, getParameters(), trainResults, "train");
         
         
         this.testInstCounter = 0; //prep for start of testing
@@ -134,8 +134,8 @@ public class CAWPE_TunedAlpha extends CAWPE {
     public String getParameters(){
         StringBuilder out = new StringBuilder();
         
-        if (ensembleTrainResults != null) //cv performed
-            out.append("BuildTime,").append(ensembleTrainResults.getBuildTime()).append(",Trainacc,").append(ensembleTrainResults.getAcc()).append(",");
+        if (trainResults != null) //cv performed
+            out.append("BuildTime,").append(trainResults.getBuildTime()).append(",Trainacc,").append(trainResults.getAcc()).append(",");
         else 
             out.append("BuildTime,").append("-1").append(",Trainacc,").append("-1").append(",");
         

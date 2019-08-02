@@ -114,7 +114,7 @@ import weka.core.Utils;
  **/
 
 public class cTSF extends AbstractClassifierWithTrainingInfo
-        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler,
+        implements TrainAccuracyEstimator, TechnicalInformationHandler,
         TrainTimeContractable, Checkpointable {
 //Static defaults
 
@@ -146,7 +146,6 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     /**Can seed for reproducibility*/
     private Random rand;
     private boolean setSeed=false;
-    private int seed=0;
 
     /** If trainAccuracy is required, a cross validation is done in buildClassifier
      * or a OOB estimate is formed

@@ -138,7 +138,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     /**Can seed for reproducibility*/
     private Random rand;
     private boolean setSeed=false;
-    private int seed=0;
 
    /** If trainAccuracy is required, a cross validation is done in buildClassifier
     * or a OOB estimate is formed. If set, train results are overwritten with 
@@ -643,10 +642,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
             System.out.println("Unable to read number of intervals, not set");
     }
 
-    @Override
-    public int getSeed() {
-        return seed;
-    }
 
 //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
