@@ -16,6 +16,7 @@ package timeseriesweka.filters.shapelet_transforms.distance_functions;
 
 import java.util.Arrays;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
+import static utilities.rescalers.ZNormalisation.ROUNDING_ERROR_CORRECTION;
 import weka.core.Instance;
 
 /**

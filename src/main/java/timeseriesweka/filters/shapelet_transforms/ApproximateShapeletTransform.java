@@ -255,7 +255,7 @@ public class ApproximateShapeletTransform extends ShapeletTransform{
                 
                 //Normalise series
                 double[] series = currentInstance.toDoubleArray();
-                series = this.subseqDistance.zNormalise(series, true);
+                series = this.subseqDistance.seriesRescaler.rescaleSeries(series, true);
                 
                 double[] paaSublists = new double[paaSize];
                 int[] paaSublistsSizes = new int[paaSize];
