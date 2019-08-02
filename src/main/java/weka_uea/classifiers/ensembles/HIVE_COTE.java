@@ -18,24 +18,46 @@
 package weka_uea.classifiers.ensembles;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.hybrids.HiveCote.DefaultShapeletTransformPlaceholder;
 import timeseriesweka.classifiers.interval_based.TSF;
 import weka.classifiers.Classifier;
+import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 
 /**
- *
+ * TODO jay/tony update javadoc/author list as wanted
+ * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class HIVE_COTE extends AbstractEnsemble  implements TechnicalInformationHandler {
+public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
 
-        @Override
+    //TrainTimeContractable
+    protected boolean contractingTrainTime = false;
+    protected long contractTrainTime = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
+    protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
+    
+    
+    /**
+     * Utility if we want to be conservative while contracting with the overhead 
+     * of the ensemble and any variance with the base classifiers' abilities to adhere 
+     * to the contract. Give the base classifiers a (very large not not full) proportion
+     * of the contract time given, and allow some extra time for the ensemble overhead,
+     * potential threading overhead, etc
+     */
+    protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
+    
+    
+    
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -57,7 +79,7 @@ public class HIVE_COTE extends AbstractEnsemble  implements TechnicalInformation
     @Override
     public void setupDefaultEnsembleSettings() {
         //copied over/adapted from HiveCote.setDefaultEnsembles()
-        //for review purposes
+        //TODO jay/tony review
         this.ensembleName = "HIVE-COTE";
         
         this.weightingScheme = new TrainAcc(4);
@@ -102,4 +124,73 @@ public class HIVE_COTE extends AbstractEnsemble  implements TechnicalInformation
         setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
     }
 
+    
+    @Override
+    public void buildClassifier(Instances data) throws Exception {        
+        if (contractingTrainTime) 
+            setupContracting();
+        
+        super.buildClassifier(data);
+    }
+    
+    /**
+     * Will split time given evenly among the contractable base classifiers. 
+     * 
+     * This is currently very naive, and likely innaccurate. Consider these TODOs
+     * 
+     *  1) If there are any non-contractable base classifiers, these are ignored in 
+     *      the contract setting. The full time is allocated among the contractable 
+     *      base classifiers, instead of trying to do any wonky guessing of how long the 
+     *      non-contractable ones might take
+     *  2) Currently, generating accuracy estimates is not considered in the contract.
+     *      If there are any non-TrainAccuracyEstimating classifiers, the estimation procedure (e.g.
+     *      a 10fold cv) will very likely overshoot the contract, since the classifier would be
+     *      trying to keep to contract on each fold and the full build individually, not in total. 
+     *      This is an active research question moreso than an implementation question
+     *  3) The contract currently does not consider whether the ensemble is being threaded,
+     *      i.e. even if it can run the building of two or more classifiers in parallel, 
+     *      this will still naively set the contract per classifier as amount/numClassifiers
+     */
+    @Override //TrainTimeContractable
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
+        contractingTrainTime = true;
+        contractTrainTime = amount;
+        contractTrainTimeUnit = time;
+    }
+    
+    /**
+     * Sets up the ensemble for contracting, to be called at the start of build classifier,
+     * i.e. when parameters can no longer be changed.
+     */
+    protected void setupContracting() {
+        //splits the ensemble contract time between this many classifiers
+        int numContractableClassifiers = 0; 
+        
+        //in future, the number of classifiers we need to separately eval and custom-contract for
+        int numNonTrainEstimatingClassifiers = 0; 
+        
+        for (EnsembleModule module : modules) {
+            if(module.isTrainTimeContractable())
+                numContractableClassifiers++;
+            else 
+                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " is not contractable, "
+                        + "and is therefore not considered in the contract. The ensemble as a whole will very likely not meet the contract.");
+            
+            if(!module.isTrainAccuracyEstimator()) {
+                numNonTrainEstimatingClassifiers++;
+                System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " does not estimate its own accuracy. "
+                        + "Performing a separate evaluation on the train set currently is not considered in the contract, and therefore the ensemble as a whole will very "
+                        + "likely not meet the contract.");
+            }
+        }
+        
+        //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
+        TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
+        long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(contractTrainTime, contractTrainTimeUnit));
+        long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
+        
+        for (EnsembleModule module : modules)
+            if(module.isTrainTimeContractable())
+                ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
+    }
 }
