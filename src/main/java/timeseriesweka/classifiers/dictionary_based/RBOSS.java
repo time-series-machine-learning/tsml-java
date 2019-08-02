@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,16 +42,16 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
 /**
- * BOSS classifier with parameter search and ensembling for univariate and
+ * RBOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
  * If parameters are known, use the nested class BOSSIndividual and directly provide them.
  *
- * Options to change the method of ensembling to randomly select parameters instead of searching.
+ * Options to change the method of ensembling to randomly select parameters with or without a filter.
  * Has the capability to contract train time and checkpoint when using a random ensemble.
  *
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *
- * @author James Large, updated by Matthew Middlehurst
+ * @author Matthew Middlehurst
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
@@ -146,7 +147,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        TechnicalInformation 	result;
+        //TODO update
+        TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
         result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
         result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
@@ -544,8 +546,9 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             idxSubsampleCount = new int[data.numInstances()];
         }
 
-        if (multiThread && numThreads == 1){
-            numThreads = Runtime.getRuntime().availableProcessors();
+        if (multiThread){
+            if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
+            if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
         }
 
         //required to deal with multivariate datasets, each channel is split into its own instances
@@ -1126,27 +1129,17 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         int requiredCorrect = (int)(lowestAcc*numInst);
 
         if (multiThread){
-            ex = Executors.newFixedThreadPool(numThreads);
-            ArrayList<BOSSIndividual.TrainNearestNeighbourThread> threads = new ArrayList<>(sum(numClassifiers));
+            ArrayList<Future<Double>> futures = new ArrayList<>(numInst);
 
-            for (int i = 0; i < numInst; ++i) {
-                BOSSIndividual.TrainNearestNeighbourThread t = boss.new TrainNearestNeighbourThread(indicies[i]);
-                threads.add(t);
-                ex.execute(t);
-            }
+            for (int i = 0; i < numInst; ++i)
+                futures.add(ex.submit(boss.new TrainNearestNeighbourThread(i)));
 
-            ex.shutdown();
-            while (!ex.isTerminated());
-
-            for (BOSSIndividual.TrainNearestNeighbourThread t: threads){
-                if (t.nn == series.get(t.testIndex).classValue()) {
+            int idx = 0;
+            for (Future<Double> f: futures){
+                if (f.get() == series.get(idx).classValue()) {
                     ++correct;
                 }
-
-                if (trainCV){
-                    latestTrainPreds.add((int)t.nn);
-                    latestTrainIdx.add(t.testIndex);
-                }
+                idx++;
             }
         }
         else {
@@ -1196,17 +1189,24 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 probs = distributionForInstance(i);
             }
 
-            double c = 0;
-            for (int j = 1; j < probs.length; j++)
-                if (probs[j] > probs[(int) c])
-                    c = j;
+            int maxClass = 0;
+            for (int n = 1; n < probs.length; ++n) {
+                if (probs[n] > probs[maxClass]) {
+                    maxClass = n;
+                }
+                else if (probs[n] == probs[maxClass]){
+                    if (rand.nextBoolean()){
+                        maxClass = n;
+                    }
+                }
+            }
 
-            if (c == data.get(i).classValue())
+            if (maxClass == data.get(i).classValue())
                 ++correct;
 
-            this.ensembleCvPreds[i] = c;
+            this.ensembleCvPreds[i] = maxClass;
 
-            trainResults.addPrediction(data.get(i).classValue(), probs, c, -1, "");
+            trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, -1, "");
         }
 
         return correct / data.numInstances();
@@ -1290,17 +1290,16 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[] dist = distributionForInstance(instance);
+        double[] probs = distributionForInstance(instance);
 
-        double maxFreq=dist[0], maxClass=0;
-        for (int i = 1; i < dist.length; ++i) {
-            if (dist[i] > maxFreq) {
-                maxFreq = dist[i];
-                maxClass = i;
+        int maxClass = 0;
+        for (int n = 1; n < probs.length; ++n) {
+            if (probs[n] > probs[maxClass]) {
+                maxClass = n;
             }
-            else if (dist[i] == maxFreq){
+            else if (probs[n] == probs[maxClass]){
                 if (rand.nextBoolean()){
-                    maxClass = i;
+                    maxClass = n;
                 }
             }
         }
@@ -1329,23 +1328,23 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         }
 
         if (multiThread){
-            ex = Executors.newFixedThreadPool(numThreads);
-            ArrayList<BOSSIndividual.TestNearestNeighbourThread> threads = new ArrayList<>(sum(numClassifiers));
+            ArrayList<Future<Double>>[] futures = new ArrayList[numSeries];
 
             for (int n = 0; n < numSeries; n++) {
+                futures[n] = new ArrayList<>(numClassifiers[n]);
                 for (BOSSIndividual classifier : classifiers[n]) {
-                    BOSSIndividual.TestNearestNeighbourThread t = classifier.new TestNearestNeighbourThread(instance, classifier.weight, n);
-                    threads.add(t);
-                    ex.execute(t);
+                    futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
                 }
             }
 
-            ex.shutdown();
-            while (!ex.isTerminated());
-
-            for (BOSSIndividual.TestNearestNeighbourThread t: threads){
-                classHist[(int)t.nn] += t.weight;
-                sum += t.weight;
+            for (int n = 0; n < numSeries; n++) {
+                int idx = 0;
+                for (Future<Double> f : futures[n]) {
+                    double weight = classifiers[n].get(idx).weight;
+                    classHist[f.get().intValue()] += weight;
+                    sum += weight;
+                    idx++;
+                }
             }
         }
         else {
@@ -1525,17 +1524,17 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 01/08/19
+        //Output 02/08/19
         /*
         JAVAGENT: call premain instrumentation for class SizeOf
         CV acc =0.9552238805970149
         CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.923226433430515 numClassifiers = [50]
         CV acc =0.7666666666666667
-        CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8851851851851852 numClassifiers = [50, 50, 50, 50]
+        CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
         CV acc =0.9402985074626866
         Bayesian CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.9300291545189504 numClassifiers = [50]
         CV acc =0.9
-        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8888888888888888 numClassifiers = [50, 50, 50, 50]
+        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
         CV acc =0.8955223880597015
         FastMax CVAcc BOSS accuracy on ItalyPowerDemand fold 0 = 0.8415937803692906 numClassifiers = [50]
         CV acc =0.4
@@ -1543,15 +1542,15 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         CV acc =0.9552238805970149
         CAWPE Subsample BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [80]
         CV acc =0.7
-        CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8592592592592593 numClassifiers = [25, 25, 25, 25]
-        CV acc =0.6716417910447762
+        CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8481481481481481 numClassifiers = [25, 25, 25, 25]
+        CV acc =0.6865671641791045
         Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80]
         CV acc =0.3
         Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190]
-        CV acc =0.6716417910447762
-        Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7103984450923226 numClassifiers = [50]
+        CV acc =0.6865671641791045
+        Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7094266277939747 numClassifiers = [50]
         CV acc =0.3
-        Contract 500MB BOSS accuracy on ERing fold 0 = 0.4740740740740741 numClassifiers = [13, 13, 12, 12]
+        Contract 500MB BOSS accuracy on ERing fold 0 = 0.4777777777777778 numClassifiers = [13, 13, 12, 12]
         */
     }
 }

@@ -1,13 +1,16 @@
 package timeseriesweka.classifiers.dictionary_based;
 
+import timeseriesweka.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * BOSS classifier to be used with known parameters, for boss with parameter search, use BOSSEnsemble.
@@ -21,7 +24,7 @@ import java.util.concurrent.Executors;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual> {
+public class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual>, MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     protected BitWord [/*instance*/][/*windowindex*/] SFAwords;
@@ -104,6 +107,11 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     @Override
     public int compareTo(BOSSIndividual o) {
         return Double.compare(this.accuracy, o.accuracy);
+    }
+
+    @Override
+    public void setThreadAllowance(int numThreads) {
+        this.numThreads = numThreads;
     }
 
     public static class Bag extends HashMap<BitWord, Integer> {
@@ -506,22 +514,16 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         numClasses = data.numClasses();
 
         if (multiThread){
-            ex = Executors.newFixedThreadPool(numThreads);
-            ArrayList<TransformThread> threads = new ArrayList<>(data.numInstances());
+            if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
+            if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            for (int inst = 0; inst < data.numInstances(); ++inst) {
-                TransformThread t = new TransformThread(inst, data.get(inst));
-                threads.add(t);
-                bags.add(null);
-                ex.execute(t);
-            }
+            ArrayList<Future<Bag>> futures = new ArrayList<>(data.numInstances());
 
-            ex.shutdown();
-            while (!ex.isTerminated());
+            for (int inst = 0; inst < data.numInstances(); ++inst)
+                futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
 
-            for (TransformThread t: threads){
-                bags.set(t.i, t.bag);
-            }
+            for (Future<Bag> f: futures)
+                bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
@@ -613,24 +615,20 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         return nn;
     }
 
-    public class TestNearestNeighbourThread implements Runnable{
+    public class TestNearestNeighbourThread implements Callable<Double>{
         Instance inst;
-        double weight;
-        int series;
-        double nn = -1.0;
 
-        public TestNearestNeighbourThread(Instance inst, double weight, int series){
+        public TestNearestNeighbourThread(Instance inst){
             this.inst = inst;
-            this.series = series;
-            this.weight = weight;
         }
 
         @Override
-        public void run() {
+        public Double call() {
             BOSSIndividual.Bag testBag = BOSSTransform(inst);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
+            double nn = -1.0;
 
             for (int i = 0; i < bags.size(); ++i) {
                 double dist = BOSSdistance(testBag, bags.get(i), bestDist);
@@ -640,23 +638,25 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
                     nn = bags.get(i).getClassVal();
                 }
             }
+
+            return nn;
         }
     }
 
-    public class TrainNearestNeighbourThread implements Runnable{
+    public class TrainNearestNeighbourThread implements Callable<Double>{
         int testIndex;
-        double nn = -1.0;
 
         public TrainNearestNeighbourThread(int testIndex){
             this.testIndex = testIndex;
         }
 
         @Override
-        public void run() {
+        public Double call() {
             BOSSIndividual.Bag testBag = bags.get(testIndex);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
+            double nn = -1.0;
 
             for (int i = 0; i < bags.size(); ++i) {
                 if (i == testIndex) //skip 'this' one, leave-one-out
@@ -669,13 +669,14 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
                     nn = bags.get(i).getClassVal();
                 }
             }
+
+            return nn;
         }
     }
 
-    private class TransformThread implements Runnable{
+    private class TransformThread implements Callable<Bag>{
         int i;
         Instance inst;
-        BOSSIndividual.Bag bag;
 
         public TransformThread(int i, Instance inst){
             this.i = i;
@@ -683,11 +684,13 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         }
 
         @Override
-        public void run() {
+        public Bag call() {
             SFAwords[i] = createSFAwords(inst);
 
-            bag = createBagFromWords(wordLength, SFAwords[i]);
+            Bag bag = createBagFromWords(wordLength, SFAwords[i]);
             bag.setClassVal(inst.classValue());
+
+            return bag;
         }
     }
 }
