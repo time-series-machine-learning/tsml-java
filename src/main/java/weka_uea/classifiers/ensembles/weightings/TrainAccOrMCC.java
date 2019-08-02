@@ -14,7 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * Will define a module's weighting as it's train accuracy by default, however in 

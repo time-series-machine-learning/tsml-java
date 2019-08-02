@@ -16,9 +16,7 @@ package multivariate_timeseriesweka.ensembles;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka_uea.classifiers.ensembles.voting.MajorityVote;
 import weka_uea.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;

@@ -14,7 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * Will call findMeanAuroc() on each module's results, therefore not necessary to call

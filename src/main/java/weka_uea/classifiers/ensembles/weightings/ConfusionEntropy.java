@@ -14,8 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import java.util.Arrays;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  *

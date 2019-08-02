@@ -14,8 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.voting;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
-import weka.core.Instance;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  *

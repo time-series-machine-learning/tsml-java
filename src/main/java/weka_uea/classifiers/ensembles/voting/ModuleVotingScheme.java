@@ -14,10 +14,8 @@
  */
 package weka_uea.classifiers.ensembles.voting;
 
-import java.util.ArrayList;
-import java.util.Random;
 import utilities.DebugPrinting;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;

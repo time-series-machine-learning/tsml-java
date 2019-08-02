@@ -14,7 +14,6 @@
  */
 package weka_uea.classifiers.ensembles;
 
-import weka_uea.classifiers.ensembles.CAWPE;
 import experiments.CollateResults;
 import experiments.data.DatasetLists;
 import java.io.File;
@@ -24,18 +23,16 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka_uea.classifiers.ensembles.voting.MajorityVote;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
-import utilities.ClassifierTools;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
 import weka.filters.Filter;
 
 /**
