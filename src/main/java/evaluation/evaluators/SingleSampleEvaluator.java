@@ -56,4 +56,11 @@ public class SingleSampleEvaluator extends SamplingEvaluator {
         return eval.evaluate(classifier, trainTest[0], trainTest[1]);
     }
 
+    @Override
+    public Evaluator cloneEvaluator() {
+        SingleSampleEvaluator ev = new SingleSampleEvaluator(this.seed, this.cloneData, this.setClassMissing);
+        ev.setPropInstancesInTrain(this.propInstancesInTrain);
+        return ev;
+    }
+
 }

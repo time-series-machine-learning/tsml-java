@@ -19,7 +19,6 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import timeseriesweka.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;

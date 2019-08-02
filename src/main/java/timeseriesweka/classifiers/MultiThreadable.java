@@ -28,5 +28,4 @@ public interface MultiThreadable {
      * Sets how many threads this object may spawn. 
      */
     void setThreadAllowance(int numThreads);
-    
 }

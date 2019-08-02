@@ -55,7 +55,7 @@ public class HIVE_COTE extends AbstractEnsemble  implements TechnicalInformation
     }
     
     @Override
-    public void setupDefaultSettings() {
+    public void setupDefaultEnsembleSettings() {
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //for review purposes
         this.ensembleName = "HIVE-COTE";
@@ -89,7 +89,14 @@ public class HIVE_COTE extends AbstractEnsemble  implements TechnicalInformation
         classifiers[4] = new TSF();
         classifierNames[4] = "TSF";
         
-        setClassifiers(classifiers, classifierNames, null);
+        try {
+            setClassifiers(classifiers, classifierNames, null);
+        } catch (Exception e) {
+            System.out.println("Exception thrown when setting up DEFUALT settings of " + this.getClass().getSimpleName() + ". Should "
+                    + "be fixed before continuing");
+            System.exit(1);
+        }
+        
         
         //defaults to 7 day contract TODO jay/tony review
         setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);

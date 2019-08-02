@@ -16,7 +16,6 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierLists;
-import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,9 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -565,6 +562,17 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
             System.out.println("");
         }
         
+    }
+
+    @Override
+    public Evaluator cloneEvaluator() {
+        CrossValidationEvaluator ev = new CrossValidationEvaluator(this.seed, this.cloneData, this.setClassMissing, this.cloneClassifiers, this.maintainClassifiers);
+        //INTENTIONALLY NOT COPYING ACROSS FOLDS. That is a utility to help speed things up
+        
+        //If people try to clone evaluators with folds already built, safer to force
+        //folds to be rebuilt (seeded/deterministic, ofc) than to potentially create
+        //many copies of large datasets
+        return ev;
     }
     
     

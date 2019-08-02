@@ -105,5 +105,10 @@ public class SingleTestSetEvaluator extends Evaluator {
         
         return res;
     }
+
+    @Override
+    public Evaluator cloneEvaluator() {
+        return new SingleTestSetEvaluator(this.seed, this.cloneData, this.setClassMissing);
+    }
     
 }

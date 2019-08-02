@@ -109,4 +109,7 @@ public abstract class Evaluator {
     }
     
     public abstract ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception;
+    
+    
+    public abstract Evaluator cloneEvaluator();
 }

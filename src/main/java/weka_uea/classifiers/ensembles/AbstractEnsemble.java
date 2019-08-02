@@ -40,6 +40,7 @@ import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
+import utilities.ThreadingUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -164,7 +165,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     protected String datasetName;
 
     public AbstractEnsemble() {
-        setupDefaultSettings();
+        setupDefaultEnsembleSettings();
     }
     
     
@@ -186,7 +187,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
      * 
      * See CAWPE and HIVE-COTE for examples of particular instantiations of this method.
      */
-    public abstract void setupDefaultSettings();
+    public abstract void setupDefaultEnsembleSettings();
     
     
     
@@ -208,22 +209,35 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
     }
 
     public void setClassifiersNamesForFileRead(String[] classifierNames) {
-        setClassifiers(null,classifierNames,null);
-
+        setClassifiers(null, classifierNames, null);
     }
 
+    public void setClassifiersForBuildingInMemory(Classifier[] classifiers) {
+        setClassifiers(classifiers, null ,null);
+    }
+    
     /**
-     * If building CAWPE from scratch, the minimum requirement for running is the
- classifiers array, the others could be left null.
+     * If building the ensemble from scratch, the minimum requirement for running is the
+     * classifiers array, the others could be left null.
      *
-     * If building CAWPE from the results files of individuals, the minimum requirement for
- running is the classifierNames list.
+     * If building the ensemble from the results files of individuals (i.e. setBuildIndividualsFromResultsFiles(true)), 
+     * the minimum requirement for running is the classifierNames list.
      *
      * @param classifiers array of classifiers to use
      * @param classifierNames if null, will use the classifiers' class names by default
      * @param classifierParameters  if null, parameters of each classifier empty by default
      */
     public void setClassifiers(Classifier[] classifiers, String[] classifierNames, String[] classifierParameters) {
+        if (classifiers == null && classifierNames == null) {
+            System.out.println("setClassifiers() was passed null for both the classifiers and classifiernames."
+                    + "If building the ensemble from scratch in memory (default), the classifiers are needed at minimum."
+                    + "Otherwise if building the ensemble from the saved results of base classifiers on disk, the "
+                    + "classifier names are needed at minimum. ");
+            
+            //ClassifierLists does not want to throw exceptions, killing here for now todo review
+            System.exit(1);
+        }
+        
         if (classifiers == null) {
             classifiers = new Classifier[classifierNames.length];
             for (int i = 0; i < classifiers.length; i++)
@@ -261,7 +275,7 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         //having that creates many, many, many annoying issues, especially when classifying test cases
         if (readIndividualsResults) {
             if (!resultsFilesParametersInitialised)
-                throw new Exception("Trying to load CAWPE modules from file, but parameters for results file reading have not been initialised");
+                throw new Exception("Trying to load "+ensembleName+" modules from file, but parameters for results file reading have not been initialised");
             loadModules(); //will throw exception if a module cannot be loaded (rather than e.g training that individual instead)
         }
         else
@@ -277,80 +291,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         }
     }
 
-//    protected void trainModules_unThreaded() throws Exception {
-//
-//        for (EnsembleModule module : modules) {
-//            if (module.getClassifier() instanceof TrainAccuracyEstimator) {
-//                module.getClassifier().buildClassifier(trainInsts);
-//
-//                //these train results should also include the buildtime
-//                module.trainResults = ((TrainAccuracyEstimator)module.getClassifier()).getTrainResults();
-//                module.trainResults.finaliseResults();
-//                
-//                // TODO: should errorEstimateTime be forced to zero? by the intention of the interface,
-//                // the estimate should have been produced during the normal process of building
-//                // the classifier, but depending on how it was programmatically produced, 
-//                // the reported estimate time may have already been accounted for in the 
-//                // build time. Investigate when use cases arise
-//                
-//                if (writeIndividualsResults) { //if we're doing trainFold# file writing
-//                    String params = module.getParameters();
-//                    if (module.getClassifier() instanceof SaveParameterInfo)
-//                        params = ((SaveParameterInfo)module.getClassifier()).getParameters();
-//                    writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
-//                    printlnDebug(module.getModuleName() + " writing train file data gotten through TrainAccuracyEstimate...");
-//                }
-//            }
-//            else {
-//                printlnDebug(module.getModuleName() + " estimateing performance...");
-//                module.trainResults = trainEstimator.evaluate(module.getClassifier(), trainInsts);
-//                module.trainResults.finaliseResults();
-//                
-//                //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
-//                //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
-//                long startTime = System.nanoTime();
-//                module.getClassifier().buildClassifier(trainInsts);
-//                module.trainResults.setBuildTime(System.nanoTime() - startTime);
-//                module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-//
-//                if (writeIndividualsResults) { //if we're doing trainFold# file writing
-//                    writeResultsFile(module.getModuleName(), module.getParameters(), module.trainResults, "train"); //write results out
-//                    printlnDebug(module.getModuleName() + " writing train file with full preds from scratch...");
-//                }
-//            }
-//        }
-//    }
-
-    protected synchronized void trainModule_unThreaded(EnsembleModule module) throws Exception {
-        //todo give numThreads to module's classifier if it implements Threadable and numthreads > 1 
-        
-        if (module.getClassifier() instanceof TrainAccuracyEstimator) {
-            module.getClassifier().buildClassifier(trainInsts);
-
-            //these train results should also include the buildtime
-            module.trainResults = ((TrainAccuracyEstimator)module.getClassifier()).getTrainResults();
-            module.trainResults.finaliseResults();
-
-            // TODO: should errorEstimateTime be forced to zero? by the intention of the interface,
-            // the estimate should have been produced during the normal process of building
-            // the classifier, but depending on how it was programmatically produced, 
-            // the reported estimate time may have already been accounted for in the 
-            // build time. Investigate when use cases arise
-        }
-        else {
-            printlnDebug(module.getModuleName() + " estimateing performance...");
-            module.trainResults = trainEstimator.evaluate(module.getClassifier(), trainInsts);
-            module.trainResults.finaliseResults();
-
-            //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
-            //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
-            long startTime = System.nanoTime();
-            module.getClassifier().buildClassifier(trainInsts);
-            module.trainResults.setBuildTime(System.nanoTime() - startTime);
-            module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        }
-    }
-        
     protected boolean hasThreadableBaseClassifiers() { 
         for (EnsembleModule module : modules)
             if (module.getClassifier() instanceof MultiThreadable)
@@ -358,84 +298,173 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         return false;
     }
     
-    protected void trainModules() throws Exception {
-        if (!multiThread) {
-            for (EnsembleModule module : modules)
-                trainModule_unThreaded(module); //use the much clearer old definition of training modules
-        }
-        else {
-            //TODO can be optimised a lot, but still giving big speedup over single thread
-            //so leaving for now.
-            //In future, set off trainaccestimators first to run in background, then group 
-            //non-trainaccestimators and pass to evaluator in one go, then build 
-            //non-trainaccestimators in their own threads, then collect back all estimates from 
-            //trainaccestimators
+//    protected void trainModules() throws Exception {
+//        if (!multiThread)
+//            trainModules_unThreaded(); //use the much clearer old definition of training modules
+//        else {
+//            trainModules_threaded();
+//        }
+//        
+//        for (EnsembleModule module : modules) {
+//            if (writeIndividualsResults) { //if we're doing trainFold# file writing
+//                String params = module.getParameters();
+//                if (module.getClassifier() instanceof SaveParameterInfo)
+//                    params = ((SaveParameterInfo)module.getClassifier()).getParameters();
+//                writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
+//            }
+//        }
+//    }
+    
+    
+//    protected synchronized void trainModules_threaded() throws Exception {
+//        //TODO can be optimised a lot, but still giving big speedup over single thread
+//        //so leaving for now.
+//        //In future, set off trainaccestimators first to run in background, then group 
+//        //non-trainaccestimators and pass to evaluator in one go, then build 
+//        //non-trainaccestimators in their own threads, then collect back all estimates from 
+//        //trainaccestimators
+//
+//        //Give all the threads to the estimator, gather non-self-generated estimates first
+//        if (trainEstimator instanceof MultiThreadable)
+//            ((MultiThreadable)trainEstimator).setThreadAllowance(numThreads);
+//
+//        for (int i = 0; i < modules.length; i++) {
+//            Classifier clf = modules[i].getClassifier();
+//            if (!(clf instanceof TrainAccuracyEstimator))
+//                modules[i].trainResults = trainEstimator.evaluate(clf, trainInsts);
+//        }
+//
+//        //Have easily threadable estimates
+//        //Now build all classifiers, individually threaded
+//        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+//        List<Future<Long>> buildTimes = new ArrayList<>();
+//        for (int i = 0; i < modules.length; i++) {
+//            final Classifier clf = modules[i].getClassifier();
+//
+//            Callable<Long> call = () -> {
+//                Long buildTime = System.nanoTime();
+//                clf.buildClassifier(trainInsts);
+//                return System.nanoTime() - buildTime;
+//            };
+//
+//            buildTimes.add(executor.submit(call));
+//        }
+//
+//
+//        //All built/building, now to wait and get the train estimates of the modules that 
+//        //didnt have them built separately earlier
+//        for (int i = 0; i < modules.length; i++) {
+//            Classifier clf = modules[i].getClassifier();
+//            if ((clf instanceof TrainAccuracyEstimator)) { 
+//                // The trainResults should have the classifiers'own recorded 
+//                // build time in it, just need to get the results. This is 
+//                // however the easiest way to wait for completion of the thread/build process
+//                buildTimes.get(i).get();
+//                modules[i].trainResults = ((TrainAccuracyEstimator)clf).getTrainResults();
+//            }
+//            else {
+//                // Have the estimate results, just need to get the build time
+//                modules[i].trainResults.setBuildTime(buildTimes.get(i).get());
+//                modules[i].trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+//            }
+//            modules[i].trainResults.finaliseResults();
+//        }
+//
+//
+//        executor.shutdown();
+//        while (!executor.isTerminated()) {
+//        }
+//    }
+    
+    protected synchronized void trainModules() throws Exception {
+        
+        //define the operations to build and evaluate each module, as a function
+        //that will build the classifier and return train results for it, either 
+        //generated by the classifier itself or the trainEstimator
+        List<Callable<ClassifierResults>> moduleBuilds = new ArrayList<>();
+        for (EnsembleModule module : modules) {
+            final Classifier classifier = module.getClassifier();
+            final Evaluator eval = trainEstimator.cloneEvaluator();
             
-            //Give all the threads to the estimator, gather non-self-generated estimates first
-            if (trainEstimator instanceof MultiThreadable)
-                ((MultiThreadable)trainEstimator).setThreadAllowance(numThreads);
-            
-            for (int i = 0; i < modules.length; i++) {
-                Classifier clf = modules[i].getClassifier();
-                if (!(clf instanceof TrainAccuracyEstimator))
-                    modules[i].trainResults = trainEstimator.evaluate(clf, trainInsts);
-            }
-            
-            //Have easily threadable estimates
-            //Now build all classifiers, individually threaded
-            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-            List<Future<Long>> buildTimes = new ArrayList<>();
-            for (int i = 0; i < modules.length; i++) {
-                final Classifier clf = modules[i].getClassifier();
+            Callable<ClassifierResults> moduleBuild = () -> {
+                ClassifierResults trainResults = null;
                 
-                Callable<Long> call = () -> {
-                    Long buildTime = System.nanoTime();
-                    clf.buildClassifier(trainInsts);
-                    return System.nanoTime() - buildTime;
-                };
+                if (classifier instanceof TrainAccuracyEstimator) { 
+                    classifier.buildClassifier(trainInsts);
+                    trainResults = ((TrainAccuracyEstimator)classifier).getTrainResults();
+                }
+                else { 
+                    trainResults = eval.evaluate(classifier, trainInsts);
+                    classifier.buildClassifier(trainInsts);
+                }
                 
-                buildTimes.add(executor.submit(call));
-            }
-   
+                return trainResults;
+            };
             
-            //All built/building, now to wait and get the train estimates of the modules that 
-            //didnt have them built separately earlier
-            for (int i = 0; i < modules.length; i++) {
-                Classifier clf = modules[i].getClassifier();
-                if ((clf instanceof TrainAccuracyEstimator)) { 
-                    // The trainResults should have the classifiers'own recorded 
-                    // build time in it, just need to get the results. This is 
-                    // however the easiest way to wait for completion of the thread/build process
-                    buildTimes.get(i).get();
-                    modules[i].trainResults = ((TrainAccuracyEstimator)clf).getTrainResults();
-                }
-                else {
-                    // Have the estimate results, just need to get the build time
-                    modules[i].trainResults.setBuildTime(buildTimes.get(i).get());
-                    modules[i].trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-                }
-                modules[i].trainResults.finaliseResults();
-            }
-            
-                    
-            executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            moduleBuilds.add(moduleBuild);
         }
         
-        for (EnsembleModule module : modules) {
+        
+        //complete the operations, either threaded via the executor service or 
+        //locally/sequentially
+        List<ClassifierResults> results = new ArrayList<>();
+        if (multiThread) {
+            ExecutorService executor = ThreadingUtilities.buildExecutorService(numThreads);
+            boolean shutdownAfter = true;
+            
+            results = ThreadingUtilities.computeAll(executor, moduleBuilds, shutdownAfter);  
+        }
+        else { 
+            for (Callable<ClassifierResults> moduleBuild : moduleBuilds)
+                results.add(moduleBuild.call());
+        }
+        
+        
+        //gather back the train results
+        for (int i = 0; i < modules.length; i++) {
+            modules[i].trainResults = results.get(i);
+            
             if (writeIndividualsResults) { //if we're doing trainFold# file writing
-                String params = module.getParameters();
-                if (module.getClassifier() instanceof SaveParameterInfo)
-                    params = ((SaveParameterInfo)module.getClassifier()).getParameters();
-                writeResultsFile(module.getModuleName(), params, module.trainResults, "train"); //write results out
-                printlnDebug(module.getModuleName() + " writing train file data gotten through TrainAccuracyEstimate...");
+                String params = modules[i].getParameters();
+                if (modules[i].getClassifier() instanceof SaveParameterInfo)
+                    params = ((SaveParameterInfo)modules[i].getClassifier()).getParameters();
+                writeResultsFile(modules[i].getModuleName(), params, modules[i].trainResults, "train"); //write results out
             }
         }
     }
     
-    
-    
+//    protected void trainModules_unThreaded() throws Exception {
+//        for (EnsembleModule module : modules) {
+//            Classifier clf = module.getClassifier();
+//            if (clf instanceof TrainAccuracyEstimator) {
+//                clf.buildClassifier(trainInsts);
+//
+//                //these train results should also include the buildtime
+//                module.trainResults = ((TrainAccuracyEstimator)clf).getTrainResults();
+//                module.trainResults.finaliseResults();
+//
+//                // TODO: should errorEstimateTime be forced to zero? by the intention of the interface,
+//                // the estimate should have been produced during the normal process of building
+//                // the classifier, but depending on how it was programmatically produced, 
+//                // the reported estimate time may have already been accounted for in the 
+//                // build time. Investigate when use cases arise
+//            }
+//            else {
+//                printlnDebug(module.getModuleName() + " estimateing performance...");
+//                module.trainResults = trainEstimator.evaluate(module.getClassifier(), trainInsts);
+//                module.trainResults.finaliseResults();
+//
+//                //assumption: classifiers that maintain a classifierResults object, which may be the same object that module.trainResults refers to,
+//                //and which this subsequent building of the final classifier would tamper with, would have been handled as an instanceof TrainAccuracyEstimate above
+//                long startTime = System.nanoTime();
+//                module.getClassifier().buildClassifier(trainInsts);
+//                module.trainResults.setBuildTime(System.nanoTime() - startTime);
+//                module.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+//            }
+//        }
+//    }
+        
+
     protected void loadModules() throws Exception {
         //will look for all files and report all that are missing, instead of bailing on the first file not found
         //just helps debugging/running experiments a little
@@ -856,7 +885,8 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
         printlnDebug("**ENSEMBLE TRAIN: " + ensembleName + "**");
         
         //housekeeping
-        setupContracting();
+        if (contractingTrainTime) 
+            setupContracting();
         
         if (resultsFilesParametersInitialised) {
             if (readResultsFilesDirectories.length > 1)

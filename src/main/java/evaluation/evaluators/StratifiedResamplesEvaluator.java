@@ -24,10 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import static utilities.GenericTools.indexOfMax;
-import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -71,6 +68,14 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         
         this.numFolds = 30;
         this.propInstancesInTrain = 0.5;
+    }
+    
+    @Override
+    public Evaluator cloneEvaluator() {
+        StratifiedResamplesEvaluator ev = new StratifiedResamplesEvaluator(this.seed, this.cloneData, this.setClassMissing, this.cloneClassifiers, this.maintainClassifiers);
+        ev.setPropInstancesInTrain(this.propInstancesInTrain);
+        ev.setUseEachResampleIdAsSeed(this.useEachResampleIdAsSeed);
+        return ev;
     }
     
     /**
@@ -250,197 +255,6 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             executor.shutdown();
         
         return allConcatenatedClassifierRes;
-    }
-    
-    
-//    public ClassifierResults[] stratifiedResampleWithStats(Classifier[] classifiers, Instances dataset) throws Exception {
-//        if (cloneData)
-//            dataset = new Instances(dataset);
-//        if (cloneClassifiers)
-//            cloneClassifiers(classifiers);
-//        
-//        resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
-//        
-//        ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length] ;
-//        
-//        for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
-//            
-//            ClassifierResults concatenatedClassifierRes = new ClassifierResults(dataset.numClasses());
-//            concatenatedClassifierRes.setTimeUnit(TimeUnit.NANOSECONDS);
-//            concatenatedClassifierRes.turnOffZeroTimingsErrors();
-//            
-//            for (int fold = 0; fold < numFolds; fold++) {
-//                Instances[] resampledData = InstanceTools.resampleInstances(dataset, seed, propInstancesInTrain);
-//
-//                Classifier foldClassifier = classifiers[classifierIndex];
-//                if (cloneClassifiers)
-//                    //use the clone instead
-//                    foldClassifier = foldClassifiers[classifierIndex][fold];
-//                
-//                foldClassifier.buildClassifier(resampledData[0]);
-//                ClassifierResults foldResults = new ClassifierResults(dataset.numClasses());
-//                foldResults.setTimeUnit(TimeUnit.NANOSECONDS);
-//                foldResults.turnOffZeroTimingsErrors();
-//
-//                //todo, implement this loop via SingleTestSetEvluator            
-//                for (Instance testInst : resampledData[1]) {
-//                    double classVal = testInst.classValue(); //save in case we're deleting next line
-//                    if (setClassMissing)
-//                        testInst.setClassMissing();
-//
-//                    long startTime = System.nanoTime();
-//                    double[] dist = foldClassifier.distributionForInstance(testInst);
-//                    long predTime = System.nanoTime()- startTime;
-//
-//                    foldResults.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-//                    concatenatedClassifierRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
-//                }
-//
-//                foldResults.turnOnZeroTimingsErrors();
-//                foldResults.findAllStatsOnce(); 
-//                
-//                resultsPerFold[classifierIndex][fold] = foldResults;
-//            }
-//            
-//            concatenatedClassifierRes.turnOnZeroTimingsErrors();
-//            allConcatenatedClassifierRes[classifierIndex] = concatenatedClassifierRes;
-//        }
-//   
-//        return allConcatenatedClassifierRes;
-//    }
-    
-    public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Classifier classifier = ClassifierLists.setClassifierClassic("RandF", seed);
-        Instances data = DatasetLoading.sampleBeef(seed)[0];
-        
-        StratifiedResamplesEvaluator evalSingleThread = new StratifiedResamplesEvaluator();
-        evalSingleThread.setSeed(seed);
-        evalSingleThread.setCloneClassifiers(true); //to keep the classifier instance clean for multithreaded eval, i.e. not cloning a built classifier
-//        evalSingleThread.setNumFolds(200);
-        evalSingleThread.setThreadAllowance(0);
-        
-        StratifiedResamplesEvaluator evalMultiThread = new StratifiedResamplesEvaluator();
-        evalMultiThread.setSeed(seed);
-        evalMultiThread.setCloneClassifiers(true); //would be set in setThreadAllowance anyway, but for clarity
-//        evalMultiThread.setNumFolds(200);
-        evalMultiThread.setThreadAllowance(Runtime.getRuntime().availableProcessors()-1);
-        System.out.println("num cores = " + (Runtime.getRuntime().availableProcessors()-1));
-        
-        StratifiedResamplesEvaluator[] evals = {
-            evalSingleThread,
-            evalMultiThread,
-        };
-        
-        for (StratifiedResamplesEvaluator eval : evals) {
-            long t1 = System.currentTimeMillis();
-            ClassifierResults res = eval.evaluate(classifier, data);
-            double t2 = (double)(System.currentTimeMillis() - t1) / 1000.0;
-            System.out.println("Computed acc: " + res.getAcc() + " in time: " + t2);
-            
-            System.out.print("Folds: ");
-            for (ClassifierResults foldResult : eval.getFoldResults(0))
-                System.out.print(foldResult.getAcc() + ",");
-            System.out.println("");
-        }
-        
-        /* ROTF:
-            run:
-            num cores = 7
-            Fold 0 eval: 0.8
-            Fold 1 eval: 0.7333333333333333
-            Fold 2 eval: 0.5333333333333333
-            Fold 3 eval: 0.5333333333333333
-            Fold 4 eval: 0.5333333333333333
-            Fold 5 eval: 0.8666666666666667
-            Fold 6 eval: 0.5333333333333333
-            Fold 7 eval: 0.4
-            Fold 8 eval: 0.6
-            Fold 9 eval: 0.5333333333333333
-            Fold 10 eval: 0.8
-            Fold 11 eval: 0.6666666666666666
-            Fold 12 eval: 0.6666666666666666
-            Fold 13 eval: 0.8
-            Fold 14 eval: 0.4666666666666667
-            Fold 15 eval: 0.6
-            Fold 16 eval: 0.7333333333333333
-            Fold 17 eval: 0.6
-            Fold 18 eval: 0.6666666666666666
-            Fold 19 eval: 0.5333333333333333
-            Fold 20 eval: 0.6
-            Fold 21 eval: 0.6666666666666666
-            Fold 22 eval: 0.7333333333333333
-            Fold 23 eval: 0.6666666666666666
-            Fold 24 eval: 0.8666666666666667
-            Fold 25 eval: 0.6
-            Fold 26 eval: 0.5333333333333333
-            Fold 27 eval: 0.6666666666666666
-            Fold 28 eval: 0.8
-            Fold 29 eval: 0.6666666666666666
-            Computed acc: 0.6466666666666666 in time: 33.757
-            Fold 0 spawned
-            Fold 1 spawned
-            Fold 2 spawned
-            Fold 3 spawned
-            Fold 4 spawned
-            Fold 5 spawned
-            Fold 6 spawned
-            Fold 7 spawned
-            Fold 8 spawned
-            Fold 9 spawned
-            Fold 10 spawned
-            Fold 11 spawned
-            Fold 12 spawned
-            Fold 13 spawned
-            Fold 14 spawned
-            Fold 15 spawned
-            Fold 16 spawned
-            Fold 17 spawned
-            Fold 18 spawned
-            Fold 19 spawned
-            Fold 20 spawned
-            Fold 21 spawned
-            Fold 22 spawned
-            Fold 23 spawned
-            Fold 24 spawned
-            Fold 25 spawned
-            Fold 26 spawned
-            Fold 27 spawned
-            Fold 28 spawned
-            Fold 29 spawned
-            Fold 0 eval: 0.8
-            Fold 1 eval: 0.7333333333333333
-            Fold 2 eval: 0.5333333333333333
-            Fold 3 eval: 0.5333333333333333
-            Fold 4 eval: 0.5333333333333333
-            Fold 5 eval: 0.8666666666666667
-            Fold 6 eval: 0.5333333333333333
-            Fold 7 eval: 0.4
-            Fold 8 eval: 0.6
-            Fold 9 eval: 0.5333333333333333
-            Fold 10 eval: 0.8
-            Fold 11 eval: 0.6666666666666666
-            Fold 12 eval: 0.6666666666666666
-            Fold 13 eval: 0.8
-            Fold 14 eval: 0.4666666666666667
-            Fold 15 eval: 0.6
-            Fold 16 eval: 0.7333333333333333
-            Fold 17 eval: 0.6
-            Fold 18 eval: 0.6666666666666666
-            Fold 19 eval: 0.5333333333333333
-            Fold 20 eval: 0.6
-            Fold 21 eval: 0.6666666666666666
-            Fold 22 eval: 0.7333333333333333
-            Fold 23 eval: 0.6666666666666666
-            Fold 24 eval: 0.8666666666666667
-            Fold 25 eval: 0.6
-            Fold 26 eval: 0.5333333333333333
-            Fold 27 eval: 0.6666666666666666
-            Fold 28 eval: 0.8
-            Fold 29 eval: 0.6666666666666666
-            Computed acc: 0.6466666666666666 in time: 14.678
-            BUILD SUCCESSFUL (total time: 49 seconds)
-         */
     }
 }
 

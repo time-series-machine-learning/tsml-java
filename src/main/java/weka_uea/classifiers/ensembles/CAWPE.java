@@ -60,7 +60,7 @@ import weka_uea.classifiers.kNN;
 
 
  CLASSIFICATION SETTINGS:
- Default setup is defined by setupDefaultSettings(), i.e:
+ Default setup is defined by setupDefaultEnsembleSettings(), i.e:
    Comps: SVML, MLP, NN, Logistic, C4.5
    Weight: TrainAcc(4) (train accuracies to the power 4)
    Vote: MajorityConfidence (summing probability distributions)
@@ -119,7 +119,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * Weight: TrainAcc(4) (train accuracies to the power 4)
      * Vote: MajorityConfidence (summing probability distributions)
      */
-    public final void setupDefaultSettings(){
+    public final void setupDefaultEnsembleSettings() {
         this.ensembleName = "CAWPE";
         
         this.weightingScheme = new TrainAcc(4);
@@ -158,7 +158,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         classifiers[4] = new MultilayerPerceptron();
         classifierNames[4] = "MLP";
-
+        
         setClassifiers(classifiers, classifierNames, null);
     }
 
@@ -168,7 +168,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * Weight: TrainAcc(4) (train accuracies to the power 4)
      * Vote: MajorityConfidence (summing probability distributions)
      */
-    public final void setupDefaultSettings_NoLogistic(){
+    public final void setupDefaultSettings_NoLogistic() {
         this.ensembleName = "CAWPE-NoLogistic";
         
         this.weightingScheme = new TrainAcc(4);
@@ -208,7 +208,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     }
 
 
-    public final void setupAdvancedSettings(){
+    public final void setupAdvancedSettings() {
         this.ensembleName = "CAWPE-A";
         
         this.weightingScheme = new TrainAcc(4);
@@ -250,7 +250,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      *
      * As used originally in ST_HESCA, COTE.
      */
-    public final void setupOriginalHESCASettings(){
+    public final void setupOriginalHESCASettings() {
         this.ensembleName = "HESCA";
         
         this.weightingScheme = new TrainAcc();
@@ -324,7 +324,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
         Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
-        //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setupDefaultSettings()
+        //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setupDefaultEnsembleSettings()
         CAWPE cawpe = new CAWPE();
 
         //Setting a transform (not used in CAWPE paper, mostly for COTE/HiveCOTE or particular applications)
@@ -343,7 +343,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         cawpe.setVotingScheme(new MajorityVote()); //some voting schemes require dist for inst to be defined
 
         //Using predefined default settings. This is the CAWPE classifier in the paper, equivalent to default constructor
-        cawpe.setupDefaultSettings();
+        cawpe.setupDefaultEnsembleSettings();
 
         int resampleID = 0;
         cawpe.setRandSeed(resampleID);
@@ -664,6 +664,20 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         test_basic();
         System.out.println("");
         test_threaded();
+        
+        //run:
+        //test_basic()
+        //acc=0.9650145772594753 buildtime=1646ms
+        //BaseClassifier train accs: SVML:0.9701492537313433, NN:0.9552238805970149, C4.5:0.9552238805970149, Logistic:0.9402985074626866, MLP:0.9701492537313433, 
+        //IPD_CrossValidation: 0.9650145772594753
+        //IPD_StratifiedResample: 0.9630709426627794
+        //
+        //test_threaded()
+        //acc=0.9650145772594753 buildtime=532ms
+        //BaseClassifier train accs: SVML:0.9701492537313433, NN:0.9552238805970149, C4.5:0.9552238805970149, Logistic:0.9402985074626866, MLP:0.9701492537313433, 
+        //IPD_CrossValidation: 0.9650145772594753
+        //IPD_StratifiedResample: 0.9630709426627794
+        //BUILD SUCCESSFUL (total time: 2 seconds)
         
 //        testBuildingInds(3);
 //        testLoadingInds(2);
