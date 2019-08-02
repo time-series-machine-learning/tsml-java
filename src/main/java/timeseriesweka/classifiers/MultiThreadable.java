@@ -29,18 +29,4 @@ public interface MultiThreadable {
      */
     void setThreadAllowance(int numThreads);
     
-    /**
-     * Details how many threads this object could actually make use of and 
-     * gain benefit from. 
-     * 
-     * This might be a fixed number, or it might change depending on other parameters
-     * of the object outside this interface (e.g. an ensemble that spawns a thread
-     * for each classifier might have a numUtilisableThreads equal to the number
-     * of base classifiers). 
-     * 
-     * Intended usage is to more intelligently allocate spare threads to different
-     * (sub-)processes. This is a utility tool rather than a precise measurement, 
-     * there may be diminishing returns for additional threads etc.
-     */
-    int getNumUtilisableThreads();
 }

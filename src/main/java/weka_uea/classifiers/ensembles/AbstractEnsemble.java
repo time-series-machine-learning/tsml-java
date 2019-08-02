@@ -1049,17 +1049,6 @@ public abstract class AbstractEnsemble extends AbstractClassifier implements Sav
             this.multiThread = false;
         }
     }
-
-    @Override //MultiThreadable
-    public int getNumUtilisableThreads() {
-        int nThreads = modules.length;
-        for (EnsembleModule module : modules)
-            if (module.getClassifier() instanceof MultiThreadable)
-                nThreads += ((MultiThreadable) module.getClassifier()).getNumUtilisableThreads();
-            
-        //todo update for evaluator threads if really wanted
-        return nThreads;
-    }
     
     /**
      * Will split time given evenly among the contractable base classifiers. 

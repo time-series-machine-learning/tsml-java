@@ -151,7 +151,7 @@ public class TunedClassifier extends AbstractClassifier
     }
 
     public void setupTestTunedClassifier() {         
-        //setup classifier. in this example, if we wanted to tune the kernal as well, 
+        //setup classifier. in this example, if we wanted to tune the kernel as well, 
         //we'd have to extend smo and override the setOptions to allow specific options
         //for kernal settings... see SMO.setOptions()
         SMO svm = new SMO();
@@ -184,7 +184,8 @@ public class TunedClassifier extends AbstractClassifier
             somethingMissing = true;
         }
         if (space == null) { 
-            //todo if we end up going with some kind of default para space interface, collect paras from that if classifier is instanceof 
+//todo if we end up going with some kind of default para space interface, 
+//collect paras from that if classifier is instanceof 
             msg += "Parameter space not setup. ";
             somethingMissing = true;
         }

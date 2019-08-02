@@ -141,9 +141,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     private int seed=0;
 
    /** If trainAccuracy is required, a cross validation is done in buildClassifier
-    * or a OOB estimate is formed
-   If set, train results are overwritten with each call to buildClassifier
-   File opened on this path.*/     
+    * or a OOB estimate is formed. If set, train results are overwritten with 
+    * each call to buildClassifier File opened on trainCVPath.*/     
     boolean trainAccuracyEst=false;  
     private String trainCVPath="";
     
@@ -604,10 +603,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-        System.out.print("TSF para sets ");
-        for (String str:options)
-             System.out.print(","+str);
-        System.out.print("\n");
+//        System.out.print("TSF para sets ");
+//        for (String str:options)
+//             System.out.print(","+str);
+//        System.out.print("\n");
         String numTreesString=Utils.getOption('T', options);
         if (numTreesString.length() != 0)
             numClassifiers = Integer.parseInt(numTreesString);
@@ -718,7 +717,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     
     public static void main(String[] arg) throws Exception{
 // Basic correctness tests, including setting paras through 
-        String dataLocation="C:\\Users\\ajb\\Dropbox\\TSC Problems\\";
+        String dataLocation="Z:\\Data\\TSCProblems2018\\";
         String resultsLocation="C:\\temp\\";
         String problem="ItalyPowerDemand";
         File f= new File(resultsLocation+problem);
@@ -727,6 +726,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
+        tsf.setSeed(0);
         tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
