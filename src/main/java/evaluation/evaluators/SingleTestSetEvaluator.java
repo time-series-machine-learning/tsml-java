@@ -23,8 +23,12 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Simply gathers predictions from the (assumed to have already been built/trained) passed classifier
- * on the data given, assumed to have already been sampled/set up as desired. 
+ * Simply gathers predictions from an already built/trained classifier on the data given
+ * 
+ * As much meta info as possible shall be inferred (e.g. classifier name based on the class name),
+ * but the calling function should explicitely set/check any meta info it wants to if accuracy is 
+ * important or the values non-standard (e.g. in this context you want the classifier name to 
+ * include some specific parameter identifier)
  * 
  * distributionForInstance(Instance) MUST be defined, even if the classifier only really returns 
  * a one-hot distribution
@@ -41,15 +45,25 @@ public class SingleTestSetEvaluator extends Evaluator {
     }
     
     @Override
-    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
-        Instances insts = null;
-        if (cloneData)
-            insts = new Instances(dataset);
-        else 
-            insts = dataset;
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+        
+        if (REGRESSION_HACK) { 
+            //jamesl moved these hacks from CrossValidationEvaluator down to here,
+            //but ask mathewm for reasoning... 
+            
+            dataset = new Instances(dataset); //might end up cloning the data twice, but hey, it's a hack
+            for (Instance inst : dataset)
+                inst.setClassValue(0);
+        }
+        
+        final Instances insts = cloneData ? new Instances(dataset) : dataset;
         
         ClassifierResults res = new ClassifierResults(insts.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
+        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setDatasetName(dataset.relationName());
+        res.setFoldID(seed);
+        res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
         
         res.turnOffZeroTimingsErrors();
         for (Instance testinst : insts) {
@@ -60,12 +74,41 @@ public class SingleTestSetEvaluator extends Evaluator {
             long startTime = System.nanoTime();
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.nanoTime() - startTime;
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+            
+            if(REGRESSION_HACK) 
+                res.addPrediction(trueClassVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
+            else 
+                res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
+        
         res.turnOnZeroTimingsErrors();
         
-        res.findAllStatsOnce(); 
+        res.finaliseResults();
+        if(!REGRESSION_HACK) res.findAllStatsOnce(); 
+        
         return res;
     }
 
+    /**
+     * Utility method, will build on the classifier on the train set and evaluate on the test set 
+     */
+    public synchronized ClassifierResults evaluate(Classifier classifier, Instances train, Instances test) throws Exception {
+        long buildTime = System.nanoTime();
+        classifier.buildClassifier(train);
+        buildTime = System.nanoTime() - buildTime;
+        
+        ClassifierResults res = evaluate(classifier, test);
+        
+        res.turnOffZeroTimingsErrors();
+        res.setBuildTime(buildTime);
+        res.turnOnZeroTimingsErrors();
+        
+        return res;
+    }
+
+    @Override
+    public Evaluator cloneEvaluator() {
+        return new SingleTestSetEvaluator(this.seed, this.cloneData, this.setClassMissing);
+    }
+    
 }

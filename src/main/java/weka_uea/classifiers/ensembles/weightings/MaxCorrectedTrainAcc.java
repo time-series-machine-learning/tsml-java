@@ -14,7 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * Sets each module's weighting to Math.max(0.01, module.trainResults.acc - maxClassWeighting),

@@ -16,7 +16,7 @@ package weka_uea.classifiers.ensembles.voting.stacking;
 
 import java.util.ArrayList;
 import weka.classifiers.Classifier;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka_uea.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka.core.Attribute;
 import weka.core.Instance;

@@ -113,9 +113,9 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         
         cvAccs = new double[4][];
         cvAccs[0] = ee.getCVAccs();
-        cvAccs[1] = st.getIndividualCvAccs();
-        cvAccs[2] = acf.getIndividualCvAccs();
-        cvAccs[3] = ps.getIndividualCvAccs();
+        cvAccs[1] = st.getIndividualAccEstimates();
+        cvAccs[2] = acf.getIndividualAccEstimates();
+        cvAccs[3] = ps.getIndividualAccEstimates();
         
         cvSum = 0;
         for(int e = 0; e < cvAccs.length;e++){

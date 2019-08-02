@@ -27,7 +27,7 @@ public class CAWPE_PickBest extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "CAWPE_PickBest"; 
+        ensembleName = "CAWPE_PickBest"; 
         weightingScheme = new EqualWeighting();
         votingScheme = new BestIndividualTrain();
     }   

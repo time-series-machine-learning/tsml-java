@@ -111,7 +111,6 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     
     /**Can seed for reproducibility */
     private Random rand;
-    private int seed=0;
     private boolean setSeed=false;
     SimpleFilter[] filters;
     /** Power Spectrum transformer, probably dont need to store this here  */   

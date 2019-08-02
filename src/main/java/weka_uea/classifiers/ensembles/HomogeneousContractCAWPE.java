@@ -1,8 +1,7 @@
 package weka_uea.classifiers.ensembles;
 
-import weka_uea.classifiers.ensembles.CAWPE;
 import evaluation.storage.ClassifierResults;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka_uea.classifiers.ensembles.weightings.TrainAcc;
 import weka.classifiers.Classifier;
 import weka.core.Instances;

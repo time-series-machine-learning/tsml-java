@@ -45,7 +45,6 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,
         TechnicalInformationHandler, MultiThreadable {
 
-    private int seed = 0;
     private Random rand;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
@@ -127,7 +126,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;
@@ -160,10 +159,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     public void setMaxEnsembleSize(int size) {
         maxEnsembleSize = size;
-    }
-
-    public void setSeed(int i) {
-        seed = i;
     }
 
     @Override

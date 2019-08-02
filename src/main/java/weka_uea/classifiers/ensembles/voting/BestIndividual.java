@@ -17,7 +17,7 @@ package weka_uea.classifiers.ensembles.voting;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka.core.Instance;
 
 /**

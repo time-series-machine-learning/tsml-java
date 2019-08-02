@@ -14,7 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * Base class for defining the weighting of a classifiers votes in ensemble classifiers

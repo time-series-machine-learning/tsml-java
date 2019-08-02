@@ -141,8 +141,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
 
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
  
         

@@ -14,9 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.voting;
 
-import utilities.DebugPrinting;
-import weka_uea.classifiers.ensembles.EnsembleModule;
-import weka.core.Instance;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * TODO what if there's tie for best? UNTESTED

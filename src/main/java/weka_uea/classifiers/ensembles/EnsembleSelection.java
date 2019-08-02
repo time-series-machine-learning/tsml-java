@@ -14,7 +14,6 @@
  */
 package weka_uea.classifiers.ensembles;
 
-import weka_uea.classifiers.ensembles.CAWPE;
 import experiments.CollateResults;
 import experiments.data.DatasetLists;
 import java.io.File;
@@ -24,18 +23,16 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka_uea.classifiers.ensembles.voting.MajorityVote;
 import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
-import utilities.ClassifierTools;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
 import weka.filters.Filter;
 
 /**
@@ -95,7 +92,7 @@ public class EnsembleSelection extends CAWPE {
         super(); //sets default classifiers etc 
         
         //overwriting relevant parts 
-        ensembleIdentifier = "EnsembleSelection"; 
+        ensembleName = "EnsembleSelection"; 
 //        votingScheme = new MajorityConfidence();
         votingScheme = new MajorityVote();
         weightingScheme = new EqualWeighting();
@@ -128,8 +125,8 @@ public class EnsembleSelection extends CAWPE {
     }
     
     @Override
-    public void setRandSeed(int seed) {
-        super.setRandSeed(seed);
+    public void setSeed(int seed) {
+        super.setSeed(seed);
         rng = new Random(seed);
     }
     
@@ -213,12 +210,12 @@ public class EnsembleSelection extends CAWPE {
             
             if (numOfTopModelsToInitialiseBagWith!=null && numOfTopModelsToInitialiseBagWith > 0) {
                 int lastInd = bagOfModels.size()-1;
-                EnsembleModule model = bagOfModels.get(lastInd); //best in cv
+                EnsembleModule model = bagOfModels.get(lastInd); //best in trainEstimator
                 subensemble.add(model);
                 subEnsembleResults = model.trainResults;
                 
                 for (int i = 1; i < numOfTopModelsToInitialiseBagWith; i++) {
-                    model = bagOfModels.get(lastInd - i); //next highest cv score
+                    model = bagOfModels.get(lastInd - i); //next highest trainEstimator score
                     subensemble.add(model);
                     
                     subEnsembleResults = combinePredictions(subEnsembleResults, i, model.trainResults);
@@ -284,16 +281,16 @@ public class EnsembleSelection extends CAWPE {
         }
 //END OF THE ACTUAL SELECTION STUFF   
 
-        ensembleTrainResults = globalEnsembleResults;
-        ensembleTrainResults.setClassifierName("EnsembleSelection");
-        ensembleTrainResults.setDatasetName(datasetName);
-        ensembleTrainResults.setFoldID(seed);
-        ensembleTrainResults.setSplit("train");
+        trainResults = globalEnsembleResults;
+        trainResults.setClassifierName("EnsembleSelection");
+        trainResults.setDatasetName(datasetName);
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
         
         long buildTime = System.nanoTime() - startTime; 
-        ensembleTrainResults.setBuildTime(buildTime); //store the buildtime to be saved
+        trainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
-            writeResultsFile(ensembleIdentifier, getParameters(), ensembleTrainResults, "train");
+            writeEnsembleTrainAccuracyEstimateResultsFile();
         
         this.testInstCounter = 0; //prep for start of testing
     }
@@ -392,8 +389,8 @@ public class EnsembleSelection extends CAWPE {
                     
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
-                    c.setRandSeed(fold);
-                    c.setPerformCV(true);
+                    c.setSeed(fold);
+                    c.setEstimateEnsemblePerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
                     Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

@@ -14,7 +14,7 @@
  */
 package weka_uea.classifiers.ensembles.weightings;
 
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
 /**
  * Non uniform weighting scheme, calculates the recall for each class and uses those 

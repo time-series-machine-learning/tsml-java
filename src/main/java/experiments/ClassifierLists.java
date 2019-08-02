@@ -200,18 +200,18 @@ public class ClassifierLists {
             case "HESCA":
             case "CAWPE":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);
+                ((CAWPE)c).setSeed(fold);
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);                
-                ((CAWPE)c).setAdvancedCAWPESettings();
+                ((CAWPE)c).setSeed(fold);                
+                ((CAWPE)c).setupAdvancedSettings();
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){
                     String[] classifiers={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
@@ -225,7 +225,7 @@ public class ClassifierLists {
                     String[] cls={"TSF","BOSS","RISE","ST","ElasticEnsemble"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -239,7 +239,7 @@ public class ClassifierLists {
                     String[] cls2={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls2);

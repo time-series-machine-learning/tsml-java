@@ -15,7 +15,7 @@
 package weka_uea.classifiers.ensembles.voting.stacking;
 
 import weka.classifiers.Classifier;
-import weka_uea.classifiers.ensembles.EnsembleModule;
+import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 
