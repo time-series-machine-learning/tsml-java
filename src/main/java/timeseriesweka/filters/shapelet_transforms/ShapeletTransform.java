@@ -54,7 +54,12 @@ import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearc
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
+import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.RescalerType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
+import utilities.rescalers.NoRescaling;
+import utilities.rescalers.SeriesRescaler;
+import utilities.rescalers.ZNormalisation;
+import utilities.rescalers.ZStandardisation;
 
 /**
 
@@ -363,6 +368,27 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      */
     public void setQualityMeasure(ShapeletQualityChoice qualityChoice) {
         quality = new ShapeletQuality(qualityChoice);
+    }
+    
+    
+     /**
+     *
+     * @param type
+     */
+    public void setRescalerType(RescalerType type){
+         //TODO: don't like this, should change to match QualityChoice. 
+        SeriesRescaler sr;
+        switch(type){
+            case NONE:
+                sr = new NoRescaling();
+                break;
+            case STANDARDISATION:
+                sr = new ZStandardisation();
+                break;
+            default:
+                sr = new ZNormalisation();
+        }
+       this.subseqDistance.seriesRescaler = sr;
     }
     
         /**
@@ -1057,7 +1083,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
                 contentArray[i] = content.get(i);
             }
 
-            contentArray = sf.subseqDistance.zNormalise(contentArray, false);
+            contentArray = sf.subseqDistance.seriesRescaler.rescaleSeries(contentArray, false);
             
             ShapeletCandidate cand = new ShapeletCandidate();
             cand.setShapeletContent(contentArray);

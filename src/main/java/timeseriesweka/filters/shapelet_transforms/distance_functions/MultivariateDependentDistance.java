@@ -70,7 +70,7 @@ public class MultivariateDependentDistance extends MultivariateDistance implemen
                 //copy a section of one of the series from the channel.
                 subseq = new double[length];
                 System.arraycopy(timeSeries[j], i, subseq, 0, length);
-                subseq = zNormalise(subseq, false); // Z-NORM HERE
+                subseq = seriesRescaler.rescaleSeries(subseq, false); // Z-NORM HERE
                 for (int k = 0; k < length; k++)
                 {
                     //count ops

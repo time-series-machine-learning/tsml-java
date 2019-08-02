@@ -16,8 +16,8 @@ package timeseriesweka.filters;
 
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
-import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.ROUNDING_ERROR_CORRECTION;
 import utilities.ClassifierTools;
+import static utilities.rescalers.ZNormalisation.ROUNDING_ERROR_CORRECTION;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
