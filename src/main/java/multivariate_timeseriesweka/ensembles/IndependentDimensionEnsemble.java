@@ -16,11 +16,11 @@ package multivariate_timeseriesweka.ensembles;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import weka_uea.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
-import weka_uea.classifiers.ensembles.voting.MajorityVote;
-import weka_uea.classifiers.ensembles.voting.ModuleVotingScheme;
-import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
-import weka_uea.classifiers.ensembles.weightings.ModuleWeightingScheme;
+import weka_extras.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
+import weka_extras.classifiers.ensembles.voting.MajorityVote;
+import weka_extras.classifiers.ensembles.voting.ModuleVotingScheme;
+import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
+import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import static utilities.GenericTools.indexOfMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstanceWithClassVal;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances;

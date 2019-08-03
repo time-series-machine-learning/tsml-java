@@ -21,7 +21,7 @@ import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
-import weka_uea.classifiers.SaveEachParameter;
+import weka_extras.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;

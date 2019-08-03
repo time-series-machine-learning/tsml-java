@@ -28,7 +28,7 @@ import weka.core.Randomizable;
  * to set the TimeUnit of the ClassiiferReults object appropriately, e.g 
  * trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
  * 
- * teh method getParameters() can be enhanced to include any parameter info for the 
+ * the method getParameters() can be enhanced to include any parameter info for the 
  * final classifier. getParameters() is called to store information on the second line
  * of file storage format testFoldX.csv.
  * 
