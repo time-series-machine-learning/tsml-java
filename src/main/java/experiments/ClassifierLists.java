@@ -16,6 +16,7 @@ package experiments;
 
 
 import experiments.Experiments.ExperimentalArguments;
+import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -25,10 +26,6 @@ import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.interval_based.TSBF;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.frequency_based.RISE;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.dictionary_based.SAXVSM;
-import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
-import timeseriesweka.classifiers.dictionary_based.WEASEL;
 import timeseriesweka.classifiers.distance_based.SlowDTW_1NN;
 import timeseriesweka.classifiers.distance_based.NN_CID;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
@@ -312,16 +309,11 @@ public class ClassifierLists {
                 break;
             case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();
+                ((BOSS) c).setSeed(fold);
                 break;
             case "RBOSS":
-                c = new BOSS();
-                ((BOSS) c).setEnsembleSize(250);
-                ((BOSS) c).setMaxEnsembleSize(50);
-                ((BOSS) c).setRandomCVAccEnsemble(true);
-                ((BOSS) c).useCAWPE(true);
-                ((BOSS) c).setSeed(fold);
-                ((BOSS) c).setReduceTrainInstances(true);
-                ((BOSS) c).setTrainProportion(0.7);
+                c = new RBOSS();
+                ((RBOSS) c).setSeed(fold);
                 break;
             case "WEASEL":
                 c = new WEASEL();

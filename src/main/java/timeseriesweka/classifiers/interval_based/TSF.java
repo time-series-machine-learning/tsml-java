@@ -718,7 +718,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     
     public static void main(String[] arg) throws Exception{
 // Basic correctness tests, including setting paras through 
-        String dataLocation="C:\\Users\\ajb\\Dropbox\\TSC Problems\\";
+        String dataLocation="Z:\\Data\\TSCProblems2018\\";
         String resultsLocation="C:\\temp\\";
         String problem="ItalyPowerDemand";
         File f= new File(resultsLocation+problem);
@@ -727,6 +727,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
+        tsf.setSeed(0);
         tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
