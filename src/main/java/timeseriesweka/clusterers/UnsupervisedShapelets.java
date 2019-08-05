@@ -1,13 +1,12 @@
 package timeseriesweka.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import utilities.ClassifierTools;
-import weka_extras.clusterers.KMeans;
+import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka_extras.clusterers.KMeans;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.InstanceTools.deleteClassAttribute;
@@ -18,6 +17,10 @@ import static utilities.InstanceTools.toWekaInstances;
  * @author pfm15hbu
  */
 public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
+
+    //Zakaria, Jesin, Abdullah Mueen, and Eamonn Keogh.
+    //"Clustering time series using unsupervised-shapelets."
+    //2012 IEEE 12th International Conference on Data Mining. IEEE, 2012.
 
     private int k = 2;
     int numFolds = 20;
@@ -35,7 +38,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -158,6 +161,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
             double randIndex = 1;
 
+            //0??
             if (i > 1){
                 randIndex = 1-randIndex(foldClusters[i-1],foldClusters[i]);
             }
@@ -211,8 +215,10 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+//        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+//        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -221,6 +227,9 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         us.k = inst.numClasses();
         us.buildClusterer(inst);
 
+        System.out.println(us.clusters.length);
+        System.out.println(Arrays.toString(us.cluster));
+        System.out.println(Arrays.toString(us.clusters));
         System.out.println(randIndex(us.cluster, inst));
     }
 

@@ -1,13 +1,14 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
@@ -38,8 +39,7 @@ public class PAM extends AbstractVectorClusterer{
     public PAM(){}
     
     //Used when finding best value for k to avoid recalculating distances
-    private PAM(double[][] distanceMatrix){
-        super();
+    public PAM(double[][] distanceMatrix){
         this.distanceMatrix = distanceMatrix;
         this.hasDistances = true;
     }
@@ -75,14 +75,14 @@ public class PAM extends AbstractVectorClusterer{
     public void setNumSubsamples(int n){
         this.numSubsamples = n;
     }
-    
+
     public void setSeed(int seed){
         this.seed = seed;
     }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -92,6 +92,8 @@ public class PAM extends AbstractVectorClusterer{
         cluster = new int[numInstances];
 
         if (numInstances <= k){
+            medoids = new int[numInstances];
+
             for (int i = 0; i < numInstances; i++){
                 cluster[i] = i;
                 medoids[i] = i;
@@ -115,15 +117,13 @@ public class PAM extends AbstractVectorClusterer{
             return;
         }
 
-
         if (normaliseData){
             normaliseData(data);
         }
-        
-        distFunc.setInstances(data);
+
         
         if (!hasDistances){
-            distanceMatrix = createDistanceMatrix(data);
+            distanceMatrix = createDistanceMatrix(data, distFunc);
         }
         
         if (findBestK){
@@ -145,6 +145,15 @@ public class PAM extends AbstractVectorClusterer{
             while(!finished){
                 calculateClusterMembership();
                 finished = selectMedoids();
+            }
+        }
+
+        for (int n = 0; n < numInstances; n++){
+            for (int i = 0; i < medoids.length; i++){
+                if(medoids[i] == cluster[n]){
+                    cluster[n] = i;
+                    break;
+                }
             }
         }
     }

@@ -5,33 +5,30 @@
  */
 package timeseriesweka.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
+import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
-import utilities.ClassifierTools;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
-import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.matrix.EigenvalueDecomposition;
 import weka.core.matrix.Matrix;
 
-/**
- * UNFINISHED AND UNTESTED, DONT USE.
- *
- * @author pfm15hbu
- */
 public class KShape extends AbstractTimeSeriesClusterer {
+
+    //Paparrizos, John, and Luis Gravano.
+    //"k-shape: Efficient and accurate clustering of time series."
+    //Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data. ACM, 2015.
     
     private int k = 2;
     private int seed = Integer.MIN_VALUE;
@@ -51,7 +48,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -244,6 +241,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         String dataset = "Trace";
         Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+//        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
+//        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -253,6 +252,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         k.buildClusterer(inst);
 
         System.out.println(k.clusters.length);
+        System.out.println(Arrays.toString(k.cluster));
         System.out.println(Arrays.toString(k.clusters));
         System.out.println(randIndex(k.cluster, inst));
     }

@@ -1,14 +1,15 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
@@ -17,7 +18,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * 
  * @author MMiddlehurst
  */
-public class KMeans extends AbstractVectorClusterer{
+public class KMeans extends AbstractVectorClusterer {
     
     //MacQueen, James. 
     //"Some methods for classification and analysis of multivariate observations." 
@@ -69,10 +70,8 @@ public class KMeans extends AbstractVectorClusterer{
     public void setNumSubsamples(int n){
         this.numSubsamples = n;
     }
-    
-    public void setSeed(int seed){
-        this.seed = seed;
-    }
+
+    public void setSeed(int seed){ this.seed = seed; }
     
     public void setMaxIterations(int n){
         this.maxIterations = n;
@@ -80,7 +79,7 @@ public class KMeans extends AbstractVectorClusterer{
     
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -415,7 +414,7 @@ public class KMeans extends AbstractVectorClusterer{
         int maxK = 10;
         double bestSilVal = 0;
         
-        double[][] distMatrix = createDistanceMatrix(data);
+        double[][] distMatrix = createDistanceMatrix(data, distFunc);
         
         //For each value of K.
         for (int i = 2; i <= maxK; i++){

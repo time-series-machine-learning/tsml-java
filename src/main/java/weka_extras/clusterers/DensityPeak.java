@@ -1,13 +1,14 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
@@ -16,7 +17,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * 
  * @author MMiddlehurst
  */
-public class DensityPeak extends AbstractVectorClusterer{
+public class DensityPeak extends AbstractVectorClusterer {
     
     //Rodriguez, Alex, and Alessandro Laio. 
     //"Clustering by fast search and find of density peaks." 
@@ -75,7 +76,7 @@ public class DensityPeak extends AbstractVectorClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -86,8 +87,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         }
         
         numInstances = data.size();
-        distFunc.setInstances(data);
-        distanceMatrix = createDistanceMatrix(data);
+        distanceMatrix = createDistanceMatrix(data, distFunc);
         
         if (distC < 0){
             distC = getDistCDefault();
@@ -177,8 +177,7 @@ public class DensityPeak extends AbstractVectorClusterer{
             sortedDensitiesIndex[i] = i;
         }
         
-        SortIndexDescending sort = new SortIndexDescending();
-        sort.values = localDensities;
+        SortIndexDescending sort = new SortIndexDescending(localDensities);
         Arrays.sort(sortedDensitiesIndex, sort);
         
         shortestDist = new double[numInstances];
@@ -248,8 +247,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         for (int i = 0; i < numInstances; i++){
             estIndexes[i] = i;
         }
-        SortIndexAscending sort = new SortIndexAscending();
-        sort.values = estimates;
+        SortIndexAscending sort = new SortIndexAscending(estimates);
         Arrays.sort(estIndexes, sort);
         
         double mean = sum/numInstances;
@@ -382,7 +380,11 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     private class SortIndexDescending implements Comparator<Integer>{
-        public double[] values;
+        private double[] values;
+
+        public SortIndexDescending(double[] values){
+            this.values = values;
+        }
         
         @Override
         public int compare(Integer index1, Integer index2) {
@@ -399,7 +401,11 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     private class SortIndexAscending implements Comparator<Integer>{
-        public double[] values;
+        private double[] values;
+
+        public SortIndexAscending(double[] values){
+            this.values = values;
+        }
         
         @Override
         public int compare(Integer index1, Integer index2) {

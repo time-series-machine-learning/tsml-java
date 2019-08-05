@@ -17,7 +17,7 @@ import java.util.ArrayList;
  */
 public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
-    protected boolean dontCopyInstances = false;
+    protected boolean copyInstances = true;
 
     protected int[] cluster;
     protected ArrayList<Integer>[] clusters;
@@ -30,7 +30,7 @@ public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
         return clusters;
     }
     
-    public void setDontCopyInstances(boolean b){
-        dontCopyInstances = b;
+    public void setCopyInstances(boolean b){
+        copyInstances = b;
     }
 }

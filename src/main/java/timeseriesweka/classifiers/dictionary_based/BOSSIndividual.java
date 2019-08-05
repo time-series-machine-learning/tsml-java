@@ -136,6 +136,8 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     public int getAlphabetSize() { return alphabetSize; }
     public boolean isNorm() { return norm; }
 
+    public ArrayList<Bag> getBags() { return bags; }
+
     /**
      * @return { numIntervals(word length), alphabetSize, slidingWindowSize, normalise? }
      */
