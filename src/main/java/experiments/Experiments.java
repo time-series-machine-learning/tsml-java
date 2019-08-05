@@ -552,6 +552,11 @@ public class Experiments  {
                 if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + "100%" + testFoldFilename)) {
                     for (double i = 0.05; i < 1.01; i += 0.05) {
                         i = Math.round(i * 100.0) / 100.0;
+
+                        if (!expSettings.forceEvaluation && CollateResults.validateSingleFoldFile(resultsPath + i + "%" + testFoldFilename)) {
+                            continue;
+                        }
+
                         Instances shortData = shortenInstances(testSet, i);
                         long testBenchmark = findBenchmarkTime(expSettings);
 
