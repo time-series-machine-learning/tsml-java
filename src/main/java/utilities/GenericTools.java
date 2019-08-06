@@ -14,6 +14,9 @@
  */
 package utilities;
 
+import weka.core.Instances;
+import weka.filters.Filter;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
@@ -136,5 +139,12 @@ public class GenericTools {
             for (int j = 0; j < in[0].length; j++)
                 out[j][i] = in[i][j];
         return out;
+    }
+
+
+    public static Instances filter(Instances data, Filter filter) throws
+                                                                  Exception {
+        filter.setInputFormat(data);
+        return Filter.useFilter(data, filter);
     }
 }

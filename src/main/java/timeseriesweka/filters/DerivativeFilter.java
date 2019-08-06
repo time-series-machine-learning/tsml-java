@@ -81,7 +81,7 @@ public class DerivativeFilter extends SimpleBatchFilter{
     }
     
     
-    private static double[] getDerivative(double[] input, boolean classValOn){
+    public static double[] getDerivative(double[] input, boolean classValOn){
 
         int classPenalty = 0;
         if(classValOn){
@@ -99,7 +99,6 @@ public class DerivativeFilter extends SimpleBatchFilter{
 
         return derivative;
     }
-
 
 
 }

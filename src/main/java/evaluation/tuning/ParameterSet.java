@@ -14,6 +14,9 @@
  */
 package evaluation.tuning;
 
+import utilities.Options;
+
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,12 +26,19 @@ import java.util.Set;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ParameterSet {
+public class ParameterSet implements Options {
     public Map<String, String> parameterSet = new HashMap<>();
         
     private static String startParaLineDelimiter = "parasStart";
     private static String endParaLineDelimiter = "parasEnd";
-    
+
+    public ParameterSet() {}
+
+    public ParameterSet(final String... options) throws
+                                                Exception {
+        setOptions(options);
+    }
+
     public int size() {
         return parameterSet.size();
     }
@@ -184,5 +194,20 @@ public class ParameterSet {
         }
         
         readClassifierResultsParaLine(line);
+    }
+
+    @Override
+    public void setOption(final String key, final String value) {
+        parameterSet.put(key, value);
+    }
+
+    @Override
+    public Enumeration listOptions() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] getOptions() {
+        return toOptionsList();
     }
 }

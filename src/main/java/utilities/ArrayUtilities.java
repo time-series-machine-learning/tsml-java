@@ -1,14 +1,15 @@
 package utilities;
 
+import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
-    public static void add(double[] a, double[] b) {
+    public static void addInPlace(double[] a, double[] b) {
         if(a.length < b.length) {
             throw new IllegalArgumentException();
         }
@@ -32,7 +33,7 @@ public class ArrayUtilities {
         return sum;
     }
 
-    public static void normalise(double[] array) {
+    public static void normaliseInPlace(double[] array) {
         double sum = sum(array);
         if(sum == 0) {
             throw new IllegalArgumentException("sum of zero");
@@ -133,4 +134,243 @@ public class ArrayUtilities {
             System.out.print(", ");
         }
     }
+
+    // don't use unless you want imprecision due to incrementation
+    public static int[] incrementalRange(int min, int max, int size){
+        int[] output = new int[size];
+
+        double diff = (double)(max-min)/(size - 1);
+        double[] doubleOut = new double[size];
+        doubleOut[0] = min;
+        output[0] = min;
+        for(int i = 1; i < size - 1; i++){
+            doubleOut[i] = doubleOut[i-1]+diff;
+            output[i] = (int)Math.round(doubleOut[i]);
+        }
+        output[size - 1] = max;
+        return output;
+    }
+
+    // don't use unless you want imprecision due to incrementation
+    public static double[] incrementalRange(double min, double max, int size){
+        double[] output = new double[size];
+        double diff = (max-min)/(size - 1);
+        output[0] = min;
+        for(int i = 1; i < size - 1; i++){
+            output[i] = output[i-1]+diff;
+        }
+        output[size - 1] = max; // to make sure max isn't omitted due to double imprecision
+        return output;
+    }
+
+    public static <A> void removeDuplicatesInPlace(List<A> values) {
+        Set<A> set = new TreeSet<>(values); // must be treeset to maintain ordering
+        values.clear();
+        values.addAll(set);
+    }
+
+
+    public static <T> T[] concat(T[] first, T[]... rest) {
+        int totalLength = first.length;
+        for (T[] array : rest) {
+            totalLength += array.length;
+        }
+        T[] result = Arrays.copyOf(first, totalLength);
+        int offset = first.length;
+        for (T[] array : rest) {
+            System.arraycopy(array, 0, result, offset, array.length);
+            offset += array.length;
+        }
+        return result;
+    }
+
+    public static Instances toInstances(Instance... instances) {
+        Instances collection = new Instances(instances[0].dataset(), 0);
+        collection.addAll(Arrays.asList(instances));
+        return collection;
+    }
+
+
+    public static int[] fromPermutation(int permutataion, int... binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutataion > maxCombination || binSizes.length == 0 || permutataion < 0) {
+            throw new IllegalArgumentException();
+        }
+        int[] result = new int[binSizes.length];
+        for(int index = 0; index < binSizes.length; index++) {
+            int binSize = binSizes[index];
+            if(binSize > 1) {
+                result[index] = permutataion % binSize;
+                permutataion /= binSize;
+            } else {
+                result[index] = 0;
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static List<Integer> fromPermutation(int permutation, List<Integer> binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutation > maxCombination || binSizes.size() == 0 || permutation < 0) {
+            throw new IllegalArgumentException();
+        }
+        List<Integer> result = new ArrayList<>();
+        for(int index = 0; index < binSizes.size(); index++) {
+            int binSize = binSizes.get(index);
+            if(binSize > 1) {
+                result.add(permutation % binSize);
+                permutation /= binSize;
+            } else {
+                result.add(0);
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static int toPermutation(int[] values, int[] binSizes) {
+        return toPermutation(primitiveArrayToList(values), primitiveArrayToList(binSizes));
+    }
+
+    public static int toPermutation(List<Integer> values, List<Integer> binSizes) {
+        if(values.size() != binSizes.size()) {
+            throw new IllegalArgumentException("incorrect number of args");
+        }
+        int permutation = 0;
+        for(int i = binSizes.size() - 1; i >= 0; i--) {
+            int binSize = binSizes.get(i);
+            if(binSize > 1) {
+                int value = values.get(i);
+                permutation *= binSize;
+                permutation += value;
+            } else if(binSize <= 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+        return permutation;
+    }
+
+
+    public static int numPermutations(List<Integer> binSizes) {
+        List<Integer> maxValues = new ArrayList<>();
+        for(int i = 0; i < binSizes.size(); i++) {
+            maxValues.add(binSizes.get(i) - 1);
+        }
+        return toPermutation(maxValues, binSizes) + 1;
+    }
+
+    public static int numPermutations(int[] binSizes) {
+        return numPermutations(primitiveArrayToList(binSizes));
+    }
+
+    public static List<Integer> primitiveArrayToList(int[] values) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < values.length; i++) {
+            list.add(i);
+        }
+        return list;
+    }
+
+
+    public static <A extends List<Integer>> A sequence(int j, A list) {
+        for(int i = 0; i < j; i++) {
+            list.add(i);
+        }
+        return list;
+    }
+
+    public static List<Integer> sequence(int j) {
+        return sequence(j, new ArrayList<>());
+    }
+
+    public static <A> List<A> flatten(Map<?, List<A>> map) {
+        List<A> list = new ArrayList<>();
+        for (Map.Entry<?, List<A>> entry : map.entrySet()) {
+            list.addAll(entry.getValue());
+        }
+        return list;
+    }
+
+    public static <A> List<Integer> bestIndices(List<A> list, Comparator<A> comparator) {
+        List<Integer> indices = new ArrayList<>();
+        if(!list.isEmpty()) {
+            indices.add(0);
+            for(int i = 0; i < list.size(); i++) {
+                A item = list.get(i);
+                int comparison = comparator.compare(item, list.get(indices.get(0)));
+                if(comparison >= 0) {
+                    if(comparison > 0) {
+                        indices.clear();
+                    }
+                    indices.add(i);
+                }
+            }
+        }
+        return indices;
+    }
+
+    public static <A> int bestIndex(List<A> list, Comparator<A> comparator, Random random) {
+        List<Integer> indices = bestIndices(list, comparator);
+        return indices.get(random.nextInt(indices.size()));
+    }
+
+    public static <A extends Comparable<A>> int bestIndex(List<A> list, Random random) {
+        return bestIndex(list, Comparable::compareTo, random);
+    }
+
+
+    public static Integer[] box(int[] array) {
+        Integer[] boxed = new Integer[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Long[] box(long[] array) {
+        Long[] boxed = new Long[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Double[] box(double[] array) {
+        Double[] boxed = new Double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Float[] box(float[] array) {
+        Float[] boxed = new Float[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Short[] box(short[] array) {
+        Short[] boxed = new Short[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+    public static Boolean[] box(boolean[] array) {
+        Boolean[] boxed = new Boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+
 }
