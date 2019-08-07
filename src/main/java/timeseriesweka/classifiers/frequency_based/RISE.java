@@ -377,13 +377,13 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             }
             //4. Merge them all together
             Instances combo=new Instances(t[0]);
-            combo.setClassIndex(-1);
-            combo.deleteAttributeAt(combo.numAttributes()-1); 
-            for(int j=1;j<filters.length-1;j++){
+            for(int j=1;j<filters.length;j++){
+                if( j < filters.length){
+                    combo.setClassIndex(-1);
+                    combo.deleteAttributeAt(combo.numAttributes()-1);
+                }
                 combo=Instances.mergeInstances(combo, t[j]);
-                combo.deleteAttributeAt(combo.numAttributes()-1); 
             }
-            combo=Instances.mergeInstances(combo, t[t.length-1]);
             combo.setClassIndex(combo.numAttributes()-1);
             return combo;
     }
