@@ -50,6 +50,10 @@ public class PowerSpectrum extends FFT {
         fftFilter=new FFT();
         fftFilter.useDFT();
     }
+
+    public void useFFT(){
+        fftFilter.useFFT();
+    }
 @Override
     protected Instances determineOutputFormat(Instances inputFormat)
     throws Exception {
