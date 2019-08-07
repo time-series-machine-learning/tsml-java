@@ -96,13 +96,13 @@ public class PowerSpectrum extends FFT {
                 Instance f=fft.instance(i);
                 Instance inst=new DenseInstance(length+1);
                 for(int j=0;j<length;j++){
-                    l1=f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1);
+                    l1= Math.sqrt(f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1));
                         inst.setValue(j,Math.log(l1));
                 }
 //Set class value.
                 //Set class value.
                 if(output.classIndex()>=0)
-                    inst.setValue(length, output.instance(i).classValue());
+                    inst.setValue(length, fft.instance(i).classValue());
                 output.add(inst);
             }
 
@@ -112,7 +112,7 @@ public class PowerSpectrum extends FFT {
                     Instance f=fft.instance(i);
                     Instance inst=new DenseInstance(length+1);
                     for(int j=0;j<length;j++){
-                                    inst.setValue(j, f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1));
+                                    inst.setValue(j, Math.sqrt(f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1)));
                     }
     //Set class value.
                     //Set class value.
