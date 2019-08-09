@@ -1,22 +1,23 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the Density Peaks algorithm described in "Clustering by 
  * fast search and find of density peaks.".
  * 
- * @author MMiddlehurst
+ * @author Matthew Middlehurst
  */
-public class DensityPeak extends AbstractVectorClusterer{
+public class DensityPeak extends AbstractVectorClusterer {
     
     //Rodriguez, Alex, and Alessandro Laio. 
     //"Clustering by fast search and find of density peaks." 
@@ -75,7 +76,7 @@ public class DensityPeak extends AbstractVectorClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -86,8 +87,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         }
         
         numInstances = data.size();
-        distFunc.setInstances(data);
-        distanceMatrix = createDistanceMatrix(data);
+        distanceMatrix = createDistanceMatrix(data, distFunc);
         
         if (distC < 0){
             distC = getDistCDefault();
@@ -105,7 +105,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         assignClusters();
         
         //Create and store an ArrayList for each cluster containing indexes of
-        //points inside the cluster.
+        //points inside the cluster
         clusters = new ArrayList[clusterCenters.size()];
         
         for (int i = 0; i < clusterCenters.size(); i++){
@@ -122,7 +122,7 @@ public class DensityPeak extends AbstractVectorClusterer{
     
     //Method used in the original implementation to set distC so that the 
     //average number of neighbors is around 1 to 2% of the total number of 
-    //points in the dataset.
+    //points in the dataset
     private double getDistCDefault(){
         ArrayList<Double> sortedDistances = new ArrayList<>(numInstances);
         
@@ -140,7 +140,7 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     //Gets the local density for each instance i with the density defined as the
-    //number of points closer than distC to i.
+    //number of points closer than distC to i
     private void generateLocalDensitiesCutoff(){
         localDensities = new double[numInstances];
         
@@ -155,7 +155,7 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     //Gets the local density for each instance i with the density estimated 
-    //using a gaussian kernel.
+    //using a gaussian kernel
     private void generateLocalDensitiesGuassian(){
         localDensities = new double[numInstances];
         
@@ -171,21 +171,20 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     private void generateHighDensDistance(){
-        //Find the indexes of the local densities sorted in descending order.
+        //Find the indexes of the local densities sorted in descending order
         sortedDensitiesIndex = new Integer[numInstances];
         for (int i = 0; i < numInstances; i++){
             sortedDensitiesIndex[i] = i;
         }
         
-        SortIndexDescending sort = new SortIndexDescending();
-        sort.values = localDensities;
+        SortIndexDescending sort = new SortIndexDescending(localDensities);
         Arrays.sort(sortedDensitiesIndex, sort);
         
         shortestDist = new double[numInstances];
         nearestNeighbours = new int[numInstances];
         
         //Find the shortest distance/nearest neigbour from points with a higher
-        //local density for each point;
+        //local density for each point
         for (int i = 1; i < numInstances; i++){
             shortestDist[sortedDensitiesIndex[i]] = Double.MAX_VALUE;
             
@@ -206,7 +205,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         }
         
         //Set the shortest distance of the point with the highest local density
-        //to the max of the distances from other points.
+        //to the max of the distances from other points
         double maxDensDist = 0;
         for (int i = 0; i < shortestDist.length; i++){
             if (shortestDist[i] > maxDensDist){
@@ -243,13 +242,12 @@ public class DensityPeak extends AbstractVectorClusterer{
 //        System.out.println("e = " + Arrays.toString(estimates));
 //        System.out.println("scatter([1:length(e)],sort(e))");
         
-        //Find the indexes of the estimates sorted in ascending order.
+        //Find the indexes of the estimates sorted in ascending order
         Integer[] estIndexes = new Integer[numInstances];
         for (int i = 0; i < numInstances; i++){
             estIndexes[i] = i;
         }
-        SortIndexAscending sort = new SortIndexAscending();
-        sort.values = estimates;
+        SortIndexAscending sort = new SortIndexAscending(estimates);
         Arrays.sort(estIndexes, sort);
         
         double mean = sum/numInstances;
@@ -257,7 +255,7 @@ public class DensityPeak extends AbstractVectorClusterer{
         boolean findCutoff = false;
 
         for (int i = 0; i < numInstances; i++){
-            //If no estimate cutoff value is set find a cutoff point. 
+            //If no estimate cutoff value is set find a cutoff point
             if (clusterCenterCutoff < 0){
                 findCutoff = true;
             }
@@ -267,7 +265,7 @@ public class DensityPeak extends AbstractVectorClusterer{
             }
             
             //If a value above the cutoff is found set it and the following
-            //points as cluster centers;
+            //points as cluster centers
             if (threshholdFound || i == numInstances-1){
                 clusterCenters.add(estIndexes[i]);
                 cluster[estIndexes[i]] = estIndexes[i];
@@ -283,7 +281,7 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     //Assigns each point to a cluster by setting each to the cluster of its
-    //nearest neighbour, iterating through the sorted local densities.
+    //nearest neighbour, iterating through the sorted local densities
     private void assignClusters(){
         for (int i = 0; i < numInstances; i++){
             if (!clusterCenters.contains(sortedDensitiesIndex[i])){
@@ -300,7 +298,7 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     //Sets points as not belonging to a cluster using a cutoff for its local 
-    //density.
+    //density
     private void cutoffOutliers(){
         if (outlierCutoff < 0){
             outlierCutoff = numInstances/20;
@@ -382,7 +380,11 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     private class SortIndexDescending implements Comparator<Integer>{
-        public double[] values;
+        private double[] values;
+
+        public SortIndexDescending(double[] values){
+            this.values = values;
+        }
         
         @Override
         public int compare(Integer index1, Integer index2) {
@@ -399,7 +401,11 @@ public class DensityPeak extends AbstractVectorClusterer{
     }
     
     private class SortIndexAscending implements Comparator<Integer>{
-        public double[] values;
+        private double[] values;
+
+        public SortIndexAscending(double[] values){
+            this.values = values;
+        }
         
         @Override
         public int compare(Integer index1, Integer index2) {

@@ -1,23 +1,27 @@
 package timeseriesweka.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import utilities.ClassifierTools;
-import weka_extras.clusterers.KMeans;
+import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka_extras.clusterers.KMeans;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.InstanceTools.toWekaInstances;
 
 /**
+ * Class for the UnsupervisedShapelets clustering algorithm.
  *
- * @author pfm15hbu
+ * @author Matthew Middlehurst
  */
 public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
+
+    //Zakaria, Jesin, Abdullah Mueen, and Eamonn Keogh.
+    //"Clustering time series using unsupervised-shapelets."
+    //2012 IEEE 12th International Conference on Data Mining. IEEE, 2012.
 
     private int k = 2;
     int numFolds = 20;
@@ -35,7 +39,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -56,6 +60,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         while (!finished){
             ArrayList<UShapelet> shapeletCandidates = new ArrayList();
 
+            //Finds all candidate shapelets on the selected instance
             for (int i = 0; i < shapeletLengths.length; i++){
                 for (int n = 0; n < inst.numAttributes() - shapeletLengths[i]; n++){
                     UShapelet candidate = new UShapelet(n, shapeletLengths[i], inst);
@@ -67,6 +72,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             double maxGap = -1;
             int maxGapIndex = -1;
 
+            //Finds the shapelet with the highest gap value
             for (int i = 0; i < shapeletCandidates.size(); i++){
                 if (shapeletCandidates.get(i).gap > maxGap){
                     maxGap = shapeletCandidates.get(i).gap;
@@ -74,6 +80,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 }
             }
 
+            //Adds the shapelet with the best gap value to the pool of shapelets
             UShapelet best = shapeletCandidates.get(maxGapIndex);
             shapelets.add(best);
 
@@ -82,6 +89,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             double maxDist = -1;
             int maxDistIndex = -1;
 
+            //Finds the instance with the max dist to the shapelet and all with a dist lower than the distance used
+            //to generate the gap value.
             for (int i = 0; i < distances.length; i++){
                 if (distances[i] < best.dt){
                     lesserDists.add(distances[i]);
@@ -92,6 +101,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 }
             }
 
+            //Use max dist instance to generate new shapelet and remove low distance instances
             if (lesserDists.size() == 1){
                 finished = true;
             }
@@ -119,7 +129,6 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     }
 
     private void clusterData(Instances data) throws Exception{
-
         Instances distanceMap;
 
         int[][] foldClusters = new int[shapelets.size()][];
@@ -127,6 +136,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         double minRandIndex = 1;
         int minIndex = -1;
 
+        //Create a distance matrix by calculating the distance of shapelet i and previous shapelets to each time series
         for (int i = 0; i < shapelets.size(); i++){
             UShapelet shapelet = shapelets.get(i);
             double[] distances = shapelet.computeDistances(data);
@@ -139,6 +149,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
             distanceMap = toWekaInstances(distanceMatrix);
 
+            //Build multiple kmeans clusterers using the one with the smallest squared distance
             for (int n = 0; n < numFolds; n++){
                 KMeans kmeans = new KMeans();
                 kmeans.setK(k);
@@ -158,7 +169,9 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
             double randIndex = 1;
 
-            if (i > 1){
+            //If the rand index of this output of clusters compared to the previous one is greater than the current best
+            //use this output of clusters
+            if (i > 0){
                 randIndex = 1-randIndex(foldClusters[i-1],foldClusters[i]);
             }
 
@@ -211,8 +224,10 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+//        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
+//        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -221,13 +236,20 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         us.k = inst.numClasses();
         us.buildClusterer(inst);
 
+        System.out.println(us.clusters.length);
+        System.out.println(Arrays.toString(us.cluster));
+        System.out.println(Arrays.toString(us.clusters));
         System.out.println(randIndex(us.cluster, inst));
     }
 
+    //Class for a single Unsupervised Shapelet with methods to calculate distance to time series and the gap value
     private class UShapelet{
 
+        //Where the shapelet starts
         int startPoint;
+        //Length of the shapelet
         int length;
+        //Series the shapelet is extracted from
         double[] series;
 
         double gap = 0;
@@ -239,6 +261,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             this.series = inst.toDoubleArray();
         }
 
+        //finds the highest gap value and corresponding distance for this shapelet on the input dataset
         void computeGap(Instances data){
             double[] sortedDistances = computeDistances(data);
             Arrays.sort(sortedDistances);
@@ -249,6 +272,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 ArrayList<Double> lesserDists = new ArrayList();
                 ArrayList<Double> greaterDists = new ArrayList();
 
+                //separate instance distances based on whether they are greater or less than the current dist
                 for (int n = 0; n < sortedDistances.length; n++){
                     if (sortedDistances[n] < dist){
                         lesserDists.add(sortedDistances[n]);
@@ -266,6 +290,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                     double lesserStdev = standardDeviation(lesserDists, lesserMean);
                     double greaterStdev = standardDeviation(greaterDists, greaterMean);
 
+                    //gap value for this distance
                     double gap = greaterMean - greaterStdev - (lesserMean + lesserStdev);
 
                     if (gap > this.gap){
@@ -276,6 +301,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             }
         }
 
+        //Lowest euclidean distance of the shapelet to each instance in the input dataset
         double[] computeDistances(Instances data){
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();
@@ -285,6 +311,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
                 distances[i] = Double.MAX_VALUE;
                 UShapelet subseries = new UShapelet(0, length, inst);
 
+                //Sliding window calculating distance of each section of the series to the shapelet
                 for (int n = 0; n < inst.numAttributes() - length; n++){
                     subseries.startPoint = n;
                     double dist = euclideanDistance(shapelet, subseries.zNormalise());
@@ -304,6 +331,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             return distances;
         }
 
+        //return the shapelet using the series, start point and shapelet length
         double[] zNormalise(){
             double meanSum = 0;
 

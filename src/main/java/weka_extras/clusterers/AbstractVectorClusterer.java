@@ -21,7 +21,7 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
     
     protected DistanceFunction distFunc = new EuclideanDistance();
     protected boolean normaliseData = true;
-    protected boolean dontCopyInstances = false;
+    protected boolean copyInstances = true;
 
     protected int[] cluster;
     protected ArrayList<Integer>[] clusters;
@@ -46,24 +46,8 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
         this.normaliseData = b;
     }
     
-    public void setDontCopyInstances(boolean b){
-        dontCopyInstances = b;
-    }
-
-    //Create lower half distance matrix.
-    protected double[][] createDistanceMatrix(Instances data){
-        double[][] distMatrix = new double[data.numInstances()][];
-        
-        for (int i = 0; i < data.numInstances(); i++){
-            distMatrix[i] = new double[i+1];
-            Instance first = data.get(i);
-            
-            for (int n = 0; n < i; n++){
-                distMatrix[i][n] = distFunc.distance(first, data.get(n));
-            }
-        }
-        
-        return distMatrix;
+    public void setCopyInstances(boolean b){
+        copyInstances = b;
     }
 
     //Normalise instances and save the means and standard deviations.

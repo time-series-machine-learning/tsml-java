@@ -1,20 +1,21 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the Partitioning Around Medoids (PAM) algorithm with 
  * options for finding a value for k and a refined initial medoid selection.
  * 
- * @author MMiddlehurst
+ * @author Matthew Middlehurst
  */
 public class PAM extends AbstractVectorClusterer{
 
@@ -38,8 +39,7 @@ public class PAM extends AbstractVectorClusterer{
     public PAM(){}
     
     //Used when finding best value for k to avoid recalculating distances
-    private PAM(double[][] distanceMatrix){
-        super();
+    public PAM(double[][] distanceMatrix){
         this.distanceMatrix = distanceMatrix;
         this.hasDistances = true;
     }
@@ -75,14 +75,14 @@ public class PAM extends AbstractVectorClusterer{
     public void setNumSubsamples(int n){
         this.numSubsamples = n;
     }
-    
+
     public void setSeed(int seed){
         this.seed = seed;
     }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -92,6 +92,8 @@ public class PAM extends AbstractVectorClusterer{
         cluster = new int[numInstances];
 
         if (numInstances <= k){
+            medoids = new int[numInstances];
+
             for (int i = 0; i < numInstances; i++){
                 cluster[i] = i;
                 medoids[i] = i;
@@ -115,15 +117,13 @@ public class PAM extends AbstractVectorClusterer{
             return;
         }
 
-
         if (normaliseData){
             normaliseData(data);
         }
-        
-        distFunc.setInstances(data);
+
         
         if (!hasDistances){
-            distanceMatrix = createDistanceMatrix(data);
+            distanceMatrix = createDistanceMatrix(data, distFunc);
         }
         
         if (findBestK){
@@ -147,6 +147,15 @@ public class PAM extends AbstractVectorClusterer{
                 finished = selectMedoids();
             }
         }
+
+        for (int n = 0; n < numInstances; n++){
+            for (int i = 0; i < medoids.length; i++){
+                if(medoids[i] == cluster[n]){
+                    cluster[n] = i;
+                    break;
+                }
+            }
+        }
     }
     
     //Returns the sum of the squared distance from each point to its cluster
@@ -156,6 +165,8 @@ public class PAM extends AbstractVectorClusterer{
             
         for (int i = 0; i < k; i++){
             for(int n = 0; n < clusters[i].size(); n++){
+                if (medoids[i] == clusters[i].get(n)) continue;
+
                 if (medoids[i] > clusters[i].get(n)){
                     distSum += distanceMatrix[medoids[i]][clusters[i].get(n)]
                         * distanceMatrix[medoids[i]][clusters[i].get(n)];
@@ -339,6 +350,8 @@ public class PAM extends AbstractVectorClusterer{
                 double clusterDist = 0;
                 
                 for (int g = 0; g < clusters[i].size(); g++){
+                    if (clusters[i].get(n) == clusters[i].get(g)) continue;
+
                     if (clusters[i].get(n) > clusters[i].get(g)){
                         clusterDist += distanceMatrix[clusters[i].get(n)][clusters[i].get(g)];
                     }
@@ -396,6 +409,8 @@ public class PAM extends AbstractVectorClusterer{
                     //Find mean distance of the point to other points in its
                     //cluster.
                     for (int j = 0; j < pam.clusters[n].size(); j++){
+                        if (index == pam.clusters[n].get(j)) continue;
+
                         if (index > pam.clusters[n].get(j)){
                             clusterDist += distanceMatrix[index][pam.clusters[n].get(j)];
                         }
