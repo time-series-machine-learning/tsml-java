@@ -14,6 +14,11 @@ import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
 
+/**
+ * Class for a dictionary based clustering algorithm, very experimental.
+ *
+ * @author Matthew Middlehurst
+ */
 public class DictClusterer extends AbstractTimeSeriesClusterer {
 
     private int k = 2;
@@ -50,6 +55,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
         double minRandIndex = 1;
         int minIndex = 0;
 
+        //Create a matrix of BOSS distances using varying parameter sets, use the clusters with the best rand index.
         for (int i = 0; i < ensembleSize; i++){
             if (curWordLen == 0) {
                 boss = new BOSSIndividual(parameters[i][0], parameters[i][1], parameters[i][2], norm[parameters[i][3]]);
@@ -104,6 +110,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
         }
     }
 
+    //Selects and returns ensembleSize number of BOSS parameter sets
     private int[][] getParameters(int seriesLength){
         int minWindow = 10;
         int maxWindow = (int)(seriesLength*maxWinLenProportion);
@@ -115,7 +122,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
         int[][] parameters = new int[ensembleSize][];
         int currentParam = 0;
 
-        for (int normalise = 0; normalise < norm.length; normalise++) {
+        for (int normalise = 0; normalise < norm.length && currentParam < ensembleSize; normalise++) {
             for (int winSize = minWindow; winSize <= maxWindow && currentParam < ensembleSize; winSize += winInc) {
                 for (Integer wordLen : wordLengths) {
                     int[] paramSet = {wordLen, alphabetSize, winSize, normalise};
@@ -133,6 +140,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
         return parameters;
     }
 
+    //Turns the bags attribute from BOSS into a 2d double array of BOSS distances
     private double[][] matrixFromBags(Instances data, BOSSIndividual boss){
         double[][] distMatrix = new double[data.numInstances()][];
         ArrayList<BOSSIndividual.Bag> bags = boss.getBags();

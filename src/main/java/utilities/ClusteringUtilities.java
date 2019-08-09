@@ -92,8 +92,8 @@ public class ClusteringUtilities {
         double[][] distMatrix = new double[data.numInstances()][];
         distFunc.setInstances(data);
 
-        for (int i = 0; i < data.numInstances(); i++){
-            distMatrix[i] = new double[i+1];
+        for (int i = 1; i < data.numInstances(); i++){
+            distMatrix[i] = new double[i];
             Instance first = data.get(i);
 
             for (int n = 0; n < i; n++){

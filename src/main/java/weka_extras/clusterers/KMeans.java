@@ -16,7 +16,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * Implementation of the K-Means algorithm with options for finding a value 
  * for k and a refined initial cluster center selection.
  * 
- * @author MMiddlehurst
+ * @author Matthew Middlehurst
  */
 public class KMeans extends AbstractVectorClusterer {
     
@@ -440,6 +440,8 @@ public class KMeans extends AbstractVectorClusterer {
                     //Find mean distance of the point to other points in its
                     //cluster.
                     for (int j = 0; j < kmeans.clusters[n].size(); j++){
+                        if (index == kmeans.clusters[n].get(j)) continue;
+
                         if (index > kmeans.clusters[n].get(j)){
                             clusterDist += distMatrix[index][kmeans.clusters[n].get(j)];
                         }

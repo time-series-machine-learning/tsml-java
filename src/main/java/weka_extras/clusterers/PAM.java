@@ -15,7 +15,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * Implementation of the Partitioning Around Medoids (PAM) algorithm with 
  * options for finding a value for k and a refined initial medoid selection.
  * 
- * @author MMiddlehurst
+ * @author Matthew Middlehurst
  */
 public class PAM extends AbstractVectorClusterer{
 
@@ -165,6 +165,8 @@ public class PAM extends AbstractVectorClusterer{
             
         for (int i = 0; i < k; i++){
             for(int n = 0; n < clusters[i].size(); n++){
+                if (medoids[i] == clusters[i].get(n)) continue;
+
                 if (medoids[i] > clusters[i].get(n)){
                     distSum += distanceMatrix[medoids[i]][clusters[i].get(n)]
                         * distanceMatrix[medoids[i]][clusters[i].get(n)];
@@ -348,6 +350,8 @@ public class PAM extends AbstractVectorClusterer{
                 double clusterDist = 0;
                 
                 for (int g = 0; g < clusters[i].size(); g++){
+                    if (clusters[i].get(n) == clusters[i].get(g)) continue;
+
                     if (clusters[i].get(n) > clusters[i].get(g)){
                         clusterDist += distanceMatrix[clusters[i].get(n)][clusters[i].get(g)];
                     }
@@ -405,6 +409,8 @@ public class PAM extends AbstractVectorClusterer{
                     //Find mean distance of the point to other points in its
                     //cluster.
                     for (int j = 0; j < pam.clusters[n].size(); j++){
+                        if (index == pam.clusters[n].get(j)) continue;
+
                         if (index > pam.clusters[n].get(j)){
                             clusterDist += distanceMatrix[index][pam.clusters[n].get(j)];
                         }

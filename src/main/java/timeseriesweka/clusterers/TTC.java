@@ -14,9 +14,12 @@ import java.util.Arrays;
 import static utilities.ClusteringUtilities.*;
 import static utilities.InstanceTools.deleteClassAttribute;
 
-//runs but does not perform as well as intended, needs revisiting.
-
-public class AffinityTTS extends AbstractTimeSeriesClusterer {
+/**
+ * Class for a dictionary based clustering algorithm, very experimental.
+ *
+ * @author Matthew Middlehurst
+ */
+public class TTC extends AbstractTimeSeriesClusterer {
 
     //Aghabozorgi, Saeed, et al.
     //"A hybrid algorithm for clustering of time series data based on affinity search technique."
@@ -29,7 +32,7 @@ public class AffinityTTS extends AbstractTimeSeriesClusterer {
     private double[][] distanceMatrix;
     private ArrayList<Integer>[] subclusters;
 
-    public AffinityTTS(){}
+    public TTC(){}
 
     @Override
     public int numberOfClusters() throws Exception { return k; }
@@ -49,6 +52,7 @@ public class AffinityTTS extends AbstractTimeSeriesClusterer {
         ed.setDontNormalize(true);
         distanceMatrix = createDistanceMatrix(data, ed);
 
+        //Cluster using the CAST algorithm
         CAST cast = new CAST(distanceMatrix);
         cast.setAffinityThreshold(affinityThreshold);
         cast.buildClusterer(data);
@@ -57,6 +61,7 @@ public class AffinityTTS extends AbstractTimeSeriesClusterer {
 
         double[][] prototypes = new double[subclusters.length][data.numAttributes()];
 
+        //Take average of each cluster
         for (int i = 0; i < subclusters.length; i++){
             for (int n = 0; n < data.numAttributes(); n++){
                 for (int g = 0; g < subclusters[i].size(); g++){
@@ -72,17 +77,18 @@ public class AffinityTTS extends AbstractTimeSeriesClusterer {
             cl.add(new DenseInstance(1, prototypes[i]));
         }
 
+
+        //Use PAM using DTW distance to cluster discretised data
         PAM pam = new PAM();
         pam.setDistanceFunction(new DTW());
         pam.setK(k);
         pam.setSeed(seed);
         pam.buildClusterer(cl);
 
-        System.out.println(Arrays.toString(pam.getClusters()));
-
         ArrayList<Integer>[] ptClusters = pam.getClusters();
         cluster = new int[data.size()];
 
+        //Assign each instance to the cluster assigned it its subcluster using PAM
         for (int i = 1; i < k; i++){
             for (int n = 0; n < ptClusters[i].size(); n++){
                 ArrayList<Integer> subcluster = subclusters[ptClusters[i].get(n)];
@@ -111,14 +117,14 @@ public class AffinityTTS extends AbstractTimeSeriesClusterer {
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
 //        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
 //        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
-        AffinityTTS k = new AffinityTTS();
+        TTC k = new TTC();
         k.seed = 0;
         k.k = inst.numClasses();
         k.buildClusterer(inst);

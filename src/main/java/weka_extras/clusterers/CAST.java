@@ -1,22 +1,30 @@
 package weka_extras.clusterers;
 
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.Utilities.maxIndex;
 import static utilities.Utilities.minIndex;
 
+/**
+ * Implementation of the CAST clustering algorithm.
+ *
+ * @author Matthew Middlehurst
+ */
 public class CAST extends AbstractVectorClusterer {
 
     //Ben-Dor, Amir, Ron Shamir, and Zohar Yakhini.
     //"Clustering gene expression patterns."
     //Journal of computational biology 6.3-4 (1999): 281-297.
 
-    private double affinityThreshold = 0.3;
+    private double affinityThreshold = 0.1;
     private boolean dynamicAffinityThreshold = false;
+    private double eCastThreshold = 0.25;
 
     private double[][] distanceMatrix;
     private boolean hasDistances = false;
@@ -65,10 +73,11 @@ public class CAST extends AbstractVectorClusterer {
 
         normaliseDistanceMatrix();
 
+        //Main CAST loop
         ArrayList<ArrayList<Integer>> subclusters = runCAST();
 
         //Create and store an ArrayList for each cluster containing indexes of
-        //points inside the cluster.
+        //points inside the cluster
         cluster = new int[data.size()];
         clusters = new ArrayList[subclusters.size()];
 
@@ -90,24 +99,28 @@ public class CAST extends AbstractVectorClusterer {
         }
         clusterAffinities = new ArrayList();
 
-        double[] indiciesAffinities;
         double[] subclusterAffinities = null;
 
         while (indicies.size() > 0){
             ArrayList<Integer> subcluster = new ArrayList();
             boolean change = true;
 
+            //E-cast
             if (dynamicAffinityThreshold){
                 computeThreshold(indicies);
             }
 
             subcluster.add(indicies.remove(initialiseCluster(indicies)));
 
+            //While changes still happen continue to add and remove items from the cluster.
             while(change){
                 change = false;
-                indiciesAffinities = getAffinities(indicies, subcluster);
+                double[] indiciesAffinities = getAffinities(indicies, subcluster);
                 int minIdx = minIndex(indiciesAffinities);
 
+                int i = 0;
+
+                //Addition step
                 while (indiciesAffinities.length > 0 && indiciesAffinities[minIdx] <= affinityThreshold*subcluster.size()){
                     subcluster.add(indicies.remove(minIdx));
                     indiciesAffinities = getAffinities(indicies, subcluster);
@@ -121,7 +134,8 @@ public class CAST extends AbstractVectorClusterer {
                 subclusterAffinities = getAffinities(subcluster, subcluster);
                 int maxIdx = maxIndex(subclusterAffinities);
 
-                while (subclusterAffinities[maxIdx] > affinityThreshold*subcluster.size()){
+                //Removal step
+                while (subclusterAffinities[maxIdx] > affinityThreshold*(subcluster.size()-1)){
                     indicies.add(subcluster.remove(maxIdx));
                     subclusterAffinities = getAffinities(subcluster, subcluster);
                     maxIdx = maxIndex(subclusterAffinities);
@@ -132,6 +146,8 @@ public class CAST extends AbstractVectorClusterer {
                 }
             }
 
+            //Add the cluster and the affinities of each member to itself, items in subcluster removed from indicies
+            //pool
             clusterAffinities.add(subclusterAffinities);
             subclusters.add(subcluster);
         }
@@ -144,6 +160,8 @@ public class CAST extends AbstractVectorClusterer {
 
         for (int n = 0; n < affinities.length; n++) {
             for (int i = 0; i < subcluster.size(); i++) {
+                if (indicies.get(n).equals(subcluster.get(i))) continue;
+
                 if (indicies.get(n) > subcluster.get(i)) {
                     affinities[n] += distanceMatrix[indicies.get(n)][subcluster.get(i)];
                 } else {
@@ -161,6 +179,7 @@ public class CAST extends AbstractVectorClusterer {
 
         for (int n = 0; n < indicies.size(); n++) {
             for (int i = 0; i < indicies.size(); i++) {
+                if(indicies.get(n).equals(indicies.get(i))) continue;
                 double dist;
 
                 if (indicies.get(n) > indicies.get(i)) {
@@ -179,16 +198,39 @@ public class CAST extends AbstractVectorClusterer {
         return minIdx;
     }
 
+    private void normaliseDistanceMatrix(){
+        double maxDist = 0;
+        double minDist = Double.MAX_VALUE;
+
+        for (int i = 0; i < distanceMatrix.length; i++){
+            for (int n = 0; n < i; n++){
+                if (distanceMatrix[i][n] > maxDist){
+                    maxDist = distanceMatrix[i][n];
+                }
+                else if (distanceMatrix[i][n] < minDist){
+                    minDist = distanceMatrix[i][n];
+                }
+            }
+        }
+
+        for (int i = 0; i < distanceMatrix.length; i++){
+            for (int n = 0; n < i; n++){
+                distanceMatrix[i][n] = (distanceMatrix[i][n] - minDist)/(maxDist - minDist);
+            }
+        }
+    }
+
     //Bellaachia, Abdelghani, et al.
     //"E-CAST: a data mining algorithm for gene expression data."
     //Proceedings of the 2nd International Conference on Data Mining in Bioinformatics. Springer-Verlag, 2002.
 
     private void computeThreshold(ArrayList<Integer> indicies){
-        int a = 0;
+        double a = 0;
         int count = 0;
 
         for (int n = 0; n < indicies.size(); n++) {
             for (int i = 0; i < indicies.size(); i++) {
+                if (indicies.get(n).equals(indicies.get(i))) continue;
                 double dist;
 
                 if (indicies.get(n) > indicies.get(i)) {
@@ -197,32 +239,43 @@ public class CAST extends AbstractVectorClusterer {
                     dist = distanceMatrix[indicies.get(i)][indicies.get(n)];
                 }
 
-                //may need fixing
-
-                if (dist < 0.5){
-                    a += dist - 0.5;
+                if (dist < eCastThreshold){
+                    a += dist - eCastThreshold;
                     count++;
                 }
             }
         }
 
-        affinityThreshold = (a/count)+0.5;
+        affinityThreshold = (a/count)+eCastThreshold;
+        if (Double.isNaN(affinityThreshold)) affinityThreshold = eCastThreshold;
     }
 
-    private void normaliseDistanceMatrix(){
-        double maxDist = 0;
+    public static void main(String[] args) throws Exception{
+        String[] datasets = {"Z:/Data/ClusteringTestDatasets/DensityPeakVector/aggregation.arff",
+                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/clustersynth.arff",
+                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest1k.arff",
+                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest4k.arff",
+                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/flame.arff",
+                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/spiral.arff"};
+        String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
+        boolean output = true;
 
-        for (int i = 0; i < distanceMatrix.length; i++){
-            for (int n = 0; n < i; n++){
-                if (distanceMatrix[i][n] > maxDist){
-                    maxDist = distanceMatrix[i][n];
-                }
-            }
+        if (output){
+            System.out.println("cd('Z:/Data/ClusteringTestDatasets/DensityPeakVector')");
+            System.out.println("load('matlabCluster.mat')");
+            System.out.println("k = [1,2,3,4,5,6,7,8,9,10]");
         }
 
-        for (int i = 0; i < distanceMatrix.length; i++){
-            for (int n = 0; n < i; n++){
-                distanceMatrix[i][n] = distanceMatrix[i][n]/maxDist;
+        for (int i = 0; i < datasets.length; i++){
+            Instances inst = DatasetLoading.loadDataNullable(datasets[i]);
+            inst.setClassIndex(inst.numAttributes()-1);
+            CAST cast = new CAST();
+            cast.buildClusterer(inst);
+
+            if(output){
+                System.out.println(names[i] + "c = " + Arrays.toString(cast.cluster));
+                System.out.println("figure");
+                System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }
         }
     }
