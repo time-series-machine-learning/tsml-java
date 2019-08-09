@@ -43,7 +43,7 @@ public class ArrayUtilities {
         }
     }
 
-    public static void multiply(double[] array, double multiplier) {
+    public static void multiplyInPlace(double[] array, double multiplier) {
         for(int i = 0; i < array.length; i++) {
             array[i] *= multiplier;
         }

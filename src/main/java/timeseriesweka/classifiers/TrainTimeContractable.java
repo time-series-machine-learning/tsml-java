@@ -25,6 +25,9 @@ known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (part
  * @author raj09hxu
  */
 public interface TrainTimeContractable {
+
+    String TRAIN_TIME_CONTRACT_KEY = "trainTimeContract";
+
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }

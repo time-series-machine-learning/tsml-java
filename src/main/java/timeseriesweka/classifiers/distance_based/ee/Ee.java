@@ -1,133 +1,165 @@
 package timeseriesweka.classifiers.distance_based.ee;
 
 import evaluation.storage.ClassifierResults;
-import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.distance_based.ee.selection.BestPerTypeSelector;
 import timeseriesweka.classifiers.distance_based.ee.selection.Selector;
 import utilities.ArrayUtilities;
-import utilities.iteration.ParameterSetIterator;
 import utilities.iteration.AbstractIterator;
+import utilities.iteration.linear.LinearIterator;
+import utilities.iteration.linear.RoundRobinIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 
 public class Ee extends AbstractClassifier {
-
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>();
-//    private Selector<Candidate> selector = new BestPerTypeSelector<Candidate, ParameterSpace>(Candidate::getParameterSpace, Comparator.comparingDouble(candidate -> candidate.getTrainResults().getAcc()));
+    private List<Member> members = new ArrayList<>();
+    private AbstractIterator<AbstractClassifier> candidateIterator;
+    private AbstractIterator<AbstractClassifier> improvementIterator;
+    private final Random trainRandom = new Random();
+    private final Random testRandom = new Random();
+    private Long trainSeed;
+    private Long testSeed;
+    private Selector<Benchmark> selector = new BestPerTypeSelector<>();
+    private List<Benchmark> constituents;
 
-    private List<Candidate> constituents;
-    private int numClasses;
-    private AbstractIterator<AbstractIterator<ParameterSet>> parameterSetIteratorIterator;
-    private Long seed;
-    private Selector<Candidate> selector = new BestPerTypeSelector<>(bestPerDistanceMeasureTraditional(),
-                                                                     Comparator.comparingDouble(candidate -> candidate.getTrainResults().getAcc()));
-
-    private static Function<Candidate, String> bestPerDistanceMeasure() {
-        return candidate -> candidate.getParameterSet()
-                                     .getParameterValue(DistanceMeasure.DISTANCE_MEASURE_KEY);
-    }
-
-    private static Function<Candidate, String> bestPerDistanceMeasureTraditional() {
-        return new Function<Candidate, String>() {
-            @Override
-            public String apply(final Candidate candidate) {
-//                Dtw.NAME;
-                return null;
-            }
-        };
-    }
-
-    private void setup(Instances trainingSet) {
-        if(seed == null) {
-            throw new IllegalStateException("seed not set");
-        }
-        numClasses = trainingSet.numClasses();
-        buildParameterSetIterators(trainingSet);
-    }
-
-    private void buildParameterSpaceIterator() {
-        parameterSetIteratorIterator = new RandomIterator<>(seed);
-    }
-
-    private void buildParameterSetIterators(Instances trainingSet) {
-        for(Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
-            ParameterSpace parameterSpace = function.apply(trainingSet);
-            if(parameterSpace.isEmpty()) {
-                continue;
-            }
-            parameterSpace.removeDuplicateParameterSets();
-            RandomIterator<Integer> randomIterator = new RandomIterator<>(seed);
-            randomIterator.addAll(ArrayUtilities.sequence(parameterSpace.size()));
-            ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, randomIterator);
-            parameterSetIteratorIterator.add(parameterSetIterator);
-        }
-    }
-
-    @Override
-    public void buildClassifier(final Instances trainingSet) throws
-                                                      Exception {
-        setup(trainingSet);
-//        while (parameterSetIteratorIterator.hasNext()) {
-//            AbstractIterator<ParameterSet> parameterSetIterator = parameterSetIteratorIterator.next();
-//            ParameterSet parameterSet = parameterSetIterator.next();
-//            parameterSetIterator.remove();
-//            if(!parameterSetIterator.hasNext()) {
-//                parameterSetIteratorIterator.remove();
-//            }
-//            Knn knn = new Knn();
-//            knn.setOptions(parameterSet.getOptions());
-//            ClassifierResults trainResults = knn.getTrainResults();
-//            Candidate candidate = new Candidate(knn, parameterSet, trainResults);
-//            selector.add(candidate);
-//        }
-//        constituents = selector.getSelected();
-    }
-
-    @Override
-    public double[] distributionForInstance(final Instance testCase) throws
-                                                                     Exception {
-        double[] overallDistribution = new double[numClasses];
-        for(Candidate constituent : constituents) {
-            double[] distribution = constituent.getClassifier()
-                                          .distributionForInstance(testCase);
-            ArrayUtilities.addInPlace(overallDistribution, distribution);
-        }
-        ArrayUtilities.normaliseInPlace(overallDistribution);
-        return overallDistribution;
-    }
-
-    private static class Candidate {
+    private static class Benchmark {
         private final AbstractClassifier classifier;
-        private final ParameterSet parameterSet;
         private final ClassifierResults trainResults;
 
-        private Candidate(final AbstractClassifier classifier,
-                          final ParameterSet parameterSet, final ClassifierResults trainResults) {
+        private Benchmark(AbstractClassifier classifier, ClassifierResults trainResults) {
             this.classifier = classifier;
-            this.parameterSet = parameterSet;
             this.trainResults = trainResults;
         }
-
-        public AbstractClassifier getClassifier() {
-            return classifier;
-        }
-
 
         public ClassifierResults getTrainResults() {
             return trainResults;
         }
 
-        public ParameterSet getParameterSet() {
-            return parameterSet;
+        public AbstractClassifier getClassifier() {
+            return classifier;
         }
+    }
+
+    public List<Function<Instances, ParameterSpace>> getParameterSpaceFunctions() {
+        return parameterSpaceFunctions;
+    }
+
+    public void setParameterSpaceFunctions(List<Function<Instances, ParameterSpace>> parameterSpaceFunctions) {
+        this.parameterSpaceFunctions = parameterSpaceFunctions;
+    }
+
+    private static class Member {
+        private final ParameterSpace parameterSpace;
+        private final Iterator<Integer> indexIterator;
+
+        private Member(ParameterSpace parameterSpace, Iterator<Integer> indexIterator) {
+            this.parameterSpace = parameterSpace;
+            this.indexIterator = indexIterator;
+        }
+
+        public Iterator<Integer> getIndexIterator() {
+            return indexIterator;
+        }
+
+        public ParameterSpace getParameterSpace() {
+            return parameterSpace;
+        }
+    }
+
+    private void setup(Instances trainInstances) {
+        // todo selector random
+        candidateIterator = new LinearIterator<>();
+        improvementIterator = new RoundRobinIterator<>();
+        for(Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
+            ParameterSpace parameterSpace = function.apply(trainInstances);
+            parameterSpace.removeDuplicateParameterSets();
+            if(parameterSpace.size() > 0) {
+                AbstractIterator<Integer> iterator = new RandomIterator<>(); // todo set seed
+                iterator.addAll(ArrayUtilities.sequence(parameterSpace.size()));
+                members.add(new Member(parameterSpace, iterator));
+            }
+        }
+    }
+
+    private static class Abc {
+        private final AbstractClassifier classifier;
+
+    }
+
+    private void nextCandidate(Instances trainInstances) throws Exception {
+        AbstractClassifier classifier = candidateIterator.next();
+        candidateIterator.remove();
+
+
+
+
+        classifier.buildClassifier(trainInstances);
+        ClassifierResults trainResults;
+        if(classifier instanceof TrainAccuracyEstimator) {
+            trainResults = ((TrainAccuracyEstimator) classifier).getTrainResults();
+        } else {
+            throw new UnsupportedOperationException(); // todo 10 fold cv
+        }
+        Benchmark benchmark = new Benchmark(classifier, trainResults);
+        selector.add(benchmark);
+//        improvementIterator.add(classifier);
+    }
+
+    private void nextImprovement(Instances trainInstances) {
+        AbstractClassifier classifier = improvementIterator.next();
+        improvementIterator.remove();
+        // todo
+    }
+
+    private boolean hasRemainingCandidates() {
+        return candidateIterator.hasNext();
+    }
+
+    private boolean hasRemainingImprovements() {
+        return improvementIterator.hasNext();
+    }
+
+    @Override
+    public void buildClassifier(Instances trainInstances) throws Exception {
+        setup(trainInstances);
+        boolean hasRemainingCandidates = hasRemainingCandidates();
+        boolean hasRemainingImprovements = hasRemainingImprovements();
+        while ((hasRemainingCandidates || hasRemainingImprovements)) {
+            boolean choice = hasRemainingCandidates;
+            if(hasRemainingCandidates && hasRemainingImprovements) {
+                choice = trainRandom.nextBoolean();
+            }
+            if(choice) {
+                nextCandidate(trainInstances);
+            } else {
+                nextImprovement(trainInstances);
+            }
+            hasRemainingCandidates = hasRemainingCandidates();
+            hasRemainingImprovements = hasRemainingImprovements();
+        }
+        constituents = selector.getSelected();
+    }
+
+    @Override
+    public double[] distributionForInstance(Instance testInstance) throws Exception {
+        double[] distribution = new double[testInstance.numClasses()];
+        for(Benchmark constituent : constituents) {
+            double weight = constituent.getTrainResults().getAcc();
+            double[] constituentDistribution = constituent.getClassifier().distributionForInstance(testInstance);
+            ArrayUtilities.multiplyInPlace(constituentDistribution, weight);
+            ArrayUtilities.addInPlace(distribution, constituentDistribution);
+        }
+        ArrayUtilities.normaliseInPlace(distribution);
+        return distribution;
     }
 }

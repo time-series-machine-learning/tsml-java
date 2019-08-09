@@ -24,6 +24,9 @@ import java.util.concurrent.TimeUnit;
  * @author pfm15hbu
  */
 public interface TestTimeContractable {
+
+    String TEST_TIME_CONTRACT_KEY = "testTimeContract";
+
     default void setOneSecondLimit(){ setTestTimeLimit(TimeUnit.SECONDS, 1); }
 
     default void setOneMillisecondLimit(){ setTestTimeLimit(TimeUnit.MILLISECONDS, 1); }
