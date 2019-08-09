@@ -6,14 +6,14 @@ import utilities.Copyable;
 import java.util.*;
 import java.util.function.Function;
 
-public class BestKSelector<A, B extends Comparable<B>> implements Copyable
+public class KBestSelector<A, B extends Comparable<B>> implements Copyable
  {
     private final TreeMap<B, List<A>> map = new TreeMap<>();
     private Function<A, B> extractor;
     private int size = 0;
     private int limit = -1;
-    private B largestValue;
-    private List<A> furthestItems;
+    private B worstValue;
+    private List<A> worstItems;
     private Random random = new Random();
 
     public TreeMap<B, List<A>> getSelectedAsMapWithDraws() {
@@ -48,7 +48,7 @@ public class BestKSelector<A, B extends Comparable<B>> implements Copyable
     @Override
     public void copyFrom(final Object object) throws
                                               Exception {
-        BestKSelector<A, B> other = (BestKSelector<A, B>) object;
+        KBestSelector<A, B> other = (KBestSelector<A, B>) object;
         setLimit(other.getLimit());
         setExtractor(other.getExtractor());
         size = other.size;
@@ -57,19 +57,19 @@ public class BestKSelector<A, B extends Comparable<B>> implements Copyable
             map.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
         Map.Entry<B, List<A>> lastEntry = map.lastEntry();
-        largestValue = lastEntry.getKey();
-        furthestItems = lastEntry.getValue();
+        worstValue = lastEntry.getKey();
+        worstItems = lastEntry.getValue();
     }
 
-    public BestKSelector() {}
+    public KBestSelector() {}
 
-    public BestKSelector(BestKSelector<A, B> other) throws
+    public KBestSelector(KBestSelector<A, B> other) throws
                                             Exception {
         copyFrom(other);
     }
 
-    public B getLargestValue() {
-        return largestValue;
+    public B getWorstValue() {
+        return worstValue;
     }
 
     public void add(A item) {
@@ -78,10 +78,10 @@ public class BestKSelector<A, B extends Comparable<B>> implements Copyable
         }
         B value = extractor.apply(item);
         int comparison;
-        if(largestValue == null) {
+        if(worstValue == null) {
             comparison = -1;
         } else {
-            comparison = value.compareTo(largestValue);
+            comparison = value.compareTo(worstValue);
         }
         if (comparison <= 0 || (size < limit || limit <= 0)) {
             List<A> items = map.get(value);
@@ -89,22 +89,22 @@ public class BestKSelector<A, B extends Comparable<B>> implements Copyable
                 items = new ArrayList<>();
                 map.put(value, items);
                 if(size == 0) {
-                    largestValue = value;
-                    furthestItems = items;
+                    worstValue = value;
+                    worstItems = items;
                 } else if(comparison > 0){
-                    largestValue = value;
+                    worstValue = value;
                 }
             }
             items.add(item);
             size++;
             if (comparison < 0 && size > limit && limit > 0) {
-                int numFurthestItems = furthestItems.size();
+                int numFurthestItems = worstItems.size();
                 if (size - limit >= numFurthestItems) {
                     map.pollLastEntry();
                     size -= numFurthestItems;
                     Map.Entry<B, List<A>> furthestNeighboursEntry = map.lastEntry();
-                    furthestItems = furthestNeighboursEntry.getValue();
-                    largestValue = furthestNeighboursEntry.getKey();
+                    worstItems = furthestNeighboursEntry.getValue();
+                    worstValue = furthestNeighboursEntry.getKey();
                 }
             }
         }
@@ -140,7 +140,7 @@ public class BestKSelector<A, B extends Comparable<B>> implements Copyable
     @Override
     public Object copy() throws
                          Exception {
-        return new BestKSelector<>(this);
+        return new KBestSelector<>(this);
     }
 
      public Random getRandom() {

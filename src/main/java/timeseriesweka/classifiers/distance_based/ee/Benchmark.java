@@ -6,15 +6,15 @@ import weka.classifiers.AbstractClassifier;
 
 public class Benchmark {
     private final AbstractClassifier classifier;
-    private final ClassifierResults trainResults;
+    private final ClassifierResults results;
 
-    public Benchmark(AbstractClassifier classifier, ClassifierResults trainResults) {
+    public Benchmark(AbstractClassifier classifier, ClassifierResults results) {
         this.classifier = classifier;
-        this.trainResults = trainResults;
+        this.results = results;
     }
 
-    public ClassifierResults getTrainResults() {
-        return trainResults;
+    public ClassifierResults getResults() {
+        return results;
     }
 
     public AbstractClassifier getClassifier() {

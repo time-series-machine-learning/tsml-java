@@ -6,7 +6,7 @@ import timeseriesweka.classifiers.TestTimeContractable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
-import timeseriesweka.classifiers.distance_based.ee.selection.BestKSelector;
+import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import utilities.ArrayUtilities;
 import utilities.Copyable;
 import utilities.Options;
@@ -199,7 +199,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private class Searcher {
         private final Instance target;
         private final boolean train;
-        private final BestKSelector<Neighbour, Double> selector;
+        private final KBestSelector<Neighbour, Double> selector;
 
         public Instance getTarget() {
             return target;
@@ -207,7 +207,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
         private Searcher(final Instance target, boolean train) {
             this.target = target;
-            selector = new BestKSelector<>();
+            selector = new KBestSelector<>();
             selector.setLimit(k);
             this.train = train;
             if (train) {
@@ -222,7 +222,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             if (!instance.equals(target)) {
                 distanceMeasure.setCandidate(instance);
                 distanceMeasure.setTarget(target);
-                Double max = selector.getLargestValue();
+                Double max = selector.getWorstValue();
                 if (max != null) {
                     distanceMeasure.setLimit(max);
                 }

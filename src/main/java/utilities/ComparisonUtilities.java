@@ -1,10 +1,5 @@
 package utilities;
 
-import timeseriesweka.classifiers.distance_based.ee.selection.BestKSelector;
-
-import java.util.*;
-import java.util.function.Function;
-
 public class ComparisonUtilities {
 
 //    public <A, B extends Comparable<B>> TreeMap<B, List<A>> findBest(Collection<A> collection, Function<A, B> extractor, Comparator<B> comparator, int limit) {

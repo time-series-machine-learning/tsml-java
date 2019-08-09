@@ -7,8 +7,7 @@ import java.util.Random;
 
 public interface Selector<A>
     extends Copyable {
-    boolean add(A candidate);
+    void add(A candidate);
     List<A> getSelected();
-    List<A> getSelectedWithDraws();
     void clear();
 }
