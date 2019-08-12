@@ -14,6 +14,9 @@
  */
 package timeseriesweka.classifiers.frequency_based;
 
+import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
@@ -32,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainTimeContractable;
+
+import static experiments.data.DatasetLoading.loadDataNullable;
 
 /**
  <!-- globalinfo-start -->
@@ -107,10 +112,11 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         timer = new Timer();
     }
 
-    public void RISE(){
+    public cRISE(){
         this.seed = 0;
         random = new Random(0);
         timer = new Timer();
+        this.setTransformType(TransformType.ACF_PS);
     }
 
     public enum TransformType {ACF, PS, ACF_PS, ACF_PS_AR}
@@ -877,60 +883,19 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        Instances train;
-        Instances test;
-        Instances instances;
-        String problemName = "StarLightCurves";
-        //String problemName = "InsectWingbeat";
+        cRISE cRISE = new cRISE();
+        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28]);
 
-        train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TRAIN.arff");
-        test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TEST.arff");
-        //instances = ClassifierTools.loadDataThrowable("Z:\\Data\\TSCProblemsAudio2019\\InsectWingbeat\\InsectWingbeat.arff");
-        //Instances[] data = InstanceTools.resampleInstances(instances, 0, 0.5);
-        //train = data[0];
-        //test = data[1];
-
-        double[] dist = null;
-        double acc = 0.0;
-        double classification = 0.0;
-
-        cRISE c = new cRISE(0);
-        //c.setDownSample(true);
-        c.setTransformType(TransformType.ACF_PS);
-        //c.setStabilise(3);
-        c.setModelOutPath("");
-        c.setSavePath("");
-        //c.setTrainTimeLimit(TimeUnit.MINUTES,5);
-
-        //Train
+        ClassifierResults cr = null;
+        SingleSampleEvaluator sse = new SingleSampleEvaluator();
         try {
-            c.buildClassifier(train);
-        } catch (Exception ex) {
-            System.out.println("Build failed: " + ex);
+            sse.setPropInstancesInTrain(0.5);
+            sse.setSeed(0);
+            cr = sse.evaluate(cRISE, data);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        //Test
-        for (int i = 0; i < test.size(); i++) {
-
-            try {
-                dist = c.distributionForInstance(test.get(i));
-                classification = c.classifyInstance(test.get(i));
-            } catch (Exception ex) {
-                System.out.println("distributionForInstance | classifyInstance failed: " + ex);
-            }
-
-            //print dist
-            for (int j = 0; j < dist.length; j++) {
-                System.out.print(dist[j] + ", ");
-            }
-            System.out.println();
-
-            if(test.get(i).classValue() == classification)
-                acc++;
-        }
-
-        acc /= test.size();
-        System.out.println(acc);
-
+        System.out.println(cr.getAcc());
     }
 }
