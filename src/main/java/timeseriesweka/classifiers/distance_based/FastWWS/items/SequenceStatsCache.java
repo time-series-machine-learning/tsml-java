@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.items;
+package timeseriesweka.classifiers.distance_based.FastWWS.items;
 
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
+import timeseriesweka.classifiers.distance_based.FastWWS.sequences.SymbolicSequence;
 
 /**
  * Code for the paper "Efficient search of the best warping window for Dynamic Time Warping" published in SDM18

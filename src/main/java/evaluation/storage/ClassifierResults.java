@@ -875,7 +875,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) throws Exception {
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) throws RuntimeException {
         predDistributions.add(dist);
         predClassValues.add(predictedClass);
         
@@ -886,7 +886,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         
         if (errorOnTimingOfZero && predictionTime < 1)
-            throw new Exception("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
+            throw new RuntimeException("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
                     + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
                     + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
                     + "for this call");  
@@ -911,7 +911,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
-    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) throws Exception {        
+    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) throws RuntimeException {        
         addPrediction(dist,predictedClass,predictionTime,description);
         trueClassValues.add(trueClassVal);
     }
@@ -923,7 +923,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws Exception {
+    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws RuntimeException {
         assert(trueClassVals.length == predictions.length);
         assert(trueClassVals.length == distributions.length);
         assert(trueClassVals.length == predTimes.length);
@@ -948,7 +948,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws Exception {
+    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws RuntimeException {
         
         //todo replace asserts with actual exceptions
         assert(predictions.length == distributions.length);

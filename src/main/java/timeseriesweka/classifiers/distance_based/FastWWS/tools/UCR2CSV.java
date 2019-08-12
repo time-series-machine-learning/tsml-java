@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.tools;
+package timeseriesweka.classifiers.distance_based.FastWWS.tools;
 
 import java.io.BufferedReader;
 import java.io.File;

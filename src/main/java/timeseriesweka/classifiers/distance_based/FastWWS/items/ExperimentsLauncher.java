@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.items;
+package timeseriesweka.classifiers.distance_based.FastWWS.items;
 
 import java.io.File;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.tools.UCR2CSV;
+import timeseriesweka.classifiers.distance_based.FastWWS.tools.UCR2CSV;
 import weka.core.Instances;
 import weka.core.converters.CSVLoader;
 

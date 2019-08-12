@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.experiments;
+package timeseriesweka.classifiers.distance_based.FastWWS.experiments;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -23,12 +23,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.ExperimentsLauncher;
-import timeseriesweka.classifiers.distance_based.fast_dtw.tools.Sampling;
-import timeseriesweka.classifiers.distance_based.fast_dtw.tools.UCRArchive;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.ExperimentsLauncher;
+import timeseriesweka.classifiers.distance_based.FastWWS.tools.Sampling;
+import timeseriesweka.classifiers.distance_based.FastWWS.tools.UCRArchive;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
-import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.NaiveDTW;
+import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.NaiveDTW;
 
 /**
  * Code for the paper "Efficient search of the best warping window for Dynamic Time Warping" published in SDM18

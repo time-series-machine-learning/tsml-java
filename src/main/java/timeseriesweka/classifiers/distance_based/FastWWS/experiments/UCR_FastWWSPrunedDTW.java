@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.distance_based.fast_dtw.experiments;
+package timeseriesweka.classifiers.distance_based.FastWWS.experiments;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -6,11 +6,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.ExperimentsLauncher;
-import timeseriesweka.classifiers.distance_based.fast_dtw.tools.Sampling;
-import timeseriesweka.classifiers.distance_based.fast_dtw.tools.UCRArchive;
-import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.FastWWS;
-import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.FastWWSPrunedDTW;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.ExperimentsLauncher;
+import timeseriesweka.classifiers.distance_based.FastWWS.tools.Sampling;
+import timeseriesweka.classifiers.distance_based.FastWWS.tools.UCRArchive;
+import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWS;
+import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSPrunedDTW;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
 
