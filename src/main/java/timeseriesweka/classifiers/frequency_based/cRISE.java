@@ -19,7 +19,6 @@ import fileIO.FullAccessOutFile;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.FFT;
-import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -72,7 +71,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * @date 19/02/19
  **/
 
-public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
+public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 2;
@@ -102,7 +101,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
      * Constructor
      * @param seed
      */
-    public CRISE(long seed){
+    public cRISE(long seed){
         this.seed = seed;
         random = new Random(seed);
         timer = new Timer();
@@ -212,7 +211,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 + "\\SERIALISE_cRISE_"
                 + seed
                 + ".txt");
-        CRISE temp = readSerialise(seed);
+        cRISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
 
@@ -473,9 +472,9 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         }
     }
 
-    private CRISE readSerialise(long seed){
+    private cRISE readSerialise(long seed){
         ObjectInputStream oi = null;
-        CRISE temp = null;
+        cRISE temp = null;
         try {
             FileInputStream fi = new FileInputStream(new File(
                     serialisePath
@@ -483,10 +482,10 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                             + seed
                             + ".txt"));
             oi = new ObjectInputStream(fi);
-            temp = (CRISE)oi.readObject();
+            temp = (cRISE)oi.readObject();
             oi.close();
             fi.close();
-            System.out.println("File load successful: " + ((CRISE)temp).treeCount + " trees.");
+            System.out.println("File load successful: " + ((cRISE)temp).treeCount + " trees.");
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("File load: failed.");
         }
@@ -497,23 +496,23 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     public void copyFromSerObject(Object temp){
 
         try{
-            this.baseClassifiers = ((CRISE)temp).baseClassifiers;
-            this.classifier = ((CRISE)temp).classifier;
-            this.data = ((CRISE)temp).data;
-            this.downSample = ((CRISE)temp).downSample;
-            this.fft = ((CRISE)temp).fft;
-            this.intervalsAttIndexes = ((CRISE)temp).intervalsAttIndexes;
-            this.intervalsInfo = ((CRISE)temp).intervalsInfo;
-            this.maxIntervalLength = ((CRISE)temp).maxIntervalLength;
-            this.minIntervalLength = ((CRISE)temp).minIntervalLength;
-            this.numTrees = ((CRISE)temp).numTrees;
-            this.random = ((CRISE)temp).random;
-            this.rawIntervalIndexes = ((CRISE)temp).rawIntervalIndexes;
-            this.serialisePath = ((CRISE)temp).serialisePath;
-            this.stabilise = ((CRISE)temp).stabilise;
-            this.timer = ((CRISE)temp).timer;
-            this.transformType = ((CRISE)temp).transformType;
-            this.treeCount = ((CRISE)temp).treeCount;
+            this.baseClassifiers = ((cRISE)temp).baseClassifiers;
+            this.classifier = ((cRISE)temp).classifier;
+            this.data = ((cRISE)temp).data;
+            this.downSample = ((cRISE)temp).downSample;
+            this.fft = ((cRISE)temp).fft;
+            this.intervalsAttIndexes = ((cRISE)temp).intervalsAttIndexes;
+            this.intervalsInfo = ((cRISE)temp).intervalsInfo;
+            this.maxIntervalLength = ((cRISE)temp).maxIntervalLength;
+            this.minIntervalLength = ((cRISE)temp).minIntervalLength;
+            this.numTrees = ((cRISE)temp).numTrees;
+            this.random = ((cRISE)temp).random;
+            this.rawIntervalIndexes = ((cRISE)temp).rawIntervalIndexes;
+            this.serialisePath = ((cRISE)temp).serialisePath;
+            this.stabilise = ((cRISE)temp).stabilise;
+            this.timer = ((cRISE)temp).timer;
+            this.transformType = ((cRISE)temp).transformType;
+            this.treeCount = ((cRISE)temp).treeCount;
             this.loadedFromFile = true;
             System.out.println("Varible assignment: successful.");
         }catch(Exception ex){
@@ -895,7 +894,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         double acc = 0.0;
         double classification = 0.0;
 
-        CRISE c = new CRISE(0);
+        cRISE c = new cRISE(0);
         //c.setDownSample(true);
         c.setTransformType(TransformType.ACF_PS);
         //c.setStabilise(3);
