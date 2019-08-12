@@ -42,7 +42,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
 /**
- * RBOSS classifier with parameter search and ensembling for univariate and
+ * cBOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
  * If parameters are known, use the nested class BOSSIndividual and directly provide them.
  *
@@ -55,7 +55,7 @@ import static weka.core.Utils.sum;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
+public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;
@@ -116,7 +116,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private boolean memoryContract = false;
     private boolean underMemoryLimit = true;
 
-    //RBOSS CV acc variables, stored as field for checkpointing.
+    //cBOSS CV acc variables, stored as field for checkpointing.
     private int[] classifiersBuilt;
     private int[] lowestAccIdx;
     private double[] lowestAcc;
@@ -142,7 +142,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     protected static final long serialVersionUID = 22554L;
 
-    public RBOSS(){}
+    public cBOSS(){}
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -196,7 +196,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         return sb.toString();
     }
 
-    private void useRecommendedSettingsRBOSS(){
+    private void useRecommendedSettings(){
         ensembleSize = 250;
         maxEnsembleSize = 50;
         randomCVAccEnsemble = true;
@@ -271,9 +271,9 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     //Define how to copy from a loaded object to this object
     @Override
     public void copyFromSerObject(Object obj) throws Exception{
-        if(!(obj instanceof RBOSS))
+        if(!(obj instanceof cBOSS))
             throw new Exception("The SER file is not an instance of BOSS");
-        RBOSS saved = ((RBOSS)obj);
+        cBOSS saved = ((cBOSS)obj);
         System.out.println("Loading BOSS.ser");
 
         //copy over variables from serialised object
@@ -1371,24 +1371,24 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];
 
-        RBOSS c;
+        cBOSS c;
         double accuracy;
 
-        c = new RBOSS();
-        c.useRecommendedSettingsRBOSS();
+        c = new cBOSS();
+        c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1397,8 +1397,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
-        c.useRecommendedSettingsRBOSS();
+        c = new cBOSS();
+        c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1407,8 +1407,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
-        c.useRecommendedSettingsRBOSS();
+        c = new cBOSS();
+        c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
@@ -1416,8 +1416,8 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
-        c.useRecommendedSettingsRBOSS();
+        c = new cBOSS();
+        c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
@@ -1425,7 +1425,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1440,7 +1440,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1455,7 +1455,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1467,7 +1467,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1479,7 +1479,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1490,7 +1490,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1501,7 +1501,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1510,7 +1510,7 @@ public class RBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new RBOSS();
+        c = new cBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);

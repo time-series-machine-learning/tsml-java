@@ -1,20 +1,21 @@
 package weka_extras.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import utilities.ClassifierTools;
+
+import experiments.data.DatasetLoading;
 import weka.core.Instances;
 
+import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the Partitioning Around Medoids (PAM) algorithm with 
  * options for finding a value for k and a refined initial medoid selection.
  * 
- * @author MMiddlehurst
+ * @author Matthew Middlehurst
  */
 public class PAM extends AbstractVectorClusterer{
 
@@ -38,8 +39,7 @@ public class PAM extends AbstractVectorClusterer{
     public PAM(){}
     
     //Used when finding best value for k to avoid recalculating distances
-    private PAM(double[][] distanceMatrix){
-        super();
+    public PAM(double[][] distanceMatrix){
         this.distanceMatrix = distanceMatrix;
         this.hasDistances = true;
     }
@@ -60,9 +60,7 @@ public class PAM extends AbstractVectorClusterer{
         return k;
     }
 
-    public void setK(int k){
-        this.k = k;
-    }
+    public void setNumberOfClusters(int n){ k = n; }
     
     public void setFindBestK(boolean b){
         this.findBestK = b;
@@ -75,25 +73,27 @@ public class PAM extends AbstractVectorClusterer{
     public void setNumSubsamples(int n){
         this.numSubsamples = n;
     }
-    
+
     public void setSeed(int seed){
         this.seed = seed;
     }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
         deleteClassAttribute(data);
 
         numInstances = data.size();
-        cluster = new int[numInstances];
+        assignments = new int[numInstances];
 
         if (numInstances <= k){
+            medoids = new int[numInstances];
+
             for (int i = 0; i < numInstances; i++){
-                cluster[i] = i;
+                assignments[i] = i;
                 medoids[i] = i;
             }
 
@@ -105,7 +105,7 @@ public class PAM extends AbstractVectorClusterer{
 
             for (int i = 0; i < numInstances; i++){
                 for (int n = 0; n < k; n++){
-                    if(n == cluster[i]){
+                    if(n == assignments[i]){
                         clusters[n].add(i);
                         break;
                     }
@@ -115,15 +115,13 @@ public class PAM extends AbstractVectorClusterer{
             return;
         }
 
-
         if (normaliseData){
             normaliseData(data);
         }
-        
-        distFunc.setInstances(data);
+
         
         if (!hasDistances){
-            distanceMatrix = createDistanceMatrix(data);
+            distanceMatrix = createDistanceMatrix(data, distFunc);
         }
         
         if (findBestK){
@@ -147,6 +145,15 @@ public class PAM extends AbstractVectorClusterer{
                 finished = selectMedoids();
             }
         }
+
+        for (int n = 0; n < numInstances; n++){
+            for (int i = 0; i < medoids.length; i++){
+                if(medoids[i] == assignments[n]){
+                    assignments[n] = i;
+                    break;
+                }
+            }
+        }
     }
     
     //Returns the sum of the squared distance from each point to its cluster
@@ -156,6 +163,8 @@ public class PAM extends AbstractVectorClusterer{
             
         for (int i = 0; i < k; i++){
             for(int n = 0; n < clusters[i].size(); n++){
+                if (medoids[i] == clusters[i].get(n)) continue;
+
                 if (medoids[i] > clusters[i].get(n)){
                     distSum += distanceMatrix[medoids[i]][clusters[i].get(n)]
                         * distanceMatrix[medoids[i]][clusters[i].get(n)];
@@ -236,7 +245,7 @@ public class PAM extends AbstractVectorClusterer{
             }
             
             PAM pam = new PAM();
-            pam.setK(k);
+            pam.setNumberOfClusters(k);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(false);
             pam.setSeed(seed);
@@ -268,7 +277,7 @@ public class PAM extends AbstractVectorClusterer{
             }
             
             PAM pam = new PAM(initialMedoids);
-            pam.setK(k);
+            pam.setNumberOfClusters(k);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(false);
             pam.setSeed(seed+i);
@@ -294,18 +303,18 @@ public class PAM extends AbstractVectorClusterer{
                 if (medoids[n] > i){
                     if (distanceMatrix[medoids[n]][i] < minDist){
                         minDist = distanceMatrix[medoids[n]][i];
-                        cluster[i] = medoids[n];
+                        assignments[i] = medoids[n];
                     }
                 }
                 //If a point is a medoid set it to its own cluster.
                 else if (medoids[n] == i){
-                    cluster[i] = medoids[n];
+                    assignments[i] = medoids[n];
                     break;
                 }
                 else {
                     if (distanceMatrix[i][medoids[n]] < minDist){
                         minDist = distanceMatrix[i][medoids[n]];
-                        cluster[i] = medoids[n];
+                        assignments[i] = medoids[n];
                     }
                 }
             }
@@ -319,7 +328,7 @@ public class PAM extends AbstractVectorClusterer{
             clusters[i] = new ArrayList();
             
             for (int n = 0; n < numInstances; n++){
-                if(medoids[i] == cluster[n]){
+                if(medoids[i] == assignments[n]){
                     clusters[i].add(n);
                 }
             }
@@ -339,6 +348,8 @@ public class PAM extends AbstractVectorClusterer{
                 double clusterDist = 0;
                 
                 for (int g = 0; g < clusters[i].size(); g++){
+                    if (clusters[i].get(n) == clusters[i].get(g)) continue;
+
                     if (clusters[i].get(n) > clusters[i].get(g)){
                         clusterDist += distanceMatrix[clusters[i].get(n)][clusters[i].get(g)];
                     }
@@ -376,7 +387,7 @@ public class PAM extends AbstractVectorClusterer{
         //For each value of K.
         for (int i = 2; i <= maxK; i++){
             PAM pam = new PAM(distanceMatrix);
-            pam.setK(i);
+            pam.setNumberOfClusters(i);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(refinedInitialMedoids);
             pam.setSeed(seed);
@@ -396,6 +407,8 @@ public class PAM extends AbstractVectorClusterer{
                     //Find mean distance of the point to other points in its
                     //cluster.
                     for (int j = 0; j < pam.clusters[n].size(); j++){
+                        if (index == pam.clusters[n].get(j)) continue;
+
                         if (index > pam.clusters[n].get(j)){
                             clusterDist += distanceMatrix[index][pam.clusters[n].get(j)];
                         }
@@ -447,7 +460,7 @@ public class PAM extends AbstractVectorClusterer{
             if (totalSilVal > bestSilVal){
                 bestSilVal = totalSilVal;
                 medoids = pam.medoids;
-                cluster = pam.cluster;
+                assignments = pam.assignments;
                 clusters = pam.clusters;
                 k = pam.k;
             }
@@ -480,7 +493,7 @@ public class PAM extends AbstractVectorClusterer{
             pam.buildClusterer(inst);
             
             if(output){
-                System.out.println(names[i] + "c = " + Arrays.toString(pam.cluster));
+                System.out.println(names[i] + "c = " + Arrays.toString(pam.assignments));
                 System.out.println("figure");
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }

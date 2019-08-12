@@ -18,7 +18,7 @@ package timeseriesweka.classifiers;
  * Interface that allows the user to allow a classifier to use multiple threads, how this happens is determined by the
  * classifier. Exact API for this and how threading is handled codebase-wide is still to be decided 02/08/2019
  * 
- * Known classifiers: AbstractEnsemble, BOSS, RBOSS, BOSSIndividual, MultiSamplingEvaluator
+ * Known classifiers: AbstractEnsemble, BOSS, cBOSS, BOSSIndividual, MultiSamplingEvaluator
  * 
  * @author pfm15hbu, James Large (james.large@uea.ac.uk) 
  */
