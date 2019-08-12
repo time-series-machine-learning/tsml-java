@@ -59,7 +59,6 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     
     
     boolean suppressOutput = false;
-    long seed;
     
     // length of a time-series 
     public int seriesLength;
@@ -193,9 +192,10 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     public LearnShapelets() {
     }
     
-    public void setSeed(long seed)
+    @Override
+    public void setSeed(int seed)
     {
-        this.seed = seed;
+        super.setSeed(seed);
         rand = new Random(seed);
     }
 

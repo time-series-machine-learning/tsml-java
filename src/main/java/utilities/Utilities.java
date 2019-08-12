@@ -127,6 +127,16 @@ public class Utilities {
         return maxIndex;
     }
 
+    public static final int minIndex(double[] array) {
+        int minIndex = 0;
+        for (int i = 1; i < array.length; i++) {
+            if(array[i] < array[minIndex]) {
+                minIndex = i;
+            }
+        }
+        return minIndex;
+    }
+
     public static final void zeroOrMore(int i) {
         if(i < 0) {
             throw new IllegalArgumentException("less than zero");

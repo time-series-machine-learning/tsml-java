@@ -45,7 +45,6 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,
         TechnicalInformationHandler, MultiThreadable {
 
-    private int seed = 0;
     private Random rand;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
@@ -127,7 +126,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;
@@ -160,10 +159,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     public void setMaxEnsembleSize(int size) {
         maxEnsembleSize = size;
-    }
-
-    public void setSeed(int i) {
-        seed = i;
     }
 
     @Override
@@ -555,15 +550,15 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];

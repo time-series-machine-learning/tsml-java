@@ -36,15 +36,15 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
 import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.distance_based.FastWWS.FastDTWWrapper;
+import timeseriesweka.classifiers.distance_based.FastDTW;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.distance_based.proximity_forest.ProximityForestWeka;
-import weka_uea.classifiers.ensembles.CAWPE;
-import weka_uea.classifiers.PLSNominalClassifier;
-import weka_uea.classifiers.tuned.TunedXGBoost;
+import timeseriesweka.classifiers.distance_based.ProximityForestWrapper;
+import weka_extras.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.PLSNominalClassifier;
+import weka_extras.classifiers.tuned.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -53,7 +53,7 @@ import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
-import weka_uea.classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
@@ -107,7 +107,7 @@ public class ClassifierLists {
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
             case "ProximityForest":
-                c = new ProximityForestWeka();
+                c = new ProximityForestWrapper();
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -200,18 +200,18 @@ public class ClassifierLists {
             case "HESCA":
             case "CAWPE":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);
+                ((CAWPE)c).setSeed(fold);
                 break;
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setRandSeed(fold);                
-                ((CAWPE)c).setAdvancedCAWPESettings();
+                ((CAWPE)c).setSeed(fold);                
+                ((CAWPE)c).setupAdvancedSettings();
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){
                     String[] classifiers={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
@@ -225,7 +225,7 @@ public class ClassifierLists {
                     String[] cls={"TSF","BOSS","RISE","ST","ElasticEnsemble"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -239,7 +239,7 @@ public class ClassifierLists {
                     String[] cls2={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setRandSeed(fold);  
+                    ((CAWPE)c).setSeed(fold);  
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls2);
@@ -269,7 +269,7 @@ public class ClassifierLists {
 //                ((FastDTW_1NN)c).optimiseWindow(true);
 //                break;
 //            case "FastDTWWrapper":
-                c= new FastDTWWrapper();
+                c= new FastDTW();
                 break;
             case "DD_DTW":
                 c=new DD_DTW();
@@ -311,9 +311,9 @@ public class ClassifierLists {
                 c=new BOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
-            case "RBOSS":
-                c = new RBOSS();
-                ((RBOSS) c).setSeed(fold);
+            case "RBOSS": case "cBOSS":
+                c = new cBOSS();
+                ((cBOSS) c).setSeed(fold);
                 break;
             case "WEASEL":
                 c = new WEASEL();
@@ -372,7 +372,6 @@ public class ClassifierLists {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(setClassifierClassic("RCBOSSMV", 0));
-        System.out.println(setClassifierClassic("RBOSSMV", 0));
+        System.out.println(setClassifierClassic("cBOSS", 0));
     }
 }

@@ -17,7 +17,7 @@ package timeseriesweka.classifiers.distance_based.elastic_ensemble;
 
 import experiments.data.DatasetLoading;
 import utilities.ClassifierTools;
-import weka_uea.classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;

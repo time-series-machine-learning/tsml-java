@@ -138,12 +138,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     /**Can seed for reproducibility*/
     private Random rand;
     private boolean setSeed=false;
-    private int seed=0;
 
    /** If trainAccuracy is required, a cross validation is done in buildClassifier
-    * or a OOB estimate is formed
-   If set, train results are overwritten with each call to buildClassifier
-   File opened on this path.*/     
+    * or a OOB estimate is formed. If set, train results are overwritten with 
+    * each call to buildClassifier File opened on trainCVPath.*/     
     boolean trainAccuracyEst=false;  
     private String trainCVPath="";
     
@@ -604,10 +602,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-        System.out.print("TSF para sets ");
-        for (String str:options)
-             System.out.print(","+str);
-        System.out.print("\n");
+//        System.out.print("TSF para sets ");
+//        for (String str:options)
+//             System.out.print(","+str);
+//        System.out.print("\n");
         String numTreesString=Utils.getOption('T', options);
         if (numTreesString.length() != 0)
             numClassifiers = Integer.parseInt(numTreesString);
@@ -644,10 +642,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
             System.out.println("Unable to read number of intervals, not set");
     }
 
-    @Override
-    public int getSeed() {
-        return seed;
-    }
 
 //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{

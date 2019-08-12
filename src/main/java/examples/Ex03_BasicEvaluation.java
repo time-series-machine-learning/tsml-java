@@ -19,7 +19,7 @@ package examples;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
-import evaluation.evaluators.SamplingEvaluator;
+import evaluation.evaluators.MultiSamplingEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierLists;
@@ -81,7 +81,7 @@ public class Ex03_BasicEvaluation {
         // Let's generate an estimate of our error from the train data through cross validation.
         
         boolean cloneClassifier = false, maintainFoldClassifiers = false;
-        SamplingEvaluator cvEval = new CrossValidationEvaluator(seed, cloneData, setClassMissing, cloneClassifier, maintainFoldClassifiers);
+        MultiSamplingEvaluator cvEval = new CrossValidationEvaluator(seed, cloneData, setClassMissing, cloneClassifier, maintainFoldClassifiers);
         cvEval.setNumFolds(10);
         
         ClassifierResults trainResults = cvEval.evaluate(classifier, train);
