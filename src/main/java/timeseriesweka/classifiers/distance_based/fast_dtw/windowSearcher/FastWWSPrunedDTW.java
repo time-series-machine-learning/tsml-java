@@ -28,7 +28,7 @@ import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequ
 /**
  * Code for the paper "Efficient search of the best warping window for Dynamic Time Warping" published in SDM18
  * 
- * Search for the best warping window using Fast Warping Window Search with PrunedDTW (FastWWS)
+ * Search for the best warping window using Fast Warping Window Search with PrunedDTW (fast_dtw)
  * 
  * We use the original PrunedDTW C++ code from http://sites.labic.icmc.usp.br/prunedDTW/ 
  * and modify it into Java
