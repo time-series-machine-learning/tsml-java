@@ -7,9 +7,15 @@ public abstract class ParameterSpaceFromInstancesBuilder extends ParameterSpaceB
         return instances;
     }
 
-    public void setInstances(final Instances instances) {
+    public ParameterSpaceFromInstancesBuilder setInstances(final Instances instances) {
         this.instances = instances;
+        return this;
     }
 
     private Instances instances;
+
+    public ParameterSpace build(Instances instances) {
+        setInstances(instances);
+        return build();
+    }
 }

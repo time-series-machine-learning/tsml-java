@@ -85,7 +85,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
      * Adder for *array* of strings themselves
      */
     public void addParameter(String paraName, String... paraValues) {
-        parameterLists.put(paraName, Arrays.asList(paraValues));
+        parameterLists.put(paraName, new ArrayList<>(Arrays.asList(paraValues)));
     }
 
     //Adders for the primitive types
@@ -132,7 +132,7 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
     }
 
     public void putParameter(String name, String... values) {
-        putParameter(name, Arrays.asList(values));
+        putParameter(name, new ArrayList<>(Arrays.asList(values)));
     }
 
     @Override

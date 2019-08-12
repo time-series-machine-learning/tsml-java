@@ -5,6 +5,19 @@ import java.util.function.BiFunction;
 
 public class StringUtilities {
 
+    public static String join(String separator, String... parts) {
+        if(parts.length == 0) {
+            return "";
+        }
+        StringBuilder list = new StringBuilder();
+        for(int i = 0; i < parts.length - 1; i++){
+            list.append(parts[i]);
+            list.append(separator);
+        }
+        list.append(parts[parts.length - 1]);
+        return list.toString();
+    }
+
     public static void forEachPair(String[] options, BiConsumer<String, String> function) {
         if(options.length % 2 != 0) {
             throw new IllegalArgumentException("options is not correct length, must be key-value pairs");

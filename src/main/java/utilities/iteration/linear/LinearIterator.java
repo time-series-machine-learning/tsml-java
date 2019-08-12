@@ -16,7 +16,7 @@ public class LinearIterator<A> extends AbstractIterator<A> {
         this.index = index;
     }
 
-    protected int index = 0;
+    protected int index = -1;
 
     public List<A> getValues() {
         return values;
@@ -43,9 +43,6 @@ public class LinearIterator<A> extends AbstractIterator<A> {
     public void remove() {
         values.remove(index);
         index--;
-        if(index < 0) {
-            index = 0;
-        }
     }
 
     @Override
@@ -55,12 +52,13 @@ public class LinearIterator<A> extends AbstractIterator<A> {
 
     @Override
     public boolean hasNext() {
-        return index < values.size();
+        return index + 1 < values.size();
     }
 
     @Override
     public A next() {
-        return values.get(index++);
+        index++;
+        return values.get(index);
     }
 
     @Override

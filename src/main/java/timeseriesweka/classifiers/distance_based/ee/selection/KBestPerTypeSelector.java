@@ -7,12 +7,16 @@ public class KBestPerTypeSelector<A, B> implements Selector<A> {
 
     private Map<B, KBestSelector<A, ?>> map = new HashMap<>();
 
-    public <C extends Comparable<C>> void add(KBestSelector<A, C> selector, B type) {
+    public <C extends Comparable<C>> void addSelector(KBestSelector<A, C> selector, B type) {
         map.put(type, selector);
     }
 
     private Function<B, KBestSelector<A, ?>> selectorFunction = b -> new KBestSelector<>();
     private Function<A, B> typeExtractor;
+
+    public KBestPerTypeSelector() {}
+
+    public KBestPerTypeSelector(Function<A, B> typeExtractor) { setTypeExtractor(typeExtractor); }
 
     @Override
     public void add(A candidate) {

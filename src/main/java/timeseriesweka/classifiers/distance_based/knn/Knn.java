@@ -3,14 +3,12 @@ package timeseriesweka.classifiers.distance_based.knn;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.Seedable;
 import timeseriesweka.classifiers.TestTimeContractable;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
-import utilities.ArrayUtilities;
-import utilities.Copyable;
-import utilities.Options;
-import utilities.StopWatch;
+import utilities.*;
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
@@ -26,7 +24,8 @@ import static experiments.data.DatasetLoading.sampleDataset;
 import static timeseriesweka.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_MEASURE_KEY;
 import static utilities.GenericTools.indexOfMax;
 
-public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable {
+public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable,
+                                                       TrainAccuracyEstimator {
 
     @Override
     public void setTrainSeed(final long seed) {
@@ -49,6 +48,19 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private Long testSeed;
+
+    @Override
+    public void setFindTrainAccuracyEstimate(final boolean estimateTrain) {
+        this.estimateTrain = estimateTrain;
+    }
+
+    @Override
+    public void writeTrainEstimatesToFile(final String path) {
+        trainResultsPath = path;
+    }
+
+    private boolean estimateTrain = true;
+    private String trainResultsPath;
 
     public ClassifierResults getTrainResults() {
         return trainResults;
@@ -178,6 +190,11 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         this.trainSize = trainSize;
     }
 
+    @Override
+    public String getParameters() {
+        return StringUtilities.join(",", getOptions());
+    }
+
     private static class Neighbour {
         private final Instance instance;
         private final double distance;
@@ -289,12 +306,14 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             } else {
                 System.err.println("train seed not set");
             }
-            neighbourhood = new ArrayList<>();
-            cache = new HashMap<>();
-            trainSearchers = new ArrayList<>();
-            this.trainInstances = trainInstances;
-            trainInstanceIterator = buildTrainInstanceIterator();
-            trainEstimatorIterator = buildTrainEstimatorIterator();
+            if(estimateTrain) {
+                neighbourhood = new ArrayList<>();
+                cache = new HashMap<>();
+                trainSearchers = new ArrayList<>();
+                this.trainInstances = trainInstances;
+                trainInstanceIterator = buildTrainInstanceIterator();
+                trainEstimatorIterator = buildTrainEstimatorIterator();
+            }
             trainTimer.lap();
         }
     }
@@ -380,7 +399,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private boolean withinTrainTimeLimit() {
-        return hasTrainTimeLimit() && trainTimer.getTimeNanos() < trainTimeLimitNanos;
+        return !hasTrainTimeLimit() || trainTimer.getTimeNanos() < trainTimeLimitNanos;
     }
 
     private boolean withinTestTimeLimit() {
@@ -391,24 +410,26 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     public void buildClassifier(final Instances trainingSet) throws
             Exception {
         setupTrain(trainingSet);
-        boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
-        boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-        while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
-            boolean choice = hasRemainingTrainSearchers;
-            if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
-                choice = trainRandom.nextBoolean();
+        if(estimateTrain) {
+            boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
+            boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+            while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
+                boolean choice = hasRemainingTrainSearchers;
+                if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
+                    choice = trainRandom.nextBoolean();
+                }
+                if (choice) {
+                    nextTrainSearcher();
+                } else {
+                    nextTrainInstance();
+                }
+                hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
+                hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+                trainTimer.lap();
             }
-            if (choice) {
-                nextTrainSearcher();
-            } else {
-                nextTrainInstance();
-            }
-            hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
-            hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-            trainTimer.lap();
+            buildTrainResults();
         }
-        cache = null;
-        buildTrainResults();
+        trainTimer.lap();
     }
 
     private void buildTrainResults() throws

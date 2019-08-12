@@ -6,6 +6,7 @@ public class RoundRobinIterator<A> extends LinearIterator<A> {
 
     public RoundRobinIterator(final List<A> values) {
         super(values);
+        index = values.size() - 1;
     }
 
     public RoundRobinIterator(RoundRobinIterator<A> other) {
@@ -19,12 +20,14 @@ public class RoundRobinIterator<A> extends LinearIterator<A> {
 
     @Override
     public A next() {
-        return values.get(index = (index + 1) % values.size());
+        index = (index + 1) % values.size();
+        A value = values.get(index);
+        return value;
     }
 
     @Override
     public void remove() {
-        super.remove();
+        values.remove(index);
         if(index < 0) {
             index = values.size() - 1;
         }
