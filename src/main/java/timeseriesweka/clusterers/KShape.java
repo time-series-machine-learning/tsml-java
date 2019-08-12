@@ -46,10 +46,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
     public int numberOfClusters(){
         return k;
     }
-    
-    public void setK(int k){
-        this.k = k;
-    }
+
+    public void setNumberOfClusters(int n){ k = n; }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
@@ -82,19 +80,19 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
         
         int iterations = 0;
-        cluster = new int[data.numInstances()];
+        assignments = new int[data.numInstances()];
 
         //Randomly assign clusters
-        for (int i = 0; i < cluster.length; i++){
-            cluster[i] = (int)Math.ceil(rand.nextDouble()*k)-1;
+        for (int i = 0; i < assignments.length; i++){
+            assignments[i] = (int)Math.ceil(rand.nextDouble()*k)-1;
         }
 
         int[] prevCluster = new int[data.numInstances()];
         prevCluster[0] = -1;
 
         //While clusters change and less than max iterations
-        while (!Arrays.equals(cluster, prevCluster) && iterations < 100){
-            prevCluster = Arrays.copyOf(cluster, cluster.length);
+        while (!Arrays.equals(assignments, prevCluster) && iterations < 100){
+            prevCluster = Arrays.copyOf(assignments, assignments.length);
 
             //Select centroids
             for (int i = 0; i < k; i ++){
@@ -110,7 +108,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
                     if (sbd.dist < minDist){
                         minDist = sbd.dist;
-                        cluster[i] = n;
+                        assignments[i] = n;
                     }
                 }
             }
@@ -128,7 +126,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         for (int i = 0; i < data.numInstances(); i++){
             for (int n = 0; n < k; n++){
-                if(n == cluster[i]){
+                if(n == assignments[i]){
                     clusters[n].add(i);
                     break;
                 }
@@ -148,7 +146,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         //Take subsample of instances in centroids cluster
         for (int i = 0; i < data.numInstances(); i++){
-            if (cluster[i] == centroidNum){
+            if (assignments[i] == centroidNum){
                 //If the centroid sums to 0 add full instance to the subsample
                 if (sumZero){
                     subsample.add(data.get(i));
@@ -210,7 +208,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             //I have no idea why this happens or which datasets this may happen in
             if (Math.round(eigSum) == subsample.get(0).numAttributes() && Math.round(eigSumNeg) == subsample.get(0).numAttributes()){
                 col++;
-                System.err.println("Possible eigenvalue error");
+                //System.err.println("Possible eigenvalue error");
             }
             else{
                 break;
@@ -266,9 +264,9 @@ public class KShape extends AbstractTimeSeriesClusterer {
         k.buildClusterer(inst);
 
         System.out.println(k.clusters.length);
-        System.out.println(Arrays.toString(k.cluster));
+        System.out.println(Arrays.toString(k.assignments));
         System.out.println(Arrays.toString(k.clusters));
-        System.out.println(randIndex(k.cluster, inst));
+        System.out.println(randIndex(k.assignments, inst));
     }
 
     //Class for calculating Shape Based Distance

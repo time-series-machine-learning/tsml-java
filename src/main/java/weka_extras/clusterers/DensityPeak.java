@@ -112,9 +112,9 @@ public class DensityPeak extends AbstractVectorClusterer {
             clusters[i] = new ArrayList();
             
             for (int n = 0; n < numInstances; n++){
-                if(clusterCenters.get(i) == cluster[n]){
+                if(clusterCenters.get(i) == assignments[n]){
                     clusters[i].add(n);
-                    cluster[n] = i;
+                    assignments[n] = i;
                 }
             }
         }
@@ -219,7 +219,7 @@ public class DensityPeak extends AbstractVectorClusterer {
     
     private void findClusterCentres(){
         clusterCenters = new ArrayList<>();
-        cluster = new int[numInstances];
+        assignments = new int[numInstances];
         
         //Get the cluster center estimates.
         double[] estimates = new double[numInstances];
@@ -268,14 +268,14 @@ public class DensityPeak extends AbstractVectorClusterer {
             //points as cluster centers
             if (threshholdFound || i == numInstances-1){
                 clusterCenters.add(estIndexes[i]);
-                cluster[estIndexes[i]] = estIndexes[i];
+                assignments[estIndexes[i]] = estIndexes[i];
             }
             else if (clusterCenterCutoff < estimates[estIndexes[i+1]]){
                 threshholdFound = true;
-                cluster[estIndexes[i]] = -1;
+                assignments[estIndexes[i]] = -1;
             }
             else{
-                cluster[estIndexes[i]] = -1;
+                assignments[estIndexes[i]] = -1;
             }
         }
     }
@@ -285,7 +285,7 @@ public class DensityPeak extends AbstractVectorClusterer {
     private void assignClusters(){
         for (int i = 0; i < numInstances; i++){
             if (!clusterCenters.contains(sortedDensitiesIndex[i])){
-                cluster[sortedDensitiesIndex[i]] = cluster[nearestNeighbours[sortedDensitiesIndex[i]]];
+                assignments[sortedDensitiesIndex[i]] = assignments[nearestNeighbours[sortedDensitiesIndex[i]]];
             }
         }
         
@@ -306,7 +306,7 @@ public class DensityPeak extends AbstractVectorClusterer {
             
         for (int i = 0; i < numInstances; i++){
             if (localDensities[i] < outlierCutoff){
-                cluster[i] = -1;
+                assignments[i] = -1;
             }
         }
     }
@@ -320,23 +320,23 @@ public class DensityPeak extends AbstractVectorClusterer {
             
             for (int i = 0; i < numInstances; i++){
                 for (int n = 0; n < i; n++){
-                    if (cluster[i] != cluster[n] && distanceMatrix[i][n] <= distC){
+                    if (assignments[i] != assignments[n] && distanceMatrix[i][n] <= distC){
                         double ldAvg = (localDensities[i] + localDensities[n])/2;
                     
-                        if (ldAvg > border[cluster[i]]) {
-                            border[cluster[i]] = ldAvg;
+                        if (ldAvg > border[assignments[i]]) {
+                            border[assignments[i]] = ldAvg;
                         }
                         
-                        if (ldAvg > border[cluster[n]]){ 
-                            border[cluster[n]] = ldAvg;
+                        if (ldAvg > border[assignments[n]]){
+                            border[assignments[n]] = ldAvg;
                         }
                     }
                 }
             } 
             
             for (int i = 0; i < numInstances; i++){
-                if (localDensities[i] < border[cluster[i]]){
-                    cluster[i] = -1;
+                if (localDensities[i] < border[assignments[i]]){
+                    assignments[i] = -1;
                 }
             }
         }
@@ -372,7 +372,7 @@ public class DensityPeak extends AbstractVectorClusterer {
             dp.buildClusterer(inst);
             
             if(output){
-                System.out.println(names[i] + "c = " + Arrays.toString(dp.cluster));
+                System.out.println(names[i] + "c = " + Arrays.toString(dp.assignments));
                 System.out.println("figure");
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }

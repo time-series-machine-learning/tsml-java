@@ -34,9 +34,9 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
     public DictClusterer(){}
 
     @Override
-    public int numberOfClusters() throws Exception {
-        return k;
-    }
+    public int numberOfClusters() { return k; }
+
+    public void setNumberOfClusters(int n){ k = n; }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
@@ -67,10 +67,10 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
 
             double[][] matrix = matrixFromBags(data, boss);
             PAM pam = new PAM(matrix);
-            pam.setK(k);
+            pam.setNumberOfClusters(k);
             pam.setSeed(seed+i);
             pam.buildClusterer(data);
-            paramClusters[i] = pam.getCluster();
+            paramClusters[i] = pam.getAssignments();
 
             double randIndex = 1;
 
@@ -92,8 +92,8 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
             }
         }
 
-        cluster = paramClusters[minIndex];
-        System.out.println(Arrays.toString(cluster));
+        assignments = paramClusters[minIndex];
+        System.out.println(Arrays.toString(assignments));
         clusters = new ArrayList[k];
 
         for (int i = 0; i < k; i++){
@@ -102,7 +102,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
 
         for (int i = 0; i < data.numInstances(); i++){
             for (int n = 0; n < k; n++){
-                if(n == cluster[i]){
+                if(n == assignments[i]){
                     clusters[n].add(i);
                     break;
                 }
@@ -201,6 +201,6 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
 
         System.out.println(k.clusters.length);
         System.out.println(Arrays.toString(k.clusters));
-        System.out.println(randIndex(k.cluster, inst));
+        System.out.println(randIndex(k.assignments, inst));
     }
 }

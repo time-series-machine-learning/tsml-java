@@ -78,7 +78,7 @@ public class CAST extends AbstractVectorClusterer {
 
         //Create and store an ArrayList for each cluster containing indexes of
         //points inside the cluster
-        cluster = new int[data.size()];
+        assignments = new int[data.size()];
         clusters = new ArrayList[subclusters.size()];
 
         for (int i = 0; i < subclusters.size(); i++){
@@ -86,7 +86,7 @@ public class CAST extends AbstractVectorClusterer {
 
             for (int n = 0; n < subclusters.get(i).size(); n++){
                 clusters[i].add(subclusters.get(i).get(n));
-                cluster[subclusters.get(i).get(n)] = i;
+                assignments[subclusters.get(i).get(n)] = i;
             }
         }
     }
@@ -273,7 +273,7 @@ public class CAST extends AbstractVectorClusterer {
             cast.buildClusterer(inst);
 
             if(output){
-                System.out.println(names[i] + "c = " + Arrays.toString(cast.cluster));
+                System.out.println(names[i] + "c = " + Arrays.toString(cast.assignments));
                 System.out.println("figure");
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }

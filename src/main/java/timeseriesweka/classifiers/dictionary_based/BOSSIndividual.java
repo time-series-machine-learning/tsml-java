@@ -4,6 +4,7 @@ import timeseriesweka.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.UnassignedClassException;
 
 import java.io.Serializable;
 import java.util.*;
@@ -34,8 +35,6 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
     //breakpoints to be found by MCB
     protected double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
-
-    protected int numClasses;
 
     protected double inverseSqrtWindowSize;
     protected int windowSize;
@@ -101,7 +100,6 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         this.rand = boss.rand;
 
         this.bags = new ArrayList<>(boss.bags.size());
-        this.numClasses = boss.numClasses;
     }
 
     @Override
@@ -506,14 +504,13 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        if (data.classIndex() != data.numAttributes()-1)
+        if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
             throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
         SFAwords = new BitWord[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
-        numClasses = data.numClasses();
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -532,7 +529,12 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
                 SFAwords[inst] = createSFAwords(data.get(inst));
 
                 Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
-                bag.setClassVal(data.get(inst).classValue());
+                try {
+                    bag.setClassVal(data.get(inst).classValue());
+                }
+                catch(UnassignedClassException e){
+                    bag.setClassVal(-1);
+                }
                 bags.add(bag);
             }
         }
@@ -690,7 +692,12 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
             SFAwords[i] = createSFAwords(inst);
 
             Bag bag = createBagFromWords(wordLength, SFAwords[i]);
-            bag.setClassVal(inst.classValue());
+            try {
+                bag.setClassVal(inst.classValue());
+            }
+            catch(UnassignedClassException e){
+                bag.setClassVal(-1);
+            }
 
             return bag;
         }

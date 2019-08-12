@@ -37,6 +37,8 @@ public class TTC extends AbstractTimeSeriesClusterer {
     @Override
     public int numberOfClusters() throws Exception { return k; }
 
+    public void setNumberOfClusters(int n){ k = n; }
+
     public void setSeed(int seed){ this.seed = seed; }
 
     @Override
@@ -81,12 +83,12 @@ public class TTC extends AbstractTimeSeriesClusterer {
         //Use PAM using DTW distance to cluster discretised data
         PAM pam = new PAM();
         pam.setDistanceFunction(new DTW());
-        pam.setK(k);
+        pam.setNumberOfClusters(k);
         pam.setSeed(seed);
         pam.buildClusterer(cl);
 
         ArrayList<Integer>[] ptClusters = pam.getClusters();
-        cluster = new int[data.size()];
+        assignments = new int[data.size()];
 
         //Assign each instance to the cluster assigned it its subcluster using PAM
         for (int i = 1; i < k; i++){
@@ -94,7 +96,7 @@ public class TTC extends AbstractTimeSeriesClusterer {
                 ArrayList<Integer> subcluster = subclusters[ptClusters[i].get(n)];
 
                 for (int g = 0; g < subcluster.size(); g++){
-                    cluster[subcluster.get(g)] = i;
+                    assignments[subcluster.get(g)] = i;
                 }
             }
         }
@@ -107,7 +109,7 @@ public class TTC extends AbstractTimeSeriesClusterer {
 
         for (int i = 0; i < data.size(); i++){
             for (int n = 0; n < k; n++){
-                if(n == cluster[i]){
+                if(n == assignments[i]){
                     clusters[n].add(i);
                     break;
                 }
@@ -131,6 +133,6 @@ public class TTC extends AbstractTimeSeriesClusterer {
 
         System.out.println(k.clusters.length);
         System.out.println(Arrays.toString(k.clusters));
-        System.out.println(randIndex(k.cluster, inst));
+        System.out.println(randIndex(k.assignments, inst));
     }
 }

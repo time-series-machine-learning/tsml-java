@@ -14,6 +14,7 @@ import weka.core.Instances;
 import java.util.ArrayList;
 
 /**
+ * Abstract class for vector based clusterers.
  *
  * @author pfm15hbu
  */
@@ -23,15 +24,15 @@ public abstract class AbstractVectorClusterer extends AbstractClusterer{
     protected boolean normaliseData = true;
     protected boolean copyInstances = true;
 
-    protected int[] cluster;
+    protected int[] assignments;
     protected ArrayList<Integer>[] clusters;
     
     //mean and stdev of each attribute for normalisation.
     protected double[] attributeMeans;
     protected double[] attributeStdDevs;
 
-    public int[] getCluster(){
-        return cluster;
+    public int[] getAssignments(){
+        return assignments;
     }
 
     public ArrayList<Integer>[] getClusters(){

@@ -24,7 +24,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     //2012 IEEE 12th International Conference on Data Mining. IEEE, 2012.
 
     private int k = 2;
-    int numFolds = 20;
+    private int numFolds = 20;
     private int seed = Integer.MIN_VALUE;
 
     private ArrayList<UShapelet> shapelets;
@@ -36,6 +36,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
     public int numberOfClusters(){
         return k;
     }
+
+    public void setNumberOfClusters(int n){ k = n; }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
@@ -51,6 +53,10 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     private void extractUShapelets(Instances data){
         int[] shapeletLengths = {25, 50};
+
+        if (data.numAttributes() < 50){
+            shapeletLengths = new int[]{data.numAttributes()/2};
+        }
 
         shapelets = new ArrayList();
         numInstances = data.size();
@@ -152,7 +158,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             //Build multiple kmeans clusterers using the one with the smallest squared distance
             for (int n = 0; n < numFolds; n++){
                 KMeans kmeans = new KMeans();
-                kmeans.setK(k);
+                kmeans.setNumberOfClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
                 kmeans.setRefinedInitialMedoids(false);
@@ -163,7 +169,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
                 if (dist < minDist){
                     minDist = dist;
-                    foldClusters[i] = kmeans.getCluster();
+                    foldClusters[i] = kmeans.getAssignments();
                 }
             }
 
@@ -181,7 +187,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             }
         }
 
-        cluster = foldClusters[minIndex];
+        assignments = foldClusters[minIndex];
 
         clusters = new ArrayList[k];
 
@@ -191,7 +197,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
         for (int i = 0; i < numInstances; i++){
             for (int n = 0; n < k; n++){
-                if(n == cluster[i]){
+                if(n == assignments[i]){
                     clusters[n].add(i);
                     break;
                 }
@@ -224,10 +230,8 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
-//        Instances inst = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TRAIN.arff");
-//        Instances inst2 = ClassifierTools.loadData("Z:/Data/TSCProblems2018/" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -237,9 +241,9 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
         us.buildClusterer(inst);
 
         System.out.println(us.clusters.length);
-        System.out.println(Arrays.toString(us.cluster));
+        System.out.println(Arrays.toString(us.assignments));
         System.out.println(Arrays.toString(us.clusters));
-        System.out.println(randIndex(us.cluster, inst));
+        System.out.println(randIndex(us.assignments, inst));
     }
 
     //Class for a single Unsupervised Shapelet with methods to calculate distance to time series and the gap value

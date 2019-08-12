@@ -311,9 +311,9 @@ public class ClassifierLists {
                 c=new BOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
-            case "RBOSS":
-                c = new RBOSS();
-                ((RBOSS) c).setSeed(fold);
+            case "RBOSS": case "cBOSS":
+                c = new cBOSS();
+                ((cBOSS) c).setSeed(fold);
                 break;
             case "WEASEL":
                 c = new WEASEL();
@@ -372,7 +372,6 @@ public class ClassifierLists {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(setClassifierClassic("RCBOSSMV", 0));
-        System.out.println(setClassifierClassic("RBOSSMV", 0));
+        System.out.println(setClassifierClassic("cBOSS", 0));
     }
 }
