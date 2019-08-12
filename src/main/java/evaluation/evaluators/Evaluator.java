@@ -43,7 +43,11 @@ public abstract class Evaluator {
      * times, and the latter expects the class value to still be there (to check for correct predictions, e.g)
      */
     boolean setClassMissing;
-    
+
+    public Evaluator() {
+        this(-1, false, false);
+    }
+
     public Evaluator(int seed, boolean cloneData, boolean setClassMissing) {
         this.seed = seed;
         this.cloneData = cloneData;

@@ -14,6 +14,7 @@ import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.unsupervised.attribute.RandomProjection;
 
 import java.io.Serializable;
 import java.util.*;
@@ -27,9 +28,32 @@ import static utilities.GenericTools.indexOfMax;
 public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable,
                                                        TrainAccuracyEstimator {
 
-    @Override
-    public void setTrainSeed(final long seed) {
-        trainSeed = seed;
+    private static final String K_KEY = "k";
+    private Random trainRandom = new Random();
+    private Long testSeed;
+    private Random testRandom = new Random();
+    private boolean estimateTrain = true;
+    private String trainResultsPath;
+    private boolean resetTrain = true;
+    private boolean resetTest = true;
+    private int k = 1;
+    private DistanceMeasure distanceMeasure = new Dtw();
+    private long trainTimeLimitNanos = -1;
+    private long testTimeLimitNanos = -1;
+    private Long trainSeed = null;
+    private AbstractIterator<Instance> trainInstanceIterator;
+    private AbstractIterator<Instance> trainEstimatorIterator;
+    private Instances trainInstances;
+    private Map<Instance, Map<Instance, Double>> cache;
+    private List<Searcher> trainSearchers;
+    private List<Instance> neighbourhood;
+    private StopWatch trainTimer = new StopWatch();
+    private StopWatch testTimer = new StopWatch();
+    private int trainSize = -1;
+    private ClassifierResults trainResults;
+
+    public Knn() {
+
     }
 
     @Override
@@ -47,7 +71,194 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         return testSeed;
     }
 
-    private Long testSeed;
+    @Override
+    public void setTrainSeed(final long seed) {
+        trainSeed = seed;
+    }
+
+    public static void main(String[] args) throws
+            Exception {
+        int seed = 0;
+        Instances[] dataset = sampleDataset("/home/vte14wgu/Projects/datasets/Univariate2018/", "GunPoint", seed);
+        Instances train = dataset[0];
+        Instances test = dataset[1];
+        Knn knn = new Knn();
+        knn.setTrainSeed(seed);
+        knn.setTestSeed(seed);
+        knn.buildClassifier(train);
+        ClassifierResults trainResults = knn.getTrainResults();
+        System.out.println("train acc: " + trainResults.getAcc());
+        System.out.println("-----");
+        ClassifierResults testResults = new ClassifierResults();
+        for (Instance testInstance : test) {
+            long time = System.nanoTime();
+            double[] distribution = knn.distributionForInstance(testInstance);
+            double prediction = indexOfMax(distribution);
+            time = System.nanoTime() - time;
+            testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
+        }
+        System.out.println(testResults.getAcc());
+    }    @Override
+    public void setOptions(String[] options) throws Exception {
+        Options.super.setOptions(options);
+        distanceMeasure.setOptions(options);
+    }
+
+    @Override
+    public void buildClassifier(final Instances trainingSet) throws
+            Exception {
+        setupTrain(trainingSet);
+        if(estimateTrain) {
+            boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
+            boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+            while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
+                boolean choice = hasRemainingTrainSearchers;
+                if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
+                    choice = trainRandom.nextBoolean();
+                }
+                if (choice) {
+                    nextTrainSearcher();
+                } else {
+                    nextTrainInstance();
+                }
+                hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
+                hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+                trainTimer.lap();
+            }
+            buildTrainResults();
+        }
+        trainTimer.lap();
+        if(estimateTrain && trainResultsPath != null) {
+            trainResults.writeFullResultsToFile(trainResultsPath);
+        }
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance testInstance) throws
+            Exception {
+//        testTimer.reset(); // todo
+        setupTest();
+//        resetTest = true;
+        Searcher searcher = new Searcher(testInstance, false);
+        searcher.addAll(trainInstances);
+        return searcher.predict();
+    }    @Override
+    public String[] getOptions() {
+        return ArrayUtilities.concat(distanceMeasure.getOptions(), new String[]{
+                DISTANCE_MEASURE_KEY,
+                String.valueOf(distanceMeasure),
+                K_KEY,
+                String.valueOf(k),
+                TRAIN_TIME_CONTRACT_KEY,
+                String.valueOf(trainTimeLimitNanos),
+                TEST_TIME_CONTRACT_KEY,
+                String.valueOf(testTimeLimitNanos),
+        });
+    }
+
+    @Override
+    public Enumeration listOptions() {
+        throw new UnsupportedOperationException();
+    }
+
+    private void setupTrain(Instances trainInstances) {
+        if (resetTrain) {
+            trainTimer.reset();
+            trainTimer.start();
+            if (trainSeed != null) {
+                trainRandom.setSeed(trainSeed);
+            } else {
+                System.err.println("train seed not set");
+            }
+            if(estimateTrain) {
+                neighbourhood = new ArrayList<>();
+                cache = new HashMap<>();
+                trainSearchers = new ArrayList<>();
+                this.trainInstances = trainInstances;
+                trainInstanceIterator = buildTrainInstanceIterator();
+                trainEstimatorIterator = buildTrainEstimatorIterator();
+            }
+            trainTimer.lap();
+        }
+    }
+
+    private boolean hasRemainingTrainNeighbours() {
+        return trainInstanceIterator.hasNext();
+    }
+
+    private boolean hasRemainingTrainSearchers() {
+        return trainEstimatorIterator.hasNext();
+    }
+
+    private boolean withinTrainTimeLimit() {
+        return !hasTrainTimeLimit() || trainTimer.getTimeNanos() < trainTimeLimitNanos;
+    }
+
+    private void nextTrainSearcher() {
+        Instance trainInstance = trainEstimatorIterator.next();
+        trainEstimatorIterator.remove();
+        Searcher searcher = new Searcher(trainInstance, true);
+        searcher.addAll(neighbourhood);
+        trainSearchers.add(searcher);
+    }
+
+    private void nextTrainInstance() {
+        Instance trainInstance = trainInstanceIterator.next();
+        trainInstanceIterator.remove();
+        for (Searcher trainSearcher : trainSearchers) {
+            trainSearcher.add(trainInstance);
+        }
+        neighbourhood.add(trainInstance);
+    }
+
+    private void buildTrainResults() throws
+            Exception {
+        if(estimateTrain) {
+            trainResults = new ClassifierResults();
+            for (Searcher searcher : trainSearchers) {
+                long time = System.nanoTime();
+                double[] distribution = searcher.predict();
+                ArrayUtilities.normaliseInPlace(distribution);
+                int prediction = ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), trainRandom);
+                time = System.nanoTime() - time;
+                trainResults.addPrediction(searcher.getTarget().classValue(),
+                                           distribution,
+                                           prediction,
+                                           time,
+                                           null);
+            }
+//        setClassifierResultsMetaInfo(trainResults);
+        }
+    }
+
+    private void setupTest() {
+        if (resetTest) {
+            resetTest = false;
+            if (testSeed != null) {
+                testRandom.setSeed(testSeed);
+            } else {
+                System.err.println("test seed not set");
+            }
+        }
+    }
+
+    private AbstractIterator<Instance> buildTrainInstanceIterator() {
+        RandomIterator<Instance> iterator = new RandomIterator<>();
+        iterator.setSeed(trainRandom.nextLong());
+        iterator.addAll(trainInstances);
+        return iterator;
+    }
+
+    private AbstractIterator<Instance> buildTrainEstimatorIterator() {
+        RandomIterator<Instance> iterator = new RandomIterator<>();
+        iterator.setSeed(trainRandom.nextLong());
+        iterator.addAll(trainInstances);
+        return iterator;
+    }
+
+    public boolean hasTrainTimeLimit() {
+        return trainTimeLimitNanos >= 0;
+    }
 
     @Override
     public void setFindTrainAccuracyEstimate(final boolean estimateTrain) {
@@ -59,17 +270,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         trainResultsPath = path;
     }
 
-    private boolean estimateTrain = true;
-    private String trainResultsPath;
-
     public ClassifierResults getTrainResults() {
         return trainResults;
     }
-
-    private static final String K_KEY = "k";
-    private boolean resetTrain = true;
-    private boolean resetTest = true;
-    private int k = 1;
 
     public boolean isResetTrain() {
         return resetTrain;
@@ -86,8 +289,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     public void setK(final int k) {
         this.k = k;
     }
-
-    private DistanceMeasure distanceMeasure = new Dtw();
 
     public DistanceMeasure getDistanceMeasure() {
         return distanceMeasure;
@@ -130,31 +331,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     @Override
-    public void setOptions(String[] options) throws Exception {
-        Options.super.setOptions(options);
-        distanceMeasure.setOptions(options);
-    }
-
-    @Override
-    public Enumeration listOptions() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String[] getOptions() {
-        return ArrayUtilities.concat(distanceMeasure.getOptions(), new String[]{
-                DISTANCE_MEASURE_KEY,
-                String.valueOf(distanceMeasure),
-                K_KEY,
-                String.valueOf(k),
-                TRAIN_TIME_CONTRACT_KEY,
-                String.valueOf(trainTimeLimitNanos),
-                TEST_TIME_CONTRACT_KEY,
-                String.valueOf(testTimeLimitNanos),
-        });
-    }
-
-    @Override
     public void setTestTimeLimit(TimeUnit time, long amount) {
         testTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
     }
@@ -164,22 +340,38 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         trainTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
     }
 
-    public Knn() {
-
-    }
-
-    public Knn(Knn other) throws Exception {
-        copyFrom(other);
+    @Override
+    public Knn shallowCopy() throws Exception {
+        Knn knn = new Knn();
+        knn.shallowCopyFrom(this);
+        return knn;
     }
 
     @Override
-    public Object copy() throws Exception {
-        throw new UnsupportedOperationException(); // todo
-    }
-
-    @Override
-    public void copyFrom(Object object) throws Exception {
-        throw new UnsupportedOperationException(); // todo
+    public void shallowCopyFrom(Object object) throws Exception {
+        Knn other = (Knn) object;
+        trainRandom = other.trainRandom;
+        testRandom = other.testRandom;
+        testSeed = other.testSeed;
+        trainSeed = other.trainSeed;
+        estimateTrain = other.estimateTrain;
+        trainResultsPath = other.trainResultsPath;
+        resetTrain = other.resetTrain;
+        resetTest = other.resetTest;
+        k = other.k;
+        distanceMeasure = other.distanceMeasure;
+        trainTimeLimitNanos = other.trainTimeLimitNanos;
+        testTimeLimitNanos = other.testTimeLimitNanos;
+        trainInstanceIterator = other.trainInstanceIterator;
+        trainEstimatorIterator = other.trainEstimatorIterator;
+        trainInstances = other.trainInstances;
+        cache = other.cache;
+        trainSearchers = other.trainSearchers;
+        neighbourhood = other.neighbourhood;
+        trainTimer = other.trainTimer;
+        testTimer = other.testTimer;
+        trainSize = other.trainSize;
+        trainResults = other.trainResults;
     }
 
     public int getTrainSize() {
@@ -193,6 +385,46 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public String getParameters() {
         return StringUtilities.join(",", getOptions());
+    }
+
+    private double findDistance(Instance a, Instance b, Supplier<Double> supplier) {
+        Double distance = findAndRemoveCachedDistance(a, b);
+        if (distance == null) {
+            distance = supplier.get();
+            cache.computeIfAbsent(a, x -> new HashMap<>()).put(b, distance);
+        }
+        return distance;
+    }
+
+    private Double findAndRemoveCachedDistance(Instance a, Instance b) {
+        Double cachedDistance = findAndRemoveCachedDistanceOrdered(a, b);
+        if (cachedDistance == null) {
+            cachedDistance = findAndRemoveCachedDistanceOrdered(b, a);
+        }
+        return cachedDistance;
+    }
+
+    private Double findAndRemoveCachedDistanceOrdered(Instance a, Instance b) {
+        Map<Instance, Double> subCache = cache.get(a);
+        if (subCache != null) {
+            Double distance = subCache.get(b);
+            if (distance != null) {
+                subCache.remove(b);
+                if (subCache.isEmpty()) {
+                    cache.remove(a);
+                }
+            }
+            return distance;
+        }
+        return null;
+    }
+
+    private boolean withinTestTimeLimit() {
+        return hasTestTimeLimit() && testTimer.getTimeNanos() < testTimeLimitNanos;
+    }
+
+    public boolean hasTestTimeLimit() {
+        return testTimeLimitNanos >= 0;
     }
 
     private static class Neighbour {
@@ -218,13 +450,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         private final boolean train;
         private final KBestSelector<Neighbour, Double> selector;
 
-        public Instance getTarget() {
-            return target;
-        }
-
         private Searcher(final Instance target, boolean train) {
             this.target = target;
-            selector = new KBestSelector<>();
+            selector = new KBestSelector<>(((Comparator<Double>) Double::compare).reversed());
             selector.setLimit(k);
             this.train = train;
             if (train) {
@@ -235,22 +463,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             selector.setExtractor(Neighbour::getDistance);
         }
 
-        public void add(Instance instance) {
-            if (!instance.equals(target)) {
-                distanceMeasure.setCandidate(instance);
-                distanceMeasure.setTarget(target);
-                Double max = selector.getWorstValue();
-                if (max != null) {
-                    distanceMeasure.setLimit(max);
-                }
-                double distance;
-                if (train) {
-                    distance = findDistance(instance, target, distanceMeasure::distance);
-                } else {
-                    distance = distanceMeasure.distance();
-                }
-                addUnchecked(instance, distance);
-            }
+        public Instance getTarget() {
+            return target;
         }
 
         public void add(Instance instance, double distance) {
@@ -280,222 +494,35 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 add(instance);
             }
         }
-    }
 
-    private long trainTimeLimitNanos = -1;
-    private long testTimeLimitNanos = -1;
-    private Long trainSeed = null;
-    private AbstractIterator<Instance> trainInstanceIterator;
-    private AbstractIterator<Instance> trainEstimatorIterator;
-    private Instances trainInstances;
-    private Map<Instance, Map<Instance, Double>> cache;
-    private List<Searcher> trainSearchers;
-    private List<Instance> neighbourhood;
-    private final Random trainRandom = new Random();
-    private final Random testRandom = new Random();
-    private StopWatch trainTimer = new StopWatch();
-    private StopWatch testTimer = new StopWatch();
-    private int trainSize = -1;
-
-    private void setupTrain(Instances trainInstances) {
-        if (resetTrain) {
-            trainTimer.reset();
-            trainTimer.start();
-            if (trainSeed != null) {
-                trainRandom.setSeed(trainSeed);
-            } else {
-                System.err.println("train seed not set");
-            }
-            if(estimateTrain) {
-                neighbourhood = new ArrayList<>();
-                cache = new HashMap<>();
-                trainSearchers = new ArrayList<>();
-                this.trainInstances = trainInstances;
-                trainInstanceIterator = buildTrainInstanceIterator();
-                trainEstimatorIterator = buildTrainEstimatorIterator();
-            }
-            trainTimer.lap();
-        }
-    }
-
-    private AbstractIterator<Instance> buildTrainInstanceIterator() {
-        RandomIterator<Instance> iterator = new RandomIterator<>();
-        iterator.setSeed(trainRandom.nextLong());
-        iterator.addAll(trainInstances);
-        return iterator;
-    }
-
-    private AbstractIterator<Instance> buildTrainEstimatorIterator() {
-        RandomIterator<Instance> iterator = new RandomIterator<>();
-        iterator.setSeed(trainRandom.nextLong());
-        iterator.addAll(trainInstances);
-        return iterator;
-    }
-
-
-    private Double findAndRemoveCachedDistanceOrdered(Instance a, Instance b) {
-        Map<Instance, Double> subCache = cache.get(a);
-        if (subCache != null) {
-            Double distance = subCache.get(b);
-            if (distance != null) {
-                subCache.remove(b);
-                if (subCache.isEmpty()) {
-                    cache.remove(a);
+        public void add(Instance instance) {
+            if (!instance.equals(target)) {
+                distanceMeasure.setCandidate(instance);
+                distanceMeasure.setTarget(target);
+                Double max = selector.getWorstValue();
+                if (max != null) {
+                    distanceMeasure.setLimit(max);
                 }
-            }
-            return distance;
-        }
-        return null;
-    }
-
-    private Double findAndRemoveCachedDistance(Instance a, Instance b) {
-        Double cachedDistance = findAndRemoveCachedDistanceOrdered(a, b);
-        if (cachedDistance == null) {
-            cachedDistance = findAndRemoveCachedDistanceOrdered(b, a);
-        }
-        return cachedDistance;
-    }
-
-    private double findDistance(Instance a, Instance b, Supplier<Double> supplier) {
-        Double distance = findAndRemoveCachedDistance(a, b);
-        if (distance == null) {
-            distance = supplier.get();
-            cache.computeIfAbsent(a, x -> new HashMap<>()).put(b, distance);
-        }
-        return distance;
-    }
-
-    private void nextTrainInstance() {
-        Instance trainInstance = trainInstanceIterator.next();
-        trainInstanceIterator.remove();
-        for (Searcher trainSearcher : trainSearchers) {
-            trainSearcher.add(trainInstance);
-        }
-        neighbourhood.add(trainInstance);
-    }
-
-    private void nextTrainSearcher() {
-        Instance trainInstance = trainEstimatorIterator.next();
-        trainEstimatorIterator.remove();
-        Searcher searcher = new Searcher(trainInstance, true);
-        searcher.addAll(neighbourhood);
-        trainSearchers.add(searcher);
-    }
-
-    private boolean hasRemainingTrainSearchers() {
-        return trainEstimatorIterator.hasNext();
-    }
-
-    private boolean hasRemainingTrainNeighbours() {
-        return trainInstanceIterator.hasNext();
-    }
-
-    public boolean hasTrainTimeLimit() {
-        return trainTimeLimitNanos >= 0;
-    }
-
-    public boolean hasTestTimeLimit() {
-        return testTimeLimitNanos >= 0;
-    }
-
-    private boolean withinTrainTimeLimit() {
-        return !hasTrainTimeLimit() || trainTimer.getTimeNanos() < trainTimeLimitNanos;
-    }
-
-    private boolean withinTestTimeLimit() {
-        return hasTestTimeLimit() && testTimer.getTimeNanos() < testTimeLimitNanos;
-    }
-
-    @Override
-    public void buildClassifier(final Instances trainingSet) throws
-            Exception {
-        setupTrain(trainingSet);
-        if(estimateTrain) {
-            boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
-            boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-            while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
-                boolean choice = hasRemainingTrainSearchers;
-                if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
-                    choice = trainRandom.nextBoolean();
-                }
-                if (choice) {
-                    nextTrainSearcher();
+                double distance;
+                if (train) {
+                    distance = findDistance(instance, target, distanceMeasure::distance);
                 } else {
-                    nextTrainInstance();
+                    distance = distanceMeasure.distance();
                 }
-                hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
-                hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-                trainTimer.lap();
-            }
-            buildTrainResults();
-        }
-        trainTimer.lap();
-    }
-
-    private void buildTrainResults() throws
-            Exception {
-        trainResults = new ClassifierResults();
-        trainResults = new ClassifierResults();
-        for (Searcher searcher : trainSearchers) {
-            long time = System.nanoTime();
-            double[] distribution = searcher.predict();
-            ArrayUtilities.normaliseInPlace(distribution);
-            int prediction = ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), trainRandom);
-            time = System.nanoTime() - time;
-            trainResults.addPrediction(searcher.getTarget().classValue(),
-                    distribution,
-                    prediction,
-                    time,
-                    null);
-        }
-//        setClassifierResultsMetaInfo(trainResults);
-    }
-
-    private ClassifierResults trainResults;
-
-    private void setupTest() {
-        if (resetTest) {
-            resetTest = false;
-            if (testSeed != null) {
-                testRandom.setSeed(testSeed);
-            } else {
-                System.err.println("test seed not set");
+                addUnchecked(instance, distance);
             }
         }
     }
 
-    @Override
-    public double[] distributionForInstance(final Instance testInstance) throws
-            Exception {
-//        testTimer.reset(); // todo
-        setupTest();
-//        resetTest = true;
-        Searcher searcher = new Searcher(testInstance, false);
-        searcher.addAll(trainInstances);
-        return searcher.predict();
-    }
 
-    public static void main(String[] args) throws
-            Exception {
-        int seed = 0;
-        Instances[] dataset = sampleDataset("/home/vte14wgu/Projects/datasets/Univariate2018/", "GunPoint", seed);
-        Instances train = dataset[0];
-        Instances test = dataset[1];
-        Knn knn = new Knn();
-        knn.setTrainSeed(seed);
-        knn.setTestSeed(seed);
-        knn.buildClassifier(train);
-        ClassifierResults trainResults = knn.getTrainResults();
-        System.out.println("train acc: " + trainResults.getAcc());
-        System.out.println("-----");
-        ClassifierResults testResults = new ClassifierResults();
-        for (Instance testInstance : test) {
-            long time = System.nanoTime();
-            double[] distribution = knn.distributionForInstance(testInstance);
-            double prediction = indexOfMax(distribution);
-            time = System.nanoTime() - time;
-            testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
-        }
-        System.out.println(testResults.getAcc());
-    }
+
+
+
+
+
+
+
+
+
+
 }

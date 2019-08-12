@@ -6,15 +6,16 @@ import utilities.Copyable;
 import java.util.*;
 import java.util.function.Function;
 
-public class KBestSelector<A, B extends Comparable<B>> implements Copyable
+public class KBestSelector<A, B> implements Copyable
  {
-    private final TreeMap<B, List<A>> map = new TreeMap<>();
+    private TreeMap<B, List<A>> map;
     private Function<A, B> extractor;
     private int size = 0;
     private int limit = -1;
     private B worstValue;
     private List<A> worstItems;
     private Random random = new Random();
+    private Comparator<B> comparator;
 
     public TreeMap<B, List<A>> getSelectedAsMapWithDraws() {
         return map;
@@ -46,7 +47,7 @@ public class KBestSelector<A, B extends Comparable<B>> implements Copyable
     }
 
     @Override
-    public void copyFrom(final Object object) throws
+    public void shallowCopyFrom(final Object object) throws
                                               Exception {
         KBestSelector<A, B> other = (KBestSelector<A, B>) object;
         setLimit(other.getLimit());
@@ -61,11 +62,14 @@ public class KBestSelector<A, B extends Comparable<B>> implements Copyable
         worstItems = lastEntry.getValue();
     }
 
-    public KBestSelector() {}
+    public KBestSelector(Comparator<B> comparator) {
+        map = new TreeMap<>(comparator);
+        this.comparator = comparator;
+    }
 
     public KBestSelector(KBestSelector<A, B> other) throws
                                             Exception {
-        copyFrom(other);
+        shallowCopyFrom(other);
     }
 
     public B getWorstValue() {
@@ -81,7 +85,7 @@ public class KBestSelector<A, B extends Comparable<B>> implements Copyable
         if(worstValue == null) {
             comparison = -1;
         } else {
-            comparison = value.compareTo(worstValue);
+            comparison = comparator.compare(value, worstValue);
         }
         if (comparison <= 0 || (size < limit || limit <= 0)) {
             List<A> items = map.get(value);
@@ -138,7 +142,7 @@ public class KBestSelector<A, B extends Comparable<B>> implements Copyable
     }
 
     @Override
-    public Object copy() throws
+    public Object shallowCopy() throws
                          Exception {
         return new KBestSelector<>(this);
     }

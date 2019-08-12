@@ -5,26 +5,33 @@ import java.util.function.Function;
 
 public class KBestPerTypeSelector<A, B> implements Selector<A> {
 
-    private Map<B, KBestSelector<A, ?>> map = new HashMap<>();
+    protected final Map<B, KBestSelector<A, ?>> map = new HashMap<>();
 
     public <C extends Comparable<C>> void addSelector(KBestSelector<A, C> selector, B type) {
         map.put(type, selector);
     }
 
-    private Function<B, KBestSelector<A, ?>> selectorFunction = b -> new KBestSelector<>();
-    private Function<A, B> typeExtractor;
+    private Function<B, KBestSelector<A, ?>> generator;
+
+    public Function<B, KBestSelector<A, ?>> getGenerator() {
+        return generator;
+    }
+
+    public void setGenerator(final Function<B, KBestSelector<A, ?>> generator) {
+        this.generator = generator;
+    }
+
+    protected Function<A, B> extractor;
 
     public KBestPerTypeSelector() {}
 
-    public KBestPerTypeSelector(Function<A, B> typeExtractor) { setTypeExtractor(typeExtractor); }
-
     @Override
     public void add(A candidate) {
-        if(typeExtractor == null) {
+        if(extractor == null) {
             throw new IllegalStateException("need to set type extractor!");
         }
-        B type = typeExtractor.apply(candidate);
-        KBestSelector<A, ?> kBestSelector = map.computeIfAbsent(type, selectorFunction);
+        B type = extractor.apply(candidate);
+        KBestSelector<A, ?> kBestSelector = map.computeIfAbsent(type, generator);
         kBestSelector.add(candidate);
     }
 
@@ -37,12 +44,12 @@ public class KBestPerTypeSelector<A, B> implements Selector<A> {
         return selected;
     }
 
-    public Function<A, B> getTypeExtractor() {
-        return typeExtractor;
+    public Function<A, B> getExtractor() {
+        return extractor;
     }
 
-    public void setTypeExtractor(Function<A, B> typeExtractor) {
-        this.typeExtractor = typeExtractor;
+    public void setExtractor(Function<A, B> extractor) {
+        this.extractor = extractor;
     }
 
     @Override
@@ -51,13 +58,13 @@ public class KBestPerTypeSelector<A, B> implements Selector<A> {
     }
 
     @Override
-    public Object copy() throws
+    public Object shallowCopy() throws
                          Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void copyFrom(final Object object) throws
+    public void shallowCopyFrom(final Object object) throws
                                               Exception {
         throw new UnsupportedOperationException();
     }

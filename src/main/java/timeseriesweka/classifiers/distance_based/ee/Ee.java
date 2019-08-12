@@ -1,12 +1,14 @@
 package timeseriesweka.classifiers.distance_based.ee;
 
+import evaluation.evaluators.BespokeTrainEstimateEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
-import evaluation.tuning.ParameterSpaceBuilder;
 import timeseriesweka.classifiers.Seedable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.DdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.FullDdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.distances.dtw.DtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.dtw.EdParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.dtw.FullDtwParameterSpaceBuilder;
@@ -17,6 +19,7 @@ import timeseriesweka.classifiers.distance_based.distances.twed.TwedParameterSpa
 import timeseriesweka.classifiers.distance_based.distances.wddtw.WddtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.wdtw.WdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestPerTypeSelector;
+import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.ee.selection.Selector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
 import utilities.ArrayUtilities;
@@ -31,10 +34,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Function;
 
 import static experiments.data.DatasetLoading.sampleDataset;
@@ -46,9 +46,7 @@ public class Ee
 
     private final Random trainRandom = new Random();
     private final Random testRandom = new Random();
-    private final AbstractIterator<AbstractIterator<AbstractClassifier>> sources = new RoundRobinIterator<>(); //
     // todo add classifiers
-    private final AbstractIterator<AbstractClassifier> improvements = new RandomIterator<>();// todo seed
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
         i -> new EdParameterSpaceBuilder().build(),
         i -> new DtwParameterSpaceBuilder().build(i),
@@ -62,15 +60,83 @@ public class Ee
         i -> new ErpParameterSpaceBuilder().build(i),
         i -> new TwedParameterSpaceBuilder().build()
                                                                                                              ));
-    private Instances trainInstances;
     private Long trainSeed;
     private Long testSeed;
-    private AbstractIterator<AbstractClassifier> iterator;
-    private Selector<Benchmark> selector = new KBestPerTypeSelector<>(benchmark -> benchmark.getResults().getAcc());
+    private AbstractIterator<Member> memberIterator;
     private List<Benchmark> constituents;
+    private List<Member> members;
     private boolean estimateTrain = true;
     private String trainResultsPath;
     private ClassifierResults trainResults;
+    private int trainInstancesSize;
+
+    public class Member {
+
+        private final AbstractIterator<AbstractClassifier> source;
+
+        public AbstractIterator<AbstractClassifier> getImprovement() {
+            return improvement;
+        }
+
+        private final AbstractIterator<AbstractClassifier> improvement;
+        private final IncrementalTuner tuner;
+
+        public Member(final AbstractIterator<AbstractClassifier> source,
+                      final AbstractIterator<AbstractClassifier> improvement,
+                      final KBestSelector<Benchmark, Double> selector,
+                      final Instances trainInstances) {
+            this.source = source;
+            this.improvement = improvement;
+            tuner = new IncrementalTuner();
+            tuner.setIterator(new Iterator<AbstractClassifier>() {
+                @Override
+                public boolean hasNext() {
+                    return source.hasNext() || improvement.hasNext();
+                }
+
+                @Override
+                public AbstractClassifier next() {
+                    boolean anotherSource = source.hasNext();
+                    boolean anotherImprovement = improvement.hasNext();
+                    boolean choice = anotherSource;
+                    AbstractClassifier classifier;
+                    if (anotherSource && anotherImprovement) {
+                        choice = trainRandom.nextBoolean();
+                    }
+                    if (choice) {
+                        classifier = nextSource();
+                    } else {
+                        classifier = nextImprovement();
+                    }
+                    if(classifier instanceof Seedable) {
+                        ((Seedable) classifier).setTrainSeed(trainSeed);
+                        ((Seedable) classifier).setTestSeed(testSeed);
+                    }
+                    return classifier;
+                }
+            });
+            tuner.setSelector(selector);
+            tuner.setEvaluator(new BespokeTrainEstimateEvaluator());
+            tuner.setInstances(trainInstances);
+        }
+
+        private AbstractClassifier nextSource() {
+            AbstractClassifier classifier = source.next();
+            source.remove();
+            return classifier;
+        }
+
+        private AbstractClassifier nextImprovement() {
+            AbstractClassifier classifier = improvement.next();
+            improvement.remove();
+            classifier = improve(classifier);
+            return classifier;
+        }
+
+        public IncrementalTuner getTuner() {
+            return tuner;
+        }
+    }
 
     public static void main(String[] args) throws
                                            Exception {
@@ -100,25 +166,24 @@ public class Ee
     public void buildClassifier(Instances trainInstances) throws
                                                           Exception {
         setup(trainInstances);
-        while (iterator.hasNext()) {
-            AbstractClassifier classifier = iterator.next();
-            ClassifierResults results;
-            if (classifier instanceof TrainAccuracyEstimator) {
-                ((TrainAccuracyEstimator) classifier).setFindTrainAccuracyEstimate(true);
-                if(classifier instanceof Seedable) {
-                    ((Seedable) classifier).setTrainSeed(trainSeed);
-                    ((Seedable) classifier).setTestSeed(testSeed);
-                }
-                classifier.buildClassifier(trainInstances);
-                results = ((TrainAccuracyEstimator) classifier).getTrainResults();
-            } else {
-                throw new UnsupportedOperationException();
+        while (memberIterator.hasNext()) {
+            Member member = memberIterator.next();
+            IncrementalTuner tuner = member.getTuner();
+            Benchmark benchmark = tuner.next();
+            tuner.remove();
+            if(!tuner.hasNext()) {
+                memberIterator.remove();
             }
-            Benchmark benchmark = new Benchmark(classifier, results);
-            feedback(benchmark);
-            selector.add(benchmark);
+            feedback(member, benchmark);
         }
-        constituents = selector.getSelected();
+        constituents = new ArrayList<>();
+        for(Member member : members) {
+            List<Benchmark> selected = member.getTuner().getSelector().getSelectedAsList();
+            if(selected.size() > 1) {
+                // todo rand trim
+            }
+            constituents.addAll(selected);
+        }
         if(estimateTrain) {
             trainResults = new ClassifierResults();
             for(int i = 0; i < trainInstances.size(); i++) {
@@ -137,14 +202,16 @@ public class Ee
     }
 
     private void setup(Instances trainInstances) {
+        // todo is train seed set / test seed
         if(trainInstances.isEmpty()) {
             throw new IllegalArgumentException("train instances empty");
         }
         if(parameterSpaceFunctions.isEmpty()) {
             throw new IllegalStateException("no constituents given");
         }
-        this.trainInstances = trainInstances;
-        // todo selector random
+        trainInstancesSize = trainInstances.size();
+        members = new ArrayList<>();
+        memberIterator = new RandomIterator<>(trainRandom);
         for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
             ParameterSpace parameterSpace = function.apply(trainInstances);
             parameterSpace.removeDuplicateParameterSets();
@@ -158,64 +225,20 @@ public class Ee
                     knn.setTrainSize(2);
                     return knn;
                 });
-                sources.add(classifierIterator);
+                KBestSelector<Benchmark, Double> selector = new KBestSelector<>((aDouble, t1) -> Double.compare(t1, aDouble));
+                selector.setLimit(1);
+                selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
+                Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector, trainInstances);
+                memberIterator.add(member);
+                members.add(member);
             }
         }
-        iterator = new AbstractIterator<AbstractClassifier>() {
-
-            @Override
-            public void add(AbstractClassifier item) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public AbstractFeedbackIterator<AbstractClassifier, Benchmark> iterator() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return sources.hasNext() || improvements.hasNext();
-            }
-
-            @Override
-            public AbstractClassifier next() {
-                boolean anotherSource = sources.hasNext();
-                boolean anotherImprovement = improvements.hasNext();
-                boolean choice = anotherSource;
-                if (anotherSource && anotherImprovement) {
-                    choice = trainRandom.nextBoolean();
-                }
-                if (choice) {
-                    return nextSource();
-                } else {
-                    return nextImprovement();
-                }
-            }
-
-            private AbstractClassifier nextSource() {
-                AbstractIterator<AbstractClassifier> classifierIterator = sources.next();
-                AbstractClassifier classifier = classifierIterator.next();
-                classifierIterator.remove();
-                if (!classifierIterator.hasNext()) {
-                    sources.remove();
-                }
-                return classifier;
-            }
-
-            private AbstractClassifier nextImprovement() {
-                AbstractClassifier classifier = improvements.next();
-                improvements.remove();
-                classifier = improve(classifier);
-                return classifier;
-            }
-        };
     }
 
-    private void feedback(Benchmark benchmark) {
+    private void feedback(Member member, Benchmark benchmark) {
         AbstractClassifier classifier = benchmark.getClassifier();
         if (canImprove(classifier)) {
-            improvements.add(classifier);
+            member.getImprovement().add(classifier);
         }
     }
 
@@ -223,7 +246,7 @@ public class Ee
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
             int trainSize = knn.getTrainSize();
-            return trainSize + 1 <= trainInstances.size();
+            return trainSize + 1 <= trainInstancesSize;
         }
         throw new UnsupportedOperationException();
     }
@@ -231,8 +254,13 @@ public class Ee
     private AbstractClassifier improve(AbstractClassifier classifier) {
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
+            try {
+                knn = knn.shallowCopy();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
             int trainSize = knn.getTrainSize();
-            knn.setTrainSize(trainSize);
+            knn.setTrainSize(trainSize + 1);
             return knn;
         }
         throw new UnsupportedOperationException();

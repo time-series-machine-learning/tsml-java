@@ -2,9 +2,21 @@ package utilities;
 
 public interface Copyable {
 
-    Object copy() throws
-                  Exception;
+    default Object shallowCopy() throws
+                  Exception {
+        throw new UnsupportedOperationException();
+    }
 
-    void copyFrom(Object object) throws Exception;
+    default void shallowCopyFrom(Object object) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deepCopyFrom(Object object) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default Object deepCopy() throws Exception {
+        throw new UnsupportedOperationException();
+    }
 
 }
