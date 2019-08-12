@@ -1,121 +1,60 @@
 /*******************************************************************************
  * Copyright (C) 2017 Chang Wei Tan, Francois Petitjean, Matthieu Herrmann, Germain Forestier, Geoff Webb
- * 
+ *
  * This file is part of FastWWSearch.
- * 
+ *
  * FastWWSearch is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- * 
+ *
  * FastWWSearch is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 package timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher;
 
+import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN;
+import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN.RefineReturnType;
+import timeseriesweka.classifiers.distance_based.fast_dtw.items.SequenceStatsCache;
+import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.SequenceStatsCache;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN.RefineReturnType;
-import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
-
 /**
  * Code for the paper "Efficient search of the best warping window for Dynamic Time Warping" published in SDM18
- * 
- * Search for the best warping window using Fast Warping Window Search (FastWWS)
- * 
- * @author Chang Wei Tan, Francois Petitjean, Matthieu Herrmann, Germain Forestier, Geoff Webb
+ * <p>
+ * Search for the best warping window using Fast Warping Window Search (fast_dtw)
+ * Searches through all the percentage of time series length
  *
+ * @author Chang Wei Tan, Francois Petitjean, Matthieu Herrmann, Germain Forestier, Geoff Webb
  */
-public class FastWWS extends WindowSearcher {
-	// --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+public class FastWWSByPercent extends WindowSearcher {
+    // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     // Internal types
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-	/**
-     * Potential nearest neighbour
-     */
-    private static class PotentialNN {
-        /**
-         * Status of the PotentialNN
-         */
-        public enum Status {
-            NN,                         // This is the Nearest Neighbour
-            BC,                         // Best Candidate so far
-        }
-        
-        public int index;               // Index of the sequence in train[]
-        public int r;                   // Window validity
-        public double distance;         // Computed distance
-        public Status status;           // Is that
 
-        public PotentialNN() {
-            this.index = Integer.MIN_VALUE;                 // Will be an invalid, negative, index.
-            this.r = Integer.MAX_VALUE;						// Max: stands for "haven't found yet"
-            this.distance = Double.POSITIVE_INFINITY;       // Infinity: stands for "not computed yet".
-            this.status = Status.BC;                        // By default, we don't have any found NN.
-        }
-
-        /**
-         * Setting the Potential NN for the query at a window
-         * @param index: Index in training dataset
-         * @param r: Window validity with query
-         * @param distance: Distance to query
-         * @param status: Status of the nearest neighbour
-         */
-        public void set(int index, int r, double distance, Status status) {
-            this.index = index;
-            this.r = r;
-            this.distance = distance;
-            this.status = status;
-        }
-
-        /** 
-         * Check if this is a nearest neighbour for the query at a window
-         * @return
-         */
-        public boolean isNN() {
-            return this.status == Status.NN;
-        }
-
-        @Override
-        public String toString() {
-            return "" + this.index;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            PotentialNN that = (PotentialNN) o;
-
-            return index == that.index;
-        }
-    }
-    
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     // Fields
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     private static final long serialVersionUID = 1536192551485201554L;
     private PotentialNN[][] nns;                                        // Our main structure
     private boolean init;                                               // Have we initialize our structure?
-    
+
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     // Constructor
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    public FastWWS() {
+    public FastWWSByPercent() {
         super();
         forwardSearch = false;
         init = false;
     }
-    
-    public FastWWS(String name) {
+
+    public FastWWSByPercent(String name) {
         super();
         forwardSearch = false;
         init = false;
@@ -125,32 +64,32 @@ public class FastWWS extends WindowSearcher {
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     // Methods
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    public String doTime(long start){
+    public String doTime(long start) {
         long duration = System.currentTimeMillis() - start;
         return "" + (duration / 1000) + " s " + (duration % 1000) + " ms";
     }
 
-    public String doTime(long start, long now){
+    public String doTime(long start, long now) {
         long duration = now - start;
         return "" + (duration / 1000) + " s " + (duration % 1000) + " ms";
     }
-    
+
     /**
      * Initializing our main structure
-     * 
+     * <p>
      * Data:
      * protected SymbolicSequence[] train; 									-- Array of sequences
      * protected HashMap<String, ArrayList<SymbolicSequence>> classedData;	-- Sequences by classes
      * protected HashMap<String, ArrayList<Integer>> classedDataIndices; 	-- Sequences index in train by classes
      * protected String[] classMap; 										-- Class per index
-     * 
+     * <p>
      * We are using SymbolicSequenceScoredClassed to retain what is the nearest neighbour:
      * this.public SymbolicSequence sequence; 				-- The sequence of interest, the nearest neighbour itself
      * this.public String classValue;						-- Class of the NN
      * this.public int index;                           	-- Index of the NN in the train
      * this.public public int smallestValidWindow;      	-- Smallest window that would give the same distance
      * this.public double score                         	-- Value of the distance
-     * 
+     * <p>
      * When computing DTW, we get a DTWResult, storing more data than just the distance:
      * this.public double distance;		-- the DTW distance
      * this.public int r;               -- the smallest window that would give the same path
@@ -167,7 +106,7 @@ public class FastWWS extends WindowSearcher {
         //
         // Timing and progress output
         long timeInit = System.currentTimeMillis();
-        
+
         //
         // --- ALGORITHM DECLARATIONS & INITIALISATION
         //
@@ -176,8 +115,8 @@ public class FastWWS extends WindowSearcher {
 
         // We need a N*L storing area. We favorite an access per window size.
         // For each [Window Size][sequence], we store the nearest neighbour. See above.
-        nns = new PotentialNN[maxWindow + 1][train.length];
-        for (int win = 0; win < maxWindow + 1; ++win) {
+        nns = new PotentialNN[100 + 1][train.length];
+        for (int win = 0; win < 100 + 1; ++win) {
             for (int len = 0; len < train.length; ++len) {
                 nns[win][len] = new PotentialNN();
             }
@@ -189,37 +128,39 @@ public class FastWWS extends WindowSearcher {
             lazyUCR[i] = new LazyAssessNN(cache);
         }
         // "Challengers" that compete with each other to be the NN of query
-        ArrayList<LazyAssessNN> challengers = new ArrayList<LazyAssessNN>(train.length);
+        ArrayList <LazyAssessNN> challengers = new ArrayList <LazyAssessNN>(train.length);
 
-        System.out.println("Initialisation done ("+doTime(timeInit)+")");
-        
+        System.out.println("Initialisation done (" + doTime(timeInit) + ")");
+
         //
         // --- ALGORITHM
         //
         // Iteration for all TS, starting with the second one (first is a reference)
-        for(int current=1; current < train.length; ++current){
+        for (int current = 1; current < train.length; ++current) {
             // --- --- Get the data --- ---
             SymbolicSequence sCurrent = train[current];
 
             // Clear off the previous challengers and add all the previous sequences
-            challengers.clear();		
-            for(int previous=0; previous < current; ++previous) {
+            challengers.clear();
+            for (int previous = 0; previous < current; ++previous) {
                 LazyAssessNN d = lazyUCR[previous];
                 d.set(train[previous], previous, sCurrent, current);
                 challengers.add(d);
             }
 
             // --- --- For each, decreasing (positive) windows --- ---
-            for(int win = maxWindow; win > -1; --win){
-                // --- Get the data
-                PotentialNN currPNN = nns[win][current];
+            for (int percent = 100; percent > -1; --percent) {
+                int win = percentToLength(percent);
 
-                if(currPNN.isNN()){
+                // --- Get the data
+                PotentialNN currPNN = nns[percent][current];
+
+                if (currPNN.isNN()) {
                     // --- --- WITH NN CASE --- ---
                     // We already have a NN for sure, but we still have to check if current is a new NN for previous
-                    for(int previous = 0; previous < current; ++previous){
+                    for (int previous = 0; previous < current; ++previous) {
                         // --- Get the data
-                        PotentialNN prevNN = nns[win][previous];
+                        PotentialNN prevNN = nns[percent][previous];
 
                         // --- Try to beat the previous best NN
                         double toBeat = prevNN.distance;
@@ -227,7 +168,7 @@ public class FastWWS extends WindowSearcher {
                         RefineReturnType rrt = challenger.tryToBeat(toBeat, win);
 
                         // --- Check the result
-                        if(rrt == RefineReturnType.New_best){
+                        if (rrt == RefineReturnType.New_best) {
                             int r = challenger.getMinWindowValidityForFullDistance();
                             double d = challenger.getDistance(win);
                             prevNN.set(current, r, d, PotentialNN.Status.NN);
@@ -243,7 +184,7 @@ public class FastWWS extends WindowSearcher {
                     for (LazyAssessNN challenger : challengers) {
                         // --- Get the data
                         int previous = challenger.indexQuery;
-                        PotentialNN prevNN = nns[win][previous];
+                        PotentialNN prevNN = nns[percent][previous];
 
                         // --- First we want to beat the current best candidate:
                         double toBeat = currPNN.distance;
@@ -274,18 +215,19 @@ public class FastWWS extends WindowSearcher {
                     // the current best candidate is really the best one, so the NN.
                     // So assign the current NN to all the windows that are valid
                     int r = currPNN.r;
+                    int rEnd = lengthToPercent(r);
                     double d = currPNN.distance;
                     int index = currPNN.index;
-                    for (int w = win; w >= r; --w) {
+                    for (int w = percent; w >= rEnd; --w) {
                         nns[w][current].set(index, r, d, PotentialNN.Status.NN);
                     }
                 } // END WITHOUT NN CASE
             } // END for(int win=maxWindow; win>-1; --win)
         } // END for(int current=1; current < train.length; ++current)
 
-        System.out.println("done! (" + doTime (timeInit) + ")");
-        this.init = true;        
-    } // END initTable()
+        System.out.println("done! (" + doTime(timeInit) + ")");
+        this.init = true;
+    } // END initTablePercent()
 
     @Override
     protected double evalSolution(int warpingWindow) {
@@ -305,36 +247,140 @@ public class FastWWS extends WindowSearcher {
 
         return 1.0 * nErrors / train.length;
     }
-     
-    /** 
+
+    @Override
+    protected void searchBestWarpingWindow() {
+        int currentWindowPercent = (forwardSearch) ? 0 : 100;
+        double currentScore;
+        bestScore = 1.0;
+
+        long startTime = System.currentTimeMillis();
+
+        while (currentWindowPercent >= 0 && currentWindowPercent <= 100) {
+            currentScore = evalSolution(currentWindowPercent);
+
+            long endTime = System.currentTimeMillis();
+            long accumulatedTime = (endTime - startTime);
+
+            // saving results
+//            searchResults[currentWindowPercent] = currentWindowPercent + "," + currentScore + "," + accumulatedTime;
+
+//            out.println(currentWindowPercent + " " + currentScore + " " + accumulatedTime);
+//            out.flush();
+
+            if (currentScore <= bestScore || (currentScore == bestScore && !forwardSearch)) {
+                bestScore = currentScore;
+                bestWindowPercent = currentWindowPercent;
+            } else if (greedySearch && currentScore > bestScore) {
+                break;
+            }
+
+            currentWindowPercent = (forwardSearch) ? currentWindowPercent + 1 : currentWindowPercent - 1;
+        }
+        bestWarpingWindow = percentToLength(bestWindowPercent);
+    }
+
+    /**
      * Get the best warping window found
      */
     @Override
-	public int getBestWin() {
-    	return bestWarpingWindow;
+    public int getBestWin() {
+        return bestWarpingWindow;
     }
-    
-    /** 
+
+    /**
+     * Get the best warping window in percentage found
+     */
+    @Override
+    public int getBestPercent() {
+        return bestWindowPercent;
+    }
+
+    /**
      * Get the LOOCV accuracy for the best warping window
      */
     @Override
-	public double getBestScore() {
-    	return bestScore;
+    public double getBestScore() {
+        return bestScore;
     }
-    
-    /** 
+
+    /**
      * Set the result directory
      */
     @Override
-	public void setResDir(String path) {
-    	resDir = path;
+    public void setResDir(String path) {
+        resDir = path;
     }
-    
-    /** 
+
+    /**
      * Set type of classifier
      */
     @Override
-	public void setType(String t) {
-    	type = t;
+    public void setType(String t) {
+        type = t;
+    }
+
+    /**
+     * Potential nearest neighbour
+     */
+    private static class PotentialNN {
+        public int index;               // Index of the sequence in train[]
+        public int r;                   // Window validity
+        public double distance;         // Computed distance
+        public Status status;           // Is that
+
+        public PotentialNN() {
+            this.index = Integer.MIN_VALUE;                 // Will be an invalid, negative, index.
+            this.r = Integer.MAX_VALUE;                        // Max: stands for "haven't found yet"
+            this.distance = Double.POSITIVE_INFINITY;       // Infinity: stands for "not computed yet".
+            this.status = Status.BC;                        // By default, we don't have any found NN.
+        }
+
+        /**
+         * Setting the Potential NN for the query at a window
+         *
+         * @param index:    Index in training dataset
+         * @param r:        Window validity with query
+         * @param distance: Distance to query
+         * @param status:   Status of the nearest neighbour
+         */
+        public void set(int index, int r, double distance, Status status) {
+            this.index = index;
+            this.r = r;
+            this.distance = distance;
+            this.status = status;
+        }
+
+        /**
+         * Check if this is a nearest neighbour for the query at a window
+         *
+         * @return
+         */
+        public boolean isNN() {
+            return this.status == Status.NN;
+        }
+
+        @Override
+        public String toString() {
+            return "" + this.index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PotentialNN that = (PotentialNN) o;
+
+            return index == that.index;
+        }
+
+        /**
+         * Status of the PotentialNN
+         */
+        public enum Status {
+            NN,                         // This is the Nearest Neighbour
+            BC,                         // Best Candidate so far
+        }
     }
 }

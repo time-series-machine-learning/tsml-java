@@ -159,7 +159,7 @@ public class UCR_FastWWSPrunedDTW {
         	saveSearchTime(searchTime, eval.errorRate());
         	        	
         	method = "FastWWSearch-PrunedDTW";
-        	System.out.println("Run " + i + ", Launching FastWWS with SDM16");
+        	System.out.println("Run " + i + ", Launching fast_dtw with SDM16");
         	FastWWSPrunedDTW fastwwsSDM16Classifier = new FastWWSPrunedDTW(datasetName);
         	fastwwsSDM16Classifier.setResDir(resDir);
         	fastwwsSDM16Classifier.setType(method);
@@ -184,8 +184,8 @@ public class UCR_FastWWSPrunedDTW {
         	
         }
         
-        System.out.println("Average FastWWS Time: " + avgFastWWSTime/nbRuns + "s");
-        System.out.println("Average FastWWS with SDM16 Time: " + avgFastWWSSDM16Time/nbRuns + "s");
+        System.out.println("Average fast_dtw Time: " + avgFastWWSTime/nbRuns + "s");
+        System.out.println("Average fast_dtw with SDM16 Time: " + avgFastWWSSDM16Time/nbRuns + "s");
         
         System.out.println("Average Speedup: " + speedUp/nbRuns);
 	}

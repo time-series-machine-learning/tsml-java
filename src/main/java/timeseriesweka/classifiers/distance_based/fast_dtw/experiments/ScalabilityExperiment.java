@@ -133,7 +133,7 @@ public class ScalabilityExperiment {
 		try{
 			Instances newTrain = Sampling.sample(data, sampleSize);
 
-			System.out.println("Size: " + sampleSize + ", Launching FastWWS");
+			System.out.println("Size: " + sampleSize + ", Launching fast_dtw");
 			FastWWS classifier = new FastWWS(datasetName);
 			classifier.setResDir(resDir);
 			classifier.setType(method);
