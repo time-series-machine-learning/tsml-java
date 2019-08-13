@@ -1,12 +1,14 @@
 package timeseriesweka.classifiers.distance_based.distances.twed;
 
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import utilities.ArrayUtilities;
+import weka.core.Instance;
 
 public class Twed
     extends DistanceMeasure {
 
     @Override
-    public double distance() {
+    public double measureDistance() {
         /*This code is faithful to the c version, so uses a redundant
  * Multidimensional representation. The c code does not describe what the
             arguments
@@ -19,14 +21,16 @@ public class Twed
         // todo early abandon
         // todo might be able to inherit from dtw to use warping window perhaps?
 
-        double[] a = getTarget();
-        double[] b = getCandidate();
+        Instance a = getFirstInstance();
+        int aLength = a.numAttributes() - 1;
+        Instance b = getSecondInstance();
+        int bLength = b.numAttributes() - 1;
         int dim=1;
         double dist, disti1, distj1;
-        double[][] ta=new double[a.length][dim];
-        double[][] tb=new double[a.length][dim];
-        double[] tsa=new double[a.length];
-        double[] tsb=new double[b.length];
+        double[][] ta=new double[aLength][dim];
+        double[][] tb=new double[bLength][dim];
+        double[] tsa=new double[aLength];
+        double[] tsb=new double[bLength];
         for(int i=0;i<tsa.length;i++)
             tsa[i]=(i+1);
         for(int i=0;i<tsb.length;i++)
@@ -36,10 +40,10 @@ public class Twed
         int c = tb.length;
         int i,j,k;
 //Copy over values
-        for(i=0;i<a.length;i++)
-            ta[i][0]=a[i];
-        for(i=0;i<b.length;i++)
-            tb[i][0]=b[i];
+        for(i=0;i<aLength;i++)
+            ta[i][0]=a.value(i);
+        for(i=0;i<bLength;i++)
+            tb[i][0]=b.value(i);
 
         /* allocations in c
 	double **D = (double **)calloc(r+1, sizeof(double*));
@@ -157,6 +161,7 @@ public class Twed
 
     @Override
     public void setOption(final String key, final String value) {
+        super.setOption(key, value);
         if(key.equals(NU_KEY)) {
             setNu(Double.parseDouble(value));
         } else if(key.equals(LAMBDA_KEY)) {
@@ -166,12 +171,12 @@ public class Twed
 
     @Override
     public String[] getOptions() {
-        return new String[] {
+        return ArrayUtilities.concat(new String[] {
             NU_KEY,
             String.valueOf(nu),
             LAMBDA_KEY,
             String.valueOf(lambda)
-        };
+        }, super.getOptions());
     }
 
     public static final String NAME = "TWE";

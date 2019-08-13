@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers.distance_based.distances.erp;
 
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import utilities.ArrayUtilities;
+import weka.core.Instance;
 
 public class Erp extends DistanceMeasure {
 
@@ -15,10 +17,12 @@ public class Erp extends DistanceMeasure {
     }
 
     @Override
-    public double distance() {
+    public double measureDistance() {
 
-        double[] timeSeriesA = getTarget();
-        double[] timeSeriesB = getCandidate();
+        Instance a = getFirstInstance();
+        Instance b = getSecondInstance();
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // todo cleanup
         // todo trim memory to window by window
@@ -26,22 +30,22 @@ public class Erp extends DistanceMeasure {
         // todo remove sqrt (Jay says this changes the distance however, need to confirm!)
 
         // Current and previous columns of the matrix
-        double[] curr = new double[timeSeriesB.length];
-        double[] prev = new double[timeSeriesB.length];
+        double[] curr = new double[bLength];
+        double[] prev = new double[bLength];
 
         // size of edit distance band
         // bandsize is the maximum allowed distance to the diagonal
 //        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
         int band = getBandSize();
         if(band < 0) {
-            band = timeSeriesA.length + 1;
+            band = aLength + 1;
         }
 
         // g parameters for local usage
         double gValue = penalty;
 
         for (int i = 0;
-             i < timeSeriesA.length;
+             i < aLength;
              i++) {
             // Swap current and prev arrays. We'll just overwrite the new curr.
             {
@@ -54,8 +58,8 @@ public class Erp extends DistanceMeasure {
                 l = 0;
             }
             int r = i + (band + 1);
-            if (r > (timeSeriesB.length - 1)) {
-                r = (timeSeriesB.length - 1);
+            if (r > (bLength - 1)) {
+                r = (bLength - 1);
             }
 
             for (int j = l;
@@ -63,18 +67,18 @@ public class Erp extends DistanceMeasure {
                  j++) {
                 if (Math.abs(i - j) <= band) {
                     // compute squared distance of feature vectors
-                    double val1 = timeSeriesA[i];
+                    double val1 = a.value(i);
                     double val2 = gValue;
                     double diff = (val1 - val2);
                     final double d1 = Math.sqrt(diff * diff);
 
                     val1 = gValue;
-                    val2 = timeSeriesB[j];
+                    val2 = b.value(j);
                     diff = (val1 - val2);
                     final double d2 = Math.sqrt(diff * diff);
 
-                    val1 = timeSeriesA[i];
-                    val2 = timeSeriesB[j];
+                    val1 = a.value(i);
+                    val2 = b.value(j);
                     diff = (val1 - val2);
                     final double d12 = Math.sqrt(diff * diff);
 
@@ -107,7 +111,7 @@ public class Erp extends DistanceMeasure {
             }
         }
 
-        return Math.sqrt(curr[timeSeriesB.length - 1]);
+        return Math.sqrt(curr[bLength - 1]);
     }
 
 
@@ -118,17 +122,18 @@ public class Erp extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return new String[] {
+        return ArrayUtilities.concat(new String[] {
             PENALTY_KEY,
             String.valueOf(penalty),
             BAND_SIZE_KEY,
             String.valueOf(bandSize)
-        };
+        }, super.getOptions());
     }
 
 
     @Override
     public void setOption(final String key, final String value) {
+        super.setOption(key, value);
         if (key.equals(PENALTY_KEY)) {
             setPenalty(Double.parseDouble(value));
         } else if(

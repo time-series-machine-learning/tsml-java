@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers.distance_based.distances.lcss;
 
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import utilities.ArrayUtilities;
+import weka.core.Instance;
 
 public class Lcss extends DistanceMeasure {
 
@@ -20,30 +22,27 @@ public class Lcss extends DistanceMeasure {
     private int delta = 0;
 
     @Override
-    public double distance() {
+    public double measureDistance() {
 
-        double[] first = getTarget();
-        double[] second = getCandidate();
-        // todo cleanup
-        // todo trim memory to window by window
-        // todo early abandon
-        int m = first.length;
-        int n = second.length;
+        Instance a = getFirstInstance();
+        Instance b = getSecondInstance();
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
-        int[][] lcss = new int[m+1][n+1];
+        int[][] lcss = new int[aLength+1][bLength+1];
 
         int warpingWindow = getDelta();
         if(warpingWindow < 0) {
-            warpingWindow = first.length + 1;
+            warpingWindow = aLength + 1;
         }
 
-        for(int i = 0; i < m; i++){
+        for(int i = 0; i < aLength; i++){
             for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
                 if(j < 0){
                     j = -1;
-                }else if(j >= n){
+                }else if(j >= bLength){
                     j = i+warpingWindow;
-                }else if(second[j]+this.epsilon >= first[i] && second[j] - epsilon <= first[i]){
+                }else if(b.value(j) + this.epsilon >= a.value(i) && b.value(j) - epsilon <= a.value(i)){
                     lcss[i+1][j+1] = lcss[i][j]+1;
                 }else if(lcss[i][j+1] > lcss[i+1][j]){
                     lcss[i+1][j+1] = lcss[i][j+1];
@@ -61,7 +60,7 @@ public class Lcss extends DistanceMeasure {
                 max = lcss[lcss.length-1][i];
             }
         }
-        return 1-((double)max/m);
+        return 1-((double)max/aLength);
     }
 
     public static final String EPSILON_KEY = "tolerance";
@@ -69,6 +68,7 @@ public class Lcss extends DistanceMeasure {
 
     @Override
     public void setOption(final String key, final String value) {
+        super.setOption(key, value);
         if(key.equals(DELTA_KEY)) {
             setDelta(Integer.parseInt(value));
         } else if(key.equals(EPSILON_KEY)) {
@@ -78,12 +78,12 @@ public class Lcss extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return new String[] {
+        return ArrayUtilities.concat(new String[] {
             EPSILON_KEY,
             String.valueOf(epsilon),
             DELTA_KEY,
             String.valueOf(delta)
-        };
+        }, super.getOptions());
     }
 
     public static final String NAME = "LCSS";

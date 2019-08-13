@@ -8,25 +8,105 @@ import timeseriesweka.classifiers.distance_based.distances.msm.Msm;
 import timeseriesweka.classifiers.distance_based.distances.twed.Twed;
 import timeseriesweka.classifiers.distance_based.distances.wddtw.Wddtw;
 import timeseriesweka.classifiers.distance_based.distances.wdtw.Wdtw;
+import timeseriesweka.filters.cache.Cache;
+import timeseriesweka.filters.cache.DupeCache;
 import utilities.Options;
-import utilities.Utilities;
 import weka.core.Instance;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Enumeration;
 
-public abstract class DistanceMeasure implements Serializable,
-                                                 Options {
+public abstract class DistanceMeasure
+    implements Serializable,
+               Options {
 
     public DistanceMeasure() { }
 
     private double limit = Double.POSITIVE_INFINITY;
-    private double[] target;
-    private Instance targetInstance;
-    private double[] candidate;
-    private Instance candidateInstance;
+    private Instance firstInstance;
+    private Instance secondInstance;
 
-    public abstract double distance();
+    private Cache<Integer, Integer, Double> distanceCache = new DupeCache<>();
+
+    private boolean storeHashInInstanceWeight = true;
+    public final static String CACHED_DISTANCE_KEY = "cachedDistances";
+
+    private int count = 2;
+    private boolean cacheDistances = true;
+
+    @Override
+    public String[] getOptions() {
+        return new String[] {CACHED_DISTANCE_KEY,
+                             String.valueOf(cacheDistances)
+        };
+    }
+
+    @Override
+    public void setOption(final String key, final String value) {
+        if(key.equals(CACHED_DISTANCE_KEY)) setCacheDistances(Boolean.parseBoolean(value));
+    }
+
+    protected abstract double measureDistance();
+
+    public boolean isStoreHashInInstanceWeight() {
+        return storeHashInInstanceWeight;
+    }
+
+    public void setStoreHashInInstanceWeight(final boolean storeHashInInstanceWeight) {
+        this.storeHashInInstanceWeight = storeHashInInstanceWeight;
+    }
+
+    protected int hash(Instance instance) {
+        if(storeHashInInstanceWeight) {
+            int hash = (int) instance.weight();
+            if(hash == 1) {
+                hash = count++;
+                instance.setWeight(hash);
+            }
+            return hash;
+        } else {
+            return Arrays.hashCode(instance.toDoubleArray());
+        }
+    }
+
+    public double cachedDistance() {
+        int firstHash = hash(firstInstance);
+        int secondHash = hash(secondInstance);
+        Double distance = distanceCache.get(firstHash, secondHash);
+        if(distance == null) {
+            distance = measureDistance();
+            distanceCache.put(firstHash, secondHash, distance);
+        }
+        return distance;
+    }
+
+    public double distance() {
+        if(firstInstance.classIndex() != firstInstance.numAttributes() - 1) {
+            throw new IllegalStateException("class value must be at the end");
+        }
+        if(secondInstance.classIndex() != secondInstance.numAttributes() - 1) {
+            throw new IllegalStateException("class value must be at the end");
+        }
+        double distance;
+        if(cacheDistances) {
+            distance = cachedDistance();
+        } else {
+            distance = measureDistance();
+        }
+        return distance;
+    }
+
+    public double distance(final Instance first, final Instance second) {
+        setFirstInstance(first);
+        setSecondInstance(second);
+        return distance();
+    }
+
+    public double distance(final Instance first, final Instance second, final double limit) {
+        setLimit(limit);
+        return distance(first, second);
+    }
 
     public static DistanceMeasure fromString(String str) {
         switch(str) {
@@ -60,37 +140,36 @@ public abstract class DistanceMeasure implements Serializable,
         throw new UnsupportedOperationException();
     }
 
-    public double[] getCandidate() {
-        return candidate;
+    public Instance getSecondInstance() {
+        return secondInstance;
     }
 
-    public void setCandidate(final double[] candidate) {
-        this.candidate = candidate;
+    public void setSecondInstance(final Instance second) {
+        this.secondInstance = second;
+
     }
 
-    public double[] getTarget() {
-        return target;
+    public Instance getFirstInstance() {
+        return firstInstance;
     }
 
-    public void setTarget(final double[] target) {
-        this.target = target;
+    public void setFirstInstance(final Instance first) {
+        this.firstInstance = first;
     }
 
-    public Instance getCandidateInstance() {
-        return candidateInstance;
+    public boolean isCacheDistances() {
+        return cacheDistances;
     }
 
-    public void setCandidate(final Instance candidateInstance) {
-        this.candidateInstance = candidateInstance;
-        setCandidate(Utilities.extractTimeSeries(candidateInstance));
+    public void setCacheDistances(final boolean cacheDistances) {
+        this.cacheDistances = cacheDistances;
     }
 
-    public Instance getTargetInstance() {
-        return targetInstance;
+    public Cache<Integer, Integer, Double> getDistanceCache() {
+        return distanceCache;
     }
 
-    public void setTarget(final Instance targetInstance) {
-        this.targetInstance = targetInstance;
-        setTarget(Utilities.extractTimeSeries(targetInstance));
+    public void setDistanceCache(final Cache<Integer, Integer, Double> distanceCache) {
+        this.distanceCache = distanceCache;
     }
 }

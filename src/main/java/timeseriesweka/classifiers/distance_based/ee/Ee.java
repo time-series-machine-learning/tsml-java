@@ -1,6 +1,5 @@
 package timeseriesweka.classifiers.distance_based.ee;
 
-import akka.event.Logging;
 import evaluation.evaluators.BespokeTrainEstimateEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
@@ -8,9 +7,9 @@ import evaluation.tuning.ParameterSpace;
 import timeseriesweka.classifiers.Seedable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import timeseriesweka.classifiers.distance_based.distances.ddtw.Ddtw;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.DdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.FullDdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.distances.dtw.DtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.dtw.EdParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.dtw.FullDtwParameterSpaceBuilder;
@@ -18,19 +17,17 @@ import timeseriesweka.classifiers.distance_based.distances.erp.ErpParameterSpace
 import timeseriesweka.classifiers.distance_based.distances.lcss.LcssParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.msm.MsmParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.twed.TwedParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distances.wddtw.Wddtw;
 import timeseriesweka.classifiers.distance_based.distances.wddtw.WddtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.wdtw.WdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.ee.selection.KBestPerTypeSelector;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
-import timeseriesweka.classifiers.distance_based.ee.selection.Selector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
+import timeseriesweka.filters.cache.CachedFunction;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.ClassifierIterator;
 import utilities.iteration.ParameterSetIterator;
-import utilities.iteration.feedback.AbstractFeedbackIterator;
-import utilities.iteration.linear.RoundRobinIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -38,6 +35,7 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
@@ -49,10 +47,12 @@ public class Ee
 
     private final Random trainRandom = new Random();
     private final Random testRandom = new Random();
-    // todo add classifiers
+
+    private CachedFunction<Instance, Integer, Instance> derivativeCache;
+
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
-        i -> new EdParameterSpaceBuilder().build(),
-        i -> new DtwParameterSpaceBuilder().build(i)
+//        i -> new EdParameterSpaceBuilder().build()//,
+        i -> new DtwParameterSpaceBuilder().build(i)//,
 //        i -> new FullDtwParameterSpaceBuilder().build(),
 //        i -> new DdtwParameterSpaceBuilder().build(i),
 //        i -> new FullDdtwParameterSpaceBuilder().build(),
@@ -73,7 +73,11 @@ public class Ee
     private ClassifierResults trainResults;
     private int trainInstancesSize;
     private int minTrainSize = -1;
-    private final static Logger LOGGER = Logger.getLogger(Ee.class.getCanonicalName());
+    private final Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
+
+    public Logger getLogger() {
+        return logger;
+    }
 
     public class Member {
 
@@ -142,6 +146,22 @@ public class Ee
 
         private AbstractClassifier nextSource() {
             AbstractClassifier classifier = source.next();
+            if(classifier instanceof Knn) {
+                Knn knn = (Knn) classifier;
+                DistanceMeasure distanceMeasure = knn.getDistanceMeasure();
+                distanceMeasure.setCacheDistances(true);
+                if(distanceMeasure instanceof Ddtw || distanceMeasure instanceof Wddtw) {
+                    if(derivativeCache == null) {
+                        derivativeCache = new Ddtw().getDerivativeCache();
+                    }
+                    if(distanceMeasure instanceof Ddtw) {
+                        ((Ddtw) distanceMeasure).setDerivativeCache(derivativeCache);
+                    }
+                    if(distanceMeasure instanceof Wddtw) {
+                        ((Wddtw) distanceMeasure).setDerivativeCache(derivativeCache);
+                    }
+                }
+            }
             if(classifier instanceof Seedable) {
                 ((Seedable) classifier).setTrainSeed(trainSeed);
                 ((Seedable) classifier).setTestSeed(testSeed);
@@ -175,6 +195,7 @@ public class Ee
         Instances train = dataset[0];
         Instances test = dataset[1];
         Ee ee = new Ee();
+//        ee.getLogger().setLevel(Level.OFF);
         ee.setTrainSeed(seed);
         ee.setTestSeed(seed);
         ee.setFindTrainAccuracyEstimate(true);
@@ -204,7 +225,7 @@ public class Ee
             iterator.remove();
             ClassifierResults trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
             Benchmark benchmark = new Benchmark(classifier, trainResults);
-            LOGGER.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
+            logger.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
             member.getSelector().add(benchmark);
             feedback(member, benchmark);
             if(!iterator.hasNext()) {
@@ -215,6 +236,7 @@ public class Ee
         for(Member member : members) {
             List<Benchmark> selected = member.getSelector().getSelectedAsList();
             Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
+            System.out.println(StringUtilities.join(", " , choice.getClassifier().getOptions()));
             constituents.add(choice);
         }
         if(estimateTrain) {
@@ -246,7 +268,10 @@ public class Ee
 
     private void setup(Instances trainInstances) {
         if(trainSeed == null) {
-
+            logger.warning("train seed not set");
+        }
+        if(testSeed == null) {
+            logger.warning("test seed not set");
         }
         if(trainInstances.isEmpty()) {
             throw new IllegalArgumentException("train instances empty");
@@ -254,6 +279,7 @@ public class Ee
         if(parameterSpaceFunctions.isEmpty()) {
             throw new IllegalStateException("no constituents given");
         }
+        derivativeCache = null;
         trainInstancesSize = trainInstances.size();
         members = new ArrayList<>();
         memberIterator = new RandomIterator<>(trainRandom);
@@ -271,7 +297,7 @@ public class Ee
 
                     return knn;
                 });
-                KBestSelector<Benchmark, Double> selector = new KBestSelector<>((a, b) -> Double.compare(a, b));
+                KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
                 selector.setLimit(1);
                 selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
                 Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector);

@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers.distance_based.distances.msm;
 
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import utilities.ArrayUtilities;
+import weka.core.Instance;
 
 public class Msm
     extends DistanceMeasure {
@@ -30,34 +32,33 @@ public class Msm
     }
 
     @Override
-    public double distance() {
-        double[] first = getTarget();
-        double[] second = getCandidate();
+    public double measureDistance() {
+        Instance a = getFirstInstance();
+        int aLength = a.numAttributes() - 1;
+        Instance b = getSecondInstance();
+        int bLength = b.numAttributes() - 1;
 
-        int m = first.length;
-        int n = first.length;
-
-        double[][] cost = new double[m][n];
+        double[][] cost = new double[aLength][bLength];
 
         // Initialization
-        cost[0][0] = Math.abs(first[0] - second[0]);
-        for (int i = 1; i < m; i++) {
-            cost[i][0] = cost[i - 1][0] + findCost(first[i], first[i - 1], second[0]);
+        cost[0][0] = Math.abs(a.value(0) - b.value(0));
+        for (int i = 1; i < aLength; i++) {
+            cost[i][0] = cost[i - 1][0] + findCost(a.value(i), a.value(i - 1), b.value(0));
         }
-        for (int i = 1; i < n; i++) {
-            cost[0][i] = cost[0][i - 1] + findCost(second[i], first[0], second[i-1]);
+        for (int i = 1; i < bLength; i++) {
+            cost[0][i] = cost[0][i - 1] + findCost(b.value(i), a.value(0), b.value(i-1));
         }
 
         // Main Loop
         double min;
         double cutOffValue = getLimit();
-        for (int i = 1; i < m; i++) {
+        for (int i = 1; i < aLength; i++) {
             min = cutOffValue;
-            for (int j = 1; j < n; j++) {
+            for (int j = 1; j < bLength; j++) {
                 double d1, d2, d3;
-                d1 = cost[i - 1][j - 1] + Math.abs(first[i] - second[j]);
-                d2 = cost[i - 1][j] + findCost(first[i], first[i-1], second[j]);
-                d3 = cost[i][j - 1] + findCost(second[j], first[i], second[j-1]);
+                d1 = cost[i - 1][j - 1] + Math.abs(a.value(i) - b.value(j));
+                d2 = cost[i - 1][j] + findCost(a.value(i), a.value(i-1), b.value(j));
+                d3 = cost[i][j - 1] + findCost(b.value(j), a.value(i), b.value(j-1));
                 cost[i][j] = Math.min(d1, Math.min(d2, d3));
 
                 if(cost[i][j] >=cutOffValue){
@@ -73,13 +74,14 @@ public class Msm
             }
         }
         // Output
-        return cost[m - 1][n - 1];
+        return cost[aLength - 1][bLength - 1];
     }
 
     public static final String COST_KEY = "cost";
 
     @Override
     public void setOption(final String key, final String value) {
+        super.setOption(key, value);
         if (key.equals(COST_KEY)) {
             setCost(Double.parseDouble(value));
         }
@@ -87,10 +89,10 @@ public class Msm
 
     @Override
     public String[] getOptions() {
-        return new String[] {
+        return ArrayUtilities.concat(new String[] {
             COST_KEY,
             String.valueOf(cost)
-        };
+        }, super.getOptions());
     }
 
 

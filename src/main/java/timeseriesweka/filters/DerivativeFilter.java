@@ -100,5 +100,6 @@ public class DerivativeFilter extends SimpleBatchFilter{
         return derivative;
     }
 
+    public static final DerivativeFilter INSTANCE = new DerivativeFilter();
 
 }

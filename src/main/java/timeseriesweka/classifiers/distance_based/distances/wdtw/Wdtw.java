@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers.distance_based.distances.wdtw;
 
 import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
+import utilities.ArrayUtilities;
+import weka.core.Instance;
 
 public class Wdtw
     extends DistanceMeasure {
@@ -28,22 +30,22 @@ public class Wdtw
     private double[] weightVector;
 
     @Override
-    public double distance() {
-
-        double[] a = getTarget();
-        double[] b = getCandidate();
-        if(seriesLength < 0 || seriesLength != a.length) {
-            generateWeights(a.length);
+    public double measureDistance() {
+        
+        Instance a = getFirstInstance();
+        int aLength = a.numAttributes() - 1;
+        Instance b = getSecondInstance();
+        int bLength = b.numAttributes() - 1;
+        if(seriesLength < 0 || seriesLength != aLength) {
+            generateWeights(aLength);
         }
         double cutOff = getLimit();
 
         //create empty array
-        int m = a.length;
-        int n = b.length;
-        double[][] distances = new double[m][n];
+        double[][] distances = new double[aLength][bLength];
 
         //first value
-        distances[0][0] = weightVector[0] * (a[0] - b[0]) * (a[0] - b[0]);
+        distances[0][0] = weightVector[0] * (a.value(0) - b.value(0)) * (a.value(0) - b.value(0));
 
         //early abandon if first values is larger than cut off
         if (distances[0][0] > cutOff) {
@@ -51,27 +53,27 @@ public class Wdtw
         }
 
         //top row
-        for (int i = 1; i < n; i++) {
+        for (int i = 1; i < bLength; i++) {
             distances[0][i] =
-                distances[0][i - 1] + weightVector[i] * (a[0] - b[i]) * (a[0] - b[i]); //edited by Jay
+                distances[0][i - 1] + weightVector[i] * (a.value(0) - b.value(i)) * (a.value(0) - b.value(i)); //edited by Jay
         }
 
         //first column
-        for (int i = 1; i < m; i++) {
+        for (int i = 1; i < aLength; i++) {
             distances[i][0] =
-                distances[i - 1][0] + weightVector[i] * (a[i] - b[0]) * (a[i] - b[0]); //edited by Jay
+                distances[i - 1][0] + weightVector[i] * (a.value(i) - b.value(0)) * (a.value(i) - b.value(0)); //edited by Jay
         }
 
         //warp rest
         double minDistance;
-        for (int i = 1; i < m; i++) {
+        for (int i = 1; i < aLength; i++) {
             boolean overflow = true;
 
-            for (int j = 1; j < n; j++) {
+            for (int j = 1; j < bLength; j++) {
                 //calculate distances
                 minDistance = Math.min(distances[i][j - 1], Math.min(distances[i - 1][j], distances[i - 1][j - 1]));
                 distances[i][j] =
-                    minDistance + weightVector[Math.abs(i - j)] * (a[i] - b[j]) * (a[i] - b[j]);
+                    minDistance + weightVector[Math.abs(i - j)] * (a.value(i) - b.value(j)) * (a.value(i) - b.value(j));
 
                 if (overflow && distances[i][j] < cutOff) {
                     overflow = false; // because there's evidence that the path can continue
@@ -83,7 +85,7 @@ public class Wdtw
                 return Double.POSITIVE_INFINITY;
             }
         }
-        return distances[m - 1][n - 1];
+        return distances[aLength - 1][bLength - 1];
     }
 
 
@@ -91,6 +93,7 @@ public class Wdtw
 
     @Override
     public void setOption(final String key, final String value) {
+        super.setOption(key, value);
         if (key.equals(WEIGHT_KEY)) {
             setG(Double.parseDouble(value));
         }
@@ -98,10 +101,10 @@ public class Wdtw
 
     @Override
     public String[] getOptions() {
-        return new String[] {
+        return ArrayUtilities.concat(new String[] {
             WEIGHT_KEY,
             String.valueOf(g),
-            };
+            }, super.getOptions());
     }
 
 
