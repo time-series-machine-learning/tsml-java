@@ -1,6 +1,8 @@
 package timeseriesweka.classifiers.distance_based.ee;
 
+import akka.event.Logging;
 import evaluation.evaluators.BespokeTrainEstimateEvaluator;
+import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import timeseriesweka.classifiers.Seedable;
@@ -36,6 +38,7 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
 import static utilities.GenericTools.indexOfMax;
@@ -49,16 +52,16 @@ public class Ee
     // todo add classifiers
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
         i -> new EdParameterSpaceBuilder().build(),
-        i -> new DtwParameterSpaceBuilder().build(i),
-        i -> new FullDtwParameterSpaceBuilder().build(),
-        i -> new DdtwParameterSpaceBuilder().build(i),
-        i -> new FullDdtwParameterSpaceBuilder().build(),
-        i -> new WdtwParameterSpaceBuilder().build(),
-        i -> new WddtwParameterSpaceBuilder().build(),
-        i -> new LcssParameterSpaceBuilder().build(i),
-        i -> new MsmParameterSpaceBuilder().build(),
-        i -> new ErpParameterSpaceBuilder().build(i),
-        i -> new TwedParameterSpaceBuilder().build()
+        i -> new DtwParameterSpaceBuilder().build(i)
+//        i -> new FullDtwParameterSpaceBuilder().build(),
+//        i -> new DdtwParameterSpaceBuilder().build(i),
+//        i -> new FullDdtwParameterSpaceBuilder().build(),
+//        i -> new WdtwParameterSpaceBuilder().build(),
+//        i -> new WddtwParameterSpaceBuilder().build(),
+//        i -> new LcssParameterSpaceBuilder().build(i),
+//        i -> new MsmParameterSpaceBuilder().build(),
+//        i -> new ErpParameterSpaceBuilder().build(i),
+//        i -> new TwedParameterSpaceBuilder().build()
                                                                                                              ));
     private Long trainSeed;
     private Long testSeed;
@@ -69,26 +72,41 @@ public class Ee
     private String trainResultsPath;
     private ClassifierResults trainResults;
     private int trainInstancesSize;
+    private int minTrainSize = -1;
+    private final static Logger LOGGER = Logger.getLogger(Ee.class.getCanonicalName());
 
     public class Member {
 
         private final AbstractIterator<AbstractClassifier> source;
+        private final AbstractIterator<AbstractClassifier> improvement;
 
         public AbstractIterator<AbstractClassifier> getImprovement() {
             return improvement;
         }
 
-        private final AbstractIterator<AbstractClassifier> improvement;
-        private final IncrementalTuner tuner;
+        private final AbstractIterator<AbstractClassifier> iterator;
+        private final KBestSelector<Benchmark, Double> selector;
+        private final Evaluator evaluator;
 
         public Member(final AbstractIterator<AbstractClassifier> source,
                       final AbstractIterator<AbstractClassifier> improvement,
-                      final KBestSelector<Benchmark, Double> selector,
-                      final Instances trainInstances) {
+                      final KBestSelector<Benchmark, Double> selector) {
             this.source = source;
             this.improvement = improvement;
-            tuner = new IncrementalTuner();
-            tuner.setIterator(new Iterator<AbstractClassifier>() {
+            this.iterator = new AbstractIterator<AbstractClassifier>() {
+
+                private AbstractIterator<AbstractClassifier> previous;
+
+                @Override
+                public void add(final AbstractClassifier item) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public AbstractIterator<AbstractClassifier> iterator() {
+                    throw new UnsupportedOperationException();
+                }
+
                 @Override
                 public boolean hasNext() {
                     return source.hasNext() || improvement.hasNext();
@@ -104,37 +122,49 @@ public class Ee
                         choice = trainRandom.nextBoolean();
                     }
                     if (choice) {
+                        previous = source;
                         classifier = nextSource();
                     } else {
+                        previous = improvement;
                         classifier = nextImprovement();
-                    }
-                    if(classifier instanceof Seedable) {
-                        ((Seedable) classifier).setTrainSeed(trainSeed);
-                        ((Seedable) classifier).setTestSeed(testSeed);
                     }
                     return classifier;
                 }
-            });
-            tuner.setSelector(selector);
-            tuner.setEvaluator(new BespokeTrainEstimateEvaluator());
-            tuner.setInstances(trainInstances);
+
+                @Override
+                public void remove() {
+                    previous.remove();
+                }
+            };
+            this.selector = selector;
+            this.evaluator = new BespokeTrainEstimateEvaluator();
         }
 
         private AbstractClassifier nextSource() {
             AbstractClassifier classifier = source.next();
-            source.remove();
+            if(classifier instanceof Seedable) {
+                ((Seedable) classifier).setTrainSeed(trainSeed);
+                ((Seedable) classifier).setTestSeed(testSeed);
+            }
             return classifier;
         }
 
         private AbstractClassifier nextImprovement() {
             AbstractClassifier classifier = improvement.next();
-            improvement.remove();
             classifier = improve(classifier);
             return classifier;
         }
 
-        public IncrementalTuner getTuner() {
-            return tuner;
+        public AbstractIterator<AbstractClassifier> getIterator() {
+            return iterator;
+        }
+
+        public KBestSelector<Benchmark, Double> getSelector() {
+            return selector;
+        }
+
+        public Evaluator getEvaluator() {
+            return evaluator;
         }
     }
 
@@ -147,6 +177,7 @@ public class Ee
         Ee ee = new Ee();
         ee.setTrainSeed(seed);
         ee.setTestSeed(seed);
+        ee.setFindTrainAccuracyEstimate(true);
         ee.buildClassifier(train);
         ClassifierResults trainResults = ee.getTrainResults();
         System.out.println("train acc: " + trainResults.getAcc());
@@ -168,25 +199,28 @@ public class Ee
         setup(trainInstances);
         while (memberIterator.hasNext()) {
             Member member = memberIterator.next();
-            IncrementalTuner tuner = member.getTuner();
-            Benchmark benchmark = tuner.next();
-            tuner.remove();
-            if(!tuner.hasNext()) {
+            AbstractIterator<AbstractClassifier> iterator = member.getIterator();
+            AbstractClassifier classifier = iterator.next();
+            iterator.remove();
+            ClassifierResults trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
+            Benchmark benchmark = new Benchmark(classifier, trainResults);
+            LOGGER.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
+            member.getSelector().add(benchmark);
+            feedback(member, benchmark);
+            if(!iterator.hasNext()) {
                 memberIterator.remove();
             }
-            feedback(member, benchmark);
         }
         constituents = new ArrayList<>();
         for(Member member : members) {
-            List<Benchmark> selected = member.getTuner().getSelector().getSelectedAsList();
-            if(selected.size() > 1) {
-                // todo rand trim
-            }
-            constituents.addAll(selected);
+            List<Benchmark> selected = member.getSelector().getSelectedAsList();
+            Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
+            constituents.add(choice);
         }
         if(estimateTrain) {
             trainResults = new ClassifierResults();
             for(int i = 0; i < trainInstances.size(); i++) {
+                long time = System.nanoTime();
                 double[] distribution = new double[trainInstances.numClasses()];
                 for(Benchmark constituent : constituents) {
                     ClassifierResults constituentTrainResults = constituent.getResults();
@@ -194,6 +228,15 @@ public class Ee
                     ArrayUtilities.multiplyInPlace(constituentDistribution, constituentTrainResults.getAcc());
                     ArrayUtilities.addInPlace(distribution, constituentDistribution);
                 }
+                ArrayUtilities.normaliseInPlace(distribution);;
+                int prediction = ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), trainRandom);
+                time = System.nanoTime() - time;
+                Instance trainInstance = trainInstances.get(i);
+                trainResults.addPrediction(trainInstance.classValue(),
+                                           distribution,
+                                           prediction,
+                                           time,
+                                           null);
             }
             if(trainResultsPath != null) {
                 trainResults.writeFullResultsToFile(trainResultsPath);
@@ -202,7 +245,9 @@ public class Ee
     }
 
     private void setup(Instances trainInstances) {
-        // todo is train seed set / test seed
+        if(trainSeed == null) {
+
+        }
         if(trainInstances.isEmpty()) {
             throw new IllegalArgumentException("train instances empty");
         }
@@ -222,13 +267,14 @@ public class Ee
                 classifierIterator.setParameterSetIterator(parameterSetIterator);
                 classifierIterator.setSupplier(() -> {
                     Knn knn = new Knn();
-                    knn.setTrainSize(2);
+                    knn.setTrainSize(minTrainSize);
+
                     return knn;
                 });
-                KBestSelector<Benchmark, Double> selector = new KBestSelector<>((aDouble, t1) -> Double.compare(t1, aDouble));
+                KBestSelector<Benchmark, Double> selector = new KBestSelector<>((a, b) -> Double.compare(a, b));
                 selector.setLimit(1);
                 selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
-                Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector, trainInstances);
+                Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector);
                 memberIterator.add(member);
                 members.add(member);
             }
@@ -246,7 +292,7 @@ public class Ee
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
             int trainSize = knn.getTrainSize();
-            return trainSize + 1 <= trainInstancesSize;
+            return trainSize + 1 <= trainInstancesSize && trainSize >= 0;
         }
         throw new UnsupportedOperationException();
     }

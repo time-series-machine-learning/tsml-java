@@ -208,6 +208,15 @@ public class ParameterSet implements Options {
 
     @Override
     public String[] getOptions() {
-        return toOptionsList();
+        String[] ps = new String[parameterSet.size() * 2];
+
+        int i = 0;
+        for (Map.Entry<String, String> entry : parameterSet.entrySet()) {
+            ps[i] = entry.getKey();
+            ps[i+1] = entry.getValue();
+            i+=2;
+        }
+
+        return ps;
     }
 }

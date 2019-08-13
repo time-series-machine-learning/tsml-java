@@ -10,6 +10,7 @@ import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import utilities.*;
 import utilities.iteration.AbstractIterator;
+import utilities.iteration.linear.LinearIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -51,6 +52,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private StopWatch testTimer = new StopWatch();
     private int trainSize = -1;
     private ClassifierResults trainResults;
+    private static final String TRAIN_SIZE_KEY = "trainSize";
 
     public Knn() {
 
@@ -98,7 +100,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
         }
         System.out.println(testResults.getAcc());
-    }    @Override
+    }
+
+    @Override
     public void setOptions(String[] options) throws Exception {
         Options.super.setOptions(options);
         distanceMeasure.setOptions(options);
@@ -142,9 +146,13 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         Searcher searcher = new Searcher(testInstance, false);
         searcher.addAll(trainInstances);
         return searcher.predict();
-    }    @Override
+    }
+
+    @Override
     public String[] getOptions() {
         return ArrayUtilities.concat(distanceMeasure.getOptions(), new String[]{
+                TRAIN_SIZE_KEY,
+                String.valueOf(trainSize),
                 DISTANCE_MEASURE_KEY,
                 String.valueOf(distanceMeasure),
                 K_KEY,
@@ -243,15 +251,17 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private AbstractIterator<Instance> buildTrainInstanceIterator() {
-        RandomIterator<Instance> iterator = new RandomIterator<>();
-        iterator.setSeed(trainRandom.nextLong());
+//        RandomIterator<Instance> iterator = new RandomIterator<>();
+//        iterator.setSeed(trainRandom.nextLong());
+        LinearIterator<Instance> iterator = new LinearIterator<>();
         iterator.addAll(trainInstances);
         return iterator;
     }
 
     private AbstractIterator<Instance> buildTrainEstimatorIterator() {
-        RandomIterator<Instance> iterator = new RandomIterator<>();
-        iterator.setSeed(trainRandom.nextLong());
+//        RandomIterator<Instance> iterator = new RandomIterator<>();
+//        iterator.setSeed(trainRandom.nextLong());
+        LinearIterator<Instance> iterator = new LinearIterator<>();
         iterator.addAll(trainInstances);
         return iterator;
     }
@@ -452,7 +462,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
         private Searcher(final Instance target, boolean train) {
             this.target = target;
-            selector = new KBestSelector<>(((Comparator<Double>) Double::compare).reversed());
+            selector = new KBestSelector<>((a, b) -> Double.compare(b, a));
             selector.setLimit(k);
             this.train = train;
             if (train) {
@@ -502,6 +512,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 Double max = selector.getWorstValue();
                 if (max != null) {
                     distanceMeasure.setLimit(max);
+                } else {
+                    distanceMeasure.setLimit(Double.POSITIVE_INFINITY);
                 }
                 double distance;
                 if (train) {
@@ -514,15 +526,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
+    @Override
+    public String toString() {
+        return "KNN";
+    }
 }

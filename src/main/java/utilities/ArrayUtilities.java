@@ -314,9 +314,13 @@ public class ArrayUtilities {
         return indices;
     }
 
+    public static <A> A randomChoice(List<A> list, Random random) {
+        return list.get(random.nextInt(list.size()));
+    }
+
     public static <A> int bestIndex(List<A> list, Comparator<A> comparator, Random random) {
         List<Integer> indices = bestIndices(list, comparator);
-        return indices.get(random.nextInt(indices.size()));
+        return randomChoice(indices, random);
     }
 
     public static <A extends Comparable<A>> int bestIndex(List<A> list, Random random) {

@@ -63,7 +63,7 @@ public class KBestSelector<A, B> implements Copyable
     }
 
     public KBestSelector(Comparator<B> comparator) {
-        map = new TreeMap<>(comparator);
+        map = new TreeMap<>(comparator.reversed());
         this.comparator = comparator;
     }
 
@@ -83,11 +83,11 @@ public class KBestSelector<A, B> implements Copyable
         B value = extractor.apply(item);
         int comparison;
         if(worstValue == null) {
-            comparison = -1;
+            comparison = 1;
         } else {
             comparison = comparator.compare(value, worstValue);
         }
-        if (comparison <= 0 || (size < limit || limit <= 0)) {
+        if (comparison >= 0 || (size < limit || limit <= 0)) {
             List<A> items = map.get(value);
             if (items == null) {
                 items = new ArrayList<>();
@@ -95,13 +95,13 @@ public class KBestSelector<A, B> implements Copyable
                 if(size == 0) {
                     worstValue = value;
                     worstItems = items;
-                } else if(comparison > 0){
+                } else if(comparison < 0){
                     worstValue = value;
                 }
             }
             items.add(item);
             size++;
-            if (comparison < 0 && size > limit && limit > 0) {
+            if (comparison > 0 && size > limit && limit > 0) {
                 int numFurthestItems = worstItems.size();
                 if (size - limit >= numFurthestItems) {
                     map.pollLastEntry();

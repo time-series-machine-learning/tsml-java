@@ -113,17 +113,9 @@ public class Dtw extends DistanceMeasure {
     }
 
     public static final String NAME = "DTW";
-    public static final String ED_NAME = "ED";
-    public static final String FULL_DTW_NAME = "Full_" + NAME;
 
     @Override
     public String toString() {
-        if(warpingWindow == 0) {
-            return ED_NAME;
-        }
-        if(warpingWindow == -1) {
-            return FULL_DTW_NAME;
-        }
         return NAME;
     }
 

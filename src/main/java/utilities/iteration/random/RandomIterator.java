@@ -52,6 +52,11 @@ public class RandomIterator<A> extends LinearIterator<A> {
     }
 
     @Override
+    public boolean hasNext() {
+        return !values.isEmpty();
+    }
+
+    @Override
     public A next() {
         index = random.nextInt(values.size());
         A value = values.get(index);
