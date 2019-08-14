@@ -21,6 +21,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+
+import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.WindowSearcher;
 import timeseriesweka.classifiers.distance_based.fast_dtw.items.MonoDoubleItemSet;
 import timeseriesweka.classifiers.distance_based.fast_dtw.items.SequenceStatsCache;
 import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
