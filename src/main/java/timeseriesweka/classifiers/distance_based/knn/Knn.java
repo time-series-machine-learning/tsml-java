@@ -54,10 +54,12 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private StopWatch trainTimer = new StopWatch();
     private StopWatch testTimer = new StopWatch();
     private int neighbourhoodSizeLimit = -1;
+    private double neighbourhoodSizeLimitPercentage = -1;
     private int trainEstimateSizeLimit = -1;
     private ClassifierResults trainResults;
     private Cache<Instance, Instance, Double> distanceCache;
     private boolean distanceCacheEnabled = true;
+    private static final String NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "neighbourhoodSizeLimitPercentage";
     private static final String DISTANCE_CACHE_ENABLED_KEY = "distanceCacheEnabled";
     private static final String NEIGHBOURHOOD_SIZE_LIMIT_KEY = "neighbourhoodSizeLimit";
     private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "trainEstimateSizeLimit";
@@ -193,6 +195,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public String[] getOptions() {
         return ArrayUtilities.concat(distanceMeasure.getOptions(), new String[]{
+                NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY,
+                String.valueOf(neighbourhoodSizeLimitPercentage),
                 NEIGHBOURHOOD_SIZE_LIMIT_KEY,
                 String.valueOf(neighbourhoodSizeLimit),
                 DISTANCE_MEASURE_KEY,
@@ -204,7 +208,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 TEST_TIME_CONTRACT_KEY,
                 String.valueOf(testTimeLimitNanos),
                 DISTANCE_CACHE_ENABLED_KEY,
-                String.valueOf(distanceCacheEnabled)
+                String.valueOf(distanceCacheEnabled),
         });
     }
 
@@ -223,6 +227,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 System.err.println("train seed not set");
             }
             if(trainEstimateEnabled) {
+                if(neighbourhoodSizeLimitPercentage >= 0 && neighbourhoodSizeLimitPercentage <= 1) {
+                    neighbourhoodSizeLimit = (int) (trainInstances.size() * neighbourhoodSizeLimitPercentage);
+                }
                 neighbourhood = new ArrayList<>();
                 if(distanceCacheEnabled) {
                     InstanceTools.indexInstances(trainInstances);
@@ -405,6 +412,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             case NEIGHBOURHOOD_SIZE_LIMIT_KEY:
                 setNeighbourhoodSizeLimit(Integer.parseInt(value));
                 break;
+            case NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY:
+                setNeighbourhoodSizeLimitPercentage(Double.parseDouble(value));
         }
     }
 
@@ -480,6 +489,14 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     public void setTrainEstimateSizeLimit(int trainEstimateSizeLimit) {
         this.trainEstimateSizeLimit = trainEstimateSizeLimit;
+    }
+
+    public double getNeighbourhoodSizeLimitPercentage() {
+        return neighbourhoodSizeLimitPercentage;
+    }
+
+    public void setNeighbourhoodSizeLimitPercentage(double neighbourhoodSizeLimitPercentage) {
+        this.neighbourhoodSizeLimitPercentage = neighbourhoodSizeLimitPercentage;
     }
 
     private static class Neighbour {

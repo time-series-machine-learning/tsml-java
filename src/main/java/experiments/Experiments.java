@@ -14,6 +14,8 @@
  */
 package experiments;
 
+import utilities.StringUtilities;
+import weka.classifiers.AbstractClassifier;
 import weka_uea.classifiers.SaveEachParameter;
 import weka_uea.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -94,10 +96,22 @@ public class Experiments  {
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
 
-    @Parameters(separators = "=")
+    @Parameters(separators = " ")
     public static class ExperimentalArguments implements Runnable {
-        
-    //REQUIRED PARAMETERS
+
+        @Parameter(names={"-p","--parameter"}, description = "Parameter key-value pair to be passed to the classifier's setOptions(String[]) function")
+        public List<String> parameters = new ArrayList<>();
+
+        @Parameter(names={"-ap","--appendParameters"}, description = "Use parameters in classifier name")
+        public boolean appendParameters = false;
+
+        @Parameter(names={"-aip","--appendParameters"}, description = "Use parameters in classifier name")
+        public boolean appendIncrementalParameter = false;
+
+        @Parameter(names={"-ip","--parameter"}, description = "Incremental parameter key-value pair to be passed to the classifier's setOptions(String[]) function. This list of parameters are incremental, e.g. setting the build time limit over a range of times, say 1m, 2m, 5m, 10m, where each depend on the previous.")
+        public List<String> incrementalParameters = new ArrayList<>();
+
+        //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
@@ -429,29 +443,50 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can 
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
-        
-        //Build/make the directory to write the train and/or testFold files to
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
-        File f = new File(fullWriteLocation);
-        if (!f.exists())
-            f.mkdirs();
-        
-        String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
-        
-        //Check whether fold already exists, if so, dont do it, just quit
-        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-            return;
+
+        AbstractClassifier abstractClassifier = (AbstractClassifier) classifier;
+        List<String> parameters = new ArrayList<>();
+        for(String str : expSettings.parameters) {
+            parameters.addAll(Arrays.asList(str.split(" ")));
         }
-        else {     
-            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
-        
-            //If needed, build/make the directory to write the train and/or testFold files to
-            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation;
-            
-            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished. 
-            // default builds a foldx/ dir in normal write dir
+        String[] parametersArray = parameters.toArray(new String[0]);
+        abstractClassifier.setOptions(parametersArray);
+
+        if(expSettings.appendParameters && !parameters.isEmpty()) {
+            expSettings.classifierName += "," + StringUtilities.join(",", parametersArray);
+        }
+
+        String classifierName = expSettings.classifierName;
+        if(expSettings.incrementalParameters.isEmpty()) {
+            expSettings.incrementalParameters.add(" ");
+        }
+        for(String incrementalParameterSet : expSettings.incrementalParameters) {
+            String[] incrementalParameters = incrementalParameterSet.split(" ");
+            if(expSettings.appendIncrementalParameter && incrementalParameters.length > 0) {
+                classifierName = expSettings.classifierName + "," + StringUtilities.join(",", incrementalParameters);
+            }
+            abstractClassifier.setOptions(incrementalParameters);
+            //Build/make the directory to write the train and/or testFold files to
+            String fullWriteLocation = expSettings.resultsWriteLocation + classifierName + "/Predictions/" + expSettings.datasetName + "/";
+            File f = new File(fullWriteLocation);
+            if (!f.exists())
+                f.mkdirs();
+            String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+
+            //Check whether fold already exists, if so, dont do it, just quit
+            if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
+                return;
+            }
+            else {
+                Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+
+                //If needed, build/make the directory to write the train and/or testFold files to
+                if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+                    expSettings.supportingFilePath = fullWriteLocation;
+
+                ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
+                // default builds a foldx/ dir in normal write dir
 //            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
 //                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
 //            if (classifier instanceof FileProducer) {
@@ -459,20 +494,21 @@ public class Experiments  {
 //                if (!f.exists())
 //                    f.mkdirs();
 //            }
-            
-            //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
-            if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
-                expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
-                
-                targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                    LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                    return;
-                }
-            }
 
-            double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
+                //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
+                if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
+                    expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
+
+                    targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
+                    if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                        LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
+                        return;
+                    }
+                }
+
+                double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+                LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
+            }
         }
     }
     
