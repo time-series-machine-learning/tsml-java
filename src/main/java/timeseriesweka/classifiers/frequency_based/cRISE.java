@@ -17,11 +17,11 @@ package timeseriesweka.classifiers.frequency_based;
 import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import fileIO.FullAccessOutFile;
+import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.FFT;
+import timeseriesweka.filters.PowerSpectrum;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -97,7 +97,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     private ArrayList<int[]> intervalsInfo = null;
     private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
     private ArrayList<Integer> rawIntervalIndexes = null;
-    private FFT fft;
+    private PowerSpectrum PS;
     private TransformType transformType = TransformType.ACF_PS;
     private String serialisePath = null;
     private Instances data = null;
@@ -119,7 +119,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         this.setTransformType(TransformType.ACF_PS);
     }
 
-    public enum TransformType {ACF, PS, ACF_PS, ACF_PS_AR}
+    public enum TransformType {ACF, PS, FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
 
     /**
      * Function used to reset internal state of classifier.
@@ -132,7 +132,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         intervalsInfo = new ArrayList<>();
         intervalsAttIndexes = new ArrayList<>();
         rawIntervalIndexes = new ArrayList<>();
-        fft = new FFT();
+        PS = new PowerSpectrum();
         treeCount = 0;
     }
 
@@ -422,10 +422,18 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 break;
             case PS:
                 try {
-                    fft.useFFT();
-                    temp = fft.process(instances);
+                    PS.useFFT();
+                    temp = PS.process(instances);
                 } catch (Exception ex) {
                     System.out.println("FFT failed (could be build or classify) \n" + ex);
+                }
+                break;
+            case FFT:
+                Fast_FFT Fast_FFT = new Fast_FFT();
+                try {
+                    temp = Fast_FFT.process(instances);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 break;
             case ACF_PS:
@@ -433,6 +441,13 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
                 temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case ACF_FFT:
+                temp = transformInstances(instances, TransformType.ACF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case ACF_PS_AR:
@@ -506,7 +521,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
             this.classifier = ((cRISE)temp).classifier;
             this.data = ((cRISE)temp).data;
             this.downSample = ((cRISE)temp).downSample;
-            this.fft = ((cRISE)temp).fft;
+            this.PS = ((cRISE)temp).PS;
             this.intervalsAttIndexes = ((cRISE)temp).intervalsAttIndexes;
             this.intervalsInfo = ((cRISE)temp).intervalsInfo;
             this.maxIntervalLength = ((cRISE)temp).maxIntervalLength;
@@ -883,19 +898,38 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        cRISE cRISE = new cRISE();
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28]);
-
+        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[65] + "/" + DatasetLists.tscProblems85[65]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
+        sse.setPropInstancesInTrain(0.5);
+        sse.setSeed(0);
+
+        cRISE cRISE = null;
+        System.out.println("Dataset name: " + data.relationName());
+        System.out.println("Numer of cases: " + data.size());
+        System.out.println("Number of attributes: " + (data.numAttributes() - 1));
+        System.out.println("Number of classes: " + data.classAttribute().numValues());
+        System.out.println("\n");
         try {
-            sse.setPropInstancesInTrain(0.5);
-            sse.setSeed(0);
+            cRISE = new cRISE();
+            cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            cRISE.setTransformType(TransformType.ACF_PS);
             cr = sse.evaluate(cRISE, data);
+            System.out.println("ACF_PS");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            cRISE = new cRISE();
+            cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            cRISE.setTransformType(TransformType.ACF_FFT);
+            cr = sse.evaluate(cRISE, data);
+            System.out.println("ACF_FFT");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        System.out.println(cr.getAcc());
+
     }
 }
