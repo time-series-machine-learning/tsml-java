@@ -21,7 +21,7 @@ public class FilterUtilities {
     }
 
     public static Instances toInstances(Instance... instances) {
-        Instances result = new Instances(instances[0].dataset());
+        Instances result = new Instances(instances[0].dataset(), 0);
         result.addAll(Arrays.asList(instances));
         return result;
     }

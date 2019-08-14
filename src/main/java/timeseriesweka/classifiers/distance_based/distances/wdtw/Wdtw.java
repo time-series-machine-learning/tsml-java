@@ -93,7 +93,6 @@ public class Wdtw
 
     @Override
     public void setOption(final String key, final String value) {
-        super.setOption(key, value);
         if (key.equals(WEIGHT_KEY)) {
             setG(Double.parseDouble(value));
         }
@@ -101,10 +100,10 @@ public class Wdtw
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {
+        return new String[] {
             WEIGHT_KEY,
             String.valueOf(g),
-            }, super.getOptions());
+            };
     }
 
 

@@ -48,7 +48,7 @@ public class Ee
     private final Random trainRandom = new Random();
     private final Random testRandom = new Random();
 
-    private CachedFunction<Instance, Integer, Instance> derivativeCache;
+    private CachedFunction<Instance, Instance> derivativeCache;
 
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
 //        i -> new EdParameterSpaceBuilder().build()//,
@@ -149,7 +149,7 @@ public class Ee
             if(classifier instanceof Knn) {
                 Knn knn = (Knn) classifier;
                 DistanceMeasure distanceMeasure = knn.getDistanceMeasure();
-                distanceMeasure.setCacheDistances(true);
+//                distanceMeasure.setCacheDistances(true);
                 if(distanceMeasure instanceof Ddtw || distanceMeasure instanceof Wddtw) {
                     if(derivativeCache == null) {
                         derivativeCache = new Ddtw().getDerivativeCache();
@@ -191,7 +191,8 @@ public class Ee
     public static void main(String[] args) throws
                                            Exception {
         long seed = 0;
-        Instances[] dataset = sampleDataset("/home/vte14wgu/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
+        String username = "goastler";
+        Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
         Ee ee = new Ee();

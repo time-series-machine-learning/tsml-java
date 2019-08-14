@@ -81,7 +81,6 @@ public class Msm
 
     @Override
     public void setOption(final String key, final String value) {
-        super.setOption(key, value);
         if (key.equals(COST_KEY)) {
             setCost(Double.parseDouble(value));
         }
@@ -89,10 +88,10 @@ public class Msm
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {
+        return new String[] {
             COST_KEY,
             String.valueOf(cost)
-        }, super.getOptions());
+        };
     }
 
 

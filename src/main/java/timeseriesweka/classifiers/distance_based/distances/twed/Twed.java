@@ -161,7 +161,6 @@ public class Twed
 
     @Override
     public void setOption(final String key, final String value) {
-        super.setOption(key, value);
         if(key.equals(NU_KEY)) {
             setNu(Double.parseDouble(value));
         } else if(key.equals(LAMBDA_KEY)) {
@@ -171,12 +170,12 @@ public class Twed
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {
+        return new String[] {
             NU_KEY,
             String.valueOf(nu),
             LAMBDA_KEY,
             String.valueOf(lambda)
-        }, super.getOptions());
+        };
     }
 
     public static final String NAME = "TWE";

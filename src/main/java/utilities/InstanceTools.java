@@ -765,4 +765,71 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
+
+
+
+    public static class IndexedInstance extends DenseInstance {
+
+        public IndexedInstance(IndexedInstance indexedInstance) {
+            this(indexedInstance, indexedInstance.index);
+        }
+
+        public IndexedInstance(Instance instance, int index) {
+            super(instance);
+            this.index = index;
+        }
+
+        public IndexedInstance(double weight, double[] attValues, int index) {
+            super(weight, attValues);
+            this.index = index;
+        }
+
+        public IndexedInstance(int numAttributes, int index) {
+            super(numAttributes);
+            this.index = index;
+        }
+
+        private int index;
+
+        public int getIndex() {
+            return index;
+        }
+
+        private void setIndex(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if(o instanceof IndexedInstance) {
+                IndexedInstance other = (IndexedInstance) o;
+                return other.index == index;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return index;
+        }
+
+        @Override
+        public IndexedInstance copy() {
+            IndexedInstance result = new IndexedInstance(this);
+            result.setDataset(this.dataset());
+            return result;
+        }
+    }
+
+    public static void indexInstances(List<Instance> instances) {
+        for(int i = 0; i < instances.size(); i++) {
+            Instance instance = instances.get(i);
+            if(instance instanceof IndexedInstance) {
+                ((IndexedInstance) instance).setIndex(i);
+            } else {
+                IndexedInstance indexedInstance = new IndexedInstance(instance, i);
+                instances.set(i, indexedInstance);
+            }
+        }
+    }
 }

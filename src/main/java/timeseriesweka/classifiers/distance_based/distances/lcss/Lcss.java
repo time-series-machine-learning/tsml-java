@@ -68,7 +68,6 @@ public class Lcss extends DistanceMeasure {
 
     @Override
     public void setOption(final String key, final String value) {
-        super.setOption(key, value);
         if(key.equals(DELTA_KEY)) {
             setDelta(Integer.parseInt(value));
         } else if(key.equals(EPSILON_KEY)) {
@@ -78,12 +77,12 @@ public class Lcss extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {
+        return new String[] {
             EPSILON_KEY,
             String.valueOf(epsilon),
             DELTA_KEY,
             String.valueOf(delta)
-        }, super.getOptions());
+        };
     }
 
     public static final String NAME = "LCSS";

@@ -14,12 +14,15 @@
  */ 
 package timeseriesweka.filters;
 
+import utilities.FilterUtilities;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.*;
+
+import java.util.function.Function;
 
 
 public class DerivativeFilter extends SimpleBatchFilter{
@@ -101,5 +104,22 @@ public class DerivativeFilter extends SimpleBatchFilter{
     }
 
     public static final DerivativeFilter INSTANCE = new DerivativeFilter();
+
+    public static final Function<Instance, Instance> INSTANCE_DERIVATIVE_FUNCTION = instance -> {
+        try {
+            return FilterUtilities.filter(instance, new DerivativeFilter());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    };
+
+
+    public static final Function<Instances, Instances> INSTANCES_DERIVATIVE_FUNCTION = instances -> {
+        try {
+            return FilterUtilities.filter(instances, new DerivativeFilter());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    };
 
 }

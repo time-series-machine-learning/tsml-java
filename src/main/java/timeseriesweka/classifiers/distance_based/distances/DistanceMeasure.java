@@ -1,5 +1,6 @@
 package timeseriesweka.classifiers.distance_based.distances;
 
+import timeseriesweka.classifiers.Loggable;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.Ddtw;
 import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.distances.erp.Erp;
@@ -9,17 +10,32 @@ import timeseriesweka.classifiers.distance_based.distances.twed.Twed;
 import timeseriesweka.classifiers.distance_based.distances.wddtw.Wddtw;
 import timeseriesweka.classifiers.distance_based.distances.wdtw.Wdtw;
 import timeseriesweka.filters.cache.Cache;
+import timeseriesweka.filters.cache.CachedFunction;
 import timeseriesweka.filters.cache.DupeCache;
+import utilities.InstanceTools;
 import utilities.Options;
 import weka.core.Instance;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 public abstract class DistanceMeasure
     implements Serializable,
-               Options {
+               Options, Loggable {
+
+    protected Logger logger;
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
 
     public DistanceMeasure() { }
 
@@ -27,83 +43,26 @@ public abstract class DistanceMeasure
     private Instance firstInstance;
     private Instance secondInstance;
 
-    private Cache<Integer, Integer, Double> distanceCache = new DupeCache<>();
-
-    private boolean storeHashInInstanceWeight = true;
-    public final static String CACHED_DISTANCE_KEY = "cachedDistances";
-
-    private int count = 2;
-    private boolean cacheDistances = true;
-
-    @Override
-    public String[] getOptions() {
-        return new String[] {CACHED_DISTANCE_KEY,
-                             String.valueOf(cacheDistances)
-        };
-    }
-
-    @Override
-    public void setOption(final String key, final String value) {
-        if(key.equals(CACHED_DISTANCE_KEY)) setCacheDistances(Boolean.parseBoolean(value));
-    }
-
     protected abstract double measureDistance();
 
-    public boolean isStoreHashInInstanceWeight() {
-        return storeHashInInstanceWeight;
-    }
-
-    public void setStoreHashInInstanceWeight(final boolean storeHashInInstanceWeight) {
-        this.storeHashInInstanceWeight = storeHashInInstanceWeight;
-    }
-
-    protected int hash(Instance instance) {
-        if(storeHashInInstanceWeight) {
-            int hash = (int) instance.weight();
-            if(hash == 1) {
-                hash = count++;
-                instance.setWeight(hash);
-            }
-            return hash;
-        } else {
-            return Arrays.hashCode(instance.toDoubleArray());
-        }
-    }
-
-    public double cachedDistance() {
-        int firstHash = hash(firstInstance);
-        int secondHash = hash(secondInstance);
-        Double distance = distanceCache.get(firstHash, secondHash);
-        if(distance == null) {
-            distance = measureDistance();
-            distanceCache.put(firstHash, secondHash, distance);
-        }
-        return distance;
-    }
-
-    public double distance() {
+    public final double distance() {
         if(firstInstance.classIndex() != firstInstance.numAttributes() - 1) {
             throw new IllegalStateException("class value must be at the end");
         }
         if(secondInstance.classIndex() != secondInstance.numAttributes() - 1) {
             throw new IllegalStateException("class value must be at the end");
         }
-        double distance;
-        if(cacheDistances) {
-            distance = cachedDistance();
-        } else {
-            distance = measureDistance();
-        }
+        double distance = measureDistance();
         return distance;
     }
 
-    public double distance(final Instance first, final Instance second) {
+    public final double distance(final Instance first, final Instance second) {
         setFirstInstance(first);
         setSecondInstance(second);
         return distance();
     }
 
-    public double distance(final Instance first, final Instance second, final double limit) {
+    public final double distance(final Instance first, final Instance second, final double limit) {
         setLimit(limit);
         return distance(first, second);
     }
@@ -127,11 +86,11 @@ public abstract class DistanceMeasure
     @Override
     public abstract String toString();
 
-    public double getLimit() {
+    public final double getLimit() {
         return limit;
     }
 
-    public void setLimit(final double limit) {
+    public final void setLimit(final double limit) {
         this.limit = limit;
     }
 
@@ -140,36 +99,37 @@ public abstract class DistanceMeasure
         throw new UnsupportedOperationException();
     }
 
-    public Instance getSecondInstance() {
+    public final Instance getSecondInstance() {
         return secondInstance;
     }
 
-    public void setSecondInstance(final Instance second) {
+    public final void setSecondInstance(final Instance second) {
         this.secondInstance = second;
 
     }
 
-    public Instance getFirstInstance() {
+    public final Instance getFirstInstance() {
         return firstInstance;
     }
 
-    public void setFirstInstance(final Instance first) {
+    public final void setFirstInstance(final Instance first) {
         this.firstInstance = first;
     }
 
-    public boolean isCacheDistances() {
-        return cacheDistances;
+    public boolean isSymmetric() {
+        return true;
     }
 
-    public void setCacheDistances(final boolean cacheDistances) {
-        this.cacheDistances = cacheDistances;
-    }
-
-    public Cache<Integer, Integer, Double> getDistanceCache() {
-        return distanceCache;
-    }
-
-    public void setDistanceCache(final Cache<Integer, Integer, Double> distanceCache) {
-        this.distanceCache = distanceCache;
+    public static double transformedDistanceMeasure(DistanceMeasure distanceMeasure, Function<Instance, Instance> transformFunction, Supplier<Double> distanceSupplier) {
+        Instance origFirst = distanceMeasure.getFirstInstance();
+        Instance origSecond = distanceMeasure.getSecondInstance();
+        Instance first = transformFunction.apply(origFirst);
+        Instance second = transformFunction.apply(origSecond);
+        distanceMeasure.setFirstInstance(first);
+        distanceMeasure.setSecondInstance(second);
+        double distance = distanceSupplier.get();
+        distanceMeasure.setFirstInstance(origFirst);
+        distanceMeasure.setSecondInstance(origSecond);
+        return distance;
     }
 }

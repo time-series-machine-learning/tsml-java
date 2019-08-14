@@ -105,13 +105,12 @@ public class Dtw extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {WARPING_WINDOW_KEY, String.valueOf(warpingWindow)}, super.getOptions());
+        return new String[] {WARPING_WINDOW_KEY, String.valueOf(warpingWindow)};
     }
 
     public static final String WARPING_WINDOW_KEY = "warpingWindow";
 
     public void setOption(String key, String value) {
-        super.setOption(key, value);
         if(key.equals(WARPING_WINDOW_KEY)) {
             setWarpingWindow(Integer.parseInt(value));
         }

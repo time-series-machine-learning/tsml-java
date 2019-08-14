@@ -122,18 +122,17 @@ public class Erp extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return ArrayUtilities.concat(new String[] {
+        return new String[] {
             PENALTY_KEY,
             String.valueOf(penalty),
             BAND_SIZE_KEY,
             String.valueOf(bandSize)
-        }, super.getOptions());
+        };
     }
 
 
     @Override
     public void setOption(final String key, final String value) {
-        super.setOption(key, value);
         if (key.equals(PENALTY_KEY)) {
             setPenalty(Double.parseDouble(value));
         } else if(
