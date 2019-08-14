@@ -13,9 +13,13 @@ package timeseriesweka.classifiers.frequency_based;
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
+import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.ClassifierTools;
@@ -32,13 +36,14 @@ import timeseriesweka.filters.PowerSpectrum;
 import timeseriesweka.filters.ACF_PACF;
 import timeseriesweka.filters.ARMA;
 import timeseriesweka.filters.PACF;
-import weka.core.Capabilities;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
 import timeseriesweka.classifiers.SubSampleTrainer;
+
+import static experiments.data.DatasetLoading.loadDataNullable;
 
 /**
  * Development code for RISE
@@ -167,6 +172,9 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                     break;
                 case "PS": case "PowerSpectrum":
                     filters[count]= new PowerSpectrum();
+                    break;
+                case "FFT":
+                    filters[count] = new Fast_FFT();
                     break;
                 case "ACF_PACF": case "PACF_ACF":
                     filters[count]= new ACF_PACF();
@@ -410,7 +418,38 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     }
    
     public static void main(String[] arg) throws Exception{
-        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
+
+        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        ClassifierResults cr = null;
+        SingleSampleEvaluator sse = new SingleSampleEvaluator();
+        sse.setPropInstancesInTrain(0.5);
+        sse.setSeed(0);
+
+        RISE RISE = null;
+        System.out.println("Dataset name: " + data.relationName());
+        System.out.println("Numer of cases: " + data.size());
+        System.out.println("Number of attributes: " + (data.numAttributes() - 1));
+        System.out.println("Number of classes: " + data.classAttribute().numValues());
+        System.out.println("\n");
+        try {
+            RISE = new RISE();
+            RISE.setTransforms("ACF", "PS");
+            cr = sse.evaluate(RISE, data);
+            System.out.println("ACF_PS");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            RISE = new RISE();
+            cr = sse.evaluate(RISE, data);
+            System.out.println("ACF_FFT");
+            RISE.setTransforms("ACF", "FFT");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN");
         Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\ItalyPowerDemand\\ItalyPowerDemand_TEST");
         RISE rif = new RISE();
         rif.setTransforms("ACF","AR","AFC");
@@ -425,7 +464,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         rif.buildClassifier(train);
         System.out.println("build ok:");
         double a=ClassifierTools.accuracy(test, rif);
-        System.out.println(" Accuracy ="+a);
+        System.out.println(" Accuracy ="+a);*/
 /*
         //Get the class values as a fast vector			
         Attribute target =data.attribute(data.classIndex());
