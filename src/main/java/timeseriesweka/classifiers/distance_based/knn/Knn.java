@@ -11,22 +11,20 @@ import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distances.ddtw.DdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
 import timeseriesweka.classifiers.distance_based.distances.dtw.DtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.wddtw.WddtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.filters.cache.Cache;
 import timeseriesweka.filters.cache.DupeCache;
 import utilities.*;
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.linear.LinearIterator;
+import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
@@ -51,17 +49,18 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private AbstractIterator<Instance> trainInstanceIterator;
     private AbstractIterator<Instance> trainEstimatorIterator;
     private Instances trainInstances;
-    private Map<Instance, Map<Instance, Double>> cache;
     private List<Searcher> trainSearchers;
     private List<Instance> neighbourhood;
     private StopWatch trainTimer = new StopWatch();
     private StopWatch testTimer = new StopWatch();
-    private int trainSize = -1;
+    private int neighbourhoodSizeLimit = -1;
+    private int trainEstimateSizeLimit = -1;
     private ClassifierResults trainResults;
     private Cache<Instance, Instance, Double> distanceCache;
     private boolean distanceCacheEnabled = true;
     private static final String DISTANCE_CACHE_ENABLED_KEY = "distanceCacheEnabled";
-    private static final String TRAIN_SIZE_KEY = "trainSize";
+    private static final String NEIGHBOURHOOD_SIZE_LIMIT_KEY = "neighbourhoodSizeLimit";
+    private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "trainEstimateSizeLimit";
     private boolean earlyAbandonEnabled = true;
     private final Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
 
@@ -109,10 +108,10 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             Exception {
         int seed = 0;
         String user = "goastler";
-        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "GunPoint", seed);
+        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "StarLightCurves", seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
-        ParameterSpace parameterSpace = new DdtwParameterSpaceBuilder().build(train);
+        ParameterSpace parameterSpace = new DtwParameterSpaceBuilder().build(train);
         for(int i = 0; i < parameterSpace.size(); i++) {
             ParameterSet parameterSet = parameterSpace.get(i);
             System.out.println(parameterSet);
@@ -121,7 +120,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             knn.setFindTrainAccuracyEstimate(true);
             knn.setTrainSeed(seed);
             knn.setTestSeed(seed);
-//            knn.setDistanceCacheEnabled(false);
+            knn.setNeighbourhoodSizeLimit(10);
+            knn.setTrainEstimateSizeLimit(10);
             knn.buildClassifier(train);
             ClassifierResults trainResults = knn.getTrainResults();
             System.out.println(i + " " + trainResults.getAcc());
@@ -193,8 +193,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public String[] getOptions() {
         return ArrayUtilities.concat(distanceMeasure.getOptions(), new String[]{
-                TRAIN_SIZE_KEY,
-                String.valueOf(trainSize),
+                NEIGHBOURHOOD_SIZE_LIMIT_KEY,
+                String.valueOf(neighbourhoodSizeLimit),
                 DISTANCE_MEASURE_KEY,
                 String.valueOf(distanceMeasure),
                 K_KEY,
@@ -241,12 +241,20 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         }
     }
 
+    private boolean withinTrainEstimateSizeLimit() {
+        return trainEstimateSizeLimit < 0 || trainSearchers.size() < trainEstimateSizeLimit;
+    }
+
+    private boolean withinNeighbourhoodSizeLimit() {
+        return neighbourhoodSizeLimit < 0 || neighbourhood.size() < neighbourhoodSizeLimit;
+    }
+
     private boolean hasRemainingTrainNeighbours() {
-        return trainInstanceIterator.hasNext();
+        return trainInstanceIterator.hasNext() && withinNeighbourhoodSizeLimit();
     }
 
     private boolean hasRemainingTrainSearchers() {
-        return trainEstimatorIterator.hasNext();
+        return trainEstimatorIterator.hasNext() && withinTrainEstimateSizeLimit();
     }
 
     private boolean withinTrainTimeLimit() {
@@ -302,17 +310,17 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private AbstractIterator<Instance> buildTrainInstanceIterator() {
-//        RandomIterator<Instance> iterator = new RandomIterator<>();
-//        iterator.setSeed(trainRandom.nextLong());
-        LinearIterator<Instance> iterator = new LinearIterator<>();
+        RandomIterator<Instance> iterator = new RandomIterator<>();
+        iterator.setSeed(trainRandom.nextLong());
+//        LinearIterator<Instance> iterator = new LinearIterator<>();
         iterator.addAll(trainInstances);
         return iterator;
     }
 
     private AbstractIterator<Instance> buildTrainEstimatorIterator() {
-//        RandomIterator<Instance> iterator = new RandomIterator<>();
-//        iterator.setSeed(trainRandom.nextLong());
-        LinearIterator<Instance> iterator = new LinearIterator<>();
+        RandomIterator<Instance> iterator = new RandomIterator<>();
+        iterator.setSeed(trainRandom.nextLong());
+//        LinearIterator<Instance> iterator = new LinearIterator<>();
         iterator.addAll(trainInstances);
         return iterator;
     }
@@ -391,6 +399,12 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             case DISTANCE_CACHE_ENABLED_KEY:
                 setDistanceCacheEnabled(Boolean.parseBoolean(value));
                 break;
+            case TRAIN_ESTIMATE_SIZE_LIMIT_KEY:
+                setTrainEstimateSizeLimit(Integer.parseInt(value));
+                break;
+            case NEIGHBOURHOOD_SIZE_LIMIT_KEY:
+                setNeighbourhoodSizeLimit(Integer.parseInt(value));
+                break;
         }
     }
 
@@ -435,16 +449,16 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         neighbourhood = other.neighbourhood;
         trainTimer = other.trainTimer;
         testTimer = other.testTimer;
-        trainSize = other.trainSize;
+        neighbourhoodSizeLimit = other.neighbourhoodSizeLimit;
         trainResults = other.trainResults;
     }
 
-    public int getTrainSize() {
-        return trainSize;
+    public int getNeighbourhoodSizeLimit() {
+        return neighbourhoodSizeLimit;
     }
 
-    public void setTrainSize(int trainSize) {
-        this.trainSize = trainSize;
+    public void setNeighbourhoodSizeLimit(int neighbourhoodSizeLimit) {
+        this.neighbourhoodSizeLimit = neighbourhoodSizeLimit;
     }
 
     @Override
@@ -458,6 +472,14 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     public boolean hasTestTimeLimit() {
         return testTimeLimitNanos >= 0;
+    }
+
+    public int getTrainEstimateSizeLimit() {
+        return trainEstimateSizeLimit;
+    }
+
+    public void setTrainEstimateSizeLimit(int trainEstimateSizeLimit) {
+        this.trainEstimateSizeLimit = trainEstimateSizeLimit;
     }
 
     private static class Neighbour {

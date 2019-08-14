@@ -35,7 +35,6 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
@@ -51,17 +50,17 @@ public class Ee
     private CachedFunction<Instance, Instance> derivativeCache;
 
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
-//        i -> new EdParameterSpaceBuilder().build()//,
-        i -> new DtwParameterSpaceBuilder().build(i)//,
-//        i -> new FullDtwParameterSpaceBuilder().build(),
-//        i -> new DdtwParameterSpaceBuilder().build(i),
-//        i -> new FullDdtwParameterSpaceBuilder().build(),
-//        i -> new WdtwParameterSpaceBuilder().build(),
-//        i -> new WddtwParameterSpaceBuilder().build(),
-//        i -> new LcssParameterSpaceBuilder().build(i),
-//        i -> new MsmParameterSpaceBuilder().build(),
-//        i -> new ErpParameterSpaceBuilder().build(i),
-//        i -> new TwedParameterSpaceBuilder().build()
+        i -> new EdParameterSpaceBuilder().build(),
+        i -> new DtwParameterSpaceBuilder().build(i),
+        i -> new FullDtwParameterSpaceBuilder().build(),
+        i -> new DdtwParameterSpaceBuilder().build(i),
+        i -> new FullDdtwParameterSpaceBuilder().build(),
+        i -> new WdtwParameterSpaceBuilder().build(),
+        i -> new WddtwParameterSpaceBuilder().build(),
+        i -> new LcssParameterSpaceBuilder().build(i),
+        i -> new MsmParameterSpaceBuilder().build(),
+        i -> new ErpParameterSpaceBuilder().build(i),
+        i -> new TwedParameterSpaceBuilder().build()
                                                                                                              ));
     private Long trainSeed;
     private Long testSeed;
@@ -72,7 +71,7 @@ public class Ee
     private String trainResultsPath;
     private ClassifierResults trainResults;
     private int trainInstancesSize;
-    private int minTrainSize = -1;
+    private int minNeighbourhoodSize = -1;
     private final Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
 
     public Logger getLogger() {
@@ -237,7 +236,6 @@ public class Ee
         for(Member member : members) {
             List<Benchmark> selected = member.getSelector().getSelectedAsList();
             Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
-            System.out.println(StringUtilities.join(", " , choice.getClassifier().getOptions()));
             constituents.add(choice);
         }
         if(estimateTrain) {
@@ -294,7 +292,7 @@ public class Ee
                 classifierIterator.setParameterSetIterator(parameterSetIterator);
                 classifierIterator.setSupplier(() -> {
                     Knn knn = new Knn();
-                    knn.setTrainSize(minTrainSize);
+                    knn.setNeighbourhoodSizeLimit(minNeighbourhoodSize);
 
                     return knn;
                 });
@@ -318,7 +316,7 @@ public class Ee
     private boolean canImprove(AbstractClassifier classifier) {
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
-            int trainSize = knn.getTrainSize();
+            int trainSize = knn.getNeighbourhoodSizeLimit();
             return trainSize + 1 <= trainInstancesSize && trainSize >= 0;
         }
         throw new UnsupportedOperationException();
@@ -332,8 +330,8 @@ public class Ee
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
-            int trainSize = knn.getTrainSize();
-            knn.setTrainSize(trainSize + 1);
+            int trainSize = knn.getNeighbourhoodSizeLimit();
+            knn.setNeighbourhoodSizeLimit(trainSize + 1);
             return knn;
         }
         throw new UnsupportedOperationException();
