@@ -27,6 +27,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.Tuneable;
 
 /** 
   <!-- globalinfo-start -->
@@ -109,7 +111,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 **/ 
 
 public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler{
+        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler, Tuneable{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -741,5 +743,22 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         
         
     }
+    
+    @Override
+    public ParameterSpace getDefaultParameterSearchSpace(){
+   //TUNED TSC Classifiers
+  /* Valid options are: <p/>
+   * <pre> -T Number of trees.</pre>
+   * <pre> -I Number of intervals to fit.</pre>
+   */
+        ParameterSpace ps=new ParameterSpace();
+        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
+        ps.addParameter("-T", numTrees);
+        String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"}; 
+        ps.addParameter("-I", numInterv);
+        return ps;
+    }
+    
+    
 }
   

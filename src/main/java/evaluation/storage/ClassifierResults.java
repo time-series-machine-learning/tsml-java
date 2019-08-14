@@ -1618,7 +1618,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
                 
                 if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
                     if (printDistMissingWarning)
-                        System.out.println("Probabiltiy distributions missing from file: " + path);
+                        System.out.println("Probability distributions missing from file: " + path);
                 }
                 
                 break;

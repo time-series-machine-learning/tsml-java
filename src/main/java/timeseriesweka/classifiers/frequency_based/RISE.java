@@ -13,6 +13,7 @@ package timeseriesweka.classifiers.frequency_based;
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
@@ -39,6 +40,7 @@ import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
 import timeseriesweka.classifiers.SubSampleTrainer;
+import timeseriesweka.classifiers.Tuneable;
 
 /**
  * Development code for RISE
@@ -94,7 +96,7 @@ import timeseriesweka.classifiers.SubSampleTrainer;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrainer, Randomizable,TechnicalInformationHandler{
+public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */    
@@ -210,9 +212,10 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
      * Holders for the headers of each transform. 
      */    
     Instances[] testHolders;
+    @Override
     public void setSeed(int s){
         rand=new Random();
-        this.seed=seed;
+        this.seed=s;
         rand.setSeed(seed);
     }
     @Override
@@ -256,15 +259,18 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             numBaseClassifiers = Integer.parseInt(numCls);
         else
             numBaseClassifiers = DEFAULT_NUM_CLASSIFIERS;
-    /** Minimum sizer of all intervals */    
+    /** Minimum size of all intervals */    
         String minInt=Utils.getOption('I', options);
         if (minInt.length() != 0)
             minInterval=Integer.parseInt(minInt);
-    /** Transforms to use */    
+    /** Transforms to use */ 
+    
         String trans=Utils.getOption('T', options);
-        String[] t= trans.split(" ");
-//NEED TO CHECK THIS WORKS        
-        setTransforms(t);
+        if(trans.length()!=0){
+            String[] t= trans.split(" ");
+    //NEED TO CHECK THIS WORKS        
+            setTransforms(t);
+        }
     }
 
     @Override
@@ -454,4 +460,22 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             return seed;
         throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
     }
+    @Override
+    public ParameterSpace getDefaultParameterSearchSpace(){
+   //TUNED TSC Classifiers
+  /* Valid options are: <p/>
+  * <pre> -T Number of base classifiers.
+   * <pre> -I min Interval, integer, should be in range 3 to m-MINa check in build classifier is made to see if if.
+   * </pre>   */
+        ParameterSpace ps=new ParameterSpace();
+        String[] numTrees={"100","200","300","400","500","600"};
+        ps.addParameter("-K", numTrees);
+        String[] minInterv={"4","8","16","32","64","128"}; 
+        ps.addParameter("-I", minInterv);
+        String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
+        ps.addParameter("-T", transforms);
+        return ps;
+    }
+      
+    
 }
