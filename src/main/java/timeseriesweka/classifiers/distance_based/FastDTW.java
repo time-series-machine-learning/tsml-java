@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.FastWWSByPercent;
-import timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher.WindowSearcher;
+import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSByPercent;
+import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.WindowSearcher;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 
