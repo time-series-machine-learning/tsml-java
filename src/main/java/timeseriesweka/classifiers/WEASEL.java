@@ -1,27 +1,25 @@
 package timeseriesweka.classifiers;
 
 
-import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
+import com.carrotsearch.hppc.cursors.DoubleIntCursor;
 import com.carrotsearch.hppc.cursors.IntCursor;
-import com.carrotsearch.hppc.cursors.LongFloatCursor;
+import com.carrotsearch.hppc.cursors.LongDoubleCursor;
 import com.carrotsearch.hppc.cursors.LongIntCursor;
 import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import timeseriesweka.classifiers.cote.HiveCoteModule;
-import utilities.*;
+import utilities.ClassifierTools;
+import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import weka.core.TechnicalInformationHandler;
 
 /**
  * WEASEL Classifier
@@ -51,7 +49,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
   protected static boolean[] NORMALIZATION = new boolean[]{true, false};
 
   // chi-squared test
-  public static double chi = 2;
+  public static double chi = 0.1;
 
   // default liblinear parameters
   public static double bias = 1;
@@ -689,58 +687,139 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
      * Implementation based on:
      * https://github.com/scikit-learn/scikit-learn/blob/c957249/sklearn/feature_selection/univariate_selection.py#L170
      */
-    public void trainChiSquared(final BagOfBigrams[] bob, double chi_limit) {
+    public void trainChiSquared(final BagOfBigrams[] bob, double p_limit) {
       // Chi2 Test
       LongIntHashMap featureCount = new LongIntHashMap(bob[0].bob.size());
-      LongFloatHashMap classProb = new LongFloatHashMap(10);
-      LongIntHashMap observed = new LongIntHashMap(bob[0].bob.size());
+      DoubleIntHashMap classProb = new DoubleIntHashMap(10);
+      DoubleObjectHashMap<LongIntHashMap> observed = new DoubleObjectHashMap<>();
 
       // count number of samples with this word
       for (BagOfBigrams bagOfPattern : bob) {
-        long label = bagOfPattern.label.longValue();
+        double label = bagOfPattern.label;
+
+        int index = -1;
+        LongIntHashMap obs = null;
+        if ((index = observed.indexOf(label)) > -1) {
+          obs = observed.indexGet(index);
+        } else {
+          obs = new LongIntHashMap();
+          observed.put(label, obs);
+        }
+
         for (LongIntCursor word : bagOfPattern.bob) {
           if (word.value > 0) {
-            featureCount.putOrAdd(word.key, 1, 1);
-            long key = label << 32 | word.key;
-            observed.putOrAdd(key, 1, 1);
+            featureCount.putOrAdd(word.key, 1,1); //word.value, word.value);
+
+            // count observations per class for this feature
+            obs.putOrAdd(word.key, 1,1); //word.value, word.value);
           }
         }
       }
 
       // samples per class
       for (BagOfBigrams bagOfPattern : bob) {
-        long label = bagOfPattern.label.longValue();
+        double label = bagOfPattern.label;
         classProb.putOrAdd(label, 1, 1);
       }
 
-      // chi-squared: observed minus expected occurrence
-      LongHashSet chiSquare = new LongHashSet(featureCount.size());
-      for (LongFloatCursor prob : classProb) {
-        prob.value /= bob.length; // (float) frequencies.get(prob.key);
+      // p_value-squared: observed minus expected occurrence
+      LongDoubleHashMap chiSquareSum = new LongDoubleHashMap(featureCount.size());
+
+      for (DoubleIntCursor prob : classProb) {
+        double p = ((double)prob.value) / bob.length;
+        LongIntHashMap obs = observed.get(prob.key);
 
         for (LongIntCursor feature : featureCount) {
-          long key = prob.key << 32 | feature.key;
-          float expected = prob.value * feature.value;
+          double expected = p * feature.value;
 
-          float chi = observed.get(key) - expected;
-          float newChi = chi * chi / expected;
-          if (newChi >= chi_limit
-              && !chiSquare.contains(feature.key)) {
-            chiSquare.add(feature.key);
+          double chi = obs.get(feature.key) - expected;
+          double newChi = chi * chi / expected;
+
+          if (newChi > 0) {
+            // build the sum among p_value-values of all classes
+            chiSquareSum.putOrAdd(feature.key, newChi, newChi);
           }
         }
       }
 
+      LongHashSet chiSquare = new LongHashSet(featureCount.size());
+      ArrayList<PValueKey> values = new ArrayList<PValueKey>(featureCount.size());
+
+      for (LongDoubleCursor feature : chiSquareSum) {
+        double newChi = feature.value;
+        double pvalue = Statistics.chiSquaredProbability(newChi, classProb.keys().size()-1);
+
+        if (pvalue <= p_limit) {
+          chiSquare.add(feature.key);
+          values.add(new PValueKey(pvalue, feature.key));
+        }
+      }
+
+      // limit number of features per window size to avoid excessive features
+      int limit = 100;
+      if (values.size() > limit) {
+        // sort by p_value-squared value
+        Collections.sort(values, new Comparator<PValueKey>() {
+          @Override
+          public int compare(PValueKey o1, PValueKey o2) {
+            int comp = Double.compare(o1.pvalue, o2.pvalue);
+            if (comp != 0) { // tie breaker
+              return comp;
+            }
+            return Long.compare(o1.key, o2.key);
+          }
+        });
+
+        chiSquare.clear();
+
+        // use 100 unigrams and 100 bigrams
+        int countUnigram = 0;
+        int countBigram = 0;
+        for (int i = 0; i < values.size(); i++) {
+          // bigram?
+          long val = values.get(i).key;
+          if (val > (1l << 32) && countBigram < limit) {
+            chiSquare.add(val);
+            countBigram++;
+          }
+          // unigram?
+          else if (val < (1l << 32) && countUnigram < limit){
+            chiSquare.add(val);
+            countUnigram++;
+          }
+
+          if (countUnigram >= limit && countBigram >= limit) {
+            break;
+          }
+        }
+      }
+
+      // remove values
       for (int j = 0; j < bob.length; j++) {
-        for (LongIntCursor cursor : bob[j].bob) {
-          if (!chiSquare.contains(cursor.key)) {
-            bob[j].bob.values[cursor.index] = 0;
+        LongIntHashMap oldMap = bob[j].bob;
+        bob[j].bob = new LongIntHashMap();
+        for (LongIntCursor cursor : oldMap) {
+          if (chiSquare.contains(cursor.key)) {
+            bob[j].bob.put(cursor.key, cursor.value);
           }
         }
+        oldMap.clear();
+      }
+    }
+
+    static class PValueKey {
+      public double pvalue;
+      public long key;
+
+      public PValueKey(double pvalue, long key) {
+        this.pvalue = pvalue;
+        this.key = key;
       }
 
-      // chi-squared reduces keys substantially => remap
-      //this.dict.remap(bob);
+      @Override
+      public String toString() {
+        return "" + this.pvalue + ":" + this.key;
+      }
     }
 
     /**
@@ -765,8 +844,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
         // add 2 grams
         if (offset - this.windowLengths[w] >= 0) {
           long prevWord = (words[offset - this.windowLengths[w]] & mask);
-          long newWord = (prevWord << 32 | word ) << highestBit | (long) w;
-          bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+          if (prevWord != 0) {
+            long newWord = (prevWord << 32 | word);
+            bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+          }
         }
       }
       return bagOfPatterns;
@@ -799,8 +880,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
           // add 2 grams
           if (offset - this.windowLengths[w] >= 0) {
             long prevWord = (wordsForWindowLength[j][offset - this.windowLengths[w]] & mask);
-            long newWord = (prevWord << 32 | word)  << highestBit | (long) w;
-            bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
+            if (prevWord != 0) {
+              long newWord = (prevWord << 32 | word);
+              bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
+            }
           }
         }
       }
