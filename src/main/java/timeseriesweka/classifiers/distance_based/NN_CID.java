@@ -25,6 +25,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.elastic_distance_measures.DTW;
+import weka.core.TechnicalInformationHandler;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
@@ -69,7 +70,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         cid=new CIDDTWDistance();
     }
     
-     @Override
+    @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
 
