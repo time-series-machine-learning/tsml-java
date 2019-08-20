@@ -397,6 +397,8 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
 
+        numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+
         //path checkpoint files will be saved to
         File file = new File(checkpointPath + "TSF" + seed + ".ser");
 

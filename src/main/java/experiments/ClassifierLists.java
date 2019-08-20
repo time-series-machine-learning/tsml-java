@@ -17,6 +17,7 @@ package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
+import timeseriesweka.classifiers.frequency_based.CRISE;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -338,9 +339,9 @@ public class ClassifierLists {
                 ((HiveCote)c).setContract(24);
                 break; 
             case "RISE":
-                c=new RISE();
-                ((RISE) c).setSeed(fold);
-                ((RISE) c).setTransforms("PS","ACF");
+                c=new CRISE();
+                ((CRISE) c).setSeed(fold);
+                ((CRISE) c).setTransformType(CRISE.TransformType.ACF_PS);
                 break;
             case "TSF":
                 c=new TSF();

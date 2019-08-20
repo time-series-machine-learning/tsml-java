@@ -137,4 +137,13 @@ public class GenericTools {
                 out[j][i] = in[i][j];
         return out;
     }
+
+    public static double[] linSpace(int numValues, double min, double max){
+        double[] d = new double[numValues];
+        double step = (max-min)/(numValues-1);
+        for (int i = 0; i < numValues; i++){
+            d[i] = min + i * step;
+        }
+        return d;
+    }
 }

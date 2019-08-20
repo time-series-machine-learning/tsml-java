@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import timeseriesweka.classifiers.early_classification.SR1CF1;
 import weka_extras.classifiers.SaveEachParameter;
 import weka_extras.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -47,6 +48,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import static utilities.InstanceTools.shortenInstances;
+import static utilities.InstanceTools.truncateInstances;
 
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
@@ -558,7 +560,13 @@ public class Experiments  {
                             continue;
                         }
 
-                        Instances shortData = shortenInstances(testSet, i);
+                        Instances shortData;
+                        if (classifier instanceof SR1CF1){
+                            shortData = truncateInstances(testSet, i);
+                        }
+                        else {
+                            shortData = shortenInstances(testSet, i);
+                        }
                         long testBenchmark = findBenchmarkTime(expSettings);
 
                         testResults = evaluateClassifier(expSettings, classifier, shortData);

@@ -263,9 +263,8 @@ public class PAM extends AbstractVectorClusterer{
             }
         }
         
-        //Cluster again using subsample medoids as data and find the solution 
-        //with the lowest distortion using each set of medoids as the initial
-        //set.
+        //Cluster again using subsample medoids as data and find the solution with the lowest distortion using each set
+        //of medoids as the initial set.
         double minDist = Double.MAX_VALUE;
         int minIndex = -1;
         
@@ -320,8 +319,7 @@ public class PAM extends AbstractVectorClusterer{
             }
         }
         
-        //Create and store an ArrayList for each cluster containing indexes of
-        //points inside the cluster.
+        //Create and store an ArrayList for each cluster containing indexes of points inside the cluster.
         clusters = new ArrayList[k];
         
         for (int i = 0; i < k; i++){
@@ -335,8 +333,7 @@ public class PAM extends AbstractVectorClusterer{
         }
     }
     
-    //Select new medoids bu finding the point with the lowest distnce sum for
-    //each cluster.
+    //Select new medoids bu finding the point with the lowest distnce sum for each cluster.
     private boolean selectMedoids(){
         boolean changedMedoid = false;
         
@@ -377,9 +374,8 @@ public class PAM extends AbstractVectorClusterer{
     //Lletı, R., et al. 
     //"Selecting variables for k-means cluster analysis by using a genetic algorithm that optimises the silhouettes." 
     //Analytica Chimica Acta 515.1 (2004): 87-100.
-    
-    //Method of finding the best value for k based on the silhouette method 
-    //above.
+
+    //Simple method of finding the best value for k based on the silhouettes.
     private void findBestK(Instances data) throws Exception{
         int maxK = 10;
         double bestSilVal = 0;
@@ -404,8 +400,7 @@ public class PAM extends AbstractVectorClusterer{
                     
                     int index = pam.clusters[n].get(g);
                     
-                    //Find mean distance of the point to other points in its
-                    //cluster.
+                    //Find mean distance of the point to other points in its cluster.
                     for (int j = 0; j < pam.clusters[n].size(); j++){
                         if (index == pam.clusters[n].get(j)) continue;
 
@@ -443,12 +438,11 @@ public class PAM extends AbstractVectorClusterer{
                         }
                     }
                     
-                    //Calculate the silhoutte value for the point and add it 
-                    //to the total.
+                    //Calculate the silhoutte value for the point and add it to the total.
                     double silVal = minOtherClusterDist - clusterDist;
                     double div = clusterDist;
                     
-                    if(minOtherClusterDist > clusterDist){
+                    if (minOtherClusterDist > clusterDist){
                         div = minOtherClusterDist;
                     }
                     

@@ -406,8 +406,7 @@ public class KMeans extends AbstractVectorClusterer {
     //"Selecting variables for k-means cluster analysis by using a genetic algorithm that optimises the silhouettes." 
     //Analytica Chimica Acta 515.1 (2004): 87-100.
     
-    //Method of finding the best value for k based on the silhouette method 
-    //above.
+    //Simple method of finding the best value for k based on the silhouettes.
     private void findBestK(Instances data) throws Exception{
         int maxK = 10;
         double bestSilVal = 0;

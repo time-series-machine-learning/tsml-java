@@ -47,15 +47,6 @@ public class SingleTestSetEvaluator extends Evaluator {
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         
-        if (REGRESSION_HACK) { 
-            //jamesl moved these hacks from CrossValidationEvaluator down to here,
-            //but ask mathewm for reasoning... 
-            
-            dataset = new Instances(dataset); //might end up cloning the data twice, but hey, it's a hack
-            for (Instance inst : dataset)
-                inst.setClassValue(0);
-        }
-        
         final Instances insts = cloneData ? new Instances(dataset) : dataset;
         
         ClassifierResults res = new ClassifierResults(insts.numClasses());

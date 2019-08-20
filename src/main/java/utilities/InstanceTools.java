@@ -788,4 +788,28 @@ public class InstanceTools {
 
         return shortenedData;
     }
+
+    public static Instances truncateInstances(Instances data, int fullLength, int newLength){
+        Instances newData = new Instances(data);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newData.deleteAttributeAt(newLength);
+        }
+        return newData;
+    }
+
+    public static Instances truncateInstances(Instances data, double proportionRemaining){
+        if (proportionRemaining == 1) return data;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        return truncateInstances(data, data.numAttributes()-1, newSize);
+    }
+
+    public static Instance truncateInstance(Instance inst, int fullLength, int newLength){
+        Instance newInst = new DenseInstance(inst);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newInst.deleteAttributeAt(newLength);
+        }
+        return newInst;
+    }
 }

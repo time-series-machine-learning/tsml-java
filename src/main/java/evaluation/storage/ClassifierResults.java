@@ -344,12 +344,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
 
-    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
-        double MAA = 0;
+    //Mean Absolute Error
+    public static final Function<ClassifierResults, Double> MAE = (ClassifierResults cr) -> {
+        double MAE = 0;
         for (int i = 0; i < cr.numInstances; i++){
-            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
+            MAE += Math.abs(cr.predClassValues.get(i) - cr.trueClassValues.get(i));
         }
-        return -(MAA/cr.numInstances);
+        return -(MAE/cr.numInstances);
     };
     
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 

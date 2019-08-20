@@ -108,7 +108,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         timer = new Timer();
     }
 
-    public void RISE(){
+    public CRISE(){
         this.seed = 0;
         random = new Random(0);
         timer = new Timer();
