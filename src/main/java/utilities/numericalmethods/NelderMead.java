@@ -37,23 +37,22 @@ public class NelderMead {
         System.out.println("\nThat's all folks");
     }
     private double[] best_result;
-
-    void descend(NumericalFunction fun, double[] x0) {
+    
+    
+    public void descend(NumericalFunction fun, double[] x0) {
         
         func = fun;
         NDIMS = x0.length;
         NPTS = NDIMS+1;
+        
 
         //n-dimensional simplex construction
         //based on matlab's fminsearch routine.
         double simplex[][] = new double[NPTS][NDIMS];
-        double score[] = new double[NPTS];
         
         simplex[0] = x0;
-        score[0] = 0.0;
         
         for (int i = 1; i < NPTS; i++) {
-            score[i] = 0.0;
             simplex[i] = new double[NDIMS];
             for (int j = 0; j < NDIMS; j++) {                
                 simplex[i][j] = x0[j];
@@ -65,7 +64,20 @@ public class NelderMead {
                    
             }
         } 
-
+    
+        descend(fun, simplex);
+    }
+    
+    public void descend(NumericalFunction fun, double[][] simplex){
+        
+        func = fun;
+        NDIMS = simplex[0].length;
+        NPTS = NDIMS+1;
+        double score[] = new double[NPTS];
+        for (int i = 0; i < NPTS; i++) {
+            score [i] = 0.0;
+        }
+        
         best_score = 1E99;
 
         //////////////// initialize the funcvals ////////////////
@@ -101,12 +113,12 @@ public class NelderMead {
                 }
             }
 
-            for (int j = 0; j < NDIMS; j++) {
+            /*for (int j = 0; j < NDIMS; j++) {
                 System.out.print(fwd(simplex[ilo][j], 18, 9));
             }
             System.out.print(fwd(score[ilo], 18, 9));
             
-            System.out.println();
+            System.out.println();*/
 
             ////////// exit criterion //////////////
             if ((iter % 4 * NDIMS) == 0) {
@@ -216,7 +228,7 @@ public class NelderMead {
             }
         }
 
-        System.out.println("ncalls, iters, Best =" + fwi(ncalls, 6) + fwi(iter, 6) + fwd(best_score, 16, 9));
+        //System.out.println("ncalls, iters, Best =" + fwi(ncalls, 6) + fwi(iter, 6) + fwd(best_score, 16, 9));
 
     }
     
