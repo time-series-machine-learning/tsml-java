@@ -14,10 +14,11 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import vector_classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -85,7 +86,7 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
         System.out.println("BagofPatternsTest\n\n");
         
         try {
-            Instances all = ClassifierTools.loadData("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
+            Instances all = DatasetLoading.loadDataNullable("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
             all.deleteAttributeAt(0); //just name of bottle        
             
             Randomize rand = new Randomize();

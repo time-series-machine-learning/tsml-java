@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.hybrids;
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
@@ -21,7 +22,7 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
-import vector_classifiers.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
@@ -112,9 +113,9 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         
         cvAccs = new double[4][];
         cvAccs[0] = ee.getCVAccs();
-        cvAccs[1] = st.getIndividualCvAccs();
-        cvAccs[2] = acf.getIndividualCvAccs();
-        cvAccs[3] = ps.getIndividualCvAccs();
+        cvAccs[1] = st.getIndividualAccEstimates();
+        cvAccs[2] = acf.getIndividualAccEstimates();
+        cvAccs[3] = ps.getIndividualAccEstimates();
         
         cvSum = 0;
         for(int e = 0; e < cvAccs.length;e++){
@@ -174,8 +175,8 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
     public static void main(String[] args) throws Exception{
         
         FlatCote fc = new FlatCote();
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         fc.buildClassifier(train);
         
         int correct = 0;

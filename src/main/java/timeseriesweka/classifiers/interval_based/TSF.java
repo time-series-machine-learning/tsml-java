@@ -26,8 +26,8 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -40,6 +40,7 @@ import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /** 
   <!-- globalinfo-start -->
@@ -107,7 +108,8 @@ import weka.core.Utils;
 
 **/ 
 
-public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainAccuracyEstimate, Randomizable,TechnicalInformationHandler{
+public class TSF extends AbstractClassifierWithTrainingInfo 
+        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler{
 //Static defaults
     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -136,12 +138,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
     /**Can seed for reproducibility*/
     private Random rand;
     private boolean setSeed=false;
-    private int seed=0;
 
    /** If trainAccuracy is required, a cross validation is done in buildClassifier
-    * or a OOB estimate is formed
-   If set, train results are overwritten with each call to buildClassifier
-   File opened on this path.*/     
+    * or a OOB estimate is formed. If set, train results are overwritten with 
+    * each call to buildClassifier File opened on trainCVPath.*/     
     boolean trainAccuracyEst=false;  
     private String trainCVPath="";
     
@@ -203,7 +203,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
  * @param train 
  */    
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainAccuracyEst=true;
     }
@@ -602,10 +602,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-        System.out.print("TSF para sets ");
-        for (String str:options)
-             System.out.print(","+str);
-        System.out.print("\n");
+//        System.out.print("TSF para sets ");
+//        for (String str:options)
+//             System.out.print(","+str);
+//        System.out.print("\n");
         String numTreesString=Utils.getOption('T', options);
         if (numTreesString.length() != 0)
             numClassifiers = Integer.parseInt(numTreesString);
@@ -642,10 +642,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
             System.out.println("Unable to read number of intervals, not set");
     }
 
-    @Override
-    public int getSeed() {
-        return seed;
-    }
 
 //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
@@ -716,16 +712,17 @@ public class TSF extends AbstractClassifierWithTrainingInfo implements SaveParam
     
     public static void main(String[] arg) throws Exception{
 // Basic correctness tests, including setting paras through 
-        String dataLocation="C:\\Users\\ajb\\Dropbox\\TSC Problems\\";
+        String dataLocation="Z:\\Data\\TSCProblems2018\\";
         String resultsLocation="C:\\temp\\";
         String problem="ItalyPowerDemand";
         File f= new File(resultsLocation+problem);
         if(!f.isDirectory())
             f.mkdirs();
-        Instances train=ClassifierTools.loadData(dataLocation+problem+"\\"+problem+"_TRAIN");
-        Instances test=ClassifierTools.loadData(dataLocation+problem+"\\"+problem+"_TEST");
+        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
-        tsf.writeCVTrainToFile(resultsLocation+problem+"trainFold0.csv");
+        tsf.setSeed(0);
+        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);

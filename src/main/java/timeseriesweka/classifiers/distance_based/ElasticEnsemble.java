@@ -19,7 +19,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.ERP1NN;
@@ -29,7 +28,6 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.TWE1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -37,9 +35,11 @@ import weka.core.Instances;
 import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * A new Elastic Ensemble for sharing with others
@@ -55,7 +55,7 @@ import weka.core.TechnicalInformationHandler;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, WritableTestResults,TrainAccuracyEstimate,TechnicalInformationHandler{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
 
     
     @Override
@@ -143,17 +143,17 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
 
     @Override
-    public double getEnsembleCvAcc() {
+    public double getTrainAcc() {
         if(this.ensembleCvAcc != -1 && this.ensembleCvPreds!=null){
             return this.ensembleCvAcc;
         }
         
-        this.getEnsembleCvPreds();
+        this.getTrainPreds();
         return this.ensembleCvAcc;
     }
 
 //    @Override
-    public double[] getEnsembleCvPreds() {
+    public double[] getTrainPreds() {
         if(this.ensembleCvPreds!=null){
             return this.ensembleCvPreds;
         }
@@ -273,7 +273,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
     
     @Override
-    public void writeCVTrainToFile(String outputPathAndName){
+    public void writeTrainEstimatesToFile(String outputPathAndName){
         this.writeEnsembleTrainingFile = true;
         ensembleTrainFilePathAndName = outputPathAndName;
     }
@@ -376,11 +376,11 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             if(this.writeEnsembleTrainingFile){
                 StringBuilder output = new StringBuilder();
                 
-                double[] ensembleCvPreds = this.getEnsembleCvPreds();
+                double[] ensembleCvPreds = this.getTrainPreds();
                 
                 output.append(train.relationName()).append(",EE,train\n");
                 output.append(this.getParameters()).append("\n");
-                output.append(this.getEnsembleCvAcc()).append("\n");
+                output.append(this.getTrainAcc()).append("\n");
                 
                 for(int i = 0; i < train.numInstances(); i++){
                     output.append(train.instance(i).classValue()).append(",").append(ensembleCvPreds[i]).append("\n");
@@ -596,8 +596,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
         
         int correct = 0;
@@ -608,7 +608,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         }
         System.out.println("correct: "+correct+"/"+test.numInstances());
         System.out.println((double)correct/test.numInstances());
-        System.out.println(ee.getEnsembleCvAcc());
+        System.out.println(ee.getTrainAcc());
     }
 }
 

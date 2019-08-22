@@ -28,6 +28,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.Capabilities;
@@ -38,16 +40,17 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
-import utilities.BitWord;
+import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
-import utilities.TrainAccuracyEstimate;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
  
 /**
  * BOSS + C45 tree classifier with parameter search and ensembling, if parameters are 
@@ -71,7 +74,7 @@ import weka.core.Instances;
  * BOSS implementation based on the algorithm described in getTechnicalInformation()
  * C45 done using the WEKA implementation 'weka.classifiers.trees.J48'
  */
-public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -251,7 +254,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }
@@ -561,8 +564,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "BeetleFly";
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BOSSC45();
         c.buildClassifier(train);
@@ -578,8 +581,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     public static void detailedFold0Test(String dset) {
         System.out.println("BOSSC45 DetailedTest\n");
         try {
-            Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BOSSC45 boss = new BOSSC45();
@@ -614,8 +617,8 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BOSSC45();
          
@@ -655,7 +658,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
      * 
      * @author James Large
      */
-    public static class BOSSC45Individual extends BOSS.BOSSIndividual {
+    public static class BOSSC45Individual extends BOSSIndividual {
 
         public boolean buildBags = true;
         public boolean buildForest = true;

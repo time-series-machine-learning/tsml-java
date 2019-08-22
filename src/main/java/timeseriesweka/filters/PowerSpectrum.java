@@ -14,6 +14,7 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.FileReader;
 import java.util.logging.Level;
@@ -48,6 +49,10 @@ public class PowerSpectrum extends FFT {
     public PowerSpectrum(){
         fftFilter=new FFT();
         fftFilter.useDFT();
+    }
+
+    public void useFFT(){
+        fftFilter.useFFT();
     }
 @Override
     protected Instances determineOutputFormat(Instances inputFormat)
@@ -95,13 +100,13 @@ public class PowerSpectrum extends FFT {
                 Instance f=fft.instance(i);
                 Instance inst=new DenseInstance(length+1);
                 for(int j=0;j<length;j++){
-                    l1=f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1);
+                    l1= Math.sqrt(f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1));
                         inst.setValue(j,Math.log(l1));
                 }
 //Set class value.
                 //Set class value.
                 if(output.classIndex()>=0)
-                    inst.setValue(length, output.instance(i).classValue());
+                    inst.setValue(length, fft.instance(i).classValue());
                 output.add(inst);
             }
 
@@ -111,7 +116,7 @@ public class PowerSpectrum extends FFT {
                     Instance f=fft.instance(i);
                     Instance inst=new DenseInstance(length+1);
                     for(int j=0;j<length;j++){
-                                    inst.setValue(j, f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1));
+                                    inst.setValue(j, Math.sqrt(f.value(j*2)*f.value(j*2)+f.value(j*2+1)*f.value(j*2+1)));
                     }
     //Set class value.
                     //Set class value.
@@ -123,8 +128,8 @@ public class PowerSpectrum extends FFT {
         return output;		
     }
     public static void waferTest(){
-/*		Instances a=WekaMethods.loadData("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TRAIN");
-            Instances b=WekaMethods.loadData("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TEST");
+/*		Instances a=WekaMethods.loadDataThrowable("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TRAIN");
+            Instances b=WekaMethods.loadDataThrowable("C:\\Research\\Data\\Time Series Data\\Time Series Classification\\wafer\\wafer_TEST");
             PowerSpectrum ps=new PowerSpectrum();
             try{
             Instances c=ps.process(a);
@@ -184,8 +189,8 @@ public class PowerSpectrum extends FFT {
 //Case 4:           0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1              
 /*            PowerSpectrum ps=new PowerSpectrum();
 
-        Instances test1=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test1");
-        Instances test2=ClassifierTools.loadData("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test2");
+        Instances test1=ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test1");
+        Instances test2=ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\TestData\\FFT_test2");
         Instances t2;
      try{
           t2=ps.process(test1);
@@ -213,7 +218,7 @@ public class PowerSpectrum extends FFT {
         String problemPath = "E:/TSCProblems/";
         String resultsPath="E:/Temp/";
         String datasetName="ItalyPowerDemand";
-        Instances train =ClassifierTools.loadData("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances train =DatasetLoading.loadDataNullable("E:/TSCProblems/"+datasetName+"/"+datasetName+"_TRAIN");
         PowerSpectrum ps= new PowerSpectrum();
         try {
             Instances trans=ps.process(train);

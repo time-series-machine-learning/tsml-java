@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 
+import scala.tools.nsc.Global;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -268,6 +269,23 @@ public class InstanceTools {
         return wekaInstances;
     }
 
+    //converts a 2d array into a weka Instances, appending the ith classlabel onto the ith row of data for each instance
+    public static Instances toWekaInstances(double[][] data, double[] classLabels) {
+        //todo error checking if really wanted. all utils need it at some point
+        
+        double[][] newData = new double[data.length][];
+        
+        for (int i = 0; i < data.length; i++) {
+            newData[i] = new double[data[i].length + 1];
+            int j = 0;
+            for ( ; j < data[i].length; j++)
+                newData[i][j] = data[i][j];
+            
+            newData[i][j] = classLabels[i];
+        }
+        
+        return toWekaInstancesWithClass(newData);
+    }
     
     //converts a weka Instances into a 2d array - removing class val at the end.
     public static double[][] fromWekaInstancesArray(Instances ds, boolean removeLastVal) {
@@ -747,5 +765,4 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
-    
 }

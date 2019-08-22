@@ -19,10 +19,6 @@ import java.util.*;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 
-/*
-     * copyright: Anthony Bagnall
- * 
- * */
 public class Clipping extends SimpleBatchFilter {
 	boolean useMean=true;
 	boolean useRealAttributes=false;

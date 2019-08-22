@@ -14,10 +14,11 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import vector_classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -283,10 +284,10 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingInfo implements
     public static void basicTest() {
         System.out.println("BOPBasicTest\n");
         try {
-            Instances train = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
-            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
-//            Instances train = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TRAIN.arff");
-//            Instances test = ClassifierTools.loadData("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TEST.arff");
+//            Instances train = ClassifierTools.loadDataThrowable("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TRAIN.arff");
+//            Instances test = ClassifierTools.loadDataThrowable("C:\\tempbakeoff\\TSC Problems\\BeetleFly\\BeetleFly_TEST.arff");
 
             System.out.println(train.relationName());
 

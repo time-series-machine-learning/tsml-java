@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 import utilities.class_counts.ClassCounts;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQualityMeasure;
+import utilities.rescalers.SeriesRescaler;
 
 /**
  *

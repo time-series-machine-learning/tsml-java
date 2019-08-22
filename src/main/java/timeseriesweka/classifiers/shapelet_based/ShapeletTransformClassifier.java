@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
@@ -25,7 +26,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import vector_classifiers.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -34,9 +35,8 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
-import vector_classifiers.ensembles.voting.MajorityConfidence;
-import vector_classifiers.ensembles.weightings.TrainAcc;
+import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
+import weka_extras.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -45,9 +45,10 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
-import vector_classifiers.ensembles.voting.MajorityVote;
-import vector_classifiers.ensembles.weightings.EqualWeighting;
+import weka_extras.classifiers.ensembles.voting.MajorityVote;
+import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -57,29 +58,33 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
  *
  * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
- *  then classifies with the heterogeneous ensemble CAWPE, using randF, rotF and SVMQ.
+ *  then classifies with rotation forest.
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements HiveCoteModule, SaveParameterInfo, TrainTimeContractable {
-
-    //Minimum number of instances per class in the train set
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable {
+//Basic pipeline is transform, then build classifier on transformed space
+    private ShapeletTransform transform;
+//Transformed shapelets header info stored here
+    private Instances shapeletData;
+//Final classifier built on transformed shapelet
+    private Classifier classifier;
+//Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
-    private static int MAXTRANSFORMSIZE=1000; //Default number in transform
+//Default number in transform
+    private static int MAXTRANSFORMSIZE=1000; 
 
     private boolean preferShortShapelets = false;
     private String shapeletOutputPath;
-    private CAWPE ensemble;
-    private ShapeletTransform transform;
-    private Instances shapeletData;
     int[] redundantFeatures;
     private boolean doTransform=true;
     private long transformBuildTime;
-    int numShapeletsInTransform = MAXTRANSFORMSIZE;
+    private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
     private long numShapelets = 0;
     private long seed = 0;
@@ -89,7 +94,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     private boolean checkpoint=false;
     private boolean saveShapelets=false;
     private String shapeletPath="";
-    
+//Can be configured to multivariate     
     enum TransformType{UNI,MULTI_D,MULTI_I};
     TransformType type=TransformType.UNI;
     
@@ -117,7 +122,10 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public ShapeletTransformClassifier(){
-        configureDefaultEnsemble();
+        classifier= new ContractRotationForest();
+        
+        
+//        configureCAWPEEnsemble();
     }
 
     
@@ -133,26 +141,32 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
 
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
  
         
     @Override
     public String getParameters(){
-        String paras=transform.getParameters();
-        String ensemble=this.ensemble.getParameters();
-        return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
+       String paras=transform.getParameters();
+       String classifierParas="No Classifier Para Info";
+       if(classifier instanceof SaveParameterInfo) 
+            classifierParas=((SaveParameterInfo)classifier).getParameters();
+        return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     
-    @Override
-    public double getEnsembleCvAcc() {
-        return ensemble.getEnsembleCvAcc();
+//    @Override
+    public double getTrainAcc() {
+        if(classifier instanceof TrainAccuracyEstimator)
+            return ((TrainAccuracyEstimator)classifier).getTrainAcc();
+        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
 
-    @Override
-    public double[] getEnsembleCvPreds() {
-        return ensemble.getEnsembleCvPreds();
+//    @Override
+    public double[] getTrainPreds() {
+        if(classifier instanceof TrainAccuracyEstimator)
+            return ((TrainAccuracyEstimator)classifier).getTrainPreds();
+        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
     public void doSTransform(boolean b){
@@ -202,10 +216,12 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         getCapabilities().testWithFail(data);
         
         long startTime=System.nanoTime(); 
-        shapeletData = doTransform ? createTransformData(data, timeLimit) : data;
-        transformBuildTime=System.currentTimeMillis()-startTime;
-        if(setSeed)
-            ensemble.setRandSeed((int) seed);
+        long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
+        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
+        shapeletData = doTransform ? createTransformData(data, transformTime) : data;
+        transformBuildTime=System.nanoTime()-startTime;
+//        if(setSeed)
+//            classifier.setRandSeed((int) seed);
 //        if(debug)
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
@@ -224,25 +240,25 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
             of.writeString("\n");
             of.writeString(transform.toString());
             of.closeFile();
-            
         }
-
-        ensemble.buildClassifier(shapeletData);
+        long classifierTime=timeLimit-transformBuildTime;
+        if(classifier instanceof TrainTimeContractable)
+            ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
+        classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
     }
 /**
  * Classifiers used in the HIVE COTE paper
  */    
-    public void configureDefaultEnsemble(){
+    public void configureCAWPEEnsemble(){
 //HIVE_SHAPELET_SVMQ    HIVE_SHAPELET_RandF    HIVE_SHAPELET_RotF    
 //HIVE_SHAPELET_NN    HIVE_SHAPELET_NB    HIVE_SHAPELET_C45    HIVE_SHAPELET_SVML   
-        ensemble=new CAWPE();
-        ensemble.setWeightingScheme(new TrainAcc(4));
-        ensemble.setVotingScheme(new MajorityConfidence());
+        classifier=new CAWPE();
+        ((CAWPE)classifier).setWeightingScheme(new TrainAcc(1));
+        ((CAWPE)classifier).setVotingScheme(new MajorityConfidence());
         Classifier[] classifiers = new Classifier[7];
-        String[] classifierNames = new String[7];
-        
+        String[] classifierNames = new String[7];        
         SMO smo = new SMO();
         smo.turnChecksOff();
         smo.setBuildLogisticModels(true);
@@ -285,16 +301,15 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         smo.setKernel(k2);
         classifiers[6] = svml;
         classifierNames[6] = "SVML";
-        ensemble.setClassifiers(classifiers, classifierNames, null);
+        ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);
     }
 //This sets up the ensemble to work within the time constraints of the problem    
     public void configureEnsemble(){
-        ensemble.setWeightingScheme(new TrainAcc(4));
-        ensemble.setVotingScheme(new MajorityConfidence());
+        ((CAWPE)classifier).setWeightingScheme(new TrainAcc(4));
+        ((CAWPE)classifier).setVotingScheme(new MajorityConfidence());
         
         Classifier[] classifiers = new Classifier[3];
         String[] classifierNames = new String[3];
-        
         SMO smo = new SMO();
         smo.turnChecksOff();
         smo.setBuildLogisticModels(true);
@@ -320,17 +335,14 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
            rf.setSeed((int)seed);
         classifiers[2] = rf;
         classifierNames[2] = "RotF";
-        
-        
-       ensemble.setClassifiers(classifiers, classifierNames, null);        
-        
+       ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);        
     }
     
 
     
     public void configureBasicEnsemble(){
 // Random forest only
-        ensemble=new CAWPE();
+        classifier=new CAWPE();
         Classifier[] classifiers = new Classifier[1];
         String[] classifierNames = new String[1];
         RandomForest r=new RandomForest();
@@ -341,13 +353,13 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         classifierNames[0] = "RandF";
 
 
-        ensemble.setWeightingScheme(new EqualWeighting());
-        ensemble.setVotingScheme(new MajorityVote());
+        ((CAWPE)classifier).setWeightingScheme(new EqualWeighting());
+        ((CAWPE)classifier).setVotingScheme(new MajorityVote());
         RotationForest rf=new RotationForest();
         rf.setNumIterations(100);
         if(setSeed)
            rf.setSeed((int)seed);
-        ensemble.setClassifiers(classifiers, classifierNames, null);
+        ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);
     }
     
 
@@ -362,7 +374,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
         Instance test  = temp.get(0);
         shapeletData.remove(0);
-        return ensemble.classifyInstance(test);
+        return classifier.classifyInstance(test);
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
@@ -375,7 +387,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
         Instance test  = temp.get(0);
         shapeletData.remove(0);
-        return ensemble.distributionForInstance(test);
+        return classifier.distributionForInstance(test);
     }
     
     public void setShapeletOutputFilePath(String path){
@@ -396,12 +408,10 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         int m = train.numAttributes()-1;
 //Set the number of shapelets to keep, max is MAXTRANSFORMSIZE (500)
 //numShapeletsInTransform
-//    n > 2000 ? 2000 : n;   
+//    n*m < 1000 ? n*m: 1000;   
         if(n*m<numShapeletsInTransform)
             numShapeletsInTransform=n*m;
-
-
-        //construct the options for the transform.
+//construct the options for the transform.
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
         optionsBuilder.setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE);
         optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
@@ -418,7 +428,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         searchBuilder.setMax(m);
 
         
-        //how much time do we have vs. how long our algorithm will take.
+//how much time do we have vs. how long our algorithm will take.
         BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
         BigInteger opCount = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
         if(opCount.compareTo(opCountTarget) == 1){
@@ -437,11 +447,9 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
                 searchBuilder.setSeed(seed);
             searchBuilder.setSearchType(searchType);
             searchBuilder.setNumShapelets(numShapelets);
-            
             // can't have more final shapelets than we actually search through.
             numShapeletsInTransform =  numShapelets > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapelets;
         }
-
         optionsBuilder.setKShapelets(numShapeletsInTransform);
         optionsBuilder.setSearchOptions(searchBuilder.build());
         transform = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
@@ -452,7 +460,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
         if(preferShortShapelets)
             transform.setShapeletComparator(new Shapelet.ShortOrder());
-        
+        transform.setNumberOfShapelets((int)numShapeletsInTransform);
         return transform.process(train);
     }
     
@@ -463,8 +471,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         String datasetName = "FordA";
         int fold = 0;
         
-        Instances train= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
-        Instances test= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TEST");
+        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
+        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
         String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
         String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
         String preds=saveLocation+datasetName;
@@ -497,7 +505,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
 //Copy meta data
         ShapeletTransformClassifier st=(ShapeletTransformClassifier)obj;
 //We assume the classifiers have not been built, so are basically copying over the set up
-        ensemble=st.ensemble;
+        classifier=st.classifier;
         preferShortShapelets = st.preferShortShapelets;
         shapeletOutputPath=st.shapeletOutputPath;
         transform=st.transform;

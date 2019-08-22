@@ -129,7 +129,7 @@ import utilities.InstanceTools;
  * @date 19/02/19
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
-        
+       
 //LINE 1: meta info, set by user
     private String classifierName = "";
     private String datasetName = "";
@@ -216,6 +216,30 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     private long memoryUsage = -1; 
  
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    private String errorEstimateMethod = "";
+    
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    private long errorEstimateTime = -1;
+    
 //REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
     private ArrayList<Double> trueClassValues;
@@ -319,6 +343,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Recall = (ClassifierResults cr) -> {return cr.recall;};
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
+
+    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
+        double MAA = 0;
+        for (int i = 0; i < cr.numInstances; i++){
+            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
+        }
+        return -(MAA/cr.numInstances);
+    };
     
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles. 
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -768,7 +800,63 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public void setBenchmarkTime(long benchmarkTime) {
         this.benchmarkTime = benchmarkTime;
     }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public String getErrorEstimateMethod() {
+        return errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * See the experiments parameter trainEstimateMethod
+     * 
+     * This defines the method and parameter of train estimate used, if one was done
+     */
+    public void setErrorEstimateMethod(String errorEstimateMethod) {
+        this.errorEstimateMethod = errorEstimateMethod;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public long getErrorEstimateTime() {
+        return errorEstimateTime;
+    }
+
+    /**
+     * todo initially intended as a temporary measure, but might stay here until a switch 
+     * over to json etc is made
+     * 
+     * This defines the total time taken to estimate the classifier's error. This currently 
+     * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
+     * and as such would need to set this themselves (but likely do not)
+     * 
+     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
+     */
+    public void setErrorEstimateTime(long errorEstimateTime) {
+        this.errorEstimateTime = errorEstimateTime;
+    }
            
+    
+    
 
     /****************************
      *   
@@ -787,7 +875,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * The true class is missing, however can be added in one go later with the 
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) throws Exception {
+    public void addPrediction(double[] dist, double predictedClass, long predictionTime, String description) throws RuntimeException {
         predDistributions.add(dist);
         predClassValues.add(predictedClass);
         
@@ -798,7 +886,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         
         if (errorOnTimingOfZero && predictionTime < 1)
-            throw new Exception("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
+            throw new RuntimeException("Prediction time passed has invalid value, " + predictionTime + ". If greater resolution is needed, "
                     + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
                     + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
                     + "for this call");  
@@ -823,7 +911,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * Todo future, maaaybe add enum for tie resolution to handle it here.
      */
-    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) throws Exception {        
+    public void addPrediction(double trueClassVal, double[] dist, double predictedClass, long predictionTime, String description) throws RuntimeException {        
         addPrediction(dist,predictedClass,predictionTime,description);
         trueClassValues.add(trueClassVal);
     }
@@ -835,7 +923,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws Exception {
+    public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions) throws RuntimeException {
         assert(trueClassVals.length == predictions.length);
         assert(trueClassVals.length == distributions.length);
         assert(trueClassVals.length == predTimes.length);
@@ -860,7 +948,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * 
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws Exception {
+    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predTimes, String[] descriptions ) throws RuntimeException {
         
         //todo replace asserts with actual exceptions
         assert(predictions.length == distributions.length);
@@ -1461,6 +1549,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             memoryUsage = Long.parseLong(parts[4]);
         if (parts.length > 5) 
             numClasses = Integer.parseInt(parts[5]);
+        if (parts.length > 6) 
+            errorEstimateMethod = parts[6];
+        if (parts.length > 7) 
+            errorEstimateTime = Long.parseLong(parts[7]);
         
         return acc;
     }
@@ -1470,7 +1562,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + testTime
             + "," + benchmarkTime
             + "," + memoryUsage
-            + "," + numClasses();
+            + "," + numClasses()
+            + "," + errorEstimateMethod
+            + "," + errorEstimateTime;
+        
         return res;
     }
 
@@ -1610,7 +1705,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public void findAllStatsOnce(){
         if (finalised && allStatsFound) {
-            System.out.println("Stats already found, ignoring findAllStatsOnce()");
+            printlnDebug("Stats already found, ignoring findAllStatsOnce()");
             return;
         } 
         else {
@@ -1801,7 +1896,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         
         int mid = copy.size()/2;
         if (copy.size() % 2 == 0)
-            return (copy.get(mid) + copy.get(mid+1)) / 2;
+            return (copy.get(mid) + copy.get(mid-1)) / 2;
         else 
             return copy.get(mid);
     }
@@ -1949,6 +2044,63 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             throw e;
         }
     }
+    
+    
+    
+    /**
+     * Concatenates the predictions of classifiers made on different folds on the data
+     * into one results object
+     *
+     * If ClassifierResults ever gets split into separate classes for prediction and meta info,
+     * this obviously gets cleaned up a lot
+     *
+     * @param cresults ClassifierResults[fold]
+     * @return         single ClassifierResults object
+     */
+    public static ClassifierResults concatenateClassifierResults( /*fold*/ ClassifierResults[] cresults) throws Exception {
+        return concatenateClassifierResults(new ClassifierResults[][]{cresults})[0];
+    }
+
+    /**
+     * Concatenates the predictions of classifiers made on different folds on the data
+     * into one results object per classifier.
+     *
+     * If ClassifierResults ever gets split into separate classes for prediction and meta info,
+     * this obviously gets cleaned up a lot
+     *
+     * @param cresults ClassifierResults[classifier][fold]
+     * @return         ClassifierResults[classifier]
+     */
+    public static ClassifierResults[] concatenateClassifierResults( /*classiifer*/ /*fold*/ ClassifierResults[][] cresults) throws Exception {
+        ClassifierResults[] concatenatedResults = new ClassifierResults[cresults.length];
+        for (int classifierid = 0; classifierid < cresults.length; classifierid++) {
+            if (cresults[classifierid].length == 1) {
+                concatenatedResults[classifierid] = cresults[classifierid][0];
+            } else {
+                ClassifierResults newCres = new ClassifierResults();
+                for (int foldid = 0; foldid < cresults[classifierid].length; foldid++) {
+                    ClassifierResults foldCres = cresults[classifierid][foldid];
+                    for (int predid = 0; predid < foldCres.numInstances(); predid++) {
+                        newCres.addPrediction(foldCres.getTrueClassValue(predid), foldCres.getProbabilityDistribution(predid), foldCres.getPredClassValue(predid), foldCres.getPredictionTime(predid), foldCres.getPredDescription(predid));
+                        // TODO previously didnt copy of pred times and predictions
+                        // not sure if there was any particular reason why i didnt,
+                        // aside from saving space?
+                    }
+                }
+                concatenatedResults[classifierid] = newCres;
+            }
+        }
+        return concatenatedResults;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     public static void main(String[] args) throws Exception {
         readWriteTest();

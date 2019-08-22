@@ -39,13 +39,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import utilities.ClassifierTools;
-import utilities.BitWord;
-import utilities.TrainAccuracyEstimate;
+import timeseriesweka.classifiers.dictionary_based.BitWord;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -63,7 +64,7 @@ import evaluation.storage.ClassifierResults;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -244,7 +245,7 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }
@@ -576,8 +577,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
      public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BOSSSpatialPyramids();
         c.buildClassifier(train);
@@ -593,8 +594,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     public static void detailedFold0Test(String dset) {
         System.out.println("BOSSEnsembleSPDetailedTest\n");
         try {
-            Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BOSSSpatialPyramids boss = new BOSSSpatialPyramids();
@@ -629,8 +630,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BOSSSpatialPyramids();
          
@@ -1379,8 +1380,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
         public static void detailedFold0Test(String dset) {
             System.out.println("BOSSSpatialPyramidsIndividual DetailedTest\n");
             try {
-                Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-                Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+                Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+                Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
                 System.out.println(train.relationName());
 
                 int windowSize = 10;

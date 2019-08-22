@@ -25,10 +25,10 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
-import utilities.TrainAccuracyEstimate;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.Capabilities;
@@ -38,6 +38,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.core.TechnicalInformation;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -63,7 +64,7 @@ import weka.core.TechnicalInformation;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccuracyEstimate {
+public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -138,7 +139,7 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     }
     
     @Override
-    public void writeCVTrainToFile(String train) {
+    public void writeTrainEstimatesToFile(String train) {
         trainCVPath=train;
         trainCV=true;
     }
@@ -441,8 +442,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     public static void main(String[] args) throws Exception{
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
         Classifier c = new BoTSWEnsemble();
         ((BoTSWEnsemble)c).dist = BoTSW.DistFunction.BOSS_DISTANCE;
@@ -459,8 +460,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
         public static void detailedFold0Test(String dset) {
         System.out.println("BoTSWEnsemble DetailedTest\n");
         try {
-            Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-            Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
             BoTSWEnsemble botsw = new BoTSWEnsemble();
@@ -496,8 +497,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     }
         
     public static void resampleTest(String dset, int resamples) throws Exception {
-        Instances train = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
-        Instances test = ClassifierTools.loadData("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
         Classifier c = new BoTSWEnsemble();
          

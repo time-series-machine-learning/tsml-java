@@ -13,6 +13,7 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.shapelet_based;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,7 +59,6 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     
     
     boolean suppressOutput = false;
-    long seed;
     
     // length of a time-series 
     public int seriesLength;
@@ -192,9 +192,10 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     public LearnShapelets() {
     }
     
-    public void setSeed(long seed)
+    @Override
+    public void setSeed(int seed)
     {
-        this.seed = seed;
+        super.setSeed(seed);
         rand = new Random(seed);
     }
 
@@ -796,8 +797,8 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
         String samplePath = args[0] + fileExtension;
 
         //load the train and test.
-        Instances testSet = utilities.ClassifierTools.loadData(samplePath + "_TEST");
-        Instances trainSet = utilities.ClassifierTools.loadData(samplePath + "_TRAIN");        
+        Instances testSet = DatasetLoading.loadDataNullable(samplePath + "_TEST");
+        Instances trainSet = DatasetLoading.loadDataNullable(samplePath + "_TRAIN");        
 
         LearnShapelets ls = new LearnShapelets();
         ls.setSeed(0);

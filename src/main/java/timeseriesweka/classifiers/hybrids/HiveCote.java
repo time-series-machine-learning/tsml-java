@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.hybrids;
 
 
+import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
@@ -29,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.hybrids.cote.HiveCoteModule;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import vector_classifiers.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
@@ -184,16 +185,16 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         for(int i = 0; i < classifiers.size(); i++){
             
             
-            // if classifier is an implementation of HiveCoteModule, no need to cv for ensemble accuracy as it can self-report
-            // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
-            if(classifiers.get(i) instanceof HiveCoteModule){
+// if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
+// e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
+            if(classifiers.get(i) instanceof TrainAccuracyEstimator){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
-                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((HiveCoteModule) classifiers.get(i)).getEnsembleCvAcc());
+                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((HiveCoteModule)(modules[i].classifier)).getEnsembleCvPreds(), this.fileOutputDataset, modules[i].classifierName, ((HiveCoteModule)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((TrainAccuracyEstimator)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 
@@ -660,8 +661,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         String datasetName = "ItalyPowerDemand";
 //        String datasetName = "MoteStrain";
         
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
 
         HiveCote hive = new HiveCote();
         hive.makeShouty();

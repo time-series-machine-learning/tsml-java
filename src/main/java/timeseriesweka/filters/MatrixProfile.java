@@ -14,9 +14,10 @@
  */ 
 package timeseriesweka.filters;
 
+import experiments.data.DatasetLoading;
 import java.util.ArrayList;
-import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.ROUNDING_ERROR_CORRECTION;
 import utilities.ClassifierTools;
+import static utilities.rescalers.ZNormalisation.ROUNDING_ERROR_CORRECTION;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -701,7 +702,7 @@ public class MatrixProfile extends SimpleBatchFilter{
                         //<editor-fold defaultstate="collapsed" desc="An example using GunPoint"> 
                         String datapath = "C:/users/sjx07ngu/Dropbox/TSC Problems/";
                         String datasetName = "GunPoint";
-                        Instances train = ClassifierTools.loadData(datapath+datasetName+"/"+datasetName+"_TRAIN");
+                        Instances train = DatasetLoading.loadDataNullable(datapath+datasetName+"/"+datasetName+"_TRAIN");
                         int windowSize = 10;
                         MatrixProfile mp = new MatrixProfile(windowSize);
                         
@@ -722,7 +723,7 @@ public class MatrixProfile extends SimpleBatchFilter{
                         //<editor-fold defaultstate="collapsed" desc="An example using GunPoint, but using a window that is bigger than m/4"> 
                         String datapath = "C:/users/sjx07ngu/Dropbox/TSC Problems/";
                         String datasetName = "GunPoint";
-                        Instances train = ClassifierTools.loadData(datapath+datasetName+"/"+datasetName+"_TRAIN");
+                        Instances train = DatasetLoading.loadDataNullable(datapath+datasetName+"/"+datasetName+"_TRAIN");
                         int windowSize = (train.numAttributes()-1)/4+1;
                         MatrixProfile mp = new MatrixProfile(windowSize);
                         Instances transformedToDistances = mp.process(train);

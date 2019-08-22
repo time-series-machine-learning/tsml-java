@@ -14,7 +14,7 @@
  */
 package experiments;
 
-import experiments.DataSets;
+import experiments.data.DatasetLists;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -50,13 +50,13 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import vector_classifiers.CAWPE;
-import vector_classifiers.ensembles.SaveableEnsemble;
+import weka_extras.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import vector_classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Instance;
 import timeseriesweka.filters.NormalizeCase;
 /*
@@ -329,10 +329,10 @@ public class SimulationExperiments {
 
 
 //Set up the train and test files
-        File f=new File(experiments.DataSets.resultsPath+simulator);
+        File f=new File(experiments.data.DatasetLists.resultsPath+simulator);
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.DataSets.resultsPath+simulator+"/"+classifier;
+        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -378,7 +378,7 @@ public class SimulationExperiments {
     }
     public static void combineTestResults(String classifier, String simulator){
         int folds=200;
-        File f=new File(experiments.DataSets.resultsPath+"/"+simulator);
+        File f=new File(experiments.data.DatasetLists.resultsPath+"/"+simulator);
         if(!f.exists() || !f.isDirectory()){
             f.mkdir();
         }
@@ -386,18 +386,18 @@ public class SimulationExperiments {
             boolean results=false;
             for(int i=0;i<folds && !results;i++){
     //Check fold exists            
-                f= new File(experiments.DataSets.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                f= new File(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                 if(f.exists())
                     results=true;
             }
 
             if(results){
-                OutFile of=new OutFile(experiments.DataSets.resultsPath+"/"+simulator+"/"+classifier+".csv");
+                OutFile of=new OutFile(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+".csv");
                 for(int i=0;i<folds;i++){
         //Check fold exists            
-                    f= new File(experiments.DataSets.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                    f= new File(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                     if(f.exists() && f.length()>0){
-                        InFile inf=new InFile(experiments.DataSets.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                        InFile inf=new InFile(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                         inf.readLine();
                         inf.readLine();
                         of.writeLine(i+","+inf.readDouble());
@@ -459,7 +459,7 @@ public class SimulationExperiments {
     }
 
     public static void collateAllResults(){
-        experiments.DataSets.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
+        experiments.data.DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
         for(String s:allClassifiers){
             for(String a:allSimulators){
 //            String a="WholeSeriesElastic";
@@ -468,21 +468,21 @@ public class SimulationExperiments {
         }
         int folds=200;
         for(String a:allSimulators){
-            if(new File(experiments.DataSets.resultsPath+a).exists()){
+            if(new File(experiments.data.DatasetLists.resultsPath+a).exists()){
                 System.out.println(" Simulation = "+a);
-                OutFile of=new OutFile(DataSets.resultsPath+a+"CombinedResults.csv");
+                OutFile of=new OutFile(DatasetLists.resultsPath+a+"CombinedResults.csv");
                 InFile[] ins=new InFile[allClassifiers.length];
                 int count=0;
                 of.writeString(",");
                 for(String s:allClassifiers){
-                    File f=new File(experiments.DataSets.resultsPath+a+"\\"+s+".csv");
+                    File f=new File(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
                     if(f.exists()){
-                        InFile inf=new InFile(experiments.DataSets.resultsPath+a+"\\"+s+".csv");
+                        InFile inf=new InFile(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
                         int lines=inf.countLines();
                         if(lines>=folds){
                             System.out.println(" Doing "+a+" and "+s);
                             of.writeString(s+",");
-                            ins[count++]=new InFile(experiments.DataSets.resultsPath+a+"\\"+s+".csv");
+                            ins[count++]=new InFile(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
                         }
                     }
                 }
@@ -583,13 +583,13 @@ public class SimulationExperiments {
         int e=Integer.parseInt(args[2])-1;
         int fold=Integer.parseInt(args[3])-1;
 //Set up the train and test files
-        File f=new File(experiments.DataSets.resultsPath+"Error");
+        File f=new File(experiments.data.DatasetLists.resultsPath+"Error");
         if(!f.exists())
             f.mkdir();
-        f=new File(experiments.DataSets.resultsPath+"Error/"+simulator);
+        f=new File(experiments.data.DatasetLists.resultsPath+"Error/"+simulator);
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.DataSets.resultsPath+"Error/"+simulator+"/"+classifier;
+        String predictions= experiments.data.DatasetLists.resultsPath+"Error/"+simulator+"/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -620,10 +620,10 @@ public class SimulationExperiments {
         int l=Integer.parseInt(args[2]);
         seriesLength=10+(1+l)*50;   //l from 1 to 50
 //Set up the train and test files
-        File f=new File(experiments.DataSets.resultsPath+simulator+"Length");
+        File f=new File(experiments.data.DatasetLists.resultsPath+simulator+"Length");
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.DataSets.resultsPath+simulator+"Length/"+classifier;
+        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"Length/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -655,10 +655,10 @@ public class SimulationExperiments {
         int l=Integer.parseInt(args[2]);
         trainProp=(double)(l/10.0);   //l from 1 to 9
 //Set up the train and test files
-        File f=new File(experiments.DataSets.resultsPath+simulator+"Length");
+        File f=new File(experiments.data.DatasetLists.resultsPath+simulator+"Length");
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.DataSets.resultsPath+simulator+"Length/"+classifier;
+        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"Length/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -942,7 +942,7 @@ public class SimulationExperiments {
 smoothingTests();
 System.exit(0);
         if(args.length>0){
-            experiments.DataSets.resultsPath= experiments.DataSets.clusterPath+"Results/SimulationExperiments/";
+            experiments.data.DatasetLists.resultsPath= experiments.data.DatasetLists.clusterPath+"Results/SimulationExperiments/";
             if(args.length==3){//Base experiment
                 double b=runSimulationExperiment(args,true);
                 System.out.println(args[0]+","+args[1]+","+","+args[2]+" Acc ="+b);
@@ -953,9 +953,9 @@ System.exit(0);
 //              runLengthExperiment(paras);
         }
         else{
-//            DataSets.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\MatrixProfileExperiments\\";
+//            DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\MatrixProfileExperiments\\";
             local=true;
-            experiments.DataSets.resultsPath="C:\\temp\\";
+            experiments.data.DatasetLists.resultsPath="C:\\temp\\";
                 String[] algos={"ED"};//,,"MP_RotF","MP_DTW"};
                 double[] meanAcc=new double[algos.length];
                 

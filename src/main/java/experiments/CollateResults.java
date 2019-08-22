@@ -694,7 +694,7 @@ public static void basicSummaryComparisons(){
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
-            m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+            m.setDatasets(Arrays.copyOfRange(experiments.data.DatasetLists.UCIContinuousWithoutBigFour, 0, 117));
             m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
                     "E://Results/UCI/Tuned");
             m.runComparison(); 
@@ -756,7 +756,7 @@ public static void basicSummaryComparisons(){
         f=new File(fullPath+"/Predictions");
         System.out.println(fullPath+"/Predictions");
         File[] fileList=f.listFiles();
-        System.out.println("File names in primary : has "+f.length()+" files ");
+        System.out.println("File names in "+fullPath+"/Predictions  : has "+f.length()+" files ");
         for(File t:fileList){
             System.out.println("\t"+t.getName());
 
@@ -778,11 +778,13 @@ public static void basicSummaryComparisons(){
         OutFile trTsTimesFile=new OutFile(fullPath+"/QuickResults/TimesTrainTest"+classifierName+".csv");
         OutFile meanTimesFile=new OutFile(fullPath+"/QuickResults/TimeAverage"+folds+classifierName+".csv");
         OutFile allFoldsTimesFile=new OutFile(fullPath+"/QuickResults/TimeAllFolds"+classifierName+".csv");
+        OutFile trainFileCount=new OutFile(fullPath+"/QuickResults/trainFileCount"+classifierName+".csv");
               
         InFile inf=null;
         boolean readTimes=true;
         for(int i=0;i<trainTest.length;i++){
             System.out.println("Processing "+problems.get(i));
+            int trainCount=0;
             boolean cont=true;
             for(int j=0;j<folds && cont;j++){
                 try{
@@ -836,6 +838,12 @@ public static void basicSummaryComparisons(){
                     }
                     allFolds[i][j]=acc;
                     allFoldsTime[i][j]=time;
+                    File tr_f=new File(fullPath+"/Predictions/"+problems.get(i)+"/trainFold"+j+".csv");
+                    if(tr_f.exists()){//Train fold present
+                        trainCount++;
+                    }
+                    
+                    
                 }catch(Exception e){
                     missing.add(problems.get(i));
                     System.out.println("Some error processing "+fullPath+"/Predictions/"+problems.get(i)+"/testFold"+j+".csv");
@@ -851,7 +859,7 @@ public static void basicSummaryComparisons(){
                 trTsFile.writeString(problems.get(i));
                 meansFile.writeString(problems.get(i));
                 allFoldsFile.writeString(problems.get(i));
-
+                trainFileCount.writeLine(problems.get(i)+","+trainCount);
                 trTsFile.writeString(","+trainTest[i]);
                 means[i]=0;
                 for(int j=0;j<allFolds[i].length;j++){
@@ -961,10 +969,10 @@ public static void basicSummaryComparisons(){
                 trainTestResults.add(trTest);
                 averageResults.add(averages);
             }
-            trTsFile=new OutFile(fullPath+"/QuickResults/CompareTrainTest.csv");
-            OutFile trTsFileComplete=new OutFile(fullPath+"/QuickResults/CompareTrainTestCompleteOnly.csv");
-            meansFile=new OutFile(fullPath+"/QuickResults/CompareAverage"+folds+".csv");
-            OutFile meansFileComplete=new OutFile(fullPath+"/QuickResults/CompareAverageCompleteOnly.csv");
+            trTsFile=new OutFile(fullPath+"/QuickResults/CompareTrainTest"+classifierName+".csv");
+            OutFile trTsFileComplete=new OutFile(fullPath+"/QuickResults/CompareTrainTestCompleteOnly"+classifierName+".csv");
+            meansFile=new OutFile(fullPath+"/QuickResults/CompareAverage"+folds+"_"+classifierName+".csv");
+            OutFile meansFileComplete=new OutFile(fullPath+"/QuickResults/CompareAverageCompleteOnly"+classifierName+".csv");
             trTsFile.writeString("Problem,"+classifierName);
             meansFile.writeString("Problem,"+classifierName);
             meansFileComplete.writeString("Problem,"+classifierName);
@@ -1051,7 +1059,8 @@ public static void basicSummaryComparisons(){
         if (args.length == 0) {//Local run
             bakeOffPath=bakeOffPathBeast;
             hiveCotePath=hiveCotePathBeast;
-            quickStats("E:/Results/UCR Debug/Python/PF",false,30,false,"Bakeoff,EE","HIVE-COTE,HIVE-COTE");
+            quickStats("C:/Temp/CNN/CNN10hours",false,1,false);
+            //,"HIVE-COTE,ST","HIVE-COTE,HIVE-COTE");
 //          quickStats("Z:/Results/BOSS variants/Univariate/RBOSS250",false,30,false,"HIVE-COTE,BOSS");
 //TunedTSF
  //           quickStats("E:/Results/UCR Debug/Java/TunedTSF",false,30,"Bakeoff,ST","Bakeoff,TSF","Bakeoff,BOSS","Bakeoff,DTWCV");
@@ -1088,7 +1097,7 @@ public static void basicSummaryComparisons(){
                 System.out.println(s);
             singleClassifiervsReferenceResults(args);
         }
-
+            
         System.exit(0);
         boolean singleClassifierStats=true;
         if(singleClassifierStats)

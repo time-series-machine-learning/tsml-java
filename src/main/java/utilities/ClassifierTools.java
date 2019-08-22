@@ -47,7 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import vector_classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.converters.ArffSaver;
@@ -60,66 +60,6 @@ import weka.core.converters.ArffSaver;
  */
 public class ClassifierTools {
 	
-        /** 
-         * simply loads the file on path or exits the program
-         * @param fullPath source path for ARFF file WITHOUT THE EXTENSION for some reason
-         * @return Instances from path
-         */
-	public static Instances loadData(String fullPath){
-            if(!fullPath.toLowerCase().endsWith(".arff"))
-                fullPath += ".arff";
-        
-            try {
-                return loadData(new File(fullPath));
-            } catch(IOException e) {
-                System.out.println("Unable to load data on path "+fullPath+" Exception thrown ="+e);
-                return null;
-            }
-	}
-	
-        public static Instances loadDataThrowable(String fullPath) throws IOException{
-            if(!fullPath.toLowerCase().endsWith(".arff"))
-                fullPath += ".arff";
-        
-            return loadData(new File(fullPath));
-	}
-        
-        /** 
-        * simply loads the instances from the file
-        * @param file the File pointer rather than the path. Useful if you use FilenameFilters.
-        * @return Instances from file.
-        */
-        public static Instances loadData(File file) throws IOException{
-            FileReader reader = new FileReader(file);
-            Instances inst = new Instances(reader);
-            inst.setClassIndex(inst.numAttributes()-1);
-            reader.close();
-            return inst;
-        }
-        
-    /**
-     *  Simple util to saveDatasets out. Useful for shapelet transform.
-     * 
-     * @param dataSet
-     * @param fileName
-     */
-    public static void saveDataset(Instances dataSet, String fileName)
-    {
-        try
-        {
-            ArffSaver saver = new ArffSaver();
-            saver.setInstances(dataSet);
-            if (fileName.endsWith(".arff"))
-                saver.setFile(new File(fileName));
-            else 
-                saver.setFile(new File(fileName + ".arff"));
-            saver.writeBatch();
-        }
-        catch (IOException ex)
-        {
-            System.out.println("Error saving transformed dataset" + ex);
-        }
-    }
 
 /**
  * 	Simple util to find the accuracy of a trained classifier on a test set. Probably is a built in method for this! 

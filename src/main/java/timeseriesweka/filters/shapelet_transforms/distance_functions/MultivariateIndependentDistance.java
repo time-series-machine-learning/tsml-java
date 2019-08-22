@@ -16,6 +16,7 @@ package timeseriesweka.filters.shapelet_transforms.distance_functions;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import timeseriesweka.filters.shapelet_transforms.Shapelet;
 import weka.core.Instance;
 
 /**
@@ -37,6 +38,21 @@ public class MultivariateIndependentDistance extends MultivariateDistance implem
         return cumulative_distance;
     }
     
+    @Override
+    public double distanceToShapelet(Shapelet otherShapelet){
+        double sum = 0;
+        //loop through all the channels.
+        for(int j=0; j< numChannels; j++){
+            sum += super.distanceToShapelet(otherShapelet);
+        }
+        
+        double dist = (sum == 0.0) ? 0.0 : (1.0 / length * sum);
+        return dist;
+    }
+    
+    
+    
+    
     //we take in a start pos, but we also start from 0.
     public double calculate(double[] shape, double[] timeSeries) 
     {
@@ -54,7 +70,7 @@ public class MultivariateIndependentDistance extends MultivariateDistance implem
             subseq = new double[length];
             System.arraycopy(timeSeries, i, subseq, 0, length);
             
-            subseq = zNormalise(subseq, false); // Z-NORM HERE
+            subseq = seriesRescaler.rescaleSeries(subseq, false); // Z-NORM HERE
             for (int j = 0; j < length; j++)
             {
                 //count ops

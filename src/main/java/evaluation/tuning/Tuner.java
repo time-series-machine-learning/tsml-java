@@ -19,6 +19,7 @@ import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.Evaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
+import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,7 +30,7 @@ import java.util.function.Function;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import vector_classifiers.SaveEachParameter;
+import weka_extras.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -438,7 +439,7 @@ public class Tuner
         tuner.setSeed(seed);
         
         String dataset = "hayes-roth";
-        Instances all = ClassifierTools.loadData("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
+        Instances all = DatasetLoading.loadDataNullable("Z:\\Data\\UCIDelgado\\"+dataset+"\\"+dataset+".arff");
         Instances[] data = InstanceTools.resampleInstances(all, seed, 0.5);
         
         System.out.println(tuner.tune(svm, data[0], space));

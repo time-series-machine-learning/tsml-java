@@ -16,6 +16,7 @@ package timeseriesweka.filters.shapelet_transforms.distance_functions;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import timeseriesweka.filters.shapelet_transforms.Shapelet;
 import timeseriesweka.filters.shapelet_transforms.ShapeletCandidate;
 import static utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToArrays;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
@@ -31,6 +32,25 @@ public class MultivariateDependentDistance extends MultivariateDistance implemen
     public double calculate(Instance inst, int timeSeriesId){
         return calculate(convertMultiInstanceToArrays(splitMultivariateInstance(inst)), timeSeriesId);
     }
+    
+    
+    @Override
+    public double distanceToShapelet(Shapelet otherShapelet){
+        double sum = 0;
+        double temp;
+        //loop through all the channels.
+        for(int j=0; j< numChannels; j++){
+            for (int k = 0; k < length; k++)
+            {
+                temp = (cand.getShapeletContent(j)[k] - otherShapelet.getContent().getShapeletContent(j)[k]);
+                sum = sum + (temp * temp);
+            }
+        }
+        
+        double dist = (sum == 0.0) ? 0.0 : (1.0 / length * sum);
+        return dist;
+    }
+    
     
     //we take in a start pos, but we also start from 0.
     public double calculate(double[][] timeSeries, int timeSeriesId) 
@@ -50,7 +70,7 @@ public class MultivariateDependentDistance extends MultivariateDistance implemen
                 //copy a section of one of the series from the channel.
                 subseq = new double[length];
                 System.arraycopy(timeSeries[j], i, subseq, 0, length);
-                subseq = zNormalise(subseq, false); // Z-NORM HERE
+                subseq = seriesRescaler.rescaleSeries(subseq, false); // Z-NORM HERE
                 for (int k = 0; k < length; k++)
                 {
                     //count ops
