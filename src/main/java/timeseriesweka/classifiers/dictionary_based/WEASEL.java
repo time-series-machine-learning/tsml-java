@@ -14,30 +14,26 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-
-import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.storage.ClassifierResults;
 import com.carrotsearch.hppc.*;
+import com.carrotsearch.hppc.cursors.DoubleIntCursor;
 import com.carrotsearch.hppc.cursors.IntCursor;
-import com.carrotsearch.hppc.cursors.LongFloatCursor;
+import com.carrotsearch.hppc.cursors.LongDoubleCursor;
 import com.carrotsearch.hppc.cursors.LongIntCursor;
 import de.bwaldvogel.liblinear.*;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
-import utilities.*;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import weka.core.TechnicalInformationHandler;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * WEASEL Classifier
@@ -45,9 +41,8 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,TechnicalInformationHandler {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TechnicalInformationHandler {
 
-  @Override
   public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -68,7 +63,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   protected static boolean[] NORMALIZATION = new boolean[]{true, false};
 
   // chi-squared test
-  public static double chi = 2;
+  public static double chi = 0.1;
 
   // default liblinear parameters
   public static double bias = 1;
@@ -116,10 +111,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     public WEASELModel(){}
 
     public WEASELModel(
-        boolean normed,
-        int features,
-        WEASELTransform model,
-        de.bwaldvogel.liblinear.Model linearModel
+            boolean normed,
+            int features,
+            WEASELTransform model,
+            de.bwaldvogel.liblinear.Model linearModel
     ) {
       this.normed = normed;
       this.features = features;
@@ -189,9 +184,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   }
 
   protected static Problem initLibLinearProblem(
-      final WEASELTransform.BagOfBigrams[] bob,
-      final WEASELTransform.Dictionary dict,
-      final double bias) {
+          final WEASELTransform.BagOfBigrams[] bob,
+          final WEASELTransform.Dictionary dict,
+          final double bias) {
     Linear.resetRandom();
     Linear.disableDebugOutput();
 
@@ -208,8 +203,8 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   }
 
   protected static FeatureNode[][] initLibLinear(
-      final WEASELTransform.BagOfBigrams[] bob,
-      final WEASELTransform.Dictionary dict) {
+          final WEASELTransform.BagOfBigrams[] bob,
+          final WEASELTransform.Dictionary dict) {
     FeatureNode[][] featuresTrain = new FeatureNode[bob.length][];
     for (int j = 0; j < bob.length; j++) {
       WEASELTransform.BagOfBigrams bop = bob[j];
@@ -238,8 +233,8 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
   @SuppressWarnings("static-access")
   protected static int trainLibLinear(
-      final Problem prob, final SolverType solverType, double c,
-      int iter, double p, int nr_fold) {
+          final Problem prob, final SolverType solverType, double c,
+          int iter, double p, int nr_fold) {
     final Parameter param = new Parameter(solverType, c, iter, p);
 
     ThreadLocal<Random> myRandom = new ThreadLocal<>();
@@ -343,9 +338,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
           for (int w = 0; w < model.windowLengths.length; w++) {
             WEASELTransform.BagOfBigrams[] bobForOneWindow = fitOneWindow(
-                samples,
-                model.windowLengths, mean,
-                words[w], ff, w);
+                    samples,
+                    model.windowLengths, mean,
+                    words[w], ff, w);
             mergeBobs(bop, bobForOneWindow);
           }
 
@@ -372,9 +367,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       for (int w = 0; w < model.windowLengths.length; w++) {
         int[][] words = model.createWords(samples, w);
         WEASELTransform.BagOfBigrams[] bobForOneWindow = fitOneWindow(
-            samples,
-            model.windowLengths, bestNorm,
-            words, bestF, w);
+                samples,
+                model.windowLengths, bestNorm,
+                words, bestF, w);
         mergeBobs(bop, bobForOneWindow);
       }
 
@@ -383,10 +378,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       de.bwaldvogel.liblinear.Model linearModel = Linear.train(problem, new Parameter(solverType, c, iterations, p));
 
       this.classifier = new WEASELModel(
-          bestNorm,
-          bestF,
-          model,
-          linearModel
+              bestNorm,
+              bestF,
+              model,
+              linearModel
       );
 
     } catch (Exception e) {
@@ -418,9 +413,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   }
 
   private WEASELTransform.BagOfBigrams[] fitOneWindow(
-      Instances samples,
-      int[] windowLengths, boolean mean,
-      int[][] word, int f, int w) {
+          Instances samples,
+          int[] windowLengths, boolean mean,
+          int[][] word, int f, int w) {
     WEASELTransform modelForWindow = new WEASELTransform(f, maxS, windowLengths, mean);
     WEASELTransform.BagOfBigrams[] bopForWindow = modelForWindow.createBagOfPatterns(word, samples, w, f);
     modelForWindow.trainChiSquared(bopForWindow, chi);
@@ -428,8 +423,8 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   }
 
   private synchronized void mergeBobs(
-      WEASELTransform.BagOfBigrams[] bop,
-      WEASELTransform.BagOfBigrams[] bopForWindow) {
+          WEASELTransform.BagOfBigrams[] bop,
+          WEASELTransform.BagOfBigrams[] bopForWindow) {
     for (int i = 0; i < bop.length; i++) {
       if (bop[i]==null) {
         bop[i] = bopForWindow[i];
@@ -448,7 +443,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     for (int w = 0; w < classifier.weasel.windowLengths.length; w++) {
       int[] wordsTest = classifier.weasel.createWords(instance, w);
       WEASELTransform.BagOfBigrams[] bopForWindow =
-          new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
+              new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
       classifier.weasel.dict.filterChiSquared(bopForWindow);
       mergeBobs(bagTest, bopForWindow);
     }
@@ -466,7 +461,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     for (int w = 0; w < classifier.weasel.windowLengths.length; w++) {
       int[] wordsTest = classifier.weasel.createWords(instance, w);
       WEASELTransform.BagOfBigrams[] bopForWindow =
-          new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
+              new WEASELTransform.BagOfBigrams[]{classifier.weasel.createBagOfPatterns(wordsTest, instance, w, classifier.features)};
       classifier.weasel.dict.filterChiSquared(bopForWindow);
       mergeBobs(bagTest, bopForWindow);
     }
@@ -480,17 +475,6 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       classHist[classifier.linearModel.getLabels()[i]] = probabilities[i];
     }
     return classHist;
-  }
-
-
-  @Override
-  public double getTrainAcc() {
-    return 0;
-  }
-
-  @Override
-  public double[] getTrainPreds() {
-    return new double[0];
   }
 
   @Override
@@ -675,7 +659,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       if (this.signature[index] == null) {
         this.signature[index] = new SFASupervised();
         this.signature[index].fitWindowing(
-            samples, this.windowLengths[index], this.maxF, this.alphabetSize, this.normMean);
+                samples, this.windowLengths[index], this.maxF, this.alphabetSize, this.normMean);
       }
 
       // create words
@@ -706,68 +690,149 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
      * Implementation based on:
      * https://github.com/scikit-learn/scikit-learn/blob/c957249/sklearn/feature_selection/univariate_selection.py#L170
      */
-    public void trainChiSquared(final BagOfBigrams[] bob, double chi_limit) {
+    public void trainChiSquared(final BagOfBigrams[] bob, double p_limit) {
       // Chi2 Test
       LongIntHashMap featureCount = new LongIntHashMap(bob[0].bob.size());
-      LongFloatHashMap classProb = new LongFloatHashMap(10);
-      LongIntHashMap observed = new LongIntHashMap(bob[0].bob.size());
+      DoubleIntHashMap classProb = new DoubleIntHashMap(10);
+      DoubleObjectHashMap<LongIntHashMap> observed = new DoubleObjectHashMap<>();
 
       // count number of samples with this word
       for (BagOfBigrams bagOfPattern : bob) {
-        long label = bagOfPattern.label.longValue();
+        double label = bagOfPattern.label;
+
+        int index = -1;
+        LongIntHashMap obs = null;
+        if ((index = observed.indexOf(label)) > -1) {
+          obs = observed.indexGet(index);
+        } else {
+          obs = new LongIntHashMap();
+          observed.put(label, obs);
+        }
+
         for (LongIntCursor word : bagOfPattern.bob) {
           if (word.value > 0) {
-            featureCount.putOrAdd(word.key, 1, 1);
-            long key = label << 32 | word.key;
-            observed.putOrAdd(key, 1, 1);
+            featureCount.putOrAdd(word.key, 1,1); //word.value, word.value);
+
+            // count observations per class for this feature
+            obs.putOrAdd(word.key, 1,1); //word.value, word.value);
           }
         }
       }
 
       // samples per class
       for (BagOfBigrams bagOfPattern : bob) {
-        long label = bagOfPattern.label.longValue();
+        double label = bagOfPattern.label;
         classProb.putOrAdd(label, 1, 1);
       }
 
-      // chi-squared: observed minus expected occurrence
-      LongHashSet chiSquare = new LongHashSet(featureCount.size());
-      for (LongFloatCursor prob : classProb) {
-        prob.value /= bob.length; // (float) frequencies.get(prob.key);
+      // p_value-squared: observed minus expected occurrence
+      LongDoubleHashMap chiSquareSum = new LongDoubleHashMap(featureCount.size());
+
+      for (DoubleIntCursor prob : classProb) {
+        double p = ((double)prob.value) / bob.length;
+        LongIntHashMap obs = observed.get(prob.key);
 
         for (LongIntCursor feature : featureCount) {
-          long key = prob.key << 32 | feature.key;
-          float expected = prob.value * feature.value;
+          double expected = p * feature.value;
 
-          float chi = observed.get(key) - expected;
-          float newChi = chi * chi / expected;
-          if (newChi >= chi_limit
-              && !chiSquare.contains(feature.key)) {
-            chiSquare.add(feature.key);
+          double chi = obs.get(feature.key) - expected;
+          double newChi = chi * chi / expected;
+
+          if (newChi > 0) {
+            // build the sum among p_value-values of all classes
+            chiSquareSum.putOrAdd(feature.key, newChi, newChi);
           }
         }
       }
 
+      LongHashSet chiSquare = new LongHashSet(featureCount.size());
+      ArrayList<PValueKey> values = new ArrayList<PValueKey>(featureCount.size());
+
+      for (LongDoubleCursor feature : chiSquareSum) {
+        double newChi = feature.value;
+        double pvalue = Statistics.chiSquaredProbability(newChi, classProb.keys().size()-1);
+
+        if (pvalue <= p_limit) {
+          chiSquare.add(feature.key);
+          values.add(new PValueKey(pvalue, feature.key));
+        }
+      }
+
+      // limit number of features per window size to avoid excessive features
+      int limit = 100;
+      if (values.size() > limit) {
+        // sort by p_value-squared value
+        Collections.sort(values, new Comparator<PValueKey>() {
+          @Override
+          public int compare(PValueKey o1, PValueKey o2) {
+            int comp = Double.compare(o1.pvalue, o2.pvalue);
+            if (comp != 0) { // tie breaker
+              return comp;
+            }
+            return Long.compare(o1.key, o2.key);
+          }
+        });
+
+        chiSquare.clear();
+
+        // use 100 unigrams and 100 bigrams
+        int countUnigram = 0;
+        int countBigram = 0;
+        for (int i = 0; i < values.size(); i++) {
+          // bigram?
+          long val = values.get(i).key;
+          if (val > (1l << 32) && countBigram < limit) {
+            chiSquare.add(val);
+            countBigram++;
+          }
+          // unigram?
+          else if (val < (1l << 32) && countUnigram < limit){
+            chiSquare.add(val);
+            countUnigram++;
+          }
+
+          if (countUnigram >= limit && countBigram >= limit) {
+            break;
+          }
+        }
+      }
+
+      // remove values
       for (int j = 0; j < bob.length; j++) {
-        for (LongIntCursor cursor : bob[j].bob) {
-          if (!chiSquare.contains(cursor.key)) {
-            bob[j].bob.values[cursor.index] = 0;
+        LongIntHashMap oldMap = bob[j].bob;
+        bob[j].bob = new LongIntHashMap();
+        for (LongIntCursor cursor : oldMap) {
+          if (chiSquare.contains(cursor.key)) {
+            bob[j].bob.put(cursor.key, cursor.value);
           }
         }
+        oldMap.clear();
+      }
+    }
+
+    static class PValueKey {
+      public double pvalue;
+      public long key;
+
+      public PValueKey(double pvalue, long key) {
+        this.pvalue = pvalue;
+        this.key = key;
       }
 
-      // chi-squared reduces keys substantially => remap
-      //this.dict.remap(bob);
+      @Override
+      public String toString() {
+        return "" + this.pvalue + ":" + this.key;
+      }
     }
 
     /**
      * Create words and bi-grams for all window lengths
      */
     public BagOfBigrams createBagOfPatterns(
-        final int[] words,
-        final Instance sample,
-        final int w,    // index of used windowSize
-        final int wordLength) {
+            final int[] words,
+            final Instance sample,
+            final int w,    // index of used windowSize
+            final int wordLength) {
       BagOfBigrams bagOfPatterns = new BagOfBigrams(words.length * 2, sample.classValue());
 
       final byte usedBits = (byte) binlog(this.alphabetSize);
@@ -782,8 +847,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
         // add 2 grams
         if (offset - this.windowLengths[w] >= 0) {
           long prevWord = (words[offset - this.windowLengths[w]] & mask);
-          long newWord = (prevWord << 32 | word ) << highestBit | (long) w;
-          bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+          if (prevWord != 0) {
+            long newWord = (prevWord << 32 | word);
+            bagOfPatterns.bob.putOrAdd(newWord, 1, 1);
+          }
         }
       }
       return bagOfPatterns;
@@ -793,10 +860,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
      * Create words and bi-grams for all window lengths
      */
     public BagOfBigrams[] createBagOfPatterns(
-        final int[][] wordsForWindowLength,
-        final Instances samples,
-        final int w,    // index of used windowSize
-        final int wordLength) {
+            final int[][] wordsForWindowLength,
+            final Instances samples,
+            final int w,    // index of used windowSize
+            final int wordLength) {
       BagOfBigrams[] bagOfPatterns = new BagOfBigrams[samples.size()];
 
       final byte usedBits = (byte) binlog(this.alphabetSize);
@@ -816,8 +883,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
           // add 2 grams
           if (offset - this.windowLengths[w] >= 0) {
             long prevWord = (wordsForWindowLength[j][offset - this.windowLengths[w]] & mask);
-            long newWord = (prevWord << 32 | word)  << highestBit | (long) w;
-            bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
+            if (prevWord != 0) {
+              long newWord = (prevWord << 32 | word);
+              bagOfPatterns[j].bob.putOrAdd(newWord, 1, 1);
+            }
           }
         }
       }
@@ -987,22 +1056,22 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     }
 
     protected double calculateInformationGain(
-        ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
-        double class_entropy,
-        double total_c_in,
-        double total) {
+            ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
+            double class_entropy,
+            double total_c_in,
+            double total) {
       double total_c_out = (total - total_c_in);
       return class_entropy
-          - total_c_in / total * entropy(cIn, total_c_in)
-          - total_c_out / total * entropy(cOut, total_c_out);
+              - total_c_in / total * entropy(cIn, total_c_in)
+              - total_c_out / total * entropy(cOut, total_c_out);
     }
 
     protected void findBestSplit(
-        List<ValueLabel> element,
-        int start,
-        int end,
-        int remainingSymbols,
-        List<Integer> splitPoints
+            List<ValueLabel> element,
+            int start,
+            int end,
+            int remainingSymbols,
+            List<Integer> splitPoints
     ) {
 
       double bestGain = -1;
@@ -1028,6 +1097,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
         // only inspect changes of the label
         if (!label.equals(lastLabel)) {
           double gain = calculateInformationGain(cIn, cOut, class_entropy, i, total);
+          gain = Math.round(gain * 1000.0) / 1000.0; // round for 4 decimal places
 
           if (gain >= bestGain) {
             bestPos = split;
@@ -1058,9 +1128,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     }
 
     protected int moveElement(
-        List<ValueLabel> element,
-        ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
-        int pos) {
+            List<ValueLabel> element,
+            ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
+            int pos) {
       cIn.putOrAdd(element.get(pos).label, 1, 1);
       cOut.putOrAdd(element.get(pos).label, -1, -1);
       return 1;
@@ -1146,9 +1216,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
      * @return
      */
     public static Indices<Double>[] calcBestCoefficients(
-        double[][] samples,
-        double[] labels,
-        double[][] transformedSignal) {
+            double[][] samples,
+            double[] labels,
+            double[][] transformedSignal) {
       HashMap<Double, ArrayList<double[]>> classes = new HashMap<>();
       for (int i = 0; i < samples.length; i++) {
         ArrayList<double[]> allTs = classes.get(labels[i]);
@@ -1233,10 +1303,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
      * @return
      */
     public static double[] getFoneway(
-        int length,
-        Map<Double, ArrayList<double[]>> classes,
-        double nSamples,
-        double nClasses) {
+            int length,
+            Map<Double, ArrayList<double[]>> classes,
+            double nSamples,
+            double nClasses) {
       double[] ss_alldata = new double[length];
       HashMap<Double, double[]> sums_args = new HashMap<>();
 
@@ -1612,10 +1682,10 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
      * Gets the means and stddevs for all sliding windows of a time series
      */
     public void calcIncrementalMeanStddev(
-        int windowLength,
-        double[] tsData,
-        double[] means,
-        double[] stds) {
+            int windowLength,
+            double[] tsData,
+            double[] means,
+            double[] stds) {
       double sum = 0;
       double squareSum = 0;
 
@@ -1689,17 +1759,17 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
     //Minimum working example
 
     for (String dataset : new String[]{ "Coffee",
-        "ECG200",
-        "FaceFour",
-        "OliveOil",
-        "GunPoint",
-        "Beef",
-        "DiatomSizeReduction",
-        "CBF",
-        "ECGFiveDays",
-        "TwoLeadECG",
-        "MoteStrain",
-        "ItalyPowerDemand"}) {
+            "ECG200",
+            "FaceFour",
+            "OliveOil",
+            "GunPoint",
+            "Beef",
+            "DiatomSizeReduction",
+            "CBF",
+            "ECGFiveDays",
+            "TwoLeadECG",
+            "MoteStrain",
+            "ItalyPowerDemand"}) {
       Instances train = DatasetLoading.loadDataNullable("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TRAIN.arff");
       Instances test = DatasetLoading.loadDataNullable("/Users/bzcschae/workspace/TSC_TONY_new/TimeSeriesClassification/TSCProblems/" + dataset + "/" + dataset + "_TEST.arff");
 
