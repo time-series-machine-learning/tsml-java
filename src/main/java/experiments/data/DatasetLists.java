@@ -255,7 +255,8 @@ public class DatasetLists {
         "GesturePebbleZ2",
         "PickupGestureWiimoteZ",
         "PLAID",
-        "ShakeGestureWiimoteZ"
+        "ShakeGestureWiimoteZ",
+		   "MelbournePedestrian"
    };
    
    

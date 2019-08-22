@@ -123,7 +123,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     /** Primary parameters potentially tunable*/
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
-    private int maxClassifiers = 1000;
+    private int maxClassifiers = 500;
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
     private int numIntervals=0;

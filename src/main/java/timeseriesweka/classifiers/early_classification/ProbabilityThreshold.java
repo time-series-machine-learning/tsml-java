@@ -1,5 +1,6 @@
 package timeseriesweka.classifiers.early_classification;
 
+import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.interval_based.TSF;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -9,6 +10,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static experiments.ExperimentsEarlyClassification.defaultTimeStamps;
 import static utilities.Utilities.argMax;
@@ -33,9 +35,9 @@ public class ProbabilityThreshold extends AbstractClassifier {
         classifier = c;
     }
 
-    public void setThreshold(double d) {
-        threshold = d;
-    }
+    public void setThreshold(double d) { threshold = d; }
+
+    public void setSeed(int i){ seed = i; }
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -91,5 +93,55 @@ public class ProbabilityThreshold extends AbstractClassifier {
         } else {
             return null;
         }
+    }
+
+    public static ClassifierResults resultsFromFile(String resultsPath, int foldNo, double threshold, Instances data)
+            throws Exception {
+        ClassifierResults res = new ClassifierResults(resultsPath + "/5%testFold" + foldNo + ".csv");
+
+        ClassifierResults newRes = new ClassifierResults(res.numClasses());
+        newRes.setTimeUnit(TimeUnit.NANOSECONDS);
+        newRes.setClassifierName(res.getClassifierName());
+        newRes.setDatasetName(res.getDatasetName());
+        newRes.setFoldID(foldNo);
+        newRes.setSplit("test");
+
+        int length = data.numAttributes()-1;
+        newRes.turnOffZeroTimingsErrors();
+
+        double[] trueClassVals = data.attributeToDoubleArray(data.classIndex());
+        double[] predictions = new double[data.numInstances()];
+        double[][] distributions = new double[data.numInstances()][];
+        long[] predTimes = new long[data.numInstances()];
+        String[] descriptions = new String[data.numInstances()];
+
+        Random rand = new Random(foldNo);
+
+        for (int n = 5; n <= 100; n += 5) {
+            res = new ClassifierResults(resultsPath + "/" + n + "%testFold" + foldNo + ".csv");
+
+            for (int i = 0; i < data.numInstances(); i++) {
+                if (distributions[i] == null) {
+                    double[] dist = res.getProbabilityDistribution(i);
+                    predTimes[i] += res.getPredictionTime(i);
+                    int maxIndex = argMax(dist, rand);
+
+                    if (dist[maxIndex] > threshold) {
+                        int newLength = (int) Math.round((n / 100.0 * length));
+                        descriptions[i] = Double.toString(newLength / (double) length);
+                        distributions[i] = dist;
+                        predictions[i] = maxIndex;
+                    }
+                }
+            }
+        }
+
+        newRes.addAllPredictions(trueClassVals, predictions, distributions, predTimes, descriptions);
+        newRes.turnOnZeroTimingsErrors();
+
+        newRes.finaliseResults();
+        newRes.findAllStatsOnce();
+
+        return newRes;
     }
 }
