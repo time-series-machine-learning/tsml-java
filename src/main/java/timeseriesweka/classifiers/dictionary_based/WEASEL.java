@@ -1108,6 +1108,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements HiveCo
         // only inspect changes of the label
         if (!label.equals(lastLabel)) {
           double gain = calculateInformationGain(cIn, cOut, class_entropy, i, total);
+          gain = Math.round(gain * 1000.0) / 1000.0; // round for 4 decimal places
 
           if (gain >= bestGain) {
             bestPos = split;
