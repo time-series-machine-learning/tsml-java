@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface that allows the user to allow a classifier to checkpoint, i.e. 
@@ -60,5 +61,11 @@ public interface Checkpointable extends Serializable{
         }
     }
     
-    
+    default void setCheckpointInterval(long amount, TimeUnit unit) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setCheckpointing(boolean on) {
+
+    }
 }

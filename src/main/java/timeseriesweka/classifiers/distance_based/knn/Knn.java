@@ -15,6 +15,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private long trainTimeLimitNanos = -1;
     private long testTimeLimitNanos = -1;
     private Long trainSeed = null;
-    private String checkpointPath;
+    private String checkpointDirPath;
+    private long lastCheckpointTimestamp = 0;
+    private long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private AbstractIterator<Instance> trainInstanceIterator;
     private AbstractIterator<Instance> trainEstimatorIterator;
     private Instances trainInstances;
@@ -58,6 +61,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
     private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
     private boolean earlyAbandonEnabled = true;
+    private boolean checkpointing = false;
     private Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
 
     public Logger getLogger() {
@@ -111,7 +115,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     public static void main(String[] args) throws
             Exception {
         int seed = 0;
-        String user = "goastler";
+        String user = "vte14wgu";
         Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "GunPoint", seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
@@ -131,6 +135,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 //            System.out.println(i + " " + trainResults.getAcc());
 //        }
         Knn knn = new Knn();
+        Dtw dtw = new Dtw();
+        dtw.setWarpingWindow(-1);
+        knn.setDistanceMeasure(dtw);
         knn.setTrainSeed(seed);
         knn.setTestSeed(seed);
         knn.buildClassifier(train);
@@ -154,6 +161,31 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         distanceMeasure.setOptions(options);
     }
 
+    private void checkpoint() throws
+                              IOException {
+        checkpoint(false);
+    }
+
+    private boolean withinCheckpointInterval() {
+        return System.nanoTime() - lastCheckpointTimestamp < checkpointIntervalNanos;
+    }
+
+    private void checkpoint(boolean force) throws
+                                           IOException {
+        trainTimer.lapAndStop();
+        if(checkpointing && (force || !withinCheckpointInterval())) {
+            String trainSeedStr = this.trainSeed == null ? "" :
+                               String.valueOf(this.trainSeed);
+            saveToFile(checkpointDirPath + "/checkpoint" + trainSeedStr + ".ser");
+        }
+        trainTimer.start();
+    }
+
+    @Override
+    public void setCheckpointing(final boolean on) {
+        checkpointing = on;
+    }
+
     @Override
     public void buildClassifier(final Instances trainInstances) throws
             Exception {
@@ -173,14 +205,18 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 }
                 hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
                 hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+                checkpoint();
                 trainTimer.lap();
             }
             buildTrainEstimate();
         }
+        checkpoint(true);
     }
 
     private Iterator<Instance> buildTestNeighbourIterator() {
-        return new RandomIterator<>(testRandom);
+        RandomIterator<Instance> iterator = new RandomIterator<>(testRandom);
+        iterator.addAll(trainInstances);
+        return iterator;
     }
 
     @Override
@@ -191,6 +227,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         Iterator<Instance> iterator = buildTestNeighbourIterator();
         while (withinTestTimeLimit() && iterator.hasNext()) {
             Instance trainInstance = iterator.next();
+            iterator.remove();
             searcher.add(trainInstance);
         }
         double[] distribution = searcher.predict();
@@ -230,6 +267,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             } else {
                 System.err.println("train seed not set");
             }
+            this.trainInstances = trainInstances;
             if(estimateTrainEnabled) {
                 if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
                     trainNeighbourhoodSizeLimit = (int) (trainInstances.size() * trainNeighbourhoodSizeLimitPercentage);
@@ -244,7 +282,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                     }
                 }
                 trainSearchers = new ArrayList<>();
-                this.trainInstances = trainInstances;
                 trainInstanceIterator = buildTrainInstanceIterator();
                 trainEstimatorIterator = buildTrainEstimatorIterator();
             }
@@ -485,7 +522,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private boolean withinTestTimeLimit() {
-        return hasTestTimeLimit() && testTimer.getTimeNanos() < testTimeLimitNanos;
+        return !hasTestTimeLimit() || testTimer.getTimeNanos() < testTimeLimitNanos;
     }
 
     public boolean hasTestTimeLimit() {
@@ -510,7 +547,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     @Override
     public void setSavePath(final String path) {
-        checkpointPath = path;
+        checkpointDirPath = path;
     }
 
     @Override

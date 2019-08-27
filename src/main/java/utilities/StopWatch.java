@@ -37,4 +37,13 @@ public class StopWatch {
     public void reset() {
         time = 0;
     }
+
+    public void lapAndStop() {
+        lap();
+        stop();
+    }
+
+    public void add(long nanos) {
+        time += nanos;
+    }
 }

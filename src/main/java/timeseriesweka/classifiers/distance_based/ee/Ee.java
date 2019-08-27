@@ -11,6 +11,7 @@ import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasu
 import timeseriesweka.classifiers.distance_based.distance_measures.Wddtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
+import utilities.Checks;
 import utilities.StopWatch;
 import utilities.cache.CachedFunction;
 import utilities.ArrayUtilities;
@@ -20,9 +21,11 @@ import utilities.iteration.ClassifierIterator;
 import utilities.iteration.ParameterSetIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -38,8 +41,8 @@ public class Ee
                TestTimeContractable,
                Checkpointable {
 
-    private final Random trainRandom = new Random();
-    private final Random testRandom = new Random();
+    private Random trainRandom = new Random();
+    private Random testRandom = new Random();
 
     private CachedFunction<Instance, Instance> derivativeCache;
 
@@ -64,27 +67,31 @@ public class Ee
     private boolean estimateTrain = true;
     private String trainResultsPath;
     private ClassifierResults trainResults;
-    private int minNeighbourhoodSize = -1;
-    private String postProcessedClassifierResultsDirPath;
+    private int minTrainNeighbourhoodSizeLimit = 2;
+    private int trainNeighbourhoodSizeLimit = -1;
+    private double trainNeighbourhoodSizeLimitPercentage = -1;
+    private String offlineBuildClassifierResultsDirPath;
+    private List<String> offlineBuildClassifierNames;
     private boolean resetTrain = true;
     private Instances trainInstances;
     private Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
-    private String checkpointSavePath;
+    private String checkpointDirPath;
     private long testTimeLimitNanos = -1;
     private long trainTimeLimitNanos = -1;
-    private StopWatch trainTimer;
-    private StopWatch testTimer;
+    private StopWatch trainTimer = new StopWatch();
+    private StopWatch testTimer = new StopWatch();
+    private boolean offlineBuild = false;
 
     public Logger getLogger() {
         return logger;
     }
 
-    public String getPostProcessedClassifierResultsDirPath() {
-        return postProcessedClassifierResultsDirPath;
+    public String getOfflineBuildClassifierResultsDirPath() {
+        return offlineBuildClassifierResultsDirPath;
     }
 
-    public void setPostProcessedClassifierResultsDirPath(final String postProcessedClassifierResultsDirPath) {
-        this.postProcessedClassifierResultsDirPath = postProcessedClassifierResultsDirPath;
+    public void setOfflineBuildClassifierResultsDirPath(final String offlineBuildClassifierResultsDirPath) {
+        this.offlineBuildClassifierResultsDirPath = offlineBuildClassifierResultsDirPath;
     }
 
     public boolean isResetTrain() {
@@ -97,7 +104,7 @@ public class Ee
 
     @Override
     public void setSavePath(final String path) {
-        checkpointSavePath = path;
+        checkpointDirPath = path;
     }
 
     @Override
@@ -130,6 +137,22 @@ public class Ee
     @Override
     public void setTrainTimeLimit(final TimeUnit time, final long amount) {
         trainTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
+    }
+
+    public boolean isOfflineBuild() {
+        return offlineBuild;
+    }
+
+    public void setOfflineBuild(final boolean offlineBuild) {
+        this.offlineBuild = offlineBuild;
+    }
+
+    public List<String> getOfflineBuildClassifierNames() {
+        return offlineBuildClassifierNames;
+    }
+
+    public void setOfflineBuildClassifierNames(final List<String> offlineBuildClassifierNames) {
+        this.offlineBuildClassifierNames = offlineBuildClassifierNames;
     }
 
     public class Member {
@@ -215,16 +238,12 @@ public class Ee
                     }
                 }
             }
-            if(classifier instanceof Seedable) {
-                ((Seedable) classifier).setTrainSeed(trainSeed);
-                ((Seedable) classifier).setTestSeed(testSeed);
-            }
             return classifier;
         }
 
         private AbstractClassifier nextImprovement() {
             AbstractClassifier classifier = improvement.next();
-            classifier = improve(classifier);
+            classifier = improveClassifier(classifier);
             return classifier;
         }
 
@@ -267,14 +286,24 @@ public class Ee
 //        }
 //        System.out.println(testResults.getAcc());
         long seed = 0;
-        String username = "goastler";
+        String username = "vte14wgu";
         Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
+        List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN");
+        names = new ArrayList<>(names);
+        for(int i = 0; i < names.size(); i++) {
+            String name = names.get(i);
+            name += ",trnslp,0.1";
+            names.set(i, name);
+        }
         Ee ee = new Ee();
+        ee.setOfflineBuildClassifierResultsDirPath("/home/vte14wgu/Projects/tsml/results2/");
 //        ee.getLogger().setLevel(Level.OFF);
         ee.setTrainSeed(seed);
         ee.setTestSeed(seed);
+        ee.setOfflineBuild(true);
+        ee.setOfflineBuildClassifierNames(names);
         ee.setFindTrainAccuracyEstimate(true);
         ee.buildClassifier(train);
         ClassifierResults trainResults = ee.getTrainResults();
@@ -324,10 +353,8 @@ public class Ee
         }
     }
 
-    @Override
-    public void buildClassifier(Instances trainInstances) throws
-                                                          Exception {
-        setup(trainInstances);
+    private void buildClassifierOnline() throws
+                                         Exception {
         while (memberIterator.hasNext() && withinTrainTimeLimit()) {
             Member member = memberIterator.next();
             AbstractIterator<AbstractClassifier> iterator = member.getIterator();
@@ -343,14 +370,80 @@ public class Ee
             }
             trainTimer.lap();
         }
+    }
+
+    private void buildClassifierOffline() throws
+                                          Exception {
+        trainTimer.lapAndStop();
+        String postfix = "/Predictions/" + trainInstances.relationName() + "/";
+        for(String name : offlineBuildClassifierNames) {
+            File resultsDir = new File(offlineBuildClassifierResultsDirPath, name + postfix);
+            File[] files = resultsDir.listFiles(file -> {
+                String name1 = file.getName();
+                return name1.startsWith("fold" + trainSeed + "_") && file.isFile();
+            });
+            if(files == null || files.length == 0) {
+                // no parameters, therefore should already have train file
+                files = new File[] {new File(resultsDir, "trainFold" + trainSeed + ".csv")};
+            }
+            trainTimer.start();
+            KBestSelector<Benchmark, Double> selector = buildSelector();
+            Member member = new Member(null, null, selector);
+            members.add(member);
+            for(File file : files) {
+                ClassifierResults trainResults = new ClassifierResults();
+                trainResults.loadResultsFromFile(file.getPath());
+                AbstractClassifier classifier = buildKnn();
+                classifier.setOptions(trainResults.getParas().split(","));
+                trainTimer.start();
+                selector.add(new Benchmark(classifier, trainResults));
+                trainTimer.lapAndStop();
+            }
+        }
+        trainTimer.start();
+    }
+
+    private void pickConstituents() throws
+                                    Exception {
         constituents = new ArrayList<>();
         for(Member member : members) {
             List<Benchmark> selected = member.getSelector().getSelectedAsList();
             Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
             constituents.add(choice);
         }
+    }
+
+    private void buildOfflineConstituents() throws
+                                            Exception {
+        if(offlineBuild) {
+            trainTimer.lapAndStop();
+            for(Benchmark benchmark : constituents) {
+                Classifier classifier = benchmark.getClassifier();
+                if(classifier instanceof TrainAccuracyEstimator) {
+                    ((TrainAccuracyEstimator) classifier).setFindTrainAccuracyEstimate(false);
+                    classifier.buildClassifier(trainInstances);
+                    ((TrainAccuracyEstimator) classifier).setFindTrainAccuracyEstimate(true);
+                } else {
+                    classifier.buildClassifier(trainInstances);
+                }
+            }
+            trainTimer.start();
+        }
+    }
+
+    @Override
+    public void buildClassifier(Instances trainInstances) throws
+                                                          Exception {
+        setup(trainInstances);
+        if(offlineBuild) {
+            buildClassifierOffline();
+        } else {
+            buildClassifierOnline();
+        }
+        pickConstituents();
+        buildOfflineConstituents();
         buildTrainEstimate();
-        trainTimer.stop();
+        trainTimer.lapAndStop();
     }
 
     private void setup(Instances trainInstances) {
@@ -370,59 +463,67 @@ public class Ee
             if(parameterSpaceFunctions.isEmpty()) {
                 throw new IllegalStateException("no constituents given");
             }
+            if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
+                trainNeighbourhoodSizeLimit = (int) (trainNeighbourhoodSizeLimitPercentage * trainInstances.size());
+            }
             derivativeCache = null;
             this.trainInstances = trainInstances;
             members = new ArrayList<>();
-            memberIterator = new RandomIterator<>(trainRandom);
-            for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
-                ParameterSpace parameterSpace = function.apply(trainInstances);
-                parameterSpace.removeDuplicateParameterSets();
-                if (parameterSpace.size() > 0) {
-                    AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
-                    ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
-                    ClassifierIterator classifierIterator = new ClassifierIterator();
-                    classifierIterator.setParameterSetIterator(parameterSetIterator);
-                    classifierIterator.setSupplier(() -> {
-                        Knn knn = new Knn();
-                        knn.setTrainNeighbourhoodSizeLimit(minNeighbourhoodSize);
-                        return knn;
-                    });
-                    KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
-                    selector.setLimit(1);
-                    selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
-                    Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector);
-                    memberIterator.add(member);
-                    members.add(member);
+            if(!offlineBuild) {
+                memberIterator = new RandomIterator<>(trainRandom);
+                for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
+                    ParameterSpace parameterSpace = function.apply(trainInstances);
+                    parameterSpace.removeDuplicateParameterSets();
+                    if (parameterSpace.size() > 0) {
+                        AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
+                        ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
+                        ClassifierIterator classifierIterator = new ClassifierIterator();
+                        classifierIterator.setParameterSetIterator(parameterSetIterator);
+                        classifierIterator.setSupplier(this::buildKnn);
+                        Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), buildSelector());
+                        memberIterator.add(member);
+                        members.add(member);
+                    }
                 }
             }
             trainTimer.lap();
         }
     }
 
+    private AbstractClassifier buildKnn() {
+        Knn knn = new Knn();
+        knn.setTrainNeighbourhoodSizeLimit(minTrainNeighbourhoodSizeLimit);
+        if(trainSeed != null) knn.setTrainSeed(trainSeed);
+        if(testSeed != null) knn.setTestSeed(testSeed);
+        return knn;
+    }
+
+    private KBestSelector<Benchmark, Double> buildSelector() {
+        KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
+        selector.setLimit(1);
+        selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
+        return selector;
+    }
+
     private void feedback(Member member, Benchmark benchmark) {
         AbstractClassifier classifier = benchmark.getClassifier();
-        if (canImprove(classifier)) {
+        if (canImproveClassifier(classifier)) {
             member.getImprovement().add(classifier);
         }
     }
 
-    private boolean canImprove(AbstractClassifier classifier) {
+    private boolean canImproveClassifier(AbstractClassifier classifier) {
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
             int trainSize = knn.getTrainNeighbourhoodSizeLimit();
-            return trainSize + 1 <= trainInstances.size() && trainSize >= 0;
+            return (trainSize + 1 <= trainNeighbourhoodSizeLimit || trainSize + 1 < trainInstances.size()) && trainSize >= 0;
         }
         throw new UnsupportedOperationException();
     }
 
-    private AbstractClassifier improve(AbstractClassifier classifier) {
+    private AbstractClassifier improveClassifier(AbstractClassifier classifier) {
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
-            try {
-                knn = knn.shallowCopy();
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
             int trainSize = knn.getTrainNeighbourhoodSizeLimit();
             knn.setTrainNeighbourhoodSizeLimit(trainSize + 1);
             return knn;
