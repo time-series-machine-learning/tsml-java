@@ -8,7 +8,6 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
-import timeseriesweka.classifiers.distance_based.distance_measures.dtw.DtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import utilities.cache.Cache;
 import utilities.cache.DupeCache;
@@ -26,7 +25,7 @@ import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
 import static timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure.DISTANCE_MEASURE_KEY;
-import static utilities.Checks.isValidPercentageRange;
+import static utilities.Checks.isValidPercentage;
 
 public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable,
                                                        TrainAccuracyEstimator {
@@ -227,7 +226,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 System.err.println("train seed not set");
             }
             if(estimateTrainEnabled) {
-                if(isValidPercentageRange(trainNeighbourhoodSizeLimitPercentage)) {
+                if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
                     trainNeighbourhoodSizeLimit = (int) (trainInstances.size() * trainNeighbourhoodSizeLimitPercentage);
                 }
                 neighbourhood = new ArrayList<>();

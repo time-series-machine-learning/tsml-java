@@ -7,7 +7,7 @@ public class Checks {
     }
 
 
-    public static boolean isValidPercentageRange(double percentage) {
+    public static boolean isValidPercentage(double percentage) {
         return percentage >= 0 && percentage <= 1;
     }
 }
