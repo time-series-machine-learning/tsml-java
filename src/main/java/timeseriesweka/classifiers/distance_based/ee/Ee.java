@@ -8,18 +8,8 @@ import timeseriesweka.classifiers.Seedable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
-import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.DdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.FullDdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.dtw.DtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.dtw.EdParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.dtw.FullDtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.erp.ErpParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.lcss.LcssParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.msm.MsmParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.twed.TwedParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasureParameterSpaces;
 import timeseriesweka.classifiers.distance_based.distance_measures.Wddtw;
-import timeseriesweka.classifiers.distance_based.distance_measures.wddtw.WddtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.wdtw.WdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
 import utilities.cache.CachedFunction;
@@ -50,17 +40,17 @@ public class Ee
     private CachedFunction<Instance, Instance> derivativeCache;
 
     private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
-        i -> new EdParameterSpaceBuilder().build(),
-        i -> new DtwParameterSpaceBuilder().build(i),
-        i -> new FullDtwParameterSpaceBuilder().build(),
-        i -> new DdtwParameterSpaceBuilder().build(i),
-        i -> new FullDdtwParameterSpaceBuilder().build(),
-        i -> new WdtwParameterSpaceBuilder().build(),
-        i -> new WddtwParameterSpaceBuilder().build(),
-        i -> new LcssParameterSpaceBuilder().build(i),
-        i -> new MsmParameterSpaceBuilder().build(),
-        i -> new ErpParameterSpaceBuilder().build(i),
-        i -> new TwedParameterSpaceBuilder().build()
+        i -> DistanceMeasureParameterSpaces.buildEdParameterSpace(),
+        DistanceMeasureParameterSpaces::buildDtwParameterSpace,
+        i -> DistanceMeasureParameterSpaces.buildFullDtwParameterSpace(),
+        DistanceMeasureParameterSpaces::buildDdtwParameterSpace,
+        i -> DistanceMeasureParameterSpaces.buildFullDdtwParameterSpace(),
+        i -> DistanceMeasureParameterSpaces.buildWdtwParameterSpace(),
+        i -> DistanceMeasureParameterSpaces.buildWddtwParameterSpace(),
+        DistanceMeasureParameterSpaces::buildLcssParameterSpace,
+        i -> DistanceMeasureParameterSpaces.buildMsmParameterSpace(),
+        DistanceMeasureParameterSpaces::buildErpParameterSpace,
+        i -> DistanceMeasureParameterSpaces.buildTwedParameterSpace()
                                                                                                              ));
     private Long trainSeed;
     private Long testSeed;
@@ -70,12 +60,30 @@ public class Ee
     private boolean estimateTrain = true;
     private String trainResultsPath;
     private ClassifierResults trainResults;
-    private int trainInstancesSize;
     private int minNeighbourhoodSize = -1;
+    private String preprocessedConstituentResultsPath;
+    private boolean resetTrain = true;
+    private Instances trainInstances;
     private final Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public String getPreprocessedConstituentResultsPath() {
+        return preprocessedConstituentResultsPath;
+    }
+
+    public void setPreprocessedConstituentResultsPath(final String preprocessedConstituentResultsPath) {
+        this.preprocessedConstituentResultsPath = preprocessedConstituentResultsPath;
+    }
+
+    public boolean isResetTrain() {
+        return resetTrain;
+    }
+
+    public void setResetTrain(final boolean resetTrain) {
+        this.resetTrain = resetTrain;
     }
 
     public class Member {
@@ -214,30 +222,8 @@ public class Ee
         System.out.println(testResults.getAcc());
     }
 
-    @Override
-    public void buildClassifier(Instances trainInstances) throws
-                                                          Exception {
-        setup(trainInstances);
-        while (memberIterator.hasNext()) {
-            Member member = memberIterator.next();
-            AbstractIterator<AbstractClassifier> iterator = member.getIterator();
-            AbstractClassifier classifier = iterator.next();
-            iterator.remove();
-            ClassifierResults trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
-            Benchmark benchmark = new Benchmark(classifier, trainResults);
-            logger.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
-            member.getSelector().add(benchmark);
-            feedback(member, benchmark);
-            if(!iterator.hasNext()) {
-                memberIterator.remove();
-            }
-        }
-        constituents = new ArrayList<>();
-        for(Member member : members) {
-            List<Benchmark> selected = member.getSelector().getSelectedAsList();
-            Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
-            constituents.add(choice);
-        }
+    private void buildTrainEstimate() throws
+                                                              Exception {
         if(estimateTrain) {
             trainResults = new ClassifierResults();
             for(int i = 0; i < trainInstances.size(); i++) {
@@ -265,43 +251,72 @@ public class Ee
         }
     }
 
-    private void setup(Instances trainInstances) {
-        if(trainSeed == null) {
-            logger.warning("train seed not set");
+    @Override
+    public void buildClassifier(Instances trainInstances) throws
+                                                          Exception {
+        setup(trainInstances);
+        while (memberIterator.hasNext()) {
+            Member member = memberIterator.next();
+            AbstractIterator<AbstractClassifier> iterator = member.getIterator();
+            AbstractClassifier classifier = iterator.next();
+            iterator.remove();
+            ClassifierResults trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
+            Benchmark benchmark = new Benchmark(classifier, trainResults);
+            logger.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
+            member.getSelector().add(benchmark);
+            feedback(member, benchmark);
+            if(!iterator.hasNext()) {
+                memberIterator.remove();
+            }
         }
-        if(testSeed == null) {
-            logger.warning("test seed not set");
+        constituents = new ArrayList<>();
+        for(Member member : members) {
+            List<Benchmark> selected = member.getSelector().getSelectedAsList();
+            Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
+            constituents.add(choice);
         }
-        if(trainInstances.isEmpty()) {
-            throw new IllegalArgumentException("train instances empty");
-        }
-        if(parameterSpaceFunctions.isEmpty()) {
-            throw new IllegalStateException("no constituents given");
-        }
-        derivativeCache = null;
-        trainInstancesSize = trainInstances.size();
-        members = new ArrayList<>();
-        memberIterator = new RandomIterator<>(trainRandom);
-        for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
-            ParameterSpace parameterSpace = function.apply(trainInstances);
-            parameterSpace.removeDuplicateParameterSets();
-            if (parameterSpace.size() > 0) {
-                AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
-                ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
-                ClassifierIterator classifierIterator = new ClassifierIterator();
-                classifierIterator.setParameterSetIterator(parameterSetIterator);
-                classifierIterator.setSupplier(() -> {
-                    Knn knn = new Knn();
-                    knn.setTrainNeighbourhoodSizeLimit(minNeighbourhoodSize);
+        buildTrainEstimate();
+    }
 
-                    return knn;
-                });
-                KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
-                selector.setLimit(1);
-                selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
-                Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector);
-                memberIterator.add(member);
-                members.add(member);
+    private void setup(Instances trainInstances) {
+        if(resetTrain) {
+            resetTrain = false;
+            if(trainSeed == null) {
+                logger.warning("train seed not set");
+            }
+            if(testSeed == null) {
+                logger.warning("test seed not set");
+            }
+            if(trainInstances.isEmpty()) {
+                throw new IllegalArgumentException("train instances empty");
+            }
+            if(parameterSpaceFunctions.isEmpty()) {
+                throw new IllegalStateException("no constituents given");
+            }
+            derivativeCache = null;
+            this.trainInstances = trainInstances;
+            members = new ArrayList<>();
+            memberIterator = new RandomIterator<>(trainRandom);
+            for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
+                ParameterSpace parameterSpace = function.apply(trainInstances);
+                parameterSpace.removeDuplicateParameterSets();
+                if (parameterSpace.size() > 0) {
+                    AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
+                    ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
+                    ClassifierIterator classifierIterator = new ClassifierIterator();
+                    classifierIterator.setParameterSetIterator(parameterSetIterator);
+                    classifierIterator.setSupplier(() -> {
+                        Knn knn = new Knn();
+                        knn.setTrainNeighbourhoodSizeLimit(minNeighbourhoodSize);
+                        return knn;
+                    });
+                    KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
+                    selector.setLimit(1);
+                    selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
+                    Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), selector);
+                    memberIterator.add(member);
+                    members.add(member);
+                }
             }
         }
     }
@@ -317,7 +332,7 @@ public class Ee
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
             int trainSize = knn.getTrainNeighbourhoodSizeLimit();
-            return trainSize + 1 <= trainInstancesSize && trainSize >= 0;
+            return trainSize + 1 <= trainInstances.size() && trainSize >= 0;
         }
         throw new UnsupportedOperationException();
     }

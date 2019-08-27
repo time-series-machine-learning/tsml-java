@@ -2,10 +2,7 @@ package timeseriesweka.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.Seedable;
-import timeseriesweka.classifiers.TestTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
@@ -27,8 +24,8 @@ import static experiments.data.DatasetLoading.sampleDataset;
 import static timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure.DISTANCE_MEASURE_KEY;
 import static utilities.Checks.isValidPercentage;
 
-public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable,
-                                                       TrainAccuracyEstimator {
+public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable, TrainAccuracyEstimator,
+                                                       Checkpointable {
 
     private static final String K_KEY = "k";
     private Random trainRandom = new Random();
@@ -493,6 +490,19 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     public void setTrainNeighbourhoodSizeLimitPercentage(double trainNeighbourhoodSizeLimitPercentage) {
         this.trainNeighbourhoodSizeLimitPercentage = trainNeighbourhoodSizeLimitPercentage;
+    }
+
+    private String checkpointPath;
+
+    @Override
+    public void setSavePath(final String path) {
+        checkpointPath = path;
+    }
+
+    @Override
+    public void copyFromSerObject(final Object obj) throws
+                                                    Exception {
+        shallowCopyFrom(obj);
     }
 
     private static class Neighbour {

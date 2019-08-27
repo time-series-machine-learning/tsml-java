@@ -23,15 +23,8 @@ import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
-import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.DdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasureParameterSpaces;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
-import timeseriesweka.classifiers.distance_based.distance_measures.dtw.DtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.erp.ErpParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.lcss.LcssParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.msm.MsmParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.twed.TwedParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.wddtw.WddtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distance_measures.wdtw.WdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
@@ -143,28 +136,28 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             case "TUNED_LCSS_1NN":
-                c = buildCls(fold, i -> new LcssParameterSpaceBuilder().build(i));
+                c = buildCls(fold, DistanceMeasureParameterSpaces::buildLcssParameterSpace);
                 break;
             case "TUNED_TWED_1NN":
-                c = buildCls(fold, i -> new TwedParameterSpaceBuilder().build());
+                c = buildCls(fold, i -> DistanceMeasureParameterSpaces.buildTwedParameterSpace());
                 break;
             case "TUNED_ERP_1NN":
-                c = buildCls(fold, i -> new ErpParameterSpaceBuilder().build(i));
+                c = buildCls(fold, DistanceMeasureParameterSpaces::buildErpParameterSpace);
                 break;
             case "TUNED_MSM_1NN":
-                c = buildCls(fold, i -> new MsmParameterSpaceBuilder().build());
+                c = buildCls(fold, i -> DistanceMeasureParameterSpaces.buildMsmParameterSpace());
                 break;
             case "TUNED_DTW_1NN":
-                c = buildCls(fold, i -> new DtwParameterSpaceBuilder().build(i));
+                c = buildCls(fold, DistanceMeasureParameterSpaces::buildDtwParameterSpace);
                 break;
             case "TUNED_DDTW_1NN":
-                c = buildCls(fold, i -> new DdtwParameterSpaceBuilder().build(i));
+                c = buildCls(fold, DistanceMeasureParameterSpaces::buildDdtwParameterSpace);
                 break;
             case "TUNED_WDTW_1NN":
-                c = buildCls(fold, i -> new WdtwParameterSpaceBuilder().build());
+                c = buildCls(fold, i -> DistanceMeasureParameterSpaces.buildWdtwParameterSpace());
                 break;
             case "TUNED_WDDTW_1NN":
-                c = buildCls(fold, i -> new WddtwParameterSpaceBuilder().build());
+                c = buildCls(fold, i -> DistanceMeasureParameterSpaces.buildWddtwParameterSpace());
                 break;
             case "DTW_1NN":
                 c = buildCls2(fold, () -> {

@@ -432,7 +432,7 @@ public class Experiments  {
 
         if(expSettings.appendParameters && !parameters.isEmpty()) {
             expSettings.classifierName += "," + StringUtilities.join(",", parametersArray);
-        }c
+        }
 
         String classifierName = expSettings.classifierName;
         if(expSettings.incrementalParameters.isEmpty()) {
