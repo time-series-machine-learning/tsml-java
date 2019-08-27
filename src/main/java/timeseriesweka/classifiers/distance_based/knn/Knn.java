@@ -39,6 +39,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private long trainTimeLimitNanos = -1;
     private long testTimeLimitNanos = -1;
     private Long trainSeed = null;
+    private String checkpointPath;
     private AbstractIterator<Instance> trainInstanceIterator;
     private AbstractIterator<Instance> trainEstimatorIterator;
     private Instances trainInstances;
@@ -57,7 +58,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
     private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
     private boolean earlyAbandonEnabled = true;
-    private final Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
+    private Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
 
     public boolean isEarlyAbandonEnabled() {
         return earlyAbandonEnabled;
@@ -458,6 +459,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         testTimer = other.testTimer;
         trainNeighbourhoodSizeLimit = other.trainNeighbourhoodSizeLimit;
         trainResults = other.trainResults;
+        trainEstimateSizeLimit = other.trainEstimateSizeLimit;
+        earlyAbandonEnabled = other.earlyAbandonEnabled;
+        logger = other.logger;
     }
 
     public int getTrainNeighbourhoodSizeLimit() {
@@ -491,8 +495,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     public void setTrainNeighbourhoodSizeLimitPercentage(double trainNeighbourhoodSizeLimitPercentage) {
         this.trainNeighbourhoodSizeLimitPercentage = trainNeighbourhoodSizeLimitPercentage;
     }
-
-    private String checkpointPath;
 
     @Override
     public void setSavePath(final String path) {
