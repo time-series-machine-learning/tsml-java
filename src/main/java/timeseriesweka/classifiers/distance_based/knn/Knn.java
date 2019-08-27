@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleDataset;
 import static timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure.DISTANCE_MEASURE_KEY;
-import static utilities.Checks.isValidPercentage;
 
 public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable, TrainAccuracyEstimator,
                                                        Checkpointable {
@@ -50,6 +49,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private int trainNeighbourhoodSizeLimit = -1;
     private double trainNeighbourhoodSizeLimitPercentage = -1;
     private int trainEstimateSizeLimit = -1;
+    private String trainResultsPath;
     private ClassifierResults trainResults;
     private Cache<Instance, Instance, Double> distanceCache;
     private boolean distanceCacheEnabled = true;
@@ -59,6 +59,14 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
     private boolean earlyAbandonEnabled = true;
     private Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public void setTrainResultsPath(final String trainResultsPath) {
+        this.trainResultsPath = trainResultsPath;
+    }
 
     public boolean isEarlyAbandonEnabled() {
         return earlyAbandonEnabled;
@@ -167,9 +175,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 hasRemainingTrainSearchers = hasRemainingTrainSearchers();
                 trainTimer.lap();
             }
-            buildTrainResults();
+            buildTrainEstimate();
         }
-        trainTimer.lap();
     }
 
     private Iterator<Instance> buildTestNeighbourIterator() {
@@ -282,7 +289,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         neighbourhood.add(trainInstance);
     }
 
-    private void buildTrainResults() throws
+    private void buildTrainEstimate() throws
             Exception {
         if(estimateTrainEnabled) {
             trainResults = new ClassifierResults();
@@ -298,12 +305,17 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                                            time,
                                            null);
             }
+            trainTimer.lap();
+            trainTimer.stop();
             trainResults.setBuildTime(trainTimer.getTimeNanos());
             trainResults.setParas(StringUtilities.join(",", getOptions()));
             try {
                 trainResults.setMemory(SizeOf.deepSizeOf(this));
             } catch (Exception ignored) {
 
+            }
+            if(trainResultsPath != null) {
+                trainResults.writeFullResultsToFile(trainResultsPath);
             }
         }
     }

@@ -4,14 +4,14 @@ import evaluation.evaluators.BespokeTrainEstimateEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
-import timeseriesweka.classifiers.Seedable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasureParameterSpaces;
 import timeseriesweka.classifiers.distance_based.distance_measures.Wddtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
+import utilities.StopWatch;
 import utilities.cache.CachedFunction;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
@@ -24,6 +24,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -32,7 +33,10 @@ import static utilities.GenericTools.indexOfMax;
 
 public class Ee
     extends AbstractClassifier
-    implements TrainAccuracyEstimator {
+    implements TrainAccuracyEstimator,
+               TrainTimeContractable,
+               TestTimeContractable,
+               Checkpointable {
 
     private final Random trainRandom = new Random();
     private final Random testRandom = new Random();
@@ -61,21 +65,26 @@ public class Ee
     private String trainResultsPath;
     private ClassifierResults trainResults;
     private int minNeighbourhoodSize = -1;
-    private String preprocessedConstituentResultsPath;
+    private String postProcessedClassifierResultsDirPath;
     private boolean resetTrain = true;
     private Instances trainInstances;
-    private final Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
+    private Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
+    private String checkpointSavePath;
+    private long testTimeLimitNanos = -1;
+    private long trainTimeLimitNanos = -1;
+    private StopWatch trainTimer;
+    private StopWatch testTimer;
 
     public Logger getLogger() {
         return logger;
     }
 
-    public String getPreprocessedConstituentResultsPath() {
-        return preprocessedConstituentResultsPath;
+    public String getPostProcessedClassifierResultsDirPath() {
+        return postProcessedClassifierResultsDirPath;
     }
 
-    public void setPreprocessedConstituentResultsPath(final String preprocessedConstituentResultsPath) {
-        this.preprocessedConstituentResultsPath = preprocessedConstituentResultsPath;
+    public void setPostProcessedClassifierResultsDirPath(final String postProcessedClassifierResultsDirPath) {
+        this.postProcessedClassifierResultsDirPath = postProcessedClassifierResultsDirPath;
     }
 
     public boolean isResetTrain() {
@@ -84,6 +93,43 @@ public class Ee
 
     public void setResetTrain(final boolean resetTrain) {
         this.resetTrain = resetTrain;
+    }
+
+    @Override
+    public void setSavePath(final String path) {
+        checkpointSavePath = path;
+    }
+
+    @Override
+    public void copyFromSerObject(final Object obj) throws
+                                                    Exception {
+        // todo
+    }
+
+    public boolean hasTrainTimeLimit() {
+        return trainTimeLimitNanos >= 0;
+    }
+
+    public boolean hasTestTimeLimit() {
+        return testTimeLimitNanos >= 0;
+    }
+
+    private boolean withinTestTimeLimit() {
+        return hasTestTimeLimit() && testTimer.getTimeNanos() < testTimeLimitNanos;
+    }
+
+    private boolean withinTrainTimeLimit() {
+        return !hasTrainTimeLimit() || trainTimer.getTimeNanos() < trainTimeLimitNanos;
+    }
+
+    @Override
+    public void setTestTimeLimit(final TimeUnit time, final long amount) {
+        testTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
+    }
+
+    @Override
+    public void setTrainTimeLimit(final TimeUnit time, final long amount) {
+        trainTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
     }
 
     public class Member {
@@ -197,6 +243,29 @@ public class Ee
 
     public static void main(String[] args) throws
                                            Exception {
+//        long seed = 0;
+//        String username = "goastler";
+//        Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
+//        Instances train = dataset[0];
+//        Instances test = dataset[1];
+//        Ee ee = new Ee();
+////        ee.getLogger().setLevel(Level.OFF);
+//        ee.setTrainSeed(seed);
+//        ee.setTestSeed(seed);
+//        ee.setFindTrainAccuracyEstimate(true);
+//        ee.buildClassifier(train);
+//        ClassifierResults trainResults = ee.getTrainResults();
+//        System.out.println("train acc: " + trainResults.getAcc());
+//        System.out.println("-----");
+//        ClassifierResults testResults = new ClassifierResults();
+//        for (Instance testInstance : test) {
+//            long time = System.nanoTime();
+//            double[] distribution = ee.distributionForInstance(testInstance);
+//            double prediction = indexOfMax(distribution);
+//            time = System.nanoTime() - time;
+//            testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
+//        }
+//        System.out.println(testResults.getAcc());
         long seed = 0;
         String username = "goastler";
         Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
@@ -224,6 +293,7 @@ public class Ee
 
     private void buildTrainEstimate() throws
                                                               Exception {
+        trainTimer.lap();
         if(estimateTrain) {
             trainResults = new ClassifierResults();
             for(int i = 0; i < trainInstances.size(); i++) {
@@ -246,8 +316,11 @@ public class Ee
                                            null);
             }
             if(trainResultsPath != null) {
+                trainTimer.stop();
                 trainResults.writeFullResultsToFile(trainResultsPath);
+                trainTimer.start();
             }
+            trainTimer.lap();
         }
     }
 
@@ -255,7 +328,7 @@ public class Ee
     public void buildClassifier(Instances trainInstances) throws
                                                           Exception {
         setup(trainInstances);
-        while (memberIterator.hasNext()) {
+        while (memberIterator.hasNext() && withinTrainTimeLimit()) {
             Member member = memberIterator.next();
             AbstractIterator<AbstractClassifier> iterator = member.getIterator();
             AbstractClassifier classifier = iterator.next();
@@ -268,6 +341,7 @@ public class Ee
             if(!iterator.hasNext()) {
                 memberIterator.remove();
             }
+            trainTimer.lap();
         }
         constituents = new ArrayList<>();
         for(Member member : members) {
@@ -276,10 +350,13 @@ public class Ee
             constituents.add(choice);
         }
         buildTrainEstimate();
+        trainTimer.stop();
     }
 
     private void setup(Instances trainInstances) {
         if(resetTrain) {
+            trainTimer.reset();
+            trainTimer.start();
             resetTrain = false;
             if(trainSeed == null) {
                 logger.warning("train seed not set");
@@ -318,6 +395,7 @@ public class Ee
                     members.add(member);
                 }
             }
+            trainTimer.lap();
         }
     }
 
@@ -370,6 +448,7 @@ public class Ee
     @Override
     public double[] distributionForInstance(Instance testInstance) throws
                                                                    Exception {
+        // todo test contract
         double[] distribution = new double[testInstance.numClasses()];
         for (Benchmark constituent : constituents) {
             double weight = constituent.getResults()
