@@ -56,7 +56,7 @@ public interface TrainAccuracyEstimator extends SaveParameterInfo{
 * 
  * @param train: Full file name for the TrainCV results
  */    
-    default void writeTrainEstimatesToFile(String train) {
+    default void writeTrainEstimatesToFile(String train) throws Exception {
         throw new UnsupportedOperationException();
     }
 /**
