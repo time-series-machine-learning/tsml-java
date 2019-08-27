@@ -1,23 +1,10 @@
-package timeseriesweka.classifiers.distance_based.distances;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
 import timeseriesweka.classifiers.Loggable;
-import timeseriesweka.classifiers.distance_based.distances.ddtw.Ddtw;
-import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
-import timeseriesweka.classifiers.distance_based.distances.erp.Erp;
-import timeseriesweka.classifiers.distance_based.distances.lcss.Lcss;
-import timeseriesweka.classifiers.distance_based.distances.msm.Msm;
-import timeseriesweka.classifiers.distance_based.distances.twed.Twed;
-import timeseriesweka.classifiers.distance_based.distances.wddtw.Wddtw;
-import timeseriesweka.classifiers.distance_based.distances.wdtw.Wdtw;
-import timeseriesweka.filters.cache.Cache;
-import timeseriesweka.filters.cache.CachedFunction;
-import timeseriesweka.filters.cache.DupeCache;
-import utilities.InstanceTools;
 import utilities.Options;
 import weka.core.Instance;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -120,7 +107,7 @@ public abstract class DistanceMeasure
         return true;
     }
 
-    public static double transformedDistanceMeasure(DistanceMeasure distanceMeasure, Function<Instance, Instance> transformFunction, Supplier<Double> distanceSupplier) {
+    protected static double transformedDistanceMeasure(DistanceMeasure distanceMeasure, Function<Instance, Instance> transformFunction, Supplier<Double> distanceSupplier) {
         Instance origFirst = distanceMeasure.getFirstInstance();
         Instance origSecond = distanceMeasure.getSecondInstance();
         Instance first = transformFunction.apply(origFirst);

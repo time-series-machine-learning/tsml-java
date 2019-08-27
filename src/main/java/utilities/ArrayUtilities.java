@@ -1,5 +1,7 @@
 package utilities;
 
+import timeseriesweka.classifiers.distance_based.ee.Benchmark;
+import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -375,6 +377,5 @@ public class ArrayUtilities {
         }
         return boxed;
     }
-
 
 }

@@ -1,7 +1,5 @@
-package timeseriesweka.classifiers.distance_based.distances.wdtw;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 
 public class Wdtw
@@ -70,7 +68,7 @@ public class Wdtw
             boolean overflow = true;
 
             for (int j = 1; j < bLength; j++) {
-                //calculate distances
+                //calculate distance_measures
                 minDistance = Math.min(distances[i][j - 1], Math.min(distances[i - 1][j], distances[i - 1][j - 1]));
                 distances[i][j] =
                     minDistance + weightVector[Math.abs(i - j)] * (a.value(i) - b.value(j)) * (a.value(i) - b.value(j));

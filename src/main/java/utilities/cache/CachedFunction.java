@@ -1,4 +1,4 @@
-package timeseriesweka.filters.cache;
+package utilities.cache;
 
 import java.util.HashMap;
 import java.util.function.Function;

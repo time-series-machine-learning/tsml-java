@@ -2,6 +2,7 @@ package utilities.iteration;
 
 import evaluation.tuning.ParameterSet;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 
 import java.util.function.Supplier;
 
@@ -10,6 +11,15 @@ public class ClassifierIterator
 
     private AbstractIterator<ParameterSet> parameterSetIterator;
     private Supplier<AbstractClassifier> supplier;
+
+    public ClassifierIterator() {
+
+    }
+
+    public ClassifierIterator(Supplier<AbstractClassifier> supplier, AbstractIterator<ParameterSet> parameterSetIterator) {
+        setSupplier(supplier);
+        setParameterSetIterator(parameterSetIterator);
+    }
 
     @Override
     public AbstractIterator<AbstractClassifier> iterator() {

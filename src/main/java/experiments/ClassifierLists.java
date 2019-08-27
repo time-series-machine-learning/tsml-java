@@ -15,8 +15,24 @@
 package experiments;
 
 
+import evaluation.evaluators.BespokeTrainEstimateEvaluator;
+import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSpace;
+import evaluation.tuning.Tuner;
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
+import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
+import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
+import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.DdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
+import timeseriesweka.classifiers.distance_based.distance_measures.dtw.DtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.erp.ErpParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.lcss.LcssParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.msm.MsmParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.twed.TwedParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.wddtw.WddtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.wdtw.WdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.knn.Knn;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -42,8 +58,10 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.distance_based.ProximityForestWrapper;
+import weka.core.Instances;
 import weka_uea.classifiers.ensembles.CAWPE;
 import weka_uea.classifiers.PLSNominalClassifier;
+import weka_uea.classifiers.tuned.TunedClassifier;
 import weka_uea.classifiers.tuned.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -59,6 +77,9 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -66,7 +87,34 @@ import weka.core.EuclideanDistance;
 public class ClassifierLists {
     public static String[] bakeOffClassifierList = { };    //todo, as an example of the kind of thing we could do with this class
     public static String[] CAWPE_fig1Ensembles = { };      //todo, as an example of the kind of thing we could do with this class
-    
+
+    private static Classifier buildCls(int fold, Function<Instances, ParameterSpace> func) {
+
+        TunedClassifier tunedClassifier = new TunedClassifier();
+        tunedClassifier.setCloneClassifierForEachParameterEval(false);
+        tunedClassifier.setSaveEachParaAcc(true);
+        Tuner tuner = new Tuner();
+        tunedClassifier.setClassifierSupplier(() -> {
+            Knn knn = new Knn();
+            knn.setTrainSeed(fold);
+            knn.setTestSeed(fold);
+            return knn;
+        });
+        tuner.setEvaluator(new BespokeTrainEstimateEvaluator());
+        tuner.setEvalMetric(ClassifierResults::getAcc);
+        tunedClassifier.setTuner(tuner);
+        tunedClassifier.setParameterSpaceFunction(func);
+        return tunedClassifier;
+    }
+
+    private static Classifier buildCls2(int fold, Supplier<DistanceMeasure> dm) {
+        Knn knn = new Knn();
+        knn.setTrainSeed(fold);
+        knn.setTestSeed(fold);
+        knn.setDistanceMeasure(dm.get());
+        return knn;
+    }
+
     /**
      * 
      * setClassifier, which takes the experimental 
@@ -94,6 +142,68 @@ public class ClassifierLists {
         }
         Classifier c=null;
         switch(classifier){
+            case "TUNED_LCSS_1NN":
+                c = buildCls(fold, i -> new LcssParameterSpaceBuilder().build(i));
+                break;
+            case "TUNED_TWED_1NN":
+                c = buildCls(fold, i -> new TwedParameterSpaceBuilder().build());
+                break;
+            case "TUNED_ERP_1NN":
+                c = buildCls(fold, i -> new ErpParameterSpaceBuilder().build(i));
+                break;
+            case "TUNED_MSM_1NN":
+                c = buildCls(fold, i -> new MsmParameterSpaceBuilder().build());
+                break;
+            case "TUNED_DTW_1NN":
+                c = buildCls(fold, i -> new DtwParameterSpaceBuilder().build(i));
+                break;
+            case "TUNED_DDTW_1NN":
+                c = buildCls(fold, i -> new DdtwParameterSpaceBuilder().build(i));
+                break;
+            case "TUNED_WDTW_1NN":
+                c = buildCls(fold, i -> new WdtwParameterSpaceBuilder().build());
+                break;
+            case "TUNED_WDDTW_1NN":
+                c = buildCls(fold, i -> new WddtwParameterSpaceBuilder().build());
+                break;
+            case "DTW_1NN":
+                c = buildCls2(fold, () -> {
+                    Dtw dtw = new Dtw();
+                    dtw.setWarpingWindow(-1);
+                    return dtw;
+                });
+                break;
+            case "ED_1NN":
+                c = buildCls2(fold, () -> {
+                    Dtw dtw = new Dtw();
+                    dtw.setWarpingWindow(0);
+                    return dtw;
+                });
+                break;
+            case "DDTW_1NN":
+                c = buildCls2(fold, () -> {
+                    Ddtw dtw = new Ddtw();
+                    dtw.setWarpingWindow(-1);
+                    return dtw;
+                });
+                break;
+//            case "TUNED_DTW_1NN":
+//                OptimisedClassifier tunedClassifier = new OptimisedClassifier();
+//                tunedClassifier.setTrainSeed(fold);
+//                tunedClassifier.setTestSeed(fold);
+//                tunedClassifier.setTunedFunction(instances -> {
+//                    ParameterSpace parameterSpace = new DtwParameterSpaceBuilder().build(instances);
+//                    ClassifierIterator classifierIterator = new ClassifierIterator(Knn::new, new ParameterSetIterator(parameterSpace, new RandomIterator<Integer>(fold)));
+//                    Tuned tuned = new Tuned();
+//                    tuned.setIterator(classifierIterator);
+//                    tuned.setEvaluator(new BespokeTrainEstimateEvaluator());
+//                    KBestSelector<Benchmark, Double> selector = new KBestSelector<>(Double::compare);
+//                    selector.setExtractor(benchmark -> benchmark.getResults().getAcc());
+//                    tuned.setSelector(selector);
+//                    return tuned;
+//                });
+//                c = tunedClassifier;
+//                break;
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost(); 
                 break;

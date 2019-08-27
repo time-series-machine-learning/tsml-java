@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
+
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
@@ -51,7 +53,6 @@ public class Tuner
     private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
     
     private ParameterResults bestParaSetAndResults = null;
-    
     
     private int seed;
     private String classifierName; //interpreted from simpleClassName(), maybe have getter setter later
@@ -221,19 +222,23 @@ public class Tuner
         Instances data = cloneDataIfNeeded(trainSet);
         AbstractClassifier classifier = cloneClassifierIfNeeded(baseClassifier); 
             
-        String[] options = parameterSet.toOptionsList();
+        String[] options = parameterSet.getOptions();
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);
-        results.setClassifierName("TunedClassifier:"+classifierName);
-        results.setDatasetName(datasetName);
-        results.setFoldID(seed);
-        results.setSplit("train");
-        results.setParas(parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine));
+//        results.setClassifierName("TunedClassifier:"+classifierName);
+//        results.setDatasetName(datasetName);
+//        results.setFoldID(seed);
+//        results.setSplit("train");
+//        results.setParas(parameterSet.toClassifierResultsParaLine(includeMarkersInParaLine));
         
         return results;
     }
-    
+
+    public ParameterResults tune(Supplier<AbstractClassifier> baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
+        return tune(baseClassifier.get(), trainSet, parameterSpace);
+    }
+
     public ParameterResults tune(AbstractClassifier baseClassifier, Instances trainSet, ParameterSpace parameterSpace) throws Exception {
         //System.out.println("Evaluating para space: " + parameterSpace);
         
@@ -319,6 +324,7 @@ public class Tuner
 //        return "fold" + seed + "_" +paraID + ".csv";
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         return paraID + ".csv";
+//        return String.valueOf(paraID);
     }
     
     private void storeParaResult(ParameterSet pset, ClassifierResults results, List<ParameterResults> tiesBestSoFar) {
@@ -350,7 +356,7 @@ public class Tuner
         //experiments paasses us /path/[classifier]/predictions/[dataset]/fold[seed]_
         //so no need to make dir, just add on para id and write
         
-        results.writeFullResultsToFile(parameterSavingPath + buildParaFilename(paraID));
+        results.writeFullResultsToFile(parameterSavingPath);// + buildParaFilename(paraID));
     }
     
     /**

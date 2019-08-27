@@ -1,18 +1,11 @@
-package timeseriesweka.classifiers.distance_based.distances.ddtw;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
-import timeseriesweka.classifiers.distance_based.distances.dtw.Dtw;
-import timeseriesweka.filters.DerivativeFilter;
-import timeseriesweka.filters.cache.CachedFunction;
-import utilities.FilterUtilities;
-import utilities.InstanceTools;
+import utilities.cache.CachedFunction;
 import weka.core.Instance;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static timeseriesweka.filters.DerivativeFilter.INSTANCE_DERIVATIVE_FUNCTION;
 
-public class Ddtw extends Dtw {
+public class Wddtw extends Wdtw {
 
     private CachedFunction<Instance, Instance> derivativeCache = new CachedFunction<>(INSTANCE_DERIVATIVE_FUNCTION);
 
@@ -34,5 +27,5 @@ public class Ddtw extends Dtw {
         return NAME;
     }
 
-    public static final String NAME = "DDTW";
+    public static final String NAME = "WDDTW";
 }

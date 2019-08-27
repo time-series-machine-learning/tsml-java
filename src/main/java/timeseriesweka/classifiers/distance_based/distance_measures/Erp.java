@@ -1,7 +1,5 @@
-package timeseriesweka.classifiers.distance_based.distances.erp;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 
 public class Erp extends DistanceMeasure {
@@ -23,11 +21,6 @@ public class Erp extends DistanceMeasure {
         Instance b = getSecondInstance();
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
-
-        // todo cleanup
-        // todo trim memory to window by window
-        // todo early abandon
-        // todo remove sqrt (Jay says this changes the distance however, need to confirm!)
 
         // Current and previous columns of the matrix
         double[] curr = new double[bLength];

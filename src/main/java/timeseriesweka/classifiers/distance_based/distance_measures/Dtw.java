@@ -1,8 +1,6 @@
-package timeseriesweka.classifiers.distance_based.distances.dtw;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
 
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 
 public class Dtw extends DistanceMeasure {

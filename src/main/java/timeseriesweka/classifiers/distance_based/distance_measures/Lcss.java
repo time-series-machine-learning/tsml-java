@@ -1,7 +1,5 @@
-package timeseriesweka.classifiers.distance_based.distances.lcss;
+package timeseriesweka.classifiers.distance_based.distance_measures;
 
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 
 public class Lcss extends DistanceMeasure {

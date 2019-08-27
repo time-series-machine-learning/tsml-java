@@ -1,4 +1,4 @@
-package timeseriesweka.filters.cache;
+package utilities.cache;
 
 public class DupeCache<A, B> extends Cache<A, A, B> {
 

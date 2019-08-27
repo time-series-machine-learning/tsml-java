@@ -96,7 +96,6 @@ public class Experiments  {
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
 
-    @Parameters(separators = " ")
     public static class ExperimentalArguments implements Runnable {
 
         @Parameter(names={"-p","--parameter"}, description = "Parameter key-value pair to be passed to the classifier's setOptions(String[]) function")
@@ -105,10 +104,10 @@ public class Experiments  {
         @Parameter(names={"-ap","--appendParameters"}, description = "Use parameters in classifier name")
         public boolean appendParameters = false;
 
-        @Parameter(names={"-aip","--appendParameters"}, description = "Use parameters in classifier name")
+        @Parameter(names={"-aip","--appendIncrementalParameters"}, description = "Use parameters in classifier name")
         public boolean appendIncrementalParameter = false;
 
-        @Parameter(names={"-ip","--parameter"}, description = "Incremental parameter key-value pair to be passed to the classifier's setOptions(String[]) function. This list of parameters are incremental, e.g. setting the build time limit over a range of times, say 1m, 2m, 5m, 10m, where each depend on the previous.")
+        @Parameter(names={"-ip","--incrementalParameter"}, description = "Incremental parameter key-value pair to be passed to the classifier's setOptions(String[]) function. This list of parameters are incremental, e.g. setting the build time limit over a range of times, say 1m, 2m, 5m, 10m, where each depend on the previous.")
         public List<String> incrementalParameters = new ArrayList<>();
 
         //REQUIRED PARAMETERS
@@ -139,7 +138,7 @@ public class Experiments  {
         @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
         public boolean debug = false;
         
-        @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
+        @Parameter(names={"-gtf","--genTrainFiles"}, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
                 + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
         
@@ -194,7 +193,7 @@ public class Experiments  {
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
         
-        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        @Parameter(names={"--force"}, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
         
         @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
@@ -291,7 +290,7 @@ public class Experiments  {
 //                System.exit(1);
             }
             
-            foldId -= 1; //go from one-indexed to zero-indexed
+//            foldId -= 1; //go from one-indexed to zero-indexed
             Experiments.debug = this.debug;
             
             //populating the contract times if present
@@ -362,43 +361,22 @@ public class Experiments  {
             System.out.println("\t"+str);
         System.out.println("");
         
-        if (args.length > 0) {
-            ExperimentalArguments expSettings = new ExperimentalArguments(args);
-            setupAndRunExperiment(expSettings);
-        }else{
-            int folds=1;
-            boolean threaded=false;
-            if(threaded){
-                String[] settings=new String[6];
-                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="-rp=E:/Results/";//Where to write results                
-                settings[2]="-gtf=true"; //Whether to generate train files or not               
-                settings[3]="-cn=RISE"; //Classifier name
-                settings[5]="1";
-                settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
-                settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DatasetLists.tscProblems78,0,folds);
-            }else{//Local run without args, mainly for debugging
-                String[] settings=new String[6];
-//Location of data set
-                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="-rp=E:/Results/";//Where to write results                
-                settings[2]="-gtf=false"; //Whether to generate train files or not               
-                settings[3]="-cn=TunedTSF"; //Classifier name
-//                for(String str:DatasetLists.tscProblems78){
-                    settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
-                    settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
-                System.out.println("Manually set args:");
-                for (String str : settings)
-                    System.out.println("\t"+settings);
-                System.out.println("");
-                    
-                    ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                    setupAndRunExperiment(expSettings);
-//                }
-            }
+        if (args.length <= 0) {
+            args = new String[] {
+                    "-cn", "TUNED_DTW_1NN",
+                    "-dn", "GunPoint",
+                    "-dp", "/home/goastler/Projects/datasets/Univariate2018/",
+                    "-rp", "results/",
+                    "-f", "0",
+                    "-gtf",
+                    "--force",
+                    "-pid", "0",
+                    "-p", "trnslp,.1",
+                    "-ap"
+            };
         }
+        ExperimentalArguments expSettings = new ExperimentalArguments(args);
+        setupAndRunExperiment(expSettings);
     }
 
     /**

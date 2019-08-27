@@ -6,23 +6,23 @@ import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import timeseriesweka.classifiers.Seedable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
-import timeseriesweka.classifiers.distance_based.distances.DistanceMeasure;
-import timeseriesweka.classifiers.distance_based.distances.ddtw.Ddtw;
-import timeseriesweka.classifiers.distance_based.distances.ddtw.DdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.ddtw.FullDdtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.dtw.DtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.dtw.EdParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.dtw.FullDtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.erp.ErpParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.lcss.LcssParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.msm.MsmParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.twed.TwedParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.wddtw.Wddtw;
-import timeseriesweka.classifiers.distance_based.distances.wddtw.WddtwParameterSpaceBuilder;
-import timeseriesweka.classifiers.distance_based.distances.wdtw.WdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
+import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
+import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.DdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.ddtw.FullDdtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.dtw.DtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.dtw.EdParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.dtw.FullDtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.erp.ErpParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.lcss.LcssParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.msm.MsmParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.twed.TwedParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.Wddtw;
+import timeseriesweka.classifiers.distance_based.distance_measures.wddtw.WddtwParameterSpaceBuilder;
+import timeseriesweka.classifiers.distance_based.distance_measures.wdtw.WdtwParameterSpaceBuilder;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
-import timeseriesweka.filters.cache.CachedFunction;
+import utilities.cache.CachedFunction;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
 import utilities.iteration.AbstractIterator;
@@ -292,7 +292,7 @@ public class Ee
                 classifierIterator.setParameterSetIterator(parameterSetIterator);
                 classifierIterator.setSupplier(() -> {
                     Knn knn = new Knn();
-                    knn.setNeighbourhoodSizeLimit(minNeighbourhoodSize);
+                    knn.setTrainNeighbourhoodSizeLimit(minNeighbourhoodSize);
 
                     return knn;
                 });
@@ -316,7 +316,7 @@ public class Ee
     private boolean canImprove(AbstractClassifier classifier) {
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
-            int trainSize = knn.getNeighbourhoodSizeLimit();
+            int trainSize = knn.getTrainNeighbourhoodSizeLimit();
             return trainSize + 1 <= trainInstancesSize && trainSize >= 0;
         }
         throw new UnsupportedOperationException();
@@ -330,8 +330,8 @@ public class Ee
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
-            int trainSize = knn.getNeighbourhoodSizeLimit();
-            knn.setNeighbourhoodSizeLimit(trainSize + 1);
+            int trainSize = knn.getTrainNeighbourhoodSizeLimit();
+            knn.setTrainNeighbourhoodSizeLimit(trainSize + 1);
             return knn;
         }
         throw new UnsupportedOperationException();

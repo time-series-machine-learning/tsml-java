@@ -21,6 +21,7 @@ import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import utilities.ArrayUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -29,6 +30,9 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_uea.classifiers.SaveEachParameter;
@@ -60,10 +64,19 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 public class TunedClassifier extends AbstractClassifier 
         implements SaveParameterInfo,TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
+    @Override
+    public void setOptions(String[] options) throws Exception {
+        this.options = ArrayUtilities.concat(this.options, options);
+    }
+
+    private String[] options = new String[0];
+
     int seed;
     ParameterSpace space = null;
+    private Function<Instances, ParameterSpace> parameterSpaceFunction;
     Tuner tuner = null;
     AbstractClassifier classifier = null;
+    private Supplier<AbstractClassifier> classifierSupplier;
 
     ParameterSet bestParas = null;
     String[] bestOptions = null;
@@ -89,9 +102,17 @@ public class TunedClassifier extends AbstractClassifier
     double TAE_trainAcc = -1; //TrainAccuracyEstimate
     
     ////////// end interface variables
-    
-    
-    public TunedClassifier() { 
+
+
+    public Function<Instances, ParameterSpace> getParameterSpaceFunction() {
+        return parameterSpaceFunction;
+    }
+
+    public void setParameterSpaceFunction(Function<Instances, ParameterSpace> parameterSpaceFunction) {
+        this.parameterSpaceFunction = parameterSpaceFunction;
+    }
+
+    public TunedClassifier() {
         this.tuner = new Tuner(); 
     }
     
@@ -175,6 +196,12 @@ public class TunedClassifier extends AbstractClassifier
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
+        if(parameterSpaceFunction != null) {
+            space = parameterSpaceFunction.apply(data);
+        }
+        if(classifierSupplier != null) {
+            classifier = classifierSupplier.get();
+        }
         
         //check everything's here/init
         boolean somethingMissing = false;
@@ -194,6 +221,8 @@ public class TunedClassifier extends AbstractClassifier
         }
         if (somethingMissing) 
             throw new Exception("TunedClassifier: " + msg);
+
+        classifier.setOptions(options);
         
         applyInterfaceFlagsToTuner(); //apply any interface flags onto the tuner itself
         
@@ -207,7 +236,7 @@ public class TunedClassifier extends AbstractClassifier
         }
         
         //actual work if normal run
-        ParameterResults best = tuner.tune(classifier, data, space);
+        ParameterResults best = tuner.tune(classifierSupplier, data, space);
         
         bestParas = best.paras;
         TAE_trainResults = best.results;
@@ -397,10 +426,19 @@ public class TunedClassifier extends AbstractClassifier
      * (or sticks with default) THEN sets these variables, etc
      */
     private void applyInterfaceFlagsToTuner() {
-        if (SEP_CP_savingAllParameters || PS_parameterSplitting)
-            tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
-        
+        if (SEP_CP_savingAllParameters || PS_parameterSplitting) {
+//            tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
+            tuner.setPathToSaveParameters(TAE_trainAccWritePath);
+        }
         if (CC_contracting)
             tuner.setTrainTimeLimit(this.CC_contractTimeNanos);
+    }
+
+    public Supplier<AbstractClassifier> getClassifierSupplier() {
+        return classifierSupplier;
+    }
+
+    public void setClassifierSupplier(Supplier<AbstractClassifier> classifierSupplier) {
+        this.classifierSupplier = classifierSupplier;
     }
 }

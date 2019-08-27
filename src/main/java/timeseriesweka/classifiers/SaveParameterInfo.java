@@ -13,6 +13,10 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers;
+
+import utilities.StringUtilities;
+import weka.classifiers.AbstractClassifier;
+
 /**
  *
  * @author ajb
@@ -24,6 +28,12 @@ package timeseriesweka.classifiers;
 *
 */
 public interface SaveParameterInfo {
-    String getParameters();
+    default String getParameters() {
+        if(this instanceof AbstractClassifier) {
+            return StringUtilities.join(",", ((AbstractClassifier) this).getOptions());
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
     
 }
