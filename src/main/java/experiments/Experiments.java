@@ -14,8 +14,10 @@
  */
 package experiments;
 
+import com.beust.jcommander.converters.IParameterSplitter;
 import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.trees.j48.NoSplit;
 import weka_uea.classifiers.SaveEachParameter;
 import weka_uea.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -98,7 +100,14 @@ public class Experiments  {
 
     public static class ExperimentalArguments implements Runnable {
 
-        @Parameter(names={"-p","--parameter"}, description = "Parameter key-value pair to be passed to the classifier's setOptions(String[]) function")
+        public static class NoSplitter implements IParameterSplitter {
+            @Override
+            public List<String> split(String value) {
+                return Arrays.asList(value);
+            }
+        }
+
+        @Parameter(names={"-p","--parameter"}, description = "Parameter key-value pair to be passed to the classifier's setOptions(String[]) function", splitter = NoSplitter.class)
         public List<String> parameters = new ArrayList<>();
 
         @Parameter(names={"-ap","--appendParameters"}, description = "Use parameters in classifier name")
@@ -107,7 +116,7 @@ public class Experiments  {
         @Parameter(names={"-aip","--appendIncrementalParameters"}, description = "Use parameters in classifier name")
         public boolean appendIncrementalParameter = false;
 
-        @Parameter(names={"-ip","--incrementalParameter"}, description = "Incremental parameter key-value pair to be passed to the classifier's setOptions(String[]) function. This list of parameters are incremental, e.g. setting the build time limit over a range of times, say 1m, 2m, 5m, 10m, where each depend on the previous.")
+        @Parameter(names={"-ip","--incrementalParameter"}, splitter = NoSplitter.class, description = "Incremental parameter key-value pair to be passed to the classifier's setOptions(String[]) function. This list of parameters are incremental, e.g. setting the build time limit over a range of times, say 1m, 2m, 5m, 10m, where each depend on the previous.")
         public List<String> incrementalParameters = new ArrayList<>();
 
         //REQUIRED PARAMETERS
@@ -425,7 +434,7 @@ public class Experiments  {
         AbstractClassifier abstractClassifier = (AbstractClassifier) classifier;
         List<String> parameters = new ArrayList<>();
         for(String str : expSettings.parameters) {
-            parameters.addAll(Arrays.asList(str.split(" ")));
+            parameters.addAll(Arrays.asList(str.split(",")));
         }
         String[] parametersArray = parameters.toArray(new String[0]);
         abstractClassifier.setOptions(parametersArray);
@@ -439,9 +448,9 @@ public class Experiments  {
             expSettings.incrementalParameters.add(" ");
         }
         for(String incrementalParameterSet : expSettings.incrementalParameters) {
-            String[] incrementalParameters = incrementalParameterSet.split(" ");
+            String[] incrementalParameters = incrementalParameterSet.split(",");
             if(expSettings.appendIncrementalParameter && incrementalParameters.length > 0) {
-                classifierName = expSettings.classifierName + "," + StringUtilities.join(",", incrementalParameters);
+                classifierName = expSettings.classifierName + "," + incrementalParameterSet;
             }
             abstractClassifier.setOptions(incrementalParameters);
             //Build/make the directory to write the train and/or testFold files to
