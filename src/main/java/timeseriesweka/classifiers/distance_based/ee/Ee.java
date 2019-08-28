@@ -11,11 +11,8 @@ import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasu
 import timeseriesweka.classifiers.distance_based.distance_measures.Wddtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
-import utilities.Checks;
-import utilities.StopWatch;
+import utilities.*;
 import utilities.cache.CachedFunction;
-import utilities.ArrayUtilities;
-import utilities.StringUtilities;
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.ClassifierIterator;
 import utilities.iteration.ParameterSetIterator;
@@ -27,6 +24,7 @@ import weka.core.Instances;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -40,7 +38,10 @@ public class Ee
     implements TrainAccuracyEstimator,
                TrainTimeContractable,
                TestTimeContractable,
-               Checkpointable {
+               Checkpointable,
+               Copyable,
+               Serializable,
+               Seedable {
 
     private Random trainRandom = new Random();
     private Random testRandom = new Random();
@@ -65,26 +66,27 @@ public class Ee
     private AbstractIterator<Member> memberIterator;
     private List<Benchmark> constituents;
     private List<Member> members;
-    private boolean estimateTrain = true;
-    private String trainResultsPath;
+    private boolean estimateTrainEnabled = true;
+    private transient String trainResultsPath;
     private ClassifierResults trainResults;
     private int minTrainNeighbourhoodSizeLimit = 2;
     private int trainNeighbourhoodSizeLimit = -1;
     private double trainNeighbourhoodSizeLimitPercentage = -1;
-    private String offlineBuildClassifierResultsDirPath;
-    private List<String> offlineBuildClassifierNames;
-    private boolean resetTrain = true;
+    private transient String offlineBuildClassifierResultsDirPath;
+    private transient List<String> offlineBuildClassifierNames;
+    private boolean resetTrainEnabled = true;
+    private boolean resetTestEnabled = true;
     private Instances trainInstances;
-    private Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
-    private String checkpointDirPath;
-    private boolean checkpointing;
-    private long lastCheckpointTimestamp = 0;
-    private long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    private transient Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
+    private transient String checkpointDirPath;
+    private transient boolean checkpointing;
+    private transient long lastCheckpointTimestamp = 0;
+    private transient long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private long testTimeLimitNanos = -1;
     private long trainTimeLimitNanos = -1;
     private StopWatch trainTimer = new StopWatch();
     private StopWatch testTimer = new StopWatch();
-    private boolean offlineBuild = false;
+    private transient boolean offlineBuild = false;
 
     public void setTrainRandom(final Random trainRandom) {
         this.trainRandom = trainRandom;
@@ -98,8 +100,8 @@ public class Ee
         this.derivativeCache = derivativeCache;
     }
 
-    public void setEstimateTrain(final boolean estimateTrain) {
-        this.estimateTrain = estimateTrain;
+    public void setEstimateTrainEnabled(final boolean estimateTrainEnabled) {
+        this.estimateTrainEnabled = estimateTrainEnabled;
     }
 
     public void setTrainResultsPath(final String trainResultsPath) {
@@ -139,8 +141,8 @@ public class Ee
         return derivativeCache;
     }
 
-    public boolean isEstimateTrain() {
-        return estimateTrain;
+    public boolean isEstimateTrainEnabled() {
+        return estimateTrainEnabled;
     }
 
     public String getTrainResultsPath() {
@@ -181,8 +183,14 @@ public class Ee
     }
 
     private void checkpoint(boolean force) throws
-            IOException {
-        if(checkpointing && (force || !withinCheckpointInterval())) {
+                                           IOException {
+        if(checkpointing &&
+           (
+               (hasTrainTimeLimit() && !withinTrainTimeLimit()) ||
+               (!hasTrainTimeLimit() && !withinCheckpointInterval()) ||
+               force
+           )
+        ) {
             saveToFile(getCheckpointFilePath());
             lastCheckpointTimestamp = System.nanoTime();
         }
@@ -202,6 +210,7 @@ public class Ee
             // keep copy of current checkpointing config
             String currentCheckpointDirPath = checkpointDirPath;
             long currentCheckpointIntervalNanos = checkpointIntervalNanos;
+            String currentTrainResultsPath = trainResultsPath;
             try {
                 // load from checkpoint file, carrying across checkpointing config
                 loadFromFile(getCheckpointFilePath());
@@ -209,6 +218,7 @@ public class Ee
                 setCheckpointInterval(currentCheckpointIntervalNanos, TimeUnit.NANOSECONDS);
                 setCheckpointDirPath(currentCheckpointDirPath);
                 setCheckpointing(true);
+                setTrainResultsPath(currentTrainResultsPath);
                 lastCheckpointTimestamp = System.nanoTime();
             } catch (Exception e) {
 
@@ -233,12 +243,12 @@ public class Ee
         this.offlineBuildClassifierResultsDirPath = offlineBuildClassifierResultsDirPath;
     }
 
-    public boolean isResetTrain() {
-        return resetTrain;
+    public boolean isResetTrainEnabled() {
+        return resetTrainEnabled;
     }
 
-    public void setResetTrain(final boolean resetTrain) {
-        this.resetTrain = resetTrain;
+    public void setResetTrainEnabled(final boolean resetTrainEnabled) {
+        this.resetTrainEnabled = resetTrainEnabled;
     }
 
     @Override
@@ -364,7 +374,6 @@ public class Ee
             if(classifier instanceof Knn) {
                 Knn knn = (Knn) classifier;
                 DistanceMeasure distanceMeasure = knn.getDistanceMeasure();
-//                distanceMeasure.setCacheDistances(true);
                 if(distanceMeasure instanceof Ddtw || distanceMeasure instanceof Wddtw) {
                     if(derivativeCache == null) {
                         derivativeCache = new Ddtw().getDerivativeCache();
@@ -462,7 +471,7 @@ public class Ee
     private void buildTrainEstimate() throws
                                                               Exception {
         trainTimer.lap();
-        if(estimateTrain) {
+        if(estimateTrainEnabled) {
             trainResults = new ClassifierResults();
             for(int i = 0; i < trainInstances.size(); i++) {
                 long time = System.nanoTime();
@@ -590,10 +599,10 @@ public class Ee
     }
 
     private void setup(Instances trainInstances) {
-        if(resetTrain) {
+        if(resetTrainEnabled) {
             trainTimer.reset();
             trainTimer.start();
-            resetTrain = false;
+            resetTrainEnabled = false;
             if(trainSeed == null) {
                 logger.warning("train seed not set");
             }
@@ -689,10 +698,18 @@ public class Ee
         return ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), testRandom);
     }
 
+    private void setupTest() {
+        if(resetTestEnabled) {
+            resetTestEnabled = false;
+            if(testSeed != null) testRandom.setSeed(testSeed);
+        }
+    }
+
     @Override
     public double[] distributionForInstance(Instance testInstance) throws
                                                                    Exception {
-        // todo test contract
+        // todo test contract, how best to break up constituents...
+        setupTest();
         double[] distribution = new double[testInstance.numClasses()];
         for (Benchmark constituent : constituents) {
             double weight = constituent.getResults()
@@ -706,25 +723,70 @@ public class Ee
         return distribution;
     }
 
-    public Long getTrainSeed() {
-        return trainSeed;
+    @Override
+    public void setTrainSeed(final long seed) {
+        trainSeed = seed;
     }
 
-    public void setTrainSeed(final Long trainSeed) {
-        this.trainSeed = trainSeed;
+    @Override
+    public void setTestSeed(final long seed) {
+        testSeed = seed;
+    }
+
+    public Long getTrainSeed() {
+        return trainSeed;
     }
 
     public Long getTestSeed() {
         return testSeed;
     }
 
-    public void setTestSeed(final Long testSeed) {
-        this.testSeed = testSeed;
+    @Override
+    public Object shallowCopy() throws
+                                Exception {
+        Ee ee = new Ee();
+        ee.shallowCopyFrom(this);
+        return ee;
+    }
+
+    @Override
+    public void shallowCopyFrom(final Object object) throws
+                                                     Exception {
+        Ee other = (Ee) object;
+        // generic fields
+        trainRandom = other.trainRandom;
+        testRandom = other.testRandom;
+        testSeed = other.testSeed;
+        trainSeed = other.trainSeed;
+        estimateTrainEnabled = other.estimateTrainEnabled;
+        resetTrainEnabled = other.resetTrainEnabled;
+        resetTestEnabled = other.resetTestEnabled;
+        logger = other.logger;
+        checkpointing = other.checkpointing;
+        checkpointIntervalNanos = other.checkpointIntervalNanos;
+        lastCheckpointTimestamp = other.lastCheckpointTimestamp;
+        checkpointDirPath = other.checkpointDirPath;
+        trainTimeLimitNanos = other.trainTimeLimitNanos;
+        testTimeLimitNanos = other.testTimeLimitNanos;
+        trainTimer = other.trainTimer;
+        testTimer = other.testTimer;
+        trainResults = other.trainResults;
+        trainInstances = other.trainInstances;
+        trainResultsPath = other.trainResultsPath;
+        // bespoke fields
+        memberIterator = other.memberIterator;
+        constituents = other.constituents;
+        minTrainNeighbourhoodSizeLimit = other.minTrainNeighbourhoodSizeLimit;
+        trainNeighbourhoodSizeLimit = other.trainNeighbourhoodSizeLimit;
+        trainNeighbourhoodSizeLimitPercentage = other.trainNeighbourhoodSizeLimitPercentage;
+        offlineBuildClassifierResultsDirPath = other.offlineBuildClassifierResultsDirPath;
+        offlineBuildClassifierNames = other.offlineBuildClassifierNames;
+        offlineBuild = other.offlineBuild;
     }
 
     @Override
     public void setFindTrainAccuracyEstimate(final boolean estimateTrain) {
-        this.estimateTrain = estimateTrain;
+        this.estimateTrainEnabled = estimateTrain;
     }
 
     @Override

@@ -228,7 +228,13 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     private void checkpoint(boolean force) throws
                                            IOException {
-        if(checkpointing && (force || !withinCheckpointInterval())) {
+        if(checkpointing &&
+            (
+                (hasTrainTimeLimit() && !withinTrainTimeLimit()) ||
+                (!hasTrainTimeLimit() && !withinCheckpointInterval()) ||
+                force
+            )
+        ) {
             saveToFile(getCheckpointFilePath());
             lastCheckpointTimestamp = System.nanoTime();
         }
@@ -248,6 +254,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             // keep copy of current checkpointing config
             String currentCheckpointDirPath = checkpointDirPath;
             long currentCheckpointIntervalNanos = checkpointIntervalNanos;
+            String currentTrainResultsPath = trainResultsPath;
             try {
                 // load from checkpoint file, carrying across checkpointing config
                 loadFromFile(getCheckpointFilePath());
@@ -255,6 +262,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 setCheckpointInterval(currentCheckpointIntervalNanos, TimeUnit.NANOSECONDS);
                 setCheckpointDirPath(currentCheckpointDirPath);
                 setCheckpointing(true);
+                setTrainResultsPath(currentTrainResultsPath);
                 lastCheckpointTimestamp = System.nanoTime();
             } catch (Exception e) {
 
@@ -570,6 +578,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public void shallowCopyFrom(Object object) throws Exception {
         Knn other = (Knn) object;
+        // generic fields
         trainRandom = other.trainRandom;
         testRandom = other.testRandom;
         testSeed = other.testSeed;
@@ -577,28 +586,30 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         estimateTrainEnabled = other.estimateTrainEnabled;
         resetTrainEnabled = other.resetTrainEnabled;
         resetTestEnabled = other.resetTestEnabled;
-        k = other.k;
+        logger = other.logger;
         checkpointing = other.checkpointing;
         checkpointIntervalNanos = other.checkpointIntervalNanos;
         lastCheckpointTimestamp = other.lastCheckpointTimestamp;
         checkpointDirPath = other.checkpointDirPath;
-        distanceMeasure = other.distanceMeasure;
         trainTimeLimitNanos = other.trainTimeLimitNanos;
         testTimeLimitNanos = other.testTimeLimitNanos;
-        trainInstanceIterator = other.trainInstanceIterator;
-        trainEstimatorIterator = other.trainEstimatorIterator;
+        trainTimer = other.trainTimer;
+        testTimer = other.testTimer;
+        trainResults = other.trainResults;
         trainInstances = other.trainInstances;
+        trainResultsPath = other.trainResultsPath;
+        // bespoke fields
         distanceCache = other.distanceCache;
         distanceCacheEnabled = other.distanceCacheEnabled;
         trainSearchers = other.trainSearchers;
         neighbourhood = other.neighbourhood;
-        trainTimer = other.trainTimer;
-        testTimer = other.testTimer;
         trainNeighbourhoodSizeLimit = other.trainNeighbourhoodSizeLimit;
-        trainResults = other.trainResults;
         trainEstimateSizeLimit = other.trainEstimateSizeLimit;
         earlyAbandonEnabled = other.earlyAbandonEnabled;
-        logger = other.logger;
+        trainInstanceIterator = other.trainInstanceIterator;
+        trainEstimatorIterator = other.trainEstimatorIterator;
+        k = other.k;
+        distanceMeasure = other.distanceMeasure;
     }
 
     public int getTrainNeighbourhoodSizeLimit() {
