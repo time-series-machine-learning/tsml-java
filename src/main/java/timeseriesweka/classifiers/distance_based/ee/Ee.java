@@ -438,15 +438,15 @@ public class Ee
         Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
-        List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN");
+        List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
         names = new ArrayList<>(names);
         for(int i = 0; i < names.size(); i++) {
             String name = names.get(i);
-            name += ",trnslp,0.1";
+            name += ",trnslp,1.0";
             names.set(i, name);
         }
         Ee ee = new Ee();
-        ee.setOfflineBuildClassifierResultsDirPath("/home/vte14wgu/Projects/tsml/results2/");
+        ee.setOfflineBuildClassifierResultsDirPath("/home/vte14wgu/Projects/tsml/results/");
 //        ee.getLogger().setLevel(Level.OFF);
         ee.setTrainSeed(seed);
         ee.setTestSeed(seed);
@@ -485,8 +485,10 @@ public class Ee
                 ArrayUtilities.normaliseInPlace(distribution);;
                 int prediction = ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), trainRandom);
                 time = System.nanoTime() - time;
-                Instance trainInstance = trainInstances.get(i);
-                trainResults.addPrediction(trainInstance.classValue(),
+//                Instance trainInstance = trainInstances.get(i);
+                trainResults.addPrediction(
+//                    trainInstance.classValue(),
+                    constituents.get(0).getResults().getTrueClassValue(i),
                                            distribution,
                                            prediction,
                                            time,
