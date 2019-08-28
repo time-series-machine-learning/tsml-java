@@ -26,6 +26,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -76,11 +77,56 @@ public class Ee
     private Instances trainInstances;
     private Logger logger = Logger.getLogger(Ee.class.getCanonicalName());
     private String checkpointDirPath;
+    private boolean checkpointing;
+    private long lastCheckpointTimestamp = 0;
+    private long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private long testTimeLimitNanos = -1;
     private long trainTimeLimitNanos = -1;
     private StopWatch trainTimer = new StopWatch();
     private StopWatch testTimer = new StopWatch();
     private boolean offlineBuild = false;
+
+
+    private void checkpoint() throws
+            IOException {
+        checkpoint(false);
+    }
+
+    private boolean withinCheckpointInterval() {
+        return System.nanoTime() - lastCheckpointTimestamp < checkpointIntervalNanos;
+    }
+
+    private void checkpoint(boolean force) throws
+            IOException {
+        if(checkpointing && (force || !withinCheckpointInterval())) {
+            saveToFile(getCheckpointFilePath());
+            lastCheckpointTimestamp = System.nanoTime();
+        }
+    }
+
+    private String getTrainSeedAsString() {
+        return this.trainSeed == null ? "" :
+                String.valueOf(this.trainSeed);
+    }
+
+    private String getCheckpointFilePath() {
+        return checkpointDirPath + "/checkpoint" + getTrainSeedAsString() + ".ser";
+    }
+
+    private void loadFromCheckpoint() {
+        if(checkpointing) {
+            try {
+                loadFromFile(getCheckpointFilePath());
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    @Override
+    public void setCheckpointing(final boolean on) {
+        checkpointing = on;
+    }
 
     public Logger getLogger() {
         return logger;
@@ -355,6 +401,7 @@ public class Ee
 
     private void buildClassifierOnline() throws
                                          Exception {
+        loadFromCheckpoint();
         while (memberIterator.hasNext() && withinTrainTimeLimit()) {
             Member member = memberIterator.next();
             AbstractIterator<AbstractClassifier> iterator = member.getIterator();
@@ -368,7 +415,9 @@ public class Ee
             if(!iterator.hasNext()) {
                 memberIterator.remove();
             }
-            trainTimer.lap();
+            trainTimer.lapAndStop();
+            checkpoint();
+            trainTimer.start();
         }
     }
 
@@ -395,6 +444,7 @@ public class Ee
                 trainResults.loadResultsFromFile(file.getPath());
                 AbstractClassifier classifier = buildKnn();
                 classifier.setOptions(trainResults.getParas().split(","));
+                trainTimer.add(trainResults.getBuildTimeInNanos());
                 trainTimer.start();
                 selector.add(new Benchmark(classifier, trainResults));
                 trainTimer.lapAndStop();
