@@ -199,7 +199,7 @@ public class TunedClassifier extends AbstractClassifier
         if(parameterSpaceFunction != null) {
             space = parameterSpaceFunction.apply(data);
         }
-        if(classifierSupplier != null) {
+        if(classifierSupplier != null && classifier == null) {
             classifier = classifierSupplier.get();
         }
         

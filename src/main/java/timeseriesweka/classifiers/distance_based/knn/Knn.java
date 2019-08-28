@@ -279,10 +279,11 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     public void buildClassifier(final Instances trainInstances) throws
             Exception {
         loadFromCheckpoint();
-        trainingSetup(trainInstances);
+        setupTrain(trainInstances);
         if(estimateTrainEnabled) {
             boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
             boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+            trainTimer.lap();
             while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
                 boolean choice = hasRemainingTrainSearchers;
                 if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
@@ -295,9 +296,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 }
                 hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
                 hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-                trainTimer.lapAndStop();
+                trainTimer.lap();
                 checkpoint();
-                trainTimer.start();
+                trainTimer.resetClock();
             }
             buildTrainEstimate();
         }
@@ -323,7 +324,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         }
         double[] distribution = searcher.predict();
         testTimer.lap();
-        testTimer.stop();
         return distribution;
     }
 
@@ -349,10 +349,11 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         });
     }
 
-    private void trainingSetup(Instances trainInstances) {
+    private void setupTrain(Instances trainInstances) {
+        trainTimer.resetClock();
         if (resetTrainEnabled) {
-            trainTimer.reset();
-            trainTimer.start();
+            resetTrainEnabled = false;
+            trainTimer.resetTime();
             if (trainSeed != null) {
                 trainRandom.setSeed(trainSeed);
             } else {
@@ -360,9 +361,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             }
             this.trainInstances = trainInstances;
             if(estimateTrainEnabled) {
-                if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
-                    trainNeighbourhoodSizeLimit = (int) (trainInstances.size() * trainNeighbourhoodSizeLimitPercentage);
-                }
                 neighbourhood = new ArrayList<>();
                 if(distanceCacheEnabled) {
                     InstanceTools.indexInstances(trainInstances);
@@ -378,8 +376,13 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 trainInstanceIterator = buildTrainInstanceIterator();
                 trainEstimatorIterator = buildTrainEstimatorIterator();
             }
-            trainTimer.lap();
         }
+        if(estimateTrainEnabled) {
+            if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
+                trainNeighbourhoodSizeLimit = (int) (trainInstances.size() * trainNeighbourhoodSizeLimitPercentage);
+            }
+        }
+        trainTimer.lap();
     }
 
     private boolean withinTrainEstimateSizeLimit() {
@@ -429,13 +432,16 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 ArrayUtilities.normaliseInPlace(distribution);
                 int prediction = ArrayUtilities.bestIndex(Arrays.asList(ArrayUtilities.box(distribution)), trainRandom);
                 time = System.nanoTime() - time;
+                int index = ((InstanceTools.IndexedInstance) searcher.getTarget()).getIndex();
+                String description = String.valueOf(index);
                 trainResults.addPrediction(searcher.getTarget().classValue(),
                                            distribution,
                                            prediction,
                                            time,
-                                           null);
+                                           description);
             }
-            trainTimer.lapAndStop();
+            trainTimer.lap();
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainTimer.getTimeNanos());
             trainResults.setParas(StringUtilities.join(",", getOptions()));
             try {
@@ -451,7 +457,6 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     private void setupTest() {
         testTimer.reset();
-        testTimer.start();
         if (resetTestEnabled) {
             resetTestEnabled = false;
             if (testSeed != null) {

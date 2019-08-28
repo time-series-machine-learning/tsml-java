@@ -494,10 +494,11 @@ public class Ee
                                            time,
                                            null);
             }
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            // todo mem / build time / etc
             if(trainResultsPath != null) {
-                trainTimer.stop();
                 trainResults.writeFullResultsToFile(trainResultsPath);
-                trainTimer.start();
+                trainTimer.resetClock();
             }
             trainTimer.lap();
         }
@@ -519,15 +520,15 @@ public class Ee
             if(!iterator.hasNext()) {
                 memberIterator.remove();
             }
-            trainTimer.lapAndStop();
+            trainTimer.lap();
             checkpoint();
-            trainTimer.start();
+            trainTimer.resetClock();
         }
     }
 
     private void buildClassifierOffline() throws
                                           Exception {
-        trainTimer.lapAndStop();
+        trainTimer.lap();
         String postfix = "/Predictions/" + trainInstances.relationName() + "/";
         for(String name : offlineBuildClassifierNames) {
             File resultsDir = new File(offlineBuildClassifierResultsDirPath, name + postfix);
@@ -539,7 +540,7 @@ public class Ee
                 // no parameters, therefore should already have train file
                 files = new File[] {new File(resultsDir, "trainFold" + trainSeed + ".csv")};
             }
-            trainTimer.start();
+            trainTimer.resetClock();
             KBestSelector<Benchmark, Double> selector = buildSelector();
             Member member = new Member(null, null, selector);
             members.add(member);
@@ -549,12 +550,12 @@ public class Ee
                 AbstractClassifier classifier = buildKnn();
                 classifier.setOptions(trainResults.getParas().split(","));
                 trainTimer.add(trainResults.getBuildTimeInNanos());
-                trainTimer.start();
+                trainTimer.resetClock();
                 selector.add(new Benchmark(classifier, trainResults));
-                trainTimer.lapAndStop();
+                trainTimer.lap();
             }
         }
-        trainTimer.start();
+        trainTimer.resetClock();
     }
 
     private void pickConstituents() throws
@@ -570,7 +571,7 @@ public class Ee
     private void buildOfflineConstituents() throws
                                             Exception {
         if(offlineBuild) {
-            trainTimer.lapAndStop();
+            trainTimer.lap();
             for(Benchmark benchmark : constituents) {
                 Classifier classifier = benchmark.getClassifier();
                 if(classifier instanceof TrainAccuracyEstimator) {
@@ -581,7 +582,7 @@ public class Ee
                     classifier.buildClassifier(trainInstances);
                 }
             }
-            trainTimer.start();
+            trainTimer.resetClock();
         }
     }
 
@@ -597,13 +598,13 @@ public class Ee
         pickConstituents();
         buildOfflineConstituents();
         buildTrainEstimate();
-        trainTimer.lapAndStop();
+        trainTimer.lap();
     }
 
     private void setup(Instances trainInstances) {
         if(resetTrainEnabled) {
-            trainTimer.reset();
-            trainTimer.start();
+            trainTimer.resetTime();
+            trainTimer.resetClock();
             resetTrainEnabled = false;
             if(trainSeed == null) {
                 logger.warning("train seed not set");

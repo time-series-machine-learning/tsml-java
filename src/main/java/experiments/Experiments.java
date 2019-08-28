@@ -107,6 +107,9 @@ public class Experiments  {
             }
         }
 
+        @Parameter(names={"-ngtef"}, description = "Not generate test files")
+        public boolean notGenerateTestFiles = false;
+
         @Parameter(names={"-p","--parameter"}, description = "Parameter key-value pair to be passed to the classifier's setOptions(String[]) function", splitter = NoSplitter.class)
         public List<String> parameters = new ArrayList<>();
 
@@ -445,7 +448,7 @@ public class Experiments  {
 
         String classifierName = expSettings.classifierName;
         if(expSettings.incrementalParameters.isEmpty()) {
-            expSettings.incrementalParameters.add(" ");
+            expSettings.incrementalParameters.add(",");
         }
         for(String incrementalParameterSet : expSettings.incrementalParameters) {
             String[] incrementalParameters = incrementalParameterSet.split(",");
@@ -488,11 +491,11 @@ public class Experiments  {
 
                     targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
                     if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                        new File(targetFileName).createNewFile();
                         LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
                         return;
                     }
                 }
-
                 double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
                 LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
             }
@@ -567,12 +570,13 @@ public class Experiments  {
 
 
             //And now evaluate on the test set, if this wasn't a single parameter fold
-            if (expSettings.singleParameterID == null) {
+            if (expSettings.singleParameterID == null && !expSettings.notGenerateTestFiles) {
                 //This is checked before the buildClassifier also, but 
                 //a) another process may have been doing the same experiment 
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
+                    new File(resultsPath + testFoldFilename).createNewFile();
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
