@@ -174,8 +174,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                                            IOException {
         if(checkpointing && (force || !withinCheckpointInterval())) {
             saveToFile(getCheckpointFilePath());
+            lastCheckpointTimestamp = System.nanoTime();
         }
-        trainTimer.start();
     }
 
     private String getTrainSeedAsString() {
@@ -511,6 +511,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         resetTrainEnabled = other.resetTrainEnabled;
         resetTestEnabled = other.resetTestEnabled;
         k = other.k;
+        checkpointing = other.checkpointing;
+        checkpointIntervalNanos = other.checkpointIntervalNanos;
+        lastCheckpointTimestamp = other.lastCheckpointTimestamp;
         distanceMeasure = other.distanceMeasure;
         trainTimeLimitNanos = other.trainTimeLimitNanos;
         testTimeLimitNanos = other.testTimeLimitNanos;
