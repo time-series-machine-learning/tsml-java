@@ -173,11 +173,28 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private void checkpoint(boolean force) throws
                                            IOException {
         if(checkpointing && (force || !withinCheckpointInterval())) {
-            String trainSeedStr = this.trainSeed == null ? "" :
-                               String.valueOf(this.trainSeed);
-            saveToFile(checkpointDirPath + "/checkpoint" + trainSeedStr + ".ser");
+            saveToFile(getCheckpointFilePath());
         }
         trainTimer.start();
+    }
+
+    private String getTrainSeedAsString() {
+        return this.trainSeed == null ? "" :
+                              String.valueOf(this.trainSeed);
+    }
+
+    private String getCheckpointFilePath() {
+        return checkpointDirPath + "/checkpoint" + getTrainSeedAsString() + ".ser";
+    }
+
+    private void loadFromCheckpoint() {
+        if(checkpointing) {
+            try {
+                loadFromFile(getCheckpointFilePath());
+            } catch (Exception e) {
+
+            }
+        }
     }
 
     @Override
@@ -188,6 +205,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public void buildClassifier(final Instances trainInstances) throws
             Exception {
+        loadFromCheckpoint();
         trainingSetup(trainInstances);
         if(estimateTrainEnabled) {
             boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
