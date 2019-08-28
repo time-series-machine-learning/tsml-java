@@ -39,9 +39,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private long trainTimeLimitNanos = -1;
     private long testTimeLimitNanos = -1;
     private Long trainSeed = null;
-    private String checkpointDirPath;
-    private long lastCheckpointTimestamp = 0;
-    private long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    private transient String checkpointDirPath;
+    private transient long lastCheckpointTimestamp = 0;
+    private transient long checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private AbstractIterator<Instance> trainInstanceIterator;
     private AbstractIterator<Instance> trainEstimatorIterator;
     private Instances trainInstances;
@@ -52,7 +52,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private int trainNeighbourhoodSizeLimit = -1;
     private double trainNeighbourhoodSizeLimitPercentage = -1;
     private int trainEstimateSizeLimit = -1;
-    private String trainResultsPath;
+    private transient String trainResultsPath;
     private ClassifierResults trainResults;
     private Cache<Instance, Instance, Double> distanceCache;
     private boolean distanceCacheEnabled = true;
@@ -61,8 +61,64 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
     private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
     private boolean earlyAbandonEnabled = true;
-    private boolean checkpointing = false;
-    private Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
+    private transient boolean checkpointing = false;
+    private transient Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
+
+    public void setTrainRandom(final Random trainRandom) {
+        this.trainRandom = trainRandom;
+    }
+
+    public void setTestRandom(final Random testRandom) {
+        this.testRandom = testRandom;
+    }
+
+    public void setEstimateTrainEnabled(final boolean estimateTrainEnabled) {
+        this.estimateTrainEnabled = estimateTrainEnabled;
+    }
+
+    public void setDistanceCache(final Cache<Instance, Instance, Double> distanceCache) {
+        this.distanceCache = distanceCache;
+    }
+
+    public void setLogger(final Logger logger) {
+        this.logger = logger;
+    }
+
+    public Random getTrainRandom() {
+        return trainRandom;
+    }
+
+    public Random getTestRandom() {
+        return testRandom;
+    }
+
+    public boolean isEstimateTrainEnabled() {
+        return estimateTrainEnabled;
+    }
+
+    public Cache<Instance, Instance, Double> getDistanceCache() {
+        return distanceCache;
+    }
+
+    public String getCheckpointDirPath() {
+        return checkpointDirPath;
+    }
+
+    public void setCheckpointDirPath(final String checkpointDirPath) {
+        this.checkpointDirPath = checkpointDirPath;
+    }
+
+    public long getCheckpointIntervalNanos() {
+        return checkpointIntervalNanos;
+    }
+
+    public void setCheckpointIntervalNanos(final long checkpointIntervalNanos) {
+        this.checkpointIntervalNanos = checkpointIntervalNanos;
+    }
+
+    public boolean isCheckpointing() {
+        return checkpointing;
+    }
 
     public Logger getLogger() {
         return logger;
@@ -189,8 +245,17 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     private void loadFromCheckpoint() {
         if(checkpointing) {
+            // keep copy of current checkpointing config
+            String currentCheckpointDirPath = checkpointDirPath;
+            long currentCheckpointIntervalNanos = checkpointIntervalNanos;
             try {
+                // load from checkpoint file, carrying across checkpointing config
                 loadFromFile(getCheckpointFilePath());
+                // reapply current checkpointing config
+                setCheckpointInterval(currentCheckpointIntervalNanos, TimeUnit.NANOSECONDS);
+                setCheckpointDirPath(currentCheckpointDirPath);
+                setCheckpointing(true);
+                lastCheckpointTimestamp = System.nanoTime();
             } catch (Exception e) {
 
             }
@@ -293,10 +358,12 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 neighbourhood = new ArrayList<>();
                 if(distanceCacheEnabled) {
                     InstanceTools.indexInstances(trainInstances);
-                    if(distanceMeasure.isSymmetric() && distanceCache == null) {
-                        distanceCache = new DupeCache<>();
-                    } else {
-                        distanceCache = new Cache<>();
+                    if(distanceCache == null) {
+                        if(distanceMeasure.isSymmetric() && distanceCache == null) {
+                            distanceCache = new DupeCache<>();
+                        } else {
+                            distanceCache = new Cache<>();
+                        }
                     }
                 }
                 trainSearchers = new ArrayList<>();
@@ -514,6 +581,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         checkpointing = other.checkpointing;
         checkpointIntervalNanos = other.checkpointIntervalNanos;
         lastCheckpointTimestamp = other.lastCheckpointTimestamp;
+        checkpointDirPath = other.checkpointDirPath;
         distanceMeasure = other.distanceMeasure;
         trainTimeLimitNanos = other.trainTimeLimitNanos;
         testTimeLimitNanos = other.testTimeLimitNanos;

@@ -86,6 +86,90 @@ public class Ee
     private StopWatch testTimer = new StopWatch();
     private boolean offlineBuild = false;
 
+    public void setTrainRandom(final Random trainRandom) {
+        this.trainRandom = trainRandom;
+    }
+
+    public void setTestRandom(final Random testRandom) {
+        this.testRandom = testRandom;
+    }
+
+    public void setDerivativeCache(final CachedFunction<Instance, Instance> derivativeCache) {
+        this.derivativeCache = derivativeCache;
+    }
+
+    public void setEstimateTrain(final boolean estimateTrain) {
+        this.estimateTrain = estimateTrain;
+    }
+
+    public void setTrainResultsPath(final String trainResultsPath) {
+        this.trainResultsPath = trainResultsPath;
+    }
+
+    public void setTrainNeighbourhoodSizeLimit(final int trainNeighbourhoodSizeLimit) {
+        this.trainNeighbourhoodSizeLimit = trainNeighbourhoodSizeLimit;
+    }
+
+    public void setTrainNeighbourhoodSizeLimitPercentage(final double trainNeighbourhoodSizeLimitPercentage) {
+        this.trainNeighbourhoodSizeLimitPercentage = trainNeighbourhoodSizeLimitPercentage;
+    }
+
+    public void setLogger(final Logger logger) {
+        this.logger = logger;
+    }
+
+    public void setCheckpointDirPath(final String checkpointDirPath) {
+        this.checkpointDirPath = checkpointDirPath;
+    }
+
+    @Override
+    public void setCheckpointInterval(final long amount, final TimeUnit unit) {
+        checkpointIntervalNanos = TimeUnit.NANOSECONDS.convert(amount, unit);
+    }
+
+    public Random getTrainRandom() {
+        return trainRandom;
+    }
+
+    public Random getTestRandom() {
+        return testRandom;
+    }
+
+    public CachedFunction<Instance, Instance> getDerivativeCache() {
+        return derivativeCache;
+    }
+
+    public boolean isEstimateTrain() {
+        return estimateTrain;
+    }
+
+    public String getTrainResultsPath() {
+        return trainResultsPath;
+    }
+
+    public int getMinTrainNeighbourhoodSizeLimit() {
+        return minTrainNeighbourhoodSizeLimit;
+    }
+
+    public int getTrainNeighbourhoodSizeLimit() {
+        return trainNeighbourhoodSizeLimit;
+    }
+
+    public double getTrainNeighbourhoodSizeLimitPercentage() {
+        return trainNeighbourhoodSizeLimitPercentage;
+    }
+
+    public String getCheckpointDirPath() {
+        return checkpointDirPath;
+    }
+
+    public boolean isCheckpointing() {
+        return checkpointing;
+    }
+
+    public long getCheckpointIntervalNanos() {
+        return checkpointIntervalNanos;
+    }
 
     private void checkpoint() throws
             IOException {
@@ -115,8 +199,17 @@ public class Ee
 
     private void loadFromCheckpoint() {
         if(checkpointing) {
+            // keep copy of current checkpointing config
+            String currentCheckpointDirPath = checkpointDirPath;
+            long currentCheckpointIntervalNanos = checkpointIntervalNanos;
             try {
+                // load from checkpoint file, carrying across checkpointing config
                 loadFromFile(getCheckpointFilePath());
+                // reapply current checkpointing config
+                setCheckpointInterval(currentCheckpointIntervalNanos, TimeUnit.NANOSECONDS);
+                setCheckpointDirPath(currentCheckpointDirPath);
+                setCheckpointing(true);
+                lastCheckpointTimestamp = System.nanoTime();
             } catch (Exception e) {
 
             }
