@@ -466,7 +466,7 @@ public class Experiments  {
             //Check whether fold already exists, if so, dont do it, just quit
             if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
                 LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-                return;
+                continue;
             }
             else {
                 Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
@@ -491,10 +491,12 @@ public class Experiments  {
 
                     targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
                     if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                        new File(targetFileName).createNewFile();
                         LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                        return;
+                        continue;
                     }
+//                    else {
+//                        new File(targetFileName).createNewFile();
+//                    }
                 }
                 double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
                 LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
@@ -524,7 +526,7 @@ public class Experiments  {
      * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
      * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
-    public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
+    public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) throws IOException {
         
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
@@ -533,7 +535,13 @@ public class Experiments  {
             //otherwise, defined by this as default
             trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
         String testFoldFilename = "testFold" + expSettings.foldId + ".csv";       
-        
+
+        if(CollateResults.validateSingleFoldFile(resultsPath + trainFoldFilename)) {
+            return -1;
+        } else {
+//            if(!new File(resultsPath + trainFoldFilename).createNewFile()) return -2;
+        }
+
         ClassifierResults trainResults = null;
         ClassifierResults testResults = null;
         
@@ -576,7 +584,7 @@ public class Experiments  {
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    new File(resultsPath + testFoldFilename).createNewFile();
+//                    new File(resultsPath + testFoldFilename).createNewFile();
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);

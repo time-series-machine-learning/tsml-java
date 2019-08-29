@@ -1,5 +1,6 @@
 package timeseriesweka.classifiers.distance_based.ee.selection;
 
+import timeseriesweka.classifiers.distance_based.knn.Knn;
 import utilities.ArrayUtilities;
 import utilities.Copyable;
 
@@ -14,15 +15,14 @@ public class KBestSelector<A, B> implements Copyable
     private int limit = -1;
     private B worstValue;
     private List<A> worstItems;
-    private Random random = new Random();
     private Comparator<B> comparator;
 
     public TreeMap<B, List<A>> getSelectedAsMapWithDraws() {
         return map;
     }
 
-    public TreeMap<B, List<A>> getSelectedAsMap() {
-        TreeMap<B, List<A>> map = getSelectedAsMapWithDraws();
+    public TreeMap<B, List<A>> getSelectedAsMap(Random random) { // todo move to util func
+        TreeMap<B, List<A>> map = new TreeMap<>(getSelectedAsMapWithDraws());
         if(size > limit) {
             Map.Entry<B, List<A>> lastEntry = map.lastEntry();
             List<A> list = new ArrayList<>(lastEntry.getValue());
@@ -42,8 +42,9 @@ public class KBestSelector<A, B> implements Copyable
      }
 
     public List<A> getSelectedAsList() {
-        TreeMap<B, List<A>> map = getSelectedAsMap();
-        return ArrayUtilities.flatten(map);
+        throw new UnsupportedOperationException();
+//        TreeMap<B, List<A>> map = getSelectedAsMap();
+//        return ArrayUtilities.flatten(map);
     }
 
     @Override
@@ -146,12 +147,4 @@ public class KBestSelector<A, B> implements Copyable
                          Exception {
         return new KBestSelector<>(this);
     }
-
-     public Random getRandom() {
-         return random;
-     }
-
-     public void setRandom(final Random random) {
-         this.random = random;
-     }
  }

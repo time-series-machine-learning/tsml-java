@@ -158,7 +158,7 @@ public class CollateResults {
         File f= new File(str);
         if(f.exists()){ // Check 1: non zero
              if(f.length()==0){//Empty, delete file
-                 f.delete();
+//                 f.delete();
              }
              else{
                  try{

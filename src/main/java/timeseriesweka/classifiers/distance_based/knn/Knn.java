@@ -170,11 +170,12 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
     public static void main(String[] args) throws
             Exception {
-        int seed = 0;
-        String user = "vte14wgu";
-        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "GunPoint", seed);
-        Instances train = dataset[0];
-        Instances test = dataset[1];
+//        int seed = 0;
+//        String user = "vte14wgu";
+//        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "GunPoint", seed);
+//        Instances train = dataset[0];
+//        Instances test = dataset[1];
+
 //        ParameterSpace parameterSpace = new DtwParameterSpaceBuilder().build(train);
 //        for(int i = 0; i < parameterSpace.size(); i++) {
 //            ParameterSet parameterSet = parameterSpace.get(i);
@@ -190,25 +191,37 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 //            ClassifierResults trainResults = knn.getTrainResults();
 //            System.out.println(i + " " + trainResults.getAcc());
 //        }
-        Knn knn = new Knn();
-        Dtw dtw = new Dtw();
-        dtw.setWarpingWindow(-1);
-        knn.setDistanceMeasure(dtw);
-        knn.setTrainSeed(seed);
-        knn.setTestSeed(seed);
-        knn.buildClassifier(train);
-        ClassifierResults trainResults = knn.getTrainResults();
-        System.out.println("train acc: " + trainResults.getAcc());
-        System.out.println("-----");
-        ClassifierResults testResults = new ClassifierResults();
-        for (Instance testInstance : test) {
-            long time = System.nanoTime();
-            double[] distribution = knn.distributionForInstance(testInstance);
-            double prediction = knn.classifyInstance(testInstance);
-            time = System.nanoTime() - time;
-            testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
-        }
-        System.out.println(testResults.getAcc());
+
+
+//        Knn knn = new Knn();
+//        Dtw dtw = new Dtw();
+//        dtw.setWarpingWindow(-1);
+//        knn.setDistanceMeasure(dtw);
+//        knn.setTrainSeed(seed);
+//        knn.setTestSeed(seed);
+//        knn.buildClassifier(train);
+//        ClassifierResults trainResults = knn.getTrainResults();
+//        System.out.println("train acc: " + trainResults.getAcc());
+//        System.out.println("-----");
+//        ClassifierResults testResults = new ClassifierResults();
+//        for (Instance testInstance : test) {
+//            long time = System.nanoTime();
+//            double[] distribution = knn.distributionForInstance(testInstance);
+//            double prediction = knn.classifyInstance(testInstance);
+//            time = System.nanoTime() - time;
+//            testResults.addPrediction(testInstance.classValue(), distribution, prediction, time, null);
+//        }
+//        System.out.println(testResults.getAcc());
+
+        KBestSelector<Neighbour, Double> selector = new KBestSelector<>((a,b) -> Double.compare(b, a));
+        selector.setExtractor(Neighbour::getDistance);
+        selector.setLimit(1);
+        selector.add(new Neighbour(null, 4));
+        selector.add(new Neighbour(null, 3));
+        selector.add(new Neighbour(null, 3));
+        selector.add(new Neighbour(null, 3));
+//        selector.add(new Neighbour(null, 2));
+        selector.getSelectedAsMap(new Random(0));
     }
 
     @Override
@@ -451,6 +464,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             }
             if(trainResultsPath != null) {
                 trainResults.writeFullResultsToFile(trainResultsPath);
+                trainTimer.resetClock();
             }
         }
     }
@@ -713,18 +727,15 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
 
         public double[] predict() {
             double[] distribution = new double[target.numClasses()];
-            TreeMap<Double, List<Neighbour>> map = selector.getSelectedAsMap();
+            TreeMap<Double, List<Neighbour>> map = selector.getSelectedAsMap(trainRandom);
             int i = 0;
             for (Map.Entry<Double, List<Neighbour>> entry : map.entrySet()) {
                 for (Neighbour neighbour : entry.getValue()) {
-                    distribution[(int) neighbour.getInstance().classValue()]++;
                     i++;
+                    distribution[(int) neighbour.getInstance().classValue()]++;
                 }
             }
-            if(i > 1) {
-                System.out.println(i);
-                throw new UnsupportedOperationException(); // todo need to limit to k
-            }
+            assert i == k;
             return distribution;
         }
 

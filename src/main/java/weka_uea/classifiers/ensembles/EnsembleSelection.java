@@ -18,6 +18,7 @@ import weka_uea.classifiers.ensembles.CAWPE;
 import experiments.CollateResults;
 import experiments.data.DatasetLists;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -350,7 +351,7 @@ public class EnsembleSelection extends CAWPE {
 //        ana();
     }
    
-    public static void tests() { 
+    public static void tests() throws IOException {
         String resPath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
         int numfolds = 30;
         

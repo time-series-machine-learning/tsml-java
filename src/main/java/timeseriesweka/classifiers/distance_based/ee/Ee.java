@@ -1,9 +1,9 @@
 package timeseriesweka.classifiers.distance_based.ee;
 
-import evaluation.evaluators.BespokeTrainEstimateEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
+import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
@@ -48,7 +48,15 @@ public class Ee
 
     private CachedFunction<Instance, Instance> derivativeCache;
 
-    private List<Function<Instances, ParameterSpace>> parameterSpaceFunctions = new ArrayList<>(Arrays.asList(
+    public List<Member> getMembers() {
+        return members;
+    }
+
+    public void setMembers(List<Member> members) {
+        this.members = members;
+    }
+
+    private final static List<Function<Instances, ParameterSpace>> TRADITIONAL_CONFIG_PARAMETER_SPACE_FUNCTIONS = new ArrayList<>(Arrays.asList(
         i -> DistanceMeasureParameterSpaces.buildEdParameterSpace(),
         DistanceMeasureParameterSpaces::buildDtwParameterSpace,
         i -> DistanceMeasureParameterSpaces.buildFullDtwParameterSpace(),
@@ -60,12 +68,13 @@ public class Ee
         i -> DistanceMeasureParameterSpaces.buildMsmParameterSpace(),
         DistanceMeasureParameterSpaces::buildErpParameterSpace,
         i -> DistanceMeasureParameterSpaces.buildTwedParameterSpace()
-                                                                                                             ));
+    ));
+
     private Long trainSeed;
     private Long testSeed;
     private AbstractIterator<Member> memberIterator;
     private List<Benchmark> constituents;
-    private List<Member> members;
+    private List<Member> members = new ArrayList<>();
     private boolean estimateTrainEnabled = true;
     private transient String trainResultsPath;
     private ClassifierResults trainResults;
@@ -306,67 +315,41 @@ public class Ee
 
     public class Member {
 
-        private final AbstractIterator<AbstractClassifier> source;
-        private final AbstractIterator<AbstractClassifier> improvement;
+        private AbstractIterator<AbstractClassifier> source;
+        private AbstractIterator<AbstractClassifier> improvement;
+        private String offlinePath;
+        private Function<Instances, ParameterSpace> parameterSpaceFunction;
 
         public AbstractIterator<AbstractClassifier> getImprovement() {
             return improvement;
         }
 
-        private final AbstractIterator<AbstractClassifier> iterator;
-        private final KBestSelector<Benchmark, Double> selector;
-        private final Evaluator evaluator;
+        private AbstractIterator<AbstractClassifier> iterator;
+        private KBestSelector<Benchmark, Double> selector;
+        private Evaluator evaluator;
 
-        public Member(final AbstractIterator<AbstractClassifier> source,
-                      final AbstractIterator<AbstractClassifier> improvement,
-                      final KBestSelector<Benchmark, Double> selector) {
+        public AbstractIterator<AbstractClassifier> getSource() {
+            return source;
+        }
+
+        public void setSource(AbstractIterator<AbstractClassifier> source) {
             this.source = source;
+        }
+
+        public void setImprovement(AbstractIterator<AbstractClassifier> improvement) {
             this.improvement = improvement;
-            this.iterator = new AbstractIterator<AbstractClassifier>() {
+        }
 
-                private AbstractIterator<AbstractClassifier> previous;
+        public void setIterator(AbstractIterator<AbstractClassifier> iterator) {
+            this.iterator = iterator;
+        }
 
-                @Override
-                public void add(final AbstractClassifier item) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public AbstractIterator<AbstractClassifier> iterator() {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return source.hasNext() || improvement.hasNext();
-                }
-
-                @Override
-                public AbstractClassifier next() {
-                    boolean anotherSource = source.hasNext();
-                    boolean anotherImprovement = improvement.hasNext();
-                    boolean choice = anotherSource;
-                    AbstractClassifier classifier;
-                    if (anotherSource && anotherImprovement) {
-                        choice = trainRandom.nextBoolean();
-                    }
-                    if (choice) {
-                        previous = source;
-                        classifier = nextSource();
-                    } else {
-                        previous = improvement;
-                        classifier = nextImprovement();
-                    }
-                    return classifier;
-                }
-
-                @Override
-                public void remove() {
-                    previous.remove();
-                }
-            };
+        public void setSelector(KBestSelector<Benchmark, Double> selector) {
             this.selector = selector;
-            this.evaluator = new BespokeTrainEstimateEvaluator();
+        }
+
+        public void setEvaluator(Evaluator evaluator) {
+            this.evaluator = evaluator;
         }
 
         private AbstractClassifier nextSource() {
@@ -406,6 +389,22 @@ public class Ee
         public Evaluator getEvaluator() {
             return evaluator;
         }
+
+        public String getOfflinePath() {
+            return offlinePath;
+        }
+
+        public void setOfflinePath(String offlinePath) {
+            this.offlinePath = offlinePath;
+        }
+
+        public Function<Instances, ParameterSpace> getParameterSpaceFunction() {
+            return parameterSpaceFunction;
+        }
+
+        public void setParameterSpaceFunction(Function<Instances, ParameterSpace> parameterSpaceFunction) {
+            this.parameterSpaceFunction = parameterSpaceFunction;
+        }
     }
 
     public static void main(String[] args) throws
@@ -434,19 +433,51 @@ public class Ee
 //        }
 //        System.out.println(testResults.getAcc());
         long seed = 0;
-        String username = "vte14wgu";
+        String username = "goastler";
         Instances[] dataset = sampleDataset("/home/" + username + "/Projects/datasets/Univariate2018/", "GunPoint", (int) seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
-        List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
+        List<String> names = Arrays.asList(
+                "ED_1NN",
+                "TUNED_DTW_1NN",
+                "DTW_1NN",
+                "TUNED_DDTW_1NN",
+                "DDTW_1NN",
+                "TUNED_WDTW_1NN",
+                "TUNED_WDDTW_1NN",
+                "TUNED_LCSS_1NN",
+                "TUNED_MSM_1NN",
+                "TUNED_ERP_1NN",
+                "TUNED_TWED_1NN"
+        );
         names = new ArrayList<>(names);
+        List<Function<Instances, ParameterSpace>> functions = Arrays.asList(
+                i -> DistanceMeasureParameterSpaces.buildEdParameterSpace(),
+                DistanceMeasureParameterSpaces::buildDtwParameterSpace,
+                i -> DistanceMeasureParameterSpaces.buildFullDtwParameterSpace(),
+                DistanceMeasureParameterSpaces::buildDdtwParameterSpace,
+                i -> DistanceMeasureParameterSpaces.buildFullDdtwParameterSpace(),
+                i -> DistanceMeasureParameterSpaces.buildWdtwParameterSpace(),
+                i -> DistanceMeasureParameterSpaces.buildWddtwParameterSpace(),
+                DistanceMeasureParameterSpaces::buildLcssParameterSpace,
+                i -> DistanceMeasureParameterSpaces.buildMsmParameterSpace(),
+                DistanceMeasureParameterSpaces::buildErpParameterSpace,
+                i -> DistanceMeasureParameterSpaces.buildTwedParameterSpace()
+        );
+        Ee ee = new Ee();
+        String option = "trnslp,1.0";
+        ee.setTrainNeighbourhoodSizeLimitPercentage(1.0);
+//        ee.setOptions(option.split(",")); // todo
+        String resultsPath = "/home/goastler/Projects/tsml/results/";
         for(int i = 0; i < names.size(); i++) {
             String name = names.get(i);
-            name += ",trnslp,1.0";
-            names.set(i, name);
+            name += "," + option;
+            name += "/Predictions/" + train.relationName();
+            Member member = ee.new Member();
+            member.setParameterSpaceFunction(functions.get(i));
+            member.setOfflinePath(resultsPath + name);
+            ee.getMembers().add(member);
         }
-        Ee ee = new Ee();
-        ee.setOfflineBuildClassifierResultsDirPath("/home/vte14wgu/Projects/tsml/results/");
 //        ee.getLogger().setLevel(Level.OFF);
         ee.setTrainSeed(seed);
         ee.setTestSeed(seed);
@@ -496,15 +527,26 @@ public class Ee
             }
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             // todo mem / build time / etc
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            trainResults.setBuildTime(trainTimer.getTimeNanos());
+            trainResults.setParas(StringUtilities.join(",", getOptions()));
+            trainTimer.lap();
+            try {
+                trainResults.setMemory(SizeOf.deepSizeOf(this));
+            } catch (Exception ignored) {
+
+            }
+            if(trainResultsPath != null) {
+                trainResults.writeFullResultsToFile(trainResultsPath);
+            }
             if(trainResultsPath != null) {
                 trainResults.writeFullResultsToFile(trainResultsPath);
                 trainTimer.resetClock();
             }
-            trainTimer.lap();
         }
     }
 
-    private void buildClassifierOnline() throws
+    private void build() throws
                                          Exception {
         loadFromCheckpoint();
         while (memberIterator.hasNext() && withinTrainTimeLimit()) {
@@ -512,7 +554,15 @@ public class Ee
             AbstractIterator<AbstractClassifier> iterator = member.getIterator();
             AbstractClassifier classifier = iterator.next();
             iterator.remove();
-            ClassifierResults trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
+            ClassifierResults trainResults;
+            if(offlineBuild) {
+                trainTimer.lap();
+                trainResults = lookupTrainResults(classifier, member.getOfflinePath());
+                trainTimer.add(trainResults.getBuildTime());
+                trainTimer.resetClock();
+            } else {
+                trainResults = member.getEvaluator().evaluate(classifier, trainInstances);
+            }
             Benchmark benchmark = new Benchmark(classifier, trainResults);
             logger.info(trainResults.getAcc() + " for " + classifier.toString() + " " + StringUtilities.join(", ", classifier.getOptions()));
             member.getSelector().add(benchmark);
@@ -526,36 +576,32 @@ public class Ee
         }
     }
 
-    private void buildClassifierOffline() throws
-                                          Exception {
-        trainTimer.lap();
-        String postfix = "/Predictions/" + trainInstances.relationName() + "/";
-        for(String name : offlineBuildClassifierNames) {
-            File resultsDir = new File(offlineBuildClassifierResultsDirPath, name + postfix);
-            File[] files = resultsDir.listFiles(file -> {
+    private ClassifierResults lookupTrainResults(AbstractClassifier classifier, String... paths) throws Exception {
+        //        String postfix = "/Predictions/" + trainInstances.relationName() + "/"; // todo put postfix in experiments
+        String[] options = classifier.getOptions();
+        for(String path : paths) {
+            if(path == null) {
+                throw new IllegalStateException("null path");
+            }
+            File dir = new File(path);
+            File[] files = dir.listFiles(file -> {
                 String name1 = file.getName();
                 return name1.startsWith("fold" + trainSeed + "_") && file.isFile();
             });
             if(files == null || files.length == 0) {
                 // no parameters, therefore should already have train file
-                files = new File[] {new File(resultsDir, "trainFold" + trainSeed + ".csv")};
+                files = new File[] {new File(dir, "trainFold" + trainSeed + ".csv")};
             }
-            trainTimer.resetClock();
-            KBestSelector<Benchmark, Double> selector = buildSelector();
-            Member member = new Member(null, null, selector);
-            members.add(member);
             for(File file : files) {
                 ClassifierResults trainResults = new ClassifierResults();
                 trainResults.loadResultsFromFile(file.getPath());
-                AbstractClassifier classifier = buildKnn();
-                classifier.setOptions(trainResults.getParas().split(","));
-                trainTimer.add(trainResults.getBuildTimeInNanos());
-                trainTimer.resetClock();
-                selector.add(new Benchmark(classifier, trainResults));
-                trainTimer.lap();
+                System.out.println(trainResults.getParas() + " vs " + StringUtilities.join(",", options));
+                if(StringUtilities.equalPairs(trainResults.getParas().split(","), options)) {
+                    return trainResults;
+                }
             }
         }
-        trainTimer.resetClock();
+        throw new IllegalStateException("offline train results not found for " + StringUtilities.join(",", options));
     }
 
     private void pickConstituents() throws
@@ -570,8 +616,8 @@ public class Ee
 
     private void buildOfflineConstituents() throws
                                             Exception {
+        trainTimer.lap();
         if(offlineBuild) {
-            trainTimer.lap();
             for(Benchmark benchmark : constituents) {
                 Classifier classifier = benchmark.getClassifier();
                 if(classifier instanceof TrainAccuracyEstimator) {
@@ -582,72 +628,113 @@ public class Ee
                     classifier.buildClassifier(trainInstances);
                 }
             }
-            trainTimer.resetClock();
         }
+        trainTimer.resetClock();
     }
 
     @Override
     public void buildClassifier(Instances trainInstances) throws
                                                           Exception {
-        setup(trainInstances);
-        if(offlineBuild) {
-            buildClassifierOffline();
-        } else {
-            buildClassifierOnline();
-        }
+        setupTrain(trainInstances);
+        build();
         pickConstituents();
         buildOfflineConstituents();
         buildTrainEstimate();
         trainTimer.lap();
     }
 
-    private void setup(Instances trainInstances) {
+    private void setupTrain(Instances trainInstances) {
+        trainTimer.resetClock();
         if(resetTrainEnabled) {
             trainTimer.resetTime();
-            trainTimer.resetClock();
             resetTrainEnabled = false;
             if(trainSeed == null) {
                 logger.warning("train seed not set");
-            }
-            if(testSeed == null) {
-                logger.warning("test seed not set");
+            } else {
+                trainRandom.setSeed(trainSeed);
             }
             if(trainInstances.isEmpty()) {
                 throw new IllegalArgumentException("train instances empty");
             }
-            if(parameterSpaceFunctions.isEmpty()) {
+            if(members.isEmpty()) {
                 throw new IllegalStateException("no constituents given");
-            }
-            if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
-                trainNeighbourhoodSizeLimit = (int) (trainNeighbourhoodSizeLimitPercentage * trainInstances.size());
             }
             derivativeCache = null;
             this.trainInstances = trainInstances;
-            members = new ArrayList<>();
-            if(!offlineBuild) {
-                memberIterator = new RandomIterator<>(trainRandom);
-                for (Function<Instances, ParameterSpace> function : parameterSpaceFunctions) {
-                    ParameterSpace parameterSpace = function.apply(trainInstances);
-                    parameterSpace.removeDuplicateParameterSets();
-                    if (parameterSpace.size() > 0) {
-                        AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
-                        ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
-                        ClassifierIterator classifierIterator = new ClassifierIterator();
-                        classifierIterator.setParameterSetIterator(parameterSetIterator);
-                        classifierIterator.setSupplier(this::buildKnn);
-                        Member member = new Member(classifierIterator, new RandomIterator<>(trainRandom), buildSelector());
-                        memberIterator.add(member);
-                        members.add(member);
-                    }
+            memberIterator = new RandomIterator<>(trainRandom);
+            for (Member member : members) {
+                ParameterSpace parameterSpace = member.getParameterSpaceFunction().apply(trainInstances);
+                parameterSpace.removeDuplicateParameterSets();
+                if (parameterSpace.size() > 0) {
+                    AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
+                    ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
+                    ClassifierIterator classifierIterator = new ClassifierIterator();
+                    classifierIterator.setParameterSetIterator(parameterSetIterator);
+                    classifierIterator.setSupplier(this::buildKnn);
+                    member.setSource(classifierIterator);
+                    member.setImprovement(new RandomIterator<>(trainRandom));
+                    member.setIterator(new AbstractIterator<AbstractClassifier>() {
+
+                        private AbstractIterator<AbstractClassifier> previous;
+
+                        @Override
+                        public void add(final AbstractClassifier item) {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
+                        public AbstractIterator<AbstractClassifier> iterator() {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
+                        public boolean hasNext() {
+                            return member.getSource().hasNext() || member.getImprovement().hasNext();
+                        }
+
+                        @Override
+                        public AbstractClassifier next() {
+                            boolean anotherSource = member.getSource().hasNext();
+                            boolean anotherImprovement = member.getImprovement().hasNext();
+                            boolean choice = anotherSource;
+                            AbstractClassifier classifier;
+                            if (anotherSource && anotherImprovement) {
+                                choice = trainRandom.nextBoolean();
+                            }
+                            if (choice) {
+                                previous = member.getSource();
+                                classifier = member.nextSource();
+                            } else {
+                                previous = member.getImprovement();
+                                classifier = member.nextImprovement();
+                            }
+                            return classifier;
+                        }
+
+                        @Override
+                        public void remove() {
+                            previous.remove();
+                        }
+                    });
+                    member.setSelector(buildSelector());
                 }
             }
-            trainTimer.lap();
+            memberIterator.addAll(members);
         }
+        if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
+            trainNeighbourhoodSizeLimit = (int) (trainNeighbourhoodSizeLimitPercentage * trainInstances.size());
+        }
+        trainTimer.lap();
     }
 
     private AbstractClassifier buildKnn() {
         Knn knn = new Knn();
-        knn.setTrainNeighbourhoodSizeLimit(minTrainNeighbourhoodSizeLimit);
+        if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage) || trainNeighbourhoodSizeLimit >= 0) {
+            knn.setTrainNeighbourhoodSizeLimit(trainNeighbourhoodSizeLimit);
+            knn.setTrainNeighbourhoodSizeLimitPercentage(trainNeighbourhoodSizeLimitPercentage);
+        } else {
+            knn.setTrainNeighbourhoodSizeLimit(minTrainNeighbourhoodSizeLimit);
+        }
         if(trainSeed != null) knn.setTrainSeed(trainSeed);
         if(testSeed != null) knn.setTestSeed(testSeed);
         return knn;
@@ -684,14 +771,6 @@ public class Ee
             return knn;
         }
         throw new UnsupportedOperationException();
-    }
-
-    public List<Function<Instances, ParameterSpace>> getParameterSpaceFunctions() {
-        return parameterSpaceFunctions;
-    }
-
-    public void setParameterSpaceFunctions(List<Function<Instances, ParameterSpace>> parameterSpaceFunctions) {
-        this.parameterSpaceFunctions = parameterSpaceFunctions;
     }
 
     @Override
