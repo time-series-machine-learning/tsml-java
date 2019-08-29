@@ -468,7 +468,7 @@ public class Ee
         String option = "trnslp,1.0";
         ee.setTrainNeighbourhoodSizeLimitPercentage(1.0);
 //        ee.setOptions(option.split(",")); // todo
-        String resultsPath = "/home/goastler/Projects/tsml/results/";
+        String resultsPath = "/home/goastler/Projects/tsml/results3/";
         for(int i = 0; i < names.size(); i++) {
             String name = names.get(i);
             name += "," + option;
@@ -595,7 +595,7 @@ public class Ee
             for(File file : files) {
                 ClassifierResults trainResults = new ClassifierResults();
                 trainResults.loadResultsFromFile(file.getPath());
-                System.out.println(trainResults.getParas() + " vs " + StringUtilities.join(",", options));
+//                System.out.println(trainResults.getParas() + " vs " + StringUtilities.join(",", options));
                 if(StringUtilities.equalPairs(trainResults.getParas().split(","), options)) {
                     return trainResults;
                 }
@@ -608,7 +608,7 @@ public class Ee
                                     Exception {
         constituents = new ArrayList<>();
         for(Member member : members) {
-            List<Benchmark> selected = member.getSelector().getSelectedAsList();
+            List<Benchmark> selected = member.getSelector().getSelectedAsList(trainRandom);
             Benchmark choice = ArrayUtilities.randomChoice(selected, trainRandom);
             constituents.add(choice);
         }

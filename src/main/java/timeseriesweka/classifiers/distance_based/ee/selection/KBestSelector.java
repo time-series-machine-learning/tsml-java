@@ -41,10 +41,10 @@ public class KBestSelector<A, B> implements Copyable
          return ArrayUtilities.flatten(map);
      }
 
-    public List<A> getSelectedAsList() {
-        throw new UnsupportedOperationException();
-//        TreeMap<B, List<A>> map = getSelectedAsMap();
-//        return ArrayUtilities.flatten(map);
+    public List<A> getSelectedAsList(Random random) {
+        // todo sort this out
+        TreeMap<B, List<A>> map = getSelectedAsMap(random);
+        return ArrayUtilities.flatten(map);
     }
 
     @Override
