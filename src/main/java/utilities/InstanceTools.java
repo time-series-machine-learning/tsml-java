@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 
-import scala.tools.nsc.Global;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -766,7 +765,7 @@ public class InstanceTools {
         return combo;
     }
 
-    public static Instances shortenInstances(Instances data, double proportionRemaining){
+    public static Instances shortenInstances(Instances data, double proportionRemaining, boolean normalise){
         if (proportionRemaining > 1 || proportionRemaining <= 0){
             throw new RuntimeException("Remaining series length propotion must be greater than 0 and less than or equal to 1");
         }
@@ -778,6 +777,17 @@ public class InstanceTools {
         if (proportionRemaining == 1) return shortenedData;
         int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
         if (newSize == 0) newSize = 1;
+
+        if (normalise) {
+            Instances tempData = truncateInstances(data, data.numAttributes()-1, newSize);
+            tempData = zNormaliseWithClass(tempData);
+
+            for (int i = 0; i < data.numInstances(); i++){
+                for (int n = 0; n < tempData.numAttributes()-1; n++){
+                    shortenedData.get(i).setValue(n, tempData.get(i).value(n));
+                }
+            }
+        }
 
         for (int i = 0; i < data.numInstances(); i++){
             for (int n = data.numAttributes()-2; n >= newSize; n--){
@@ -810,6 +820,50 @@ public class InstanceTools {
         for (int i = 0; i < fullLength - newLength; i++){
             newInst.deleteAttributeAt(newLength);
         }
+        return newInst;
+    }
+
+    public static Instances zNormaliseWithClass(Instances data) {
+        Instances newData = new Instances(data, 0);
+
+        for (int i = 0; i < data.numInstances(); i++){
+            newData.add(zNormaliseWithClass(data.get(i)));
+        }
+
+        return newData;
+    }
+
+    public static Instance zNormaliseWithClass(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+
+        double meanSum = 0;
+        int length = newInst.numAttributes()-1;
+
+        if (length < 2) return newInst;
+
+        for (int i = 0; i < length; i++){
+            meanSum += newInst.value(i);
+        }
+
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < length; i++){
+            double temp = newInst.value(i) - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < length; i++){
+            newInst.setValue(i, (newInst.value(i) - mean) / stdev);
+        }
+
         return newInst;
     }
 }

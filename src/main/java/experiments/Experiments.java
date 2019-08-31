@@ -47,8 +47,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import static utilities.InstanceTools.shortenInstances;
-import static utilities.InstanceTools.truncateInstances;
+
+import static utilities.InstanceTools.*;
 
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
@@ -517,6 +517,9 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
         
         try {
+            trainSet = zNormaliseWithClass(trainSet);
+            testSet = zNormaliseWithClass(testSet);
+
             //Setup train results
             if (expSettings.generateErrorEstimateOnTrainSet) 
                 trainResults = findOrSetUpTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);
@@ -560,13 +563,7 @@ public class Experiments  {
                             continue;
                         }
 
-                        Instances shortData;
-                        if (classifier instanceof SR1CF1){
-                            shortData = truncateInstances(testSet, i);
-                        }
-                        else {
-                            shortData = shortenInstances(testSet, i);
-                        }
+                        Instances shortData = shortenInstances(testSet, i, true);
                         long testBenchmark = findBenchmarkTime(expSettings);
 
                         testResults = evaluateClassifier(expSettings, classifier, shortData);

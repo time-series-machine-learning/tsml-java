@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static experiments.ExperimentsEarlyClassification.defaultTimeStamps;
+import static utilities.InstanceTools.zNormaliseWithClass;
 import static utilities.Utilities.argMax;
 
 public class ProbabilityThreshold extends AbstractClassifier {
@@ -41,11 +42,14 @@ public class ProbabilityThreshold extends AbstractClassifier {
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
+        data = zNormaliseWithClass(data);
+
         if (addTruncatedTrainInstances){
             if (truncationTimeStamps == null) truncationTimeStamps = defaultTimeStamps(data.numAttributes()-1);
             if (extraTrainInstances == -1) extraTrainInstances = truncationTimeStamps.length * data.numInstances();
 
             //todo
+            //shortenData with normalisation
         }
 
         classifier.buildClassifier(data);
@@ -86,6 +90,7 @@ public class ProbabilityThreshold extends AbstractClassifier {
             fullSeries = false;
         }
 
+        instance = zNormaliseWithClass(instance);
         double[] probs = classifier.distributionForInstance(instance);
 
         if (fullSeries || argMax(probs, rand) > threshold) {

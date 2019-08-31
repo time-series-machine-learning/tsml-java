@@ -6,6 +6,7 @@ import experiments.data.DatasetLoading;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -15,8 +16,7 @@ import java.util.Random;
 import static experiments.ExperimentsEarlyClassification.defaultTimeStamps;
 import static utilities.ArrayUtilities.mean;
 import static utilities.GenericTools.linSpace;
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.InstanceTools.truncateInstances;
+import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
 public class SR1CF1 extends AbstractClassifier {
@@ -59,6 +59,7 @@ public class SR1CF1 extends AbstractClassifier {
 
         for (int i = 0; i < timeStamps.length; i++){
             Instances truncatedData = truncateInstances(data, fullLength, timeStamps[i]);
+            truncatedData = zNormaliseWithClass(truncatedData);
             classifiers[i] = AbstractClassifier.makeCopy(classifierType);
             classifiers[i].buildClassifier(truncatedData);
 
@@ -122,6 +123,7 @@ public class SR1CF1 extends AbstractClassifier {
         }
         if (idx == -1) throw new Exception("Input instance length does not match any given timestamps.");
 
+        instance = zNormaliseWithClass(instance);
         double[] probs = classifiers[idx].distributionForInstance(instance);
 
         if (idx == timeStamps.length-1 || stoppingRule(probs, timeStamps[idx])){

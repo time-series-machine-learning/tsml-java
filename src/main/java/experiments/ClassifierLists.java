@@ -17,9 +17,10 @@ package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
-import timeseriesweka.classifiers.frequency_based.CRISE;
+import timeseriesweka.classifiers.frequency_based.cRISE;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.interval_based.cTSF;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
@@ -109,6 +110,7 @@ public class ClassifierLists {
                 break;
             case "ProximityForest":
                 c = new ProximityForestWrapper();
+                ((ProximityForestWrapper)c).setSeed(fold);
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -339,13 +341,30 @@ public class ClassifierLists {
                 ((HiveCote)c).setContract(24);
                 break; 
             case "RISE":
-                c=new CRISE();
-                ((CRISE) c).setSeed(fold);
-                ((CRISE) c).setTransformType(CRISE.TransformType.ACF_PS);
+                c=new cRISE();
+                ((cRISE) c).setSeed(fold);
+                ((cRISE) c).setTransformType(cRISE.TransformType.ACF_PS);
                 break;
             case "TSF":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
+                break;
+
+            case "cBOSS2Hour":
+                c = new cBOSS();
+                ((cBOSS) c).setSeed(fold);
+                ((cBOSS) c).setHourLimit(2);
+                break;
+            case "cRISE2Hour":
+                c=new cRISE();
+                ((cRISE) c).setSeed(fold);
+                ((cRISE) c).setTransformType(cRISE.TransformType.ACF_PS);
+                ((cRISE) c).setHourLimit(2);
+                break;
+            case "cTSF2Hour":
+                c=new cTSF();
+                ((cTSF)c).setSeed(fold);
+                ((cTSF) c).setHourLimit(2);
                 break;
 
            default:

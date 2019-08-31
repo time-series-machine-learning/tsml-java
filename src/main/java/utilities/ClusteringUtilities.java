@@ -63,6 +63,8 @@ public class ClusteringUtilities {
         double meanSum = 0;
         int length = inst.numAttributes();
 
+        if (length < 2) return;
+
         for (int i = 0; i < length; i++){
             meanSum += inst.value(i);
         }
