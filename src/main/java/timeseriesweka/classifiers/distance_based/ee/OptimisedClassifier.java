@@ -53,7 +53,7 @@ public class OptimisedClassifier extends AbstractClassifier implements SeedableC
             Benchmark benchmark = tuned.next();
             logger.info(tuned.getSelector().getExtractor().apply(benchmark) + " for " + benchmark.getClassifier().toString() + " " + StringUtilities.join(", ", benchmark.getClassifier().getOptions()));
         }
-        List<Benchmark> selected = tuned.getSelector().getSelectedAsList();
+        List<Benchmark> selected = tuned.getSelector().getSelectedAsList(trainRandom);
         logger.info("Best: "); // todo stringbuilder
         for(Benchmark benchmark : selected) {
             logger.info(tuned.getSelector().getExtractor().apply(benchmark) + " for " + benchmark.getClassifier().toString() + " " + StringUtilities.join(", ", benchmark.getClassifier().getOptions()));

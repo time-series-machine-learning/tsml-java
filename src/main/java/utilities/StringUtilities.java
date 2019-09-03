@@ -1,5 +1,7 @@
 package utilities;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -38,5 +40,25 @@ public class StringUtilities {
             strings[i] = String.valueOf(values[i]);
         }
         return join(separator, strings);
+    }
+
+    public static HashMap<String, String> pairValuesToMap(String... pairValues) {
+        HashMap<String, String> map = new HashMap<>();
+        forEachPair(pairValues, map::put);
+        return map;
+    }
+
+    public static boolean equalPairs(String[] a, String[] b) {
+        HashMap<String, String> mapA = pairValuesToMap(a);
+        HashMap<String, String> mapB = pairValuesToMap(b);
+        for(Map.Entry<String, String> entry : mapA.entrySet()) {
+            String valueA = entry.getValue();
+            String keyA = entry.getKey();
+            String valueB = mapB.get(keyA);
+            if(valueB == null || !valueA.equals(valueB)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

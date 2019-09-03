@@ -1354,8 +1354,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
    
     @Override
     public String toString() {                
-        return "acc: " + getAcc();
-        //return generateFirstLine();
+//        return "acc: " + getAcc();
+        return generateFirstLine();
     }
     
     public String writeFullResultsToString() throws Exception {         

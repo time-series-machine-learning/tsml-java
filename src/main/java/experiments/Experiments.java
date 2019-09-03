@@ -15,7 +15,6 @@
 package experiments;
 
 import com.beust.jcommander.converters.IParameterSplitter;
-import timeseriesweka.classifiers.distance_based.ee.Ee;
 import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.j48.NoSplit;
@@ -550,7 +549,13 @@ public class Experiments  {
             //otherwise, defined by this as default
             trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
         String testFoldFilename = "testFold" + expSettings.foldId + ".csv";       
-        
+
+        if(CollateResults.validateSingleFoldFile(resultsPath + trainFoldFilename)) {
+            return -1;
+        } else {
+//            if(!new File(resultsPath + trainFoldFilename).createNewFile()) return -2;
+        }
+
         ClassifierResults trainResults = null;
         ClassifierResults testResults = null;
         
@@ -593,7 +598,7 @@ public class Experiments  {
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    new File(resultsPath + testFoldFilename).createNewFile();
+//                    new File(resultsPath + testFoldFilename).createNewFile();
                     long testBenchmark = findBenchmarkTime(expSettings);
                     
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
