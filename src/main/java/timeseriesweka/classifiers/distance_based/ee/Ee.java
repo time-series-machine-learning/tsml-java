@@ -41,7 +41,7 @@ public class Ee
                Checkpointable,
                Copyable,
                Serializable,
-               Seedable {
+               SeedableClassifier {
 
     private Random trainRandom = new Random();
     private Random testRandom = new Random();

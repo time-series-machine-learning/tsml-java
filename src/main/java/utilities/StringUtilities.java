@@ -1,9 +1,12 @@
 package utilities;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 public class StringUtilities {
+
+
 
     public static String join(String separator, String... parts) {
         if(parts.length == 0) {
@@ -27,5 +30,13 @@ public class StringUtilities {
             String value = options[i + 1];
             function.accept(key, value);
         }
+    }
+
+    public static String join(String separator, double... values) {
+        String[] strings = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            strings[i] = String.valueOf(values[i]);
+        }
+        return join(separator, strings);
     }
 }

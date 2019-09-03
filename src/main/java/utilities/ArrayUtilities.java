@@ -1,6 +1,7 @@
 package utilities;
 
 import timeseriesweka.classifiers.distance_based.ee.Benchmark;
+import timeseriesweka.classifiers.distance_based.knn.sampling.DistributedRandomSampler;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -35,7 +36,7 @@ public class ArrayUtilities {
         return sum;
     }
 
-    public static void normaliseInPlace(double[] array) {
+    public static double[] normaliseInPlace(double[] array) {
         double sum = sum(array);
         if(sum == 0) {
             throw new IllegalArgumentException("sum of zero");
@@ -43,6 +44,19 @@ public class ArrayUtilities {
         for(int i = 0; i < array.length; i++) {
             array[i] /= sum;
         }
+        return array;
+    }
+
+    public static double[] primitiveIntToDouble(int[] array) {
+        double[] doubles = new double[array.length];
+        for (int i = 0; i < array.length; i++) {
+            doubles[i] = array[i];
+        }
+        return doubles;
+    }
+
+    public static double[] normaliseInPlace(int[] array) {
+        return normaliseInPlace(primitiveIntToDouble(array));
     }
 
     public static void multiplyInPlace(double[] array, double multiplier) {
@@ -298,7 +312,7 @@ public class ArrayUtilities {
         return list;
     }
 
-    public static <A> List<Integer> bestIndices(List<A> list, Comparator<A> comparator) {
+    public static <A> List<Integer> bestIndices(List<? extends A> list, Comparator<? super A> comparator) {
         List<Integer> indices = new ArrayList<>();
         if(!list.isEmpty()) {
             indices.add(0);
@@ -316,16 +330,16 @@ public class ArrayUtilities {
         return indices;
     }
 
-    public static <A> A randomChoice(List<A> list, Random random) {
+    public static <A> A randomChoice(List<? extends A> list, Random random) {
         return list.get(random.nextInt(list.size()));
     }
 
-    public static <A> int bestIndex(List<A> list, Comparator<A> comparator, Random random) {
+    public static <A> int bestIndex(List<? extends A> list, Comparator<? super A> comparator, Random random) {
         List<Integer> indices = bestIndices(list, comparator);
         return randomChoice(indices, random);
     }
 
-    public static <A extends Comparable<A>> int bestIndex(List<A> list, Random random) {
+    public static <A extends Comparable<? super B>, B extends A> int bestIndex(List<? extends B> list, Random random) {
         return bestIndex(list, Comparable::compareTo, random);
     }
 
@@ -378,4 +392,8 @@ public class ArrayUtilities {
         return boxed;
     }
 
+    public static <A extends Comparable<? super B>, B extends A> A best(final List<? extends B> list, final Random random) {
+        int bestIndex = bestIndex(list, random);
+        return list.get(bestIndex);
+    }
 }

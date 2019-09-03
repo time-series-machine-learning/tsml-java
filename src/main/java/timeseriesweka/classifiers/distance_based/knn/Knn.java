@@ -2,14 +2,18 @@ package timeseriesweka.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
 import timeseriesweka.classifiers.distance_based.ee.selection.KBestSelector;
+import timeseriesweka.classifiers.distance_based.knn.sampling.DistributedRandomSampler;
 import utilities.cache.Cache;
 import utilities.cache.DupeCache;
 import utilities.*;
 import utilities.iteration.AbstractIterator;
+import utilities.iteration.linear.LinearIterator;
+import utilities.iteration.linear.RoundRobinIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -24,7 +28,8 @@ import java.util.logging.Logger;
 import static experiments.data.DatasetLoading.sampleDataset;
 import static timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure.DISTANCE_MEASURE_KEY;
 
-public class Knn extends AbstractClassifier implements Options, Seedable, TrainTimeContractable, TestTimeContractable, Copyable, Serializable, TrainAccuracyEstimator,
+public class Knn extends AbstractClassifier implements Options,
+                                                       SeedableClassifier, TrainTimeContractable, TestTimeContractable, Copyable, Serializable, TrainAccuracyEstimator,
                                                        Checkpointable {
 
     private static final String K_KEY = "k";
@@ -63,6 +68,9 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     private boolean earlyAbandonEnabled = true;
     private transient boolean checkpointing = false;
     private transient Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
+    private NeighbourIterationStrategy neighbourIterationStrategy = NeighbourIterationStrategy.RANDOM; // todo copy field
+//    private AbstractMultipleLinearRegression trainTimePredictor = new OLSMultipleLinearRegression(); // todo copy field
+//    private double[][]
 
     public void setTrainRandom(final Random trainRandom) {
         this.trainRandom = trainRandom;
@@ -172,7 +180,7 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
             Exception {
         int seed = 0;
         String user = "vte14wgu";
-        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "GunPoint", seed);
+        Instances[] dataset = sampleDataset("/home/" + user + "/Projects/datasets/Univariate2018/", "DistalPhalanxTW", seed);
         Instances train = dataset[0];
         Instances test = dataset[1];
 //        ParameterSpace parameterSpace = new DtwParameterSpaceBuilder().build(train);
@@ -193,6 +201,8 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         Knn knn = new Knn();
         Dtw dtw = new Dtw();
         dtw.setWarpingWindow(-1);
+//        knn.setDistanceCacheEnabled(false);
+//        knn.setEarlyAbandonEnabled(false);
         knn.setDistanceMeasure(dtw);
         knn.setTrainSeed(seed);
         knn.setTestSeed(seed);
@@ -283,10 +293,20 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
         if(estimateTrainEnabled) {
             boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
             boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
+//            OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+//            double[][] x = new double[0][];
+//            double[] y = new double[0];
+//            int i = 0;
             trainTimer.lap();
             while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
                 boolean choice = hasRemainingTrainSearchers;
-                if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
+                if(trainSearchers.size() < trainInstances.numClasses()) { // impose minimum of # classes of train instances to produce train estimate
+                    choice = true;
+                }
+                else if(neighbourhood.size() < trainInstances.numClasses()) { // impose min number of neighbours
+                    choice = false;
+                }
+                else if (hasRemainingTrainNeighbours && hasRemainingTrainSearchers) {
                     choice = trainRandom.nextBoolean();
                 }
                 if (choice) {
@@ -299,6 +319,29 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
                 trainTimer.lap();
                 checkpoint();
                 trainTimer.resetClock();
+//                double[][] nx = new double[x.length + 1][2];
+//                double[] ny = new double[y.length + 1];
+//                System.arraycopy(y, 0, ny, 0, y.length);
+//                y = ny;
+//                y[i] = 0;
+//                for(int a = 0; a < x.length; a++) {
+//                    System.arraycopy(x[a], 0, nx[a], 0, x[a].length);
+//                }
+//                x = nx;
+//                x[i] = new double[] {neighbourhood.size(), trainSearchers.size()};
+//                try {
+//                    buildTrainEstimate();
+//                    y[i] = getTrainResults().getAcc();
+//                    System.out.println(getTrainResults().getAcc() + "," + neighbourhood.size() + "," + trainSearchers.size() + ";");
+//                    regression.newSampleData(y, x);
+//                    System.out.println(getTrainResults().getAcc() + "," + StringUtilities.join(",", regression.estimateRegressionParameters()));
+//                    double[] parameters = regression.estimateRegressionParameters();
+//                    double acc = neighbourhood.size() * parameters[1] + trainSearchers.size() * parameters[2] + parameters[0];
+//                    System.out.println(getTrainResults().getAcc() + "," + acc);
+//                } catch (Exception ignored) {
+//
+//                }
+//                i++;
             }
             buildTrainEstimate();
         }
@@ -468,11 +511,31 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     }
 
     private AbstractIterator<Instance> buildTrainInstanceIterator() {
-        RandomIterator<Instance> iterator = new RandomIterator<>();
-        iterator.setSeed(trainRandom.nextLong());
+        AbstractIterator<Instance> result;
+        switch (neighbourIterationStrategy) {
+            case RANDOM:
+                RandomIterator<Instance> iterator = new RandomIterator<>();
+                iterator.setSeed(trainRandom.nextLong());
+                result = iterator;
+                break;
+            case LINEAR:
+                result = new LinearIterator<>();
+                break;
+            case ROUND_ROBIN:
+                result = new RoundRobinIterator<>();
+                break;
+//            case DISTRIBUTED:
+//                result = new DistributedRandomSampler();
+//                break;
+//            case REGRESSED:
+//
+//                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
 //        LinearIterator<Instance> iterator = new LinearIterator<>();
-        iterator.addAll(trainInstances);
-        return iterator;
+        result.addAll(trainInstances);
+        return result;
     }
 
     private AbstractIterator<Instance> buildTrainEstimatorIterator() {
@@ -663,6 +726,14 @@ public class Knn extends AbstractClassifier implements Options, Seedable, TrainT
     @Override
     public void writeTrainEstimatesToFile(String path) {
         trainResultsPath = path;
+    }
+
+    public NeighbourIterationStrategy getNeighbourIterationStrategy() {
+        return neighbourIterationStrategy;
+    }
+
+    public void setNeighbourIterationStrategy(final NeighbourIterationStrategy neighbourIterationStrategy) {
+        this.neighbourIterationStrategy = neighbourIterationStrategy;
     }
 
     private static class Neighbour {

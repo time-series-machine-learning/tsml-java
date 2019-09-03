@@ -2,7 +2,7 @@ package timeseriesweka.classifiers.distance_based.ee;
 
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.Seedable;
+import timeseriesweka.classifiers.SeedableClassifier;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ArrayUtilities;
 import utilities.StringUtilities;
@@ -15,7 +15,7 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-public class OptimisedClassifier extends AbstractClassifier implements Seedable, TrainAccuracyEstimator, ParameterSplittable {
+public class OptimisedClassifier extends AbstractClassifier implements SeedableClassifier, TrainAccuracyEstimator, ParameterSplittable {
 
     private Tuned tuned;
     private Logger logger = Logger.getLogger(OptimisedClassifier.class.getCanonicalName());

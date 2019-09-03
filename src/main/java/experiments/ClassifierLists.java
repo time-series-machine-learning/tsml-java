@@ -25,6 +25,7 @@ import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasu
 import timeseriesweka.classifiers.distance_based.distance_measures.Ddtw;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasureParameterSpaces;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
+import timeseriesweka.classifiers.distance_based.ee.Ee;
 import timeseriesweka.classifiers.distance_based.knn.Knn;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
@@ -135,6 +136,14 @@ public class ClassifierLists {
         }
         Classifier c=null;
         switch(classifier){
+            case "EE":
+                Ee ee = new Ee();
+                ee.setTrainSeed(fold);
+                ee.setTestSeed(fold);
+                ee.setOfflineBuild(true);
+                ee.setOfflineBuildClassifierResultsDirPath(resultsPath);
+                c = ee;
+                break;
             case "TUNED_LCSS_1NN":
                 c = buildCls(fold, DistanceMeasureParameterSpaces::buildLcssParameterSpace);
                 break;
@@ -354,9 +363,9 @@ public class ClassifierLists {
 
 
 //ELASTIC CLASSIFIERS     
-            case "EE": case "ElasticEnsemble":
-                c=new ElasticEnsemble();
-                break;
+//            case "EE": case "ElasticEnsemble":
+//                c=new ElasticEnsemble();
+//                break;
             case "DTW":
                 c=new DTW1NN();
                 ((DTW1NN )c).setWindow(1);

@@ -15,6 +15,7 @@
 package experiments;
 
 import com.beust.jcommander.converters.IParameterSplitter;
+import timeseriesweka.classifiers.distance_based.ee.Ee;
 import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.j48.NoSplit;
@@ -451,11 +452,27 @@ public class Experiments  {
             expSettings.incrementalParameters.add(",");
         }
         for(String incrementalParameterSet : expSettings.incrementalParameters) {
+
             String[] incrementalParameters = incrementalParameterSet.split(",");
             if(expSettings.appendIncrementalParameter && incrementalParameters.length > 0) {
                 classifierName = expSettings.classifierName + "," + incrementalParameterSet;
             }
             abstractClassifier.setOptions(incrementalParameters);
+
+            if(classifier instanceof Ee) {
+                Ee ee = (Ee) classifier;
+                List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
+                names = new ArrayList<>(names);
+                for(int i = 0; i < names.size(); i++) {
+                    String name = names.get(i);
+                    if(expSettings.appendIncrementalParameter) {
+                        name += "," + incrementalParameterSet;
+                    }
+                    names.set(i, name);
+                }
+                ee.setOfflineBuildClassifierNames(names);
+            }
+
             //Build/make the directory to write the train and/or testFold files to
             String fullWriteLocation = expSettings.resultsWriteLocation + classifierName + "/Predictions/" + expSettings.datasetName + "/";
             File f = new File(fullWriteLocation);
@@ -466,7 +483,7 @@ public class Experiments  {
             //Check whether fold already exists, if so, dont do it, just quit
             if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
                 LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-                return;
+                continue;
             }
             else {
                 Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
@@ -491,9 +508,9 @@ public class Experiments  {
 
                     targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
                     if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                        new File(targetFileName).createNewFile();
+//                        new File(targetFileName).createNewFile();
                         LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                        return;
+                        continue;
                     }
                 }
                 double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);

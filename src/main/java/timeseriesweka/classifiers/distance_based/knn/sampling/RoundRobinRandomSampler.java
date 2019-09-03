@@ -2,6 +2,8 @@ package timeseriesweka.classifiers.distance_based.knn.sampling;
 
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.linear.RoundRobinIterator;
+import utilities.iteration.random.RandomIterator;
+import utilities.samplers.RandomSampler;
 import weka.core.Instance;
 
 import java.util.*;
@@ -59,7 +61,7 @@ public class RoundRobinRandomSampler
     public void add(final Instance instance) {
         double classValue = instance.classValue();
         AbstractIterator<Instance> instanceIterator = samplers.computeIfAbsent(classValue, key -> {
-            AbstractIterator<Instance> sampler = new RandomSampler(random.nextLong());
+            AbstractIterator<Instance> sampler = new RandomIterator<>(random);
             samplerIterator.add(sampler);
             return sampler;
         });
