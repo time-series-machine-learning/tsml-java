@@ -663,54 +663,12 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             MatlabController.getInstance().discconnectMatlab();
     }
 
-    public static void main(String[] args) throws Exception {
-//        String basePath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
-////            String basePath = "Z:/Results/FinalisedUCIContinuous/";
-//
-//        MultipleClassifierEvaluation mcc = 
-//            new MultipleClassifierEvaluation("C:/JamesLPHD/analysisTest/", "testrunPWS10", 30);
-//        
-//        mcc.setTestResultsOnly(true); //as is default
-//        mcc.setBuildMatlabDiagrams(true); //as is default
-//        mcc.setCleanResults(true); //as is default
-//        mcc.setDebugPrinting(true);
-//        
-//        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-////        mcc.setUseAccuracyOnly();
-////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
-////        mcc.setUseAllStatistics();
-//        
-//        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
-//        
-//        //general rule of thumb: set/add/read the classifiers as the last thing before running
-//        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath); 
-////        mcc.readInClassifier("RandF", basePath); //
-//
-//        mcc.runComparison();  
-
-        
-//        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
-//            setTestResultsOnly(false).
-//            setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
-//            readInClassifiers(new String[] {"1NN", "C4.5"}, "Z:/Results/FinalisedUCIContinuous/").
-//            runComparison(); 
-//        new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
-////            setBuildMatlabDiagrams(true).
-////            setUseAllStatistics().
-////            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
-////            setDatasets("C:/Temp/dsets.txt").
-//            setDatasets("C:/Temp/dsets.txt"). 
-//            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups"). 
-//            setPerformPostHocDsetResultsClustering(true).
-//            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
-//            runComparison();
-
-//        workingExampleCodeRunnableOnTSCServerMachine();
-
+    private static void ee(String name, String[] a, String[] b) throws
+                             Exception {
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("/scratch/ideal_results_analysis/", "exp2", 10);
+            new MultipleClassifierEvaluation("/scratch/ideal_results_analysis/", name, 10);
 
-        mcc.setTestResultsOnly(true); //as is default
+        mcc.setTestResultsOnly(false); //as is default
         mcc.setUseAccuracyOnly();
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
@@ -798,31 +756,45 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         });
 
         //general rule of thumb: set/add/read the classifiers as the last thing before running
-        mcc.readInClassifiers(new String[] {
-            "EE,trnslp,0.1,psslp,0.1",
-            "EE,trnslp,0.1,psslp,0.5",
-            "EE,trnslp,0.1,psslp,1.0",
-            "EE,trnslp,0.5,psslp,0.1",
-            "EE,trnslp,0.5,psslp,0.5",
-            "EE,trnslp,0.5,psslp,1.0",
-            "EE,trnslp,1.0,psslp,0.1",
-            "EE,trnslp,1.0,psslp,0.5",
-            "EE,trnslp,1.0,psslp,1.0",
-        }, new String[] {
-                                  "EE N 10% P 10%",
-                                  "EE N 10% P 50%",
-                                  "EE N 10% P 100%",
-                                  "EE N 50% P 10%",
-                                  "EE N 50% P 50%",
-                                  "EE N 50% P 100%",
-                                  "EE N 100% P 10%",
-                                  "EE N 100% P 50%",
-                                  "EE N 100% P 100%",
-        },
-        "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/ee3/results6/"
+        mcc.readInClassifiers(a, b,
+                              "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/ee3/results6/"
                              );
 
         mcc.runComparison();
+    }
+
+    public static void main(String[] args) throws Exception {
+//        ee("n", new String[] {
+//            "EE,trnslp,0.1,psslp,1.0",
+//            "EE,trnslp,0.5,psslp,1.0",
+//            "EE,trnslp,1.0,psslp,1.0",
+//            }, new String[] {
+//            "EE N 10%",
+//            "EE N 50%",
+//            "EE N 100%",
+//            });
+        ee("p", new String[] {
+            "EE,trnslp,1.0,psslp,0.1",
+            "EE,trnslp,1.0,psslp,0.5",
+            "EE,trnslp,1.0,psslp,1.0",
+            }, new String[] {
+            "EE P 10%",
+            "EE P 50%",
+            "EE P 100%",
+            });
+//        ee("np", new String[] {
+//            "EE,trnslp,0.1,psslp,0.1",
+//            "EE,trnslp,0.1,psslp,0.5",
+//            "EE,trnslp,0.5,psslp,0.1",
+//            "EE,trnslp,0.5,psslp,0.5",
+//            "EE,trnslp,1.0,psslp,1.0",
+//            }, new String[] {
+//            "EE N 10% P 10%",
+//            "EE N 10% P 50%",
+//            "EE N 50% P 10%",
+//            "EE N 50% P 50%",
+//            "EE N 100% P 100%",
+//            });
     }
     
     public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {

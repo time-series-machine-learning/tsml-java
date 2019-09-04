@@ -506,7 +506,9 @@ public class Experiments  {
                                                                                        );
                     for (int i = 0; i < names.size(); i++) {
                         String name = names.get(i);
-                        if(classifierName.contains(name) || name.equals("EE")) {
+                        String constName = classifierName.split(",")[0];
+                        constName = constName.substring(3);
+                        if(constName.equals(name) || name.equals("EE")) {
                             name += "," + param;
                             name += "/Predictions/" + expSettings.datasetName;
                             Ee.Member member = ee.new Member();
@@ -522,6 +524,8 @@ public class Experiments  {
                                     .add(member);
                         }
                     }
+                    assert classifierName.equals("EE") || ((Ee) classifier).getMembers()
+                                                                           .size() == 1;
 //
 //                List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
 //                names = new ArrayList<>(names);
