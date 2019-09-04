@@ -703,9 +703,126 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups"). 
 //            setPerformPostHocDsetResultsClustering(true).
 //            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
-//            runComparison(); 
+//            runComparison();
 
-        workingExampleCodeRunnableOnTSCServerMachine();
+//        workingExampleCodeRunnableOnTSCServerMachine();
+
+        MultipleClassifierEvaluation mcc =
+            new MultipleClassifierEvaluation("/scratch/ideal_results_analysis/", "exp2", 10);
+
+        mcc.setTestResultsOnly(true); //as is default
+        mcc.setUseAccuracyOnly();
+        mcc.setBuildMatlabDiagrams(true); //as is default
+        mcc.setCleanResults(true); //as is default
+        mcc.setDebugPrinting(true);
+
+//        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
+//        mcc.setUseAccuracyOnly();
+//        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
+//        mcc.setUseAllStatistics();
+
+        mcc.setDatasets(new String[] {
+            "SonyAIBORobotSurface1",
+            "ItalyPowerDemand",
+            "MoteStrain",
+            "SonyAIBORobotSurface2",
+            "TwoLeadECG",
+            "ECGFiveDays",
+            "CBF",
+            "DiatomSizeReduction",
+            "GunPoint",
+            "Coffee",
+            "FaceFour",
+            "ArrowHead",
+            "ECG200",
+            "Symbols",
+            "ShapeletSim",
+            "BeetleFly",
+            "BirdChicken",
+            "ToeSegmentation1",
+            "ToeSegmentation2",
+            "Wine",
+            "Beef",
+            "Plane",
+            "OliveOil",
+            "SyntheticControl",
+            "Lightning7",
+            "FacesUCR",
+            "Meat",
+            "Trace",
+            "MiddlePhalanxTW",
+            "DistalPhalanxOutlineAgeGroup",
+            "DistalPhalanxTW",
+            "MiddlePhalanxOutlineAgeGroup",
+            "ProximalPhalanxOutlineAgeGroup",
+            "ProximalPhalanxTW",
+            "Herring",
+            "Car",
+            "MedicalImages",
+            "Lightning2",
+            "Ham",
+            "DistalPhalanxOutlineCorrect",
+            "MiddlePhalanxOutlineCorrect",
+            "ProximalPhalanxOutlineCorrect",
+            "InsectWingbeatSound",
+            "Mallat",
+            "SwedishLeaf",
+            "CinCECGTorso",
+            "Adiac",
+            "ECG5000",
+            "WordSynonyms",
+            "FaceAll",
+            "ChlorineConcentration",
+            "Fish",
+            "OSULeaf",
+            "CricketX",
+            "CricketY",
+            "CricketZ",
+            "FiftyWords",
+            "Yoga",
+            "TwoPatterns",
+            "PhalangesOutlinesCorrect",
+            "Strawberry",
+            "Wafer",
+            "Worms",
+            "WormsTwoClass",
+            "Earthquakes",
+            "Haptics",
+            "Computers",
+            "InlineSkate",
+//            "Phoneme",
+//            "LargeKitchenAppliances",
+//            "RefrigerationDevices",
+//            "ScreenType",
+//            "SmallKitchenAppliances",
+        });
+
+        //general rule of thumb: set/add/read the classifiers as the last thing before running
+        mcc.readInClassifiers(new String[] {
+            "EE,trnslp,0.1,psslp,0.1",
+            "EE,trnslp,0.1,psslp,0.5",
+            "EE,trnslp,0.1,psslp,1.0",
+            "EE,trnslp,0.5,psslp,0.1",
+            "EE,trnslp,0.5,psslp,0.5",
+            "EE,trnslp,0.5,psslp,1.0",
+            "EE,trnslp,1.0,psslp,0.1",
+            "EE,trnslp,1.0,psslp,0.5",
+            "EE,trnslp,1.0,psslp,1.0",
+        }, new String[] {
+                                  "EE N 10% P 10%",
+                                  "EE N 10% P 50%",
+                                  "EE N 10% P 100%",
+                                  "EE N 50% P 10%",
+                                  "EE N 50% P 50%",
+                                  "EE N 50% P 100%",
+                                  "EE N 100% P 10%",
+                                  "EE N 100% P 50%",
+                                  "EE N 100% P 100%",
+        },
+        "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/ee3/results6/"
+                             );
+
+        mcc.runComparison();
     }
     
     public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {
