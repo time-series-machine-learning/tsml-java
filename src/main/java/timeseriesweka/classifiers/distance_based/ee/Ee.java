@@ -2,6 +2,7 @@ package timeseriesweka.classifiers.distance_based.ee;
 
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.*;
@@ -16,11 +17,14 @@ import utilities.cache.CachedFunction;
 import utilities.iteration.AbstractIterator;
 import utilities.iteration.ClassifierIterator;
 import utilities.iteration.ParameterSetIterator;
+import utilities.iteration.limited.LimitedIterator;
+import utilities.iteration.linear.QueueIterator;
 import utilities.iteration.random.RandomIterator;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.OptionHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +45,8 @@ public class Ee
                Checkpointable,
                Copyable,
                Serializable,
-               SeedableClassifier {
+               SeedableClassifier,
+               Options {
 
     private Random trainRandom = new Random();
     private Random testRandom = new Random();
@@ -96,6 +101,50 @@ public class Ee
     private StopWatch trainTimer = new StopWatch();
     private StopWatch testTimer = new StopWatch();
     private transient boolean offlineBuild = false;
+    public static final String PARAMETER_SPACE_SIZE_LIMIT_KEY = "pssl";
+    public static final String PARAMETER_SPACE_SIZE_LIMIT_PERCENTAGE_KEY = "psslp";
+    private int parameterSpaceSizeLimit = -1;
+    private double parameterSpaceSizeLimitPercentage = -1;
+
+    // todo getOptions
+
+
+    @Override
+    public String[] getOptions() {
+        return new String[] {
+            Knn.TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY,
+            String.valueOf(trainNeighbourhoodSizeLimit),
+            Knn.TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY,
+            String.valueOf(trainNeighbourhoodSizeLimitPercentage),
+            PARAMETER_SPACE_SIZE_LIMIT_KEY,
+            String.valueOf(parameterSpaceSizeLimit),
+            PARAMETER_SPACE_SIZE_LIMIT_PERCENTAGE_KEY,
+            String.valueOf(parameterSpaceSizeLimitPercentage)
+        };
+    }
+
+    @Override
+    public void setOption(final String key, final String value) {
+        switch (key) {
+            case Knn.TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY:
+                setTrainNeighbourhoodSizeLimitPercentage(Double.parseDouble(value));
+                break;
+            case Knn.TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY:
+                setTrainNeighbourhoodSizeLimit(Integer.parseInt(value));
+                break;
+            case PARAMETER_SPACE_SIZE_LIMIT_KEY:
+                setParameterSpaceSizeLimit(Integer.parseInt(value));
+                break;
+            case PARAMETER_SPACE_SIZE_LIMIT_PERCENTAGE_KEY:
+                setParameterSpaceSizeLimitPercentage(Double.parseDouble(value));
+                break;
+        }
+    }
+
+    public void setOptions(String[] options) throws
+                                              Exception {
+        StringUtilities.forEachPair(options, this::setOption);
+    }
 
     public void setTrainRandom(final Random trainRandom) {
         this.trainRandom = trainRandom;
@@ -313,6 +362,22 @@ public class Ee
         this.offlineBuildClassifierNames = offlineBuildClassifierNames;
     }
 
+    public int getParameterSpaceSizeLimit() {
+        return parameterSpaceSizeLimit;
+    }
+
+    public void setParameterSpaceSizeLimit(final int parameterSpaceSizeLimit) {
+        this.parameterSpaceSizeLimit = parameterSpaceSizeLimit;
+    }
+
+    public double getParameterSpaceSizeLimitPercentage() {
+        return parameterSpaceSizeLimitPercentage;
+    }
+
+    public void setParameterSpaceSizeLimitPercentage(final double parameterSpaceSizeLimitPercentage) {
+        this.parameterSpaceSizeLimitPercentage = parameterSpaceSizeLimitPercentage;
+    }
+
     public class Member {
 
         private AbstractIterator<AbstractClassifier> source;
@@ -327,6 +392,7 @@ public class Ee
         private AbstractIterator<AbstractClassifier> iterator;
         private KBestSelector<Benchmark, Double> selector;
         private Evaluator evaluator;
+        private LimitedIterator<?> limitedIterator;
 
         public AbstractIterator<AbstractClassifier> getSource() {
             return source;
@@ -404,6 +470,14 @@ public class Ee
 
         public void setParameterSpaceFunction(Function<Instances, ParameterSpace> parameterSpaceFunction) {
             this.parameterSpaceFunction = parameterSpaceFunction;
+        }
+
+        public LimitedIterator<?> getLimitedIterator() {
+            return limitedIterator;
+        }
+
+        public void setLimitedIterator(final LimitedIterator<?> limitedIterator) {
+            this.limitedIterator = limitedIterator;
         }
     }
 
@@ -526,8 +600,6 @@ public class Ee
                                            null);
             }
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            // todo mem / build time / etc
-            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainTimer.getTimeNanos());
             trainResults.setParas(StringUtilities.join(",", getOptions()));
             trainTimer.lap();
@@ -576,29 +648,26 @@ public class Ee
         }
     }
 
-    private ClassifierResults lookupTrainResults(AbstractClassifier classifier, String... paths) throws Exception {
-        //        String postfix = "/Predictions/" + trainInstances.relationName() + "/"; // todo put postfix in experiments
+    private ClassifierResults lookupTrainResults(AbstractClassifier classifier, String path) throws Exception {
         String[] options = classifier.getOptions();
-        for(String path : paths) {
-            if(path == null) {
-                throw new IllegalStateException("null path");
-            }
-            File dir = new File(path);
-            File[] files = dir.listFiles(file -> {
-                String name1 = file.getName();
-                return name1.startsWith("fold" + trainSeed + "_") && file.isFile();
-            });
-            if(files == null || files.length == 0) {
-                // no parameters, therefore should already have train file
-                files = new File[] {new File(dir, "trainFold" + trainSeed + ".csv")};
-            }
-            for(File file : files) {
-                ClassifierResults trainResults = new ClassifierResults();
-                trainResults.loadResultsFromFile(file.getPath());
+        if(path == null) {
+            throw new IllegalStateException("null path");
+        }
+        File dir = new File(path);
+        File[] files = dir.listFiles(file -> {
+            String name1 = file.getName();
+            return name1.startsWith("fold" + trainSeed + "_") && file.isFile();
+        });
+        if(files == null || files.length == 0) {
+            // no parameters, therefore should already have train file
+            files = new File[] {new File(dir, "trainFold" + trainSeed + ".csv")};
+        }
+        for(File file : files) {
+            ClassifierResults trainResults = new ClassifierResults();
+            trainResults.loadResultsFromFile(file.getPath());
 //                System.out.println(trainResults.getParas() + " vs " + StringUtilities.join(",", options));
-                if(StringUtilities.equalPairs(trainResults.getParas().split(","), options)) {
-                    return trainResults;
-                }
+            if(StringUtilities.equalPairs(trainResults.getParas().split(","), options)) {
+                return trainResults;
             }
         }
         throw new IllegalStateException("offline train results not found for " + StringUtilities.join(",", options));
@@ -646,7 +715,15 @@ public class Ee
     private void setupTrain(Instances trainInstances) {
         trainTimer.resetClock();
         if(resetTrainEnabled) {
-            trainTimer.resetTime();
+            trainTimer.resetTime();;
+        }
+        if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
+            trainNeighbourhoodSizeLimit = (int) (trainNeighbourhoodSizeLimitPercentage * trainInstances.size());
+        }
+        if(Checks.isValidPercentage(parameterSpaceSizeLimitPercentage)) {
+            parameterSpaceSizeLimit = (int) (parameterSpaceSizeLimitPercentage * 100);
+        }
+        if(resetTrainEnabled) {
             resetTrainEnabled = false;
             if(trainSeed == null) {
                 logger.warning("train seed not set");
@@ -661,18 +738,21 @@ public class Ee
             }
             derivativeCache = null;
             this.trainInstances = trainInstances;
-            memberIterator = new RandomIterator<>(trainRandom);
+            memberIterator = new QueueIterator<>();//new RandomIterator<>(trainRandom);
             for (Member member : members) {
                 ParameterSpace parameterSpace = member.getParameterSpaceFunction().apply(trainInstances);
                 parameterSpace.removeDuplicateParameterSets();
                 if (parameterSpace.size() > 0) {
                     AbstractIterator<Integer> iterator = new RandomIterator<>(trainRandom);
                     ParameterSetIterator parameterSetIterator = new ParameterSetIterator(parameterSpace, iterator);
+                    LimitedIterator<AbstractClassifier> limitedIterator = new LimitedIterator<>();
                     ClassifierIterator classifierIterator = new ClassifierIterator();
+                    limitedIterator.setIterator(classifierIterator);
                     classifierIterator.setParameterSetIterator(parameterSetIterator);
                     classifierIterator.setSupplier(this::buildKnn);
-                    member.setSource(classifierIterator);
+                    member.setSource(limitedIterator);
                     member.setImprovement(new RandomIterator<>(trainRandom));
+                    member.setLimitedIterator(limitedIterator);
                     member.setIterator(new AbstractIterator<AbstractClassifier>() {
 
                         private AbstractIterator<AbstractClassifier> previous;
@@ -721,8 +801,8 @@ public class Ee
             }
             memberIterator.addAll(members);
         }
-        if(Checks.isValidPercentage(trainNeighbourhoodSizeLimitPercentage)) {
-            trainNeighbourhoodSizeLimit = (int) (trainNeighbourhoodSizeLimitPercentage * trainInstances.size());
+        for(Member member : members) {
+            member.getLimitedIterator().setLimit(parameterSpaceSizeLimit);
         }
         trainTimer.lap();
     }
@@ -758,7 +838,8 @@ public class Ee
         if (classifier instanceof Knn) {
             Knn knn = (Knn) classifier;
             int trainSize = knn.getTrainNeighbourhoodSizeLimit();
-            return (trainSize + 1 <= trainNeighbourhoodSizeLimit || trainSize + 1 < trainInstances.size()) && trainSize >= 0;
+            return (trainNeighbourhoodSizeLimit < 0 || trainSize + 1 <= trainNeighbourhoodSizeLimit) &&
+                   (trainSize + 1 < trainInstances.size() && trainSize >= 0);
         }
         throw new UnsupportedOperationException();
     }

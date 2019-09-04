@@ -55,7 +55,7 @@ public class StringUtilities {
             String valueA = entry.getValue();
             String keyA = entry.getKey();
             String valueB = mapB.get(keyA);
-            if(valueB == null || !valueA.equals(valueB)) {
+            if(!valueA.equals(valueB)) {
                 return false;
             }
         }

@@ -61,10 +61,10 @@ public class Knn extends AbstractClassifier implements Options,
     private ClassifierResults trainResults;
     private Cache<Instance, Instance, Double> distanceCache;
     private boolean distanceCacheEnabled = true;
-    private static final String DISTANCE_CACHE_ENABLED_KEY = "dce";
-    private static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY = "trnsl";
-    private static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
-    private static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
+    public static final String DISTANCE_CACHE_ENABLED_KEY = "dce";
+    public static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_KEY = "trnsl";
+    public static final String TRAIN_NEIGHBOURHOOD_SIZE_LIMIT_PERCENTAGE_KEY = "trnslp";
+    public static final String TRAIN_ESTIMATE_SIZE_LIMIT_KEY = "tresl";
     private boolean earlyAbandonEnabled = true;
     private transient boolean checkpointing = false;
     private transient Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
@@ -784,7 +784,7 @@ public class Knn extends AbstractClassifier implements Options,
 
         public double[] predict() {
             double[] distribution = new double[target.numClasses()];
-            TreeMap<Double, List<Neighbour>> map = selector.getSelectedAsMap();
+            TreeMap<Double, List<Neighbour>> map = selector.getSelectedAsMap(trainRandom);
             int i = 0;
             for (Map.Entry<Double, List<Neighbour>> entry : map.entrySet()) {
                 for (Neighbour neighbour : entry.getValue()) {
@@ -792,10 +792,7 @@ public class Knn extends AbstractClassifier implements Options,
                     i++;
                 }
             }
-            if(i > 1) {
-                System.out.println(i);
-                throw new UnsupportedOperationException(); // todo need to limit to k
-            }
+            assert i == k; // todo what if dataset size < k? probs should set k to same size
             return distribution;
         }
 

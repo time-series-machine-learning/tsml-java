@@ -71,8 +71,11 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 /**
  *
@@ -141,6 +144,7 @@ public class ClassifierLists {
                 ee.setTrainSeed(fold);
                 ee.setTestSeed(fold);
                 ee.setOfflineBuild(true);
+                ee.getLogger().setLevel(Level.OFF);
                 ee.setOfflineBuildClassifierResultsDirPath(resultsPath);
                 c = ee;
                 break;

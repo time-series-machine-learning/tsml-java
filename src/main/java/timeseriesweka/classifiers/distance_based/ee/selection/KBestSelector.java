@@ -27,6 +27,7 @@ public class KBestSelector<A, B> implements Copyable
             map = new TreeMap<>(map);
             Map.Entry<B, List<A>> lastEntry = map.lastEntry();
             List<A> list = new ArrayList<>(lastEntry.getValue());
+            map.put(lastEntry.getKey(), list);
             int diff = size - limit;
             while (diff > 0) {
                 diff--;

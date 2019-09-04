@@ -135,8 +135,32 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
-    
-    
+
+    public boolean isOneHotEncoded() {
+        boolean result = true;
+        for(double[] distribution : predDistributions) {
+            boolean foundOne = false;
+            for(double d : distribution) {
+                if(d == 1) {
+                    if(foundOne) {
+                        result = false;
+                        break;
+                    } else {
+                        foundOne = true;
+                    }
+                } else if(d == 0) {
+                    // move on
+                } else {
+                    // not zero or one
+                    result = false;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+
     private enum FileType { 
         /**
          * Writes/loads the first 3 lines, and all prediction info on the remaining numInstances lines

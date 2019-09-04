@@ -15,6 +15,9 @@
 package experiments;
 
 import com.beust.jcommander.converters.IParameterSplitter;
+import evaluation.tuning.ParameterSpace;
+import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasureParameterSpaces;
+import timeseriesweka.classifiers.distance_based.ee.Ee;
 import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.j48.NoSplit;
@@ -34,6 +37,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
@@ -404,95 +408,151 @@ public class Experiments  {
      * 6) If we're good to go, runs the experiment.
      */
     public static void setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
-        //todo: when we convert to e.g argparse4j for parameter passing, add a para 
-        //for location to log to file as well. for now, assuming console output is good enough
-        //for local running, and cluster output files are good enough on there. 
+        if(expSettings.parameters.isEmpty()) {
+            expSettings.parameters.add(",");
+        }
+        for(String param : expSettings.parameters) {
+            System.out.println("-----------");
+            //todo: when we convert to e.g argparse4j for parameter passing, add a para
+            //for location to log to file as well. for now, assuming console output is good enough
+            //for local running, and cluster output files are good enough on there.
 //        LOGGER.addHandler(new FileHandler()); 
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else
-            LOGGER.setLevel(Level.INFO);
-        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
-        LOGGER.log(Level.FINE, expSettings.toString());
-        
-        //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
-        //paths. would rather just use the expSettings to do it all though 
-        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
-        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
-        
-        //2019_06_03: cases in the classifier can now change the classifier name to reflect 
-        //paritcular parameters wanting to be represented as different classifiers
-        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the 
-        //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
-        //such that if the experimenter is looping over contract times, they need only create one case 
-        //in the setclassifier switch and pass one classifier name, but loop over contract time directly 
-        //
-        //so, the setClassifier has been moved to up here, previously only done after the check for 
-        //whether we abort due to the results file already existing. the instantiation of a classifier
-        //shouldn't be too much work, so despite it looking a little ugly, the call is 
-        //moved to here before the first proper usage of classifiername, such that it can 
-        //be updated first if need be
-        Classifier classifier = ClassifierLists.setClassifier(expSettings);
+            if (debug)
+                LOGGER.setLevel(Level.FINEST);
+            else
+                LOGGER.setLevel(Level.INFO);
+            DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+            LOGGER.log(Level.FINE, expSettings.toString());
 
-        AbstractClassifier abstractClassifier = (AbstractClassifier) classifier;
-        List<String> parameters = new ArrayList<>();
-        for(String str : expSettings.parameters) {
-            parameters.addAll(Arrays.asList(str.split(",")));
-        }
-        String[] parametersArray = parameters.toArray(new String[0]);
-        abstractClassifier.setOptions(parametersArray);
+            //TODO still setting these for now, since maybe certain classfiiers still use these "global"
+            //paths. would rather just use the expSettings to do it all though
+            DatasetLists.resultsPath = expSettings.resultsWriteLocation;
+            experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
 
-        if(expSettings.appendParameters && !parameters.isEmpty()) {
-            expSettings.classifierName += "," + StringUtilities.join(",", parametersArray);
-        }
+            //2019_06_03: cases in the classifier can now change the classifier name to reflect
+            //paritcular parameters wanting to be represented as different classifiers
+            //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the
+            //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
+            //such that if the experimenter is looping over contract times, they need only create one case
+            //in the setclassifier switch and pass one classifier name, but loop over contract time directly
+            //
+            //so, the setClassifier has been moved to up here, previously only done after the check for
+            //whether we abort due to the results file already existing. the instantiation of a classifier
+            //shouldn't be too much work, so despite it looking a little ugly, the call is
+            //moved to here before the first proper usage of classifiername, such that it can
+            //be updated first if need be
+            Classifier classifier = ClassifierLists.setClassifier(expSettings);
 
-        String classifierName = expSettings.classifierName;
-        if(expSettings.incrementalParameters.isEmpty()) {
-            expSettings.incrementalParameters.add(",");
-        }
-        for(String incrementalParameterSet : expSettings.incrementalParameters) {
-
-            String[] incrementalParameters = incrementalParameterSet.split(",");
-            if(expSettings.appendIncrementalParameter && incrementalParameters.length > 0) {
-                classifierName = expSettings.classifierName + "," + incrementalParameterSet;
+            AbstractClassifier abstractClassifier = (AbstractClassifier) classifier;
+            List<String> parameters = new ArrayList<>();
+            for (String str : expSettings.parameters) {
+                parameters.addAll(Arrays.asList(str.split(",")));
             }
-            abstractClassifier.setOptions(incrementalParameters);
+            String[] parametersArray = parameters.toArray(new String[0]);
+            abstractClassifier.setOptions(parametersArray);
 
-            if(classifier instanceof Ee) {
-                Ee ee = (Ee) classifier;
-                List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
-                names = new ArrayList<>(names);
-                for(int i = 0; i < names.size(); i++) {
-                    String name = names.get(i);
-                    if(expSettings.appendIncrementalParameter) {
-                        name += "," + incrementalParameterSet;
-                    }
-                    names.set(i, name);
+            String classifierName = expSettings.classifierName;
+
+            if (expSettings.appendParameters && !parameters.isEmpty()) {
+                classifierName += "," + StringUtilities.join(",", parametersArray);
+            }
+
+            if (expSettings.incrementalParameters.isEmpty()) {
+                expSettings.incrementalParameters.add(",");
+            }
+
+            String origClassifierName = classifierName;
+
+            for (String incrementalParameterSet : expSettings.incrementalParameters) {
+                classifierName = origClassifierName;
+
+                String[] incrementalParameters = incrementalParameterSet.split(",");
+                if (expSettings.appendIncrementalParameter && incrementalParameters.length > 0) {
+                    classifierName += "," + incrementalParameterSet;
                 }
-                ee.setOfflineBuildClassifierNames(names);
-            }
+                abstractClassifier.setOptions(incrementalParameters);
 
-            //Build/make the directory to write the train and/or testFold files to
-            String fullWriteLocation = expSettings.resultsWriteLocation + classifierName + "/Predictions/" + expSettings.datasetName + "/";
-            File f = new File(fullWriteLocation);
-            if (!f.exists())
-                f.mkdirs();
-            String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+                if (classifier instanceof Ee) {
+                    Ee ee = (Ee) classifier;
+                    ee.getMembers()
+                      .clear();
+                    ee.setResetTrainEnabled(true);
+                    List<String> names = Arrays.asList(
+                        "ED_1NN",
+                        "TUNED_DTW_1NN",
+                        "DTW_1NN",
+                        "TUNED_DDTW_1NN",
+                        "DDTW_1NN",
+                        "TUNED_WDTW_1NN",
+                        "TUNED_WDDTW_1NN",
+                        "TUNED_LCSS_1NN",
+                        "TUNED_MSM_1NN",
+                        "TUNED_ERP_1NN",
+                        "TUNED_TWED_1NN"
+                                                      );
+                    names = new ArrayList<>(names);
+                    List<Function<Instances, ParameterSpace>> functions = Arrays.asList(
+                        i -> DistanceMeasureParameterSpaces.buildEdParameterSpace(),
+                        DistanceMeasureParameterSpaces::buildDtwParameterSpace,
+                        i -> DistanceMeasureParameterSpaces.buildFullDtwParameterSpace(),
+                        DistanceMeasureParameterSpaces::buildDdtwParameterSpace,
+                        i -> DistanceMeasureParameterSpaces.buildFullDdtwParameterSpace(),
+                        i -> DistanceMeasureParameterSpaces.buildWdtwParameterSpace(),
+                        i -> DistanceMeasureParameterSpaces.buildWddtwParameterSpace(),
+                        DistanceMeasureParameterSpaces::buildLcssParameterSpace,
+                        i -> DistanceMeasureParameterSpaces.buildMsmParameterSpace(),
+                        DistanceMeasureParameterSpaces::buildErpParameterSpace,
+                        i -> DistanceMeasureParameterSpaces.buildTwedParameterSpace()
+                                                                                       );
+                    for (int i = 0; i < names.size(); i++) {
+                        String name = names.get(i);
+                        name += "," + param;
+                        name += "/Predictions/" + expSettings.datasetName;
+                        Ee.Member member = ee.new Member();
+                        member.setParameterSpaceFunction(functions.get(i));
+                        String tmp = "";
+                        String resultsPath = expSettings.resultsWriteLocation;
+                        if(name.contains("WD")) {
+                            tmp = "_w/";
+                            resultsPath = resultsPath.substring(0, resultsPath.length() - 1);
+                        }
+                        member.setOfflinePath(resultsPath + tmp + name);
+                        ee.getMembers()
+                          .add(member);
+                    }
+//
+//                List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
+//                names = new ArrayList<>(names);
+//                for(int i = 0; i < names.size(); i++) {
+//                    String name = names.get(i);
+//                    if(expSettings.appendIncrementalParameter) {
+//                        name += "," + incrementalParameterSet;
+//                    }
+//                    names.set(i, name);
+//                }
+                    ee.setOfflineBuildClassifierNames(names);
+                }
 
-            //Check whether fold already exists, if so, dont do it, just quit
-            if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-                continue;
-            }
-            else {
-                Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+                //Build/make the directory to write the train and/or testFold files to
+                String fullWriteLocation = expSettings.resultsWriteLocation + classifierName + "/Predictions/" + expSettings.datasetName + "/";
+                File f = new File(fullWriteLocation);
+                if (!f.exists())
+                    f.mkdirs();
+                String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
 
-                //If needed, build/make the directory to write the train and/or testFold files to
-                if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                    expSettings.supportingFilePath = fullWriteLocation;
+                //Check whether fold already exists, if so, dont do it, just quit
+                if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                    LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + targetFileName + ", exiting.");
+                    continue;
+                } else {
+                    Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
-                ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
-                // default builds a foldx/ dir in normal write dir
+                    //If needed, build/make the directory to write the train and/or testFold files to
+                    if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+                        expSettings.supportingFilePath = fullWriteLocation;
+
+                    ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
+                    // default builds a foldx/ dir in normal write dir
 //            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
 //                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
 //            if (classifier instanceof FileProducer) {
@@ -501,19 +561,20 @@ public class Experiments  {
 //                    f.mkdirs();
 //            }
 
-                //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
-                if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
-                    expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
+                    //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
+                    if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
+                        expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
 
-                    targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                    if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                        targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
+                        if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
 //                        new File(targetFileName).createNewFile();
-                        LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                        continue;
+                            LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID + ", already exists at " + targetFileName + ", exiting.");
+                            continue;
+                        }
                     }
+                    double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+                    LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
                 }
-                double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-                LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
             }
         }
     }
