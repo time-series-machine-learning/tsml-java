@@ -140,6 +140,14 @@ public class ClassifierLists {
         Classifier c=null;
         switch(classifier){
             case "EE":
+            case "EE_TUNED_DTW":
+            case "EE_TUNED_DDTW":
+            case "EE_TUNED_WDTW":
+            case "EE_TUNED_WDDTW":
+            case "EE_TUNED_LCSS":
+            case "EE_TUNED_MSM":
+            case "EE_TUNED_ERP":
+            case "EE_TUNED_TWED":
                 Ee ee = new Ee();
                 ee.setTrainSeed(fold);
                 ee.setTestSeed(fold);

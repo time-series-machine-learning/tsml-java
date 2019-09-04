@@ -506,19 +506,21 @@ public class Experiments  {
                                                                                        );
                     for (int i = 0; i < names.size(); i++) {
                         String name = names.get(i);
-                        name += "," + param;
-                        name += "/Predictions/" + expSettings.datasetName;
-                        Ee.Member member = ee.new Member();
-                        member.setParameterSpaceFunction(functions.get(i));
-                        String tmp = "";
-                        String resultsPath = expSettings.resultsWriteLocation;
-                        if(name.contains("WD")) {
-                            tmp = "_w/";
-                            resultsPath = resultsPath.substring(0, resultsPath.length() - 1);
+                        if(classifierName.contains(name) || name.equals("EE")) {
+                            name += "," + param;
+                            name += "/Predictions/" + expSettings.datasetName;
+                            Ee.Member member = ee.new Member();
+                            member.setParameterSpaceFunction(functions.get(i));
+                            String tmp = "";
+                            String resultsPath = expSettings.resultsWriteLocation;
+                            if(name.contains("WD")) {
+                                tmp = "_w/";
+                                resultsPath = resultsPath.substring(0, resultsPath.length() - 1);
+                            }
+                            member.setOfflinePath(resultsPath + tmp + name);
+                            ee.getMembers()
+                                    .add(member);
                         }
-                        member.setOfflinePath(resultsPath + tmp + name);
-                        ee.getMembers()
-                          .add(member);
                     }
 //
 //                List<String> names = Arrays.asList("TUNED_DTW_1NN", "TUNED_DDTW_1NN", "TUNED_WDTW_1NN", "TUNED_WDDTW_1NN", "TUNED_MSM_1NN", "TUNED_LCSS_1NN", "TUNED_ERP_1NN", "TUNED_TWED_1NN", "ED_1NN", "DTW_1NN", "DDTW_1NN");
