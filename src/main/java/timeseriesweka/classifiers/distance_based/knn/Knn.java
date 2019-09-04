@@ -2,7 +2,6 @@ package timeseriesweka.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.distance_based.distance_measures.DistanceMeasure;
 import timeseriesweka.classifiers.distance_based.distance_measures.Dtw;
@@ -69,8 +68,6 @@ public class Knn extends AbstractClassifier implements Options,
     private transient boolean checkpointing = false;
     private transient Logger logger = Logger.getLogger(Knn.class.getCanonicalName());
     private NeighbourIterationStrategy neighbourIterationStrategy = NeighbourIterationStrategy.RANDOM; // todo copy field
-//    private AbstractMultipleLinearRegression trainTimePredictor = new OLSMultipleLinearRegression(); // todo copy field
-//    private double[][]
 
     public void setTrainRandom(final Random trainRandom) {
         this.trainRandom = trainRandom;
@@ -293,10 +290,6 @@ public class Knn extends AbstractClassifier implements Options,
         if(estimateTrainEnabled) {
             boolean hasRemainingTrainNeighbours = hasRemainingTrainNeighbours();
             boolean hasRemainingTrainSearchers = hasRemainingTrainSearchers();
-//            OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-//            double[][] x = new double[0][];
-//            double[] y = new double[0];
-//            int i = 0;
             trainTimer.lap();
             while ((hasRemainingTrainSearchers || hasRemainingTrainNeighbours) && withinTrainTimeLimit()) {
                 boolean choice = hasRemainingTrainSearchers;
@@ -319,29 +312,6 @@ public class Knn extends AbstractClassifier implements Options,
                 trainTimer.lap();
                 checkpoint();
                 trainTimer.resetClock();
-//                double[][] nx = new double[x.length + 1][2];
-//                double[] ny = new double[y.length + 1];
-//                System.arraycopy(y, 0, ny, 0, y.length);
-//                y = ny;
-//                y[i] = 0;
-//                for(int a = 0; a < x.length; a++) {
-//                    System.arraycopy(x[a], 0, nx[a], 0, x[a].length);
-//                }
-//                x = nx;
-//                x[i] = new double[] {neighbourhood.size(), trainSearchers.size()};
-//                try {
-//                    buildTrainEstimate();
-//                    y[i] = getTrainResults().getAcc();
-//                    System.out.println(getTrainResults().getAcc() + "," + neighbourhood.size() + "," + trainSearchers.size() + ";");
-//                    regression.newSampleData(y, x);
-//                    System.out.println(getTrainResults().getAcc() + "," + StringUtilities.join(",", regression.estimateRegressionParameters()));
-//                    double[] parameters = regression.estimateRegressionParameters();
-//                    double acc = neighbourhood.size() * parameters[1] + trainSearchers.size() * parameters[2] + parameters[0];
-//                    System.out.println(getTrainResults().getAcc() + "," + acc);
-//                } catch (Exception ignored) {
-//
-//                }
-//                i++;
             }
             buildTrainEstimate();
         }
