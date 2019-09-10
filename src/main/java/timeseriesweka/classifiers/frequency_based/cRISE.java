@@ -18,6 +18,7 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
+import sandbox.transforms.FACF;
 import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -79,10 +80,10 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
-    private int minIntervalLength = 2;
+    private int minIntervalLength = 16;
     private int numTrees = 500;
     private int treeCount = 0;
-    private int minNumTrees = 200;
+    private int minNumTrees = 0;
     private boolean downSample = false;
     private boolean loadedFromFile = false;
     private int stabilise = 0;
@@ -119,7 +120,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         this.setTransformType(TransformType.ACF_PS);
     }
 
-    public enum TransformType {ACF, PS, FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
 
     /**
      * Function used to reset internal state of classifier.
@@ -222,11 +223,11 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     }
 
     public int getMaxLag(Instances instances){
-        int maxLag = (instances.numAttributes()-1)/4;
-        if(maxLag > DEFAULT_MAXLAG)
+        int maxLag = (instances.numAttributes()-1);
+        if(DEFAULT_MAXLAG < maxLag)
             maxLag = DEFAULT_MAXLAG;
-        if(maxLag < DEFAULT_MINLAG)
-            maxLag = (instances.numAttributes()-1);
+        /*if(maxLag < DEFAULT_MINLAG)
+            maxLag = (instances.numAttributes()-1);*/
         return maxLag;
     }
 
@@ -308,6 +309,9 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         try{
             if(treeCount < 4){
                 index = (treeCount + 2) < powersOf2.size()-1 ? (treeCount + 2) : powersOf2.size()-1;
+            }
+            if(treeCount == 4){
+                index = powersOf2.size()-1;
             }
             intervalInfo[0] = powersOf2.get(index);
         }catch(Exception e){
@@ -411,11 +415,20 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
         switch(transformType){
             case ACF:
-                ACF acf=new ACF();
+                ACF acf = new ACF();
                 acf.setMaxLag(getMaxLag(instances));
                 acf.setNormalized(false);
                 try {
-                    temp =acf.process(instances);
+                    temp = acf.process(instances);
+                } catch (Exception e) {
+                    System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
+                }
+                break;
+            case FACF:
+                FACF FACF = new FACF();
+                FACF.setMaxLag(getMaxLag(instances));
+                try {
+                    temp = FACF.process(instances);
                 } catch (Exception e) {
                     System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
                 }
@@ -445,6 +458,18 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 break;
             case ACF_FFT:
                 temp = transformInstances(instances, TransformType.ACF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case FACF_FFT:
+                temp = transformInstances(instances, TransformType.FACF);
+                try{
+                    temp.setClassIndex(-1);
+                }catch(Exception e){
+                    temp.setClassIndex(-1);
+                }
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
                 temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
@@ -569,7 +594,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         if (!loadedFromFile) {
             //Just used for getParameters.
             data = trainingData;
-            //(re)Initailse all variables to account for mutiple calls of buildClassifier.
+            //(re)Initialise all variables to account for multiple calls of buildClassifier.
             initialise();
 
             //Check min & max interval lengths are valid.
@@ -609,6 +634,9 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
             timer.independantVariables.add(intervalInstances.numAttributes() - 1);
 
             //Build classifier with intervalInstances.
+            if(classifier instanceof RandomTree){
+                ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
+            }
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
@@ -898,7 +926,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[65] + "/" + DatasetLists.tscProblems85[65]);
+        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
@@ -912,15 +940,15 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         System.out.println("\n");
         try {
             cRISE = new cRISE();
-            cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_PS);
+            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF_PS");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
             cRISE = new cRISE();
-            cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF_FFT");
@@ -929,7 +957,5 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
     }
 }
