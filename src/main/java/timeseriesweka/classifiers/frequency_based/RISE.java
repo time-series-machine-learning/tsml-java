@@ -142,6 +142,14 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         rand.setSeed(seed);
         
     }
+
+    /*
+     * New default for speed.
+     */
+    public void setFastRISE(){
+        this.setTransforms("FFT", "ACF");
+    }
+
     /**
      * This interface is not formalised and needs to be considered in the next
      * review
