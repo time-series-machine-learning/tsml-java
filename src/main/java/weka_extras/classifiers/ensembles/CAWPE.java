@@ -448,7 +448,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest012/";
+        String writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod05/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
@@ -483,7 +483,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             "PB", "MV", "WMV", "RC", "NBC"
         };
 
-        String pkg = "weka_uea.classifiers.ensembles.";
+        String pkg = "weka_extras.classifiers.ensembles.";
         Class[] ensembleClasses = {
             Class.forName(pkg + "CAWPE"),
             Class.forName(pkg + "EnsembleSelection"),
@@ -660,10 +660,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
 
-//        buildCAWPEPaper_AllResultsForFigure3();
-        test_basic();
-        System.out.println("");
-        test_threaded();
+        buildCAWPEPaper_AllResultsForFigure3();
+//        test_basic();
+//        System.out.println("");
+//        test_threaded();
         
         //run:
         //test_basic()

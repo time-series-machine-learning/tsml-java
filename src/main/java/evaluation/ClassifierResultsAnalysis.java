@@ -19,6 +19,7 @@ import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
 import evaluation.MultipleClassifiersPairwiseTest;
+import evaluation.storage.ClassifierResultsCollection;
 import experiments.data.DatasetLists;
 import experiments.Experiments;
 import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
@@ -84,6 +85,9 @@ public class ClassifierResultsAnalysis {
 //    PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
     public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
     
+//    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.additionalTimeForEstimate;
+    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.fromScratchEstimateTime;
+    
     //final id's and path suffixes
     protected static final String matlabFilePath = "src/main/matlab/";
     protected static final String pairwiseScatterDiaPath = "dias_PairwiseScatter/";
@@ -95,6 +99,7 @@ public class ClassifierResultsAnalysis {
     private static final String testLabel = "TEST";
     private static final String trainLabel = "TRAIN";
     private static final String trainTestDiffLabel = "TRAINTESTDIFFS";
+    private static final String estimateLabel = "ESTIMATE";
     public static final String clusterGroupingIdentifier = "PostHocXmeansClustering";
         
     
@@ -132,8 +137,7 @@ public class ClassifierResultsAnalysis {
             String outPath, 
             String expname, 
             List<PerformanceMetric> metrics, 
-            List<ClassifierEvaluation> results, 
-            String[] dsets, 
+            ClassifierResultsCollection results, 
             Map<String, Map<String, String[]>> dsetGroupings) 
     {
         //hacky housekeeping
@@ -150,9 +154,7 @@ public class ClassifierResultsAnalysis {
         
         OutFile bigSummary = new OutFile(outPath + expname + "_BIGglobalSummary.csv");
         OutFile smallSummary = new OutFile(outPath + expname + "_SMALLglobalSummary.csv");
-        
-        String[] cnames = getNames(results);
-        
+                
         //this will collect the clique arrays for each metric as foudn by pairwise stats,
         //so that they can later be passed to the cd dia maker 
         ArrayList<String> statCliquesForCDDias = new ArrayList<>();
@@ -161,8 +163,8 @@ public class ClassifierResultsAnalysis {
         for (PerformanceMetric metric : metrics) {
             String[] summary = null;
             try { 
-                summary = eval_metric(outPath, expname, results, metric, cnames, dsets, dsetGroupings);
-            } catch (FileNotFoundException fnf) {
+                summary = eval_metric(outPath, expname, results, metric, dsetGroupings);
+            } catch (Exception fnf) {
                 System.out.println("Something went wrong while writing " + metric + "files, likely later stages of analysis could "
                         + "not find files that should have been made "
                         + "internally in earlier stages of the pipeline, FATAL");
@@ -186,7 +188,7 @@ public class ClassifierResultsAnalysis {
         //and add them onto the list of metrics
         String[][] trainTestTimingSummary = new String[][] { };
         try { 
-            trainTestTimingSummary = eval_timings(outPath, expname, results, cnames, dsets, null); //dont bother with groupings for timings
+            trainTestTimingSummary = eval_timings(outPath, expname, results, null); //dont bother with groupings for timings
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing timing files, likely "
                     + "later stages of analysis could not find files that should have been made"
@@ -209,7 +211,8 @@ public class ClassifierResultsAnalysis {
         
         if (trainTestTimingSummary != null) { 
             timeMetrics.add(PerformanceMetric.buildTime);
-            timeMetrics.add(testTimeMetric); //PerformanceMetric.totalTestTime, PerformanceMetric.avgTestPredTime
+            timeMetrics.add(testTimeMetric);
+//            timeMetrics.add(estimateTimeMetric); 
             for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
                 String label = timeMetrics.get(j).name;
                 if (trainTestTimingSummary[j] != null) {
@@ -247,7 +250,7 @@ public class ClassifierResultsAnalysis {
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
             matlab_buildTimingsDias(timeMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
-            matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, dsets);
+            matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput());
         }
     }
     
@@ -777,16 +780,20 @@ public class ClassifierResultsAnalysis {
     }
 
     
-    protected static String[] eval_metric(String outPath, String filename, List<ClassifierEvaluation> results, PerformanceMetric metric, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
+    protected static String[] eval_metric(String outPath, String filename, ClassifierResultsCollection results, PerformanceMetric metric, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
         String statName = metric.name;
         outPath += statName + "/";
         new File(outPath).mkdirs();        
         
-        double[][][] testFolds = getInfo(results, metric.getter, testLabel);
+        String[] cnames = results.getClassifierNamesInOutput();
+        String[] dsets = results.getDatasetNamesInOutput();
+        
+        double[][][] testFolds = results.sliceSplit("test").retrieveDoubles(metric.getter)[0];
         
         if (!testResultsOnly) {
-            double[][][] trainFolds = getInfo(results, metric.getter, trainLabel);
+            double[][][] trainFolds = results.sliceSplit("train").retrieveDoubles(metric.getter)[0];
             double[][][] trainTestDiffsFolds = findTrainTestDiffs(trainFolds, testFolds);
+            
             eval_metricOnSplit(outPath, filename, null, trainLabel, metric, trainFolds, cnames, dsets, dsetGroupings); 
             eval_metricOnSplit(outPath, filename, null, trainTestDiffLabel, metric, trainTestDiffsFolds, cnames, dsets, dsetGroupings);
         }
@@ -794,11 +801,9 @@ public class ClassifierResultsAnalysis {
         return eval_metricOnSplit(outPath, filename, null, testLabel, metric, testFolds, cnames, dsets, dsetGroupings);
     }
 
-    protected static String[/*{train,test}*/][] eval_timings(String outPath, String filename, List<ClassifierEvaluation> results, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
-        if (results.get(0).testResults[0][0].getBuildTime() <= 0) { //is not present. TODO god forbid naive bayes on balloons takes less than a millisecond...
-            System.out.println("Warning: No buildTimes found, or buildtimes == 0");
-            return null;
-        }
+    protected static String[/*{train,test}*/][] eval_timings(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {        
+        String[] cnames = results.getClassifierNamesInOutput();
+        String[] dsets = results.getDatasetNamesInOutput();
         
         PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
 //        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
@@ -806,17 +811,23 @@ public class ClassifierResultsAnalysis {
         outPath += "Timings/"; //special case for timings
         new File(outPath).mkdirs();        
         
-        double[][][] trainTimes = getTimingsIfAllArePresent(results, trainTimeMetric.getter);
+        double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
         if (trainTimes != null)
             trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings); 
            
-        double[][][] testTimes = getTimingsIfAllArePresent(results, testTimeMetric.getter);
+        double[][][] testTimes = results.sliceSplit("test").retrieveDoubles(testTimeMetric.getter)[0];
         String[] testResStr = null;
         if (testTimes != null)
             testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
+           
+//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
+//        String[] estimateResStr = null;
+//        if (estimateTimes != null)
+//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
   
         return new String[][] { trainResStr, testResStr };
+//        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
     protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques) {
