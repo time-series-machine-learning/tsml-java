@@ -448,7 +448,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod03/";
+        String writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod05/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;

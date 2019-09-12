@@ -117,6 +117,21 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      */
     private boolean closeMatlabConnectionWhenFinished = true;
     
+    
+    /**
+     * If false, all combinations of all splits/classifiers/datasets/folds must be present, 
+     * else the evaluation will not proceed. 
+     * 
+     * If true, missing results shall be ignored, and only the "minimal complete subset" 
+     * shall be evaluated. The minimal complete subsets comprised of  the datasets that ALL classifiers 
+     * have completed ALL folds on. 
+     * 
+     * As such, the evaluation shall only be performed on datasets that all the classifiers 
+     * have completed. If this is 0, nothing will happen, of course. 
+     */
+    private boolean ignoreMissingResults = false;
+    
+    
     /**
      * @param experimentName forms the analysis directory name, and the prefix to most files
      */
@@ -146,9 +161,9 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers 
      * are evaluated on each.
      */
-    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
-        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
-    }
+//    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
+//        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
+//    }
     
     /**
      * if true, will not attempt to load trainFold results, and will not produce stats for train or traintestdiffs results
@@ -424,6 +439,23 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         return this;
     }
     
+    /**
+     * If false, all combinations of all splits/classifiers/datasets/folds must be present, 
+     * else the evaluation will not proceed. 
+     * 
+     * If true, missing results shall be ignored, and only the "minimal complete subset" 
+     * shall be evaluated. The minimal complete subsets comprised of  the datasets that ALL classifiers 
+     * have completed ALL folds on. 
+     * 
+     * As such, the evaluation shall only be performed on datasets that all the classifiers 
+     * have completed. If this is 0, nothing will happen, of course. 
+     */
+    public MultipleClassifierEvaluation setIgnoreMissingResults(boolean ignoreMissingResults) {
+        this.ignoreMissingResults = ignoreMissingResults;
+        resultsCollection.setAllowMissingResults(ignoreMissingResults);
+        return this;
+    }
+    
     private void transposeEverything() { 
 //        //need to put the classifier names into the datasets list
 //        //repalce the entries of the classifier results map with entries for each dataset
@@ -500,9 +532,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         
         resultsCollection.load();
         
-        if (evaluateDatasetsOverClassifiers) {
+        if (ignoreMissingResults) 
+            resultsCollection = resultsCollection.reduceToMinimalCompleteResults_datasets();
+        
+        if (evaluateDatasetsOverClassifiers) 
             transposeEverything();
-        }
         
         ClassifierResultsAnalysis.buildMatlabDiagrams = buildMatlabDiagrams;
         ClassifierResultsAnalysis.testResultsOnly = testResultsOnly;

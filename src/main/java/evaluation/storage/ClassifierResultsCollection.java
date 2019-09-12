@@ -19,8 +19,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 
@@ -75,6 +79,10 @@ public class ClassifierResultsCollection implements DebugPrinting {
     private String[] splits;
     
     private int numMissingResults;
+    private HashSet<String> splitsWithMissingResults;
+    private HashSet<String> classifiersWithMissingResults;
+    private HashSet<String> datasetsWithMissingResults;
+    private HashSet<Integer> foldsWithMissingResults;
     
     /**
      * Paths to directories containing all the classifierNamesInStorage directories 
@@ -553,6 +561,11 @@ public class ClassifierResultsCollection implements DebugPrinting {
         //so having separate checks for each.
         boolean ignoringDistsFirstTime = true;
         
+        splitsWithMissingResults = new HashSet<>(splits.length);
+        classifiersWithMissingResults = new HashSet<>(classifierNamesInOutput.length);
+        datasetsWithMissingResults = new HashSet<>(datasetNamesInOutput.length);
+        foldsWithMissingResults = new HashSet<>(folds.length);
+        
         for (int c = 0; c < numClassifiers; c++) {
             String classifierStorage = classifierNamesInStorage[c];
             String classifierOutput = classifierNamesInOutput[c];
@@ -600,6 +613,12 @@ public class ClassifierResultsCollection implements DebugPrinting {
                                 }
                                 
                                 classifierFnfs++;
+                                
+                                splitsWithMissingResults.add(split);
+                                classifiersWithMissingResults.add(classifierStorage);
+                                datasetsWithMissingResults.add(datasetStorage);
+                                foldsWithMissingResults.add(fold);
+                                
                             }
 
                             printlnDebug("\t\t\t" + split + " successfully read in");
@@ -625,6 +644,99 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return allResults;
     }
     
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same classifier, dataset and fold
+     * sets, but only the SPLITS for which all results exist for all classifiers, datasets and folds.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_splits() throws Exception { 
+        if (!allowMissingResults || splitsWithMissingResults.size() == 0)
+            return new ClassifierResultsCollection(this, this.allResults);
+        else {
+            List<String> completeSplits = new ArrayList<>(Arrays.asList(splits));
+            completeSplits.removeAll(splitsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceSplits(completeSplits.toArray(new String[] { }));
+            reductionSummary("SPLITS", completeSplits, splitsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, dataset and fold
+     * sets, but only the CLASSIFIERS for which all results exist for all splits, datasets and folds.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_classifiers() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            List<String> completeClassifiers = new ArrayList<>(Arrays.asList(classifierNamesInStorage));
+            completeClassifiers.removeAll(classifiersWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceClassifiers(completeClassifiers.toArray(new String[] { }));
+            reductionSummary("CLASSIFIERS", completeClassifiers, classifiersWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, classifier and fold
+     * sets, but only the DATASETS for which all results exist for all splits, classifiers and folds.
+     * 
+     * Mainly for use with MultipleClassifierEvaluation, where for prototyping etc we only want 
+     * to compare over completed datasets for a fair comparison. 
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_datasets() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            List<String> completeDsets = new ArrayList<>(Arrays.asList(datasetNamesInStorage));
+            completeDsets.removeAll(datasetsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceDatasets(completeDsets.toArray(new String[] { }));
+            reductionSummary("DATASETS", completeDsets, datasetsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, classifier and dataset
+     * sets, but only the FOLDS for which all results exist for all splits, classifiers and datasets.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_folds() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            // ayy java 8
+            List<Integer> completeFolds = new ArrayList<>(Arrays.stream(folds).boxed().collect(Collectors.toList()));
+            completeFolds.removeAll(foldsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceFolds(completeFolds.stream().mapToInt(Integer::intValue).toArray());
+            reductionSummary("FOLDS", completeFolds, foldsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    private void reductionSummary(String dim, Collection<? extends Object> remaining, Collection<? extends Object> removed) { 
+        System.out.println("\n\n\n*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        
+        System.out.println("Not all results were present. Have reduced the results space "
+                + "in order to only compare the results across mutually completed "+dim+".");
+        
+        System.out.println("\n"+dim+" removed ("+removed.size()+"): " + removed.toString());
+        
+        System.out.println("\n"+dim+" remaining for comparison ("+remaining.size()+"): " + remaining.toString());
+        
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****\n\n\n".replace("*", "**********"));
+    }
     
     
     /**
