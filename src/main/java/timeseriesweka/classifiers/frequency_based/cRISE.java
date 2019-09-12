@@ -14,12 +14,14 @@
  */
 package timeseriesweka.classifiers.frequency_based;
 
-import experiments.data.DatasetLoading;
+import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
+import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.FFT;
-import utilities.ClassifierTools;
+import timeseriesweka.filters.PowerSpectrum;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -33,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainTimeContractable;
+
+import static experiments.data.DatasetLoading.loadDataNullable;
 
 /**
  <!-- globalinfo-start -->
@@ -72,13 +76,13 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * @date 19/02/19
  **/
 
-public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
+public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
-    private int minIntervalLength = 2;
+    private int minIntervalLength = 16;
     private int numTrees = 500;
     private int treeCount = 0;
-    private int minNumTrees = 200;
+    private int minNumTrees = 0;
     private boolean downSample = false;
     private boolean loadedFromFile = false;
     private int stabilise = 0;
@@ -93,7 +97,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     private ArrayList<int[]> intervalsInfo = null;
     private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
     private ArrayList<Integer> rawIntervalIndexes = null;
-    private FFT fft;
+    private PowerSpectrum PS;
     private TransformType transformType = TransformType.ACF_PS;
     private String serialisePath = null;
     private Instances data = null;
@@ -102,19 +106,20 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
      * Constructor
      * @param seed
      */
-    public CRISE(long seed){
+    public cRISE(long seed){
         this.seed = seed;
         random = new Random(seed);
         timer = new Timer();
     }
 
-    public void RISE(){
+    public cRISE(){
         this.seed = 0;
         random = new Random(0);
         timer = new Timer();
+        this.setTransformType(TransformType.ACF_PS);
     }
 
-    public enum TransformType {ACF, PS, ACF_PS, ACF_PS_AR}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
 
     /**
      * Function used to reset internal state of classifier.
@@ -127,7 +132,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         intervalsInfo = new ArrayList<>();
         intervalsAttIndexes = new ArrayList<>();
         rawIntervalIndexes = new ArrayList<>();
-        fft = new FFT();
+        PS = new PowerSpectrum();
         treeCount = 0;
     }
 
@@ -212,16 +217,16 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 + "\\SERIALISE_cRISE_"
                 + seed
                 + ".txt");
-        CRISE temp = readSerialise(seed);
+        cRISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
 
     public int getMaxLag(Instances instances){
-        int maxLag = (instances.numAttributes()-1)/4;
-        if(maxLag > DEFAULT_MAXLAG)
+        int maxLag = (instances.numAttributes()-1);
+        if(DEFAULT_MAXLAG < maxLag)
             maxLag = DEFAULT_MAXLAG;
-        if(maxLag < DEFAULT_MINLAG)
-            maxLag = (instances.numAttributes()-1);
+        /*if(maxLag < DEFAULT_MINLAG)
+            maxLag = (instances.numAttributes()-1);*/
         return maxLag;
     }
 
@@ -303,6 +308,9 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         try{
             if(treeCount < 4){
                 index = (treeCount + 2) < powersOf2.size()-1 ? (treeCount + 2) : powersOf2.size()-1;
+            }
+            if(treeCount == 4){
+                index = powersOf2.size()-1;
             }
             intervalInfo[0] = powersOf2.get(index);
         }catch(Exception e){
@@ -406,21 +414,29 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
         switch(transformType){
             case ACF:
-                ACF acf=new ACF();
+                ACF acf = new ACF();
                 acf.setMaxLag(getMaxLag(instances));
                 acf.setNormalized(false);
                 try {
-                    temp =acf.process(instances);
+                    temp = acf.process(instances);
                 } catch (Exception e) {
                     System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
                 }
                 break;
             case PS:
                 try {
-                    fft.useFFT();
-                    temp = fft.process(instances);
+                    PS.useFFT();
+                    temp = PS.process(instances);
                 } catch (Exception ex) {
                     System.out.println("FFT failed (could be build or classify) \n" + ex);
+                }
+                break;
+            case FFT:
+                Fast_FFT Fast_FFT = new Fast_FFT();
+                try {
+                    temp = Fast_FFT.process(instances);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 break;
             case ACF_PS:
@@ -428,6 +444,25 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
                 temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case ACF_FFT:
+                temp = transformInstances(instances, TransformType.ACF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case FACF_FFT:
+                temp = transformInstances(instances, TransformType.FACF);
+                try{
+                    temp.setClassIndex(-1);
+                }catch(Exception e){
+                    temp.setClassIndex(-1);
+                }
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case ACF_PS_AR:
@@ -473,9 +508,9 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         }
     }
 
-    private CRISE readSerialise(long seed){
+    private cRISE readSerialise(long seed){
         ObjectInputStream oi = null;
-        CRISE temp = null;
+        cRISE temp = null;
         try {
             FileInputStream fi = new FileInputStream(new File(
                     serialisePath
@@ -483,10 +518,10 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                             + seed
                             + ".txt"));
             oi = new ObjectInputStream(fi);
-            temp = (CRISE)oi.readObject();
+            temp = (cRISE)oi.readObject();
             oi.close();
             fi.close();
-            System.out.println("File load successful: " + ((CRISE)temp).treeCount + " trees.");
+            System.out.println("File load successful: " + ((cRISE)temp).treeCount + " trees.");
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("File load: failed.");
         }
@@ -497,23 +532,23 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     public void copyFromSerObject(Object temp){
 
         try{
-            this.baseClassifiers = ((CRISE)temp).baseClassifiers;
-            this.classifier = ((CRISE)temp).classifier;
-            this.data = ((CRISE)temp).data;
-            this.downSample = ((CRISE)temp).downSample;
-            this.fft = ((CRISE)temp).fft;
-            this.intervalsAttIndexes = ((CRISE)temp).intervalsAttIndexes;
-            this.intervalsInfo = ((CRISE)temp).intervalsInfo;
-            this.maxIntervalLength = ((CRISE)temp).maxIntervalLength;
-            this.minIntervalLength = ((CRISE)temp).minIntervalLength;
-            this.numTrees = ((CRISE)temp).numTrees;
-            this.random = ((CRISE)temp).random;
-            this.rawIntervalIndexes = ((CRISE)temp).rawIntervalIndexes;
-            this.serialisePath = ((CRISE)temp).serialisePath;
-            this.stabilise = ((CRISE)temp).stabilise;
-            this.timer = ((CRISE)temp).timer;
-            this.transformType = ((CRISE)temp).transformType;
-            this.treeCount = ((CRISE)temp).treeCount;
+            this.baseClassifiers = ((cRISE)temp).baseClassifiers;
+            this.classifier = ((cRISE)temp).classifier;
+            this.data = ((cRISE)temp).data;
+            this.downSample = ((cRISE)temp).downSample;
+            this.PS = ((cRISE)temp).PS;
+            this.intervalsAttIndexes = ((cRISE)temp).intervalsAttIndexes;
+            this.intervalsInfo = ((cRISE)temp).intervalsInfo;
+            this.maxIntervalLength = ((cRISE)temp).maxIntervalLength;
+            this.minIntervalLength = ((cRISE)temp).minIntervalLength;
+            this.numTrees = ((cRISE)temp).numTrees;
+            this.random = ((cRISE)temp).random;
+            this.rawIntervalIndexes = ((cRISE)temp).rawIntervalIndexes;
+            this.serialisePath = ((cRISE)temp).serialisePath;
+            this.stabilise = ((cRISE)temp).stabilise;
+            this.timer = ((cRISE)temp).timer;
+            this.transformType = ((cRISE)temp).transformType;
+            this.treeCount = ((cRISE)temp).treeCount;
             this.loadedFromFile = true;
             System.out.println("Varible assignment: successful.");
         }catch(Exception ex){
@@ -549,7 +584,7 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         if (!loadedFromFile) {
             //Just used for getParameters.
             data = trainingData;
-            //(re)Initailse all variables to account for mutiple calls of buildClassifier.
+            //(re)Initialise all variables to account for multiple calls of buildClassifier.
             initialise();
 
             //Check min & max interval lengths are valid.
@@ -589,6 +624,9 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
             timer.independantVariables.add(intervalInstances.numAttributes() - 1);
 
             //Build classifier with intervalInstances.
+            if(classifier instanceof RandomTree){
+                ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
+            }
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
@@ -878,60 +916,36 @@ public class CRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        Instances train;
-        Instances test;
-        Instances instances;
-        String problemName = "StarLightCurves";
-        //String problemName = "InsectWingbeat";
+        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        ClassifierResults cr = null;
+        SingleSampleEvaluator sse = new SingleSampleEvaluator();
+        sse.setPropInstancesInTrain(0.5);
+        sse.setSeed(0);
 
-        train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TRAIN.arff");
-        test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+problemName+"\\"+problemName+"_TEST.arff");
-        //instances = ClassifierTools.loadDataThrowable("Z:\\Data\\TSCProblemsAudio2019\\InsectWingbeat\\InsectWingbeat.arff");
-        //Instances[] data = InstanceTools.resampleInstances(instances, 0, 0.5);
-        //train = data[0];
-        //test = data[1];
-
-        double[] dist = null;
-        double acc = 0.0;
-        double classification = 0.0;
-
-        CRISE c = new CRISE(0);
-        //c.setDownSample(true);
-        c.setTransformType(TransformType.ACF_PS);
-        //c.setStabilise(3);
-        c.setModelOutPath("");
-        c.setSavePath("");
-        //c.setTrainTimeLimit(TimeUnit.MINUTES,5);
-
-        //Train
+        cRISE cRISE = null;
+        System.out.println("Dataset name: " + data.relationName());
+        System.out.println("Numer of cases: " + data.size());
+        System.out.println("Number of attributes: " + (data.numAttributes() - 1));
+        System.out.println("Number of classes: " + data.classAttribute().numValues());
+        System.out.println("\n");
         try {
-            c.buildClassifier(train);
-        } catch (Exception ex) {
-            System.out.println("Build failed: " + ex);
+            cRISE = new cRISE();
+            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            cRISE.setTransformType(TransformType.ACF_FFT);
+            cr = sse.evaluate(cRISE, data);
+            System.out.println("ACF_PS");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            cRISE = new cRISE();
+            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            cRISE.setTransformType(TransformType.ACF_FFT);
+            cr = sse.evaluate(cRISE, data);
+            System.out.println("ACF_FFT");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        //Test
-        for (int i = 0; i < test.size(); i++) {
-
-            try {
-                dist = c.distributionForInstance(test.get(i));
-                classification = c.classifyInstance(test.get(i));
-            } catch (Exception ex) {
-                System.out.println("distributionForInstance | classifyInstance failed: " + ex);
-            }
-
-            //print dist
-            for (int j = 0; j < dist.length; j++) {
-                System.out.print(dist[j] + ", ");
-            }
-            System.out.println();
-
-            if(test.get(i).classValue() == classification)
-                acc++;
-        }
-
-        acc /= test.size();
-        System.out.println(acc);
-
     }
 }

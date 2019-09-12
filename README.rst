@@ -9,7 +9,8 @@ UEA Time Series Classification
 Find more info on our `website <http://www.timeseriesclassification.com>`__.
 
 A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>`__ compatible Java toolbox for
-time series classification, clustering and transformation. Eventually, we would like to support:
+time series classification, clustering and transformation. For the python, sklearn compatible version, see 
+_sktime <https://github.com/alan-turing-institute/sktime>`__
 
 Installation
 ------------

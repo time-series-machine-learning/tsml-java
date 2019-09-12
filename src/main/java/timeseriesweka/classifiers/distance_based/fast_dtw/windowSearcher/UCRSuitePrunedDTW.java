@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher;
+package timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNNEarlyAbandon;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNNEarlyAbandon.RefineReturnType;
-import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.MonoDoubleItemSet;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.SequenceStatsCache;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.LazyAssessNNEarlyAbandon;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.LazyAssessNNEarlyAbandon.RefineReturnType;
+import timeseriesweka.classifiers.distance_based.FastWWS.sequences.SymbolicSequence;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.MonoDoubleItemSet;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.SequenceStatsCache;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;

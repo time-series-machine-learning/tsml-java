@@ -17,8 +17,14 @@ package evaluation.storage;
 import experiments.data.DatasetLists;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 
@@ -73,13 +79,30 @@ public class ClassifierResultsCollection implements DebugPrinting {
     private String[] splits;
     
     private int numMissingResults;
+    private HashSet<String> splitsWithMissingResults;
+    private HashSet<String> classifiersWithMissingResults;
+    private HashSet<String> datasetsWithMissingResults;
+    private HashSet<Integer> foldsWithMissingResults;
     
     /**
-     * A path to a directory containing all the classifierNamesInStorage directories 
+     * Paths to directories containing all the classifierNamesInStorage directories 
      * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
+     * 
+     * If readResultsFilesDirectories.length == 1, all classifier's results read from that one path
+     * else, resultsPaths.length must equal classifiers.length, with each index aligning
+     * to the path to read the classifier's results from.
+     *
+     * e.g to read 2 classifiers from one directory, and another 2 from 2 different directories:
+     *
+     *     Index |  Paths  | Classifier
+     *     --------------------------
+     *       0   |  pathA  |   c1
+     *       1   |  pathA  |   c2
+     *       2   |  pathB  |   c3
+     *       3   |  pathC  |   c4
+     *
      */
-    private String baseReadPath;
-    
+    private String resultsFilesDirectories[];
     
     
     /**
@@ -133,7 +156,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         this.numSplits = other.numSplits;
         this.splits = other.splits;
 
-        this.baseReadPath = other.baseReadPath;
+        this.resultsFilesDirectories = other.resultsFilesDirectories;
 
         this.cleanResults = other.cleanResults;
         this.allowMissingResults = other.allowMissingResults;
@@ -164,33 +187,87 @@ public class ClassifierResultsCollection implements DebugPrinting {
         this.folds = foldIds;
         this.numFolds = foldIds.length;                
     }
-    
-    
+        
     /**
-     * Sets the classifiers to be read in. Names must correspond to directory names
+     * Sets the classifiers to be read in from baseReadPath. Names must correspond to directory names
      * in which {classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv directories/files exist
      */
-    public void setClassifiers(String[] classifierNames) {
-        setClassifiers(classifierNames, classifierNames);
+    public void setClassifiers(String[] classifierNames, String[] baseReadPaths) {
+        setClassifiers(classifierNames, classifierNames, baseReadPaths);
     }
     
     /**
-     * Sets the classifiers to be read in. classifierNamesInStorage must correspond to directory names
+     * Sets the classifiers to be read in from baseReadPath. Names must correspond to directory names
+     * in which {classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv directories/files exist
+     */
+    public void setClassifiers(String[] classifierNamesInStorage, String[] classifierNamesInOutput, String[] baseReadPaths) {        
+        if (classifierNamesInStorage.length != classifierNamesInOutput.length 
+                || classifierNamesInStorage.length != baseReadPaths.length)
+            throw new IllegalArgumentException("Classifier names lengths and paths not equal, "
+                    + "classifierNamesInStorage.length="+classifierNamesInStorage.length
+                    + " classifierNamesInOutput.length="+classifierNamesInOutput.length
+                    + " baseReadPaths.length="+baseReadPaths.length);
+        
+       this.classifierNamesInStorage = classifierNamesInStorage;
+       this.classifierNamesInOutput = classifierNamesInOutput;
+       this.resultsFilesDirectories = baseReadPaths;
+       numClassifiers = classifierNamesInOutput.length;
+    }
+
+    
+    /**
+     * Adds classifiers to be read in from baseReadPath. Names must correspond to directory names
+     * in which {classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv directories/files exist
+     */
+    public void addClassifiers(String[] classifierNames, String baseReadPath) {
+        addClassifiers(classifierNames, classifierNames, baseReadPath);
+    }
+    
+    /**
+     * Adds classifiers to be read in from baseReadPath. classifierNamesInStorage must correspond to directory names
      * in which {classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv directories/files exist,
      * while classifierNamesInOutputs can be 'cleaner' names intended for image or spreadsheet
      * outputs. The two arrays should be parallel
      */
-    public void setClassifiers(String[] classifierNamesInStorage, String[] classifierNamesInOutput) {
+    public void addClassifiers(String[] classifierNamesInStorage, String[] classifierNamesInOutput, String baseReadPath) {
         if (classifierNamesInStorage.length != classifierNamesInOutput.length)
             throw new IllegalArgumentException("Classifier names lengths not equal, "
                     + "classifierNamesInStorage.length="+classifierNamesInStorage.length
                     + " classifierNamesInOutput.length="+classifierNamesInOutput.length);
         
-        this.numClassifiers = classifierNamesInOutput.length;
-        this.classifierNamesInStorage = classifierNamesInStorage;
-        this.classifierNamesInOutput = classifierNamesInOutput;
+        if (this.classifierNamesInOutput == null) { //nothing initialisd yet, just set them directly
+            String[] t = new String[classifierNamesInOutput.length];
+            for (int i = 0; i < classifierNamesInOutput.length; i++)
+                t[i] = baseReadPath;
+            setClassifiers(classifierNamesInStorage, classifierNamesInOutput, t);
+            
+            return;
+        }
         
+        //yay arrays 
+        int origLength = this.classifierNamesInStorage.length;
+        int addedLength = classifierNamesInStorage.length;
+        
+        this.classifierNamesInStorage = Arrays.copyOf(this.classifierNamesInStorage, origLength + addedLength);
+        for (int i = 0; i < addedLength; i++)
+            this.classifierNamesInStorage[origLength + i] = classifierNamesInStorage[i];
+        
+        this.classifierNamesInOutput = Arrays.copyOf(this.classifierNamesInOutput, origLength + addedLength);
+        for (int i = 0; i < addedLength; i++)
+            this.classifierNamesInOutput[origLength + i] = classifierNamesInOutput[i];
+        
+        baseReadPath.replace("\\", "/");
+        if (baseReadPath.charAt(baseReadPath.length()-1) != '/')
+            baseReadPath += "/";
+        this.resultsFilesDirectories = Arrays.copyOf(this.resultsFilesDirectories, origLength + addedLength);
+        for (int i = 0; i < addedLength; i++)
+            this.resultsFilesDirectories[origLength + i] = baseReadPath;
+        
+        numClassifiers = origLength + addedLength;
     }
+    
+    
+    
     
     /**
      * Sets the datasets to be read in for each classifier. Names must correspond to directory names
@@ -258,26 +335,6 @@ public class ClassifierResultsCollection implements DebugPrinting {
         this.numSplits = splits.length;
     }
     
-    /**
-     * Sets the path to a directory containing all the classifierNamesInStorage directories 
-     * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
-     */
-    public void setBaseReadPath(String baseReadPath) {
-        baseReadPath.replace("\\", "/");
-        if (baseReadPath.charAt(baseReadPath.length()-1) != '/')
-            baseReadPath += "/";
-        
-        this.baseReadPath = baseReadPath;
-    }
-    
-    /**
-     * Sets the path to a directory containing all the classifierNamesInStorage directories 
-     * with the results, in format {baseReadPath}/{classifiers}/Predictions/{datasets}/{split}Fold{folds}.csv
-     */
-    public void setBaseReadPath(File baseReadPath) {
-        setBaseReadPath(baseReadPath.getAbsoluteFile());
-    }
-
     /**
      * if true, will null the individual prediction info of each ClassifierResults object after stats are found for it 
      * 
@@ -349,8 +406,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return splits;
     }
 
-    public String getBaseReadPath() {
-        return baseReadPath;
+    public String[] getBaseReadPaths() {
+        return resultsFilesDirectories;
     }
 
     public int getNumMissingResults() {
@@ -412,10 +469,25 @@ public class ClassifierResultsCollection implements DebugPrinting {
     private void confirmMinimalInfoGivenAndValid() throws Exception {
         ErrorReport err = new ErrorReport("Required results collection info missing:\n");
         
-        if (baseReadPath == null)
+        if (resultsFilesDirectories == null) {
             err.log("\tBase path to read results from not set\n");
-        else if (!(new File(baseReadPath).exists()))
-            err.log("\tBase path to read results from cannot be found: " + baseReadPath + "\n");
+        } else if (resultsFilesDirectories.length == 1) {
+            if (!(new File(resultsFilesDirectories[0]).exists())) {
+                err.log("\tBase path to read results from cannot be found: " + resultsFilesDirectories[0] + "\n");
+            }
+        }
+        else { //many read paths
+            if (resultsFilesDirectories.length != classifierNamesInOutput.length) {
+                err.log("\tEither need to specify a single read path, or a read path for each classifier. Read paths given: " + resultsFilesDirectories.length
+                        + ", classifiers given: " + classifierNamesInOutput.length + "\n");
+            }
+            
+            for (String dir : resultsFilesDirectories) {
+                if (!(new File(dir).exists())) {
+                    err.log("\tA base path to read results from cannot be found: " + dir + "\n");
+                }
+            }
+        }
                     
         if (classifierNamesInStorage == null || classifierNamesInStorage.length == 0)
             err.log("\tClassifiers to read not set\n");
@@ -489,6 +561,11 @@ public class ClassifierResultsCollection implements DebugPrinting {
         //so having separate checks for each.
         boolean ignoringDistsFirstTime = true;
         
+        splitsWithMissingResults = new HashSet<>(splits.length);
+        classifiersWithMissingResults = new HashSet<>(classifierNamesInOutput.length);
+        datasetsWithMissingResults = new HashSet<>(datasetNamesInOutput.length);
+        foldsWithMissingResults = new HashSet<>(folds.length);
+        
         for (int c = 0; c < numClassifiers; c++) {
             String classifierStorage = classifierNamesInStorage[c];
             String classifierOutput = classifierNamesInOutput[c];
@@ -511,7 +588,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
                             String split = splits[s];     
                             printlnDebug("\t\t\t" + split + " reading");
 
-                            String fileName = buildFileName(baseReadPath, classifierStorage, datasetStorage, split, fold); 
+                            String readPath = resultsFilesDirectories.length == 1 ? resultsFilesDirectories[0] : resultsFilesDirectories[c];
+                            String fileName = buildFileName(readPath, classifierStorage, datasetStorage, split, fold); 
                             try {
                                 allResults[s][c][d][f] = new ClassifierResults(fileName);
                                 if (ignoreMissingDistributions) {
@@ -535,6 +613,12 @@ public class ClassifierResultsCollection implements DebugPrinting {
                                 }
                                 
                                 classifierFnfs++;
+                                
+                                splitsWithMissingResults.add(split);
+                                classifiersWithMissingResults.add(classifierStorage);
+                                datasetsWithMissingResults.add(datasetStorage);
+                                foldsWithMissingResults.add(fold);
+                                
                             }
 
                             printlnDebug("\t\t\t" + split + " successfully read in");
@@ -560,6 +644,99 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return allResults;
     }
     
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same classifier, dataset and fold
+     * sets, but only the SPLITS for which all results exist for all classifiers, datasets and folds.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_splits() throws Exception { 
+        if (!allowMissingResults || splitsWithMissingResults.size() == 0)
+            return new ClassifierResultsCollection(this, this.allResults);
+        else {
+            List<String> completeSplits = new ArrayList<>(Arrays.asList(splits));
+            completeSplits.removeAll(splitsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceSplits(completeSplits.toArray(new String[] { }));
+            reductionSummary("SPLITS", completeSplits, splitsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, dataset and fold
+     * sets, but only the CLASSIFIERS for which all results exist for all splits, datasets and folds.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_classifiers() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            List<String> completeClassifiers = new ArrayList<>(Arrays.asList(classifierNamesInStorage));
+            completeClassifiers.removeAll(classifiersWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceClassifiers(completeClassifiers.toArray(new String[] { }));
+            reductionSummary("CLASSIFIERS", completeClassifiers, classifiersWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, classifier and fold
+     * sets, but only the DATASETS for which all results exist for all splits, classifiers and folds.
+     * 
+     * Mainly for use with MultipleClassifierEvaluation, where for prototyping etc we only want 
+     * to compare over completed datasets for a fair comparison. 
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_datasets() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            List<String> completeDsets = new ArrayList<>(Arrays.asList(datasetNamesInStorage));
+            completeDsets.removeAll(datasetsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceDatasets(completeDsets.toArray(new String[] { }));
+            reductionSummary("DATASETS", completeDsets, datasetsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    /**
+     * Returns a ClassifierResultsCollection that contains the same split, classifier and dataset
+     * sets, but only the FOLDS for which all results exist for all splits, classifiers and datasets.
+     */
+    public ClassifierResultsCollection reduceToMinimalCompleteResults_folds() throws Exception { 
+        if (!allowMissingResults)
+            return new ClassifierResultsCollection(this, this.allResults); //should be all populated anyway
+        else {
+            // ayy java 8
+            List<Integer> completeFolds = new ArrayList<>(Arrays.stream(folds).boxed().collect(Collectors.toList()));
+            completeFolds.removeAll(foldsWithMissingResults);
+            
+            ClassifierResultsCollection reducedCol = sliceFolds(completeFolds.stream().mapToInt(Integer::intValue).toArray());
+            reductionSummary("FOLDS", completeFolds, foldsWithMissingResults);
+                    
+            return reducedCol;
+        }
+    }
+    
+    private void reductionSummary(String dim, Collection<? extends Object> remaining, Collection<? extends Object> removed) { 
+        System.out.println("\n\n\n*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        
+        System.out.println("Not all results were present. Have reduced the results space "
+                + "in order to only compare the results across mutually completed "+dim+".");
+        
+        System.out.println("\n"+dim+" removed ("+removed.size()+"): " + removed.toString());
+        
+        System.out.println("\n"+dim+" remaining for comparison ("+remaining.size()+"): " + remaining.toString());
+        
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****".replace("*", "**********"));
+        System.out.println("*****\n\n\n".replace("*", "**********"));
+    }
     
     
     /**
@@ -595,9 +772,9 @@ public class ClassifierResultsCollection implements DebugPrinting {
             subResults[sts] = this.allResults[sidOrig];
         }
         
-        //copy across the meta info to neew collection object
+        //copy across the meta info to new collection object
         ClassifierResultsCollection newCol = new ClassifierResultsCollection(this, subResults);
-        newCol.setSplits(splitsToSlice); //checking the particular meta info sliced
+        newCol.setSplits(splitsToSlice); //setting the particular meta info sliced
         return newCol;
     }
        
@@ -626,23 +803,33 @@ public class ClassifierResultsCollection implements DebugPrinting {
      * @throws java.lang.Exception if the classifiers searched for were not loaded into this collection
      */
     public ClassifierResultsCollection sliceClassifiers(String[] classifiersToSlice) throws Exception { 
+        int[] origClassifierIds = new int[classifiersToSlice.length];
+        String[] keptNamesStorage = new String[classifiersToSlice.length];
+        String[] keptNamesOutput = new String[classifiersToSlice.length];
+        String[] keptReadPaths = new String[classifiersToSlice.length];
+        
         //perform existence checks before allocating the mem
-        for (String classifier : classifiersToSlice)
-            if (find(classifierNamesInStorage, classifier) == -1)
+        for (int i = 0; i < classifiersToSlice.length; i++) {
+            String classifier = classifiersToSlice[i];
+            origClassifierIds[i] = find(classifierNamesInStorage, classifier);
+            if (origClassifierIds[i] == -1)
                 throwSliceError("classifiers", classifierNamesInStorage, classifier);
+            else {
+                keptNamesStorage[i] = classifierNamesInStorage[origClassifierIds[i]];
+                keptNamesOutput[i] = classifierNamesInOutput[origClassifierIds[i]];
+                keptReadPaths[i] = resultsFilesDirectories[origClassifierIds[i]];
+            }
+        }
                 
         //copy across the results
         ClassifierResults[][][][] subResults = new ClassifierResults[numSplits][classifiersToSlice.length][][];
-        for (int s = 0; s < numSplits; s++) {
-            for (int cts = 0; cts < classifiersToSlice.length; cts++) {
-                int cidOrig = find(classifierNamesInStorage, classifiersToSlice[cts]); //know it exists, did checks above
-                subResults[s][cts] = this.allResults[s][cidOrig];
-            }
-        }
+        for (int s = 0; s < numSplits; s++)
+            for (int cts = 0; cts < classifiersToSlice.length; cts++)
+                subResults[s][cts] = this.allResults[s][origClassifierIds[cts]];
         
-        //copy across the meta info to neew collection object
+        //copy across the meta info to new collection object
         ClassifierResultsCollection newCol = new ClassifierResultsCollection(this, subResults);
-        newCol.setClassifiers(classifiersToSlice); //checking the particular meta info sliced
+        newCol.setClassifiers(keptNamesStorage, keptNamesOutput, keptReadPaths); //setting the particular meta info sliced
         return newCol;
     }
     
@@ -687,9 +874,9 @@ public class ClassifierResultsCollection implements DebugPrinting {
             }
         }
         
-        //copy across the meta info to neew collection object
+        //copy across the meta info to new collection object
         ClassifierResultsCollection newCol = new ClassifierResultsCollection(this, subResults);
-        newCol.setDatasets(datasetsToSlice); //checking the particular meta info sliced
+        newCol.setDatasets(datasetsToSlice); //setting the particular meta info sliced
         return newCol;
     }
     
@@ -745,9 +932,9 @@ public class ClassifierResultsCollection implements DebugPrinting {
             }
         }
         
-        //copy across the meta info to neew collection object
+        //copy across the meta info to new collection object
         ClassifierResultsCollection newCol = new ClassifierResultsCollection(this, subResults);
-        newCol.setFolds(foldsToSlice); //checking the particular meta info sliced
+        newCol.setFolds(foldsToSlice); //setting the particular meta info sliced
         return newCol;
     }
 
@@ -833,8 +1020,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
     
     public static void main(String[] args) throws Exception {
         ClassifierResultsCollection col = new ClassifierResultsCollection();
-        col.setBaseReadPath("C:/JamesLPHD/CAWPEExtension/Results/");
-        col.setClassifiers(new String[] { "Logistic", "SVML", "MLP" });
+        col.addClassifiers(new String[] { "Logistic", "SVML", "MLP" }, "C:/JamesLPHD/CAWPEExtension/Results/");
         col.setDatasets(Arrays.copyOfRange(DatasetLists.ReducedUCI, 0, 5));
         col.setFolds(10);
         col.setSplit_Test();

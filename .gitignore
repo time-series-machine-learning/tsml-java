@@ -24,6 +24,7 @@ hs_err_pid*
 # intellij
 .idea/
 *.iml
+classes/*
 
 # gradle
 .gradle/
