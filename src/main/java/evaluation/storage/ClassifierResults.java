@@ -61,6 +61,9 @@ import utilities.InstanceTools;
  *    - get/setBenchmarkTime(long)
  *    - get/setMemory(long)
  *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
+ *    - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
+ *    - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
+ *    - get/setBuildAndEstimateTime(long) (time to train on full data, AND estimate error on it) 
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  * 
@@ -129,7 +132,16 @@ import utilities.InstanceTools;
  * @date 19/02/19
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
-       
+    
+    /**
+     * Print a message with the filename to stdout when a file cannot be loaded.
+     * Can get very tiresome if loading thousands of files with some expected failures, 
+     * and a higher level process already summarises them, thus this option to 
+     * turn off the messages
+     */
+    public static boolean printOnFailureToLoad = true;
+    
+    
 //LINE 1: meta info, set by user
     private String classifierName = "";
     private String datasetName = "";
@@ -239,6 +251,20 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     private long errorEstimateTime = -1;
+    
+    /**
+     * This measures the total time to build the classifier on the train data 
+     * AND to estimate the classifier's error on the same train data. For classifiers 
+     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their 
+     * own error in some way during the build process, this will simply be the 
+     * buildTime and the errorEstimateTime added together. 
+     * 
+     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may 
+     * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of 
+     * the work needed to form an estimate (which the field errorEstimateTime measures from scratch) 
+     * may have already been accounted for by the buildTime
+     */
+    private long buildPlusEstimateTime = -1;
     
 //REMAINDER OF THE FILE - 1 prediction per line
     //raw performance data. currently just four parallel arrays
@@ -853,6 +879,39 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      */
     public void setErrorEstimateTime(long errorEstimateTime) {
         this.errorEstimateTime = errorEstimateTime;
+    }
+    
+    
+    /**
+     * This measures the total time to build the classifier on the train data 
+     * AND to estimate the classifier's error on the same train data. For classifiers 
+     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their 
+     * own error in some way during the build process, this will simply be the 
+     * buildTime and the errorEstimateTime added together. 
+     * 
+     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may 
+     * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of 
+     * the work needed to form an estimate (which the field errorEstimateTime measures from scratch) 
+     * may have already been accounted for by the buildTime
+     */
+    public long getBuildPlusEstimateTime() {
+        return buildPlusEstimateTime;
+    }
+    
+    /**
+     * This measures the total time to build the classifier on the train data 
+     * AND to estimate the classifier's error on the same train data. For classifiers 
+     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their 
+     * own error in some way during the build process, this will simply be the 
+     * buildTime and the errorEstimateTime added together. 
+     * 
+     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may 
+     * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of 
+     * the work needed to form an estimate (which the field errorEstimateTime measures from scratch) 
+     * may have already been accounted for by the buildTime
+     */
+    public void setBuildPlusEstimateTime(long buildPlusEstimateTime) {
+        this.buildPlusEstimateTime = buildPlusEstimateTime;
     }
            
     
@@ -1553,6 +1612,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             errorEstimateMethod = parts[6];
         if (parts.length > 7) 
             errorEstimateTime = Long.parseLong(parts[7]);
+            errorEstimateMethod = parts[6];
+        if (parts.length > 8) 
+            buildPlusEstimateTime = Long.parseLong(parts[8]);
         
         return acc;
     }
@@ -1564,7 +1626,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + memoryUsage
             + "," + numClasses()
             + "," + errorEstimateMethod
-            + "," + errorEstimateTime;
+            + "," + errorEstimateTime
+            + "," + buildPlusEstimateTime;
         
         return res;
     }
@@ -1578,60 +1641,73 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
     
     public void loadResultsFromFile(String path) throws FileNotFoundException, Exception {
-        //init
-        trueClassValues = new ArrayList<>();
-        predClassValues = new ArrayList<>();
-        predDistributions = new ArrayList<>();
-        predTimes = new ArrayList<>();
-        predDescriptions = new ArrayList<>();
-        numInstances = 0;
-        acc = -1;
-        buildTime = -1;
-        testTime = -1; 
-        memoryUsage = -1;
-
-        //check file exists
-        File f = new File(path);
-        if (!(f.exists() && f.length() > 0)) 
-            throw new FileNotFoundException("File " + path + " NOT FOUND");
-
-        Scanner inf = new Scanner(f);
-
-        //parse meta infos
-        parseFirstLine(inf.nextLine());
-        parseSecondLine(inf.nextLine());
-        double reportedTestAcc = parseThirdLine(inf.nextLine());
-
-        //fileType was read in from first line.
-        switch (fileType) {
-            case PREDICTIONS: {
-                //have all meta info, start reading predictions or metrics
-                instancePredictionsFromScanner(inf);
-
-                //acts as a basic form of verification, does the acc reported on line 3 align with 
-                //the acc calculated while reading predictions
-                double eps = 1.e-8;
-                if (Math.abs(reportedTestAcc - acc) > eps) {
-                    throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
-                            + "by more than eps (" + eps + "). File = " + path + ". numinstances = " + numInstances + ". numClasses = " + numClasses);
-                }
-                
-                if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
-                    if (printDistMissingWarning)
-                        System.out.println("Probabiltiy distributions missing from file: " + path);
-                }
-                
-                break;
-            }
-            case METRICS:
-                allPerformanceMetricsFromScanner(inf);
-                break;
-            case COMPACT:
-                throw new UnsupportedOperationException("COMPACT file reading not yet supported");
-        }
         
-        finalised = true;
-        inf.close();
+        try { 
+            //init
+            trueClassValues = new ArrayList<>();
+            predClassValues = new ArrayList<>();
+            predDistributions = new ArrayList<>();
+            predTimes = new ArrayList<>();
+            predDescriptions = new ArrayList<>();
+            numInstances = 0;
+            acc = -1;
+            buildTime = -1;
+            testTime = -1; 
+            memoryUsage = -1;
+
+            //check file exists
+            File f = new File(path);
+            if (!(f.exists() && f.length() > 0)) 
+                throw new FileNotFoundException("File " + path + " NOT FOUND");
+
+            Scanner inf = new Scanner(f);
+
+            //parse meta infos
+            parseFirstLine(inf.nextLine());
+            parseSecondLine(inf.nextLine());
+            double reportedTestAcc = parseThirdLine(inf.nextLine());
+
+            //fileType was read in from first line.
+            switch (fileType) {
+                case PREDICTIONS: {
+                    //have all meta info, start reading predictions or metrics
+                    instancePredictionsFromScanner(inf);
+
+                    //acts as a basic form of verification, does the acc reported on line 3 align with 
+                    //the acc calculated while reading predictions
+                    double eps = 1.e-8;
+                    if (Math.abs(reportedTestAcc - acc) > eps) {
+                        throw new ArithmeticException("Calculated accuracy (" + acc + ") differs from written accuracy (" + reportedTestAcc + ") "
+                                + "by more than eps (" + eps + "). File = " + path + ". numinstances = " + numInstances + ". numClasses = " + numClasses);
+                    }
+
+                    if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
+                        if (printDistMissingWarning)
+                            System.out.println("Probabiltiy distributions missing from file: " + path);
+                    }
+
+                    break;
+                }
+                case METRICS:
+                    allPerformanceMetricsFromScanner(inf);
+                    break;
+                case COMPACT:
+                    throw new UnsupportedOperationException("COMPACT file reading not yet supported");
+            }
+
+            finalised = true;
+            inf.close();
+        }
+        catch (FileNotFoundException fnf) { 
+            if (printOnFailureToLoad)
+                System.out.println("File " + path + " NOT FOUND");
+            throw fnf;
+        }
+        catch (Exception ex) {
+            if (printOnFailureToLoad)
+                System.out.println("File " + path + " FAILED TO LOAD");
+            throw ex;
+        }
     }
    
     
