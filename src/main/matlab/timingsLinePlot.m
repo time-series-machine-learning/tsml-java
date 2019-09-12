@@ -7,12 +7,21 @@ function [ f ] = timingsLinePlot( filename,evalSet )
 %   dataset2,    c1d1time,    c2d1time, ...
 %        ...,         ...,         ...
 
-[timings, headers] = readcsv(strcat(filename,'.csv'), true);
+%[timings, headers] = readcsv(strcat(filename,'.csv'), true);
+%compatability issues, deprecated
+
+data = readtable(strcat(filename,'.csv'), 'ReadRowNames', 1);
+%timings = data(1:size(data,1),2:size(data,2)); 
+%table objects are dumb. 
+
+dsets = data.Properties.RowNames;
+timings = data.Variables;
+classifiers = data.Properties.VariableNames;
+
 [ ~, inds ] = sort(median(timings, 2), 'ascend'); %mean
 timings = timings(inds, :);
 
 % data for x axis
-dsets = headers(2:size(headers,1),1);
 for i=1:length(dsets)
     dsets(i) = replace(dsets(i),'_','\_');
 end
@@ -25,9 +34,6 @@ if numDsets > 10
 end 
 ticks = floor(linspace(1,numDsets,numTicks));
 ticklabels = dsets(ticks);
-
-%data for legend
-classifiers = headers(1,2:size(headers,2));
 
 
 % start drawing
