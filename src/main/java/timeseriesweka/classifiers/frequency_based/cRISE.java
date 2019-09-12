@@ -18,7 +18,6 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
-import sandbox.transforms.FACF;
 import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -420,15 +419,6 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
                 acf.setNormalized(false);
                 try {
                     temp = acf.process(instances);
-                } catch (Exception e) {
-                    System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
-                }
-                break;
-            case FACF:
-                FACF FACF = new FACF();
-                FACF.setMaxLag(getMaxLag(instances));
-                try {
-                    temp = FACF.process(instances);
                 } catch (Exception e) {
                     System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
                 }
