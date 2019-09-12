@@ -537,10 +537,16 @@ public class Experiments  {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
+                    
+                    //for non-TrainAccEstimators, this is simply the sum of the two
+                    trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+                    
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
                 //else 
                 //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
+                //   todo should change this to the classifier gives the results object back to experiments, 
+                //      we can do any standard behaviour here, and then continue on. 
             }
             LOGGER.log(Level.FINE, "Train estimate written");
 
