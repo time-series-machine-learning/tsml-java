@@ -15,6 +15,7 @@ package timeseriesweka.classifiers.frequency_based;
  */
 import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
@@ -509,6 +510,8 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
    //TUNED TSC Classifiers
+   
+//   TESTY
   /* Valid options are: <p/>
   * <pre> -T Number of base classifiers.
    * <pre> -I min Interval, integer, should be in range 3 to m-MINa check in build classifier is made to see if if.
