@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with FastWWSearch.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package timeseriesweka.classifiers.distance_based.fast_dtw.windowSearcher;
+package timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher;
 
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.LazyAssessNN.RefineReturnType;
-import timeseriesweka.classifiers.distance_based.fast_dtw.items.SequenceStatsCache;
-import timeseriesweka.classifiers.distance_based.fast_dtw.sequences.SymbolicSequence;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.LazyAssessNN;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.LazyAssessNN.RefineReturnType;
+import timeseriesweka.classifiers.distance_based.FastWWS.items.SequenceStatsCache;
+import timeseriesweka.classifiers.distance_based.FastWWS.sequences.SymbolicSequence;
 
 import java.util.ArrayList;
 import java.util.Collections;
