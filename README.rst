@@ -119,3 +119,8 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 James Large (@James-Large, james.large@uea.ac.uk), Jason Lines (@jasonlines), George Oastler (@goastler), Matthew Middlehurst (@MatthewMiddlehurst), Michael Flynn (@Michael Flynn), Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), Patrick Schäfer (@patrickzib)
 
 We welcome anyone who would like to contribute their algorithms! 
+
+License 
+-------
+
+GNU General Public License v3.0
