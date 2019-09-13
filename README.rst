@@ -24,7 +24,7 @@ We are looking into deploying this project on Maven or Gradle in the future. For
 Overview
 --------
 
-This codebase mainly represents the implementation of different algorithms in a common framwork, which at the time leading up to the `Great Time Series Classification Bake Off <https://link.springer.com/article/10.1007/s10618-016-0483-9>`__ in particular was a real problem, with implementations being in any of Python, C/C++, Matlab, R, Java, etc. or even combinations thereof. 
+This codebase mainly represents the implementation of different algorithms in a common framework, which at the time leading up to the `Great Time Series Classification Bake Off <https://link.springer.com/article/10.1007/s10618-016-0483-9>`__ in particular was a real problem, with implementations being in any of Python, C/C++, Matlab, R, Java, etc. or even combinations thereof. 
 
 We therefore mainly provide implementations of different classifiers as well as experimental and results analysis pipelines with the hope of promoting and streamlining open source, easily comparable, and easily reproducible results, specifically within the TSC space. 
 
@@ -77,7 +77,7 @@ NN_DTW_I
 Clusterers
 ``````````
 
-Currently quite limited, asdie from those already shipped with Weka. 
+Currently quite limited, aside from those already shipped with Weka. 
 
 =====================  =======
 UnsupervisedShapelets
@@ -103,7 +103,7 @@ SAX                  Sine                 SummaryStats
 Paper-Supporting Branches
 -------------------------
 
-This project acts as the general open-source codebase for our research, especially the `Great Time Series Classification Bake Off <https://link.springer.com/article/10.1007/s10618-016-0483-9>`__. We are also trialing a process of creating stable branches in support of specific outputs. 
+This project acts as the general open-source codebase for our research, especially the `Great Time Series Classification Bake Off <https://link.springer.com/article/10.1007/s10618-016-0483-9>`__. We are also trialling a process of creating stable branches in support of specific outputs. 
 
 Current branches of this type are: 
 
