@@ -116,7 +116,13 @@ Contributors
 
 Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_bagnall>`__, ajb@uea.ac.uk)
 
-James Large (@James-Large, james.large@uea.ac.uk), Jason Lines (@jasonlines), George Oastler (@goastler), Matthew Middlehurst (@MatthewMiddlehurst), Michael Flynn (@Michael Flynn), Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), Patrick Schäfer (@patrickzib)
+* James Large (@James-Large, `@jammylarge <https://twitter.com/jammylarge>`__, james.large@uea.ac.uk)
+* Jason Lines (@jasonlines), 
+* George Oastler (@goastler), 
+* Matthew Middlehurst (@MatthewMiddlehurst), 
+* Michael Flynn (@Michael Flynn), 
+* Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), 
+* Patrick Schäfer (@patrickzib)
 
 We welcome anyone who would like to contribute their algorithms! 
 
