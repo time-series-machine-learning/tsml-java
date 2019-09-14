@@ -142,7 +142,9 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     protected static final long serialVersionUID = 22554L;
 
-    public cBOSS(){}
+    public cBOSS(){
+        useRecommendedSettings();
+    }
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
