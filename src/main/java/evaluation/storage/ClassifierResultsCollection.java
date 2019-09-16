@@ -633,7 +633,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
                 perClassifierError.throwIfErrors();
                 printlnDebug(classifierStorage + "(" + classifierOutput + ") successfully read in");
             } catch (Exception e) {
-                masterError.log("Classifier Errors: " + classifierNamesInStorage[c] + "\n" + e);
+                masterError.log("Classifier Errors: " + classifierNamesInStorage[c] + "\n" + e+" ");
+                e.printStackTrace();
             }
             
             numMissingResults += classifierFnfs;

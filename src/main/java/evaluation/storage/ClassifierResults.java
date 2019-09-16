@@ -1615,10 +1615,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             errorEstimateMethod = parts[6];
         if (parts.length > 7)
             errorEstimateTime = Long.parseLong(parts[7]);
-            errorEstimateMethod = parts[6];
         if (parts.length > 8)
             buildPlusEstimateTime = Long.parseLong(parts[8]);
-
         return acc;
     }
     private String generateThirdLine() {
