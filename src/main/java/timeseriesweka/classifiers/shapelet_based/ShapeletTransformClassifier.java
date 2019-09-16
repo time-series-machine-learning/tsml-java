@@ -26,7 +26,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -35,8 +35,8 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
-import weka_uea.classifiers.ensembles.weightings.TrainAcc;
+import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
+import weka_extras.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -47,8 +47,8 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
-import weka_uea.classifiers.ensembles.voting.MajorityVote;
-import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
+import weka_extras.classifiers.ensembles.voting.MajorityVote;
+import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -58,7 +58,7 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import weka_uea.classifiers.ensembles.ContractRotationForest;
+import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
  *
@@ -141,8 +141,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
 
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
  
         

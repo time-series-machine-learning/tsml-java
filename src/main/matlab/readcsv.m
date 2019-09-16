@@ -14,6 +14,9 @@ function [data, headers] = readcsv(path, hasRowHeaders)
         headers = fgets(fileID); 
         headers = split(headers, ',');
         headers = headers';
+        
+        headers = strip(headers);
+        %jamesl fixing trailing newline on last header
     end
     fclose(fileID);
     if hasRowHeaders

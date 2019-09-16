@@ -30,7 +30,7 @@ import java.util.function.Function;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import weka_uea.classifiers.SaveEachParameter;
+import weka_extras.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;

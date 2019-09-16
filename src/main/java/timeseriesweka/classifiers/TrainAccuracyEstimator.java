@@ -49,7 +49,7 @@ public interface TrainAccuracyEstimator extends SaveParameterInfo{
  * 
  * ProblemName,ClassifierName,train
 *  Parameter info, if available
-*  TrainAccuracy
+*  TrainAccuracy, build time, test time.
 * If available, the preds and probs will also be written 
 * Case1TrueClass,Case1PredictedClass,,ProbClass1,ProbClass2, ...
 * Case2TrueClass,Case2PredictedClass,,ProbClass1,ProbClass2, ...

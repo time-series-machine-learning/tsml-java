@@ -22,7 +22,7 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
@@ -113,9 +113,9 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         
         cvAccs = new double[4][];
         cvAccs[0] = ee.getCVAccs();
-        cvAccs[1] = st.getIndividualCvAccs();
-        cvAccs[2] = acf.getIndividualCvAccs();
-        cvAccs[3] = ps.getIndividualCvAccs();
+        cvAccs[1] = st.getIndividualAccEstimates();
+        cvAccs[2] = acf.getIndividualAccEstimates();
+        cvAccs[3] = ps.getIndividualAccEstimates();
         
         cvSum = 0;
         for(int e = 0; e < cvAccs.length;e++){

@@ -27,13 +27,13 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
-import weka_uea.classifiers.ensembles.weightings.TrainAcc;
+import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
+import weka_extras.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
@@ -127,8 +127,8 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
     
     @Override
@@ -204,7 +204,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             format = doTransform ? createTransformData(data, timeLimit) : data;
             transformBuildTime=System.currentTimeMillis()-startTime;
             if(setSeed)
-                ensemble.setRandSeed((int) seed);
+                ensemble.setSeed((int) seed);
 
             redundantFeatures=InstanceTools.removeRedundantTrainAttributes(format);
 

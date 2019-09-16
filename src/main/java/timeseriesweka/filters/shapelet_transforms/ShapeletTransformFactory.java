@@ -97,8 +97,9 @@ public class ShapeletTransformFactory {
                                             .useBinaryClassValue()
                                             .useCandidatePruning()
                                             .setKShapelets(Math.min(2000, n))
-                                            .setDistanceType(DistanceType.IMP_ONLINE)
+                                            .setDistanceType(DistanceType.NORMAL)
                                             .setSearchOptions(sOp)
+                                            .setRescalerType(SubSeqDistance.RescalerType.NORMALISATION)
                                             .build();
         
         return new ShapeletTransformFactory(options).getTransform();

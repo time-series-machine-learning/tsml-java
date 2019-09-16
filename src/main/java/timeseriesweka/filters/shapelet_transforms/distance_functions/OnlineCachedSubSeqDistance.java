@@ -45,7 +45,7 @@ public class OnlineCachedSubSeqDistance extends SubSeqDistance{
         data = new double[dataSize][];
         for (int i = 0; i < dataSize; i++)
         {
-            data[i] = zNormalise(dataInst.get(i).toDoubleArray(), true);
+            data[i] = seriesRescaler.rescaleSeries(dataInst.get(i).toDoubleArray(), true);
         }
     }
     
