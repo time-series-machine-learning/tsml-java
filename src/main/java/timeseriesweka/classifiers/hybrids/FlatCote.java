@@ -175,9 +175,13 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
     public static void main(String[] args) throws Exception{
         
         FlatCote fc = new FlatCote();
-        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
+        String datasetName = "ItalyPowerDemand";
+        
+        Instances train = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TEST");
         fc.buildClassifier(train);
+        double a=ClassifierTools.accuracy(test, fc);
+        System.out.println("Test acc for italy = "+a);
         
         int correct = 0;
         for(int i = 0; i < test.numInstances(); i++){

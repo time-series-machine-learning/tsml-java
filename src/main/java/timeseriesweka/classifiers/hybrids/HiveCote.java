@@ -39,6 +39,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -137,6 +138,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         names = new ArrayList<>();
         
         classifiers.add(new ElasticEnsemble());
+//        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         CAWPE h = new CAWPE();
         DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
         if(contractTime){
@@ -661,14 +663,15 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         String datasetName = "ItalyPowerDemand";
 //        String datasetName = "MoteStrain";
         
-        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
-
+        Instances train = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TEST");
+        
         HiveCote hive = new HiveCote();
         hive.makeShouty();
-        
         hive.buildClassifier(train);
-        
+        double a=ClassifierTools.accuracy(test, hive);
+        System.out.println("Test acc for italy = "+a);
+        System.exit(0);
         hive.writeTestPredictionsToFile(test, "prototypeSheets/", datasetName, "0");
         
         int correct = 0;
