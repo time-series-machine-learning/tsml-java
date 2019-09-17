@@ -1,4 +1,4 @@
-package transformations;
+package statistics.transformations;
 /*
  * Created on Jan 31, 2006
  *
