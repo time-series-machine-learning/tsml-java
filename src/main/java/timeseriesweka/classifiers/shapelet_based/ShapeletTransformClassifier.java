@@ -64,10 +64,11 @@ import weka_extras.classifiers.ensembles.ContractRotationForest;
  *
  * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
  *  then classifies with rotation forest.
- * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
+ * If can be contracted to a maximum run time for shapelets, and can be configured for a different base classifier
+ * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable {
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable{
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -122,13 +123,13 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public ShapeletTransformClassifier(){
-        classifier= new ContractRotationForest();
-        
+        RotationForest rf= new RotationForest();
+        rf.setNumIterations(200);
+        classifier=rf;
         
 //        configureCAWPEEnsemble();
     }
 
-    
     public void setSeed(long sd){
         setSeed=true;
         seed = sd;
@@ -244,6 +245,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         long classifierTime=timeLimit-transformBuildTime;
         if(classifier instanceof TrainTimeContractable)
             ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
+//Here get the train estimate directly from classifier using cv for now        
+        
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);

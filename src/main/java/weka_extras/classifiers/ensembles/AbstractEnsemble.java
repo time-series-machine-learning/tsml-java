@@ -887,7 +887,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             this.trainInsts = data;
         }else{
            transform.setInputFormat(data);
-           this.trainInsts = Filter.useFilter(data,transform);
+//           this.trainInsts = Filter.useFilter(data,transform);
+           this.trainInsts = transform.process(data);           
         }
           
         //init
@@ -1016,7 +1017,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
             transform.setInputFormat(rawContainer);
-            Instances converted = Filter.useFilter(rawContainer,transform);
+//            Instances converted = Filter.useFilter(rawContainer,transform);
+            Instances converted = transform.process(rawContainer);
             ins = converted.instance(0);
         }
 

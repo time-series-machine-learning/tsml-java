@@ -138,19 +138,21 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         names = new ArrayList<>();
         
         classifiers.add(new ElasticEnsemble());
-//        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
-        CAWPE h = new CAWPE();
-        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+//        CAWPE h = new CAWPE();
+//        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
         if(contractTime){
-            setTrainTimeLimit(TimeUnit.HOURS,contractHours);
+            stc.setHourLimit(contractHours);
         }
-        h.setTransform(st);
         
-        classifiers.add(h); // to get around the issue of needing training data 
+        classifiers.add(stc); // to get around the issue of needing training data 
         RISE rise = new RISE();
         classifiers.add(rise);
         classifiers.add(new BOSS());
-        classifiers.add(new TSF());
+        TSF tsf=new TSF();
+        tsf.setEstimatorMethod("CV");
+        tsf.setFindTrainAccuracyEstimate(true);
+        classifiers.add(tsf);
         
         names.add("EE");
         names.add("ST");
