@@ -1,4 +1,4 @@
-package transformations;
+package statistics.transformations;
 import fileIO.*;
 import statistics.tests.ResidualTests;
 

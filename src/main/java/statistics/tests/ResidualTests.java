@@ -19,16 +19,16 @@ import statistics.distributions.NormalDistribution;
 import fileIO.OutFile;
 import java.io.FileReader;
 import java.util.Arrays;
-import transformations.ArrayPair;
-import transformations.LinearModel;
-import transformations.MatrixSort;
+import statistics.transformations.ArrayPair;
+import statistics.transformations.LinearModel;
+import statistics.transformations.MatrixSort;
 import weka.classifiers.functions.LinearRegression;
 import weka.core.Instance;
 import weka.core.Instances;
 
 /**
  * 
- * Class to test residuals. Dont know where classes MatrixSort and LinearModel are!
+ * Class to test residuals. 
  */
 public class ResidualTests {
 
