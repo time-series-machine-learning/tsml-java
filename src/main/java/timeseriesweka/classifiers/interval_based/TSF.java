@@ -243,7 +243,15 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     @Override
      public ClassifierResults getTrainResults(){
          return trainResults;
-     }        
+     }   
+
+    @Override
+    public double getTrainAcc() {
+        return trainResults.getAcc();
+    }
+
+
+     
 /**
  * Perhaps make this coherent with setOptions(String[] ar)?
  * @return String written to results files
