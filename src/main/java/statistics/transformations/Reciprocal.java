@@ -1,4 +1,4 @@
-package transformations;
+package statistics.transformations;
 
 import weka.core.Instance;
 import weka.core.Instances;

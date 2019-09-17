@@ -1,4 +1,4 @@
-package transformations;
+package statistics.transformations;
 
 
 import statistics.distributions.NormalDistribution;
