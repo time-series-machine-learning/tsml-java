@@ -244,8 +244,8 @@ public class WeightedDTW extends BasicDTW{
     /**
      * Recursive method that finds and prints the minimum warped path
      * 
-     * @param int i position in distances, should be max of series
-     * @param int j position in distances, should be max of series
+     * @param i position in distances, should be max of series
+     * @param j position in distances, should be max of series
      * 
      * @return current position
      */
@@ -338,5 +338,46 @@ public class WeightedDTW extends BasicDTW{
     @Override
     public String toString() {
         return "BasicDTW{ " + "earlyAbandon=" + this.isEarlyAbandon + " }";
+    }
+
+    /************************************************************************************************
+     Support for FastEE
+     ************************************************************************************************/
+    private final static int MAX_SEQ_LENGTH = 4000;
+    private final static double[][] matrixD = new double[MAX_SEQ_LENGTH][MAX_SEQ_LENGTH];
+
+    public static double distance(final Instance first, final Instance second, final double[] weightVector) {
+        final int m = first.numAttributes()-1;
+        final int n = second.numAttributes()-1;
+        double diff;
+        double minDistance;
+        int i, j;
+
+        //first value
+        diff = first.value(0) - second.value(0);
+        matrixD[0][0] = weightVector[0] * diff * diff;
+
+        //first column
+        for (i = 1; i < m; i++) {
+            diff = first.value(i) - second.value(0);
+            matrixD[i][0] = matrixD[i - 1][0] + weightVector[i] * diff * diff;
+        }
+
+        //top row
+        for (j = 1; j < n; j++) {
+            diff = first.value(0) - second.value(j);
+            matrixD[0][j] = matrixD[0][j - 1] + weightVector[j] * diff * diff;
+        }
+
+        //warp rest
+        for (i = 1; i < m; i++) {
+            for (j = 1; j < n; j++) {
+                //calculate distances
+                minDistance = Math.min(matrixD[i][j - 1], Math.min(matrixD[i - 1][j], matrixD[i - 1][j - 1]));
+                diff = first.value(i) - second.value(j);
+                matrixD[i][j] = minDistance + weightVector[Math.abs(i - j)] * diff * diff;
+            }
+        }
+        return matrixD[m - 1][n - 1];
     }
 }
