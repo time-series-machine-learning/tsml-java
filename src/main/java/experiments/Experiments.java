@@ -92,6 +92,9 @@ public class Experiments  {
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
     public static boolean debug = false;
+
+    private static boolean testFoldExists;
+    private static boolean trainFoldExists;
     
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
@@ -439,9 +442,15 @@ public class Experiments  {
             f.mkdirs();
         
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+        String targetFileNameTrain = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
+
+        testFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileName);
+        trainFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileNameTrain);
         
         //Check whether fold already exists, if so, dont do it, just quit
-        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (!expSettings.forceEvaluation &&
+                ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
+                        (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return;
         }
@@ -517,7 +526,7 @@ public class Experiments  {
         
         try {
             //Setup train results
-            if (expSettings.generateErrorEstimateOnTrainSet) 
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists)
                 trainResults = findOrSetUpTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);
             LOGGER.log(Level.FINE, "Train estimate ready.");
 
@@ -532,7 +541,7 @@ public class Experiments  {
                 serialiseClassifier(expSettings, classifier);
             
             //Write train results
-            if (expSettings.generateErrorEstimateOnTrainSet) {
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists) {
                 if (!(classifier instanceof TrainAccuracyEstimator)) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
@@ -862,6 +871,6 @@ public class Experiments  {
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
-        System.out.println("Finished all threads");            
+        System.out.println("Finished all threads");
     }
 }

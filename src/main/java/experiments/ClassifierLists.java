@@ -300,6 +300,7 @@ public class ClassifierLists {
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
+                ((ShapeletTransformClassifier) c).setHourLimit(5);
                 break;
             case "TSBF":
                 c=new TSBF();
