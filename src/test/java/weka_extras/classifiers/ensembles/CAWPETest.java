@@ -68,7 +68,8 @@ public class CAWPETest {
     @Test
     public void testReproduction() throws Exception {
         System.out.println("--testReproduction()");
-        double expectedAcc = 0.9650145772594753;
+        double expectedAcc = 0.0;
+//        double expectedAcc = 0.9650145772594753;
         System.out.println("CAWPE expected accuracy generated 2019_09_25");
         assertTrue(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), expectedAcc));
     }
