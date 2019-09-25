@@ -16,8 +16,6 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import evaluation.storage.ClassifierResults;
-import evaluation.tuning.ParameterSpace;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -25,14 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
 
 /**
  *
- * @author xmw13bzu
+ * @author James Large (james.large@uea.ac.uk)
  */
 public class TSFTest {
     
@@ -58,7 +52,7 @@ public class TSFTest {
     }
 
     /**
-     * Test of simple results reproduction, of class CAWPE.
+     * Test of simple results reproduction, of class TSF.
      */
     @Test
     public void testReproduction() throws Exception {
