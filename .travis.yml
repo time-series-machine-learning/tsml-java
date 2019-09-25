@@ -5,4 +5,4 @@ branches:
   only:
   - gh-pages
   - /.*/
-script: ./gradlew test
+script: ./gradlew test --info

@@ -1,4 +1,3 @@
-apply plugin: 'java'
 
 plugins {
     java
@@ -13,12 +12,6 @@ repositories {
 dependencies {
     testImplementation("junit:junit:4.12")
     implementation(fileTree("lib"))
-}
-
-test {
-    testLogging {
-        exceptionFormat "full"
-    }
 }
 
 application {
