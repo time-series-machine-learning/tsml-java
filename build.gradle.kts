@@ -13,6 +13,12 @@ dependencies {
     implementation(fileTree("lib"))
 }
 
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}
+
 application {
     mainClassName = "App"
 }
