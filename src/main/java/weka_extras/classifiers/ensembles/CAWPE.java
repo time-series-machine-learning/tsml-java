@@ -659,8 +659,11 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
-
-        buildCAWPEPaper_AllResultsForFigure3();
+//        buildCAWPEPaper_AllResultsForFigure3();
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
+        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753));
+        
 //        test_basic();
 //        System.out.println("");
 //        test_threaded();

@@ -18,8 +18,10 @@ package utilities;
 
  */
 
+import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import experiments.data.DatasetLoading;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Random;
@@ -699,4 +701,40 @@ public class ClassifierTools {
         return data;
     }
         
+    
+    /**
+     * Simple utility method to evaluate the given classifier on the ItalyPowerDemand dataset (fold 0)
+     * and return the results. 
+     */
+    public static ClassifierResults testUtils_evalOnIPD(Classifier c) throws Exception { 
+        int seed = 0;
+        
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(seed, true, true);
+        
+        return eval.evaluate(c, data[0], data[1]);
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * in order to get the expected accuracy in the first place. It is up to the human 
+     * that the value returned is in fact 'correct' to the best of their knowledge, 
+     * tests of this nature will only confirm reproducability, but the classifier
+     * could e.g. be consistently WRONG.
+     */
+    public static double testUtils_getIPDAcc(Classifier c) throws Exception { 
+        return testUtils_evalOnIPD(c).getAcc();
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * and compare the test accuracy to a given expected value (defined by prior 
+     * experimentation/confirmation by human). 
+     */
+    public static boolean testUtils_confirmIPDReproduction(Classifier c, double expectedTestAccuracy) throws Exception { 
+        ClassifierResults res = testUtils_evalOnIPD(c);
+        System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
+        return res.getAcc() == expectedTestAccuracy;
+    }
+    
 }
