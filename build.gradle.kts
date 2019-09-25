@@ -1,3 +1,5 @@
+apply plugin: 'java'
+
 plugins {
     java
     application
@@ -15,7 +17,7 @@ dependencies {
 
 test {
     testLogging {
-        exceptionFormat = 'full'
+        exceptionFormat "full"
     }
 }
 
