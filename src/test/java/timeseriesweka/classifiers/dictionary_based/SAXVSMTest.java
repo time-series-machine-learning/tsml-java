@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.interval_based;
+package timeseriesweka.classifiers.dictionary_based;
 
 import java.lang.invoke.MethodHandles;
 import org.junit.After;
@@ -29,10 +29,10 @@ import utilities.ClassifierTools;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TSFTest {
-    static String cleanClassNameString = MethodHandles.lookup().lookupClass().getSimpleName().replace("Test", "");
+public class SAXVSMTest {
+     static String cleanClassNameString = MethodHandles.lookup().lookupClass().getSimpleName().replace("Test", "");
     
-    public TSFTest() {
+    public SAXVSMTest() {
     }
     
     @BeforeClass
@@ -54,12 +54,11 @@ public class TSFTest {
     }
 
     /**
-     * Test of simple results reproduction, of class TSF.
+     * Test of simple results reproduction.
      */
     @Test
     public void testReproduction() throws Exception {
         System.out.println("--testReproduction()");
-        assertTrue(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019_09_25"));
+        assertTrue(ClassifierTools.testUtils_confirmIPDReproduction(new SAXVSM(), 0.7580174927113703, "2019/09/26"));
     }
-    
 }

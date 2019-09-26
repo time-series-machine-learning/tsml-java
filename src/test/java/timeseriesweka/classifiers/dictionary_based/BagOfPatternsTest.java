@@ -1,38 +1,26 @@
-/*
- * Copyright (C) 2019 xmw13bzu
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-package timeseriesweka.classifiers.interval_based;
+package timeseriesweka.classifiers.dictionary_based;
 
 import java.lang.invoke.MethodHandles;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import utilities.ClassifierTools;
+import weka.classifiers.Classifier;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TSFTest {
+public class BagOfPatternsTest {
     static String cleanClassNameString = MethodHandles.lookup().lookupClass().getSimpleName().replace("Test", "");
     
-    public TSFTest() {
+    public BagOfPatternsTest() {
     }
     
     @BeforeClass
@@ -54,12 +42,12 @@ public class TSFTest {
     }
 
     /**
-     * Test of simple results reproduction, of class TSF.
+     * Test of simple results reproduction.
      */
     @Test
     public void testReproduction() throws Exception {
         System.out.println("--testReproduction()");
-        assertTrue(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019_09_25"));
+        assertTrue(ClassifierTools.testUtils_confirmIPDReproduction(new BagOfPatterns(), 0.8425655976676385, "2019_09_26"));
     }
     
 }

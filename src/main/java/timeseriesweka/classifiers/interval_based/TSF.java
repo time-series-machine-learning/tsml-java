@@ -765,7 +765,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     public static void main(String[] arg) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519));
+        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
         
 //// Basic correctness tests, including setting paras through 
 //        String dataLocation="Z:\\Data\\TSCProblems2018\\";

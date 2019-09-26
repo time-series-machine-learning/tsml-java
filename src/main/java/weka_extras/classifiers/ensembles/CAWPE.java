@@ -677,7 +677,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 //        buildCAWPEPaper_AllResultsForFigure3(null);
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753));
+        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753, "2019_09_25"));
         
 //        test_basic();
 //        System.out.println("");

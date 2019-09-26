@@ -731,8 +731,9 @@ public class ClassifierTools {
      * and compare the test accuracy to a given expected value (defined by prior 
      * experimentation/confirmation by human). 
      */
-    public static boolean testUtils_confirmIPDReproduction(Classifier c, double expectedTestAccuracy) throws Exception { 
+    public static boolean testUtils_confirmIPDReproduction(Classifier c, double expectedTestAccuracy, String dateOfExpectedAcc) throws Exception { 
         ClassifierResults res = testUtils_evalOnIPD(c);
+        System.out.println("Expected accuracy generated " + dateOfExpectedAcc);
         System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
         return res.getAcc() == expectedTestAccuracy;
     }
