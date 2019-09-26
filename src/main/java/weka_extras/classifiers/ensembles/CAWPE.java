@@ -443,19 +443,21 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
      */
-    protected static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
+    protected static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
+        if (writePathBase == null) 
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod06/";
+        
         //init, edit the paths for local running ofc
         String[] dataHeaders = { "UCI", };
         String[] dataPaths = { "C:/UCI Problems/", };
         String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod05/";
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
         int numFolds = 5;
+        
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
 //        String[][] datasets = { DataSets.UCIContinuousFileNames, };
-//        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
 //        String writePathResults =  writePathBase + "Results/";
 //        String writePathAnalysis =  writePathBase + "Analysis/";
 //        int numFolds = 30;
@@ -659,7 +661,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
-//        buildCAWPEPaper_AllResultsForFigure3();
+//        buildCAWPEPaper_AllResultsForFigure3(null);
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
         System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753));
