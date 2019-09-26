@@ -395,10 +395,13 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                                                             String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             for (String classifier : classifiers) {
-                System.out.println("\t" + classifier);
+                if (!Experiments.beQuiet)
+                    System.out.println("\t" + classifier);
 
                 for (String dset : datasetNames[archive]) {
-                    System.out.println(dset);
+                    if (!Experiments.beQuiet)
+                        System.out.println(dset);
+                    
                     for (int fold = 0; fold < numFolds; fold++) {
                           /*1: Problem path args[0]
                             2. Results path args[1]
@@ -524,7 +527,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
  
     protected static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
-        System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
+        if (!Experiments.beQuiet)
+            System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
@@ -545,7 +549,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             String writePath = baseWritePath + dataHeaders[archive] + "/";
 
             for (String dset : datasetNames[archive]) {
-                System.out.println(dset);
+                if (!Experiments.beQuiet)
+                    System.out.println(dset);
 
                 if (dataHeaders[archive].equals("UCI"))
                     all = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + ".arff");
