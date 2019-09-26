@@ -445,15 +445,23 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     protected static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod06/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod08/";
         
-        //init, edit the paths for local running ofc
+        //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "C:/UCI Problems/", };
-        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
+        String[] dataPaths = { "src/main/java/experiments/data/uci/" };
+        String[][] datasets = { { "hayes-roth", "iris", "teaching" } };
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
-        int numFolds = 5;
+        int numFolds = 3;
+        
+//        //init, edit the paths for local running ofc
+//        String[] dataHeaders = { "UCI", };
+//        String[] dataPaths = { "C:/UCI Problems/", };
+//        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
+//        String writePathResults =  writePathBase + "Results/";
+//        String writePathAnalysis =  writePathBase + "Analysis/";
+//        int numFolds = 5;
         
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
