@@ -34,7 +34,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
- * If parameters are known, use the nested class BOSSIndividual and directly provide them.
+ * If parameters are known, use the class BOSSIndividual and directly provide them.
  *
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *

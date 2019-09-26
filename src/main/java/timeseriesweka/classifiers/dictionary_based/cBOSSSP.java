@@ -14,28 +14,28 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-import java.security.InvalidParameterException;
-import java.util.*;
-
-import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.*;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import utilities.*;
-import utilities.samplers.*;
-import weka.classifiers.functions.GaussianProcesses;
-import weka.core.*;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import net.sourceforge.sizeof.SizeOf;
+import timeseriesweka.classifiers.*;
+import utilities.ClassifierTools;
+import utilities.samplers.RandomIndexSampler;
+import utilities.samplers.RandomRoundRobinIndexSampler;
+import utilities.samplers.RandomStratifiedIndexSampler;
+import utilities.samplers.Sampler;
+import weka.classifiers.functions.GaussianProcesses;
+import weka.core.*;
+
+import java.io.*;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
@@ -44,7 +44,7 @@ import static weka.core.Utils.sum;
 /**
  * cBOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
- * If parameters are known, use the class BOSSIndividual and directly provide them.
+ * If parameters are known, use the class BOSSIndividualSP and directly provide them.
  *
  * Options to change the method of ensembling to randomly select parameters with or without a filter.
  * Has the capability to contract train time and checkpoint when using a random ensemble.
@@ -55,7 +55,7 @@ import static weka.core.Utils.sum;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
+public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;
@@ -82,7 +82,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     private boolean cutoff = false;
 
-    private transient LinkedList<BOSSIndividual>[] classifiers;
+    private transient LinkedList<BOSSIndividualSP>[] classifiers;
     private int numSeries;
     private int[] numClassifiers;
     private int currentSeries = 0;
@@ -91,6 +91,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private final int[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int[] alphabetSize = { 4 };
     private final boolean[] normOptions = { true, false };
+    private final Integer[] levels = { 1, 2, 3 };
     private final double correctThreshold = 0.92;
     private int maxEnsembleSize = 500;
 
@@ -142,7 +143,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     protected static final long serialVersionUID = 22554L;
 
-    public cBOSS(){
+    public cBOSSSP(){
         useRecommendedSettings();
     }
 
@@ -189,7 +190,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             sb.append(",numclassifiers,").append(n).append(",").append(numClassifiers[n]);
 
             for (int i = 0; i < numClassifiers[n]; ++i) {
-                BOSSIndividual boss = classifiers[n].get(i);
+                BOSSIndividualSP boss = classifiers[n].get(i);
                 sb.append(",windowSize,").append(boss.getWindowSize()).append(",wordLength,").append(boss.getWordLength());
                 sb.append(",alphabetSize,").append(boss.getAlphabetSize()).append(",norm,").append(boss.isNorm());
             }
@@ -273,9 +274,9 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     //Define how to copy from a loaded object to this object
     @Override
     public void copyFromSerObject(Object obj) throws Exception{
-        if(!(obj instanceof cBOSS))
+        if(!(obj instanceof cBOSSSP))
             throw new Exception("The SER file is not an instance of BOSS");
-        cBOSS saved = ((cBOSS)obj);
+        cBOSSSP saved = ((cBOSSSP)obj);
         System.out.println("Loading BOSS.ser");
 
         //copy over variables from serialised object
@@ -305,6 +306,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         isMultivariate = saved.isMultivariate;
 //        wordLengths = saved.wordLengths;
 //        alphabetSize = saved.alphabetSize;
+//        levels = saved.levels;
 //        correctThreshold = saved.correctThreshold;
         maxEnsembleSize = saved.maxEnsembleSize;
         bayesianParameterSelection = saved.bayesianParameterSelection;
@@ -349,15 +351,15 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         for (int n = 0; n < numSeries; n++) {
             classifiers[n] = new LinkedList();
             for (int i = 0; i < saved.numClassifiers[n]; i++) {
-                System.out.println("Loading BOSSIndividual" + n + "-" + i + ".ser");
+                System.out.println("Loading BOSSIndividualSP" + n + "-" + i + ".ser");
 
-                FileInputStream fis = new FileInputStream(checkpointPath + "BOSSIndividual" + n + "-" + i + ".ser");
+                FileInputStream fis = new FileInputStream(checkpointPath + "BOSSIndividualSP" + n + "-" + i + ".ser");
                 try (ObjectInputStream in = new ObjectInputStream(fis)) {
                     Object indv = in.readObject();
 
-                    if (!(indv instanceof BOSSIndividual))
-                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of BOSSIndividual");
-                    BOSSIndividual ser = ((BOSSIndividual) indv);
+                    if (!(indv instanceof BOSSIndividualSP))
+                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of BOSSIndividualSP");
+                    BOSSIndividualSP ser = ((BOSSIndividualSP) indv);
                     classifiers[n].add(ser);
                 }
             }
@@ -629,7 +631,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -705,7 +707,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 }
 
                 for (int i = 0; i < classifiers[n].size(); i++){
-                    BOSSIndividual b = classifiers[n].get(i);
+                    BOSSIndividualSP b = classifiers[n].get(i);
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
 
@@ -758,7 +760,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividual boss = new BOSSIndividual((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -826,9 +828,9 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
 
                     //save the last build individual classifier
-                    BOSSIndividual indiv = classifiers[seriesNo].get(classifierNo);
+                    BOSSIndividualSP indiv = classifiers[seriesNo].get(classifierNo);
 
-                    FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
+                    FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividualSP" + seriesNo + "-" + classifierNo + ".ser");
                     try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                         out.writeObject(indiv);
                         out.close();
@@ -925,8 +927,10 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             for (Integer alphSize : alphabetSize) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
                     for (Integer wordLen : wordLengths) {
-                        double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0};
-                        possibleParameters.add(parameters);
+                        for (Integer level : levels) {
+                            double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level};
+                            possibleParameters.add(parameters);
+                        }
                     }
                 }
             }
@@ -1057,7 +1061,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         return params.toDoubleArray();
     }
 
-    private Instances resampleData(Instances series, BOSSIndividual boss){
+    private Instances resampleData(Instances series, BOSSIndividualSP boss){
         Instances data;
         int newSize;
 
@@ -1095,7 +1099,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         return data;
     }
 
-    private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
+    private double individualTrainAcc(BOSSIndividualSP boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
         if (trainCV){
@@ -1245,7 +1249,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         double sum = 0;
 
         for (int n = 0; n < numSeries; n++) {
-            for (BOSSIndividual classifier : classifiers[n]) {
+            for (BOSSIndividualSP classifier : classifiers[n]) {
                 double classification;
 
                 if (classifier.subsampleIndices == null){
@@ -1329,7 +1333,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
             for (int n = 0; n < numSeries; n++) {
                 futures[n] = new ArrayList<>(numClassifiers[n]);
-                for (BOSSIndividual classifier : classifiers[n]) {
+                for (BOSSIndividualSP classifier : classifiers[n]) {
                     futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
                 }
             }
@@ -1346,7 +1350,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         }
         else {
             for (int n = 0; n < numSeries; n++) {
-                for (BOSSIndividual classifier : classifiers[n]) {
+                for (BOSSIndividualSP classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
                     classHist[(int) classification] += classifier.weight;
                     sum += classifier.weight;
@@ -1386,10 +1390,10 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         train2 = data2[0];
         test2 = data2[1];
 
-        cBOSS c;
+        cBOSSSP c;
         double accuracy;
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
@@ -1399,7 +1403,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
@@ -1409,7 +1413,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1418,7 +1422,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1427,7 +1431,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1442,7 +1446,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1457,7 +1461,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1469,7 +1473,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1481,7 +1485,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1492,7 +1496,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1503,7 +1507,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1512,7 +1516,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSSSP();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
