@@ -218,7 +218,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
         long startTime=System.nanoTime(); 
         long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
-        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
+//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
         shapeletData = doTransform ? createTransformData(data, transformTime) : data;
         transformBuildTime=System.nanoTime()-startTime;
 //        if(setSeed)

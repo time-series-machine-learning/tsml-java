@@ -19,6 +19,7 @@ import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
@@ -96,6 +97,9 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         ee = new ElasticEnsemble();
         ee.buildClassifier(train);
         
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+        stc.setHourLimit(24);
+//Redo for STC
         //ShapeletTransform shapeletTransform = ShapeletTransformFactory.createTransform(train);
         ShapeletTransform shapeletTransform = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); // now defaults to max of 24 hours
         shapeletTransform.supressOutput();
