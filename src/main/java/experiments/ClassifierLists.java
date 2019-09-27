@@ -17,8 +17,10 @@ package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
+import timeseriesweka.classifiers.frequency_based.cRISE;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.interval_based.cTSF;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
@@ -346,6 +348,22 @@ public class ClassifierLists {
             case "TSF":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
+                break;
+            case "RBOSScp":
+                c = new cBOSS();
+                ((cBOSS) c).setSeed(fold);
+                ((cBOSS) c).setSavePath("D:\\UEAMachineLearning\\CallDetectionSimulation\\checkpointfiles\\");
+                break;
+            case "RISEcp":
+                c=new cRISE();
+                ((cRISE) c).setSeed(fold);
+                ((cRISE) c).setTransformType(cRISE.TransformType.ACF_PS);
+                ((cRISE) c).setSavePath("D:\\UEAMachineLearning\\CallDetectionSimulation\\checkpointfiles\\");
+                break;
+            case "TSFcp":
+                c=new cTSF();
+                ((cTSF)c).setSeed(fold);
+                ((cTSF) c).setSavePath("D:\\UEAMachineLearning\\CallDetectionSimulation\\checkpointfiles\\");
                 break;
 
            default:

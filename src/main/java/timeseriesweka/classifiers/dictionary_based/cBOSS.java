@@ -104,7 +104,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private boolean checkpoint = false;
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
-    private boolean cleanupCheckpointFiles = true;
+    private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
     private long contractTime = 0;
@@ -522,6 +522,11 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 maxEval = data.numClasses() * maxEvalPerClass;
             }
 
+            if (trainCV){
+                trainDistributions = new double[data.numInstances()][data.numClasses()];
+                idxSubsampleCount = new int[data.numInstances()];
+            }
+
             rand = new Random(seed);
 
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
@@ -537,11 +542,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         }
 
         train = data;
-
-        if (trainCV){
-            trainDistributions = new double[data.numInstances()][data.numClasses()];
-            idxSubsampleCount = new int[data.numInstances()];
-        }
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -684,7 +684,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
 
             if (checkpoint) {
-                if (numClassifiers[currentSeries] < maxEnsembleSize) {
+                if (classifiersBuilt[currentSeries] <= maxEnsembleSize) {
                     checkpoint(prev, -1);
                 }
                 else if (checkpointChange){
