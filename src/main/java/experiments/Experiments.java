@@ -414,15 +414,17 @@ public class Experiments  {
         //for local running, and cluster output files are good enough on there. 
 //        LOGGER.addHandler(new FileHandler()); 
 
-        if (beQuiet)
+        if (beQuiet) {
             LOGGER.setLevel(Level.SEVERE);
+        }
         else {
             if (debug)
                 LOGGER.setLevel(Level.FINEST);
             else
                 LOGGER.setLevel(Level.INFO);
+            
+            DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
         }
-        DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 

@@ -508,6 +508,8 @@ public class BasicReproductionTests {
         if (!classifiersComplete || !analysisReproduced) {
             System.out.println("Integration tests failed");
             System.exit(1); //fail
-        } // else end successfully
+        } 
+        
+        System.out.println("All tests passed");
     }
 }
