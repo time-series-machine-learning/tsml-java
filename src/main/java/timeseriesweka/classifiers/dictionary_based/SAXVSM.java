@@ -356,9 +356,9 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
     public static void main(String[] args) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new SAXVSM()));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAXVSM(), 0.7580174927113703, "2019/09/26"));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAXVSM(), 0.7580174927113703, "2019/09/26"));
         
-//         basicTest();
+         basicTest();
     }
 
     

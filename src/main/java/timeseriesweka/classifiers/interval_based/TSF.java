@@ -765,35 +765,35 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     public static void main(String[] arg) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
         
-//// Basic correctness tests, including setting paras through 
-//        String dataLocation="Z:\\Data\\TSCProblems2018\\";
-//        String resultsLocation="C:\\temp\\";
-//        String problem="ItalyPowerDemand";
-//        File f= new File(resultsLocation+problem);
-//        if(!f.isDirectory())
-//            f.mkdirs();
-//        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
-//        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
-//        TSF tsf = new TSF();
-//        tsf.setSeed(0);
-//        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
-//        double a;
-//        tsf.buildClassifier(train);
-//        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
-//        a=ClassifierTools.accuracy(test, tsf);
-//        System.out.println("Test Accuracy ="+a);
-//        String[] options=new String[4];
-//        options[0]="-T";
-//        options[1]="10";
-//        options[2]="-I";
-//        options[3]="1";
-//        tsf.setOptions(options);
-//        tsf.buildClassifier(train);
-//        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
-//        a=ClassifierTools.accuracy(test, tsf);
-//        System.out.println("Test Accuracy ="+a);
+// Basic correctness tests, including setting paras through 
+        String dataLocation="Z:\\Data\\TSCProblems2018\\";
+        String resultsLocation="C:\\temp\\";
+        String problem="ItalyPowerDemand";
+        File f= new File(resultsLocation+problem);
+        if(!f.isDirectory())
+            f.mkdirs();
+        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
+        TSF tsf = new TSF();
+        tsf.setSeed(0);
+        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
+        double a;
+        tsf.buildClassifier(train);
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        a=ClassifierTools.accuracy(test, tsf);
+        System.out.println("Test Accuracy ="+a);
+        String[] options=new String[4];
+        options[0]="-T";
+        options[1]="10";
+        options[2]="-I";
+        options[3]="1";
+        tsf.setOptions(options);
+        tsf.buildClassifier(train);
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        a=ClassifierTools.accuracy(test, tsf);
+        System.out.println("Test Accuracy ="+a);
          
          
     }

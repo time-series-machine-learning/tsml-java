@@ -280,9 +280,9 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingInfo implements
     public static void main(String[] args) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new BagOfPatterns()));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new BagOfPatterns(), 0.8425655976676385, "2019_09_26"));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new BagOfPatterns(), 0.8425655976676385, "2019_09_26"));
         
-//        basicTest();
+        basicTest();
     }
     
     public static void basicTest() {

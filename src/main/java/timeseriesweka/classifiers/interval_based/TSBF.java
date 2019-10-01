@@ -774,45 +774,45 @@ public static void recreatePublishedResults() throws Exception{
     }
     public static void main(String[] args) throws Exception {
                 
-        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSBF()));
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSBF()));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new LPS(), 0.9319727891156463, "2019_09_26"));
         
-//        String s= "Beef";
-//        System.out.println(" PROBLEM ="+s);
-//        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-//        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
-//        TSBF tsbf=new TSBF();
-//        double a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
-//        System.out.println(" TEST Acc ="+a);
-//
-//        
-////        DatasetLists.resultsPath=DatasetLists.clusterPath+"Results/";
-////        DatasetLists.problemPath=DatasetLists.clusterPath+"TSC Problems/";        
-////        recreatePublishedResults();
-//  //      testBinMaker();
-//        System.exit(0);
-//        DecimalFormat df = new DecimalFormat("##.###");
-//        try{
-//            for(int i=1;i<2;i++){
-//                s="TwoLeadECG";
-//                System.out.println(" PROBLEM ="+s);
-//                train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-//                test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
-////                RandomForest rf=new RandomForest();
-// //               rf.buildClassifier(train);
-////                System.out.println(" bag percent ="+rf.getBaggingPercent()+" OOB error "+rf.measureOutOfBagError());
-////                System.exit(0);
-//                tsbf=new TSBF();
-//                a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
-//                System.out.println(" error ="+df.format(1-a));
-////                tsbf.buildClassifier(train);
-// //               double c=tsbf.classifyInstance(test.instance(0));
-// //               System.out.println(" Class ="+c);
-//            }
-//        }catch(Exception e){
-//            System.out.println("Exception "+e);
-//            e.printStackTrace();
-//            System.exit(0);
-//        }
+        String s= "Beef";
+        System.out.println(" PROBLEM ="+s);
+        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+        TSBF tsbf=new TSBF();
+        double a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
+        System.out.println(" TEST Acc ="+a);
+
+        
+//        DatasetLists.resultsPath=DatasetLists.clusterPath+"Results/";
+//        DatasetLists.problemPath=DatasetLists.clusterPath+"TSC Problems/";        
+//        recreatePublishedResults();
+  //      testBinMaker();
+        System.exit(0);
+        DecimalFormat df = new DecimalFormat("##.###");
+        try{
+            for(int i=1;i<2;i++){
+                s="TwoLeadECG";
+                System.out.println(" PROBLEM ="+s);
+                train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
+                test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
+//                RandomForest rf=new RandomForest();
+ //               rf.buildClassifier(train);
+//                System.out.println(" bag percent ="+rf.getBaggingPercent()+" OOB error "+rf.measureOutOfBagError());
+//                System.exit(0);
+                tsbf=new TSBF();
+                a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
+                System.out.println(" error ="+df.format(1-a));
+//                tsbf.buildClassifier(train);
+ //               double c=tsbf.classifyInstance(test.instance(0));
+ //               System.out.println(" Class ="+c);
+            }
+        }catch(Exception e){
+            System.out.println("Exception "+e);
+            e.printStackTrace();
+            System.exit(0);
+        }
     }
 }

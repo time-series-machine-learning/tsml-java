@@ -85,45 +85,45 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
     public static void main(String[] args) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new SAX_1NN(10, 4)));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAX_1NN(10, 4), 0.9154518950437318, "2019_09_26"));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAX_1NN(10, 4), 0.9154518950437318, "2019_09_26"));
         
-//        System.out.println("BagofPatternsTest\n\n");
-//        
-//        try {
-//            Instances all = DatasetLoading.loadDataNullable("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
-//            all.deleteAttributeAt(0); //just name of bottle        
-//            
-//            Randomize rand = new Randomize();
-//            rand.setInputFormat(all);
-//            for (int i = 0; i < all.numInstances(); ++i) {
-//                rand.input(all.get(i));
-//            }
-//            rand.batchFinished();
-//            
-//            int trainNum = (int) (all.numInstances() * 0.7);
-//            int testNum = all.numInstances() - trainNum;
-//            
-//            Instances train = new Instances(all, trainNum);
-//            for (int i = 0; i < trainNum; ++i) 
-//                train.add(rand.output());
-//            
-//            Instances test = new Instances(all, testNum);
-//            for (int i = 0; i < testNum; ++i) 
-//                test.add(rand.output());
-//            
-//            SAX_1NN saxc = new SAX_1NN(6,3);
-//            saxc.buildClassifier(train);
-//            
-//            System.out.println(saxc.SAXdata);
-//            
-//            System.out.println("\nACCURACY TEST");
-//            System.out.println(ClassifierTools.accuracy(test, saxc));
-//
-//        }
-//        catch (Exception e) {
-//            System.out.println(e);
-//            e.printStackTrace();
-//        }
+        System.out.println("BagofPatternsTest\n\n");
+        
+        try {
+            Instances all = DatasetLoading.loadDataNullable("C:\\\\Temp\\\\TESTDATA\\\\FiveClassV1.arff");
+            all.deleteAttributeAt(0); //just name of bottle        
+            
+            Randomize rand = new Randomize();
+            rand.setInputFormat(all);
+            for (int i = 0; i < all.numInstances(); ++i) {
+                rand.input(all.get(i));
+            }
+            rand.batchFinished();
+            
+            int trainNum = (int) (all.numInstances() * 0.7);
+            int testNum = all.numInstances() - trainNum;
+            
+            Instances train = new Instances(all, trainNum);
+            for (int i = 0; i < trainNum; ++i) 
+                train.add(rand.output());
+            
+            Instances test = new Instances(all, testNum);
+            for (int i = 0; i < testNum; ++i) 
+                test.add(rand.output());
+            
+            SAX_1NN saxc = new SAX_1NN(6,3);
+            saxc.buildClassifier(train);
+            
+            System.out.println(saxc.SAXdata);
+            
+            System.out.println("\nACCURACY TEST");
+            System.out.println(ClassifierTools.accuracy(test, saxc));
+
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            e.printStackTrace();
+        }
         
     }
     
