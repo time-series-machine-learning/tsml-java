@@ -2,7 +2,7 @@ package timeseriesweka.clusterers;
 
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
-import timeseriesweka.classifiers.dictionary_based.BitWord;
+import timeseriesweka.classifiers.dictionary_based.bitword.BitWordInt;
 import weka.core.Instances;
 import weka_extras.clusterers.PAM;
 
@@ -155,7 +155,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
 
                 ArrayList<Integer> secondSet = new ArrayList();
 
-                for (Map.Entry<BitWord, Integer> entry : first.entrySet()) {
+                for (Map.Entry<BitWordInt, Integer> entry : first.entrySet()) {
                     Integer valA = entry.getValue();
                     Integer valB = second.get(entry.getKey());
 
@@ -169,7 +169,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
                     dist += (valA-valB)*(valA-valB);
                 }
 
-                for (Map.Entry<BitWord, Integer> entry : second.entrySet()) {
+                for (Map.Entry<BitWordInt, Integer> entry : second.entrySet()) {
                     if (secondSet.remove(entry.getKey())){
                         continue;
                     }

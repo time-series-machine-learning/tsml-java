@@ -93,10 +93,11 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
     private final boolean[] normOptions = { true, false };
     private final Integer[] levels = { 1, 2, 3 };
     private final double correctThreshold = 0.92;
+    private final double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
-    private int initialRandomParameters = 20;
+    private int initialRandomParameters = 50;
     private int[] initialParameterCount;
     private Instances[] parameterPool;
     private Instances[] prevParameters;
@@ -308,6 +309,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 //        alphabetSize = saved.alphabetSize;
 //        levels = saved.levels;
 //        correctThreshold = saved.correctThreshold;
+//        chiLimits = saved.chiLimits;
         maxEnsembleSize = saved.maxEnsembleSize;
         bayesianParameterSelection = saved.bayesianParameterSelection;
         initialRandomParameters = saved.initialRandomParameters;
@@ -624,6 +626,8 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             }
         }
 
+        int h = 0;
+
         //build classifiers up to a set size
         while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
             long indivBuildTime = System.nanoTime();
@@ -631,12 +635,14 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
             boss.buildClassifier(data);
             boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
+
+            System.out.println(boss.accuracy + " " + ++h);
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
@@ -760,7 +766,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -928,8 +934,10 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
                     for (Integer wordLen : wordLengths) {
                         for (Integer level : levels) {
-                            double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level};
-                            possibleParameters.add(parameters);
+                            for (Double chi: chiLimits) {
+                                double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi};
+                                possibleParameters.add(parameters);
+                            }
                         }
                     }
                 }
@@ -1156,7 +1164,12 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 
                 if (trainCV){
                     latestTrainPreds.add((int)c);
-                    latestTrainIdx.add(indicies[i]);
+                    if (boss.subsampleIndices != null) {
+                        latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
+                    }
+                    else {
+                        latestTrainIdx.add(indicies[i]);
+                    }
                 }
             }
         }
@@ -1261,7 +1274,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
                 else if (fullTrainCVEstimate) {
                     Instance series = train.get(test);
                     if (isMultivariate){
-                        series = splitMultivariateInstance(series)[n];
+                        series = splitMultivariateInstanceWithClassVal(series)[n];
                         series.setDataset(seriesHeader);
                     }
                     classification = classifier.classifyInstance(series);
@@ -1376,7 +1389,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
         int fold = 0;
 
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "Earthquakes";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1395,135 +1408,135 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 
         c = new cBOSSSP();
         c.useRecommendedSettings();
-        c.bayesianParameterSelection = false;
+//        c.bayesianParameterSelection = false;
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+//        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSSSP();
-        c.useRecommendedSettings();
-        c.bayesianParameterSelection = false;
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
+//        c = new cBOSSSP();
+//        c.useRecommendedSettings();
+//        c.bayesianParameterSelection = false;
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.useRecommendedSettings();
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.useRecommendedSettings();
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.ensembleSize = 250;
+//        c.setMaxEnsembleSize(50);
+//        c.setRandomCVAccEnsemble(true);
+//        c.setSeed(fold);
+//        c.useFastTrainEstimate = true;
+//        c.reduceTrainInstances = true;
+//        c.setMaxEvalPerClass(50);
+//        c.setMaxTrainInstances(500);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.ensembleSize = 250;
+//        c.setMaxEnsembleSize(50);
+//        c.setRandomCVAccEnsemble(true);
+//        c.setSeed(fold);
+//        c.useFastTrainEstimate = true;
+//        c.reduceTrainInstances = true;
+//        c.setMaxEvalPerClass(50);
+//        c.setMaxTrainInstances(500);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.ensembleSize = 100;
+//        c.useWeights(true);
+//        c.setSeed(fold);
+//        c.setReduceTrainInstances(true);
+//        c.setTrainProportion(0.7);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.ensembleSize = 100;
+//        c.useWeights(true);
+//        c.setSeed(fold);
+//        c.setReduceTrainInstances(true);
+//        c.setTrainProportion(0.7);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//        c = new cBOSSSP();
+//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+//        c.setCleanupCheckpointFiles(true);
+//        c.setSavePath("D:\\");
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+//        c.setCleanupCheckpointFiles(true);
+//        c.setSavePath("D:\\");
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSSSP();
-        c.useRecommendedSettings();
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.useRecommendedSettings();
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.ensembleSize = 250;
-        c.setMaxEnsembleSize(50);
-        c.setRandomCVAccEnsemble(true);
-        c.setSeed(fold);
-        c.useFastTrainEstimate = true;
-        c.reduceTrainInstances = true;
-        c.setMaxEvalPerClass(50);
-        c.setMaxTrainInstances(500);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.ensembleSize = 250;
-        c.setMaxEnsembleSize(50);
-        c.setRandomCVAccEnsemble(true);
-        c.setSeed(fold);
-        c.useFastTrainEstimate = true;
-        c.reduceTrainInstances = true;
-        c.setMaxEvalPerClass(50);
-        c.setMaxTrainInstances(500);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.ensembleSize = 100;
-        c.useWeights(true);
-        c.setSeed(fold);
-        c.setReduceTrainInstances(true);
-        c.setTrainProportion(0.7);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.ensembleSize = 100;
-        c.useWeights(true);
-        c.setSeed(fold);
-        c.setReduceTrainInstances(true);
-        c.setTrainProportion(0.7);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSSSP();
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//        c = new cBOSSSP();
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSSSP();
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setFindTrainAccuracyEstimate(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         //Output 02/08/19
         /*

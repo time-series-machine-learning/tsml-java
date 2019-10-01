@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import timeseriesweka.classifiers.MultiThreadable;
+import timeseriesweka.classifiers.dictionary_based.bitword.BitWordInt;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -28,7 +29,7 @@ import java.util.concurrent.Future;
 public class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual>, MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
-    protected BitWord [/*instance*/][/*windowindex*/] SFAwords;
+    protected BitWordInt[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
     protected ArrayList<Bag> bags;
@@ -112,7 +113,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         this.numThreads = numThreads;
     }
 
-    public static class Bag extends HashMap<BitWord, Integer> {
+    public static class Bag extends HashMap<BitWordInt, Integer> {
         double classVal;
         protected static final long serialVersionUID = 22552L;
 
@@ -380,10 +381,10 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      */
     protected Bag createBagSingle(double[][] dfts) {
         Bag bag = new Bag();
-        BitWord lastWord = new BitWord();
+        BitWordInt lastWord = new BitWordInt();
 
         for (double[] d : dfts) {
-            BitWord word = createWord(d);
+            BitWordInt word = createWord(d);
             //add to bag, unless num reduction applies
             if (numerosityReduction && word.equals(lastWord))
                 continue;
@@ -399,8 +400,8 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         return bag;
     }
 
-    protected BitWord createWord(double[] dft) {
-        BitWord word = new BitWord(wordLength);
+    protected BitWordInt createWord(double[] dft) {
+        BitWordInt word = new BitWordInt(wordLength);
         for (int l = 0; l < wordLength; ++l) //for each letter
             for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
                 if (dft[l] <= breakpoints[l][bp]) {
@@ -469,14 +470,14 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    protected Bag createBagFromWords(int thisWordLength, BitWord[] words) {
+    protected Bag createBagFromWords(int thisWordLength, BitWordInt[] words) {
         Bag bag = new Bag();
-        BitWord lastWord = new BitWord();
+        BitWordInt lastWord = new BitWordInt();
 
-        for (BitWord w : words) {
-            BitWord word = new BitWord(w);
+        for (BitWordInt w : words) {
+            BitWordInt word = new BitWordInt(w);
             if (wordLength != thisWordLength)
-                word.shorten(BitWord.MAX_LENGTH-thisWordLength);
+                word.shorten(BitWordInt.MAX_LENGTH-thisWordLength);
 
             //add to bag, unless num reduction applies
             if (numerosityReduction && word.equals(lastWord))
@@ -493,9 +494,9 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         return bag;
     }
 
-    protected BitWord[] createSFAwords(Instance inst) {
+    protected BitWordInt[] createSFAwords(Instance inst) {
         double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
-        BitWord[] words = new BitWord[dfts.length];
+        BitWordInt[] words = new BitWordInt[dfts.length];
         for (int window = 0; window < dfts.length; ++window)
             words[window] = createWord(dfts[window]);//discretisation
 
@@ -508,7 +509,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
             throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
-        SFAwords = new BitWord[data.numInstances()][];
+        SFAwords = new BitWordInt[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
 
@@ -555,7 +556,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (Map.Entry<BitWord, Integer> entry : instA.entrySet()) {
+        for (Map.Entry<BitWordInt, Integer> entry : instA.entrySet()) {
             Integer valA = entry.getValue();
             Integer valB = instB.get(entry.getKey());
             if (valB == null)

@@ -1,10 +1,16 @@
 package timeseriesweka.classifiers.dictionary_based;
 
+import com.carrotsearch.hppc.*;
+import com.carrotsearch.hppc.cursors.DoubleIntCursor;
+import com.carrotsearch.hppc.cursors.ObjectDoubleCursor;
+import com.carrotsearch.hppc.cursors.ObjectIntCursor;
 import timeseriesweka.classifiers.MultiThreadable;
+import timeseriesweka.classifiers.dictionary_based.bitword.BitWordLong;
 import utilities.generic_storage.ComparablePair;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Statistics;
 import weka.core.UnassignedClassException;
 
 import java.io.Serializable;
@@ -29,7 +35,7 @@ import java.util.concurrent.Future;
 public class BOSSIndividualSP extends AbstractClassifier implements Serializable, Comparable<BOSSIndividualSP>, MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
-    protected BitWord [/*instance*/][/*windowindex*/] SFAwords;
+    protected BitWordLong[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
     protected ArrayList<SPBag> bags;
@@ -49,6 +55,9 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     protected double levelWeighting = 0.5;
     protected int seriesLength;
 
+    protected ObjectHashSet<ComparablePair<BitWordLong, Byte>> chiSquare;
+    protected double chiLimit;
+
     protected double accuracy = -1;
     protected double weight = 1;
     protected ArrayList<Integer> subsampleIndices;
@@ -62,25 +71,27 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
     protected static final long serialVersionUID = 22551L;
 
-    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean multiThread, int numThreads, ExecutorService ex) {
+    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, double chiLimit, boolean multiThread, int numThreads, ExecutorService ex) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
         this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
         this.norm = normalise;
         this.levels = levels;
+        this.chiLimit = chiLimit;
         this.multiThread = multiThread;
         this.numThreads = numThreads;
         this.ex = ex;
     }
 
-    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels) {
+    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, double chiLimit) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
         this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
         this.norm = normalise;
         this.levels = levels;
+        this.chiLimit = chiLimit;
     }
 
     /**
@@ -99,6 +110,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         this.levels = boss.levels;
         this.levelWeighting = boss.levelWeighting;
         this.seriesLength = boss.seriesLength;
+
+        this.chiLimit = boss.chiLimit;
 
         this.SFAwords = boss.SFAwords;
         this.breakpoints = boss.breakpoints;
@@ -124,14 +137,14 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     }
 
     //map of <word, level> => count
-    public static class SPBag extends HashMap<ComparablePair<BitWord, Integer>, Double> {
+    public static class SPBag extends HashMap<ComparablePair<BitWordLong, Byte>, Integer> {
         double classVal;
 
         public SPBag() {
             super();
         }
 
-        public SPBag(int classValue) {
+        public SPBag(double classValue) {
             super();
             classVal = classValue;
         }
@@ -391,13 +404,26 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
      */
     protected SPBag createSPBagSingle(double[][] dfts) {
         SPBag bag = new SPBag();
-        BitWord lastWord = new BitWord();
+        BitWordLong lastWord = new BitWordLong();
+        BitWordLong[] words = new BitWordLong[dfts.length];
 
         int wInd = 0;
         int trivialMatchCount = 0;
 
         for (double[] d : dfts) {
-            BitWord word = createWord(d);
+            BitWordLong word = createWord(d);
+            words[wInd] = word;
+
+            if (wInd - windowSize >= 0 && lastWord.getWord() != 0){
+                BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
+
+                ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte)0);
+                Integer val = bag.get(key);
+
+                if (val == null)
+                    val = 0;
+                bag.put(key, ++val);
+            }
 
             //add to bag, unless num reduction applies
             if (numerosityReduction && word.equals(lastWord)) {
@@ -421,8 +447,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         return bag;
     }
 
-    protected BitWord createWord(double[] dft) {
-        BitWord word = new BitWord(wordLength);
+    protected BitWordLong createWord(double[] dft) {
+        BitWordLong word = new BitWordLong(wordLength);
         for (int l = 0; l < wordLength; ++l) //for each letter
             for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
                 if (dft[l] <= breakpoints[l][bp]) {
@@ -492,17 +518,30 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    protected SPBag createSPBagFromWords(int thisWordLength, BitWord[] words) {
+    protected SPBag createSPBagFromWords(int thisWordLength, BitWordLong[] words) {
         SPBag bag = new SPBag();
-        BitWord lastWord = new BitWord();
+        BitWordLong lastWord = new BitWordLong();
+        BitWordLong[] newWords = new BitWordLong[words.length];
 
         int wInd = 0;
         int trivialMatchCount = 0; //keeps track of how many words have been the same so far
 
-        for (BitWord w : words) {
-            BitWord word = new BitWord(w);
+        for (BitWordLong w : words) {
+            BitWordLong word = new BitWordLong(w);
             if (wordLength != thisWordLength)
-                word.shorten(BitWord.MAX_LENGTH-thisWordLength);
+                word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
+            newWords[wInd] = word;
+
+            if (wInd - windowSize >= 0 && lastWord.getWord() != 0){
+                BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
+
+                ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte)0);
+                Integer val = bag.get(key);
+
+                if (val == null)
+                    val = 0;
+                bag.put(key, ++val);
+            }
 
             //add to bag, unless num reduction applies
             if (numerosityReduction && word.equals(lastWord)) {
@@ -543,7 +582,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     }
 
     protected void applyPyramidWeights(SPBag bag) {
-        for (Map.Entry<ComparablePair<BitWord, Integer>, Double> ent : bag.entrySet()) {
+        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().var2;
             int qEnd = 0;
@@ -553,12 +592,13 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                 qEnd+=numQuadrants;
             }
 
-            double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
+            //double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
+            int val = ent.getValue() * (int)Math.pow(2,level);
             bag.put(ent.getKey(), val);
         }
     }
 
-    protected void addWordToPyramid(BitWord word, int wInd, SPBag bag) {
+    protected void addWordToPyramid(BitWordLong word, int wInd, SPBag bag) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -570,24 +610,118 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             int pos = wInd + (windowSize/2); //use the middle of the window as its position
             int quadrant = qStart + (pos/quadrantSize);
 
-            ComparablePair<BitWord, Integer> key = new ComparablePair<>(word, quadrant);
-            Double val = bag.get(key);
+            ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(word, (byte)quadrant);
+            Integer val = bag.get(key);
 
             if (val == null)
-                val = 0.0;
+                val = 0;
             bag.put(key, ++val);
 
             qStart += numQuadrants;
         }
     }
 
-    protected BitWord[] createSFAwords(Instance inst) {
+    protected BitWordLong[] createSFAwords(Instance inst) {
         double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
-        BitWord[] words = new BitWord[dfts.length];
+        BitWordLong[] words = new BitWordLong[dfts.length];
         for (int window = 0; window < dfts.length; ++window)
             words[window] = createWord(dfts[window]);//discretisation
 
         return words;
+    }
+
+    //Try FCBF?
+
+    // Modified version of the trainChiSquared method created by Patrick Schaefer in the WEASEL class
+    protected void chiSquared(){
+        ObjectIntHashMap<ComparablePair<BitWordLong, Byte>> featureCount = new ObjectIntHashMap<>();
+        DoubleIntHashMap classProb = new DoubleIntHashMap();
+        DoubleObjectHashMap<ObjectIntHashMap<ComparablePair<BitWordLong, Byte>>> observed = new DoubleObjectHashMap<>();
+
+        // count number of samples with this word
+        for (SPBag bag : bags) {
+            double label = bag.classVal;
+
+            // samples per class
+            classProb.putOrAdd(label, 1, 1);
+
+            int index = observed.indexOf(label);
+            ObjectIntHashMap<ComparablePair<BitWordLong, Byte>> obs;
+            if (index > -1) {
+                obs = observed.indexGet(index);
+            } else {
+                obs = new ObjectIntHashMap<>();
+                observed.put(label, obs);
+            }
+
+            for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : bag.entrySet()) {
+                featureCount.putOrAdd(entry.getKey(), 1,1); //word.value, word.value);
+
+                // count observations per class for this feature
+                obs.putOrAdd(entry.getKey(), 1,1); //word.value, word.value);
+            }
+        }
+
+        // p_value-squared: observed minus expected occurrence
+        ObjectDoubleHashMap<ComparablePair<BitWordLong, Byte>> chiSquareSum = new ObjectDoubleHashMap<>(featureCount.size());
+
+        for (DoubleIntCursor prob : classProb) {
+            double p = ((double)prob.value) / bags.size();
+            ObjectIntHashMap<ComparablePair<BitWordLong, Byte>> obs = observed.get(prob.key);
+
+            for (ObjectIntCursor<ComparablePair<BitWordLong, Byte>> feature : featureCount) {
+                double expected = p * feature.value;
+
+                double chi = obs.get(feature.key) - expected;
+                double newChi = chi * chi / expected;
+
+                if (newChi > 0) {
+                    // build the sum among p_value-values of all classes
+                    chiSquareSum.putOrAdd(feature.key, newChi, newChi);
+                }
+            }
+        }
+
+        chiSquare = new ObjectHashSet(featureCount.size());
+        ArrayList<ComparablePair<Double, ComparablePair<BitWordLong, Byte>>> values = new ArrayList<>(featureCount.size());
+
+        for (ObjectDoubleCursor<ComparablePair<BitWordLong, Byte>> feature : chiSquareSum) {
+            double newChi = feature.value;
+            double pvalue = Statistics.chiSquaredProbability(newChi, classProb.keys().size()-1);
+
+            if (pvalue <= chiLimit) {
+                chiSquare.add(feature.key);
+                values.add(new ComparablePair(pvalue, feature.key));
+            }
+        }
+
+        // limit number of features avoid excessive features
+        int limit = (int)(chiLimit * 100000);
+
+        System.out.println(values.size() + " " + limit + " " + levels + " " + windowSize + " " + wordLength + " " + norm);
+
+        if (values.size() > limit) {
+            // sort by p_value-squared value
+            Collections.sort(values);
+
+            chiSquare.clear();
+
+            for (int i = 0; i < limit; i++) {
+                chiSquare.add(values.get(i).var2);
+            }
+        }
+
+        // remove values
+        for (int j = 0; j < bags.size(); j++) {
+            SPBag oldBag = bags.get(j);
+            SPBag newBag = new SPBag(oldBag.classVal);
+            for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
+                if (chiSquare.contains(entry.getKey())) {
+                    newBag.put(entry.getKey(), entry.getValue());
+                }
+            }
+            bags.set(j, newBag);
+        }
     }
 
     @Override
@@ -596,9 +730,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
-        SFAwords = new BitWord[data.numInstances()][];
+        SFAwords = new BitWordLong[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
+        seriesLength = data.numAttributes()-1;
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -627,6 +762,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
+        chiSquared();
+
         if (cleanAfterBuild) {
             clean();
         }
@@ -643,11 +780,11 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (Map.Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
-            Double valA = entry.getValue();
-            Double valB = instB.get(entry.getKey());
+        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
             if (valB == null)
-                valB = 0.0;
+                valB = 0;
             dist += (valA-valB)*(valA-valB);
 
             if (dist > bestDist)
@@ -665,21 +802,29 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
         double sim = 0.0;
 
-        for (Map.Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
-            Double valA = entry.getValue();
-            Double valB = instB.get(entry.getKey());
+        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
             if (valB == null)
                 continue;
 
             sim += Math.min(valA,valB);
         }
 
-        return sim;
+        return -sim;
     }
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
+
+        SPBag oldBag = testBag;
+        testBag = new SPBag(oldBag.classVal);
+        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
+            if (chiSquare.contains(entry.getKey())) {
+                testBag.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;

@@ -146,6 +146,8 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         useRecommendedSettings();
     }
 
+    public cBOSS(boolean b){ }
+
     @Override
     public TechnicalInformation getTechnicalInformation() {
         //TODO update
@@ -1152,7 +1154,12 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
                 if (trainCV){
                     latestTrainPreds.add((int)c);
-                    latestTrainIdx.add(indicies[i]);
+                    if (boss.subsampleIndices != null) {
+                        latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
+                    }
+                    else {
+                        latestTrainIdx.add(indicies[i]);
+                    }
                 }
             }
         }
@@ -1389,7 +1396,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         cBOSS c;
         double accuracy;
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
@@ -1399,7 +1406,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
@@ -1409,7 +1416,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1418,7 +1425,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.useRecommendedSettings();
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1427,7 +1434,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Bayesian CVAcc CAWPE BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1442,7 +1449,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.ensembleSize = 250;
         c.setMaxEnsembleSize(50);
         c.setRandomCVAccEnsemble(true);
@@ -1457,7 +1464,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("FastMax CVAcc BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1469,7 +1476,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.ensembleSize = 100;
         c.useWeights(true);
         c.setSeed(fold);
@@ -1481,7 +1488,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("CAWPE Subsample BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1492,7 +1499,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
@@ -1503,7 +1510,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);
@@ -1512,7 +1519,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSS();
+        c = new cBOSS(true);
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
         c.setFindTrainAccuracyEstimate(true);

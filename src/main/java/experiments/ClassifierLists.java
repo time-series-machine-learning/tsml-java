@@ -315,6 +315,10 @@ public class ClassifierLists {
                 c = new cBOSS();
                 ((cBOSS) c).setSeed(fold);
                 break;
+            case "OFScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                break;
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);

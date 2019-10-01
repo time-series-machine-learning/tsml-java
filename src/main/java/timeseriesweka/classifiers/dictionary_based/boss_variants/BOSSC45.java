@@ -39,8 +39,8 @@ import weka.core.TechnicalInformation;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.dictionary_based.BitWord;
+
+import timeseriesweka.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.ClassifierTools;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
@@ -686,7 +686,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
             FastVector<Attribute> attInfo = new FastVector<>();
             Set<String> wordsFound = new HashSet<>();
             for (Bag bag : bags) 
-                for (Entry<BitWord,Integer> entry : bag.entrySet()) 
+                for (Entry<BitWordInt,Integer> entry : bag.entrySet())
                     wordsFound.add(entry.getKey().toString());
             for (String word : wordsFound) 
                 attInfo.add(new Attribute(word));
@@ -705,7 +705,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
                 init[init.length-1] = bag.getClassVal();
 
                 bagInsts.add(new DenseInstance(1, init));
-                for (Entry<BitWord,Integer> entry : bag.entrySet())
+                for (Entry<BitWordInt,Integer> entry : bag.entrySet())
                     bagInsts.get(i).setValue(bagInsts.attribute(entry.getKey().toString()), entry.getValue());
 
                 i++;
@@ -788,7 +788,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
 
             //TEMPORARILY create it on the end of the train insts to easily copy over the attribute data.
             bagInsts.add(new DenseInstance(1, init));
-            for (Entry<BitWord,Integer> entry : testBag.entrySet()) {
+            for (Entry<BitWordInt,Integer> entry : testBag.entrySet()) {
                 Attribute att = bagInsts.attribute(entry.getKey().toString());
                 if (att != null)
                     bagInsts.get(bagInsts.size()-1).setValue(att, entry.getValue());
@@ -810,7 +810,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
 
             //TEMPORARILY create it on the end of the train isnts to easily copy over the attribute data.
             bagInsts.add(new DenseInstance(1, init));
-            for (Entry<BitWord,Integer> entry : testBag.entrySet()) {
+            for (Entry<BitWordInt,Integer> entry : testBag.entrySet()) {
                 Attribute att = bagInsts.attribute(entry.getKey().toString());
                 if (att != null)
                     bagInsts.get(bagInsts.numInstances()-1).setValue(att, entry.getValue());
