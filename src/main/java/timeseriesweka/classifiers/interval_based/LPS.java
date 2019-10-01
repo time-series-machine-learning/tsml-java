@@ -539,23 +539,28 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 
     public static void main(String[] args) throws Exception {
         
-//       compareToPublished();
-//        System.exit(0);
-        LPS l=new LPS();
-        l.setParamSearch(false);
-        String prob="ItalyPowerDemand"; 
-        double mean=0;
-        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
-//        Instances train = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Train.arff");
-//        Instances test = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Test.arff");
-//        train.setClassIndex(train.numAttributes()-1);
-//        test.setClassIndex(test.numAttributes()-1);
-//        System.out.println("Train = "+train);
-//        System.out.println("Test = "+test);
-        l.buildClassifier(train);
-        double a=ClassifierTools.accuracy(test, l);
-        System.out.println( "test prob accuracy = "+a);
+        LPS lps = new LPS();
+        lps.setSeed(0);
+        System.out.println(ClassifierTools.testUtils_getIPDAcc(lps));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(lps, 0.9339164237123421, "2019_09_26"));
+        
+////       compareToPublished();
+////        System.exit(0);
+//        LPS l=new LPS();
+//        l.setParamSearch(false);
+//        String prob="ItalyPowerDemand"; 
+//        double mean=0;
+//        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TRAIN.arff");
+//        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+prob+"\\"+prob+"_TEST.arff");
+////        Instances train = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Train.arff");
+////        Instances test = ClassifierTools.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Big TSC Bake Off\\Code\\Baydogan LPS\\Test.arff");
+////        train.setClassIndex(train.numAttributes()-1);
+////        test.setClassIndex(test.numAttributes()-1);
+////        System.out.println("Train = "+train);
+////        System.out.println("Test = "+test);
+//        l.buildClassifier(train);
+//        double a=ClassifierTools.accuracy(test, l);
+//        System.out.println( "test prob accuracy = "+a);
     }
 
     

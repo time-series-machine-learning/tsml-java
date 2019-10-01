@@ -424,7 +424,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * This method would build all the results files leading up to figure 3 of 
      * https://link.springer.com/article/10.1007/s10618-019-00638-y,
      * the heterogeneous ensemble comparison on the basic classifiers.
-     *
+     * 
      * It would take a long time to run, almost all of which is comprised of
      * building the base classifiers.
      *
@@ -446,7 +446,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
      */
-    protected static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
+    public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
             writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod08/";
         
