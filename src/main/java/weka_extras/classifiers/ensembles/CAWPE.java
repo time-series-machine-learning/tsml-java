@@ -448,7 +448,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod08/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod07/";
         
         //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
@@ -674,10 +674,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
-//        buildCAWPEPaper_AllResultsForFigure3(null);
+        buildCAWPEPaper_AllResultsForFigure3(null);
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
-        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753, "2019_09_25"));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753, "2019_09_25"));
         
 //        test_basic();
 //        System.out.println("");

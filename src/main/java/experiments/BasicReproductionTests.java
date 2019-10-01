@@ -187,7 +187,9 @@ public class BasicReproductionTests {
          * and allocated space with can make the timings of the first few instances of any
          * particular operation far larger than normal 
          */
-        public boolean equal(ClassifierResults newResults) { 
+        public boolean equal(ClassifierResults newResults) throws Exception { 
+            
+            newResults = ClassifierResults.util_roundAllPredictionDistsToDefaultPlaces(newResults);
             
             results.findAllStatsOnce();
             newResults.findAllStatsOnce();
@@ -420,12 +422,12 @@ public class BasicReproductionTests {
         //confirm folder structure all there
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TRAIN/TRAINTrainTimes_SUMMARY.csv").exists());
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TEST/TESTAvgPredTimes_SUMMARY.csv").exists());
-        for (String set : new String[] { ClassifierResultsAnalysis.trainLabel, ClassifierResultsAnalysis.testLabel, ClassifierResultsAnalysis.trainTestDiffLabel }) {
-            for (PerformanceMetric metric : PerformanceMetric.getDefaultStatistics()) {
-                String name = metric.name;
+//        for (String set : new String[] { ClassifierResultsAnalysis.trainLabel, ClassifierResultsAnalysis.testLabel, ClassifierResultsAnalysis.trainTestDiffLabel }) {
+//            for (PerformanceMetric metric : PerformanceMetric.getDefaultStatistics()) {
+//                String name = metric.name;
 //                assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/"+name+"/"+set+"/"+set+name+"_SUMMARY.csv").exists());
-            }
-        }
+//            }
+//        }
         
         //clean up the generated files
         FileHandlingTools.recursiveDelete("Analysis/");
@@ -433,8 +435,18 @@ public class BasicReproductionTests {
 //        assertTrue(!new File("Analysis").exists());
 //        assertTrue(!new File("Results").exists());
         
-        //confirm summary of results are the same (implying individual base classifier and ensemble results for folds are correct
-        //ingores timings, as no realistic way to make those equivalent
+        //confirm summary of results are the same (implying individual base classifier and ensemble results for folds are correct)
+        //ignores timings, as no realistic way to make those equivalent
+        
+        /*
+        String[] dataHeaders = { "UCI", };
+        String[] dataPaths = { "src/main/java/experiments/data/uci/" };
+        String[][] datasets = { { "hayes-roth", "iris", "teaching" } };
+        String writePathResults =  writePathBase + "Results/";
+        String writePathAnalysis =  writePathBase + "Analysis/";
+        int numFolds = 3;
+        */
+        
         String expectedBigGlobalSummary = 
                 "ACC:TESTACC,CAWPE,NBC,WMV,RC,MV,ES,SMLR,SMM5,PB,SMLRE\n" +
                 "AvgTESTACCOverDsets:,0.7285445094217025,0.7318294707963324,0.7172998339470075,0.7145563497220419,0.6885834957764781,0.7117738791423003,0.7191336365605373,0.7116821890116237,0.6928972637354703,0.7012410656270306\n" +
@@ -463,28 +475,34 @@ public class BasicReproductionTests {
                 "StddevOfTESTNLLOverDsets:,0.691694787015834,0.9796905490544456,1.0223841041530592,0.9870722431231613,0.7746460079084273,1.0258722030842515,1.0360622981608925,1.0024121206377643,1.5111772632891516,1.0222936474880255\n" +
                 "AvgOfStddevsOfTESTNLLOverDsetFolds:,0.13100093711191763,0.22899161342369623,0.1798812801999756,0.1874603882410609,0.20352196751423426,0.18541729066158644,0.16955322281243648,0.16941142924146801,0.2786626997782997,0.2000278240505596\n" +
                 "StddevsOfTESTNLLRanksOverDsets:,0.0,2.0816659994661326,0.5773502691896258,2.516611478423583,4.041451884327381,3.4641016151377544,2.6457513110645907,4.041451884327381,4.163331998932266,1.5275252316519465";
-
-//        System.out.println(expectedBigGlobalSummary.trim());
-//        System.out.println("\n\n\n\n");
-//        System.out.println(sb.toString().trim());
         
 //        assertEquals(sb.toString().trim(), expectedBigGlobalSummary.trim());
-        return sb.toString().trim().equals(expectedBigGlobalSummary.trim());
+        boolean res = sb.toString().trim().equals(expectedBigGlobalSummary.trim());
+        
+        if (!res) {
+            System.out.println("CAWPE not recreated sucessfully, expected: ");
+            System.out.println(expectedBigGlobalSummary.trim());
+            System.out.println("\n\n\n\n");
+            System.out.println("Made just now: ");
+            System.out.println(sb.toString().trim());
+        }
+        
+        return res;
     }
     
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();
         
-        boolean classifiersComplete = confirmAllExpectedResultReproductions();
+//        boolean classifiersComplete = confirmAllExpectedResultReproductions();
         boolean analysisReproduced = testBuildCAWPEPaper_AllResultsForFigure3();
 
-        if (classifiersComplete) {
-            System.out.println("Classifiers simple eval recreation passed");
-        }
-        else { 
-            System.out.println("Classifiers simple eval recreation failed!");
-        }
+//        if (classifiersComplete) {
+//            System.out.println("Classifiers simple eval recreation passed");
+//        }
+//        else { 
+//            System.out.println("Classifiers simple eval recreation failed!");
+//        }
         
         if (analysisReproduced) {
             System.out.println("CAWPE analysis recreation passed");
