@@ -493,22 +493,21 @@ public class BasicReproductionTests {
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();
-        
-//        boolean classifiersComplete = confirmAllExpectedResultReproductions();
+//        
+        boolean classifiersComplete = confirmAllExpectedResultReproductions();
         boolean analysisReproduced = testBuildCAWPEPaper_AllResultsForFigure3();
 
-//        if (classifiersComplete) {
-//            System.out.println("Classifiers simple eval recreation passed");
-//        }
-//        else { 
-//            System.out.println("Classifiers simple eval recreation failed!");
-//        }
-        
-        if (analysisReproduced) {
-            System.out.println("CAWPE analysis recreation passed");
+        if (!classifiersComplete) {
+            System.out.println("Classifiers simple eval recreation failed!");
         }
-        else {
+        
+        if (!analysisReproduced) {
             System.out.println("CAWPE analysis recreation failed!");
         }
+        
+        if (!classifiersComplete || !analysisReproduced) {
+            System.out.println("Integration tests failed");
+            System.exit(1); //fail
+        } // else end successfully
     }
 }
