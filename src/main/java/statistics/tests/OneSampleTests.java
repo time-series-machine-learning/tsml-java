@@ -44,11 +44,13 @@ public class OneSampleTests extends Tests{
         boolean allthesame=true;
         for(int i=0;i<data.length;i++){
             d[i]=new DataPoint(data[i],0,i);
-            if(allthesame && d[i]!=d[0])
+            if(allthesame && data[i]!=data[0])
                 allthesame=false;
         }
-        if(allthesame)
-            return "AllTheSame,0,0.5,AllTheSame,0,0.5,AllTheSame,0,0.5";
+        if(allthesame){
+            System.out.println("All the values are identical, not performing tests");
+            return "T_Test,0,0.5,Sign_Test,0,0.5,Sign_Rank_Test,0,0.5";
+        }
         Arrays.sort(d);
         TestResults test=new TestResults("T_Test");
         studentTTest(test,d);
@@ -179,21 +181,32 @@ Need to rerank the data
         T.testName="wilcoxonSignRank";	
         absRankedData=new DataPoint[ranked.length];
         double diff;
-        int adjN=0;
+        int nonZeroDifferences=0;
         for(int j=0;j<ranked.length;j++)
         {
-//System.out.println(" Data = "+ranked[j].d+"\t in Pos "+ranked[j].position+" data ="+dataByLevel[0][ranked[j].position].d);
+//            System.out.println(" Data = "+ranked[j].d+"\t in Pos "+ranked[j].position);//+" data ="+dataByLevel[0][ranked[j].position].d);
             diff=(ranked[j].d>T.h0)?ranked[j].d-T.h0:T.h0-ranked[j].d;
             if(diff>0){
-                absRankedData[adjN]=new DataPoint(diff,0,j);
-                adjN++;
+                absRankedData[nonZeroDifferences]=new DataPoint(diff,0,j);
+                nonZeroDifferences++;
             }	
         }
-        if(adjN<ranked.length){
-                DataPoint[] temp = new DataPoint[adjN];
-                for(int i=0;i<adjN;i++)
-                        temp[i]=absRankedData[i];
-                absRankedData=temp;	
+        if(nonZeroDifferences==0){
+            System.out.println(" The two series are identical, this should have been handled before this call to Wilcoxon Sign Rank test. Setting up test to accept the null");
+            T.dist = new NormalDistribution(0,1);
+             T.testStat=0;
+            T.findCriticalValue();
+            T.findPValue();		
+
+
+            return;  
+            
+        }
+        if(nonZeroDifferences<ranked.length){
+            DataPoint[] temp = new DataPoint[nonZeroDifferences];
+            for(int i=0;i<nonZeroDifferences;i++)
+                    temp[i]=absRankedData[i];
+            absRankedData=temp;	
         }	
         Arrays.sort(absRankedData);
         for(int i=0;i<absRankedData.length;i++)
@@ -202,7 +215,7 @@ Need to rerank the data
 
         double rankSumUnder=0,rankSumOver=0;
 
-        for(int j=0;j<adjN;j++)
+        for(int j=0;j<nonZeroDifferences;j++)
         {
             diff=ranked[absRankedData[j].position].d-T.h0;
             if (!beQuiet)
@@ -224,7 +237,7 @@ Need to rerank the data
             T.testStat=(rankSumOver<rankSumUnder)?rankSumUnder:rankSumOver;
         //Havent used the exact distribution, but it is possible for
         //small N, see page 74 of Neave	
-        T.dist = new NormalDistribution(adjN*(adjN+1)/4.0,Math.sqrt(adjN*(adjN+1)*(2*adjN+1)/24.0));	
+        T.dist = new NormalDistribution(nonZeroDifferences*(nonZeroDifferences+1)/4.0,Math.sqrt(nonZeroDifferences*(nonZeroDifferences+1)*(2*nonZeroDifferences+1)/24.0));	
         T.findCriticalValue();
         T.findPValue();		
 

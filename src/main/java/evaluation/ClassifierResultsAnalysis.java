@@ -279,7 +279,7 @@ public class ClassifierResultsAnalysis {
     
     protected static void writeTableFile(String filename, String tableName, double[][] accs, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
-        out.writeLine(tableName + ":" + fileHelper_tabulate(accs, cnames, dsets));
+        out.writeLine(tableName + fileHelper_tabulate(accs, cnames, dsets));
 //        out.writeLine("\navg:" + util_mean(accs));
         out.closeFile();
     }
