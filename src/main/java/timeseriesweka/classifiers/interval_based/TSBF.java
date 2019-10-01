@@ -773,6 +773,10 @@ public static void recreatePublishedResults() throws Exception{
 
     }
     public static void main(String[] args) throws Exception {
+                
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSBF()));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new LPS(), 0.9319727891156463, "2019_09_26"));
+        
         String s= "Beef";
         System.out.println(" PROBLEM ="+s);
         Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");

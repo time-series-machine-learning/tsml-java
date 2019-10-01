@@ -1,3 +1,4 @@
+
 plugins {
     java
     application
@@ -14,5 +15,5 @@ dependencies {
 }
 
 application {
-    mainClassName = "App"
+    mainClassName = "experiments.BasicReproductionTests"
 }
