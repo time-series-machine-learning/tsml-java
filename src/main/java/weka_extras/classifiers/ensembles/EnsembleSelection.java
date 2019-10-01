@@ -29,6 +29,7 @@ import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
@@ -287,7 +288,22 @@ public class EnsembleSelection extends CAWPE {
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");
         
-        long buildTime = System.nanoTime() - startTime; 
+        long buildTime = System.nanoTime() - startTime;
+        if (readIndividualsResults) {
+            //we need to sum the modules' reported build time as well as the weight
+            //and voting definition time
+            for (EnsembleModule module : modules) {
+                buildTime += module.trainResults.getBuildTimeInNanos();
+                
+                //TODO see other todo in trainModules also. Currently working under 
+                //assumption that the estimate time is already accounted for in the build
+                //time of TrainAccuracyEstimators, i.e. those classifiers that will 
+                //estimate their own accuracy during the normal course of training
+                if (!(module.getClassifier() instanceof TrainAccuracyEstimator))
+                    buildTime += module.trainResults.getErrorEstimateTime();
+            }
+        }
+        
         trainResults.setBuildTime(buildTime); //store the buildtime to be saved
         if (writeEnsembleTrainingFile)
             writeEnsembleTrainAccuracyEstimateResultsFile();
