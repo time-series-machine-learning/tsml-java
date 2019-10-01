@@ -247,6 +247,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 
     @Override
     public double getTrainAcc() {
+        System.out.println("In get Train Acc : "+trainResults);
         return trainResults.getAcc();
     }
 
@@ -514,7 +515,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                     actuals[j]=data.instance(j).classValue();
                 }
                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-                trainResults.addAllPredictions(preds, trainDistributions, predTimes, null);
+                trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
                 trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
                 trainResults.setClassifierName("TSFBagging");
                 trainResults.setDatasetName(data.relationName());
