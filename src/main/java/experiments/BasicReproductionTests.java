@@ -47,7 +47,7 @@ public class BasicReproductionTests {
 
     public static final int defaultSeed = 0;
     
-    public static boolean failTestsOnTimingsDifference = true;
+    public static boolean failTestsOnTimingsDifference = false;
     public static double timingEqualityThreshold = 1.2;
     
     public static String reproductionDirectory = "src/main/java/experiments/reproductions/";
@@ -217,9 +217,10 @@ public class BasicReproductionTests {
             long t1 = TimeUnit.MILLISECONDS.convert(results.getBuildTimeInNanos(), TimeUnit.NANOSECONDS); 
             long t2 = TimeUnit.MILLISECONDS.convert(newResults.getBuildTimeInNanos(), TimeUnit.NANOSECONDS);
             if (t1*timingEqualityThreshold < t2 || t1/timingEqualityThreshold > t2) {
-                System.out.println("BUILD TIME OUTSIDE THRESHOLD, exp="+t1+" new="+t2);
-                if (failTestsOnTimingsDifference)
+                if (failTestsOnTimingsDifference) {
+                    System.out.println("BUILD TIME OUTSIDE THRESHOLD, exp="+t1+" new="+t2);
                     res = false;
+                }
             }
             
             ///////////////// FINAL FIVE PREDICTIONS
@@ -238,9 +239,10 @@ public class BasicReproductionTests {
                 t2 = TimeUnit.MILLISECONDS.convert(tt2, TimeUnit.NANOSECONDS);
                 
                 if (t1*timingEqualityThreshold < t2 || t1/timingEqualityThreshold > t2) {   
-                    System.out.println("PREDICTION TIME NUMINSTS-"+i+" OUTSIDE THRESHOLD, exp="+t1+" new="+t2);
-                    if (failTestsOnTimingsDifference)
+                    if (failTestsOnTimingsDifference) {
+                        System.out.println("PREDICTION TIME NUMINSTS-"+i+" OUTSIDE THRESHOLD, exp="+t1+" new="+t2);
                         res = false;
+                    }
                 }
             }
             
@@ -472,13 +474,23 @@ public class BasicReproductionTests {
     
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
-        generateMissingExpectedResults();
+//        generateMissingExpectedResults();
         
-        if (!confirmAllExpectedResultReproductions()) {
-            
+        boolean classifiersComplete = confirmAllExpectedResultReproductions();
+        boolean analysisReproduced = testBuildCAWPEPaper_AllResultsForFigure3();
+
+        if (classifiersComplete) {
+            System.out.println("Classifiers simple eval recreation passed");
         }
-        if (!testBuildCAWPEPaper_AllResultsForFigure3()) {
-            
+        else { 
+            System.out.println("Classifiers simple eval recreation failed!");
+        }
+        
+        if (analysisReproduced) {
+            System.out.println("CAWPE analysis recreation passed");
+        }
+        else {
+            System.out.println("CAWPE analysis recreation failed!");
         }
     }
 }
