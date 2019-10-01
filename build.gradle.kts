@@ -15,5 +15,5 @@ dependencies {
 }
 
 application {
-    mainClassName = "BasicReproductionTests"
+    mainClassName = "experiments.BasicReproductionTests"
 }
