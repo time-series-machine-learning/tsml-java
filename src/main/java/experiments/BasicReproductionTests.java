@@ -61,43 +61,33 @@ public class BasicReproductionTests {
     
     public static final String[] classifierPaths = {
         
-        tsClassifiers + "dictionary_based.BOSS",
         tsClassifiers + "dictionary_based.BagOfPatterns",
         tsClassifiers + "dictionary_based.SAXVSM",
         tsClassifiers + "dictionary_based.WEASEL",
         tsClassifiers + "dictionary_based.cBOSS",
        
-        tsClassifiers + "distance_based.ElasticEnsemble", //most other distance based stuff assumed to be covered in here
         tsClassifiers + "distance_based.FastDTW_1NN",
         tsClassifiers + "distance_based.ProximityForestWrapper",
         tsClassifiers + "distance_based.SlowDTW_1NN",
         
-        tsClassifiers + "frequency_based.RISE",
         tsClassifiers + "frequency_based.cRISE",
         
-        tsClassifiers + "hybrids.FlatCote",
-        tsClassifiers + "hybrids.HiveCote",
+        tsClassifiers + "hybrids.FlatCote", 
+        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
         
         tsClassifiers + "interval_based.LPS",
         tsClassifiers + "interval_based.TSBF",
-        tsClassifiers + "interval_based.TSF",
         tsClassifiers + "interval_based.cTSF",
         
         tsClassifiers + "shapelet_based.FastShapelets",
-        tsClassifiers + "shapelet_based.LearnShapelets",
-        tsClassifiers + "shapelet_based.ShapeletTransformClassifier",
-        
+        tsClassifiers + "shapelet_based.LearnShapelets",        
         
         extraClassifiers + "PLSNominalClassifier",
-        extraClassifiers + "MultiLinearRegression",
-        extraClassifiers + "MultiResponseModelTrees",
         extraClassifiers + "kNN",
         
         extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.EnsembleSelection",
         extraClassifiers + "ensembles.ContractRotationForest",
         extraClassifiers + "ensembles.stackers.SMLR",
-        extraClassifiers + "ensembles.weightedvoters.CAWPE_NaiveBayesCombiner",
         
     };
     
@@ -506,10 +496,10 @@ public class BasicReproductionTests {
         }
         
         if (!classifiersComplete || !analysisReproduced) {
-            System.out.println("Integration tests failed");
+            System.out.println("\n\n*********************Integration tests failed");
             System.exit(1); //fail
         } 
         
-        System.out.println("All tests passed");
+        System.out.println("\n\n*********************All tests passed");
     }
 }
