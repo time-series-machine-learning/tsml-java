@@ -311,11 +311,11 @@ public class ClassifierLists {
                 c=new BOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
-            case "RBOSS": case "cBOSS":
+            case "RBOSS": case "cBOSS": case "cBOSSBayesianFull":
                 c = new cBOSS();
                 ((cBOSS) c).setSeed(fold);
                 break;
-            case "OFScBOSS":
+            case "BISPcBOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
                 break;

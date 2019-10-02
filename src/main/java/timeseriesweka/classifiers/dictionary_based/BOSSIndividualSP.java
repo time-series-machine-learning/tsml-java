@@ -762,7 +762,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        chiSquared();
+        //chiSquared();
 
         if (cleanAfterBuild) {
             clean();
@@ -818,13 +818,13 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
-        SPBag oldBag = testBag;
-        testBag = new SPBag(oldBag.classVal);
-        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
-            if (chiSquare.contains(entry.getKey())) {
-                testBag.put(entry.getKey(), entry.getValue());
-            }
-        }
+//        SPBag oldBag = testBag;
+//        testBag = new SPBag(oldBag.classVal);
+//        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
+//            if (chiSquare.contains(entry.getKey())) {
+//                testBag.put(entry.getKey(), entry.getValue());
+//            }
+//        }
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;

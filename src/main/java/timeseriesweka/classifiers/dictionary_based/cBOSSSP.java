@@ -93,7 +93,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
     private final boolean[] normOptions = { true, false };
     private final Integer[] levels = { 1, 2, 3 };
     private final double correctThreshold = 0.92;
-    private final double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
+    private final double[] chiLimits = { 0 };
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
@@ -635,7 +635,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], 0, multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
