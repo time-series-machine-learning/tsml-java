@@ -40,6 +40,7 @@ import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import weka.core.Randomizable;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -129,7 +130,17 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         contractTime=true;
         contractHours=hours;
     }
-    
+    @Override
+    public void setSeed(int seed) { 
+        seedClassifier=true;
+        this.seed = seed;
+        rand=new Random(seed);
+        int count =2;
+        for(Classifier c:classifiers){
+            if(c instanceof Randomizable)
+                ((Randomizable)c).setSeed(seed+count++);
+        }
+    }    
     
     
     private void setDefaultEnsembles(){
@@ -479,8 +490,6 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             numFolds = train.numInstances();
         }
 
-        Random r = new Random();
-
         ArrayList<Instances> folds = new ArrayList<>();
         ArrayList<ArrayList<Integer>> foldIndexing = new ArrayList<>();
 
@@ -493,7 +502,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         for(int i = 0; i < train.numInstances(); i++){
             instanceIds.add(i);
         }
-        Collections.shuffle(instanceIds, r);
+        Collections.shuffle(instanceIds, rand);
 
         ArrayList<Instances> byClass = new ArrayList<>();
         ArrayList<ArrayList<Integer>> byClassIndices = new ArrayList<>();
