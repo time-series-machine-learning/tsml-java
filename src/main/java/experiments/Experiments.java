@@ -96,6 +96,11 @@ public class Experiments  {
     private static boolean testFoldExists;
     private static boolean trainFoldExists;
     
+    /**
+     * If true, experiments will not print or log to stdout/err anything other that exceptions (SEVERE)
+     */
+    public static boolean beQuiet = false; 
+    
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
 
@@ -348,10 +353,12 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
-        System.out.println("Raw args:");
-        for (String str : args)
-            System.out.println("\t"+str);
-        System.out.println("");
+        if (!beQuiet) {
+            System.out.println("Raw args:");
+            for (String str : args)
+                System.out.println("\t"+str);
+            System.out.println("");
+        }
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
@@ -409,11 +416,18 @@ public class Experiments  {
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there. 
 //        LOGGER.addHandler(new FileHandler()); 
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else
-            LOGGER.setLevel(Level.INFO);
-        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+
+        if (beQuiet) {
+            LOGGER.setLevel(Level.SEVERE);
+        }
+        else {
+            if (debug)
+                LOGGER.setLevel(Level.FINEST);
+            else
+                LOGGER.setLevel(Level.INFO);
+            
+            DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+        }
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
@@ -546,10 +560,16 @@ public class Experiments  {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
+                    
+                    //for non-TrainAccEstimators, this is simply the sum of the two
+                    trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+                    
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
                 //else 
                 //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
+                //   todo should change this to the classifier gives the results object back to experiments, 
+                //      we can do any standard behaviour here, and then continue on. 
             }
             LOGGER.log(Level.FINE, "Train estimate written");
 

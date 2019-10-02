@@ -395,10 +395,13 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                                                             String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             for (String classifier : classifiers) {
-                System.out.println("\t" + classifier);
+                if (!Experiments.beQuiet)
+                    System.out.println("\t" + classifier);
 
                 for (String dset : datasetNames[archive]) {
-                    System.out.println(dset);
+                    if (!Experiments.beQuiet)
+                        System.out.println(dset);
+                    
                     for (int fold = 0; fold < numFolds; fold++) {
                           /*1: Problem path args[0]
                             2. Results path args[1]
@@ -421,7 +424,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * This method would build all the results files leading up to figure 3 of 
      * https://link.springer.com/article/10.1007/s10618-019-00638-y,
      * the heterogeneous ensemble comparison on the basic classifiers.
-     *
+     * 
      * It would take a long time to run, almost all of which is comprised of
      * building the base classifiers.
      *
@@ -443,19 +446,29 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
      */
-    protected static void buildCAWPEPaper_AllResultsForFigure3() throws Exception {
-        //init, edit the paths for local running ofc
+    public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
+        if (writePathBase == null) 
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod07/";
+        
+        //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "C:/UCI Problems/", };
-        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
-        String writePathBase = "C:/Temp/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest012/";
+        String[] dataPaths = { "src/main/java/experiments/data/uci/" };
+        String[][] datasets = { { "hayes-roth", "iris", "teaching" } };
         String writePathResults =  writePathBase + "Results/";
         String writePathAnalysis =  writePathBase + "Analysis/";
-        int numFolds = 5;
+        int numFolds = 3;
+        
+//        //init, edit the paths for local running ofc
+//        String[] dataHeaders = { "UCI", };
+//        String[] dataPaths = { "C:/UCI Problems/", };
+//        String[][] datasets = { { "hayes-roth", "pittsburg-bridges-T-OR-D", "teaching", "wine" } };
+//        String writePathResults =  writePathBase + "Results/";
+//        String writePathAnalysis =  writePathBase + "Analysis/";
+//        int numFolds = 5;
+        
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
 //        String[][] datasets = { DataSets.UCIContinuousFileNames, };
-//        String writePathBase = "Z:/Results_7_2_19/CAWPEReproducabiltyTest2/";
 //        String writePathResults =  writePathBase + "Results/";
 //        String writePathAnalysis =  writePathBase + "Analysis/";
 //        int numFolds = 30;
@@ -483,7 +496,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             "PB", "MV", "WMV", "RC", "NBC"
         };
 
-        String pkg = "weka_uea.classifiers.ensembles.";
+        String pkg = "weka_extras.classifiers.ensembles.";
         Class[] ensembleClasses = {
             Class.forName(pkg + "CAWPE"),
             Class.forName(pkg + "EnsembleSelection"),
@@ -514,7 +527,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
  
     protected static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
-        System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
+        if (!Experiments.beQuiet)
+            System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(false).
@@ -535,7 +549,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             String writePath = baseWritePath + dataHeaders[archive] + "/";
 
             for (String dset : datasetNames[archive]) {
-                System.out.println(dset);
+                if (!Experiments.beQuiet)
+                    System.out.println(dset);
 
                 if (dataHeaders[archive].equals("UCI"))
                     all = DatasetLoading.loadDataNullable(dataPaths[archive] + dset + "/" + dset + ".arff");
@@ -659,11 +674,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
-
-//        buildCAWPEPaper_AllResultsForFigure3();
-        test_basic();
-        System.out.println("");
-        test_threaded();
+        buildCAWPEPaper_AllResultsForFigure3(null);
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753, "2019_09_25"));
+        
+//        test_basic();
+//        System.out.println("");
+//        test_threaded();
         
         //run:
         //test_basic()

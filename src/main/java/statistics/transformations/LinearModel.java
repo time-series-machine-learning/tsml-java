@@ -5,7 +5,7 @@ in the Jama ridge regression
 
 
  * */
-package transformations;
+package statistics.transformations;
 
 import fileIO.OutFile;
 import java.io.FileReader;

@@ -1299,6 +1299,18 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         
         
     }
+    
+    public static void testFilterUsage(){
+        String filePath ="Z:\\ArchiveData\\Univariate_ts\\";
+        String problem="Chinatown";
+        Instances test, train;
+        test = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TRAIN");
+        ShapeletTransform shapeletTransform = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); 
+        
+        
+        
+    }
     public static void main(String[] args){
         try {
             final String resampleLocation = "D:\\Research TSC\\Data\\TSCProblems2018";

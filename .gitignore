@@ -24,6 +24,7 @@ hs_err_pid*
 # intellij
 .idea/
 *.iml
+classes/*
 
 # gradle
 .gradle/
@@ -37,3 +38,7 @@ build.xml
 nbproject/
 manifest.mf
 defaultShapeletOutput.txt
+
+# testing and local results files
+Results/
+Analysis/

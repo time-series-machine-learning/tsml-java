@@ -539,6 +539,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 
     public static void main(String[] args) throws Exception {
         
+//        LPS lps = new LPS();
+//        lps.setSeed(0);
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(lps));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(lps, 0.9339164237123421, "2019_09_26"));
+        
 //       compareToPublished();
 //        System.exit(0);
         LPS l=new LPS();

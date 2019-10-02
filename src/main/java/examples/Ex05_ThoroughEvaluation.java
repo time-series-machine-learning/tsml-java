@@ -63,11 +63,10 @@ public class Ex05_ThoroughEvaluation {
         // Let's load back in all the results files we made: 
         
         ClassifierResultsCollection crc = new ClassifierResultsCollection();
-        crc.setClassifiers(classifiers);
+        crc.addClassifiers(classifiers, resultsPath);
         crc.setDatasets(datasets);
         crc.setFolds(numFolds);
         crc.setSplit_Test();
-        crc.setBaseReadPath(resultsPath);
         
         crc.load();
         System.out.println(crc);

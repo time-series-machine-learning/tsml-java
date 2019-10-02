@@ -175,7 +175,7 @@ public abstract class SimpleFilter
    * @throws Exception  in case the processing goes wrong
    * @see               #batchFinished()
    */
-  protected abstract Instances process(Instances instances) throws Exception;
+  public abstract Instances process(Instances instances) throws Exception;
   
   /**
    * Sets the format of the input instances. 
