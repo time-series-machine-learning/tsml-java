@@ -104,7 +104,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private boolean checkpoint = false;
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
-    private boolean cleanupCheckpointFiles = true;
+    private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
     private long contractTime = 0;
@@ -529,12 +529,12 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
         }
 
-        try {
-            SizeOf.deepSizeOf("test");
-        } catch (IllegalStateException e) {
-            if (memoryContract) {
+        if (memoryContract) {
+            try {
+                SizeOf.deepSizeOf("test");
+            } catch (IllegalStateException e) {
                 throw new Exception("Unable to contract memory with SizeOf unavailable, " +
-                        "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
+                            "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
             }
         }
 

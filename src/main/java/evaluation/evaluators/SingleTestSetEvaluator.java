@@ -46,16 +46,6 @@ public class SingleTestSetEvaluator extends Evaluator {
     
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
-        
-        if (REGRESSION_HACK) { 
-            //jamesl moved these hacks from CrossValidationEvaluator down to here,
-            //but ask mathewm for reasoning... 
-            
-            dataset = new Instances(dataset); //might end up cloning the data twice, but hey, it's a hack
-            for (Instance inst : dataset)
-                inst.setClassValue(0);
-        }
-        
         final Instances insts = cloneData ? new Instances(dataset) : dataset;
         
         ClassifierResults res = new ClassifierResults(insts.numClasses());
@@ -74,17 +64,14 @@ public class SingleTestSetEvaluator extends Evaluator {
             long startTime = System.nanoTime();
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.nanoTime() - startTime;
-            
-            if(REGRESSION_HACK) 
-                res.addPrediction(trueClassVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
-            else 
-                res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
         
         res.turnOnZeroTimingsErrors();
         
         res.finaliseResults();
-        if(!REGRESSION_HACK) res.findAllStatsOnce(); 
+        res.findAllStatsOnce();
         
         return res;
     }
