@@ -93,6 +93,11 @@ public class Experiments  {
 
     public static boolean debug = false;
     
+    /**
+     * If true, experiments will not print or log to stdout/err anything other that exceptions (SEVERE)
+     */
+    public static boolean beQuiet = false; 
+    
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
 
@@ -345,10 +350,12 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
-        System.out.println("Raw args:");
-        for (String str : args)
-            System.out.println("\t"+str);
-        System.out.println("");
+        if (!beQuiet) {
+            System.out.println("Raw args:");
+            for (String str : args)
+                System.out.println("\t"+str);
+            System.out.println("");
+        }
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
@@ -406,11 +413,18 @@ public class Experiments  {
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there. 
 //        LOGGER.addHandler(new FileHandler()); 
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else
-            LOGGER.setLevel(Level.INFO);
-        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+
+        if (beQuiet) {
+            LOGGER.setLevel(Level.SEVERE);
+        }
+        else {
+            if (debug)
+                LOGGER.setLevel(Level.FINEST);
+            else
+                LOGGER.setLevel(Level.INFO);
+            
+            DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+        }
         LOGGER.log(Level.FINE, expSettings.toString());
         
         //TODO still setting these for now, since maybe certain classfiiers still use these "global" 

@@ -277,7 +277,11 @@ public class BagOfPatterns extends AbstractClassifierWithTrainingInfo implements
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new BagOfPatterns()));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new BagOfPatterns(), 0.8425655976676385, "2019_09_26"));
+        
         basicTest();
     }
     

@@ -82,7 +82,11 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new SAX_1NN(10, 4)));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAX_1NN(10, 4), 0.9154518950437318, "2019_09_26"));
+        
         System.out.println("BagofPatternsTest\n\n");
         
         try {

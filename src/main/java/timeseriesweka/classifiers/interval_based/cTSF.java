@@ -143,9 +143,6 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     /**Holding variable for test classification in order to retain the header info*/
     private Instances testHolder;
 
-    /**Can seed for reproducibility*/
-    private Random rand;
-    private boolean setSeed=false;
 
     /** If trainAccuracy is required, a cross validation is done in buildClassifier
      * or a OOB estimate is formed
@@ -181,7 +178,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         rand=new Random();
         seed=s;
         rand.setSeed(seed);
-        setSeed=true;
+        seedClassifier=true;
     }
     /**
      *
@@ -211,7 +208,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
      */
     @Override
     public void setSeed(int s){
-        this.setSeed=true;
+        this.seedClassifier=true;
         seed=s;
         rand=new Random();
         rand.setSeed(seed);
@@ -497,7 +494,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
             }
             //3. Create and build tree using all the features. Feature selection
             Classifier tree = AbstractClassifier.makeCopy(base);
-            if(setSeed && tree instanceof Randomizable)
+            if(seedClassifier && tree instanceof Randomizable)
                 ((Randomizable)tree).setSeed(seed*(classifiersBuilt+1));
             if(bagging){
                 boolean[] bag = new boolean[result.numInstances()];
@@ -525,7 +522,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
                      * Could this be handled better? */
                     int numFolds = setNumberOfFolds(data);
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                    if (setSeed)
+                    if (seedClassifier)
                         cv.setSeed(seed);
                     cv.setNumFolds(numFolds);
                     ClassifierResults results = cv.crossValidateWithStats(AbstractClassifier.makeCopy(base), result);
@@ -764,7 +761,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
             intervals = saved.intervals;
             //testHolder = saved.testHolder;
             rand = saved.rand;
-            setSeed = saved.setSeed;
+            seedClassifier = saved.seedClassifier;
             seed = saved.seed;
             trainAccuracyEst = saved.trainAccuracyEst;
             trainCVPath = saved.trainCVPath;

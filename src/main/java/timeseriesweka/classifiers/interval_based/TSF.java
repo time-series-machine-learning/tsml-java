@@ -138,9 +138,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     /**Holding variable for test classification in order to retain the header info*/    
     private Instances testHolder;
  
-    /**Can seed for reproducibility*/
-    private Random rand;
-    private boolean setSeed=false;
  
 /** voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting */
@@ -172,10 +169,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         rand=new Random();
     }
     public TSF(int s){
-        rand=new Random();
-        seed=s;
-        rand.setSeed(seed);
-        setSeed=true;
+        setSeed(s);
     }
 /**
  * 
@@ -199,17 +193,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         voteEnsemble=!b;
     }
      
-/**
- * Seed experiments for reproducibility with the resample number
- * @param s 
- */   
-    @Override
-    public void setSeed(int s){
-        this.setSeed=true;
-        seed=s;
-        rand=new Random();
-        rand.setSeed(seed);
-    }
 /**
  * Stores the classifier train CV results and writes them to file. 
  * boolean trainCV is a little redundant, but nicer than checking path for null
@@ -247,6 +230,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 
     @Override
     public double getTrainAcc() {
+        System.out.println("In get Train Acc : "+trainResults);
         return trainResults.getAcc();
     }
 
@@ -473,7 +457,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
             }
         //3. Create and build tree using all the features. Feature selection
             trees[i]=AbstractClassifier.makeCopy(base); 
-            if(setSeed && trees[i] instanceof Randomizable)
+            if(seedClassifier && trees[i] instanceof Randomizable)
                 ((Randomizable)trees[i]).setSeed(seed*(i+1));
             if(bagging){
                 inBag[i] = new boolean[result.numInstances()];
@@ -514,7 +498,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                     actuals[j]=data.instance(j).classValue();
                 }
                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-                trainResults.addAllPredictions(preds, trainDistributions, predTimes, null);
+                trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
                 trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
                 trainResults.setClassifierName("TSFBagging");
                 trainResults.setDatasetName(data.relationName());
@@ -533,12 +517,13 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 long est1=System.nanoTime();
                 int numFolds=setNumberOfFolds(data);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                if (setSeed)
-                  cv.setSeed(seed);
+                if (seedClassifier)
+                  cv.setSeed(seed*5);
                 cv.setNumFolds(numFolds);
                 TSF tsf=new TSF();
                 tsf.copyParameters(this);
-                tsf.setSeed(seed);
+                if (seedClassifier)
+                   tsf.setSeed(seed*100);
                 tsf.setFindTrainAccuracyEstimate(false);
                 trainResults=cv.crossValidateWithStats(tsf,data);
                 long est2=System.nanoTime();
@@ -763,6 +748,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     } 
      
     public static void main(String[] arg) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
+        
 // Basic correctness tests, including setting paras through 
         String dataLocation="Z:\\Data\\TSCProblems2018\\";
         String resultsLocation="C:\\temp\\";

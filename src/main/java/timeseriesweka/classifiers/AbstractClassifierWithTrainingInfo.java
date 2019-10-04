@@ -16,6 +16,7 @@ package timeseriesweka.classifiers;
 
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+import java.util.Random;
 import weka.core.Capabilities;
 import weka.core.Randomizable;
 
@@ -57,7 +58,9 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
     
     protected boolean fullyNestedEstimates=true;
     protected ClassifierResults trainResults =new ClassifierResults();
-    
+/**Can seed for reproducibility*/
+    protected Random rand=new Random();
+    protected boolean seedClassifier=false;
     protected int seed = 0;
    
     
@@ -77,7 +80,10 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
      */
     @Override
     public void setSeed(int seed) { 
+        seedClassifier=true;
         this.seed = seed;
+        rand=new Random(seed);
+//        rand.setSeed(seed);
     }
 
     /**

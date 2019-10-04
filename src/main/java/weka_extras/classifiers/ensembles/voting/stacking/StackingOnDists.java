@@ -47,10 +47,10 @@ public class StackingOnDists extends AbstractStacking {
             for (int c = 0; c < numClasses; c++) 
                 instData[i++] = dists[m][c];
         
-        assert(i == numOutputAtts-2);
+        assert(i == numOutputAtts-1);
         
         if (classVal != null)
-            instData[numOutputAtts-1] = classVal; 
+            instData[i] = classVal; 
         //else irrelevent 
         
         instsHeader.add(new DenseInstance(1.0, instData));
