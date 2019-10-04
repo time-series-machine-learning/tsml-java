@@ -331,6 +331,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             int bestRatio=0;
             int bestTreeDepth=0;
             LPS trainer=new LPS();
+            if(seedClassifier)
+                trainer.setSeed(seed*42);
             trainer.nosTrees=50;
             trainer.setParamSearch(false);
             int folds=10;
@@ -339,7 +341,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
                 for(int j=0;j<treeDepths.length;j++){
                     trainer.treeDepth=treeDepths[j];
                     Evaluation eval=new Evaluation(data);
-                    eval.crossValidateModel(trainer, data, folds,new Random());
+                    eval.crossValidateModel(trainer, data, folds,rand);
                     double e=eval.errorRate();
                     if(e<bestErr){
                         bestErr=e;
@@ -366,12 +368,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         for(int i=0;i<data.numInstances();i++)
             trainClassVals[i]=data.instance(i).classValue();
         classAtt=new int[nosTrees];
-        Random r= new Random();
         
 //For each tree 1 to N
         for(int i=0;i<nosTrees;i++){    
 //    %select random segment length for each tree
-            segLengths[i]=minSegment+r.nextInt(maxSegment-minSegment);
+            segLengths[i]=minSegment+rand.nextInt(maxSegment-minSegment);
 //    %select target segments randomly for each tree
 //   %ind=1:(2*nsegment);            
 //            int target=r.nextInt(2*nosSegments);    //times 2 for diffs
@@ -380,8 +381,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 //        stxdiff=randsample(tlen-segmentlen(i)-1,nsegment,true);
 //Sample with replacement.
             for(int j=0;j<nosSegments;j++){
-                segStarts[i][j]=r.nextInt(seriesLength-segLengths[i]);
-                segDiffStarts[i][j]=r.nextInt(seriesLength-segLengths[i]-1);
+                segStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]);
+                segDiffStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]-1);
             }
 //Set up the instances for this tree            
 //2- Generate segments for each time series and 
@@ -408,7 +409,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
                 }
             }
 //3- Choose a random target column from M, let this target column be t
-            classAtt[i]=r.nextInt(sequences.numAttributes());//
+            classAtt[i]=rand.nextInt(sequences.numAttributes());//
             sequences.setClassIndex(classAtt[i]);
             trees[i]= new RandomRegressionTree();
             trees[i].setMaxDepth(treeDepth);
@@ -631,24 +632,23 @@ M equals
         segLengths=new int[nosTrees];
         segStarts=new int[nosTrees][nosSegments];
         segDiffStarts=new int[nosTrees][nosSegments];
-        Random r= new Random();
         
 //For each tree 1 to N
         for(int i=0;i<nosTrees;i++){    
 //    %select random segment length for each tree
-            segLengths[i]=minSegment+r.nextInt(maxSegment-minSegment);
+            segLengths[i]=minSegment+rand.nextInt(maxSegment-minSegment);
             segLengths[i]=3;
             System.out.println("SEG LENGTH ="+segLengths[i]);
 //    %select target segments randomly for each tree
 //   %ind=1:(2*nsegment);            
-            int target=r.nextInt(2*nosSegments);    //times 2 for diffs
+            int target=rand.nextInt(2*nosSegments);    //times 2 for diffs
 //        %construct segment matrix (both observed and difference)
 //        stx=randsample(tlen-segmentlen(i),nsegment,true); 
 //        stxdiff=randsample(tlen-segmentlen(i)-1,nsegment,true);
 //Sample with replacement.
             for(int j=0;j<nosSegments;j++){
-                segStarts[i][j]=r.nextInt(seriesLength-segLengths[i]);
-                segDiffStarts[i][j]=r.nextInt(seriesLength-segLengths[i]-1);
+                segStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]);
+                segDiffStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]-1);
                 System.out.println("SEG START ="+segStarts[i][j]);
                 System.out.println("SEG DIFF START ="+segDiffStarts[i][j]);
             }

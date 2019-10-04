@@ -254,11 +254,7 @@ public static void recreatePublishedResults() throws Exception{
     RandomForest finalRandForest;
 
     Instances first;
-    Random rand= new Random();
     static double TOLERANCE =0.05;
-    public void seedRandom(int s){
-        rand=new Random(s);
-    }
     public void searchParameters(boolean b){
         paramSearch=b;
     }
@@ -427,13 +423,18 @@ public static void recreatePublishedResults() throws Exception{
     }
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.setBuildTime(System.currentTimeMillis());
+    // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        long t1=System.nanoTime();
+//        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
             int r=0;
             for(int i=0;i<numReps;i++){
                 TSBF reps=new TSBF();
+                if(seedClassifier)
+                    reps.setSeed(seed*33);
                 reps.numReps=1;
                 reps.paramSearch=true;
                 reps.buildClassifier(data);
@@ -538,8 +539,7 @@ public static void recreatePublishedResults() throws Exception{
                     finalRandForest=new RandomForest();    
                     finalRandForest.setNumTrees(500);
                 //6. Form a CV estimate of accuracy to choose z value 
-                    Random r= new Random();
-                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,r.nextInt());
+                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,rand.nextInt());
                 }
                 if(acc>maxAcc){
                    if(!stepWise)
