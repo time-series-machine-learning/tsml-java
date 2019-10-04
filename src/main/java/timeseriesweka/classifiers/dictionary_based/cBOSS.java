@@ -490,7 +490,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "BOSS.ser");
-            System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
+            System.out.println("Spent " + (System.nanoTime() - time) + " nanoseconds loading ser files");
         }
         //initialise variables
         else {
