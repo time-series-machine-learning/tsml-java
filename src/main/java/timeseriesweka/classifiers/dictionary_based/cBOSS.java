@@ -527,6 +527,22 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             rand = new Random(seed);
 
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
+
+            if (randomCVAccEnsemble){
+                classifiersBuilt = new int[numSeries];
+                lowestAccIdx = new int[numSeries];
+                lowestAcc = new double[numSeries];
+                for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
+
+                if (trainCV){
+                    filterTrainPreds = new ArrayList[numSeries];
+                    filterTrainIdx  = new ArrayList[numSeries];
+                    for (int n = 0; n < numSeries; n++){
+                        filterTrainPreds[n] = new ArrayList();
+                        filterTrainIdx[n] = new ArrayList();
+                    }
+                }
+            }
         }
 
         if (memoryContract) {
@@ -610,20 +626,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     }
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {
-        classifiersBuilt = new int[numSeries];
-        lowestAccIdx = new int[numSeries];
-        lowestAcc = new double[numSeries];
-        for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
-
-        if (trainCV){
-            filterTrainPreds = new ArrayList[numSeries];
-            filterTrainIdx  = new ArrayList[numSeries];
-            for (int n = 0; n < numSeries; n++){
-                filterTrainPreds[n] = new ArrayList();
-                filterTrainIdx[n] = new ArrayList();
-            }
-        }
-
         //build classifiers up to a set size
         while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
             long indivBuildTime = System.nanoTime();
@@ -687,10 +689,10 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
             if (checkpoint) {
                 if (numClassifiers[currentSeries] < maxEnsembleSize) {
-                    checkpoint(prev, -1);
+                    checkpoint(prev, -1, true);
                 }
-                else if (checkpointChange){
-                    checkpoint(prev, lowestAccIdx[prev]);
+                else{
+                    checkpoint(prev, lowestAccIdx[prev], checkpointChange);
                 }
             }
 
@@ -795,7 +797,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
 
             if (checkpoint) {
-                checkpoint(prev, -1);
+                checkpoint(prev, -1, true);
             }
 
             checkContracts();
@@ -815,7 +817,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         }
     }
 
-    private void checkpoint(int seriesNo, int classifierNo){
+    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv){
         if(checkpointPath!=null){
             try{
                 File f = new File(checkpointPath);
@@ -824,17 +826,19 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 //time the checkpoint occured
                 checkpointTime = System.nanoTime();
 
-                if (seriesNo >= 0) {
-                    if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
+                if (saveIndiv) {
+                    if (seriesNo >= 0) {
+                        if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
 
-                    //save the last build individual classifier
-                    BOSSIndividual indiv = classifiers[seriesNo].get(classifierNo);
+                        //save the last build individual classifier
+                        BOSSIndividual indiv = classifiers[seriesNo].get(classifierNo);
 
-                    FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
-                    try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
-                        out.writeObject(indiv);
-                        out.close();
-                        fos.close();
+                        FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
+                        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                            out.writeObject(indiv);
+                            out.close();
+                            fos.close();
+                        }
                     }
                 }
 
