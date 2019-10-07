@@ -56,7 +56,6 @@ import weka.core.Randomizable;
  */
 abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassifier implements SaveParameterInfo, Randomizable {
     
-    protected boolean fullyNestedEstimates=true;
     protected ClassifierResults trainResults =new ClassifierResults();
 /**Can seed for reproducibility*/
     protected Random rand=new Random();
@@ -66,11 +65,11 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
     
     @Override
     public String getParameters() {
-        return "FullyNestedEstimates,"+fullyNestedEstimates;
+        return "seedClassifier,"+seedClassifier+",seed,"+seed;
     }
      
-    public String getTrainInfo() {
-        return getParameters();
+    public ClassifierResults gettrainResults() {
+        return trainResults;
     }
     
     /**
