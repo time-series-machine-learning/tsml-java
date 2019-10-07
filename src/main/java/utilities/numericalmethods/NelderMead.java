@@ -84,8 +84,7 @@ public class NelderMead {
         for (int i = 0; i < NPTS; i++) {
             score[i] = func.FunctionToMinimise(simplex[i]);
         }
-
-        System.out.println("ncalls = " + fwi(ncalls, 6));
+        
         int iter = 0;
 
         for (iter = 1; iter < MAXITER; iter++) {
@@ -227,8 +226,6 @@ public class NelderMead {
                 }
             }
         }
-
-        //System.out.println("ncalls, iters, Best =" + fwi(ncalls, 6) + fwi(iter, 6) + fwd(best_score, 16, 9));
 
     }
     

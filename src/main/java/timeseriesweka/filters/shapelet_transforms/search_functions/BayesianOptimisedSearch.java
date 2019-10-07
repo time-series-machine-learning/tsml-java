@@ -31,8 +31,8 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
 
     public ArrayList<Shapelet> evaluatedShapelets; //not the right type yet.
 
-    public int pre_samples = 100;
-    public int num_iterations = 100;
+    public int pre_samples = 10;
+    public int num_iterations = 10;
 
     public BayesianOptimisedSearch(ShapeletSearchOptions ops) {
         super(ops);
@@ -85,7 +85,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
             result.add(new DenseInstance(3));
             result.instance(i).setValue(0, shapelets.get(i).length);
             result.instance(i).setValue(1, shapelets.get(i).startPos);
-            result.instance(i).setValue(2, shapelets.get(i).qualityValue);
+            result.instance(i).setValue(2, shapelets.get(i).qualityValue); //need to convert into 1-quality value to invert the surface.
         }
 
         result.setClassIndex(2);
@@ -139,7 +139,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
             new_inst.setValue(1, params[1]);
             new_inst.setValue(2, 0); //set it as 0, because we don't know it yet.
 
-            return 1.0 - current_gp.classifyInstance(new_inst);
+            return 1 - current_gp.classifyInstance(new_inst);
             
         } catch (Exception ex) {
             System.out.println("bad");
@@ -153,16 +153,14 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
     public CandidateSearchData GetRandomShapeletFromGP(GaussianProcesses gp) throws Exception {
         
         NelderMead nm  = new NelderMead();
-        
-        evaluatedShapelets.sort(comparator);
+       
         
         // from 0,3 -> best_current_shapelet, to max length shapelet.
-        double[][] simplex = 
-        {
-            {0.0, 3.0},
-            {evaluatedShapelets.get(0).startPos, evaluatedShapelets.get(0).length},
-            {0.0, seriesLength}
-        };
+        double[][] simplex = new double[3][];
+        for(int i=0; i< 3; i++){
+            CandidateSearchData  temp =  GetRandomShapelet();
+            simplex[i] = new double[]{temp.getStartPosition(), temp.getLength()};
+        }
         
         nm.descend(this::GetIG, simplex);
         
@@ -171,7 +169,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
         double bsf_ig= nm.getScore();
 
         System.out.println("predicted ig" + bsf_ig);
-        System.out.println("bsf" + bsf_pair.getStartPosition() + bsf_pair.getLength());
+        System.out.println("bsf" + bsf_pair.getStartPosition() + " " + bsf_pair.getLength());
 
         return bsf_pair;
     }
@@ -179,7 +177,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
     public static void main(String[] args) throws Exception {
 
         String dir = "D:/Research TSC/Data/TSCProblems2018/";
-        Instances[] data = DatasetLoading.sampleDataset(dir, "FordA", 1);
+        Instances[] data = DatasetLoading.sampleDataset(dir, "StarlightCurves", 1);
 
         Instances train = data[0];
         Instances test = data[1];
@@ -196,13 +194,13 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
         ShapeletTransform st = new ShapeletTransform();
         st.setSearchFunction(new ShapeletSearchFactory(sops).getShapeletSearch());
 
-        st.process(train);
-        st.process(test);
+        Instances transformed_train = st.process(train);
+        Instances transformed_test = st.process(test);
         
         RotationForest rotf = new RotationForest();
-        rotf.buildClassifier(train);
+        rotf.buildClassifier(transformed_train);
         
-        System.out.println(ClassifierTools.accuracy(test, rotf));
+        System.out.println(ClassifierTools.accuracy(transformed_test, rotf));
 
     }
 }
