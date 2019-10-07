@@ -77,7 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE extends AbstractClassifierWithTrainingInfo implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
+public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;
@@ -920,7 +920,7 @@ public class cRISE extends AbstractClassifierWithTrainingInfo implements Classif
 
     public static void main(String[] args){
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);

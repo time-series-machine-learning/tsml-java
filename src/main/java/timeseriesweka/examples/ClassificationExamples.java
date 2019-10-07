@@ -212,14 +212,15 @@ public class ClassificationExamples {
         String classifier=args[0];
         String problem=args[1];
         int fold=Integer.parseInt(args[2])-1;
-   
+        String problemPath=args[3];
+        String resultsPath=args[4];
         Classifier c=setClassifier(classifier);
-        Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TRAIN");
-        Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+problem+"/"+problem+"_TEST");
-        File f=new File(DatasetLists.resultsPath+classifier);
+        Instances train=DatasetLoading.loadDataNullable(problemPath+problem+"/"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(problemPath+problem+"/"+problem+"_TEST");
+        File f=new File(resultsPath+classifier);
         if(!f.exists())
             f.mkdir();
-        String predictions=DatasetLists.resultsPath+classifier+"/Predictions";
+        String predictions=resultsPath+classifier+"/Predictions";
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -316,11 +317,8 @@ public class ClassificationExamples {
     public static void main(String[] args){
 //Example usage: 
         
-//1. Set up the paths
-        DatasetLists.problemPath=DatasetLists.dropboxPath+"TSC Problems/";
-        DatasetLists.resultsPath="C:/Temp/";
-//2. Set up the arguments: Classifier, Problem, Fold
-        String[] paras={"BOSS","ItalyPowerDemand","1"};
+//2. Set up the arguments: Classifier, Problem, Fold, Problem Location, Results location
+        String[] paras={"BOSS","ItalyPowerDemand","1","Z:/ArchiveData/Univariate_arff/","C:/Temp/"};
 //3. Run a full experiment, saving the results
         singleClassifierAndFold(paras);
     }
