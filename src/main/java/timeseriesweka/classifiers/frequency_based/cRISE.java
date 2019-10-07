@@ -916,7 +916,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);

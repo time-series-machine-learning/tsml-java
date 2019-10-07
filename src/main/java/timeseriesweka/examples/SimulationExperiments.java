@@ -382,7 +382,6 @@ public class SimulationExperiments {
 
     
     public static void main(String[] args){
-        DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
         runShapeletSimulatorExperiment();
     }
 }

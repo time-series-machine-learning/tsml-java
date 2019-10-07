@@ -424,10 +424,6 @@ public class Experiments  {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
         
-        //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
-        //paths. would rather just use the expSettings to do it all though 
-        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
-        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
         
         //2019_06_03: cases in the classifier can now change the classifier name to reflect 
         //paritcular parameters wanting to be represented as different classifiers

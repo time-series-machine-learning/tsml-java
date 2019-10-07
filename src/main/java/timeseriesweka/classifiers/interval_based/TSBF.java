@@ -192,14 +192,14 @@ public class TSBF extends AbstractClassifierWithTrainingInfo implements Paramete
 "Yoga"};
       //</editor-fold>  
     
-public static void recreatePublishedResults() throws Exception{
-        OutFile of=new OutFile(DatasetLists.resultsPath+"RecreateTSBF.csv");
+public static void recreatePublishedResults(String datasetPath, String resultsPath) throws Exception{
+        OutFile of=new OutFile(resultsPath+"RecreateTSBF.csv");
         System.out.println("problem,published,recreated");
         double meanDiff=0;
         int publishedBetter=0;
     for(int i=0;i<problems.length;i++){
-        Instances train = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(datasetPath+problems[i]+"/"+problems[i]+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(datasetPath+problems[i]+"/"+problems[i]+"_TEST");
         TSBF tsbf=new TSBF();
         tsbf.searchParameters(true);
         double a=ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
