@@ -67,6 +67,7 @@ public interface TrainAccuracyEstimator{
     default int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }
+    
 //Temp comment: porting these from and older interface, to be depreciated soon    
     default public double getTrainAcc(){
         throw new UnsupportedOperationException("getTrainAcc not implemented in class "+this.getClass().getName());

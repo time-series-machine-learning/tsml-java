@@ -56,12 +56,14 @@ import weka.core.Randomizable;
  */
 abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassifier implements SaveParameterInfo, Randomizable {
     
+/** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults =new ClassifierResults();
 /**Can seed for reproducibility*/
     protected Random rand=new Random();
     protected boolean seedClassifier=false;
     protected int seed = 0;
-   
+/**Use to control whether to print out debug info **/    
+    protected boolean debug=false;
     
     @Override
     public String getParameters() {
