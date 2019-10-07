@@ -77,7 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE extends AbstractClassifierWithTrainingInfo implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
+public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;
