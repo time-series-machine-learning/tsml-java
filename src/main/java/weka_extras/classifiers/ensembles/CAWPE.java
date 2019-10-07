@@ -314,9 +314,6 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         setClassifiers(classifiers, classifierNames, null);
     }
 
-
-    
-    
    
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";

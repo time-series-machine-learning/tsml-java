@@ -83,7 +83,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     private boolean preferShortShapelets = false;
     private String shapeletOutputPath;
     int[] redundantFeatures;
-    private boolean doTransform=true;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
@@ -134,6 +133,9 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         setSeed=true;
         seed = sd;
     }
+    public void setClassifier(Classifier c){
+        classifier=c;
+    }
     
     //careful when setting search type as you could set a type that violates the contract.
     public void setSearchType(ShapeletSearch.SearchType type) {
@@ -170,9 +172,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
-    public void doSTransform(boolean b){
-        doTransform=b;
-    }
     
     public long getTransformOpCount(){
         return transform.getCount();
@@ -219,7 +218,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         long startTime=System.nanoTime(); 
         long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
 //        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
-        shapeletData = doTransform ? createTransformData(data, transformTime) : data;
+        shapeletData =  createTransformData(data, transformTime);
         transformBuildTime=System.nanoTime()-startTime;
 //        if(setSeed)
 //            classifier.setRandSeed((int) seed);
@@ -370,7 +369,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public double classifyInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
+        Instances temp  = transform.process(shapeletData);
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -383,7 +382,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public double[] distributionForInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
+        Instances temp  = transform.process(shapeletData);
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -483,7 +482,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         ShapeletTransformClassifier st= new ShapeletTransformClassifier();
         st.configureBasicEnsemble();
         //st.saveResults(trainS, testS);
-        st.doSTransform(true);
         st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
         st.setMinuteLimit(2);
         System.out.println("Start transform");
@@ -514,7 +512,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         transform=st.transform;
         shapeletData=st.shapeletData;
         int[] redundantFeatures=st.redundantFeatures;
-        doTransform=st.doTransform;
         transformBuildTime=st.transformBuildTime;
         trainResults =st.trainResults;
         numShapeletsInTransform =st.numShapeletsInTransform;
