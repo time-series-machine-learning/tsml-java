@@ -15,7 +15,6 @@
 package timeseriesweka.filters.shapelet_transforms;
 
 import experiments.data.DatasetLoading;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -23,15 +22,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
@@ -39,8 +32,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
 import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
 import weka.core.*;
@@ -49,7 +40,6 @@ import timeseriesweka.filters.shapelet_transforms.class_value.BinaryClassValue;
 import timeseriesweka.filters.shapelet_transforms.class_value.NormalClassValue;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
-import timeseriesweka.filters.shapelet_transforms.search_functions.FastShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
@@ -84,7 +74,7 @@ import utilities.rescalers.ZStandardisation;
  *
  * @author Aaron Bostrom
  */
-public class ShapeletTransform extends SimpleBatchFilter implements SaveParameterInfo, Serializable{
+public class ShapeletTransform extends SimpleBatchFilter implements Serializable{
 
     //Variables for experiments
     protected static long subseqDistOpCount;
@@ -1236,7 +1226,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         return str;
     }
     
-    @Override
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets+",roundrobin,"+roundRobin
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()

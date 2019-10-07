@@ -209,7 +209,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((TrainAccuracyEstimator)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 

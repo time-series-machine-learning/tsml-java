@@ -20,7 +20,6 @@ import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -29,6 +28,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_extras.classifiers.SaveEachParameter;
@@ -57,8 +57,8 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedClassifier extends AbstractClassifier 
-        implements SaveParameterInfo,TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
+public class TunedClassifier extends AbstractClassifierWithTrainingInfo 
+        implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
     int seed;
     ParameterSpace space = null;
@@ -107,9 +107,8 @@ public class TunedClassifier extends AbstractClassifier
         this.tuner = tuner;
     }
     
-    void setSeed(int seed) { 
-        this.seed = seed;
-        
+    public void setSeed(int seed) { 
+        super.setSeed(seed);
         tuner.setSeed(seed);
         //no setSeed in abstractclassifier. i imagine most define it via setOptions,
         //so could add it a a parameter with only one possible value, or jsut set the seed

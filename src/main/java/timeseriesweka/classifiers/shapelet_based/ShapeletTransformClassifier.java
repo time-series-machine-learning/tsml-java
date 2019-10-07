@@ -24,7 +24,6 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
@@ -44,7 +43,6 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 import weka_extras.classifiers.ensembles.voting.MajorityVote;
@@ -68,7 +66,7 @@ import weka_extras.classifiers.ensembles.ContractRotationForest;
  * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable{
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable{
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -153,8 +151,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public String getParameters(){
        String paras=transform.getParameters();
        String classifierParas="No Classifier Para Info";
-       if(classifier instanceof SaveParameterInfo) 
-            classifierParas=((SaveParameterInfo)classifier).getParameters();
+       if(classifier instanceof AbstractClassifierWithTrainingInfo) 
+            classifierParas=((AbstractClassifierWithTrainingInfo)classifier).getParameters();
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     

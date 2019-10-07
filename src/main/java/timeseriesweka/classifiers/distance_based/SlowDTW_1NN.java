@@ -13,21 +13,16 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.distance_based;
-import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
-import utilities.ClassifierTools;
-import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka_extras.classifiers.SaveEachParameter;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
 import weka.core.*;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
@@ -36,7 +31,7 @@ This classifier does the full 101 parameter searches for window.
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
