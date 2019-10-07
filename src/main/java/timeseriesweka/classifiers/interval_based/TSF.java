@@ -15,7 +15,6 @@
  */
 package timeseriesweka.classifiers.interval_based;
  
-import fileIO.OutFile;
 import java.util.ArrayList;
 import java.util.Random;
 import utilities.ClassifierTools;
@@ -34,11 +33,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.Bagging;
-import weka.core.Capabilities;
-import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
@@ -112,7 +107,7 @@ import timeseriesweka.classifiers.Tuneable;
 **/
  
 public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler, Tuneable{
+        implements TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler, Tuneable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;

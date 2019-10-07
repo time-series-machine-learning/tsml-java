@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TestTimeContractable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
@@ -43,7 +42,6 @@ import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
 import weka_extras.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
@@ -406,8 +404,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             
             if (writeIndividualsResults) { //if we're doing trainFold# file writing
                 String params = modules[i].getParameters();
-                if (modules[i].getClassifier() instanceof SaveParameterInfo)
-                    params = ((SaveParameterInfo)modules[i].getClassifier()).getParameters();
+                if (modules[i].getClassifier() instanceof AbstractClassifierWithTrainingInfo)
+                    params = ((AbstractClassifierWithTrainingInfo)modules[i].getClassifier()).getParameters();
                 writeResultsFile(modules[i].getModuleName(), params, modules[i].trainResults, "train"); //write results out
             }
         }
