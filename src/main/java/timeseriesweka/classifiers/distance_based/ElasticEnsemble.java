@@ -36,6 +36,7 @@ import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
@@ -110,7 +111,6 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     private Instances derTrain;
     private Efficient1NN[] classifiers = null;
     
-    private boolean writeEnsembleTrainingFile = false;
     private String ensembleTrainFilePathAndName = null;
     
     
@@ -143,7 +143,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
 
 
-    public double getTrainAcc() {
+    public double getTrainAcc() throws Exception {
         if(this.ensembleCvAcc != -1 && this.ensembleCvPreds!=null){
             return this.ensembleCvAcc;
         }
@@ -153,11 +153,12 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
 
 
-    public double[] getTrainPreds() {
+    public double[] getTrainPreds() throws Exception {
         if(this.ensembleCvPreds!=null){
             return this.ensembleCvPreds;
         }
         
+        long estTime = System.nanoTime();
         this.ensembleCvPreds = new double[train.numInstances()];
         
         double actual, pred;
@@ -166,6 +167,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         ArrayList<Double> bsfClassVals;
         double[] weightByClass;
         for(int i = 0; i < train.numInstances(); i++){
+            long predTime = System.nanoTime(); //TODO hack/incorrect until george overhaul in
+            
             actual = train.instance(i).classValue();
             bsfClassVals = null;
             bsfWeight = -1;
@@ -193,8 +196,26 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
                 correct++;
             }
             this.ensembleCvPreds[i]=pred;
+            
+            predTime = System.nanoTime() - predTime;
+            double[] dist = new double[train.numClasses()];
+            dist[(int)pred]++;
+            trainResults.addPrediction(actual, dist, pred, predTime, "");
         }
-        
+            
+        estTime = System.nanoTime() - estTime;
+        trainResults.setErrorEstimateTime(estTime);
+        trainResults.setErrorEstimateMethod("cv_loo");
+
+        trainResults.setClassifierName("EE");
+        trainResults.setDatasetName(train.relationName());
+        trainResults.setSplit("train");
+        //no foldid/seed
+        trainResults.setNumClasses(train.numClasses());
+        trainResults.setParas(getParameters());
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.finaliseResults();
+            
         this.ensembleCvAcc = (double)correct/train.numInstances();
         return this.ensembleCvPreds;
     }
@@ -271,28 +292,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         this.resampleId = resampleId;
         this.writeToFile = true;
     }
-    
-    @Override
-    public void writeTrainEstimatesToFile(String outputPathAndName){
-        this.writeEnsembleTrainingFile = true;
-        ensembleTrainFilePathAndName = outputPathAndName;
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        this.writeEnsembleTrainingFile =setCV;
-    }
-    
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return writeEnsembleTrainingFile;}
-    
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into trainResults.acc here
-        trainResults.setAcc(ensembleCvAcc);
-//TO DO: Write the other stats        
-        return trainResults;
-    }        
-    
+        
     /**
      * Builds classifier. If building from file, cv weights and predictions will be loaded from file. If running from scratch, training cv will be performed for constituents to find best params, cv accs, and cv preds
      * @param train The training data
@@ -373,22 +373,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             }
             
             
-            if(this.writeEnsembleTrainingFile){
-                StringBuilder output = new StringBuilder();
-                
-                double[] ensembleCvPreds = this.getTrainPreds();
-                
-                output.append(train.relationName()).append(",EE,train\n");
-                output.append(this.getParameters()).append("\n");
-                output.append(this.getTrainAcc()).append("\n");
-                
-                for(int i = 0; i < train.numInstances(); i++){
-                    output.append(train.instance(i).classValue()).append(",").append(ensembleCvPreds[i]).append("\n");
-                }
-                
-                FileWriter fullTrain = new FileWriter(this.ensembleTrainFilePathAndName);
-                fullTrain.append(output);
-                fullTrain.close();
+            if(this.isFindingTrainPerformanceEstimate()){
+                this.getTrainPreds();
             }
         }
         trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());

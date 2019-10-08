@@ -215,7 +215,7 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
             trainResults.setErrorEstimateTime(estTime);
             trainResults.setErrorEstimateMethod("cv_loo");
             
-            trainResults.setClassifierName("SlowDTW_1NN");
+            trainResults.setClassifierName("FastDTW_1NN");
             trainResults.setDatasetName(train.relationName());
             trainResults.setSplit("train");
             //no foldid/seed
