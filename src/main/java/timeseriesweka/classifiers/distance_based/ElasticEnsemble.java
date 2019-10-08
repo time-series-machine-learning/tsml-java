@@ -142,7 +142,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         return this.cvAccs;
     }
 
-    @Override
+
     public double getTrainAcc() {
         if(this.ensembleCvAcc != -1 && this.ensembleCvPreds!=null){
             return this.ensembleCvAcc;
@@ -152,7 +152,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         return this.ensembleCvAcc;
     }
 
-//    @Override
+
     public double[] getTrainPreds() {
         if(this.ensembleCvPreds!=null){
             return this.ensembleCvPreds;

@@ -166,11 +166,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     }
 
    
-   @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-        return res;
-    }  
+
 //SaveParameterInfo    
     @Override
     public String getParameters() {

@@ -18,6 +18,7 @@ import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
 import weka.core.Capabilities;
+import weka.core.Instances;
 import weka.core.Randomizable;
 
 /**
@@ -64,13 +65,25 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
     protected int seed = 0;
 /**Use to control whether to print out debug info **/    
     protected boolean debug=false;
+/** Determines whether this classifier generates its own results internally or not 
+ *  Default behaviour is not to find them. In this case, the only information in trainResults
+ * relates to the time taken to build the classifier
+ **/
+    protected boolean findTrainPredictions = false;
+    
+    public void setFindTrainPredictions(boolean b){
+        findTrainPredictions=b;
+    }
+    public boolean getFindTrainPredictions(){
+        return findTrainPredictions;
+    }
     
     @Override
     public String getParameters() {
-        return "seedClassifier,"+seedClassifier+",seed,"+seed;
+        return "seedClassifier,"+seedClassifier+",seed,"+seed+",findTrainPredictionsInternally,"+findTrainPredictions;
     }
      
-    public ClassifierResults gettrainResults() {
+    public ClassifierResults getTrainResults() {
         return trainResults;
     }
     
@@ -115,5 +128,27 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
         result.setMinimumNumberInstances(0);   
         return result;
     }
-     
+//These are to be depreciated, kept for the removal of TrainAccuracyEstimator
+/**
+ * TrainCV results are not by default written to file. If this method is called
+ * they will be written in standard format, as defined in the ClassifierResults class
+ * The minimum requirements for the train results are
+ * 
+ * ProblemName,ClassifierName,train
+*  Parameter info, if available
+*  TrainAccuracy, build time, test time.
+* If available, the preds and probs will also be written 
+* Case1TrueClass,Case1PredictedClass,,ProbClass1,ProbClass2, ...
+* Case2TrueClass,Case2PredictedClass,,ProbClass1,ProbClass2, ...
+* 
+ * @param train: Full file name for the TrainCV results
+ */    
+ //   public abstract void writeTrainEstimatesToFile(String train);
+
+    public int setNumberOfFolds(Instances data){
+        return data.numInstances()<10?data.numInstances():10;
+    }    
+    
+    
+    
 }

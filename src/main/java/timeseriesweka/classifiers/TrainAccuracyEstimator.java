@@ -23,11 +23,6 @@ import weka.core.Instances;
 * 
 * there are two use cases
  
- 1. Just get it to write the train results to file
- c.writeTrainEstimatesToFile("c:\temp\TrainFold1.csv");
- whether it writes predictions is classifier specific, see below. 
- * This should be depreciated for method 2: 
- 2. Recover the train results in a ClassifierResults object.
 * 
  * @author ajb
  */
@@ -57,23 +52,9 @@ public interface TrainAccuracyEstimator{
  * @param train: Full file name for the TrainCV results
  */    
     void writeTrainEstimatesToFile(String train);
-/**
- * 
-     * @return All the data from the train CV
-    */
-    ClassifierResults getTrainResults();    
-    
-    
+
     default int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }
-    
-//Temp comment: porting these from and older interface, to be depreciated soon    
-    default public double getTrainAcc(){
-        throw new UnsupportedOperationException("getTrainAcc not implemented in class "+this.getClass().getName());
-    }
 
-    default public double[] getTrainPreds(){
-        throw new UnsupportedOperationException("getTrainPreds not implemented  in class "+this.getClass().getName());
-    }
 }

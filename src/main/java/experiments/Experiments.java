@@ -365,7 +365,7 @@ public class Experiments  {
                 settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
                 settings[1]="-rp=E:/Results/";//Where to write results                
                 settings[2]="-gtf=true"; //Whether to generate train files or not               
-                settings[3]="-cn=RISE"; //Classifier name
+                settings[3]="-cn=TSF"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)               
@@ -374,21 +374,19 @@ public class Experiments  {
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
-                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data                
-                settings[1]="-rp=E:/Results/";//Where to write results                
-                settings[2]="-gtf=false"; //Whether to generate train files or not               
-                settings[3]="-cn=TunedTSF"; //Classifier name
+                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data   
+                settings[1]="-rp=E:\\Temp\\";
+                settings[2]="-gtf=true"; //Whether to generate train files or not               
+                settings[3]="-cn=RISE"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
-                    settings[4]="-dn="+"ItalyPowerDemand"; //Problem file   
+                    settings[4]="-dn="+"Chinatown"; //Problem file   
                     settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)  
                 System.out.println("Manually set args:");
                 for (String str : settings)
-                    System.out.println("\t"+settings);
+                    System.out.println("\t"+str);
                 System.out.println("");
-                    
-                    ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                    setupAndRunExperiment(expSettings);
-//                }
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                setupAndRunExperiment(expSettings);
             }
         }
     }
@@ -507,6 +505,8 @@ public class Experiments  {
      * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
      * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
+
+
     public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
         
         //if this is a parameter split run, train file name is defined by this
@@ -540,7 +540,7 @@ public class Experiments  {
             
             //Write train results
             if (expSettings.generateErrorEstimateOnTrainSet) {
-                if (!(classifier instanceof TrainAccuracyEstimator)) {
+                if (!(findingTrainPredictions(classifier))) {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
@@ -573,7 +573,7 @@ public class Experiments  {
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
                     
-                    if (classifier instanceof TrainAccuracyEstimator) {
+                    if (findingTrainPredictions(classifier)) {
                         //if this classifier is recording it's own results, use the build time it found
                         //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
                         //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
@@ -581,7 +581,7 @@ public class Experiments  {
                         //the i/o time for reading in the modules' results, + the ensemble scheme time
                         //therefore the general assumption here is that the classifier knows its own buildtime 
                         //better than we do here
-                        testResults.setBuildTime(((TrainAccuracyEstimator)classifier).getTrainResults().getBuildTime());
+                        testResults.setBuildTime(((AbstractClassifierWithTrainingInfo)classifier).getTrainResults().getBuildTime());
                     }
                     else {
                         //else use the buildtime calculated here in experiments
@@ -609,7 +609,21 @@ public class Experiments  {
             return -1; //error state
         }
     }
+
     
+    /**
+ * temporary helper method that determines if the classifier is working out its own predictions
+* this was done via TrainAccuracyEstimator interface, but this is being rolled into AbstractClassifierWithTrainInfo
+* hence this method to check both
+* @param c
+ * @return 
+ */    
+    private static boolean findingTrainPredictions(Classifier c){
+        if(!(c instanceof AbstractClassifierWithTrainingInfo)) return false;
+        if(c instanceof TrainAccuracyEstimator) return true;
+        if(((AbstractClassifierWithTrainingInfo)c).getFindTrainPredictions()) return true;
+        return false;
+    }
     private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train, String resultsPath) { 
         String parameterFileName = null;
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
@@ -638,13 +652,15 @@ public class Experiments  {
     
     private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception { 
         ClassifierResults trainResults = null;
-        
-        if (classifier instanceof TrainAccuracyEstimator) { 
+//HERE TO CHANGE        
+        if (findingTrainPredictions(classifier)) { 
             //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimator) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
-            File f = new File(fullTrainWritingPath);
-            if (f.exists())
-                f.setWritable(true, false);
+            //HERE, JUST RETURN THE ClassifierResults??? 
+            
+//            ((AbstractClassifierWithTrainingInfo) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
+//            File f = new File(fullTrainWritingPath);
+//            if (f.exists())
+//                f.setWritable(true, false);
         } 
         else { 
             long trainBenchmark = findBenchmarkTime(exp);

@@ -369,7 +369,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
                 
                 if (classifier instanceof TrainAccuracyEstimator) { 
                     classifier.buildClassifier(trainInsts);
-                    trainResults = ((TrainAccuracyEstimator)classifier).getTrainResults();
+                    trainResults = ((AbstractClassifierWithTrainingInfo)classifier).getTrainResults();
                 }
                 else { 
                     trainResults = eval.evaluate(classifier, trainInsts);
@@ -701,16 +701,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         for (int m = 0; m < modules.length; m++)
             classifierNames[m] = modules[m].getModuleName();
         return classifierNames;
-    }
-
-    @Override
-    public double[] getTrainPreds() {
-        return trainResults.getPredClassValsAsArray();
-    }
-
-    @Override
-    public double getTrainAcc() {
-        return trainResults.getAcc();
     }
 
     public String getEnsembleName() {

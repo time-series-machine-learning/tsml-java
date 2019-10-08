@@ -561,15 +561,6 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         findTrainAcc=setCV;
     }
 
-    /**
-     * TrainAccuracyEstimate interface
-     * @return 
-     */
-    @Override
-     public ClassifierResults getTrainResults(){
-        return trainResults;
-    }  
-
     @Override
     public void setPathToSaveParameters(String r){
         resultsPath=r;

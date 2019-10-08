@@ -266,13 +266,6 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     @Override
     public boolean findsTrainAccuracyEstimate(){ return trainCV;}
     
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-//Not implemented?        res.acc=ensembleCvAcc;
-//TO DO: Write the other stats        
-        return res;
-    }        
 
     @Override
     public String getParameters() {

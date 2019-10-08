@@ -139,11 +139,6 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
 //    public boolean findsTrainAccuracyEstimate(){ return findTrainAcc;}
     
     @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-        return res;
-    }     
-    @Override
     public String getParameters() {
         String result="BuildTime,"+res.getBuildTimeInNanos()+",CVAcc,"+res.getAcc();
         result+=",C,"+paras[0];
