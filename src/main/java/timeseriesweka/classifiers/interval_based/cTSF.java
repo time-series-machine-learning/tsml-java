@@ -210,32 +210,6 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         rand=new Random();
         rand.setSeed(seed);
     }
-    /**
-     * Stores the classifier train CV results and writes them to file.
-     * boolean trainCV is a little redundant, but nicer than checking path for null
-     * @param train
-     */
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainCVPath=train;
-        trainAccuracyEst=true;
-    }
-    /**
-     * We can perform trainCV without writing the results to file. The could be used,
-     * for example, in an ensemble this TSF is a member of
-     * @param setCV
-     */
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainAccuracyEst=setCV;
-    }
-    /**
-     * Maybe this method needs renaming?
-     * @return boolean, whether trainCV happens or not
-     */
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainAccuracyEst;}
-
 
     /**
      * Perhaps make this coherent with setOptions(String[] ar)?
@@ -904,9 +878,11 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         tsf.setSeed(0);
         tsf.setTrainTimeLimit((long)1.5e+10);
         tsf.setSavePath("C:\\temp\\");
-        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
+        tsf.setFindingTrainPerformanceEstimate(true);
         double a;
         tsf.buildClassifier(train);
+        ClassifierResults trainres = tsf.getTrainResults();
+        trainres.writeFullResultsToFile(resultsLocation+problem+"trainFold0.csv");
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         System.out.println(tsf.trainResults.getBuildTime());
         a=ClassifierTools.accuracy(test, tsf);

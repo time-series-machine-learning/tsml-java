@@ -46,6 +46,8 @@ import weka.core.Instances;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
@@ -64,7 +66,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
+public class BOSSSpatialPyramids extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo,TrainAccuracyEstimator {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -109,11 +111,7 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
     private static String serFileLoc = "BOSSWindowSers\\";
      
     private boolean[] normOptions;
-    
-    private String trainCVPath;
-    private boolean trainCV=false;
-    private ClassifierResults res =new ClassifierResults();
-    
+        
     /**
      * Providing a particular value for normalisation will force that option, if 
      * whether to normalise should be a parameter to be searched, use default constructor
@@ -243,19 +241,6 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
             return -1;
         }
     }
-    
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainCVPath=train;
-        trainCV=true;
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainCV=setCV;
-    }
-    
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainCV;}
  
 
     @Override
@@ -424,18 +409,8 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
             }
         }
         
-        if (trainCV) {
-            int folds=setNumberOfFolds(data);
-            OutFile of=new OutFile(trainCVPath);
-            of.writeLine(data.relationName()+",BOSSEnsembleSP_Redo,train");
-           
-            double[][] results = findEnsembleTrainAcc(data);
-            of.writeLine(getParameters());
-            of.writeLine(results[0][0]+"");
-            for(int i=1;i<results[0].length;i++)
-                of.writeLine(results[0][i]+","+results[1][i]);
-            System.out.println("CV acc ="+results[0][0]);
-        }
+        if (isFindingTrainPerformanceEstimate())
+            findEnsembleTrainAcc(data);
     }
     
     //[0] = index, [1] = acc
@@ -464,24 +439,43 @@ public class BOSSSpatialPyramids implements Classifier, SaveParameterInfo,TrainA
         return false;
     }
 
-    private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
+    private double findEnsembleTrainAcc(Instances data) throws Exception {
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());
         
-        double[][] results = new double[2][data.numInstances() + 1];
-        
-        double correct = 0; 
+        double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
-            double c = classifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
-            if (c == data.get(i).classValue())
+            long predTime = System.nanoTime();
+            double[] probs = distributionForInstance(i, data.numClasses());
+            predTime = System.nanoTime() - predTime;
+
+            int maxClass = 0;
+            for (int n = 1; n < probs.length; ++n) {
+                if (probs[n] > probs[maxClass]) {
+                    maxClass = n;
+                }
+                else if (probs[n] == probs[maxClass]){
+                    if (rand.nextBoolean()){
+                        maxClass = n;
+                    }
+                }
+            }
+
+            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+            if (maxClass == data.get(i).classValue())
                 ++correct;
-            
-            results[0][i+1] = data.get(i).classValue();
-            results[1][i+1] = c;
+
+            trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
         
-        results[0][0] = correct / data.numInstances();
-        //TODO fill results[1][0]
+        trainResults.finaliseResults();
         
-        return results;
+        double result = correct / data.numInstances();
+        return result;
     }
     
     /**

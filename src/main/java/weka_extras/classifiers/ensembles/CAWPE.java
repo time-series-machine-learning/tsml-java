@@ -586,7 +586,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         c.setBuildIndividualsFromResultsFiles(true);
                         c.setResultsFileLocationParameters(writePath, dset, fold);
                         c.setSeed(fold);
-                        c.setEstimateEnsemblePerformance(true);
+                        c.setFindingTrainPerformanceEstimate(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
                         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

@@ -305,8 +305,6 @@ public class EnsembleSelection extends CAWPE {
         }
         
         trainResults.setBuildTime(buildTime); //store the buildtime to be saved
-        if (writeEnsembleTrainingFile)
-            writeEnsembleTrainAccuracyEstimateResultsFile();
         
         this.testInstCounter = 0; //prep for start of testing
     }
@@ -406,7 +404,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
                     c.setSeed(fold);
-                    c.setEstimateEnsemblePerformance(true);
+                    c.setFindingTrainPerformanceEstimate(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
                     Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

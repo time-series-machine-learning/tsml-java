@@ -52,7 +52,16 @@ m_C
 /**
  *
  * @author ajb
- 
+* 
+* 
+* 
+* 
+* NOTE jamesl: this classifier is now out of step with the current intended purpose usage of 
+* trainaccuracyestimator and abstractclassifierwithtraininginfo (in that, it extend RandomForest directly
+* which does not extend that)
+* 
+* Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
+
  TunedSVM sets the margin c through b ten fold cross validation.
  
  If the kernel type is RBF, also set sigma through CV, same values as c
@@ -62,7 +71,7 @@ m_C
  2. Could use libSVM instead
  * 
  */
-public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class TunedSVM extends SMO implements SaveParameterInfo,SaveEachParameter,ParameterSplittable{
     boolean setSeed=false;
     int seed;
     int minC=-16;//These search values are used for all kernels with C. It is also used for Gamma in RBF, but not for the Polynomial exponent search
@@ -123,12 +132,12 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         rng.setSeed(seed);
     }
     
- @Override
+    
     public void writeTrainEstimatesToFile(String train) {
         findTrainAcc=true;
         trainPath=train;
     }    
- @Override
+    
     public void setFindTrainAccuracyEstimate(boolean setCV){
         findTrainAcc=setCV;
     }
@@ -212,10 +221,6 @@ public class TunedSVM extends SMO implements SaveParameterInfo, TrainAccuracyEst
         return getParameters();
     }
 
-    @Override
-    public double getAcc() {
-        return res.getAcc();
-    }
     public enum KernelType {LINEAR,QUADRATIC,POLYNOMIAL,RBF};
     KernelType kernel;
     public void debug(boolean b){

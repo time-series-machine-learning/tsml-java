@@ -253,11 +253,14 @@ public class SimulationExperiments {
 
 // hack here to save internal CV for further ensembling   
         if(c instanceof TrainAccuracyEstimator)
-            ((TrainAccuracyEstimator)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
+            ((TrainAccuracyEstimator)c).setFindingTrainPerformanceEstimate(true);
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              
             c.buildClassifier(train);
+            if(c instanceof TrainAccuracyEstimator)
+                ((TrainAccuracyEstimator)c).getTrainResults().writeFullResultsToFile(preds+"/trainFold"+sample+".csv");
+            
             int[][] predictions=new int[test.numInstances()][2];
             for(int j=0;j<test.numInstances();j++){
                 predictions[j][0]=(int)test.instance(j).classValue();

@@ -159,10 +159,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers.add(stc); // to get around the issue of needing training data 
         RISE rise = new RISE();
         classifiers.add(rise);
+        
         classifiers.add(new BOSS());
+        
         TSF tsf=new TSF();
         tsf.setEstimatorMethod("CV");
-        tsf.setFindTrainPredictions(true);
+        tsf.setFindingTrainPerformanceEstimate(true);
         classifiers.add(tsf);
         
         names.add("EE");

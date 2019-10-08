@@ -79,7 +79,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected SimpleBatchFilter transform;
 
     protected Instances trainInsts;
-    protected boolean estimateEnsemblePerformance = true;
 
     //protected ClassifierResults trainResults; inherited from AbstractClassifierWithTrainingInfo data generated during buildclassifier if above = true
     protected ClassifierResults testResults;//data generated during testing
@@ -97,7 +96,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected Instance prevTestInstance;
 
     //results file handling
-    protected boolean writeEnsembleTrainingFile = false;
     protected boolean readIndividualsResults = false;
     protected boolean writeIndividualsResults = false;
     protected boolean resultsFilesParametersInitialised;
@@ -329,10 +327,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             modules[m] = new EnsembleModule(classifierNames[m], classifiers[m], classifierParameters[m]);
     }
     
-    public void setEstimateEnsemblePerformance(boolean b) {
-        estimateEnsemblePerformance = b;
-    }
-
     protected void initialiseModules() throws Exception {
         //currently will only have file reading ON or OFF (not load some files, train the rest)
         //having that creates many, many, many annoying issues, especially when classifying test cases
@@ -491,7 +485,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     }
 
     protected boolean needIndividualTrainPreds() {
-        return estimateEnsemblePerformance || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
+        return isFindingTrainPerformanceEstimate() || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
     }
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
@@ -787,21 +781,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     public void setTransform(SimpleBatchFilter transform){
         this.transform = transform;
     }
-    
-    @Override //TrainAccuracyEstimate
-    public void writeTrainEstimatesToFile(String path) {
-        estimateEnsemblePerformance=true;
-        writeEnsembleTrainingFile=true;
-        
-        setResultsFileWritingLocation(path);
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean estimatePerformance){
-        estimateEnsemblePerformance=estimatePerformance;
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return estimateEnsemblePerformance;}
 
     @Override
     public ClassifierResults getTrainResults(){
@@ -916,7 +895,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         trainResults = new ClassifierResults();
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
-        if(estimateEnsemblePerformance)
+        if(isFindingTrainPerformanceEstimate())
             trainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
         
         //HACK FOR CAWPE_EXTENSION PAPER: 
@@ -929,10 +908,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         trainResults.turnOffZeroTimingsErrors();
         trainResults.setBuildTime(buildTime);
         trainResults.turnOnZeroTimingsErrors();
-        
-        if (writeEnsembleTrainingFile)
-            writeEnsembleTrainAccuracyEstimateResultsFile();
-        
+                
         this.testInstCounter = 0; //prep for start of testing
         this.prevTestInstance = null;
     }
@@ -1193,7 +1169,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setWriteIndividualsTrainResultsFiles(true);
-            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
+            cawpe.setFindingTrainPerformanceEstimate(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);
@@ -1235,7 +1211,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setBuildIndividualsFromResultsFiles(true);
-            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
+            cawpe.setFindingTrainPerformanceEstimate(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);

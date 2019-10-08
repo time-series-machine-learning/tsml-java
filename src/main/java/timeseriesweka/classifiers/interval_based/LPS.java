@@ -315,11 +315,6 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         return ratioLevel+","+treeDepth;
     }
 
-    @Override
-    public double getAcc() {
-        return acc;
-    }
-    
     
     @Override
     public void buildClassifier(Instances data) throws Exception {

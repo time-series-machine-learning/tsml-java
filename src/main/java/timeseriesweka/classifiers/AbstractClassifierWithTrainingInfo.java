@@ -69,7 +69,7 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
      * be used to describe this classifier. By default, this will simply be the 
      * simple-class-name of the classifier
      */
-    private String classifierName = null;
+    protected String classifierName = null;
 
     
     /**

@@ -80,30 +80,9 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   // ten-fold cross validation
   private int folds = 10;
 
-  private String trainCVPath="";
-  private boolean trainCV=false;
-  private int seed=0;
-  boolean setSeed=false;
-
-  @Override
-  public void writeTrainEstimatesToFile(String outputPathAndName) {
-    trainCVPath=outputPathAndName;
-    trainCV=true;
-  }
-
-  @Override
-  public void setFindTrainAccuracyEstimate(boolean setCV){
-    trainCV=setCV;
-  }
-
   @Override
   public ClassifierResults getTrainResults() {
     return trainResults;
-  }
-
-  public void setSeed(int s){
-    seed = s;
-    setSeed = true;
   }
 
   public static class WEASELModel {
@@ -142,8 +121,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
   public WEASEL(int s) {
     super();
-    seed = s;
-    setSeed = true;
+      setSeed(seed);
   }
 
   @Override
@@ -304,18 +282,6 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   public void buildClassifier(final Instances samples) throws Exception {
     long t1=System.currentTimeMillis();
 
-    if(trainCV){
-      int numFolds=setNumberOfFolds(samples);
-      CrossValidationEvaluator cv = new CrossValidationEvaluator();
-      if (setSeed) {
-        cv.setSeed(seed);
-      }
-      cv.setNumFolds(numFolds);
-
-      WEASEL weasel = new WEASEL();
-      trainResults=cv.crossValidateWithStats(weasel,samples);
-    }
-
     if (samples.classIndex() != samples.numAttributes()-1)
       throw new Exception("WEASEL_BuildClassifier: Class attribute not set as last attribute in dataset");
 
@@ -388,28 +354,26 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       e.printStackTrace();
     }
 
-    long t2=System.currentTimeMillis();
-    trainResults.setBuildTime(t2-t1);
-
-    if(trainCVPath!=""){
-      OutFile of=new OutFile(trainCVPath);
-      of.writeLine(samples.relationName()+",TSF,train");
-      of.writeLine(getParameters());
-      of.writeLine(trainResults.getAcc()+"");
-      double[] trueClassVals,predClassVals;
-      trueClassVals=trainResults.getTrueClassValsAsArray();
-      predClassVals=trainResults.getPredClassValsAsArray();
-      for(int i=0;i<samples.numInstances();i++){
-        //Basic sanity check
-        if(samples.instance(i).classValue()!=trueClassVals[i]){
-          throw new Exception("ERROR in TSF cross validation, class mismatch!");
-        }
-        of.writeString((int)trueClassVals[i]+","+(int)predClassVals[i]+",");
-        for(double d:trainResults.getProbabilityDistribution(i))
-          of.writeString(","+d);
-        of.writeString("\n");
+    
+    
+    if(isFindingTrainPerformanceEstimate()){
+      int numFolds=setNumberOfFolds(samples);
+      CrossValidationEvaluator cv = new CrossValidationEvaluator();
+      if (seedClassifier) {
+        cv.setSeed(seed);
       }
+      cv.setNumFolds(numFolds);
+
+      WEASEL weasel = new WEASEL();
+      trainResults=cv.crossValidateWithStats(weasel,samples);
     }
+    
+    //NOTE TODO : prior to refactor, the estimate time was being included in the build time
+    //measurement. I have retained that here for continuity, shout at jamesl otherwise
+    long t2=System.currentTimeMillis();
+    trainResults.setClassifierName(getClassifierName());
+    trainResults.setParas(classifierName);
+    trainResults.setBuildTime(t2-t1);
   }
 
   private WEASELTransform.BagOfBigrams[] fitOneWindow(
