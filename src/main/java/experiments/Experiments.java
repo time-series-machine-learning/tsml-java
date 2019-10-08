@@ -530,7 +530,7 @@ public class Experiments  {
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
                 if (classifier instanceof TrainAccuracyEstimator)
-                    ((TrainAccuracyEstimator) classifier).setFindingTrainPerformanceEstimate(true);
+                    ((TrainAccuracyEstimator) classifier).setEstimatingPerformanceOnTrain(true);
                 else 
                     trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
             }

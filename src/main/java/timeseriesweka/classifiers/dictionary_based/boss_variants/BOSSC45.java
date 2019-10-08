@@ -103,6 +103,9 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
     private final int alphabetSize = 4;
     //private boolean norm;
     
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -293,6 +296,16 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
         serFileLoc = path;
     }
     
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
+    
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         if (data.classIndex() != data.numAttributes()-1)
@@ -398,7 +411,7 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
         for (BOSSWindow window : classifiers)
             window.classifier.buildFullForest();
       
-        if (isFindingTrainPerformanceEstimate())
+        if (getEstimatingPerformanceOnTrain())
             findEnsembleTrainAcc(data);
     }
 

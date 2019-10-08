@@ -148,7 +148,10 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers = new ArrayList<>();
         names = new ArrayList<>();
         
-        classifiers.add(new ElasticEnsemble());
+        ElasticEnsemble ee = new ElasticEnsemble();
+        ee.setEstimatingPerformanceOnTrain(true);
+        classifiers.add(ee);
+        
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
 //        CAWPE h = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
@@ -160,11 +163,13 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         RISE rise = new RISE();
         classifiers.add(rise);
         
-        classifiers.add(new BOSS());
+        BOSS boss = new BOSS();
+        boss.setEstimatingPerformanceOnTrain(true);
+        classifiers.add(boss);
         
         TSF tsf=new TSF();
         tsf.setEstimatorMethod("CV");
-        tsf.setFindingTrainPerformanceEstimate(true);
+        tsf.setEstimatingPerformanceOnTrain(true);
         classifiers.add(tsf);
         
         names.add("EE");
@@ -663,6 +668,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     
     public static void main(String[] args) throws Exception{
        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new HiveCote()));
+        
         String dataDir = "C:/users/ajb/dropbox/Code2019/tsml/src/main/java/experiments/data/tsc/";
         String datasetName = "Chinatown";
         Instances train = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TRAIN");

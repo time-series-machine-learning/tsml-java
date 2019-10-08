@@ -70,13 +70,12 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
      * simple-class-name of the classifier
      */
     protected String classifierName = null;
-
     
     /**
      * Used to control whether to print out debug info 
      */    
     protected boolean debug=false;
-    
+
     @Override
     public String getParameters() {
         return "seedClassifier,"+seedClassifier+",seed,"+seed;

@@ -166,6 +166,9 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     private boolean trainTimeContract = false;
     private long contractTime = 0;
 
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
     protected static final long serialVersionUID = 32554L;
 
     public cTSF(){
@@ -199,18 +202,16 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         voteEnsemble=!b;
     }
 
-    /**
-     * Seed experiments for reproducibility with the resample number
-     * @param s
-     */
-    @Override
-    public void setSeed(int s){
-        this.seedClassifier=true;
-        seed=s;
-        rand=new Random();
-        rand.setSeed(seed);
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
     }
-
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
+    
     /**
      * Perhaps make this coherent with setOptions(String[] ar)?
      * @return String written to results files
@@ -697,11 +698,6 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     }
 
     @Override
-    public int getSeed() {
-        return seed;
-    }
-
-    @Override
     public void setSavePath(String path) {
         checkpointPath = path;
         checkpoint = true;
@@ -878,7 +874,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         tsf.setSeed(0);
         tsf.setTrainTimeLimit((long)1.5e+10);
         tsf.setSavePath("C:\\temp\\");
-        tsf.setFindingTrainPerformanceEstimate(true);
+        tsf.setEstimatingPerformanceOnTrain(true);
         double a;
         tsf.buildClassifier(train);
         ClassifierResults trainres = tsf.getTrainResults();

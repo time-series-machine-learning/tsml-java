@@ -78,6 +78,19 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
     ArrayList<Double> accuracy=new ArrayList<>();
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
+       
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
     
     @Override
     public void setPathToSaveParameters(String r){
@@ -195,7 +208,7 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
         trainResults.setMemory(usedBytes);
         
-        if(isFindingTrainPerformanceEstimate()){  //Save basic train results
+        if(getEstimatingPerformanceOnTrain()){  //Save basic train results
             long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);

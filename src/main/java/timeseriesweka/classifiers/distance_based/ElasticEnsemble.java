@@ -111,8 +111,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     private Instances derTrain;
     private Efficient1NN[] classifiers = null;
     
-    private String ensembleTrainFilePathAndName = null;
-    
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
     
     private boolean usesDer = false;
     private static DerivativeFilter df = new DerivativeFilter();
@@ -127,7 +127,16 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     public Capabilities getCapabilities() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
+    
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
     
     public String[] getIndividualClassifierNames() {
         String[] names= new String[this.classifiersToUse.length];
@@ -373,7 +382,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             }
             
             
-            if(this.isFindingTrainPerformanceEstimate()){
+            if(this.getEstimatingPerformanceOnTrain()){
                 this.getTrainPreds();
             }
         }

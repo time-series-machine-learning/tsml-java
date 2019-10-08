@@ -95,6 +95,9 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
     private final Integer[] levels = { 1, 2, 3 };
     private final int alphabetSize = 4;
     
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -287,6 +290,16 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
         serFileLoc = path;
     }
     
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
+    
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         if (data.classIndex() != data.numAttributes()-1)
@@ -411,7 +424,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
             }
         }
         
-        if (isFindingTrainPerformanceEstimate())
+        if (getEstimatingPerformanceOnTrain())
             findEnsembleTrainAcc(data);
     }
     

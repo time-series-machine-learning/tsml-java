@@ -55,39 +55,30 @@ public interface TrainAccuracyEstimator{
      */
     public ClassifierResults getTrainResults();
     
-    /** 
+    /**
+     * For almost all classifiers, which extend both this interface and AbstractClassifierWithTrainingInfo,
+     * this method simply mirrors the AbstractClassifierWithTrainingInfo default implementation 
+     * and calls that, without needing to implement the method in your classifier
+     * 
      * Determines whether this classifier should generates a performance estimate on the 
      * train data internally during the buildclassifier process. 
      * 
      * Default behaviour is not to find them. In this case, the only information in trainResults
      * relates to the time taken to build the classifier
-     * 
-     * Implemented as a semi-constant within the interface to avoid having to replicate
-     * the boolean in all implementors, they can simply implement the interface 
-     * and use the getter/setter to avoid having to interact with this
      */
-    boolean[] findingTrainPredictionsLocal = { false };
+    public void setEstimatingPerformanceOnTrain(boolean b);
     
     /** 
+     * For almost all classifiers, which extend both this interface and AbstractClassifierWithTrainingInfo,
+     * this method simply mirrors the AbstractClassifierWithTrainingInfo default implementation 
+     * and calls that, without needing to implement the method in your classifier
+     * 
      * Determines whether this classifier should generates a performance estimate on the 
      * train data internally during the buildclassifier process. 
      * 
      * Default behaviour is not to find them. In this case, the only information in trainResults
      * relates to the time taken to build the classifier
      */
-    public default void setFindingTrainPerformanceEstimate(boolean b){
-        findingTrainPredictionsLocal[0] = b;
-    }
-    
-    /** 
-     * Determines whether this classifier should generates a performance estimate on the 
-     * train data internally during the buildclassifier process. 
-     * 
-     * Default behaviour is not to find them. In this case, the only information in trainResults
-     * relates to the time taken to build the classifier
-     */
-    public default boolean isFindingTrainPerformanceEstimate(){
-        return findingTrainPredictionsLocal[0];
-    }
+    public boolean getEstimatingPerformanceOnTrain();
 
 }

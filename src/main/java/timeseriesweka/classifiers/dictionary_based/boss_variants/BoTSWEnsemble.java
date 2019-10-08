@@ -89,6 +89,9 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
     private final Integer[] kRanges = { 32, 64, 128, 256, 512, 1024 };
     private final Integer[] csvmRanges = {1, 10, 100}; //not currently used, using 1NN
     
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
     private BoTSW.DistFunction dist = BoTSW.DistFunction.EUCLIDEAN_DISTANCE;
 
     private Instances train;
@@ -174,6 +177,16 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
     
     public void setDistanceFunction(BoTSW.DistFunction dist) {
         this.dist = dist;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
     }
     
     @Override
@@ -269,7 +282,7 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
             }
         }
         
-        if (isFindingTrainPerformanceEstimate())
+        if (getEstimatingPerformanceOnTrain())
             ensembleCvAcc = findEnsembleTrainAcc(data);
     }
 

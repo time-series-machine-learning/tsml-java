@@ -46,6 +46,19 @@ public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements 
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
     
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
+    
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
+    }
+    
     @Override
     public void setPathToSaveParameters(String r){
             resultsPath=r;
@@ -138,7 +151,7 @@ public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements 
         trainResults.setMemory(usedBytes);
         
         
-        if(isFindingTrainPerformanceEstimate()){  //Save basic train results
+        if(getEstimatingPerformanceOnTrain()){  //Save basic train results
             long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);

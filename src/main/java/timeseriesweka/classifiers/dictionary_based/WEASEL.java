@@ -80,6 +80,19 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
   // ten-fold cross validation
   private int folds = 10;
 
+//TrainAccuracyEstimator
+  boolean findTrainPerformanceEstimate = false;
+
+  @Override //TrainAccuracyEstimator
+  public void setEstimatingPerformanceOnTrain(boolean b) {
+      findTrainPerformanceEstimate = b;
+  }
+
+  @Override //TrainAccuracyEstimator
+  public boolean getEstimatingPerformanceOnTrain() {
+      return findTrainPerformanceEstimate;
+  }
+  
   @Override
   public ClassifierResults getTrainResults() {
     return trainResults;
@@ -356,7 +369,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
     
     
-    if(isFindingTrainPerformanceEstimate()){
+    if(getEstimatingPerformanceOnTrain()){
       int numFolds=setNumberOfFolds(samples);
       CrossValidationEvaluator cv = new CrossValidationEvaluator();
       if (seedClassifier) {

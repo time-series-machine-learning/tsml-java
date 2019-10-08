@@ -404,7 +404,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
                     c.setSeed(fold);
-                    c.setFindingTrainPerformanceEstimate(true);
+                    c.setEstimatingPerformanceOnTrain(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
                     Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

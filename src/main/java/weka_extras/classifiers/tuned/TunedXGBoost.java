@@ -119,6 +119,9 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
     ArrayList<Double> paramAccuracies;
     private long combinedBuildTime;
     boolean runSingleThreaded = false;
+   
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
 
     public TunedXGBoost() {
 
@@ -136,13 +139,16 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
         numIterationsParaRange = new int[]  { 250, 500, 1000, 1500};
     }
 
-    public int getSeed() { 
-        return seed;  
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
     }
-    public void setSeed(int rngSeed) { 
-        this.seed = rngSeed;
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
     }
-
+    
     public boolean getTuneParameters() {
         return tuneParameters;
     }
@@ -272,7 +278,7 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
                     model.setMinChildWeight(minChildWeight);
                     model.setNumIterations(p4);
                     model.tuneParameters=false;
-                    model.setFindingTrainPerformanceEstimate(false);
+                    model.setEstimatingPerformanceOnTrain(false);
                     model.setSeed(seed);
                     tempResults=cv.crossValidateWithStats(model,trainCopy);
 
@@ -446,7 +452,7 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
         xg.setMinChildWeight(minChildWeight);
         xg.setNumIterations(numIterations);
         xg.tuneParameters=false;
-        xg.setFindingTrainPerformanceEstimate(false);
+        xg.setEstimatingPerformanceOnTrain(false);
         xg.setSeed(seed);
 
         CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -476,7 +482,7 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
 
         buildActualClassifer();
 
-        if(isFindingTrainPerformanceEstimate() && !tuneParameters) //if tuneparas, will take the cv results of the best para set
+        if(getEstimatingPerformanceOnTrain() && !tuneParameters) //if tuneparas, will take the cv results of the best para set
             trainResults = estimateTrainAcc(trainInsts);
 
         if(saveEachParaAcc)
@@ -642,7 +648,7 @@ public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements 
             for (int i = 0; i < numModels; i++) {
                 models[i] = new TunedXGBoost();
                 models[i].setTuneParameters(false);
-                models[i].setFindingTrainPerformanceEstimate(false);
+                models[i].setEstimatingPerformanceOnTrain(false);
                 models[i].setLearningRate(learningRate);
                 models[i].setMaxTreeDepth(maxTreeDepth);
                 models[i].setNumIterations(newNumIterations);

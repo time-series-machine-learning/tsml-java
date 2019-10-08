@@ -81,7 +81,9 @@ public class TunedClassifier extends AbstractClassifierWithTrainingInfo
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
-        
+          
+    //TrainAccuracyEstimator
+    boolean findTrainPerformanceEstimate = false;
     ////////// end interface variables
     
     
@@ -107,6 +109,16 @@ public class TunedClassifier extends AbstractClassifierWithTrainingInfo
         //no setSeed in abstractclassifier. i imagine most define it via setOptions,
         //so could add it a a parameter with only one possible value, or jsut set the seed
         //before giving the classifier to this tunedclassifier instance
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public void setEstimatingPerformanceOnTrain(boolean b) {
+        findTrainPerformanceEstimate = b;
+    }
+    
+    @Override //TrainAccuracyEstimator
+    public boolean getEstimatingPerformanceOnTrain() {
+        return findTrainPerformanceEstimate;
     }
     
     public boolean getCloneClassifierForEachParameterEval() {

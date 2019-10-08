@@ -204,6 +204,8 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
     
     public static void main(String[] args) throws Exception{
         
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new FlatCote()));
+        
         FlatCote fc = new FlatCote();
         String datasetName = "Chinatown";
         
