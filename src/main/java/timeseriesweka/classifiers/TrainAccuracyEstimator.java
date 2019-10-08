@@ -15,46 +15,79 @@
 package timeseriesweka.classifiers;
 
 import evaluation.storage.ClassifierResults;
-import weka.core.Instances;
 
 /**
-* Classifiers implementing this interface will perform a CV on the train data
-* and implement a means of storing train predictions and probabilities. 
-* 
-* there are two use cases
- 
-* 
- * @author ajb
+ * Classifiers implementing this interface are able to estimate their own performance 
+ * (possibly with some bias) on the train data in some way as part of their buildClassifier process, 
+ * and avoid a full nested-cross validation process.
+ * 
+ * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
+ * classifier returning the train estimate of the best parameter set, acting as the train 
+ * estimate of the full classifier: note the bias), or may be done as an
+ * additional step beyond the normal build process but far more efficiently than a
+ * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+ * 
+ * Implementation of this interface indicates the ABILITY to estimate train performance, 
+ * to turn this behaviour on, setFindingTrainPerformanceEstimate(true) should be called. 
+ * By default, the estimation behaviour is off
+ * 
+ * This way, if for whatever reason a nested estimation process is explicitly wanted 
+ * (e.g. for completely bias-free estimates), that can also be achieved
+ * 
+ * @author James Large (james.large@uea.ac.uk), ajb
  */
 public interface TrainAccuracyEstimator{
 
     
-    void setFindTrainAccuracyEstimate(boolean setCV);
-    
     /**
- *  classifiers implementing this interface can estimate probabilities and classes
- * on the train data and store that data in a ClassifierResults object. 
-     * @return true if this classifier actually finds the estimate
- */
-    default boolean findsTrainAccuracyEstimate(){ return false;}
-/**
- * TrainCV results are not by default written to file. If this method is called
- * they will be written in standard format, as defined in the ClassifierResults class
- * The minimum requirements for the train results are
- * 
- * ProblemName,ClassifierName,train
-*  Parameter info, if available
-*  TrainAccuracy, build time, test time.
-* If available, the preds and probs will also be written 
-* Case1TrueClass,Case1PredictedClass,,ProbClass1,ProbClass2, ...
-* Case2TrueClass,Case2PredictedClass,,ProbClass1,ProbClass2, ...
-* 
- * @param train: Full file name for the TrainCV results
- */    
-    void writeTrainEstimatesToFile(String train);
-
-    default int setNumberOfFolds(Instances data){
-        return data.numInstances()<10?data.numInstances():10;
+     * For almost all classifiers, which extend both this interface and AbstractClassifierWithTrainingInfo,
+     * this method simply mirrors the AbstractClassifierWithTrainingInfo default implementation 
+     * and calls that, without needing to implement the method in your classifier
+     * 
+     * Gets the train results for this classifier, which will be empty (but not-null) 
+     * until buildClassifier has been called.
+     * 
+     * If the classifier was set-up to estimate  it's own train accuracy, these
+     * will be populated with full prediction information, ready to be written as a 
+     * trainFoldX file for example
+     * 
+     * Otherwise, the object will at minimum contain build time and parameter information
+     */
+    public ClassifierResults getTrainResults();
+    
+    /** 
+     * Determines whether this classifier should generates a performance estimate on the 
+     * train data internally during the buildclassifier process. 
+     * 
+     * Default behaviour is not to find them. In this case, the only information in trainResults
+     * relates to the time taken to build the classifier
+     * 
+     * Implemented as a semi-constant within the interface to avoid having to replicate
+     * the boolean in all implementors, they can simply implement the interface 
+     * and use the getter/setter to avoid having to interact with this
+     */
+    boolean[] findingTrainPredictionsLocal = { false };
+    
+    /** 
+     * Determines whether this classifier should generates a performance estimate on the 
+     * train data internally during the buildclassifier process. 
+     * 
+     * Default behaviour is not to find them. In this case, the only information in trainResults
+     * relates to the time taken to build the classifier
+     */
+    public default void setFindingTrainPerformanceEstimate(boolean b){
+        findingTrainPredictionsLocal[0] = b;
+    }
+    
+    /** 
+     * Determines whether this classifier should generates a performance estimate on the 
+     * train data internally during the buildclassifier process. 
+     * 
+     * Default behaviour is not to find them. In this case, the only information in trainResults
+     * relates to the time taken to build the classifier
+     */
+    public default boolean isFindingTrainPerformanceEstimate(){
+        return findingTrainPredictionsLocal[0];
     }
 
 }

@@ -63,33 +63,48 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
     protected Random rand=new Random();
     protected boolean seedClassifier=false;
     protected int seed = 0;
-/**Use to control whether to print out debug info **/    
-    protected boolean debug=false;
-/** Determines whether this classifier generates its own results internally or not 
- *  Default behaviour is not to find them. In this case, the only information in trainResults
- * relates to the time taken to build the classifier
- **/
-    protected boolean findTrainPredictions = false;
     
-    public void setFindTrainPredictions(boolean b){
-        findTrainPredictions=b;
-    }
-    public boolean getFindTrainPredictions(){
-        return findTrainPredictions;
-    }
+    /**
+     * A printing-friendly and/or context/parameter-aware name that can optionally 
+     * be used to describe this classifier. By default, this will simply be the 
+     * simple-class-name of the classifier
+     */
+    private String classifierName = null;
+
+    
+    /**
+     * Used to control whether to print out debug info 
+     */    
+    protected boolean debug=false;
     
     @Override
     public String getParameters() {
-        return "seedClassifier,"+seedClassifier+",seed,"+seed+",findTrainPredictionsInternally,"+findTrainPredictions;
+        return "seedClassifier,"+seedClassifier+",seed,"+seed;
     }
      
+    /**
+     * Gets the train results for this classifier, which will be empty (but not-null) 
+     * until buildClassifier has been called.
+     * 
+     * If the classifier is a TrainAccuracyEstimator and was set-up to estimate 
+     * it's own train accuracy, these will be populated with full prediction 
+     * information, ready to be written as a trainFoldX file for example
+     * 
+     * Otherwise, the object will at minimum contain the build time, classifiername, 
+     * and parameter information
+     */
     public ClassifierResults getTrainResults() {
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
         return trainResults;
     }
     
     /**
-     * Set the seed for random number generation.
-     *
+     * Set the seed for random number generation. Re-initialises internal RNG 
+     * with new seed. Therefore, note that in general this method should be called
+     * before the classifier needs to use the RNG, and that in general the RNG 
+     * shouldn't ever be used in the constructor
+     * 
      * @param seed the seed 
      */
     @Override
@@ -128,27 +143,29 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
         result.setMinimumNumberInstances(0);   
         return result;
     }
-//These are to be depreciated, kept for the removal of TrainAccuracyEstimator
-/**
- * TrainCV results are not by default written to file. If this method is called
- * they will be written in standard format, as defined in the ClassifierResults class
- * The minimum requirements for the train results are
- * 
- * ProblemName,ClassifierName,train
-*  Parameter info, if available
-*  TrainAccuracy, build time, test time.
-* If available, the preds and probs will also be written 
-* Case1TrueClass,Case1PredictedClass,,ProbClass1,ProbClass2, ...
-* Case2TrueClass,Case2PredictedClass,,ProbClass1,ProbClass2, ...
-* 
- * @param train: Full file name for the TrainCV results
- */    
- //   public abstract void writeTrainEstimatesToFile(String train);
-
+    
     public int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }    
     
+    /**
+     * A printing-friendly and/or context/parameter-aware name that can optionally 
+     * be used to describe this classifier. By default, this will simply be the 
+     * simple-class-name of the classifier.
+     */
+    public String getClassifierName() {
+        if (classifierName == null)
+            classifierName = this.getClass().getSimpleName();
+        return classifierName;
+    }
     
+    /**
+     * Sets a printing-friendly and/or context/parameter-aware name that can optionally 
+     * be used to describe this classifier. By default, this will simply be the 
+     * simple-class-name of the classifier
+     */
+    public void setClassifierName(String classifierName) {
+        this.classifierName = classifierName;
+    }
     
 }
