@@ -34,6 +34,9 @@ import java.util.concurrent.Future;
  */
 public class BOSSIndividualSP extends AbstractClassifier implements Serializable, Comparable<BOSSIndividualSP>, MultiThreadable {
 
+    public int experimentOption = 0;
+    public int maxWindowSize = 0;
+
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     protected BitWordLong[/*instance*/][/*windowindex*/] SFAwords;
 
@@ -414,15 +417,17 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             BitWordLong word = createWord(d);
             words[wInd] = word;
 
-            if (wInd - windowSize >= 0 && lastWord.getWord() != 0){
-                BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
+            if (experimentOption != 5) {
+                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
+                    BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
 
-                ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte)0);
-                Integer val = bag.get(key);
+                    ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte) 0);
+                    Integer val = bag.get(key);
 
-                if (val == null)
-                    val = 0;
-                bag.put(key, ++val);
+                    if (val == null)
+                        val = 0;
+                    bag.put(key, ++val);
+                }
             }
 
             //add to bag, unless num reduction applies
@@ -532,15 +537,17 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                 word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
             newWords[wInd] = word;
 
-            if (wInd - windowSize >= 0 && lastWord.getWord() != 0){
-                BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
+            if (experimentOption != 5) {
+                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
+                    BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
-                ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte)0);
-                Integer val = bag.get(key);
+                    ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte) 0);
+                    Integer val = bag.get(key);
 
-                if (val == null)
-                    val = 0;
-                bag.put(key, ++val);
+                    if (val == null)
+                        val = 0;
+                    bag.put(key, ++val);
+                }
             }
 
             //add to bag, unless num reduction applies
@@ -698,6 +705,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         // limit number of features avoid excessive features
         int limit = (int)(chiLimit * 100000);
 
+        if (experimentOption == 1){
+            limit = 10 * (maxWindowSize-windowSize+10) * levels;
+        }
+
         System.out.println(values.size() + " " + limit + " " + levels + " " + windowSize + " " + wordLength + " " + norm);
 
         if (values.size() > limit) {
@@ -762,7 +773,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        //chiSquared();
+        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5) chiSquared();
 
         if (cleanAfterBuild) {
             clean();
@@ -818,20 +829,24 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
-//        SPBag oldBag = testBag;
-//        testBag = new SPBag(oldBag.classVal);
-//        for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
-//            if (chiSquare.contains(entry.getKey())) {
-//                testBag.put(entry.getKey(), entry.getValue());
-//            }
-//        }
+        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5) {
+            SPBag oldBag = testBag;
+            testBag = new SPBag(oldBag.classVal);
+            for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
+                if (chiSquare.contains(entry.getKey())) {
+                    testBag.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
-            double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+            double dist;
+            if (experimentOption == 3) dist = histogramIntersection(testBag, bags.get(i));
+            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;

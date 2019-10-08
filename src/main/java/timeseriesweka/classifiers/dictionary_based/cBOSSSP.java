@@ -58,6 +58,12 @@ import static weka.core.Utils.sum;
 public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
+
+
+    public int experimentOption = 0;
+    public int maxWindow;
+
+
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
     private ArrayList<Double>[] paramMemory;
@@ -91,9 +97,9 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
     private final int[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int[] alphabetSize = { 4 };
     private final boolean[] normOptions = { true, false };
-    private final Integer[] levels = { 1, 2, 3 };
+    private Integer[] levels = { 1, 2, 3 };
     private final double correctThreshold = 0.92;
-    private final double[] chiLimits = { 0 };
+    private double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
@@ -464,6 +470,18 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
+
+        if (experimentOption == 1){
+            chiLimits = new double[]{ 0.3 };
+        }
+        else if (experimentOption == 2){
+            chiLimits = new double[]{ 0 };
+        }
+        else if (experimentOption == 4){
+            levels = new Integer[]{ 1 };
+        }
+
+
         trainResults.setBuildTime(System.nanoTime());
 
         // can classifier handle the data?
@@ -476,7 +494,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
         //Window length settings
         int seriesLength = isMultivariate ? channelLength(data) - 1 : data.numAttributes() - 1; //minus class attribute
         int minWindow = 10;
-        int maxWindow = (int) (seriesLength * maxWinLenProportion);
+        maxWindow = (int) (seriesLength * maxWinLenProportion);
         if (maxWindow < minWindow) minWindow = maxWindow / 2;
         //whats the max number of window sizes that should be searched through
         double maxWindowSearches = seriesLength * maxWinSearchProportion;
@@ -635,10 +653,14 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], 0, multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
+
+            boss.experimentOption = experimentOption;
+            boss.maxWindowSize = maxWindow;
+
             boss.buildClassifier(data);
             boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
@@ -1411,6 +1433,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 //        c.bayesianParameterSelection = false;
         c.setSeed(fold);
 //        c.setFindTrainAccuracyEstimate(true);
+        c.experimentOption = 2;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 

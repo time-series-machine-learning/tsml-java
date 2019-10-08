@@ -688,7 +688,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
 
             if (checkpoint) {
-                if (numClassifiers[currentSeries] < maxEnsembleSize) {
+                if (classifiersBuilt[currentSeries] <= maxEnsembleSize) {
                     checkpoint(prev, -1, true);
                 }
                 else{

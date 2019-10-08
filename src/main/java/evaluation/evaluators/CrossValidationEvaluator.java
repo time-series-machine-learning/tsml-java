@@ -79,7 +79,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         ClassifierResults res = crossValidateWithStats(classifier, dataset);
-        if (!REGRESSION_HACK) res.findAllStatsOnce();
+        res.findAllStatsOnce();
         return res;
     }
     
@@ -229,10 +229,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
                 //even if the lower-level evaluator resolved ties e.g. naively per fold
                 //todo review
                 double tiesResolvedRandomlyPred;
-                if(REGRESSION_HACK) 
-                    tiesResolvedRandomlyPred = Double.isNaN(dist[0]) ? 0 : dist[(int)indexOfMax(dist)];
-                else 
-                    tiesResolvedRandomlyPred = indexOfMax(dist);
+                tiesResolvedRandomlyPred = indexOfMax(dist);
 
                 preds[originalIndex] = tiesResolvedRandomlyPred;
             }
@@ -321,8 +318,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //                    allFolds_distsForInsts[classifierIndex][instIndex] = dist;
 //                    allFolds_predTimes[classifierIndex][instIndex] = predTime;
 //
-//                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
-//                    else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+//                    classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
 //                }    
 //                
 //                long foldEstimateTime = System.nanoTime() - foldEstimateTimeStart;
@@ -330,7 +326,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //                
 //                classifierFoldRes.turnOnZeroTimingsErrors();
 //                classifierFoldRes.finaliseResults();
-//                if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
+//                classifierFoldRes.findAllStatsOnce();
 //                resultsPerFold[classifierIndex][fold] = classifierFoldRes;
 //                
 //                if (cloneClassifiers && !maintainClassifiers)
@@ -354,8 +350,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //            for (int i = 0; i < dataset.numInstances(); i++) {
 //                double tiesResolvedRandomlyPred;
 //
-//                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
-//                else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+//                tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
 //
 //                results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
 //            }

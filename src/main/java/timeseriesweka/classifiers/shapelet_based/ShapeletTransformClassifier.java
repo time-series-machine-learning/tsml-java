@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.shapelet_based;
 
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.*;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
@@ -26,6 +27,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import weka.core.Check;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -43,9 +45,6 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 import weka_extras.classifiers.ensembles.voting.MajorityVote;
 import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
@@ -57,7 +56,6 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
@@ -68,7 +66,7 @@ import weka_extras.classifiers.ensembles.ContractRotationForest;
  * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable{
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable, Checkpointable {
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here

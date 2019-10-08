@@ -24,9 +24,6 @@ import weka.core.Instances;
  */
 public abstract class Evaluator {
     
-    //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
-    public static boolean REGRESSION_HACK = false; //@matthew
-    
     int seed;
     
     /**

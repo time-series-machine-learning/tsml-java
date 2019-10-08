@@ -61,6 +61,8 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -224,7 +226,7 @@ public class ClassifierLists {
                 break;
             case "CAWPE_AS_COTE":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","ST","ElasticEnsemble"};//RotF for ST
+                    String[] cls={"TSF","RBOSS","RISE","ST","EE"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((CAWPE)c).setSeed(fold);  
@@ -302,6 +304,7 @@ public class ClassifierLists {
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
+                ((ShapeletTransformClassifier) c).setTrainTimeLimit(TimeUnit.HOURS, 5);
                 break;
             case "TSBF":
                 c=new TSBF();
@@ -313,14 +316,44 @@ public class ClassifierLists {
                 c=new BOSS();
                 ((BOSS) c).setSeed(fold);
                 break;
+
+
             case "RBOSS": case "cBOSS": case "cBOSSBayesianFull":
                 c = new cBOSS();
                 ((cBOSS) c).setSeed(fold);
                 break;
+            case "OFScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 0;
+                break;
+            case "FScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 1;
+                break;
             case "BISPcBOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 2;
                 break;
+            case "HIOFScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 3;
+                break;
+            case "BIcBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 4;
+                break;
+            case "SPcBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 5;
+                break;
+
+
             case "WEASEL":
                 c = new WEASEL();
                 ((WEASEL)c).setSeed(fold);

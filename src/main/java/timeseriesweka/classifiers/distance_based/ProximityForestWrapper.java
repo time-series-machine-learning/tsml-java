@@ -23,6 +23,8 @@ import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
+
+import timeseriesweka.classifiers.Checkpointable;
 import trees.ProximityForest;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -82,7 +84,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ProximityForestWrapper extends AbstractClassifier {
+public class ProximityForestWrapper extends AbstractClassifier implements Checkpointable {
 
     //from paper, pg18-19: 
     /*
@@ -250,5 +252,15 @@ public class ProximityForestWrapper extends AbstractClassifier {
 //        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
         mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
         mce.runComparison();
+    }
+
+    @Override
+    public void setSavePath(String path) {
+
+    }
+
+    @Override
+    public void copyFromSerObject(Object obj) throws Exception {
+
     }
 }
