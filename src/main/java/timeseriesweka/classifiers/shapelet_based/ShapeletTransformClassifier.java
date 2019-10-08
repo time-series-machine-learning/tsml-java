@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
@@ -154,20 +155,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
        if(classifier instanceof AbstractClassifierWithTrainingInfo) 
             classifierParas=((AbstractClassifierWithTrainingInfo)classifier).getParameters();
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
-    }
-    
-//    @Override
-    public double getTrainAcc() {
-        if(classifier instanceof TrainAccuracyEstimator)
-            return ((TrainAccuracyEstimator)classifier).getTrainAcc();
-        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
-    }
-
-//    @Override
-    public double[] getTrainPreds() {
-        if(classifier instanceof TrainAccuracyEstimator)
-            return ((TrainAccuracyEstimator)classifier).getTrainPreds();
-        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
     

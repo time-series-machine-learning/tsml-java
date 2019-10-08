@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.hybrids;
 
 
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.frequency_based.RISE;
@@ -161,7 +162,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers.add(new BOSS());
         TSF tsf=new TSF();
         tsf.setEstimatorMethod("CV");
-        tsf.setFindTrainAccuracyEstimate(true);
+        tsf.setFindTrainPredictions(true);
         classifiers.add(tsf);
         
         names.add("EE");
@@ -205,12 +206,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             if(classifiers.get(i) instanceof TrainAccuracyEstimator){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
-                
-                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
+                ClassifierResults res= ((AbstractClassifierWithTrainingInfo)classifiers.get(i)).getTrainResults();
+                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), res.getAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, res.getPredClassValsAsArray(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 

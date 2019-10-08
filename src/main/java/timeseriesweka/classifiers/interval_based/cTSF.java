@@ -14,16 +14,13 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import fileIO.OutFile;
 
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Random;
 
 import timeseriesweka.classifiers.*;
-import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -239,14 +236,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     @Override
     public boolean findsTrainAccuracyEstimate(){ return trainAccuracyEst;}
 
-    /**
-     *
-     * @return a ClassifierResults object, which will be null if tainCV is null
-     */
-    @Override
-    public ClassifierResults getTrainResults(){
-        return trainResults;
-    }
+
     /**
      * Perhaps make this coherent with setOptions(String[] ar)?
      * @return String written to results files

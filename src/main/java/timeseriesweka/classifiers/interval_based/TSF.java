@@ -37,7 +37,7 @@ import weka.classifiers.Classifier;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
+//import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.Tuneable;
  
 /** 
@@ -107,7 +107,7 @@ import timeseriesweka.classifiers.Tuneable;
 **/
  
 public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler, Tuneable{
+        implements TechnicalInformationHandler, Tuneable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -150,7 +150,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     * of this classifier
     * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB accuracy estimate
     */
-    boolean trainAccuracyEst=false;  
+//    boolean findTrainPredictions=false;  
     enum EstimatorMethod{CV,OOB};
     EstimatorMethod estimator=EstimatorMethod.CV;
     private String trainFoldPath="";
@@ -187,49 +187,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble=!b;
     }
-     
-/**
- * Stores the classifier train CV results and writes them to file. 
- * boolean trainCV is a little redundant, but nicer than checking path for null
- * @param train 
- */   
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainFoldPath=train;
-        trainAccuracyEst=true;
-    }
-/**
- * We can perform trainCV without writing the results to file. The could be used,
- * for example, in an ensemble this TSF is a member of
- * @param setCV 
- */
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean estimateAccuracy){
-        trainAccuracyEst=estimateAccuracy;
-    }
-/** 
- * Maybe this method needs renaming?
- * @return boolean, whether trainCV happens or not
- */   
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainAccuracyEst;}
-     
-/**
- * 
- * @return a ClassifierResults object, which will be null if tainCV is null
- */   
-    @Override
-     public ClassifierResults getTrainResults(){
-         return trainResults;
-     }   
-
-    @Override
-    public double getTrainAcc() {
-        System.out.println("In get Train Acc : "+trainResults);
-        return trainResults.getAcc();
-    }
-
-
      
 /**
  * Perhaps make this coherent with setOptions(String[] ar)?
@@ -458,7 +415,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 inBag[i] = new boolean[result.numInstances()];
                 Instances bagData = result.resampleWithWeights(rand, inBag[i]);
                 trees[i].buildClassifier(bagData);
-                if(trainAccuracyEst){
+                if(findTrainPredictions){
                     for(int j=0;j<result.numInstances();j++){
                         if(inBag[i][j])
                             continue;
@@ -480,7 +437,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 *  2. with a 10xCV or (if 
 *  3. Build a bagged model simply to get the estimate. 
  */       
-        if(trainAccuracyEst){
+        if(findTrainPredictions){
              if(bagging){
             // Use bag data. Normalise probs
                 long est1=System.nanoTime();
@@ -519,7 +476,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 tsf.copyParameters(this);
                 if (seedClassifier)
                    tsf.setSeed(seed*100);
-                tsf.setFindTrainAccuracyEstimate(false);
+                tsf.setFindTrainPredictions(false);
                 trainResults=cv.crossValidateWithStats(tsf,data);
                 long est2=System.nanoTime();
                 trainResults.setErrorEstimateTime(est2-est1);
@@ -534,7 +491,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 TSF tsf=new TSF();
                 tsf.copyParameters(this);
                 tsf.setSeed(seed);
-                tsf.setFindTrainAccuracyEstimate(true);
+                tsf.setFindTrainPredictions(true);
                 tsf.bagging=true;
                 tsf.buildClassifier(data);
                 trainResults=tsf.trainResults;
@@ -758,7 +715,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.setSeed(0);
-        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
+//        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);

@@ -133,14 +133,14 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         return super.getParameters()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ens;
     }
     
-    @Override
+
     public double getTrainAcc() {
-        return ensemble.getTrainAcc();
+        return ensemble.getTrainResults().getAcc();
     }
 
-    @Override
+
     public double[] getTrainPreds() {
-        return ensemble.getTrainPreds();
+        return ensemble.getTrainResults().getPredClassValsAsArray();
     }
     
     public void doSTransform(boolean b){
