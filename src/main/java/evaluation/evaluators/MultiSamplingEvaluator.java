@@ -19,6 +19,8 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.ExecutorService;
+
+import experiments.ClassifierLists;
 import timeseriesweka.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -198,12 +200,16 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
         foldClassifiers[0] = AbstractClassifier.makeCopies(classifier, numFolds);
     }
     
-    protected void cloneClassifiers(Classifier[] classifiers) throws Exception {
+    protected void cloneClassifiers(String[] classifiers) throws Exception {
+
+
         // clone them all here in one go for efficiency of serialisation
-        foldClassifiers = new Classifier[classifiers.length][];
+        foldClassifiers = new Classifier[classifiers.length][numFolds];
 
         for (int c = 0; c < classifiers.length; ++c)
-            foldClassifiers[c] = AbstractClassifier.makeCopies(classifiers[c], numFolds);
+            for (int i = 0; i < numFolds; i++) {
+                foldClassifiers[c][i] = ClassifierLists.setClassifierClassic(classifiers[c], 0);
+            }
     }
     
     /**

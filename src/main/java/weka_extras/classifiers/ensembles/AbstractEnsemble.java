@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TestTimeContractable;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
@@ -43,7 +42,6 @@ import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
 import weka_extras.classifiers.ensembles.voting.ModuleVotingScheme;
 import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
@@ -146,8 +144,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected String datasetName;
 
     public AbstractEnsemble() {
-        fullyNestedEstimates = false;
-        
         setupDefaultEnsembleSettings();
     }
     
@@ -408,8 +404,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             
             if (writeIndividualsResults) { //if we're doing trainFold# file writing
                 String params = modules[i].getParameters();
-                if (modules[i].getClassifier() instanceof SaveParameterInfo)
-                    params = ((SaveParameterInfo)modules[i].getClassifier()).getParameters();
+                if (modules[i].getClassifier() instanceof AbstractClassifierWithTrainingInfo)
+                    params = ((AbstractClassifierWithTrainingInfo)modules[i].getClassifier()).getParameters();
                 writeResultsFile(modules[i].getModuleName(), params, modules[i].trainResults, "train"); //write results out
             }
         }
@@ -886,9 +882,11 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         if(this.transform==null){
             this.trainInsts = data;
         }else{
-           transform.setInputFormat(data);
-//           this.trainInsts = Filter.useFilter(data,transform);
+           printlnDebug(" Transform is being used: Transform = "+transform.getClass().getSimpleName());
+
            this.trainInsts = transform.process(data);           
+           printlnDebug(" Transform "+transform.getClass().getSimpleName()+" complete");
+           printlnDebug(" Transform "+transform.toString());
         }
           
         //init
@@ -961,9 +959,11 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            transform.setInputFormat(rawContainer);
-            Instances converted = Filter.useFilter(rawContainer,transform);
+//            transform.setInputFormat(rawContainer);
+//            Instances converted = Filter.useFilter(rawContainer,transform);
+            Instances converted = transform.process(rawContainer);            
             ins = converted.instance(0);
+            
         }
 
         if (testResults == null || (testInstCounter == 0 && prevTestInstance == null)) {//definitely the first call, not e.g the first inst being classified for the second time
@@ -1016,8 +1016,10 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            transform.setInputFormat(rawContainer);
+//            transform.setInputFormat(rawContainer);
 //            Instances converted = Filter.useFilter(rawContainer,transform);
+
+
             Instances converted = transform.process(rawContainer);
             ins = converted.instance(0);
         }
@@ -1038,8 +1040,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            transform.setInputFormat(rawContainer);
-            Instances converted = Filter.useFilter(rawContainer,transform);
+            Instances converted = transform.process(rawContainer);
             ins = converted.instance(0);
         }
 

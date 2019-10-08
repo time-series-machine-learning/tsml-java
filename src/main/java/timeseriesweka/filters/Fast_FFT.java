@@ -132,7 +132,7 @@ public class Fast_FFT extends SimpleBatchFilter{
     public static void main(String[] args) {
         Fast_FFT fast_fft = new Fast_FFT();
         Instances[] data = new Instances[2];
-        data[0] = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28]);
+        data[0] = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28]);
         try {
             data[1] = fast_fft.process(data[0]);
         } catch (Exception e) {

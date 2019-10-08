@@ -84,7 +84,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     }
     
     public synchronized ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
-        return crossValidateWithStats(new Classifier[] { classifier }, dataset)[0];
+        return crossValidateWithStats(new String[] { classifier.toString() }, dataset)[0];
     }
     
     /**
@@ -101,7 +101,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
      * 
      * @return double[classifier][prediction]
      */
-    public synchronized ClassifierResults[] crossValidateWithStats(Classifier[] classifiers, final Instances dataset) throws Exception {
+    public synchronized ClassifierResults[] crossValidateWithStats(String[] classifiers, final Instances dataset) throws Exception {
         
         if (folds == null || !previousRelationName.equals(dataset.relationName()))
             buildFolds(dataset);
@@ -137,7 +137,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
             for (int classifierIndex = 0; classifierIndex < classifiers.length; ++classifierIndex) {
                 
                 // get the classifier instance to be used this fold
-                final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : classifiers[classifierIndex];
+                final Classifier foldClassifier = cloneClassifiers ? foldClassifiers[classifierIndex][fold] : null;
                 final SingleTestSetEvaluator tester = new SingleTestSetEvaluator(seed, cloneData, setClassMissing);
                 
                 Callable<ClassifierResults> eval = () -> {

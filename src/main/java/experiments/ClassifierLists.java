@@ -304,7 +304,6 @@ public class ClassifierLists {
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
-                ((ShapeletTransformClassifier) c).setTrainTimeLimit(TimeUnit.HOURS, 5);
                 break;
             case "TSBF":
                 c=new TSBF();
@@ -374,7 +373,7 @@ public class ClassifierLists {
                 break; 
              case "HiveCOTE": case "HIVECOTE": case "HiveCote": case "Hive-COTE":
                 c=new HiveCote();
-                ((HiveCote)c).setContract(24);
+                //((HiveCote)c).setContract(2);
                 break; 
             case "RISE":
                 c=new RISE();

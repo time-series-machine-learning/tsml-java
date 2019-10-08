@@ -48,7 +48,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.storage.ClassifierResults;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
@@ -56,8 +56,8 @@ import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 
 
-public class ContractRotationForest extends AbstractClassifier
-  implements SaveParameterInfo, TrainTimeContractable, Checkpointable, Serializable{
+public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
+  implements TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
     ArrayList<Classifier> classifiers;

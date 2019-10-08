@@ -142,7 +142,6 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         }
     }    
     
-    
     private void setDefaultEnsembles(){
         
         classifiers = new ArrayList<>();
@@ -184,8 +183,9 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     
     @Override
     public void buildClassifier(Instances train) throws Exception{
-         long startTime=System.currentTimeMillis();
-       optionalOutputLine("Start of training");
+        getCapabilities().testWithFail(train);
+        long t1=System.nanoTime();
+        optionalOutputLine("Start of training");
                 
         modules = new ConstituentHiveEnsemble[classifiers.size()];
         
@@ -205,11 +205,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             if(classifiers.get(i) instanceof TrainAccuracyEstimator){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
+                
                 modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((TrainAccuracyEstimator)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 
@@ -233,19 +234,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         if(verbose){
             printModuleCvAccs();
         }
-       
-//        if(this.writeEnsembleTrainingPredictions){
-//            new File(this.ensembleTrainingPredictionsPathAndName).mkdirs();
-//            FileWriter out = new FileWriter(this.ensembleTrainingPredictionsPathAndName);
-//            out.append(train.relationName()+",HIVE-COTE,train\n");
-//            out.append(this.getParameters()+"\n");
-//            for(int i = 0; i < train.numInstances(); i++){
-//                this.
-//                        
-//                        do i even need to write training preds?
-//            }
-//        }
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+        long t2=System.nanoTime();
+        trainResults.setBuildTime(t2-t1);
     }
     
 
@@ -385,22 +375,6 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     public void setMaxCvFolds(int maxFolds){
         this.maxCvFolds = maxFolds;
     }
- 
-//    @Override
-//    public void writeTrainingOutput(String pathAndFileName){
-//        this.writeEnsembleTrainingPredictions = true;
-//        this.ensembleTrainingPredictionsPathAndName = pathAndFileName;
-//    }
-    
-//    @Override
-//    public String getParameters(){
-//        StringBuilder out = new StringBuilder();
-//        out.append("contains,");
-//        for (ConstituentHiveEnsemble module : this.modules) {
-//            out.append(module.classifierName).append(",");
-//        }
-//        return out.toString();
-//    }
     
     
     public void writeTestPredictionsToFile(Instances test, String outputDir, String datasetName) throws Exception{
@@ -629,6 +603,19 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     }
 
     @Override
+    public String getParameters() {
+        String str=super.getParameters();
+        str+=",NumModules,"+classifiers.size();
+        for(String s:names)
+            str+=","+s;
+        str+=",trainAccEstimate";
+        for(ConstituentHiveEnsemble m:modules)
+            str+=","+m.ensembleCvAcc;
+        return str;
+    }
+    
+
+    @Override
     public void setTrainTimeLimit(TimeUnit time, long amount) {
 //Split the time up equally if contracted, if not we have no control    
         contractTime=true;
@@ -667,21 +654,29 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         }
     }
     
+  
+    
     public static class DefaultShapeletTransformPlaceholder extends ShapeletTransform{}
     
     public static void main(String[] args) throws Exception{
        
-        String datasetName = "ItalyPowerDemand";
-//        String datasetName = "MoteStrain";
-        
-        Instances train = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TEST");
+        String dataDir = "C:/users/ajb/dropbox/Code2019/tsml/src/main/java/experiments/data/tsc/";
+        String datasetName = "Chinatown";
+        Instances train = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TEST");
         
         HiveCote hive = new HiveCote();
+        System.out.println("Example usage of HiveCote: this is the code used in the paper");
+        System.out.println(hive.getTechnicalInformation().toString());
+        System.out.println("Evaluated on "+datasetName);
         hive.makeShouty();
         hive.buildClassifier(train);
+        System.out.println("Classifier built: Parameter info ="+hive.getParameters());
         double a=ClassifierTools.accuracy(test, hive);
-        System.out.println("Test acc for italy = "+a);
+        System.out.println("Test acc for "+datasetName+" = "+a);
+
+
+        System.out.println("This is exiting now. After here in main is legacy code. Ask Jason Lines!");
         System.exit(0);
         hive.writeTestPredictionsToFile(test, "prototypeSheets/", datasetName, "0");
         
