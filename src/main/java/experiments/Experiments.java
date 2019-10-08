@@ -546,33 +546,10 @@ public class Experiments  {
             if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
                 serialiseClassifier(expSettings, classifier);
             
-            //Now that training is done, get the training results if the classifier 
-            //records it's own performance. This may just be timings, or full on 
-            //prediction info if it's a TrainAccuracyEstimator
-            if (classifier instanceof AbstractClassifierWithTrainingInfo) {
-                //if this classifier is recording it's own results, use the build time it found
-                //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
-                //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
-                //schemes. that is more accurate than what experiments would measure, which would in fact be 
-                //the i/o time for reading in the modules' results, + the ensemble scheme time
-                //therefore the general assumption here is that the classifier knows its own buildtime 
-                //better than we do here
-                trainResults = ((AbstractClassifierWithTrainingInfo) classifier).getTrainResults();
-            }
+            //Collect train results from classifier or add build time to estimate made eariler
+            trainResults = finaliseTrainResults(classifier, trainResults, buildTime);
             
-            //Write train results if we need to
             if (expSettings.generateErrorEstimateOnTrainSet) {
-                
-                //Finalise the results of classifiers that don't estimate their own performance here
-                if (!(classifier instanceof AbstractClassifierWithTrainingInfo)) {
-                    assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
-                    trainResults.turnOffZeroTimingsErrors();
-                    trainResults.setBuildTime(buildTime);
-                    
-                    //for non-TrainAccEstimators, this is simply the sum of the two
-                    trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
-                }
-                
                 //And write them out
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
             }
@@ -620,6 +597,37 @@ public class Experiments  {
         }
     }
 
+    private static ClassifierResults finaliseTrainResults(Classifier classifier, ClassifierResults trainResults, long buildTime) throws Exception { 
+        //if this classifier is recording it's own results, (instanceof AbstractClassifierWithTrainingInfo or TrainAccuracyEstimator) 
+        //use the build time it found for itself 
+        
+        //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time 
+        //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
+        //schemes. that is more accurate than what experiments would measure, which would in fact be 
+        //the i/o time for reading in the modules' results, + the ensemble scheme time
+        //therefore the general assumption here is that the classifier knows its own buildtime 
+        //better than we do here
+        if (classifier instanceof AbstractClassifierWithTrainingInfo) {
+            return ((AbstractClassifierWithTrainingInfo) classifier).getTrainResults();
+        }
+        else if (classifier instanceof TrainAccuracyEstimator) {
+            //future proofing against the case that we have train accuracy estimators
+            //that do not extend AbstractClassifierWithTrainingInfo in future, 
+            //e.g. clusterers or extensions of weka classifiers that only extend
+            //the normal abstractclassifier
+            return ((TrainAccuracyEstimator) classifier).getTrainResults();
+        }
+        else {
+            //we have the external estimate (e.g. cv) results from eariler, add in the build time that experiments recorded
+            trainResults.turnOffZeroTimingsErrors();
+            trainResults.setBuildTime(buildTime);
+            //for non-TrainAccEstimators, this is simply the sum of the two
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+            trainResults.turnOnZeroTimingsErrors();
+        }
+        
+        return trainResults;
+    }
 
     private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train, String resultsPath) { 
         String parameterFileName = null;
