@@ -55,7 +55,7 @@ import static weka.core.Utils.sum;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
+public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;

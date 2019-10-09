@@ -35,7 +35,7 @@ import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka_extras.classifiers.SaveEachParameter;
 
@@ -63,7 +63,7 @@ import weka_extras.classifiers.SaveEachParameter;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedXGBoost extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, DebugPrinting, SaveEachParameter, ParameterSplittable {
+public class TunedXGBoost extends EnhancedAbstractClassifier implements SaveParameterInfo, DebugPrinting, SaveEachParameter, ParameterSplittable {
 
     //data info
     int numTrainInsts = -1;

@@ -19,7 +19,7 @@ import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
@@ -95,7 +95,7 @@ information.
  * ARGUMENTS
  * 
  */
-public class TSBF extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class TSBF extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
 //Paras
     
 //<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper">        

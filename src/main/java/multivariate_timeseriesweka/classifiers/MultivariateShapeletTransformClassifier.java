@@ -52,7 +52,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;

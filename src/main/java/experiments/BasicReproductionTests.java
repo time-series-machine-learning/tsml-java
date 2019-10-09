@@ -17,14 +17,10 @@
 
 package experiments;
 
-import evaluation.ClassifierResultsAnalysis;
-import evaluation.PerformanceMetric;
 import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +37,11 @@ import weka_extras.classifiers.ensembles.CAWPE;
 
 /**
  *
+ * Tests to compare test accuracies for important classifier on a quick italy power 
+ * demand run to saved expected results, and to recreate results/analysis for a cawpe paper section.
+ * 
+ * Just confirms that old results are still reproducible
+ * 
  * @author James Large (james.large@uea.ac.uk)
  */
 public class BasicReproductionTests {

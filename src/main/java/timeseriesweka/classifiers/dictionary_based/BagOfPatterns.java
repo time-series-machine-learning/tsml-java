@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
@@ -35,7 +35,7 @@ import weka.core.TechnicalInformationHandler;
  * 
  * @author James
  */
-public class BagOfPatterns extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
+public class BagOfPatterns extends EnhancedAbstractClassifier implements TechnicalInformationHandler {
 
     @Override
     public TechnicalInformation getTechnicalInformation() {

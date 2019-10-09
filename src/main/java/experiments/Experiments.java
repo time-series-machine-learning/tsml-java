@@ -47,7 +47,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 
@@ -530,8 +530,8 @@ public class Experiments  {
                 //Tell the classifier to generate train results if it can do it internally, 
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
-                if (AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(classifier))
-                    ((AbstractClassifierWithTrainingInfo) classifier).setEstimateOwnPerformance(true);
+                if (EnhancedAbstractClassifier.isSelfEstimatingClassifier(classifier))
+                    ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
                 else 
                     trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
             }
@@ -623,7 +623,7 @@ public class Experiments  {
         /*
         if estimateacc { //want full predictions
             timingToUpdateWith = buildTime (the one passed to this func)
-            if is AbstractClassifierWithTrainingInfo {
+            if is EnhancedAbstractClassifier {
                 if able to estimate own acc
                     just return getTrainResults()
                 else 
@@ -633,7 +633,7 @@ public class Experiments  {
             return trainResults
         }
         else not estimating acc { //just want timings
-            if is AbstractClassifierWithTrainingInfo
+            if is EnhancedAbstractClassifier
                 just return getTrainResults(), contains the timings and other maybe useful metainfo 
             else 
                 trainResults passed are empty
@@ -645,8 +645,8 @@ public class Experiments  {
             long timingToUpdateWith = buildTime; //the timing that experiments measured by default
             String paras = "No parameter info";
             
-            if (classifier instanceof AbstractClassifierWithTrainingInfo) {
-                AbstractClassifierWithTrainingInfo eac = ((AbstractClassifierWithTrainingInfo)classifier);
+            if (classifier instanceof EnhancedAbstractClassifier) {
+                EnhancedAbstractClassifier eac = ((EnhancedAbstractClassifier)classifier);
                 if (eac.getEstimateOwnPerformance())
                     return eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
                 else {
@@ -661,8 +661,8 @@ public class Experiments  {
             trainResults.setParas(paras);
         }
         else { // just want the timings
-            if (classifier instanceof AbstractClassifierWithTrainingInfo)
-                return ((AbstractClassifierWithTrainingInfo)classifier).getTrainResults(); //classifier recorded timings/paras internally, just return that directly
+            if (classifier instanceof EnhancedAbstractClassifier)
+                return ((EnhancedAbstractClassifier)classifier).getTrainResults(); //classifier recorded timings/paras internally, just return that directly
             else 
                 trainResults.setBuildTime(buildTime);
         }

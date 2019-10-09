@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 
 import utilities.StatisticalUtilities;
@@ -41,7 +41,7 @@ import weka.core.TechnicalInformationHandler;
  * 
  */
 
-public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LearnShapelets extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
 
   
     @Override

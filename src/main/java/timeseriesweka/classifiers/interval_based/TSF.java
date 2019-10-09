@@ -32,12 +32,11 @@ import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-//import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.Tuneable;
  
 /** 
@@ -106,7 +105,7 @@ import timeseriesweka.classifiers.Tuneable;
 
 **/
  
-public class TSF extends AbstractClassifierWithTrainingInfo 
+public class TSF extends EnhancedAbstractClassifier 
         implements TechnicalInformationHandler, Tuneable{
 //Static defaults
      

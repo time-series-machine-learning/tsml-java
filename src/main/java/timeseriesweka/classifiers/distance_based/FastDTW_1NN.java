@@ -23,7 +23,7 @@ import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
 import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.GenericTools;
 
@@ -63,7 +63,7 @@ CHECK THIS: For implementation reasons, a window size of 1
 is equivalent to Euclidean distance (rather than a window size of 0
  */
 
-public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements SaveEachParameter,ParameterSplittable{
+public class FastDTW_1NN extends EnhancedAbstractClassifier implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;

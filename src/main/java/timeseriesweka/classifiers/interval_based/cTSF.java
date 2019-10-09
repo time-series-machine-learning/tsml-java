@@ -18,7 +18,6 @@ package timeseriesweka.classifiers.interval_based;
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Random;
 
 import timeseriesweka.classifiers.*;
 import utilities.ClassifierTools;
@@ -107,8 +106,8 @@ import weka.core.Utils;
 
  **/
 
-public class cTSF extends AbstractClassifierWithTrainingInfo
-        implements TrainAccuracyEstimator, TechnicalInformationHandler,
+public class cTSF extends EnhancedAbstractClassifier
+        implements TechnicalInformationHandler,
         TrainTimeContractable, Checkpointable {
 //Static defaults
 

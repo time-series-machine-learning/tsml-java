@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.TestTimeContractable;
@@ -58,7 +58,7 @@ import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * as well as the following: 
  * 
  *      Current functionality
- *          - TrainAccuracyEstimator
+ *          - Can estimate own performance on train data
  *          - Optional filewriting for individuals' and ensemble's results
  *          - Can train from scratch, or build on results saved to file in ClassifierResults format
  *          - Can thread the component evaluation/building, current just assigning one thread per base classifier
@@ -67,7 +67,7 @@ import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInfo implements DebugPrinting, MultiThreadable {
+public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implements DebugPrinting, MultiThreadable {
 
     //Main ensemble design decisions/variables
     protected String ensembleName;
@@ -79,7 +79,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
 
     protected Instances trainInsts;
 
-    //protected ClassifierResults trainResults; inherited from AbstractClassifierWithTrainingInfo data generated during buildclassifier if above = true
+    //protected ClassifierResults trainResults; inherited from EnhancedAbstractClassifier data generated during buildclassifier if above = true
     protected ClassifierResults testResults;//data generated during testing
 
     //saved after building so that it can be added to our test results, even if for some reason 
@@ -359,9 +359,9 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             Callable<ClassifierResults> moduleBuild = () -> {
                 ClassifierResults trainResults = null;
                 
-                if (AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(classifier)) { 
+                if (EnhancedAbstractClassifier.isSelfEstimatingClassifier(classifier)) { 
                     classifier.buildClassifier(trainInsts);
-                    trainResults = ((AbstractClassifierWithTrainingInfo)classifier).getTrainResults();
+                    trainResults = ((EnhancedAbstractClassifier)classifier).getTrainResults();
                 }
                 else { 
                     trainResults = eval.evaluate(classifier, trainInsts);
@@ -396,8 +396,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             
             if (writeIndividualsResults) { //if we're doing trainFold# file writing
                 String params = modules[i].getParameters();
-                if (modules[i].getClassifier() instanceof AbstractClassifierWithTrainingInfo)
-                    params = ((AbstractClassifierWithTrainingInfo)modules[i].getClassifier()).getParameters();
+                if (modules[i].getClassifier() instanceof EnhancedAbstractClassifier)
+                    params = ((EnhancedAbstractClassifier)modules[i].getClassifier()).getParameters();
                 writeResultsFile(modules[i].getModuleName(), params, modules[i].trainResults, "train"); //write results out
             }
         }
@@ -885,7 +885,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(module.getClassifier()))
+                if (!EnhancedAbstractClassifier.isSelfEstimatingClassifier(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }

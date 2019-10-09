@@ -20,7 +20,7 @@ import java.text.DecimalFormat;
 import java.util.Scanner;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.DenseInstance;
@@ -40,7 +40,7 @@ import weka.core.Instances;
  * 
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo{
+public abstract class Efficient1NN extends EnhancedAbstractClassifier implements SaveParameterInfo{
     
     protected Instances train;
     protected Instances[] trainGroup;

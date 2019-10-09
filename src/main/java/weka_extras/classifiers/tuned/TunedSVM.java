@@ -56,7 +56,7 @@ m_C
 * 
 * 
 * NOTE jamesl: this classifier is now out of step with the current intended purpose usage of 
-* trainaccuracyestimator and abstractclassifierwithtraininginfo (in that, it extend RandomForest directly
+* EnhancedAbstractClassifier (in that, it extend RandomForest directly
 * which does not extend that)
 * 
 * Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing

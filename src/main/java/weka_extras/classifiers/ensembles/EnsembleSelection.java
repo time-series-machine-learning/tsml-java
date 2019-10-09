@@ -29,7 +29,7 @@ import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
@@ -299,7 +299,7 @@ public class EnsembleSelection extends CAWPE {
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(module.getClassifier()))
+                if (!EnhancedAbstractClassifier.isSelfEstimatingClassifier(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }

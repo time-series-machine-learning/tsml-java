@@ -28,7 +28,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.Capabilities;
@@ -63,7 +63,7 @@ import weka.core.TechnicalInformation;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
+public class BoTSWEnsemble extends EnhancedAbstractClassifier implements SaveParameterInfo {
 
     public BoTSWEnsemble() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);

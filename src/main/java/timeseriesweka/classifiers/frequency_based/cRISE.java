@@ -18,7 +18,7 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -77,7 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable, Checkpointable{
+public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;

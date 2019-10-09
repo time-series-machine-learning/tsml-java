@@ -35,7 +35,7 @@ import statistics.simulators.SimulateSpectralData;
 import statistics.simulators.SimulateDictionaryData;
 import statistics.simulators.SimulateIntervalData;
 import statistics.simulators.SimulateShapeletData;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
@@ -251,14 +251,14 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(c))
-            ((AbstractClassifierWithTrainingInfo)c).setEstimateOwnPerformance(true);
+        if(EnhancedAbstractClassifier.isSelfEstimatingClassifier(c))
+            ((EnhancedAbstractClassifier)c).setEstimateOwnPerformance(true);
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              
             c.buildClassifier(train);
-            if(AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(c))
-                ((AbstractClassifierWithTrainingInfo)c).getTrainResults().writeFullResultsToFile(preds+"/trainFold"+sample+".csv");
+            if(EnhancedAbstractClassifier.isSelfEstimatingClassifier(c))
+                ((EnhancedAbstractClassifier)c).getTrainResults().writeFullResultsToFile(preds+"/trainFold"+sample+".csv");
             
             int[][] predictions=new int[test.numInstances()][2];
             for(int j=0;j<test.numInstances();j++){
@@ -274,8 +274,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof AbstractClassifierWithTrainingInfo)
-                p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier)
+                p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else

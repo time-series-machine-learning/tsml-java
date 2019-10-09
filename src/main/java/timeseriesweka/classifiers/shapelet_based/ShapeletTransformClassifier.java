@@ -42,7 +42,7 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
 import weka_extras.classifiers.ensembles.voting.MajorityVote;
 import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
@@ -64,7 +64,7 @@ import timeseriesweka.classifiers.TrainTimeContractable;
  * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable{
+public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -151,8 +151,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public String getParameters(){
        String paras=transform.getParameters();
        String classifierParas="No Classifier Para Info";
-       if(classifier instanceof AbstractClassifierWithTrainingInfo) 
-            classifierParas=((AbstractClassifierWithTrainingInfo)classifier).getParameters();
+       if(classifier instanceof EnhancedAbstractClassifier) 
+            classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     

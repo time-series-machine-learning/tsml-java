@@ -20,7 +20,7 @@ import experiments.data.DatasetLists;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.filters.Fast_FFT;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -98,7 +98,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
+public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */

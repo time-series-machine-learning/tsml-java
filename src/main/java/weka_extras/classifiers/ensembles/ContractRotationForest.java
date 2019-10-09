@@ -48,7 +48,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.storage.ClassifierResults;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
@@ -56,7 +56,7 @@ import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 
 
-public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
+public class ContractRotationForest extends EnhancedAbstractClassifier
   implements TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
@@ -95,11 +95,8 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
     int maxNumTrees=200;
     int maxNumAttributes;
     String checkpointPath;
-    boolean debug=true;
     TimingModel tm;
     double timeUsed;
-    Random random;
-    int seed =0;
     double alpha=0.2;//Learning rate for timing update
 
   /**
@@ -126,9 +123,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
     filter.setVarianceCovered(1.0);
     return filter;
   }
-  public void setSeed(int s){
-      seed=s;
-  }
+  
 
   /**
    * Sets the minimum size of a group.
@@ -255,7 +250,6 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         long startTime=System.currentTimeMillis(); 
         String relationName=data.relationName();
         data = new Instances( data );
-        debug=true;
         boolean loadedFromFile=false;
         if(checkpointPath!=null){
             //Look for previous model. Protocol for saving is ProblemName+ClassifierName.ser
@@ -263,13 +257,13 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
             System.out.println("Simple name = "+this.getClass().getSimpleName());
             File f =new File(serPath);
             if(f.exists()){
-                if(debug)
+                if(m_Debug)
                     System.out.println("Serialised version exists, trying to load from "+serPath);
                 loadFromFile(serPath);
                 loadedFromFile=true;
            }
             else
-                if(debug)
+                if(m_Debug)
                     System.out.println("No Serialised versionat location "+serPath);                
         } 
         if(!loadedFromFile){
@@ -288,9 +282,9 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
             classifiers=new ArrayList<>();
         }
         if( data.numInstances() > 0 )// This function fails if there are 0 instances
-            random = data.getRandomNumberGenerator(seed);
+            rand = data.getRandomNumberGenerator(seed);
         else
-            random = new Random(seed);
+            rand = new Random(seed);
 
 //This is from the RotationForest 
         removeUseless = new RemoveUseless();
@@ -336,7 +330,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         double treeTime;
     //Re-estimate even if loading serialised, may be different hardware ....        
         estSingleTree=tm.estimateSingleTreeHours(n,m);
-        if(debug){
+        if(m_Debug){
             System.out.println("n ="+n+" m = "+m+" estSingleTree = "+estSingleTree);
             System.out.println("Contract time ="+contractHours+" hours ");
 
@@ -344,7 +338,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
         if((estSingleTree*minNumTrees)<contractHours){ 
-            if(debug)
+            if(m_Debug)
                 System.out.println("Think we are able to build at least 50 trees");
             boolean buildFullTree=true;
             int size;
@@ -359,7 +353,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     size=m;
                 else{
                     maxAtts=tm.estimateMaxAttributes(m,minNumTrees-numTrees,estSingleTree,contractHours);
-                    size=random.nextInt(maxAtts/2)+maxAtts/2;
+                    size=rand.nextInt(maxAtts/2)+maxAtts/2;
                 }
                     
                 if(batchSize+numTrees>maxNumTrees)
@@ -379,7 +373,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                 else
                     buildFullTree=true;
             //Checkpoint here   
-                    if(debug)
+                    if(m_Debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 if(checkpointPath!=null){
                     //save the serialised version
@@ -388,7 +382,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                         if(!f.isDirectory())
                             f.mkdirs();
                         saveToFile(checkpointPath+relationName+"ContractRotationForest.ser");
-                        if(debug)
+                        if(m_Debug)
                             System.out.println("HERE!!!  Saved to "+checkpointPath+relationName+"ContractRotationForest.ser");
                     }
                     catch(Exception e){
@@ -399,7 +393,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         }
 //CASE 2 and 3: dont think we can build min number of trees        
         else{
-            if(debug)
+            if(m_Debug)
                 System.out.println("Dont think we can build 50 trees in the time allowed ");
 //If m > n: SAMPLE ATTRIBUTES
             if(m>n){
@@ -408,8 +402,8 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                 long startBuild=System.currentTimeMillis(); 
                 while(timeUsed<contractHours && numTrees<minNumTrees){
                     maxAtts=tm.estimateMaxAttributes(m,minNumTrees-numTrees,estSingleTree,contractHours);
-                    int size=random.nextInt(maxAtts/2)+maxAtts/2;
-                    if(debug){
+                    int size=rand.nextInt(maxAtts/2)+maxAtts/2;
+                    if(m_Debug){
                         System.out.print("Max estimated attributes ="+maxAtts);
                         System.out.println("    using "+size+" attributes, building single tree at a time. Total time used ="+timeUsed);
                     }
@@ -421,7 +415,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     treeTime=(newTime-sTime)/(1000.0*60.0*60.0);
                     estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
 //                    (1-alpha)*estSingleTree+alpha*treeTime;
-                    if(debug)
+                    if(m_Debug)
                         System.out.println(" actual time used ="+timeUsed+" new est single tree = "+estSingleTree);
                     
                 //Checkpoint here   
@@ -434,14 +428,14 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     maxAtts*=2;
                     if(maxAtts>size)
                         maxAtts=size;
-                    if(debug)
+                    if(m_Debug)
                         System.out.println("OVERTIME: using "+size+" attributes, building single tree at a time. Time used -"+timeUsed);
                     buildTreeAttSample(data,instancesOfClass,numTrees++,maxAtts);
             //Update time used
                     long newTime=System.currentTimeMillis(); 
                     timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
                 //Checkpoint here   
-                    if(debug)
+                    if(m_Debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 
                 }
@@ -449,11 +443,11 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
             else{
 //estimate maximum number of attributes allowed, x, to get minNumberOfTrees.                
                 int maxCases=tm.estimateMaxCases(n,minNumTrees,estSingleTree,contractHours);
-                if(debug)
+                if(m_Debug)
                     System.out.println("using max "+maxCases+" case, building single tree at a time");
                 long startBuild=System.currentTimeMillis(); 
                 while(timeUsed<contractHours && numTrees<minNumTrees){
-                    int size=random.nextInt(maxCases/2)+maxCases/2;
+                    int size=rand.nextInt(maxCases/2)+maxCases/2;
                     buildTreeCaseSample(data,instancesOfClass,numTrees++,size);
             //Update time used
                     long newTime=System.currentTimeMillis(); 
@@ -468,14 +462,14 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     long newTime=System.currentTimeMillis(); 
                     timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
                 //Checkpoint here   
-                    if(debug)
+                    if(m_Debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 
                 }
             }
         }
         res.setBuildTime(System.currentTimeMillis()-startTime);
-        if(debug)
+        if(m_Debug)
             System.out.println("Finished build");
 
     }
@@ -497,7 +491,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
  * @throws Exception 
  */    
  public void buildTreeAttSample(Instances data, Instances [] instancesOfClass,int i, int numAtts) throws Exception{
-        int[][] g=generateGroupFromSize(data, random,numAtts);
+        int[][] g=generateGroupFromSize(data, rand,numAtts);
         Filter[] projection=Filter.makeCopies(projectionFilter, g.length );
         projectionFilters.add(projection);
         groups.add(g);
@@ -520,7 +514,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
             // Select instances for the dataset
             reducedHeaders[j] = new Instances( dataSubSet, 0 );
             boolean [] selectedClasses = selectClasses( instancesOfClass.length, 
-                  random );
+                  rand );
             for( int c = 0; c < selectedClasses.length; c++ ) {
                 if( !selectedClasses[c] )
                     continue;
@@ -534,10 +528,10 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     dataSubSet.add( newInstance );
                 }
             }
-            dataSubSet.randomize(random);
+            dataSubSet.randomize(rand);
             // Remove a percentage of the instances
             Instances originalDataSubSet = dataSubSet;
-            dataSubSet.randomize(random);
+            dataSubSet.randomize(rand);
             RemovePercentage rp = new RemovePercentage();
             rp.setPercentage(removedPercentage );
             rp.setInputFormat( dataSubSet );
@@ -555,7 +549,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     projection[j] );
                 } catch ( Exception e ) {
                 // The data could not be projected, we add some random instances
-                    addRandomInstances( dataSubSet, 10, random );
+                    addRandomInstances( dataSubSet, 10, rand );
                 }
             } while( projectedData == null );
 
@@ -581,7 +575,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         Classifier c= AbstractClassifier.makeCopy(baseClassifier);
         // Build the base classifier
         if (c instanceof Randomizable) {
-            ((Randomizable) c).setSeed(random.nextInt());
+            ((Randomizable) c).setSeed(rand.nextInt());
         }
         c.buildClassifier( buildClas );
         classifiers.add(c);
@@ -596,7 +590,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
  * @throws Exception 
  */
   public void buildTreeCaseSample(Instances data, Instances [] instancesOfClass,int i, int numCases) throws Exception{
-        int[][] g=generateGroupFromSize(data, random,data.numAttributes()-1);
+        int[][] g=generateGroupFromSize(data, rand,data.numAttributes()-1);
         Filter[] projection=Filter.makeCopies(projectionFilter, g.length );
         projectionFilters.add(projection);
         groups.add(g);
@@ -605,7 +599,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         data=new Instances(data);
         int m=data.numInstances();
         for(int k=0;k<m-numCases;k++)
-            data.remove(random.nextInt(data.numInstances()));
+            data.remove(rand.nextInt(data.numInstances()));
         
         
         FastVector transformedAttributes = new FastVector( data.numAttributes() );
@@ -624,7 +618,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
             // Select instances for the dataset
             reducedHeaders[j] = new Instances( dataSubSet, 0 );
             boolean [] selectedClasses = selectClasses( instancesOfClass.length, 
-                  random );
+                  rand );
             for( int c = 0; c < selectedClasses.length; c++ ) {
                 if( !selectedClasses[c] )
                     continue;
@@ -638,10 +632,10 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     dataSubSet.add( newInstance );
                 }
             }
-            dataSubSet.randomize(random);
+            dataSubSet.randomize(rand);
             // Remove a percentage of the instances
             Instances originalDataSubSet = dataSubSet;
-            dataSubSet.randomize(random);
+            dataSubSet.randomize(rand);
             RemovePercentage rp = new RemovePercentage();
             rp.setPercentage(removedPercentage );
             rp.setInputFormat( dataSubSet );
@@ -659,7 +653,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
                     projection[j] );
                 } catch ( Exception e ) {
                 // The data could not be projected, we add some random instances
-                    addRandomInstances( dataSubSet, 10, random );
+                    addRandomInstances( dataSubSet, 10, rand );
                 }
             } while( projectedData == null );
 
@@ -685,7 +679,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         Classifier c= AbstractClassifier.makeCopy(baseClassifier);
         // Build the base classifier
         if (c instanceof Randomizable) {
-            ((Randomizable) c).setSeed(random.nextInt());
+            ((Randomizable) c).setSeed(rand.nextInt());
         }
         c.buildClassifier( buildClas );
         classifiers.add(c);
@@ -1017,7 +1011,7 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
         maxNumTrees=saved.maxNumTrees;
         maxNumAttributes=saved.maxNumAttributes;
         checkpointPath=saved.checkpointPath;
-        debug=saved.debug;
+        m_Debug=saved.m_Debug;
         tm=saved.tm;
         timeUsed=saved.timeUsed;
         numTrees=saved.numTrees;

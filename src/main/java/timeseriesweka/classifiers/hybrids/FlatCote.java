@@ -18,7 +18,7 @@ import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
@@ -48,7 +48,7 @@ import weka.core.TechnicalInformationHandler;
  
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public class FlatCote extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
+public class FlatCote extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
     public FlatCote() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);

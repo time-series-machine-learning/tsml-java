@@ -28,7 +28,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_extras.classifiers.SaveEachParameter;
@@ -57,7 +57,7 @@ import timeseriesweka.classifiers.Tuneable;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedClassifier extends AbstractClassifierWithTrainingInfo 
+public class TunedClassifier extends EnhancedAbstractClassifier 
         implements SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
     ParameterSpace space = null;

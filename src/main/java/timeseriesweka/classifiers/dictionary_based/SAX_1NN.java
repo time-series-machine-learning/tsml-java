@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
@@ -28,7 +28,7 @@ import weka.filters.unsupervised.instance.Randomize;
  *
  * @author James
  */
-public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
+public class SAX_1NN extends EnhancedAbstractClassifier {
 
     public Instances SAXdata;
     private kNN knn;

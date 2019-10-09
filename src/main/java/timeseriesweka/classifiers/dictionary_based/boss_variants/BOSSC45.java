@@ -42,7 +42,7 @@ import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -72,7 +72,7 @@ import weka.core.Instances;
  * BOSS implementation based on the algorithm described in getTechnicalInformation()
  * C45 done using the WEKA implementation 'weka.classifiers.trees.J48'
  */
-public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
+public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;

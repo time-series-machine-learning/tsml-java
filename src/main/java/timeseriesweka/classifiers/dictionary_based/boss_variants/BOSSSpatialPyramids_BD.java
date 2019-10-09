@@ -45,7 +45,7 @@ import weka.core.Instances;
 import weka.classifiers.Classifier;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
 
 /**
@@ -67,7 +67,7 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
+public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;

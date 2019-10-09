@@ -24,7 +24,7 @@ import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.*;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
+public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInformationHandler {
 
   @Override
   public TechnicalInformation getTechnicalInformation() {

@@ -37,7 +37,7 @@ import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
@@ -55,7 +55,7 @@ import weka.core.TechnicalInformationHandler;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TechnicalInformationHandler{
+public class ElasticEnsemble extends EnhancedAbstractClassifier implements WritableTestResults,TechnicalInformationHandler{
 
     
     @Override

@@ -42,7 +42,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,
+public class BOSS extends EnhancedAbstractClassifier implements
         TechnicalInformationHandler, MultiThreadable {
 
     private transient LinkedList<BOSSIndividual>[] classifiers;

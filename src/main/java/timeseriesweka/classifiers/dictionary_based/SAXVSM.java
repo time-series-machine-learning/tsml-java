@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -41,7 +41,7 @@ year="2013"
 
  * @author James Large
  */
-public class SAXVSM extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
+public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
     Instances transformedData;
     Instances corpus;

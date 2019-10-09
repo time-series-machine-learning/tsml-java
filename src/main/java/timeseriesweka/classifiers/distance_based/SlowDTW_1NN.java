@@ -20,7 +20,7 @@ import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
@@ -30,7 +30,7 @@ This classifier does the full 101 parameter searches for window.
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends EnhancedAbstractClassifier  implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
