@@ -132,6 +132,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             System.exit(1);
         }
         
+        setSeed(seed);
         
         //defaults to 7 day contract TODO jay/tony review
         setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
@@ -210,11 +211,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     @Override
     public void setSeed(int seed) { 
         super.setSeed(seed);
-        int count =2; //mirroring HiveCote setseed overload
-        for (EnsembleModule module : modules) {
+        for (EnsembleModule module : modules)
             if(module.getClassifier() instanceof Randomizable)
-                ((Randomizable)module.getClassifier()).setSeed(seed+count++);
-        }
+                ((Randomizable)module.getClassifier()).setSeed(seed);
     }    
     
     public static void main(String[] args) throws Exception {
