@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka_extras.classifiers.ensembles.CAWPE;
@@ -99,10 +98,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     private int contractHours=MAXCONTRACTHOURS;  //Default to maximum 7 days run time
     
     public HiveCote(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.setDefaultEnsembles();
     }
     
     public HiveCote(ArrayList<Classifier> classifiers, ArrayList<String> classifierNames){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.classifiers = classifiers;
         this.names = classifierNames;
         if(contractTime){
@@ -149,7 +150,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         names = new ArrayList<>();
         
         ElasticEnsemble ee = new ElasticEnsemble();
-        ee.setEstimatingPerformanceOnTrain(true);
+        ee.setEstimateOwnPerformance(true);
         classifiers.add(ee);
         
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
@@ -164,12 +165,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers.add(rise);
         
         BOSS boss = new BOSS();
-        boss.setEstimatingPerformanceOnTrain(true);
+        boss.setEstimateOwnPerformance(true);
         classifiers.add(boss);
         
         TSF tsf=new TSF();
         tsf.setEstimatorMethod("CV");
-        tsf.setEstimatingPerformanceOnTrain(true);
+        tsf.setEstimateOwnPerformance(true);
         classifiers.add(tsf);
         
         names.add("EE");
@@ -210,7 +211,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             
 // if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
 // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
-            if(classifiers.get(i) instanceof TrainAccuracyEstimator){
+            if(AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(classifiers.get(i))){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
                 ClassifierResults res= ((AbstractClassifierWithTrainingInfo)classifiers.get(i)).getTrainResults();

@@ -29,7 +29,7 @@ import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
@@ -299,7 +299,7 @@ public class EnsembleSelection extends CAWPE {
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!(module.getClassifier() instanceof TrainAccuracyEstimator))
+                if (!AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }
@@ -404,7 +404,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setBuildIndividualsFromResultsFiles(true);
                     c.setResultsFileLocationParameters(resPath, dset, fold);
                     c.setSeed(fold);
-                    c.setEstimatingPerformanceOnTrain(true);
+                    c.setEstimateOwnPerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
                     Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();

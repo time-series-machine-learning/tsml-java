@@ -43,11 +43,9 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -69,7 +67,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo,TrainAccuracyEstimator {
+public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -94,10 +92,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
     private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
     private final Integer[] levels = { 1, 2, 3 };
     private final int alphabetSize = 4;
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
+        
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -125,6 +120,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
      * @param normalise whether or not to normalise by dropping the first Fourier coefficient
      */
     public BOSSSpatialPyramids_BD(boolean normalise) {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { normalise };
     }
     
@@ -133,6 +129,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
      * window size and word length if no particular normalisation option is provided
      */
     public BOSSSpatialPyramids_BD() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { true, false };
     }  
 
@@ -289,17 +286,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
     public void setSerFileLoc(String path) {
         serFileLoc = path;
     }
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
+        
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         if (data.classIndex() != data.numAttributes()-1)
@@ -424,7 +411,7 @@ public class BOSSSpatialPyramids_BD extends AbstractClassifierWithTrainingInfo i
             }
         }
         
-        if (getEstimatingPerformanceOnTrain())
+        if (getEstimateOwnPerformance())
             findEnsembleTrainAcc(data);
     }
     

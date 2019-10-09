@@ -15,7 +15,6 @@
 package timeseriesweka.classifiers.distance_based.elastic_ensemble;
 
 import experiments.data.DatasetLoading;
-import utilities.ClassifierTools;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -41,7 +40,7 @@ public class DTW1NN extends Efficient1NN {
      * is used for any file writing
      * @param r 
      */
-    public DTW1NN(double r){
+    public DTW1NN(double r){        
         this.allowLoocv = false;
         this.r = r;
         if(r!=1){

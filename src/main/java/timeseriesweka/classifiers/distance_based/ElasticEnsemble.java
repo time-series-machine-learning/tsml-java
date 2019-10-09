@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * A new Elastic Ensemble for sharing with others
@@ -56,7 +55,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
+public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TechnicalInformationHandler{
 
     
     @Override
@@ -110,10 +109,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     private Instances train;
     private Instances derTrain;
     private Efficient1NN[] classifiers = null;
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
+        
     private boolean usesDer = false;
     private static DerivativeFilter df = new DerivativeFilter();
     
@@ -128,15 +124,6 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
     
     public String[] getIndividualClassifierNames() {
         String[] names= new String[this.classifiersToUse.length];
@@ -245,6 +232,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * Default constructor; includes all constituent classifiers
      */
     public ElasticEnsemble(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifiersToUse = ConstituentClassifiers.values();
     }
     
@@ -253,6 +241,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param classifiersToUse ConstituentClassifiers[] list of classifiers to use as enums
      */
     public ElasticEnsemble(ConstituentClassifiers[] classifiersToUse){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifiersToUse = classifiersToUse;
     }
     
@@ -265,6 +254,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param resampleId  resampleId of the dataset to be loaded
      */
     public ElasticEnsemble(String resultsDir, String datasetName, int resampleId){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.resultsDir = resultsDir;
         this.datasetName = datasetName;
         this.resampleId = resampleId;
@@ -281,6 +271,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param classifiersToUse the classifiers to load
      */
     public ElasticEnsemble(String resultsDir, String datasetName, int resampleId, ConstituentClassifiers[] classifiersToUse){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.resultsDir = resultsDir;
         this.datasetName = datasetName;
         this.resampleId = resampleId;
@@ -382,7 +373,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             }
             
             
-            if(this.getEstimatingPerformanceOnTrain()){
+            if(this.getEstimateOwnPerformance()){
                 this.getTrainPreds();
             }
         }

@@ -25,7 +25,6 @@ import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.GenericTools;
 
 /* 
@@ -64,7 +63,7 @@ CHECK THIS: For implementation reasons, a window size of 1
 is equivalent to Euclidean distance (rather than a window size of 0
  */
 
-public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -79,19 +78,6 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
        
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
     @Override
     public void setPathToSaveParameters(String r){
             resultsPath=r;
@@ -115,10 +101,12 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
     }
 
     public FastDTW_1NN(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);        
         dtw=new DTW();
         accuracy=new ArrayList<>();
     }
     public FastDTW_1NN(DTW_DistanceBasic d){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=d;
         accuracy=new ArrayList<>();
     }
@@ -208,7 +196,7 @@ public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements T
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
         trainResults.setMemory(usedBytes);
         
-        if(getEstimatingPerformanceOnTrain()){  //Save basic train results
+        if(getEstimateOwnPerformance()){  //Save basic train results
             long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);

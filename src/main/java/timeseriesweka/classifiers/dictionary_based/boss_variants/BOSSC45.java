@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based.boss_variants;
 
-import fileIO.OutFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream; 
@@ -39,10 +38,8 @@ import weka.core.TechnicalInformation;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
@@ -52,7 +49,6 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
  
 /**
  * BOSS + C45 tree classifier with parameter search and ensembling, if parameters are 
@@ -76,7 +72,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * BOSS implementation based on the algorithm described in getTechnicalInformation()
  * C45 done using the WEKA implementation 'weka.classifiers.trees.J48'
  */
-public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo,TrainAccuracyEstimator {
+public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -102,10 +98,7 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
     private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int alphabetSize = 4;
     //private boolean norm;
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
+        
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -133,6 +126,7 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
      * @param normalise whether or not to normalise by dropping the first Fourier coefficient
      */
     public BOSSC45(boolean normalise) {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { normalise };
     }
     
@@ -141,6 +135,7 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
      * window size and word length if no particular normalisation option is provided
      */
     public BOSSC45() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { true, false };
     }  
 
@@ -296,16 +291,6 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
         serFileLoc = path;
     }
     
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         if (data.classIndex() != data.numAttributes()-1)
@@ -411,7 +396,7 @@ public class BOSSC45 extends AbstractClassifierWithTrainingInfo implements SaveP
         for (BOSSWindow window : classifiers)
             window.classifier.buildFullForest();
       
-        if (getEstimatingPerformanceOnTrain())
+        if (getEstimateOwnPerformance())
             findEnsembleTrainAcc(data);
     }
 

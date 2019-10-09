@@ -26,7 +26,6 @@ import utilities.StatisticalUtilities;
 import utilities.InstanceTools;
 import static utilities.InstanceTools.fromWekaInstancesArray;
 import static utilities.StatisticalUtilities.calculateSigmoid;
-import weka.classifiers.*;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -190,6 +189,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     
     // constructor
     public LearnShapelets() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
     }
     
     @Override

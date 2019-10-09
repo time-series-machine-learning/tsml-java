@@ -32,7 +32,6 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.TestTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
@@ -68,7 +67,7 @@ import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInfo implements DebugPrinting, TrainAccuracyEstimator, MultiThreadable {
+public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInfo implements DebugPrinting, MultiThreadable {
 
     //Main ensemble design decisions/variables
     protected String ensembleName;
@@ -103,20 +102,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     //MultiThreadable
     protected int numThreads = 1;
     protected boolean multiThread = false;
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
+        
     /**
      * An annoying compromise to deal with base classfiers that dont produce dists 
      * while getting their train estimate. Off by default, shouldnt be turned on for 
@@ -153,6 +139,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected String datasetName;
 
     public AbstractEnsemble() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setupDefaultEnsembleSettings();
     }
     
@@ -223,8 +210,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             testResults = null;
         }
 
-        public boolean isTrainAccuracyEstimator() {
-            return classifier instanceof TrainAccuracyEstimator;
+        public boolean isAbleToEstimateOwnPerformance() {
+            return isSelfEstimatingClassifier(classifier);
         }
         
         public boolean isTrainTimeContractable() {
@@ -372,7 +359,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             Callable<ClassifierResults> moduleBuild = () -> {
                 ClassifierResults trainResults = null;
                 
-                if (classifier instanceof TrainAccuracyEstimator) { 
+                if (AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(classifier)) { 
                     classifier.buildClassifier(trainInsts);
                     trainResults = ((AbstractClassifierWithTrainingInfo)classifier).getTrainResults();
                 }
@@ -496,7 +483,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     }
 
     protected boolean needIndividualTrainPreds() {
-        return getEstimatingPerformanceOnTrain() || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
+        return getEstimateOwnPerformance() || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
     }
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
@@ -898,7 +885,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!(module.getClassifier() instanceof TrainAccuracyEstimator))
+                if (!AbstractClassifierWithTrainingInfo.isSelfEstimatingClassifier(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }
@@ -906,7 +893,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         trainResults = new ClassifierResults();
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
-        if(getEstimatingPerformanceOnTrain())
+        if(getEstimateOwnPerformance())
             trainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
         
         //HACK FOR CAWPE_EXTENSION PAPER: 
@@ -1180,7 +1167,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setWriteIndividualsTrainResultsFiles(true);
-            cawpe.setEstimatingPerformanceOnTrain(true); //now defaults to true
+            cawpe.setEstimateOwnPerformance(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);
@@ -1222,7 +1209,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setBuildIndividualsFromResultsFiles(true);
-            cawpe.setEstimatingPerformanceOnTrain(true); //now defaults to true
+            cawpe.setEstimateOwnPerformance(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);

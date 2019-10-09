@@ -27,7 +27,6 @@ import java.util.Random;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import static utilities.GenericTools.cloneArrayList;
 import utilities.InstanceTools;
-import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -94,6 +93,7 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
     NN_ED nn;
 
     public FastShapelets() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         nn = new NN_ED();
     }
 

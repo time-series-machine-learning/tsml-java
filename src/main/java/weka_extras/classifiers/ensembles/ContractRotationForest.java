@@ -106,7 +106,8 @@ public class ContractRotationForest extends AbstractClassifierWithTrainingInfo
    * Constructor.
    */
   public ContractRotationForest() {
-    
+    super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+      
     baseClassifier = new weka.classifiers.trees.J48();
     projectionFilter = defaultFilter();
     tm=new TimingModel();

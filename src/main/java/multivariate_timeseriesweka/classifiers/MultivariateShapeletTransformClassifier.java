@@ -43,7 +43,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *
@@ -97,6 +96,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
     
     public MultivariateShapeletTransformClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         configureDefaultEnsemble();
     }
   

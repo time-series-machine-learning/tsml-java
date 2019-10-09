@@ -37,9 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.Bagging;
-import weka.core.Capabilities;
-import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
@@ -165,20 +162,15 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
 
     private boolean trainTimeContract = false;
     private long contractTime = 0;
-
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
     
     protected static final long serialVersionUID = 32554L;
 
     public cTSF(){
-        rand=new Random();
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public cTSF(int s){
-        rand=new Random();
-        seed=s;
-        rand.setSeed(seed);
-        seedClassifier=true;
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        setSeed(seed);
     }
     /**
      *
@@ -200,16 +192,6 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     }
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble=!b;
-    }
-
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
     }
     
     /**
@@ -874,7 +856,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         tsf.setSeed(0);
         tsf.setTrainTimeLimit((long)1.5e+10);
         tsf.setSavePath("C:\\temp\\");
-        tsf.setEstimatingPerformanceOnTrain(true);
+        tsf.setEstimateOwnPerformance(true);
         double a;
         tsf.buildClassifier(train);
         ClassifierResults trainres = tsf.getTrainResults();

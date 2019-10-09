@@ -54,6 +54,10 @@ public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo im
     private String datasetName;
     private int resampleId;
     private ClassifierResults res =new ClassifierResults();
+
+    public Efficient1NN() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
     
     /**
      * Abstract method to calculates the distance between two Instance objects

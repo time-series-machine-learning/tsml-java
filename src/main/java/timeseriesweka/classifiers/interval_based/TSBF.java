@@ -213,6 +213,10 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
         of.writeLine(",,,,Mean diff ="+meanDiff/problems.length+" Published better ="+publishedBetter);
 }          
 
+    public TSBF() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
+
     @Override
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;

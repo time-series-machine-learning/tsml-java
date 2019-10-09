@@ -17,13 +17,10 @@ package timeseriesweka.classifiers.dictionary_based;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.SparseInstance;
 import timeseriesweka.filters.SAX;
 import weka.filters.unsupervised.instance.Randomize;
 
@@ -41,6 +38,8 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
     private final int SAX_alphabetSize;
     
     public SAX_1NN(int PAA_intervalsPerWindow, int SAX_alphabetSize) { 
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = PAA_intervalsPerWindow;
         this.SAX_alphabetSize = SAX_alphabetSize;
         

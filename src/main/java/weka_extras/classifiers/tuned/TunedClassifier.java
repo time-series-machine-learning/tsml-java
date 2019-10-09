@@ -32,7 +32,6 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.Tuneable;
 
 /**
@@ -59,7 +58,7 @@ import timeseriesweka.classifiers.Tuneable;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class TunedClassifier extends AbstractClassifierWithTrainingInfo 
-        implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
+        implements SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
     ParameterSpace space = null;
     Tuner tuner = null;
@@ -81,23 +80,19 @@ public class TunedClassifier extends AbstractClassifierWithTrainingInfo
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
-          
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
     ////////// end interface variables
     
     
     public TunedClassifier() { 
-        this.tuner = new Tuner(); 
+        this(null, null, new Tuner()); 
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
-        this.classifier = classifier;
-        this.space = space;
-        this.tuner = new Tuner(); 
+        this(classifier, space, new Tuner());
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space, Tuner tuner) { 
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifier = classifier;
         this.space = space;
         this.tuner = tuner;
@@ -109,16 +104,6 @@ public class TunedClassifier extends AbstractClassifierWithTrainingInfo
         //no setSeed in abstractclassifier. i imagine most define it via setOptions,
         //so could add it a a parameter with only one possible value, or jsut set the seed
         //before giving the classifier to this tunedclassifier instance
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
     }
     
     public boolean getCloneClassifierForEachParameterEval() {

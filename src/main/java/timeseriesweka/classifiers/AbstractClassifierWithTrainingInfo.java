@@ -17,6 +17,7 @@ package timeseriesweka.classifiers;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
+import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -56,7 +57,7 @@ import weka.core.Randomizable;
  * @author ajb
  */
 abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassifier implements SaveParameterInfo, Randomizable {
-    
+        
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults =new ClassifierResults();
 /**Can seed for reproducibility*/
@@ -76,6 +77,107 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
      */    
     protected boolean debug=false;
 
+    /**
+     * This flags whether classifiers are able to estimate their own performance 
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     * 
+     * This flag being true indicates the ABILITY to estimate train performance, 
+     * to turn this behaviour on, setEstimateOwnPerformance(true) should be called. 
+     * By default, the estimation behaviour is off regardless of ability
+     * 
+     * This way, if for whatever reason a nested estimation process is explicitly wanted 
+     * (e.g. for completely bias-free estimates), that can also be achieved
+     * 
+     * This variable is private and only settable via the abstract constructor, 
+     * such that all subclasses must set it at initialisation.
+     * 
+     * This variable and the related gets/sets replace the TrainAccuracyEstimator interface
+     */
+    boolean ableToEstimateOwnPerformance = false;
+    
+    /**
+     * This flags whether the classifier shall estimate their own performance 
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     * 
+     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
+     * classifier returning the train estimate of the best parameter set, acting as the train 
+     * estimate of the full classifier: note the bias), or may be done as an
+     * additional step beyond the normal build process but far more efficiently than a
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+     */
+    boolean estimateOwnPerformance = false;
+    
+    //utilities for readability in setting the above bools via super constructor in subclasses
+    public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
+    public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
+    
+    public AbstractClassifierWithTrainingInfo(boolean ableToEstimateOwnPerformance) {
+        this.ableToEstimateOwnPerformance = ableToEstimateOwnPerformance;
+    }
+    
+    /**
+     * This flags whether the classifier shall estimate their own performance 
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     * 
+     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
+     * classifier returning the train estimate of the best parameter set, acting as the train 
+     * estimate of the full classifier: note the bias), or may be done as an
+     * additional step beyond the normal build process but far more efficiently than a
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+     */
+    public boolean ableToEstimateOwnPerformance() { 
+        return ableToEstimateOwnPerformance;
+    }
+    
+    /**
+     * This flags whether the classifier shall estimate their own performance 
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     * 
+     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
+     * classifier returning the train estimate of the best parameter set, acting as the train 
+     * estimate of the full classifier: note the bias), or may be done as an
+     * additional step beyond the normal build process but far more efficiently than a
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+     */
+    public void setEstimateOwnPerformance(boolean estimateOwnPerformance) throws IllegalArgumentException {
+        if (estimateOwnPerformance && !ableToEstimateOwnPerformance)
+            throw new IllegalArgumentException("Classifier ("+getClassifierName()+") is unable to estimate own performance, but "
+                    + "trying to set it to do so. Check with ableToEstimateOwnPerformance() first");
+        this.estimateOwnPerformance = estimateOwnPerformance;
+    }
+    
+    /**
+     * This flags whether the classifier shall estimate their own performance 
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     * 
+     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
+     * classifier returning the train estimate of the best parameter set, acting as the train 
+     * estimate of the full classifier: note the bias), or may be done as an
+     * additional step beyond the normal build process but far more efficiently than a
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+     */
+    public boolean getEstimateOwnPerformance() {
+        return estimateOwnPerformance;
+    }
+    
+    /**
+     * A simple utility to wrap the test of whether a classifier reference contains an
+     * AbstractClassifierWithTrainingInfo object, and whether that classifier can estimate 
+     * its own accuracy. 
+     * 
+     * Replacing the previous tests 'classifier instanceof TrainAccuracyEstimator'
+     */
+    public static boolean isSelfEstimatingClassifier(Classifier classifier) { 
+        return classifier instanceof AbstractClassifierWithTrainingInfo && 
+                    ((AbstractClassifierWithTrainingInfo) classifier).ableToEstimateOwnPerformance(); 
+    }
+       
+    
     @Override
     public String getParameters() {
         return "seedClassifier,"+seedClassifier+",seed,"+seed;
@@ -85,9 +187,9 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
      * Gets the train results for this classifier, which will be empty (but not-null) 
      * until buildClassifier has been called.
      * 
-     * If the classifier is a TrainAccuracyEstimator and was set-up to estimate 
-     * it's own train accuracy, these will be populated with full prediction 
-     * information, ready to be written as a trainFoldX file for example
+     * If the classifier has ableToEstimateOwnPerformance()==true and was set-up to estimate 
+     * it's own train accuracy (setEstimateOwnPerformance(true) called), these will be populated 
+     * with full prediction information, ready to be written as a trainFoldX file for example
      * 
      * Otherwise, the object will at minimum contain the build time, classifiername, 
      * and parameter information
@@ -167,4 +269,5 @@ abstract public class AbstractClassifierWithTrainingInfo extends AbstractClassif
         this.classifierName = classifierName;
     }
     
+
 }

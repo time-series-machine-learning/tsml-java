@@ -33,7 +33,6 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
@@ -108,7 +107,7 @@ import timeseriesweka.classifiers.Tuneable;
 **/
  
 public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements TrainAccuracyEstimator, TechnicalInformationHandler, Tuneable{
+        implements TechnicalInformationHandler, Tuneable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -158,14 +157,12 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 /* If trainFoldPath is set, train results are overwritten with 
  each call to buildClassifier.*/    
      
-     //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
- 
      
     public TSF(){
-        rand=new Random();
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public TSF(int s){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setSeed(s);
     }
 /**
@@ -190,16 +187,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         voteEnsemble=!b;
     }
      
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
 /**
  * Perhaps make this coherent with setOptions(String[] ar)?
  * @return String written to results files
@@ -427,7 +414,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 inBag[i] = new boolean[result.numInstances()];
                 Instances bagData = result.resampleWithWeights(rand, inBag[i]);
                 trees[i].buildClassifier(bagData);
-                if(getEstimatingPerformanceOnTrain()){
+                if(getEstimateOwnPerformance()){
                     for(int j=0;j<result.numInstances();j++){
                         if(inBag[i][j])
                             continue;
@@ -449,7 +436,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 *  2. with a 10xCV or (if 
 *  3. Build a bagged model simply to get the estimate. 
  */       
-        if(getEstimatingPerformanceOnTrain()){
+        if(getEstimateOwnPerformance()){
              if(bagging){
             // Use bag data. Normalise probs
                 long est1=System.nanoTime();
@@ -488,7 +475,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 tsf.copyParameters(this);
                 if (seedClassifier)
                    tsf.setSeed(seed*100);
-                tsf.setEstimatingPerformanceOnTrain(false);
+                tsf.setEstimateOwnPerformance(false);
                 trainResults=cv.evaluate(tsf,data);
                 long est2=System.nanoTime();
                 trainResults.setErrorEstimateTime(est2-est1);
@@ -503,7 +490,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 TSF tsf=new TSF();
                 tsf.copyParameters(this);
                 tsf.setSeed(seed);
-                tsf.setEstimatingPerformanceOnTrain(true);
+                tsf.setEstimateOwnPerformance(true);
                 tsf.bagging=true;
                 tsf.buildClassifier(data);
                 trainResults=tsf.trainResults;

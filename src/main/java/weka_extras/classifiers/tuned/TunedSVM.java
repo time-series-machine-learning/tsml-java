@@ -36,7 +36,6 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.core.*;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /*
 Tony's attempt to see the effect of parameter setting on SVM.

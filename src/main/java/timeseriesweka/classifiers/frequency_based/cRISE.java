@@ -109,12 +109,14 @@ public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTi
      * @param seed
      */
     public cRISE(long seed){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = seed;
         super.setSeed((int)seed);
         timer = new Timer();
     }
 
     public cRISE(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = 0;
         super.setSeed((int)seed);
         timer = new Timer();

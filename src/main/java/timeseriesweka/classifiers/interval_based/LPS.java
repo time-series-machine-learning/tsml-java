@@ -91,6 +91,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     boolean paramSearch=true;
     double acc=0;
     public LPS(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         trees=new RandomRegressionTree[nosTrees];
     }
 

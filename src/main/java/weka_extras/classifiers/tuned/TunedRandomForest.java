@@ -38,7 +38,6 @@ import weka.classifiers.trees.RandomTree;
 import weka.core.Instances;
 import weka.core.Utils;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *This classifier is enhanced so that classifier builds a random forest with the 

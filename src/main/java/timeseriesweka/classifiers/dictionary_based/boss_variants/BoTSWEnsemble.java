@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based.boss_variants;
 
-import fileIO.OutFile;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -27,7 +26,6 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
@@ -40,7 +38,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.core.TechnicalInformation;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -66,7 +63,11 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo,TrainAccuracyEstimator {
+public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo {
+
+    public BoTSWEnsemble() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    }
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -88,10 +89,7 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
     private final Integer[] aRanges = { 4, 8 };
     private final Integer[] kRanges = { 32, 64, 128, 256, 512, 1024 };
     private final Integer[] csvmRanges = {1, 10, 100}; //not currently used, using 1NN
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
+        
     private BoTSW.DistFunction dist = BoTSW.DistFunction.EUCLIDEAN_DISTANCE;
 
     private Instances train;
@@ -177,16 +175,6 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
     
     public void setDistanceFunction(BoTSW.DistFunction dist) {
         this.dist = dist;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
     }
     
     @Override
@@ -282,7 +270,7 @@ public class BoTSWEnsemble extends AbstractClassifierWithTrainingInfo implements
             }
         }
         
-        if (getEstimatingPerformanceOnTrain())
+        if (getEstimateOwnPerformance())
             ensembleCvAcc = findEnsembleTrainAcc(data);
     }
 

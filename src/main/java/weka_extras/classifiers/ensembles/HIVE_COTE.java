@@ -19,7 +19,6 @@ package weka_extras.classifiers.ensembles;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
@@ -176,7 +175,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                 System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " is not contractable, "
                         + "and is therefore not considered in the contract. The ensemble as a whole will very likely not meet the contract.");
             
-            if(!module.isTrainAccuracyEstimator()) {
+            if(!module.isAbleToEstimateOwnPerformance()) {
                 numNonTrainEstimatingClassifiers++;
                 System.out.println("WARNING: trying to contract " + ensembleName + ", but base classifier " + module.getModuleName() + " does not estimate its own accuracy. "
                         + "Performing a separate evaluation on the train set currently is not considered in the contract, and therefore the ensemble as a whole will very "

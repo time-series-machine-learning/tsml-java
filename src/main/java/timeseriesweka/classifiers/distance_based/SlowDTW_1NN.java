@@ -24,14 +24,13 @@ import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.ParameterSplittable;
 import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /* 
 This classifier does the full 101 parameter searches for window. 
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -45,20 +44,7 @@ public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements 
     ArrayList<Double> accuracy=new ArrayList<>();
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
-    
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
-    
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
-    }
-    
+        
     @Override
     public void setPathToSaveParameters(String r){
             resultsPath=r;
@@ -80,10 +66,12 @@ public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements 
 
 
     public SlowDTW_1NN(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=new DTW();
         accuracy=new ArrayList<>();
     }
     public SlowDTW_1NN(DTW_DistanceBasic d){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=d;
         accuracy=new ArrayList<>();
     }
@@ -151,7 +139,7 @@ public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements 
         trainResults.setMemory(usedBytes);
         
         
-        if(getEstimatingPerformanceOnTrain()){  //Save basic train results
+        if(getEstimateOwnPerformance()){  //Save basic train results
             long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);

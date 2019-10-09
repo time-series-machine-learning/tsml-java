@@ -50,6 +50,10 @@ import weka.core.TechnicalInformationHandler;
  */
 public class FlatCote extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
 
+    public FlatCote() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
+
       
     @Override
     public TechnicalInformation getTechnicalInformation() {

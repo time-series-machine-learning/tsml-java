@@ -66,11 +66,10 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     private ExecutorService ex;
 
     protected static final long serialVersionUID = 22554L;
-
-    //TrainAccuracyEstimator
-    boolean findTrainPerformanceEstimate = false;
     
-    public BOSS() {}
+    public BOSS() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    }
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -121,16 +120,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         }
 
         return sb.toString();
-    }
-
-    @Override //TrainAccuracyEstimator
-    public void setEstimatingPerformanceOnTrain(boolean b) {
-        findTrainPerformanceEstimate = b;
-    }
-    
-    @Override //TrainAccuracyEstimator
-    public boolean getEstimatingPerformanceOnTrain() {
-        return findTrainPerformanceEstimate;
     }
     
     @Override
@@ -288,10 +277,10 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
 
         //Estimate train accuracy
-        if (getEstimatingPerformanceOnTrain()) {
+        if (getEstimateOwnPerformance()) {
             double result = findEnsembleTrainAcc(data);
             System.out.println("CV acc ="+result);
-            setEstimatingPerformanceOnTrain(false);
+            setEstimateOwnPerformance(false);
         }
     }
 
@@ -558,14 +547,14 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         double accuracy;
 
         c = new BOSS();
-        c.setEstimatingPerformanceOnTrain(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
-        c.setEstimatingPerformanceOnTrain(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 

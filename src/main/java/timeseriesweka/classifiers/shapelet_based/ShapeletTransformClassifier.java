@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.shapelet_based;
 
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
@@ -44,7 +43,6 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 import weka_extras.classifiers.ensembles.voting.MajorityVote;
 import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
@@ -57,7 +55,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
  *
@@ -121,6 +118,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public ShapeletTransformClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         RotationForest rf= new RotationForest();
         rf.setNumIterations(200);
         classifier=rf;

@@ -24,9 +24,7 @@ import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import fileIO.OutFile;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.*;
@@ -41,8 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Patrick Schaefer
  *
  */
-public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TechnicalInformationHandler {
+public class WEASEL extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
 
+  @Override
   public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
     result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -79,19 +78,6 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
   // ten-fold cross validation
   private int folds = 10;
-
-//TrainAccuracyEstimator
-  boolean findTrainPerformanceEstimate = false;
-
-  @Override //TrainAccuracyEstimator
-  public void setEstimatingPerformanceOnTrain(boolean b) {
-      findTrainPerformanceEstimate = b;
-  }
-
-  @Override //TrainAccuracyEstimator
-  public boolean getEstimatingPerformanceOnTrain() {
-      return findTrainPerformanceEstimate;
-  }
   
   @Override
   public ClassifierResults getTrainResults() {
@@ -129,12 +115,12 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
    *
    */
   public WEASEL() {
-    super();
+    super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
   }
 
   public WEASEL(int s) {
-    super();
-      setSeed(seed);
+    super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    setSeed(seed);
   }
 
   @Override
@@ -369,7 +355,7 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
     
     
-    if(getEstimatingPerformanceOnTrain()){
+    if(getEstimateOwnPerformance()){
       int numFolds=setNumberOfFolds(samples);
       CrossValidationEvaluator cv = new CrossValidationEvaluator();
       if (seedClassifier) {
