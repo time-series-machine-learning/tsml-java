@@ -211,7 +211,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
             
 // if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
 // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
-            if(EnhancedAbstractClassifier.isSelfEstimatingClassifier(classifiers.get(i))){
+            if(EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(classifiers.get(i))){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
                 ClassifierResults res= ((EnhancedAbstractClassifier)classifiers.get(i)).getTrainResults();

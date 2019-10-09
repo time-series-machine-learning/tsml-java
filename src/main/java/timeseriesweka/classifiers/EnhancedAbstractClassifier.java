@@ -162,14 +162,26 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     
     /**
      * A simple utility to wrap the test of whether a classifier reference contains an
-     * EnhancedAbstractClassifier object, and whether that classifier can estimate 
-     * its own accuracy. 
+     * EnhancedAbstractClassifier object, and whether that classifier CAN estimate 
+     * its own accuracy internally. 
      * 
-     * Replacing the previous tests 'classifier instanceof TrainAccuracyEstimator'
+     * Replacing the previous test 'classifier instanceof TrainAccuracyEstimator'
      */
-    public static boolean isSelfEstimatingClassifier(Classifier classifier) { 
+    public static boolean classifierAbleToEstimateOwnPerformance(Classifier classifier) { 
         return classifier instanceof EnhancedAbstractClassifier && 
                     ((EnhancedAbstractClassifier) classifier).ableToEstimateOwnPerformance(); 
+    }
+    
+    /**
+     * A simple utility to wrap the test of whether a classifier reference contains an
+     * EnhancedAbstractClassifier object, and whether that classifier has been set up 
+     * to estimate its own accuracy internally. 
+     * 
+     * Replacing the previous test 'classifier instanceof TrainAccuracyEstimator''
+     */
+    public static boolean classifierIsEstimatingOwnPerformance(Classifier classifier) { 
+        return classifier instanceof EnhancedAbstractClassifier && 
+                    ((EnhancedAbstractClassifier) classifier).getEstimateOwnPerformance(); 
     }
        
     

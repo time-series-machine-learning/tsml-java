@@ -280,7 +280,6 @@ public class BOSS extends EnhancedAbstractClassifier implements
         if (getEstimateOwnPerformance()) {
             double result = findEnsembleTrainAcc(data);
             System.out.println("CV acc ="+result);
-            setEstimateOwnPerformance(false);
         }
     }
 

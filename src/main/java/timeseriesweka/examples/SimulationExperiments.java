@@ -251,13 +251,13 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(EnhancedAbstractClassifier.isSelfEstimatingClassifier(c))
+        if(EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(c))
             ((EnhancedAbstractClassifier)c).setEstimateOwnPerformance(true);
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              
             c.buildClassifier(train);
-            if(EnhancedAbstractClassifier.isSelfEstimatingClassifier(c))
+            if(EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(c))
                 ((EnhancedAbstractClassifier)c).getTrainResults().writeFullResultsToFile(preds+"/trainFold"+sample+".csv");
             
             int[][] predictions=new int[test.numInstances()][2];

@@ -211,7 +211,11 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         }
 
         public boolean isAbleToEstimateOwnPerformance() {
-            return isSelfEstimatingClassifier(classifier);
+            return classifierAbleToEstimateOwnPerformance(classifier);
+        }
+        
+        public boolean isEstimatingOwnPerformance() {
+            return classifierIsEstimatingOwnPerformance(classifier);
         }
         
         public boolean isTrainTimeContractable() {
@@ -359,7 +363,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             Callable<ClassifierResults> moduleBuild = () -> {
                 ClassifierResults trainResults = null;
                 
-                if (EnhancedAbstractClassifier.isSelfEstimatingClassifier(classifier)) { 
+                if (EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(classifier)) { 
                     classifier.buildClassifier(trainInsts);
                     trainResults = ((EnhancedAbstractClassifier)classifier).getTrainResults();
                 }
@@ -885,7 +889,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!EnhancedAbstractClassifier.isSelfEstimatingClassifier(module.getClassifier()))
+                if (!EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }

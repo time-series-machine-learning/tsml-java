@@ -18,15 +18,20 @@
 package weka_extras.classifiers.ensembles;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.hybrids.HiveCote.DefaultShapeletTransformPlaceholder;
 import timeseriesweka.classifiers.interval_based.TSF;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
@@ -92,22 +97,31 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         Classifier[] classifiers = new Classifier[5];
         String[] classifierNames = new String[5];
         
-        classifiers[0] = new ElasticEnsemble();
+        EnhancedAbstractClassifier ee = new ElasticEnsemble();
+        ee.setEstimateOwnPerformance(true);
+        classifiers[0] = ee;
         classifierNames[0] = "EE";
         
-        CAWPE st_classifier = new CAWPE();
-        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
-        st_classifier.setTransform(st_transform);
-        classifiers[1] = st_classifier;
+//        CAWPE st_classifier = new CAWPE();
+//        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
+//        st_classifier.setTransform(st_transform);
+        ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+        if (contractingTrainTime)
+            st.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        classifiers[1] = st;
         classifierNames[1] = "ST";
         
         classifiers[2] = new RISE();
         classifierNames[2] = "RISE";
         
-        classifiers[3] = new BOSS();
+        BOSS boss = new BOSS();
+        boss.setEstimateOwnPerformance(true);
+        classifiers[3] = boss;
         classifierNames[3] = "BOSS";
         
-        classifiers[4] = new TSF();
+        TSF tsf = new TSF();
+        tsf.setEstimateOwnPerformance(true);
+        classifiers[4] = tsf;
         classifierNames[4] = "TSF";
         
         try {
@@ -191,5 +205,19 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         for (EnsembleModule module : modules)
             if(module.isTrainTimeContractable())
                 ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
+    }
+    
+    @Override
+    public void setSeed(int seed) { 
+        super.setSeed(seed);
+        int count =2; //mirroring HiveCote setseed overload
+        for (EnsembleModule module : modules) {
+            if(module.getClassifier() instanceof Randomizable)
+                ((Randomizable)module.getClassifier()).setSeed(seed+count++);
+        }
+    }    
+    
+    public static void main(String[] args) throws Exception {
+        System.out.println(ClassifierTools.testUtils_getIPDAcc(new HIVE_COTE()));
     }
 }

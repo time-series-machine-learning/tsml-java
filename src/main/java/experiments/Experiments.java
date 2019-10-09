@@ -530,7 +530,7 @@ public class Experiments  {
                 //Tell the classifier to generate train results if it can do it internally, 
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
-                if (EnhancedAbstractClassifier.isSelfEstimatingClassifier(classifier))
+                if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
                     ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
                 else 
                     trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);

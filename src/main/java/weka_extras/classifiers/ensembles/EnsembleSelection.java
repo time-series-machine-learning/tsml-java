@@ -299,7 +299,7 @@ public class EnsembleSelection extends CAWPE {
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!EnhancedAbstractClassifier.isSelfEstimatingClassifier(module.getClassifier()))
+                if (!EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }
