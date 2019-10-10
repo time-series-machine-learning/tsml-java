@@ -24,28 +24,43 @@ import weka.core.Randomizable;
 
 /**
  *
- * Extends the AbstractClassifier to store information about the training phase of 
- * the classifier. 
- * The main purpose of this class is to
- * 1. Allow storage about the training process, including build time, any optimization performed
- * and any train set estimates and predictions made to help assess generalisability.
- * 2. Allow for a unified process of seeding classifiers 
- * 3. Allow for default getCapapabilities. For time series, these default to all real
- * valued attributes, no missing values, and classification only
+ * Extends the AbstractClassifier to achieve the following:
+ * 1. Allow storage of information about the training process, including timing info, 
+ * any optimisation performed and any train set estimates and predictions made to help 
+ * assess generalisability. See below for more info on this major enhancement.
+ * 2. Allow for a unified process of seeding classifiers. The seed is stored in seed, 
+ * and set via the interface Randomizable
+ * 3. Allow for default getCapapabilities() for TSC. For time series, these default to all real
+ * valued attributes, no missing values, and classification only. This overrides default
+ * behaviour in AbstractClassifier
  * 4. Allow for standardised mechanism for saving classifier information to file. 
- * 
- * Train data is the major element of this: 
- To that end, the minimium any classifier that extends this should store
+ * For example usage, see the classifier TSF.java.  the method getParameters() 
+ * can be enhanced to include any parameter info for the final classifier. 
+ * getParameters() is called to store information on the second line of file 
+ * storage format testFoldX.csv.
+ 
+Train data is the major enhancement: There are two components: time taken in training, and any 
+train set predictions produced internally. 
+
+*there are three components to the time that may be spent building a classifier
+
+* 1. timing
+
+buildTime 
+* the minimum any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
- or nanoTime() at the start and end. nanoTime() is generally preferred, and 
+ or nanoTime() at the start and end of the method, stored in trainResults, with
+ trainResults.setBuildTime(totalBuildTime) nanoTime() is generally preferred, and 
  to set the TimeUnit of the ClassiiferReults object appropriately, e.g 
  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+errorEstimateTime
+* the exact usage of this statistic has not been finalised. Conceptually measures
+* how long is spent estimating the test error from the train data
+buildPlusEstimateTime
+* 
  
- the method getParameters() can be enhanced to include any parameter info for the 
- final classifier. getParameters() is called to store information on the second line
- of file storage format testFoldX.csv.
- 
- ClassifierResults trainResults can also store other information about the training,
+ * 2. Recording train set results
+ClassifierResults trainResults can also store other information about the training,
  including estimate of accuracy, predictions and probabilities. NOTE that these are 
  assumed to be set through nested cross validation in buildClassifier or through
  out of bag estimates where appropriate. IT IS NOT THE INTERNAL TRAIN ESTIMATES.
@@ -64,7 +79,7 @@ import weka.core.Randomizable;
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
  * 
- * @author ajb
+ * @author Tony Bagnall and James Large
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo, Randomizable {
         
@@ -85,7 +100,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**
      * This flags whether classifiers are able to estimate their own performance 
      * (possibly with some bias) on the train data in some way as part of their buildClassifier
-     * fit, and avoid a full nested-cross validation process.
+     * fit, and avoid an external fully nested-cross validation process.
      * 
      * This flag being true indicates the ABILITY to estimate train performance, 
      * to turn this behaviour on, setEstimateOwnPerformance(true) should be called. 
@@ -131,7 +146,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * classifier returning the train estimate of the best parameter set, acting as the train 
      * estimate of the full classifier: note the bias), or may be done as an
      * additional step beyond the normal build process but far more efficiently than a
-     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv, or a tree ensemble 
+     * can use out of bag estimates)  
      */
     public boolean ableToEstimateOwnPerformance() { 
         return ableToEstimateOwnPerformance;
