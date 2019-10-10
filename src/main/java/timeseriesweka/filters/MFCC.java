@@ -14,10 +14,10 @@ public class MFCC{
     int overlapLength = 70;
     //Default values (miliseconds), determined using infile info on samplerate.
     int windowDuration = 25;
-    int overlapDuration = 10;
+    int overlapDuration = 15;
 
     Boolean checkForSampleRate = true;
-    int nfft = 2048;
+    int nfft = 512;
     int sampleRate = 44100;
     Spectrogram spectrogram;
     FastCosineTransformer dct = new FastCosineTransformer(DctNormalization.STANDARD_DCT_I);
@@ -25,8 +25,8 @@ public class MFCC{
     double[][] filterBank = null;
     double[][] melFreqCepsCo = null;
     //Upper and lower frequencies the filter bank will be applied to (Freq. outside of these will not contribute to overall output.).
-    int lowerFreq = 100;
-    int upperFreq = 2000;
+    int lowerFreq = 0;
+    int upperFreq = 4000;
 
 
     public MFCC(){
@@ -78,12 +78,18 @@ public class MFCC{
         this.spectrogram.setWindowLength(windowLength);
         this.spectrogram.setOverlap(overlapLength);
 
+        if(windowLength > nfft){
+            System.out.print("NOTE: NFFT < window length, increased from " + nfft);
+            nfft = nearestPowerOF2(windowLength);
+            System.out.println(" to " + nfft);
+        }
+
         spectrogram = this.spectrogram.spectrogram(signal, windowLength, overlapLength, nfft);
 
         //Performed to create Periodogram estimate of the power spectrum.
         for (int i = 0; i < spectrogram.length; i++) {
             for (int j = 0; j < spectrogram[i].length; j++) {
-                spectrogram[i][j] = (1/(double)spectrogram[i].length)* Math.pow(spectrogram[i][j], 2);
+                spectrogram[i][j] = (1/(double)spectrogram[i].length) * Math.pow(spectrogram[i][j], 2);
             }
         }
 
@@ -94,9 +100,9 @@ public class MFCC{
             for (int j = 0; j < filterBank.length; j++) {
                 cumalativeFilteredVals = 0;
                 for (int k = 0; k < spectrogram[i].length; k++) {
-                    cumalativeFilteredVals += spectrogram[i][k] * filterBank[j][k];
+                    cumalativeFilteredVals += (spectrogram[i][k] * filterBank[j][k]);
                 }
-                melFreqCepsCo[i][j] = Math.log(cumalativeFilteredVals);
+                melFreqCepsCo[i][j] = Math.log10(cumalativeFilteredVals);
             }
         }
 
@@ -109,7 +115,7 @@ public class MFCC{
         for (int i = 0; i < melFreqCepsCo.length; i++) {
             temp = new double[numFilterBanks + 1];
             for (int j = 0; j < numFilterBanks; j++) {
-                temp[j] = melFreqCepsCo[i][j];
+                temp[j] = (-1) * melFreqCepsCo[i][j];
             }
             temp[temp.length - 1] = instance.value(instance.numAttributes() - 1);
             MFCCInstances.add(new DenseInstance(1.0, temp));
@@ -159,6 +165,13 @@ public class MFCC{
         return filterBank;
     }
 
+    private int nearestPowerOF2(int x){
+        float power = (float)(Math.log(x) / Math.log(2));
+        int m = (int)Math.ceil(power);
+        nfft = (int)Math.pow(2.0, (double)m);
+        return nfft;
+    }
+
     public static void main (String[]args){
         MFCC mfcc = new MFCC();
         Instances[] data = new Instances[2];
@@ -175,3 +188,11 @@ public class MFCC{
         }
     }
 }
+
+// (08/10/19) - Need to change spectrogram and MFCC to use relational Instance (Multi-var instance).
+// (08/10/19) - Need to fix issue where window length in > than nfft.
+// (11/10/19 <- nfft < window length ? nfft = nextPow2(window length) : ;
+// (08/10/19) - Need to double check filter bank is being populated correctly, seems to be noise other than channel one.
+// (09/10/19)<- Checked against a MATLAB implementation. The outputs are the same shape but,
+// mirrored along the x-axis and at different scales. Super wierd.
+// (08/10/19) - Need to comment.
