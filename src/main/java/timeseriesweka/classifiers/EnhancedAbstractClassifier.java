@@ -61,18 +61,10 @@ buildPlusEstimateTime
  
  * 2. Recording train set results
 ClassifierResults trainResults can also store other information about the training,
- including estimate of accuracy, predictions and probabilities. NOTE that these are 
- assumed to be set through nested cross validation in buildClassifier or through
- out of bag estimates where appropriate. IT IS NOT THE INTERNAL TRAIN ESTIMATES.
- 
- If the classifier performs some internal parameter optimisation, then ideally 
- there should be another level of nesting to get the estimates. IF THIS IS NOT DONE,
- SET THE VARIABLE fullyNestedEstimates to false. The user can do what he wants 
- with that info
- 
- Also note: all values in trainResults are set without any reference to the train 
- set at all. All the variables for trainResults are set in buildClassifier, which 
- has no access to test data at all. It is completely decoupled. 
+ including estimate of accuracy, predictions and probabilities. The mechanism for finding
+ these is algorithm specific. They key point is that  all values in trainResults are 
+ set without any reference to the train set at all. All the variables for trainResults 
+ are set in buildClassifier, which has no access to test data at all. It is completely decoupled. 
  
  Instances train=//Get train
  

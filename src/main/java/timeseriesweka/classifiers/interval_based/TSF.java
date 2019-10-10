@@ -147,7 +147,8 @@ public class TSF extends EnhancedAbstractClassifier
     * 1. bagging == true: use the OOB accuracy from the final model
     * 2. bagging == false,estimator=CV: do a 10x CV on the train set with a clone 
     * of this classifier
-    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB 
+    * accuracy estimate
     */
 //    boolean findTrainPredictions=false;  
     enum EstimatorMethod{CV,OOB};
@@ -158,6 +159,8 @@ public class TSF extends EnhancedAbstractClassifier
      
      
     public TSF(){
+//TSF Has the capability to form train estimates         
+//In order to do this, 
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public TSF(int s){
