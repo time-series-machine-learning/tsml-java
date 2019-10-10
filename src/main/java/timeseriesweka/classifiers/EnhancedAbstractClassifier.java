@@ -25,7 +25,17 @@ import weka.core.Randomizable;
 /**
  *
  * Extends the AbstractClassifier to store information about the training phase of 
- * the classifier. The minimium any classifier that extends this should store
+ * the classifier. 
+ * The main purpose of this class is to
+ * 1. Allow storage about the training process, including build time, any optimization performed
+ * and any train set estimates and predictions made to help assess generalisability.
+ * 2. Allow for a unified process of seeding classifiers 
+ * 3. Allow for default getCapapabilities. For time series, these default to all real
+ * valued attributes, no missing values, and classification only
+ * 4. Allow for standardised mechanism for saving classifier information to file. 
+ * 
+ * Train data is the major element of this: 
+ To that end, the minimium any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
  or nanoTime() at the start and end. nanoTime() is generally preferred, and 
  to set the TimeUnit of the ClassiiferReults object appropriately, e.g 
