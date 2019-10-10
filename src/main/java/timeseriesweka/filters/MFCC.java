@@ -2,12 +2,13 @@ package timeseriesweka.filters;;
 import org.apache.commons.math3.transform.DctNormalization;
 import org.apache.commons.math3.transform.FastCosineTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
-public class MFCC{
+public class MFCC extends SimpleBatchFilter{
 
     //Default values (samples), assuming no infile info on samplerate.
     int windowLength = 75;
@@ -18,7 +19,7 @@ public class MFCC{
 
     Boolean checkForSampleRate = true;
     int nfft = 512;
-    int sampleRate = 44100;
+    int sampleRate = 4000;
     Spectrogram spectrogram;
     FastCosineTransformer dct = new FastCosineTransformer(DctNormalization.STANDARD_DCT_I);
     int numFilterBanks = 33;
@@ -26,21 +27,24 @@ public class MFCC{
     double[][] melFreqCepsCo = null;
     //Upper and lower frequencies the filter bank will be applied to (Freq. outside of these will not contribute to overall output.).
     int lowerFreq = 0;
-    int upperFreq = 4000;
+    int upperFreq = 2000;
 
 
     public MFCC(){
         spectrogram = new Spectrogram(windowLength, overlapLength, nfft);
     }
 
+    public void setSampleRate(int sampleRate){
+        this.sampleRate = sampleRate;
+    }
     public String globalInfo() {
         return null;
     }
 
     protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
         Instances instances = null;
-        FastVector attributes = new FastVector(numFilterBanks);
-        for (int i = 0; i < (numFilterBanks); i++) {
+        FastVector attributes = new FastVector(melFreqCepsCo.length);
+        for (int i = 0; i < (melFreqCepsCo.length); i++) {
             attributes.addElement(new Attribute("MFCC_att" + String.valueOf(i + 1)));
         }
 
@@ -55,72 +59,78 @@ public class MFCC{
         return instances;
     }
 
-    public Instances process(Instance instance) throws Exception {
-        Instances MFCCInstances = null;
-        double[][] spectrogram = null;
-        double cumalativeFilteredVals = 0;
-        double[] signal = new double[instance.numAttributes() - 1];
+    public Instances process(Instances instances) throws Exception {
+        Instances[] MFCCs = new Instances[instances.size()];
+        Instances flatMFCCs = null;
+        for (int i = 0; i < instances.size(); i++) {
+            Instances MFCCInstances = null;
+            double[][] spectrogram = null;
+            double cumalativeFilteredVals = 0;
+            double[] signal = new double[instances.get(i).numAttributes() - 1];
 
-        for (int i = 0; i < instance.numAttributes() - 1; i++) {
-            signal[i] = instance.value(i);
-        }
-
-        if ((instance.dataset().attribute("samplerate") != null) && checkForSampleRate) {
-            sampleRate = (int) instance.dataset().get(0).value(instance.dataset().attribute("samplerate"));
-            instance.dataset().deleteAttributeAt(instance.dataset().attribute("samplerate").index());
-        }
-        if(sampleRate == 0){
-            sampleRate = nfft;
-        }
-
-        windowLength = (int)((windowDuration/1000.0) * (double)sampleRate);
-        overlapLength = (int)((overlapDuration/1000.0) * (double)sampleRate);
-        this.spectrogram.setWindowLength(windowLength);
-        this.spectrogram.setOverlap(overlapLength);
-
-        if(windowLength > nfft){
-            System.out.print("NOTE: NFFT < window length, increased from " + nfft);
-            nfft = nearestPowerOF2(windowLength);
-            System.out.println(" to " + nfft);
-        }
-
-        spectrogram = this.spectrogram.spectrogram(signal, windowLength, overlapLength, nfft);
-
-        //Performed to create Periodogram estimate of the power spectrum.
-        for (int i = 0; i < spectrogram.length; i++) {
-            for (int j = 0; j < spectrogram[i].length; j++) {
-                spectrogram[i][j] = (1/(double)spectrogram[i].length) * Math.pow(spectrogram[i][j], 2);
+            for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
+                signal[j] = instances.get(i).value(j);
             }
-        }
 
-        filterBank = createFilterBanks();
-        melFreqCepsCo = new double[spectrogram.length][filterBank.length];
+            if ((instances.get(i).dataset().attribute("samplerate") != null) && checkForSampleRate) {
+                sampleRate = (int) instances.get(i).dataset().get(0).value(instances.get(i).dataset().attribute("samplerate"));
+                instances.get(i).dataset().deleteAttributeAt(instances.get(i).dataset().attribute("samplerate").index());
+            }
+            if(sampleRate == 0){
+                sampleRate = nfft;
+            }
 
-        for (int i = 0; i < spectrogram.length; i++) {
-            for (int j = 0; j < filterBank.length; j++) {
-                cumalativeFilteredVals = 0;
-                for (int k = 0; k < spectrogram[i].length; k++) {
-                    cumalativeFilteredVals += (spectrogram[i][k] * filterBank[j][k]);
+            windowLength = (int)((windowDuration/1000.0) * (double)sampleRate);
+            overlapLength = (int)((overlapDuration/1000.0) * (double)sampleRate);
+            this.spectrogram.setWindowLength(windowLength);
+            this.spectrogram.setOverlap(overlapLength);
+
+            if(windowLength > nfft){
+                System.out.print("NOTE: NFFT < window length, increased from " + nfft);
+                nfft = nearestPowerOF2(windowLength);
+                System.out.println(" to " + nfft);
+            }
+
+            spectrogram = this.spectrogram.spectrogram(signal, windowLength, overlapLength, nfft);
+
+            //Performed to create Periodogram estimate of the power spectrum.
+            for (int j = 0; j < spectrogram.length; j++) {
+                for (int k = 0; k < spectrogram[j].length; k++) {
+                    spectrogram[j][k] = (1/(double)spectrogram[j].length) * Math.pow(spectrogram[j][k], 2);
                 }
-                melFreqCepsCo[i][j] = Math.log10(cumalativeFilteredVals);
             }
-        }
 
-        for (int i = 0; i < melFreqCepsCo.length; i++) {
-            melFreqCepsCo[i] = dct.transform(melFreqCepsCo[i], TransformType.FORWARD);
-        }
+            filterBank = createFilterBanks();
+            melFreqCepsCo = new double[spectrogram.length][filterBank.length];
 
-        MFCCInstances = determineOutputFormat(instance.dataset());
-        double[] temp;
-        for (int i = 0; i < melFreqCepsCo.length; i++) {
-            temp = new double[numFilterBanks + 1];
+            for (int j = 0; j < spectrogram.length; j++) {
+                for (int k = 0; k < filterBank.length; k++) {
+                    cumalativeFilteredVals = 0;
+                    for (int l = 0; l < spectrogram[j].length; l++) {
+                        cumalativeFilteredVals += (spectrogram[j][l] * filterBank[k][l]);
+                    }
+                    melFreqCepsCo[j][k] = cumalativeFilteredVals == 0 ? 0 : Math.log10(cumalativeFilteredVals);
+                }
+            }
+
+            for (int j = 0; j < melFreqCepsCo.length; j++) {
+                melFreqCepsCo[j] = dct.transform(melFreqCepsCo[j], TransformType.FORWARD);
+            }
+
+            MFCCInstances = determineOutputFormat(instances.get(i).dataset());
+            double[] temp;
             for (int j = 0; j < numFilterBanks; j++) {
-                temp[j] = (-1) * melFreqCepsCo[i][j];
+                temp = new double[melFreqCepsCo.length + 1];
+                for (int k = 0; k < melFreqCepsCo.length; k++) {
+                    temp[k] = (-1) * melFreqCepsCo[k][j];
+                }
+                temp[temp.length - 1] = instances.get(i).value(instances.get(i).numAttributes() - 1);
+                MFCCInstances.add(new DenseInstance(1.0, temp));
             }
-            temp[temp.length - 1] = instance.value(instance.numAttributes() - 1);
-            MFCCInstances.add(new DenseInstance(1.0, temp));
+
+            MFCCs[i] = MFCCInstances;
         }
-        return MFCCInstances;
+        return MultivariateInstanceTools.mergeToMultivariateInstances(MFCCs);
     }
 
     private double[][] createFilterBanks(){
@@ -147,9 +157,6 @@ public class MFCC{
         //Create Filter Banks.
         for (int i = 0; i < filterBank.length; i++) {
             for (int j = 0; j < filterBank[i].length; j++) {
-                if(j < filterPeaks[i]){
-                    filterBank[i][j] = 0;
-                }
                 if(j >= filterPeaks[i] && j <= filterPeaks[i + 1]){
                     filterBank[i][j] = ((j - filterPeaks[i])/(filterPeaks[i + 1] - filterPeaks[i]));
                 }
@@ -157,6 +164,9 @@ public class MFCC{
                     filterBank[i][j] = ((filterPeaks[i + 2] - j) / (filterPeaks[i + 2] - filterPeaks[i + 1]));
                 }
                 if(j > filterPeaks[i + 2]){
+                    filterBank[i][j] = 0;
+                }
+                if(j < filterPeaks[i] || (j == 0 && filterPeaks[i] == 0)){
                     filterBank[i][j] = 0;
                 }
             }
@@ -175,21 +185,23 @@ public class MFCC{
     public static void main (String[]args){
         MFCC mfcc = new MFCC();
         Instances[] data = new Instances[2];
-        data[0] = loadDataNullable("D:\\Test\\Datasets\\Truncated\\DuckDuckGeese\\DuckDuckGeese");
+        data[0] = loadDataNullable("D:\\Test\\Datasets\\Truncated\\CatsDogs\\CatsDogs");
+        mfcc.setSampleRate(16000);
         System.out.println(data[0].get(0).toString());
         try {
-            data[1] = mfcc.process(data[0].instance(0));
+            data[1] = mfcc.process(data[0]);
         } catch (Exception e) {
             e.printStackTrace();
         }
         System.out.println();
-        for (int i = 0; i < data[1].size(); i++) {
-            System.out.println(data[1].get(i).toString());
-        }
+        System.out.println(data[1].get(0));
+        Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(1));
+        System.out.println(temp[0]);
     }
 }
 
 // (08/10/19) - Need to change spectrogram and MFCC to use relational Instance (Multi-var instance).
+// (10/10/19) <- MFCC done.
 // (08/10/19) - Need to fix issue where window length in > than nfft.
 // (11/10/19 <- nfft < window length ? nfft = nextPow2(window length) : ;
 // (08/10/19) - Need to double check filter bank is being populated correctly, seems to be noise other than channel one.
