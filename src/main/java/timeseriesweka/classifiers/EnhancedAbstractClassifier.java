@@ -293,6 +293,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
     }
-    
+    boolean debug=false;
+    public void setDebug(boolean b){
+        debug=b;
+    }
 
 }

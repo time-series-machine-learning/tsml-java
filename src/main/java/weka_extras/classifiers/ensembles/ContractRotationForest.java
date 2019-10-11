@@ -87,7 +87,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
 //Added features
-    double contractHours=1;    //Defaults to an approximate build time of 2 hours
+    double contractHours=1;    //Defaults to an approximate build time of 1 hour
     protected ClassifierResults res;
     double estSingleTree;
     int numTrees=0;
@@ -247,7 +247,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
    */
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        long startTime=System.currentTimeMillis(); 
+    // can classifier handle the data? These default capabilities
+    // only allow real valued series and classification. To be adjusted
+        getCapabilities().testWithFail(data);
+        long startTime=System.nanoTime(); 
         String relationName=data.relationName();
         data = new Instances( data );
         boolean loadedFromFile=false;
@@ -264,7 +267,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
            }
             else
                 if(m_Debug)
-                    System.out.println("No Serialised versionat location "+serPath);                
+                    System.out.println("No Serialised version at location "+serPath);                
         } 
         if(!loadedFromFile){
             if (baseClassifier == null) {
@@ -277,16 +280,14 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
+            //Store the PCA transforms
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
         }
-        if( data.numInstances() > 0 )// This function fails if there are 0 instances
-            rand = data.getRandomNumberGenerator(seed);
-        else
-            rand = new Random(seed);
+        rand = new Random(seed);
 
-//This is from the RotationForest 
+//This is from the RotationForest: remove zero variance and normalise by column 
         removeUseless = new RemoveUseless();
         removeUseless.setInputFormat(data);
         data = Filter.useFilter(data, removeUseless);
@@ -296,35 +297,21 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
         int numClasses = data.numClasses();
 
-        // Split the instances according to their class
+        // Split the instances according to their class. 
+        // Does not handle regression for clarity
         Instances [] instancesOfClass; 
-        if( data.classAttribute().isNumeric() ) {
-            instancesOfClass = new Instances[numClasses]; 
-            instancesOfClass[0] = data;
+        instancesOfClass = new Instances[numClasses]; 
+        for( int i = 0; i < instancesOfClass.length; i++ ) {
+            instancesOfClass[ i ] = new Instances( data, 0 );
         }
-        else{
-            instancesOfClass = new Instances[numClasses+1]; 
-            for( int i = 0; i < instancesOfClass.length; i++ ) {
-                instancesOfClass[ i ] = new Instances( data, 0 );
-            }
-            for(Instance instance:data) {
-                if( instance.classIsMissing() )
-                    instancesOfClass[numClasses].add(instance);
-                else{
-                    int c = (int)instance.classValue();
-                    instancesOfClass[c].add( instance );
-                }
-            }
-          // If there are not instances with a missing class, we do not need to
-          // consider them
-            if( instancesOfClass[numClasses].numInstances() == 0 ) {
-                Instances [] tmp = instancesOfClass;
-                instancesOfClass =  new Instances[ numClasses ];
-                System.arraycopy( tmp, 0, instancesOfClass, 0, numClasses );
+        for(Instance instance:data) {
+            if( instance.classIsMissing() )
+                continue; //Ignore instances with missing class value
+            else{
+                int c = (int)instance.classValue();
+                instancesOfClass[c].add( instance );
             }
         }
-
-
         int n=data.numInstances();
         int m=data.numAttributes()-1;
         double treeTime;
@@ -440,8 +427,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 
                 }
             }
-            else{
-//estimate maximum number of attributes allowed, x, to get minNumberOfTrees.                
+            else{ //n>m
+//estimate maximum number of cases we can use                
                 int maxCases=tm.estimateMaxCases(n,minNumTrees,estSingleTree,contractHours);
                 if(m_Debug)
                     System.out.println("using max "+maxCases+" case, building single tree at a time");
@@ -468,7 +455,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 }
             }
         }
-        res.setBuildTime(System.currentTimeMillis()-startTime);
+        res.setBuildTime(System.nanoTime()-startTime);
         if(m_Debug)
             System.out.println("Finished build");
 
