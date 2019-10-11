@@ -10,13 +10,14 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 
 public class MFCC extends SimpleBatchFilter{
 
-    //Default values (samples), assuming no infile info on samplerate.
-    int windowLength = 75;
-    int overlapLength = 70;
-    //Default values (miliseconds), determined using infile info on samplerate.
+    //Default values (samples), assuming no sample rate set.
+    int windowLength = 50;
+    int overlapLength = 25;
+    //Default values (miliseconds), determined using sample rate.
     int windowDuration = 25;
     int overlapDuration = 15;
 
+    //Check whether there is an attribute called samplerate and use that before deleting it.
     Boolean checkForSampleRate = true;
     int nfft = 512;
     int sampleRate = 4000;
@@ -59,36 +60,49 @@ public class MFCC extends SimpleBatchFilter{
         return instances;
     }
 
+    /**
+     *
+     * @param instances   Univariate instances.
+     * @return Relational instances containing MFCC information.
+     * @throws Exception
+     */
     public Instances process(Instances instances) throws Exception {
         Instances[] MFCCs = new Instances[instances.size()];
         Instances flatMFCCs = null;
+        Instances MFCCInstances = null;
+        double[][] spectrogram = null;
+        double cumalativeFilteredVals = 0;
+        double[] signal = new double[instances.get(0).numAttributes() - 1];
+
+        //Check whether samplerate info is in file, deletes before moving on.
+        if ((instances.attribute("samplerate") != null) && checkForSampleRate) {
+            sampleRate = (int) instances.get(0).value(instances.attribute("samplerate"));
+            instances.deleteAttributeAt(instances.attribute("samplerate").index());
+        }
+        if(sampleRate == 0){
+            sampleRate = nfft;
+        }else{
+            windowLength = (int)((windowDuration/1000.0) * (double)sampleRate);
+            overlapLength = (int)((overlapDuration/1000.0) * (double)sampleRate);
+        }
+
+        this.spectrogram.setWindowLength(windowLength);
+        this.spectrogram.setOverlap(overlapLength);
+
+        if(windowLength > nfft){
+            System.out.print("NOTE: NFFT < window length, increased from " + nfft);
+            nfft = nearestPowerOF2(windowLength);
+            System.out.println(" to " + nfft);
+        }
+
         for (int i = 0; i < instances.size(); i++) {
-            Instances MFCCInstances = null;
-            double[][] spectrogram = null;
-            double cumalativeFilteredVals = 0;
-            double[] signal = new double[instances.get(i).numAttributes() - 1];
+            MFCCInstances = null;
+            spectrogram = null;
+            cumalativeFilteredVals = 0;
+            signal = new double[instances.get(0).numAttributes() - 1];
 
             for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
                 signal[j] = instances.get(i).value(j);
-            }
-
-            if ((instances.get(i).dataset().attribute("samplerate") != null) && checkForSampleRate) {
-                sampleRate = (int) instances.get(i).dataset().get(0).value(instances.get(i).dataset().attribute("samplerate"));
-                instances.get(i).dataset().deleteAttributeAt(instances.get(i).dataset().attribute("samplerate").index());
-            }
-            if(sampleRate == 0){
-                sampleRate = nfft;
-            }
-
-            windowLength = (int)((windowDuration/1000.0) * (double)sampleRate);
-            overlapLength = (int)((overlapDuration/1000.0) * (double)sampleRate);
-            this.spectrogram.setWindowLength(windowLength);
-            this.spectrogram.setOverlap(overlapLength);
-
-            if(windowLength > nfft){
-                System.out.print("NOTE: NFFT < window length, increased from " + nfft);
-                nfft = nearestPowerOF2(windowLength);
-                System.out.println(" to " + nfft);
             }
 
             spectrogram = this.spectrogram.spectrogram(signal, windowLength, overlapLength, nfft);
@@ -109,7 +123,7 @@ public class MFCC extends SimpleBatchFilter{
                     for (int l = 0; l < spectrogram[j].length; l++) {
                         cumalativeFilteredVals += (spectrogram[j][l] * filterBank[k][l]);
                     }
-                    melFreqCepsCo[j][k] = cumalativeFilteredVals == 0 ? 0 : Math.log10(cumalativeFilteredVals);
+                    melFreqCepsCo[j][k] = cumalativeFilteredVals == 0 ? 0 : Math.log(cumalativeFilteredVals);
                 }
             }
 
@@ -185,7 +199,7 @@ public class MFCC extends SimpleBatchFilter{
     public static void main (String[]args){
         MFCC mfcc = new MFCC();
         Instances[] data = new Instances[2];
-        data[0] = loadDataNullable("D:\\Test\\Datasets\\Truncated\\CatsDogs\\CatsDogs");
+        data[0] = loadDataNullable("D:\\Test\\Datasets\\Truncated\\HeartbeatSound\\Heartbeatsound");
         mfcc.setSampleRate(16000);
         System.out.println(data[0].get(0).toString());
         try {
@@ -195,16 +209,7 @@ public class MFCC extends SimpleBatchFilter{
         }
         System.out.println();
         System.out.println(data[1].get(0));
-        Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(1));
+        Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(0));
         System.out.println(temp[0]);
     }
 }
-
-// (08/10/19) - Need to change spectrogram and MFCC to use relational Instance (Multi-var instance).
-// (10/10/19) <- MFCC done.
-// (08/10/19) - Need to fix issue where window length in > than nfft.
-// (11/10/19 <- nfft < window length ? nfft = nextPow2(window length) : ;
-// (08/10/19) - Need to double check filter bank is being populated correctly, seems to be noise other than channel one.
-// (09/10/19)<- Checked against a MATLAB implementation. The outputs are the same shape but,
-// mirrored along the x-axis and at different scales. Super wierd.
-// (08/10/19) - Need to comment.
