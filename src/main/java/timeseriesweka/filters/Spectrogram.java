@@ -5,11 +5,13 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.*;
+import weka.filters.SimpleBatchFilter;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
-public class Spectrogram {
+public class Spectrogram extends SimpleBatchFilter {
 
     private int nfft = 256;
     private int windowLength = 75;
@@ -48,18 +50,22 @@ public class Spectrogram {
         return instances;
     }
 
-    public Instances process(Instance instance){
+    public Instances process(Instances instances){
 
         double[][] spectrogram = null;
-        double[] signal = new double[instance.numAttributes() - 1];
+        Instances[] spectrogramsInstances = new Instances[instances.numInstances()];
+        double[] signal = null;
+        for (int i = 0; i < instances.size(); i++) {
+            signal = new double[instances.get(i).numAttributes() - 1];
 
-        for (int i = 0; i < instance.numAttributes() - 1; i++) {
-            signal[i] = instance.value(i);
+            for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
+                signal[j] = instances.get(i).value(j);
+            }
+
+            spectrogram = spectrogram(signal, windowLength, overlap, nfft);
+            spectrogramsInstances[i] = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
         }
-
-        spectrogram = spectrogram(signal, windowLength, overlap, nfft);
-
-        return MatrixToInstances(spectrogram, instance.classAttribute(), instance.classValue());
+        return MultivariateInstanceTools.mergeToMultivariateInstances(spectrogramsInstances);
     }
 
     public int getNumWindows(int signalLength){
@@ -119,10 +125,12 @@ public class Spectrogram {
 
         data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + ".arff");
         System.out.println(data[0].get(0).toString());
-        data[1] = spec.process(data[0].get(data[0].size()-4));
+        data[1] = spec.process(data[0]);
         System.out.println();
         for (int i = 0; i < data[1].size(); i++) {
-            System.out.println(data[1].get(i).toString());
+            Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(i));
+            System.out.println(temp[0]);
         }
+
     }
 }
