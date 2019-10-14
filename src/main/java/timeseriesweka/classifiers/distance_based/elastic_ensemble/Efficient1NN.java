@@ -24,10 +24,9 @@ import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.distance_based.FastEE.CandidateNN;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
 import utilities.ClassifierTools;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -45,8 +44,7 @@ import weka.core.Instances;
  *
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public abstract class Efficient1NN extends AbstractClassifier implements SaveParameterInfo {
-
+public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo{
     protected Instances train;
     protected Instances[] trainGroup;
     protected String classifierIdentifier;

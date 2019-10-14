@@ -19,6 +19,8 @@ import java.util.Arrays;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
 import timeseriesweka.filters.shapelet_transforms.ShapeletCandidate;
+import utilities.rescalers.SeriesRescaler;
+import utilities.rescalers.ZNormalisation;
 import weka.core.Instance;
 
 /**
@@ -28,8 +30,9 @@ import weka.core.Instance;
 public class SubSeqDistance implements Serializable{
        
     public enum DistanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT, DIMENSION};
+    public enum RescalerType{NONE, STANDARDISATION, NORMALISATION};
     
-    public static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;
+    public SeriesRescaler seriesRescaler = new ZNormalisation();
     
     protected Instance candidateInst;
     protected double[] candidateArray;
@@ -61,7 +64,7 @@ public class SubSeqDistance implements Serializable{
         startPos = shp.startPos;
         cand = shp.getContent();
         length = shp.getLength();
-        dimension = shp.getDimension();
+        dimension = shp.getDimension();        
     }
     
     public void setCandidate(Instance inst, int start, int len, int dim) {
@@ -83,7 +86,7 @@ public class SubSeqDistance implements Serializable{
         cand.setShapeletContent(temp);
         
         // znorm candidate here so it's only done once, rather than in each distance calculation
-        cand.setShapeletContent(zNormalise(cand.getShapeletContent(), false));
+        cand.setShapeletContent(seriesRescaler.rescaleSeries(cand.getShapeletContent(), false));
     }
     
     public void setSeries(int srsId) {
@@ -123,7 +126,7 @@ public class SubSeqDistance implements Serializable{
             subseq = new double[length];
             System.arraycopy(timeSeries, i, subseq, 0, length);
 
-            subseq = zNormalise(subseq, false); // Z-NORM HERE
+            subseq = seriesRescaler.rescaleSeries(subseq, false); // Z-NORM HERE
 
             for (int j = 0; j < length; j++)
             {
@@ -141,59 +144,5 @@ public class SubSeqDistance implements Serializable{
 
         double dist = (bestSum == 0.0) ? 0.0 : (1.0 / length * bestSum);
         return dist;
-    }
-
-     /**
-     * Z-Normalise a time series
-     *
-     * @param input the input time series to be z-normalised
-     * @param classValOn specify whether the time series includes a class value
-     * (e.g. an full instance might, a candidate shapelet wouldn't)
-     * @return a z-normalised version of input
-     */
-    final public double[] zNormalise(double[] input, boolean classValOn)
-    {
-        double mean;
-        double stdv;
-
-        int classValPenalty = classValOn ? 1 : 0;
-        int inputLength = input.length - classValPenalty;
-
-        double[] output = new double[input.length];
-        double seriesTotal = 0;
-        for (int i = 0; i < inputLength; i++)
-        {
-            seriesTotal += input[i];
-        }
-
-        mean = seriesTotal / (double) inputLength;
-        stdv = 0;
-        double temp;
-        for (int i = 0; i < inputLength; i++)
-        {
-            temp = (input[i] - mean);
-            stdv += temp * temp;
-        }
-
-        stdv /= (double) inputLength;
-
-        // if the variance is less than the error correction, just set it to 0, else calc stdv.
-        stdv = (stdv < ROUNDING_ERROR_CORRECTION) ? 0.0 : Math.sqrt(stdv);
-        
-        //System.out.println("mean "+ mean);
-        //System.out.println("stdv "+stdv);
-        
-        for (int i = 0; i < inputLength; i++)
-        {
-            //if the stdv is 0 then set to 0, else normalise.
-            output[i] = (stdv == 0.0) ? 0.0 : ((input[i] - mean) / stdv);
-        }
-
-        if (classValOn)
-        {
-            output[output.length - 1] = input[input.length - 1];
-        }
-
-        return output;
     }
 }

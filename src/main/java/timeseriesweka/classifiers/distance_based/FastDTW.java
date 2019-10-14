@@ -10,17 +10,17 @@ package timeseriesweka.classifiers.distance_based;
 import java.util.ArrayList;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSByPercent;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.WindowSearcher;
 import weka.classifiers.AbstractClassifier;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.*;
 
 /**
  *
  * @author ajb
  */
-public class FastDTW extends AbstractClassifier  implements SaveParameterInfo{
+public class FastDTW extends AbstractClassifierWithTrainingInfo{
 
     WindowSearcher ws;
     protected ArrayList<Double> buildTimes;

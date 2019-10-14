@@ -12,25 +12,26 @@ import weka.core.Instances;
 import java.util.ArrayList;
 
 /**
+ * Abstract class for time series based clusterers.
  *
  * @author pfm15hbu
  */
 public abstract class AbstractTimeSeriesClusterer extends AbstractClusterer{
     
-    protected boolean dontCopyInstances = false;
+    protected boolean copyInstances = true;
 
-    protected int[] cluster;
+    protected int[] assignments;
     protected ArrayList<Integer>[] clusters;
 
-    public int[] getCluster(){
-        return cluster;
+    public int[] getAssignments(){
+        return assignments;
     }
 
     public ArrayList<Integer>[] getClusters(){
         return clusters;
     }
     
-    public void setDontCopyInstances(boolean b){
-        dontCopyInstances = b;
+    public void setCopyInstances(boolean b){
+        copyInstances = b;
     }
 }

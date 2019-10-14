@@ -14,8 +14,8 @@
  */
 package experiments;
 
-import weka_uea.classifiers.SaveEachParameter;
-import weka_uea.classifiers.tuned.TunedRandomForest;
+import weka_extras.classifiers.SaveEachParameter;
+import weka_extras.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
@@ -26,18 +26,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import timeseriesweka.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import evaluation.evaluators.SingleSampleEvaluator;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
 import experiments.data.DatasetLoading;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -46,8 +45,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import utilities.InstanceTools;
-import weka_uea.classifiers.ensembles.SaveableEnsemble;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
@@ -90,6 +89,11 @@ public class Experiments  {
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
     public static boolean debug = false;
+    
+    /**
+     * If true, experiments will not print or log to stdout/err anything other that exceptions (SEVERE)
+     */
+    public static boolean beQuiet = false; 
     
     //A few 'should be final but leaving them not final just in case' public static settings 
     public static int numCVFolds = 10;
@@ -343,10 +347,12 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {        
         //even if all else fails, print the args as a sanity check for cluster.
-        System.out.println("Raw args:");
-        for (String str : args)
-            System.out.println("\t"+str);
-        System.out.println("");
+        if (!beQuiet) {
+            System.out.println("Raw args:");
+            for (String str : args)
+                System.out.println("\t"+str);
+            System.out.println("");
+        }
         
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
@@ -404,17 +410,20 @@ public class Experiments  {
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there. 
 //        LOGGER.addHandler(new FileHandler()); 
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else
-            LOGGER.setLevel(Level.INFO);
-        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+
+        if (beQuiet) {
+            LOGGER.setLevel(Level.SEVERE);
+        }
+        else {
+            if (debug)
+                LOGGER.setLevel(Level.FINEST);
+            else
+                LOGGER.setLevel(Level.INFO);
+            
+            DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+        }
         LOGGER.log(Level.FINE, expSettings.toString());
         
-        //TODO still setting these for now, since maybe certain classfiiers still use these "global" 
-        //paths. would rather just use the expSettings to do it all though 
-        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
-        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
         
         //2019_06_03: cases in the classifier can now change the classifier name to reflect 
         //paritcular parameters wanting to be represented as different classifiers
@@ -535,10 +544,16 @@ public class Experiments  {
                     assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
                     trainResults.turnOffZeroTimingsErrors();
                     trainResults.setBuildTime(buildTime);
+                    
+                    //for non-TrainAccEstimators, this is simply the sum of the two
+                    trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+                    
                     writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
                 }
                 //else 
                 //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
+                //   todo should change this to the classifier gives the results object back to experiments, 
+                //      we can do any standard behaviour here, and then continue on. 
             }
             LOGGER.log(Level.FINE, "Train estimate written");
 
@@ -638,50 +653,66 @@ public class Experiments  {
             String[] parts = exp.trainEstimateMethod.split("_");
             String method = parts[0];
             
-            String para = null;
+            String para1 = null;
             if (parts.length > 1) 
-                para = parts[1];
+                para1 = parts[1];
             
-            long estimateTimeStart = System.nanoTime();
-                    
+            String para2 = null;
+            if (parts.length > 2) 
+                para2 = parts[2];
+            
             switch (method) {
                 case "cv":
                 case "CV": 
                 case "CrossValidationEvaluator":
-                    int numFolds = Experiments.numCVFolds;
-                    if (para != null)
-                        numFolds = Integer.parseInt(para);
-                    numFolds = Math.min(train.numInstances(), numFolds);
+                    int numCVFolds = Experiments.numCVFolds;
+                    if (para1 != null)
+                        numCVFolds = Integer.parseInt(para1);
+                    numCVFolds = Math.min(train.numInstances(), numCVFolds);
                     
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
                     cv.setSeed(fold);
-                    cv.setNumFolds(numFolds);
+                    cv.setNumFolds(numCVFolds);
                     trainResults = cv.crossValidateWithStats(classifier, train);
                     break;
                 
                 case "hov":
                 case "HOV":
                 case "SingleTestSetEvaluator":
-                    double trainProp = DatasetLoading.getProportionKeptForTraining();
-                    if (para != null)
-                        trainProp = Double.parseDouble(para);
+                    double trainPropHov = DatasetLoading.getProportionKeptForTraining();
+                    if (para1 != null)
+                        trainPropHov = Double.parseDouble(para1);
                     
-                    Instances[] trainVal = InstanceTools.resampleInstances(train, exp.foldId, trainProp);
-                    classifier.buildClassifier(trainVal[0]);
-                    
-                    SingleTestSetEvaluator hov = new SingleTestSetEvaluator();
+                    SingleSampleEvaluator hov = new SingleSampleEvaluator();
                     hov.setSeed(fold);
-                    trainResults = hov.evaluate(classifier, trainVal[1]);
+                    hov.setPropInstancesInTrain(trainPropHov);
+                    trainResults = hov.evaluate(classifier, train);
+                    break;
+                    
+                case "sr":
+                case "SR":
+                case "StratifiedResamplesEvaluator":
+                    int numSRFolds = 30;
+                    if (para1 != null)
+                        numSRFolds = Integer.parseInt(para1);
+                                
+                    double trainPropSRR = DatasetLoading.getProportionKeptForTraining();
+                    if (para2 != null)
+                        trainPropSRR = Double.parseDouble(para2);
+                    
+                    StratifiedResamplesEvaluator srr = new StratifiedResamplesEvaluator();
+                    srr.setSeed(fold);
+                    srr.setNumFolds(numSRFolds);
+                    srr.setUseEachResampleIdAsSeed(true);
+                    srr.setPropInstancesInTrain(trainPropSRR);
+                    trainResults = srr.evaluate(classifier, train);
                     break;
                   
                 default:
                     throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
             }
-            
-            long estimateTime = System.nanoTime() - estimateTimeStart;
                     
             trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
-            trainResults.setErrorEstimateTime(estimateTime);
             trainResults.setBenchmarkTime(trainBenchmark);      
         }
         
@@ -785,8 +816,8 @@ public class Experiments  {
         results.setSplit(split);
         results.setDescription("Generated by Experiments.java");
         
-        if (classifier instanceof SaveParameterInfo)
-            results.setParas(((SaveParameterInfo) classifier).getParameters());
+        if (classifier instanceof AbstractClassifierWithTrainingInfo)
+            results.setParas(((AbstractClassifierWithTrainingInfo) classifier).getParameters());
 
         //todo, need to make design decisions with the classifierresults enum to clean this switch up
         switch (exp.classifierResultsFileFormat) {

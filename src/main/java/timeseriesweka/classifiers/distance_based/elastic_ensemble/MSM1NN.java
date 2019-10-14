@@ -21,10 +21,11 @@ import timeseriesweka.classifiers.distance_based.FastEE.assessingNN.LazyAssessNN
 import timeseriesweka.classifiers.distance_based.FastEE.lowerBounds.LbMsm;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
 import timeseriesweka.elastic_distance_measures.MSMDistance;
+import utilities.ClassifierTools;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka_uea.classifiers.kNN;
 
 import java.util.ArrayList;
 import java.util.Collections;

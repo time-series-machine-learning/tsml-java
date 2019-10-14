@@ -15,7 +15,6 @@
 package timeseriesweka.filters.shapelet_transforms;
 
 import experiments.data.DatasetLoading;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -23,15 +22,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
@@ -39,8 +32,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
 import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
 import weka.core.*;
@@ -49,12 +40,16 @@ import timeseriesweka.filters.shapelet_transforms.class_value.BinaryClassValue;
 import timeseriesweka.filters.shapelet_transforms.class_value.NormalClassValue;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
-import timeseriesweka.filters.shapelet_transforms.search_functions.FastShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
+import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.RescalerType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
+import utilities.rescalers.NoRescaling;
+import utilities.rescalers.SeriesRescaler;
+import utilities.rescalers.ZNormalisation;
+import utilities.rescalers.ZStandardisation;
 
 /**
 
@@ -73,13 +68,13 @@ import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearc
  * shapelets.
  * <p>
  * See <a
- * href="http://delivery.acm.org/10.1145/2340000/2339579/p289-lines.pdf?ip=139.222.14.198&acc=ACTIVE%20SERVICE&CFID=221649628&CFTOKEN=31860141&__acm__=1354814450_3dacfa9c5af84445ea2bfd7cc48180c8">Lines,
- * J., Davis, L., Hills, J., Bagnall, A.: A shapelet transform for time series
+ * href="http://delivery.acm.org/10.1145/2340000/2339579/p289-lines.pdf?ip=139.222.14.198&acc=ACTIVE%20SERVICE&CFID=221649628&CFTOKEN=31860141&__acm__=1354814450_3dacfa9c5af84445ea2bfd7cc48180c8">
+ * Lines J., Davis, L., Hills, J., Bagnall, A.: A shapelet transform for time series
  * classification. In: Proc. 18th ACM SIGKDD (2012)</a>
  *
  * @author Aaron Bostrom
  */
-public class ShapeletTransform extends SimpleBatchFilter implements SaveParameterInfo, Serializable{
+public class ShapeletTransform extends SimpleBatchFilter implements Serializable{
 
     //Variables for experiments
     protected static long subseqDistOpCount;
@@ -93,6 +88,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
     //this int is used to serliase our position when iterating through a dataset.
     public int casesSoFar;
+    public boolean searchComplete=false;
     
     protected boolean supressOutput; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
     protected int numShapelets;
@@ -365,6 +361,27 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         quality = new ShapeletQuality(qualityChoice);
     }
     
+    
+     /**
+     *
+     * @param type
+     */
+    public void setRescalerType(RescalerType type){
+         //TODO: don't like this, should change to match QualityChoice. 
+        SeriesRescaler sr;
+        switch(type){
+            case NONE:
+                sr = new NoRescaling();
+                break;
+            case STANDARDISATION:
+                sr = new ZStandardisation();
+                break;
+            default:
+                sr = new ZNormalisation();
+        }
+       this.subseqDistance.seriesRescaler = sr;
+    }
+    
         /**
      *
      * @param classDist
@@ -479,8 +496,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         inputCheck(data);
         
         //checks if the shapelets haven't been found yet, finds them if it needs too.
-        if (!m_FirstBatchDone) {
+        if (!m_FirstBatchDone && !searchComplete){ //  
             trainShapelets(data);
+            searchComplete=true;
             //we log the count from the subseqdistance before we reset it in the transform.
             //we only care about the count from the train.
             count = subseqDistance.getCount();
@@ -1057,7 +1075,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
                 contentArray[i] = content.get(i);
             }
 
-            contentArray = sf.subseqDistance.zNormalise(contentArray, false);
+            contentArray = sf.subseqDistance.seriesRescaler.rescaleSeries(contentArray, false);
             
             ShapeletCandidate cand = new ShapeletCandidate();
             cand.setShapeletContent(contentArray);
@@ -1208,7 +1226,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         return str;
     }
     
-    @Override
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets+",roundrobin,"+roundRobin
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()
@@ -1269,6 +1286,18 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         
         
         
+        
+        
+        
+    }
+    
+    public static void testFilterUsage(){
+        String filePath ="Z:\\ArchiveData\\Univariate_ts\\";
+        String problem="Chinatown";
+        Instances test, train;
+        test = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TRAIN");
+        ShapeletTransform shapeletTransform = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); 
         
         
         

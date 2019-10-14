@@ -33,12 +33,14 @@ import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import timeseriesweka.classifiers.TrainTimeContractable;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import weka.core.Randomizable;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -128,8 +130,17 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         contractTime=true;
         contractHours=hours;
     }
-    
-    
+    @Override
+    public void setSeed(int seed) { 
+        seedClassifier=true;
+        this.seed = seed;
+        rand=new Random(seed);
+        int count =2;
+        for(Classifier c:classifiers){
+            if(c instanceof Randomizable)
+                ((Randomizable)c).setSeed(seed+count++);
+        }
+    }    
     
     private void setDefaultEnsembles(){
         
@@ -137,18 +148,21 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         names = new ArrayList<>();
         
         classifiers.add(new ElasticEnsemble());
-        CAWPE h = new CAWPE();
-        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+//        CAWPE h = new CAWPE();
+//        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
         if(contractTime){
-            setTrainTimeLimit(TimeUnit.HOURS,contractHours);
+            stc.setHourLimit(contractHours);
         }
-        h.setTransform(st);
         
-        classifiers.add(h); // to get around the issue of needing training data 
+        classifiers.add(stc); // to get around the issue of needing training data 
         RISE rise = new RISE();
         classifiers.add(rise);
         classifiers.add(new BOSS());
-        classifiers.add(new TSF());
+        TSF tsf=new TSF();
+        tsf.setEstimatorMethod("CV");
+        tsf.setFindTrainAccuracyEstimate(true);
+        classifiers.add(tsf);
         
         names.add("EE");
         names.add("ST");
@@ -169,8 +183,9 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     
     @Override
     public void buildClassifier(Instances train) throws Exception{
-         long startTime=System.currentTimeMillis();
-       optionalOutputLine("Start of training");
+        getCapabilities().testWithFail(train);
+        long t1=System.nanoTime();
+        optionalOutputLine("Start of training");
                 
         modules = new ConstituentHiveEnsemble[classifiers.size()];
         
@@ -190,11 +205,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             if(classifiers.get(i) instanceof TrainAccuracyEstimator){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
+                
                 modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((TrainAccuracyEstimator)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 
@@ -218,19 +234,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         if(verbose){
             printModuleCvAccs();
         }
-       
-//        if(this.writeEnsembleTrainingPredictions){
-//            new File(this.ensembleTrainingPredictionsPathAndName).mkdirs();
-//            FileWriter out = new FileWriter(this.ensembleTrainingPredictionsPathAndName);
-//            out.append(train.relationName()+",HIVE-COTE,train\n");
-//            out.append(this.getParameters()+"\n");
-//            for(int i = 0; i < train.numInstances(); i++){
-//                this.
-//                        
-//                        do i even need to write training preds?
-//            }
-//        }
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+        long t2=System.nanoTime();
+        trainResults.setBuildTime(t2-t1);
     }
     
 
@@ -370,22 +375,6 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     public void setMaxCvFolds(int maxFolds){
         this.maxCvFolds = maxFolds;
     }
- 
-//    @Override
-//    public void writeTrainingOutput(String pathAndFileName){
-//        this.writeEnsembleTrainingPredictions = true;
-//        this.ensembleTrainingPredictionsPathAndName = pathAndFileName;
-//    }
-    
-//    @Override
-//    public String getParameters(){
-//        StringBuilder out = new StringBuilder();
-//        out.append("contains,");
-//        for (ConstituentHiveEnsemble module : this.modules) {
-//            out.append(module.classifierName).append(",");
-//        }
-//        return out.toString();
-//    }
     
     
     public void writeTestPredictionsToFile(Instances test, String outputDir, String datasetName) throws Exception{
@@ -475,8 +464,6 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             numFolds = train.numInstances();
         }
 
-        Random r = new Random();
-
         ArrayList<Instances> folds = new ArrayList<>();
         ArrayList<ArrayList<Integer>> foldIndexing = new ArrayList<>();
 
@@ -489,7 +476,7 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         for(int i = 0; i < train.numInstances(); i++){
             instanceIds.add(i);
         }
-        Collections.shuffle(instanceIds, r);
+        Collections.shuffle(instanceIds, rand);
 
         ArrayList<Instances> byClass = new ArrayList<>();
         ArrayList<ArrayList<Integer>> byClassIndices = new ArrayList<>();
@@ -616,6 +603,19 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     }
 
     @Override
+    public String getParameters() {
+        String str=super.getParameters();
+        str+=",NumModules,"+classifiers.size();
+        for(String s:names)
+            str+=","+s;
+        str+=",trainAccEstimate";
+        for(ConstituentHiveEnsemble m:modules)
+            str+=","+m.ensembleCvAcc;
+        return str;
+    }
+    
+
+    @Override
     public void setTrainTimeLimit(TimeUnit time, long amount) {
 //Split the time up equally if contracted, if not we have no control    
         contractTime=true;
@@ -654,21 +654,30 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         }
     }
     
+  
+    
     public static class DefaultShapeletTransformPlaceholder extends ShapeletTransform{}
     
     public static void main(String[] args) throws Exception{
        
-        String datasetName = "ItalyPowerDemand";
-//        String datasetName = "MoteStrain";
+        String dataDir = "C:/users/ajb/dropbox/Code2019/tsml/src/main/java/experiments/data/tsc/";
+        String datasetName = "Chinatown";
+        Instances train = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TEST");
         
-        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
-
         HiveCote hive = new HiveCote();
+        System.out.println("Example usage of HiveCote: this is the code used in the paper");
+        System.out.println(hive.getTechnicalInformation().toString());
+        System.out.println("Evaluated on "+datasetName);
         hive.makeShouty();
-        
         hive.buildClassifier(train);
-        
+        System.out.println("Classifier built: Parameter info ="+hive.getParameters());
+        double a=ClassifierTools.accuracy(test, hive);
+        System.out.println("Test acc for "+datasetName+" = "+a);
+
+
+        System.out.println("This is exiting now. After here in main is legacy code. Ask Jason Lines!");
+        System.exit(0);
         hive.writeTestPredictionsToFile(test, "prototypeSheets/", datasetName, "0");
         
         int correct = 0;

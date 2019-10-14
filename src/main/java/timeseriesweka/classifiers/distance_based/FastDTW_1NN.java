@@ -20,14 +20,10 @@ import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import utilities.ClassifierTools;
-import weka_uea.classifiers.SaveEachParameter;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
+import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
-import java.lang.instrument.*;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /* 
@@ -66,7 +62,7 @@ CHECK THIS: For implementation reasons, a window size of 1
 is equivalent to Euclidean distance (rather than a window size of 0
  */
 
-public class FastDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class FastDTW_1NN extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;

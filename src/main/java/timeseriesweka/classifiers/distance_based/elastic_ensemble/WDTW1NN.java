@@ -21,7 +21,7 @@ import timeseriesweka.classifiers.distance_based.FastEE.lowerBounds.LbWdtw;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka_uea.classifiers.kNN;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;

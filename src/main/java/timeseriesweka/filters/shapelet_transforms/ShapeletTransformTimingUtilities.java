@@ -170,7 +170,6 @@ public class ShapeletTransformTimingUtilities
         ShapeletTransform transform;
         if(numClasses == 2){
             transform = new ShapeletTransform();
-            System.out.println("2 class");
         }else{
             transform = new BalancedClassShapeletTransform();
             transform.setClassValue(new BinaryClassValue());

@@ -83,6 +83,9 @@ public class PerformanceMetric {
     public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis,         median, min, slower);
     public static PerformanceMetric totalTestTime   = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_totalTestTimeDoubleMillis,      median, min, slower);
     public static PerformanceMetric avgTestPredTime = new PerformanceMetric("AvgPredTimes", ClassifierResults.GETTER_avgTestPredTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric fromScratchEstimateTime = new PerformanceMetric("FromScratchEstimateTimes", ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric totalBuildPlusEstimateTime = new PerformanceMetric("TotalBuildPlusEstimateTimes", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric additionalTimeForEstimate = new PerformanceMetric("AdditionalTimesForEstimates", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillis, median, min, slower);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 

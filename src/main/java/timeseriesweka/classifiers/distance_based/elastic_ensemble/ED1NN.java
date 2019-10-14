@@ -17,11 +17,13 @@ package timeseriesweka.classifiers.distance_based.elastic_ensemble;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.distance_based.FastEE.lowerBounds.LbKim;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
+import utilities.ClassifierTools;
+import weka.classifiers.Classifier;
+import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka_uea.classifiers.kNN;
 //import efficient_standalone_classifiers.Eff
 
 /**

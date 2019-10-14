@@ -25,7 +25,7 @@ import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import weka_uea.classifiers.tuned.TunedRandomForest;
+import weka_extras.classifiers.tuned.TunedRandomForest;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -192,14 +192,14 @@ public class TSBF extends AbstractClassifierWithTrainingInfo implements Paramete
 "Yoga"};
       //</editor-fold>  
     
-public static void recreatePublishedResults() throws Exception{
-        OutFile of=new OutFile(DatasetLists.resultsPath+"RecreateTSBF.csv");
+public static void recreatePublishedResults(String datasetPath, String resultsPath) throws Exception{
+        OutFile of=new OutFile(resultsPath+"RecreateTSBF.csv");
         System.out.println("problem,published,recreated");
         double meanDiff=0;
         int publishedBetter=0;
     for(int i=0;i<problems.length;i++){
-        Instances train = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable(DatasetLists.problemPath+problems[i]+"/"+problems[i]+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable(datasetPath+problems[i]+"/"+problems[i]+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(datasetPath+problems[i]+"/"+problems[i]+"_TEST");
         TSBF tsbf=new TSBF();
         tsbf.searchParameters(true);
         double a=ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
@@ -233,7 +233,7 @@ public static void recreatePublishedResults() throws Exception{
     
     int minIntervalLength=5;   
     int numBins=10;      //bin size for codebook generation   
-    int numReps=10;
+    int numReps=1;
     double oobError;
     static double[] zLevels={0.1,0.25,0.5,0.75}; //minimum subsequence length factors (z) to be evaluated
     double z=zLevels[0];
@@ -247,18 +247,14 @@ public static void recreatePublishedResults() throws Exception{
     int numOfTreeStep=50; //step size for tree building process
     boolean paramSearch=true;
     double trainAcc;
-    boolean stepWise=true;
+    boolean stepWise=false;// This will add trees incrementally rather than build all at once. 
     int[][] subSeries;
     int[][][] intervals;
     RandomForest subseriesRandomForest;
     RandomForest finalRandForest;
 
     Instances first;
-    Random rand= new Random();
     static double TOLERANCE =0.05;
-    public void seedRandom(int s){
-        rand=new Random(s);
-    }
     public void searchParameters(boolean b){
         paramSearch=b;
     }
@@ -427,13 +423,18 @@ public static void recreatePublishedResults() throws Exception{
     }
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        trainResults.setBuildTime(System.currentTimeMillis());
+    // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        long t1=System.nanoTime();
+//        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
             int r=0;
             for(int i=0;i<numReps;i++){
                 TSBF reps=new TSBF();
+                if(seedClassifier)
+                    reps.setSeed(seed*33);
                 reps.numReps=1;
                 reps.paramSearch=true;
                 reps.buildClassifier(data);
@@ -538,8 +539,7 @@ public static void recreatePublishedResults() throws Exception{
                     finalRandForest=new RandomForest();    
                     finalRandForest.setNumTrees(500);
                 //6. Form a CV estimate of accuracy to choose z value 
-                    Random r= new Random();
-                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,r.nextInt());
+                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,rand.nextInt());
                 }
                 if(acc>maxAcc){
                    if(!stepWise)
@@ -773,42 +773,21 @@ public static void recreatePublishedResults() throws Exception{
 
     }
     public static void main(String[] args) throws Exception {
-        String s= "Beef";
-        System.out.println(" PROBLEM ="+s);
-        Instances train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-        Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
-        TSBF tsbf=new TSBF();
-        double a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
-        System.out.println(" TEST Acc ="+a);
-
+                
+        String dataDir = "C:/users/ajb/dropbox/Code2019/tsml/src/main/java/experiments/data/tsc/";
+        String datasetName = "Chinatown";
+        Instances train = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TEST");
         
-//        DatasetLists.resultsPath=DatasetLists.clusterPath+"Results/";
-//        DatasetLists.problemPath=DatasetLists.clusterPath+"TSC Problems/";        
-//        recreatePublishedResults();
-  //      testBinMaker();
-        System.exit(0);
-        DecimalFormat df = new DecimalFormat("##.###");
-        try{
-            for(int i=1;i<2;i++){
-                s="TwoLeadECG";
-                System.out.println(" PROBLEM ="+s);
-                train=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN");
-                test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST");
-//                RandomForest rf=new RandomForest();
- //               rf.buildClassifier(train);
-//                System.out.println(" bag percent ="+rf.getBaggingPercent()+" OOB error "+rf.measureOutOfBagError());
-//                System.exit(0);
-                tsbf=new TSBF();
-                a =ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
-                System.out.println(" error ="+df.format(1-a));
-//                tsbf.buildClassifier(train);
- //               double c=tsbf.classifyInstance(test.instance(0));
- //               System.out.println(" Class ="+c);
-            }
-        }catch(Exception e){
-            System.out.println("Exception "+e);
-            e.printStackTrace();
-            System.exit(0);
-        }
+        TSBF tsbf = new TSBF();
+        System.out.println("Example usage of TSBF: this is the code used in the paper");
+        System.out.println(tsbf.getTechnicalInformation().toString());
+        System.out.println("Evaluated on "+datasetName+" Building ....");
+        tsbf.buildClassifier(train);
+        System.out.println("Classifier built: Parameter info ="+tsbf.getParameters());
+        double a=ClassifierTools.accuracy(test, tsbf);
+        System.out.println("Test acc for "+datasetName+" = "+a);
+
+
     }
 }

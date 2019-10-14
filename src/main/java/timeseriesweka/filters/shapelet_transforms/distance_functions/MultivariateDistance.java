@@ -57,7 +57,7 @@ public class MultivariateDistance extends SubSeqDistance implements Serializable
             double[] temp = new double[length];
             //copy the data from the whole series into a candidate.
             System.arraycopy(candidateArray2[i], start, temp, 0, length);
-            temp = zNormalise(temp, false); //normalise each series.
+            temp = seriesRescaler.rescaleSeries(temp, false); //normalise each series.
             cand.setShapeletContent(i, temp);
         } 
     }    

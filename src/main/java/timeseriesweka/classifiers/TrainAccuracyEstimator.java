@@ -31,7 +31,7 @@ import weka.core.Instances;
 * 
  * @author ajb
  */
-public interface TrainAccuracyEstimator extends SaveParameterInfo{
+public interface TrainAccuracyEstimator{
 
     
     void setFindTrainAccuracyEstimate(boolean setCV);
@@ -49,7 +49,7 @@ public interface TrainAccuracyEstimator extends SaveParameterInfo{
  * 
  * ProblemName,ClassifierName,train
 *  Parameter info, if available
-*  TrainAccuracy
+*  TrainAccuracy, build time, test time.
 * If available, the preds and probs will also be written 
 * Case1TrueClass,Case1PredictedClass,,ProbClass1,ProbClass2, ...
 * Case2TrueClass,Case2PredictedClass,,ProbClass1,ProbClass2, ...
@@ -67,7 +67,8 @@ public interface TrainAccuracyEstimator extends SaveParameterInfo{
     default int setNumberOfFolds(Instances data){
         return data.numInstances()<10?data.numInstances():10;
     }
-//Temp comment: porting these from     
+    
+//Temp comment: porting these from and older interface, to be depreciated soon    
     default public double getTrainAcc(){
         throw new UnsupportedOperationException("getTrainAcc not implemented in class "+this.getClass().getName());
     }

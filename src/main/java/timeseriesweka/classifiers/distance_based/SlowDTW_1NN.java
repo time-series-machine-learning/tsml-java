@@ -13,20 +13,16 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.distance_based;
-import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
-import utilities.ClassifierTools;
-import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import weka_uea.classifiers.SaveEachParameter;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
+import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
@@ -35,7 +31,7 @@ This classifier does the full 101 parameter searches for window.
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends AbstractClassifierWithTrainingInfo  implements TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -123,7 +119,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     @Override
     public void buildClassifier(Instances d){
         res =new ClassifierResults();
-        long t=System.currentTimeMillis();
+        long t=System.nanoTime();
         
         train=d;
         trainSize=d.numInstances();
@@ -154,7 +150,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             res.setAcc(maxAcc);
         }
         try {
-            res.setBuildTime(System.currentTimeMillis()-t);
+            res.setBuildTime(System.nanoTime()-t);
         } catch (Exception e) {
             System.err.println("Inheritance preventing me from throwing this error...");
             System.err.println(e);
@@ -167,22 +163,58 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
         if(trainPath!=null && trainPath!=""){  //Save basic train results
 //            
 //NEED TO FIND THE TRAIN ESTIMATES FOR EACH TEST HERE            
-            OutFile f= new OutFile(trainPath);
-            f.writeLine(train.relationName()+",FastDTW_1NN,Train");
-            f.writeLine(getParameters());
-            f.writeLine(res.getAcc()+"");
+//            OutFile f= new OutFile(trainPath);
+//            f.writeLine(train.relationName()+",FastDTW_1NN,Train");
+//            f.writeLine(getParameters());
+//            f.writeLine(res.getAcc()+"");
+//            for(int i=0;i<train.numInstances();i++){
+//                Instance test=train.remove(i);
+//                int pred=(int)classifyInstance(test);
+//                f.writeString((int)test.classValue()+","+pred+",");
+//                for(int j=0;j<train.numClasses();j++){
+//                    if(j==pred)
+//                        f.writeString(",1");
+//                    else
+//                        f.writeString(",0");
+//                }
+//                f.writeString("\n");
+//                train.add(i,test);
+//            }
+
+            long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);
+                
+                long predTime = System.nanoTime();
                 int pred=(int)classifyInstance(test);
-                f.writeString((int)test.classValue()+","+pred+",");
-                for(int j=0;j<train.numClasses();j++){
-                    if(j==pred)
-                        f.writeString(",1");
-                    else
-                        f.writeString(",0");
-                }
-                f.writeString("\n");
+                predTime = System.nanoTime() - predTime;
+                
+                double[] dist = new double[train.numClasses()];
+                dist[pred] = 1.0;
+                
+                res.addPrediction(test.classValue(), dist, pred, predTime, "");
+                    
                 train.add(i,test);
+            }
+            estTime = System.nanoTime() - estTime;
+            res.setErrorEstimateTime(estTime);
+            res.setErrorEstimateMethod("cv_loo");
+            
+            res.setClassifierName("SlowDTW_1NN");
+            res.setDatasetName(train.relationName());
+            res.setSplit("train");
+            //no foldid/seed
+            res.setNumClasses(train.numClasses());
+            res.setParas(getParameters());
+            res.setTimeUnit(TimeUnit.NANOSECONDS);
+            
+            
+            try {
+                res.writeFullResultsToFile(trainPath);
+            } catch(Exception e) {
+                System.out.println("Train file writing failed, cannot throw exception up since "
+                        + "dependent class does not handle it and dont want to change it. "
+                        + "As with previous implementation of train file writing, just going to continue");
             }
         }        
         

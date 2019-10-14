@@ -1,2 +1,2 @@
-rootProject.name = "uea-tsc"
+rootProject.name = "tsml"
 

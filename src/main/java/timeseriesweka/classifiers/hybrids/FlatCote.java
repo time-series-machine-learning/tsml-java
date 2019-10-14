@@ -19,18 +19,20 @@ import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.PowerSpectrum;
+import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 /**
- * NOTE: consider this code experimental. This is a first pass and may not be final; it has been informally tested but awaiting rigurous testing before being signed off.
+ * NOTE: consider this code legacy. There is no reason to use FlatCote over HiveCote. 
  * Also note that file writing/reading from file is not currently supported (will be added soon)
  
  @article{bagnall15cote,
@@ -63,17 +65,11 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         result.setValue(TechnicalInformation.Field.YEAR, "2015");
         return result;
     }    
-    
-
-    
-    
     // Flat-COTE includes 35 constituent classifiers:
     //  -   11 from the Elastic Ensemble
     //  -   8 from the Shapelet Transform Ensemble
     //  -   8 from CAWPE (ACF transformed)
     //  -   8 from CAWPE (PS transformed)
-    
-    private enum EnsembleType{EE,ST,ACF,PS};
     private Instances train;
     
     
@@ -81,41 +77,61 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
     private CAWPE st;
     private CAWPE acf;
     private CAWPE ps;
-    
+    private int numClassifiers=0;
 //    private ShapeletTransform shapeletTransform;
     private double[][] cvAccs;
     private double cvSum;
     
     private double[] weightByClass;
+
+
     
     @Override
     public void buildClassifier(Instances train) throws Exception{
-        long startTime=System.currentTimeMillis();
+
+        long t1=System.nanoTime();
         this.train = train;
         
         ee = new ElasticEnsemble();
-        ee.buildClassifier(train);
-        
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+        stc.setHourLimit(24);
+        stc.setClassifier(new CAWPE());
+//Redo for STC
         //ShapeletTransform shapeletTransform = ShapeletTransformFactory.createTransform(train);
         ShapeletTransform shapeletTransform = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); // now defaults to max of 24 hours
         shapeletTransform.supressOutput();
         st = new CAWPE();
         st.setTransform(shapeletTransform);
-        st.buildClassifier(train);
-        
+        st.setupOriginalHESCASettings();
         acf = new CAWPE();
+        acf.setupOriginalHESCASettings();
         acf.setTransform(new ACF());
-        acf.buildClassifier(train);
-
         ps = new CAWPE();
+        ps.setupOriginalHESCASettings();
         ps.setTransform(new PowerSpectrum());
+
+        if(seedClassifier){
+            if(ee instanceof Randomizable)
+                ((Randomizable)ee).setSeed(seed);
+            if(st instanceof Randomizable)
+                ((Randomizable)st).setSeed(seed);
+            if(acf instanceof Randomizable)
+                ((Randomizable)st).setSeed(seed);
+            if(acf instanceof Randomizable)
+                ((Randomizable)st).setSeed(seed);
+            
+        }
+//        st.setDebugPrinting(true);
+        ee.buildClassifier(train);
+        acf.buildClassifier(train);
         ps.buildClassifier(train);
+        st.buildClassifier(train);
         
         cvAccs = new double[4][];
         cvAccs[0] = ee.getCVAccs();
-        cvAccs[1] = st.getIndividualCvAccs();
-        cvAccs[2] = acf.getIndividualCvAccs();
-        cvAccs[3] = ps.getIndividualCvAccs();
+        cvAccs[1] = st.getIndividualAccEstimates();
+        cvAccs[2] = acf.getIndividualAccEstimates();
+        cvAccs[3] = ps.getIndividualAccEstimates();
         
         cvSum = 0;
         for(int e = 0; e < cvAccs.length;e++){
@@ -123,8 +139,10 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
                 cvSum+=cvAccs[e][c];
             }
         }
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
-
+        long t2=System.nanoTime();
+        trainResults.setBuildTime(t2-t1);
+        for(int i=0;i<cvAccs.length;i++)
+            numClassifiers+=cvAccs[i].length;
     }
     
     @Override
@@ -171,23 +189,36 @@ public class FlatCote extends AbstractClassifierWithTrainingInfo implements Tech
         }        
         return bsfClassVals.get(0);
     }
+    @Override
+    public String getParameters() {
+        String str=super.getParameters();
+        str+=",NumClassifiers,"+numClassifiers+",EE,"+cvAccs[0].length+",ACF_"+acf.getEnsembleName()+","+cvAccs[1].length+",PS_"+ps.getEnsembleName()+","+cvAccs[2].length+",ST_"+st.getEnsembleName()+","+cvAccs[3].length+",CVAccs,";
+        for(int i=0;i<cvAccs.length;i++)
+            for(int j=0;j<cvAccs[i].length;j++)
+                str+=cvAccs[i][j]+",";
+        
+        return str;
+    }
+
+
     
     public static void main(String[] args) throws Exception{
         
         FlatCote fc = new FlatCote();
-        Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
-        fc.buildClassifier(train);
+        String datasetName = "Chinatown";
         
-        int correct = 0;
-        for(int i = 0; i < test.numInstances(); i++){
-            if(fc.classifyInstance(test.instance(i))==test.instance(i).classValue()){
-                correct++;
-            }
-        }
-        System.out.println("Acc");
-        System.out.println(correct+"/"+test.numInstances());
-        System.out.println((double)correct/test.numInstances());
+        Instances train = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+datasetName+"/"+datasetName+"_TEST");
+        System.out.println("Example usage of HiveCote: this is the code used in the paper");
+        System.out.println(fc.getTechnicalInformation().toString());
+        System.out.println("Evaluated on "+datasetName);
+ 
+        fc.buildClassifier(train);
+        System.out.println("Build is complete");
+        System.out.println("Flat Cote parameters :"+fc.getParameters());
+        
+        double a=ClassifierTools.accuracy(test, fc);
+        System.out.println("Test acc for "+datasetName+" = "+a);
         
                 
     }

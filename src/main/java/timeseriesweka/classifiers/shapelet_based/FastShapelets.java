@@ -83,7 +83,6 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
     //where a SAX_word_type is just an int.
     HashMap<Integer, USAX_elm_type> uSAXMap;
 
-    private int seed;
     Random rand;
 
     //Obj_list_type  is a vector of ints. IE an ArrayList.
@@ -709,13 +708,6 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
                 System.out.println("Exception " + ex);
             }
         }
-    }
-
-    /**
-     * @param seed the seed to set
-     */
-    public void setSeed(int seed) {
-        this.seed = seed;
     }
 
     private class ScoreComparator implements Comparator<Pair<Integer, Double>> {

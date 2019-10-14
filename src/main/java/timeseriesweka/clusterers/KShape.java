@@ -5,33 +5,35 @@
  */
 package timeseriesweka.clusterers;
 
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
+import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.FFT;
 import timeseriesweka.filters.FFT.Complex;
 import static timeseriesweka.filters.FFT.MathsPower2;
-import utilities.ClassifierTools;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
-import static utilities.Utilities.extractTimeSeries;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.matrix.EigenvalueDecomposition;
 import weka.core.matrix.Matrix;
 
 /**
- * UNFINISHED AND UNTESTED, DONT USE.
+ * Class for the KShape clustering algorithm.
  *
- * @author pfm15hbu
+ * @author Matthew Middlehurst
  */
 public class KShape extends AbstractTimeSeriesClusterer {
+
+    //Paparrizos, John, and Luis Gravano.
+    //"k-shape: Efficient and accurate clustering of time series."
+    //Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data. ACM, 2015.
     
     private int k = 2;
     private int seed = Integer.MIN_VALUE;
@@ -44,14 +46,12 @@ public class KShape extends AbstractTimeSeriesClusterer {
     public int numberOfClusters(){
         return k;
     }
-    
-    public void setK(int k){
-        this.k = k;
-    }
+
+    public void setNumberOfClusters(int n){ k = n; }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (!dontCopyInstances){
+        if (copyInstances){
             data = new Instances(data);
         }
 
@@ -80,31 +80,35 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
         
         int iterations = 0;
-        cluster = new int[data.numInstances()];
-        
-        for (int i = 0; i < cluster.length; i++){
-            cluster[i] = (int)Math.ceil(rand.nextDouble()*k)-1;
+        assignments = new int[data.numInstances()];
+
+        //Randomly assign clusters
+        for (int i = 0; i < assignments.length; i++){
+            assignments[i] = (int)Math.ceil(rand.nextDouble()*k)-1;
         }
 
         int[] prevCluster = new int[data.numInstances()];
         prevCluster[0] = -1;
-        
-        while (!Arrays.equals(cluster, prevCluster) && iterations < 100){
-            prevCluster = Arrays.copyOf(cluster, cluster.length);
 
+        //While clusters change and less than max iterations
+        while (!Arrays.equals(assignments, prevCluster) && iterations < 100){
+            prevCluster = Arrays.copyOf(assignments, assignments.length);
+
+            //Select centroids
             for (int i = 0; i < k; i ++){
                 centroids.set(i, shapeExtraction(data, centroids.get(i), i));
             }
 
+            //Set each instance to the cluster of its closest centroid using shape based distance
             for (int i = 0; i < data.numInstances(); i++){
                 double minDist = Double.MAX_VALUE;
                 
                 for (int n = 0; n < k; n++){
                     SBD sbd = new SBD(centroids.get(n), data.get(i), false);
-                    //System.out.println(sbd.dist);
+
                     if (sbd.dist < minDist){
                         minDist = sbd.dist;
-                        cluster[i] = n;
+                        assignments[i] = n;
                     }
                 }
             }
@@ -122,7 +126,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         for (int i = 0; i < data.numInstances(); i++){
             for (int n = 0; n < k; n++){
-                if(n == cluster[i]){
+                if(n == assignments[i]){
                     clusters[n].add(i);
                     break;
                 }
@@ -135,15 +139,15 @@ public class KShape extends AbstractTimeSeriesClusterer {
         int seriesSize = centroid.numAttributes();
 
         double sum = 0;
-        
         for (int i = 0; i < seriesSize; i++){
             sum += centroid.value(i);
         }
-        
         boolean sumZero = sum == 0;
-        
+
+        //Take subsample of instances in centroids cluster
         for (int i = 0; i < data.numInstances(); i++){
-            if (cluster[i] == centroidNum){
+            if (assignments[i] == centroidNum){
+                //If the centroid sums to 0 add full instance to the subsample
                 if (sumZero){
                     subsample.add(data.get(i));
                 }
@@ -154,6 +158,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             }
         }
 
+        //Return instances of 0s as centroid if subsample empty
         if (subsample.numInstances() == 0){
             return new DenseInstance(1, new double[centroid.numAttributes()]);
         }
@@ -165,7 +170,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         for (int i = 0; i < subsample.numInstances(); i++){
             subsampleArray[i] = subsample.get(i).toDoubleArray();
         }
-        
+
+        //Calculate eignenvectors for subsample
         Matrix matrix = new Matrix(subsampleArray);
         Matrix matrixT = matrix.transpose();
 
@@ -198,9 +204,11 @@ public class KShape extends AbstractTimeSeriesClusterer {
                 eigSumNeg += (firstVal - eigVectorNeg[i]) * (firstVal - eigVectorNeg[i]);
             }
 
+            //Hack to move to next column if the correct values dont appear on the first one for some reason
+            //I have no idea why this happens or which datasets this may happen in
             if (Math.round(eigSum) == subsample.get(0).numAttributes() && Math.round(eigSumNeg) == subsample.get(0).numAttributes()){
                 col++;
-                System.err.println("Possible eig error");
+                //System.err.println("Possible eigenvalue error");
             }
             else{
                 break;
@@ -209,13 +217,14 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         Instance newCent;
 
-        if (Math.sqrt(eigSum) < Math.sqrt(eigSumNeg)){
+        if (eigSum < eigSumNeg){
             newCent = new DenseInstance(1, eigVector);
         }
         else{
             newCent = new DenseInstance(1, eigVectorNeg);
         }
 
+        //Normalise and return eigenvector as new centroid
         zNormalise(newCent);
 
         return newCent;
@@ -244,6 +253,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
         String dataset = "Trace";
         Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+//        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
+//        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -253,27 +264,37 @@ public class KShape extends AbstractTimeSeriesClusterer {
         k.buildClusterer(inst);
 
         System.out.println(k.clusters.length);
+        System.out.println(Arrays.toString(k.assignments));
         System.out.println(Arrays.toString(k.clusters));
-        System.out.println(randIndex(k.cluster, inst));
+        System.out.println(randIndex(k.assignments, inst));
     }
-    
-    private class SBD{
+
+    //Class for calculating Shape Based Distance
+    private class SBD {
         
         public double dist;
         public Instance yShift;
         
         private FFT fft;
+
+        public SBD(){}
     
         public SBD(Instance first, Instance second, boolean calcShift){
             calculateDistance(first, second, calcShift);
         }
 
-        private void calculateDistance(Instance first, Instance second, boolean calcShift){
+        public double calculateDistance(Instance first, Instance second){
+            calculateDistance(first, second, false);
+            return dist;
+        }
+
+        public void calculateDistance(Instance first, Instance second, boolean calcShift){
             int oldLength = first.numAttributes();
             int oldLengthY = second.numAttributes();
 
             int length = paddedLength(2*oldLength-1);
-            
+
+            //FFT and IFFT
             fft = new FFT();
                     
             Complex[] firstC = fft(first, oldLength, length);
@@ -285,7 +306,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
             }
             
             fft.inverseFFT(firstC, length);
-            
+
+            //Calculate NCCc values
             double firstNorm = sumSquare(first);
             double secondNorm = sumSquare(second);
             double norm = Math.sqrt(firstNorm * secondNorm);
@@ -303,7 +325,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
             
             double maxValue = 0;
             int shift = -1;
-                    
+
+            //Largest NCCc value and index
             for (int i = 0; i < ncc.length; i++){
                 if (ncc[i] > maxValue){
                     maxValue = ncc[i];
@@ -312,7 +335,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
             }
             
             dist = 1 - maxValue;
-            
+
+            //Create y', shifting the second instance in a direction and padding with 0s
             if (calcShift){
                 if (oldLength > oldLengthY){
                     shift -= oldLength-1;
@@ -335,7 +359,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
                 }
             }
         }
-        
+
+        //Amount of padding required for FFT
         private int paddedLength(int oldLength){
             int length;
             
@@ -352,16 +377,17 @@ public class KShape extends AbstractTimeSeriesClusterer {
             
             return length;
         }
-        
-        public Complex[] fft(Instance inst, int oldLength, int length){
+
+        //Run FFT and return array of complex numbers
+        private Complex[] fft(Instance inst, int oldLength, int length){
             Complex[] complex = new Complex[length];
             
             for (int i = 0; i < oldLength; i++){
                 complex[i] = new Complex(inst.value(i), 0);
             }
-            
-            while(oldLength < length){
-                complex[oldLength++] = new Complex(0,0);
+
+            for (int i = oldLength; i < length; i++){
+                complex[i] = new Complex(0,0);
             }
             
             fft.fft(complex, length);

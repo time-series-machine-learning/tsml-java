@@ -95,8 +95,8 @@ public class Cosine extends SimpleBatchFilter {
             String s="Beef";
             OutFile of1 = new OutFile("C:\\Users\\ajb\\Dropbox\\test\\BeefCosine_TRAIN.arff");
             OutFile of2 = new OutFile("C:\\Users\\ajb\\Dropbox\\test\\BeefCosine_TEST.arff");
-            Instances test=DatasetLoading.loadDataNullable(DatasetLists.dropboxPath+s+"\\"+s+"_TEST");
-            Instances train=DatasetLoading.loadDataNullable(DatasetLists.dropboxPath+s+"\\"+s+"_TRAIN");			
+            Instances test=DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+s+"/"+s+"_TEST");
+            Instances train=DatasetLoading.loadDataNullable("Z:/ArchiveData/Univariate_arff/"+s+"/"+s+"_TRAIN");			
             Cosine cosTransform= new Cosine();
             Sine sinTransform=new Sine();
             Hilbert hilbertTransform= new Hilbert();

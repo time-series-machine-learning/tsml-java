@@ -96,7 +96,10 @@ public class MultipleClassifiersPairwiseTest {
                 for(int k=0;k<accs[i].length;k++)
                     diff[k]=accs[i][k]-accs[j][k];
                 String str=test.performTests(diff);
-//                System.out.println("TEST Classifier "+names[i]+" VS "+names[j]);
+                
+                if(!beQuiet)
+                    System.out.println("TEST Classifier "+names[i]+" VS "+names[j]+ " returns string "+str);
+                
                 String[] tmp=str.split(",");
                 pValsTTest[i][j]=Double.parseDouble(tmp[2]);
                 pValsSignTest[i][j]=Double.parseDouble(tmp[5]);

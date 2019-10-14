@@ -23,17 +23,14 @@ import java.io.File;
 import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
 
-import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import weka.classifiers.AbstractClassifier;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
-import weka_uea.classifiers.ensembles.weightings.TrainAcc;
+import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
+import weka_extras.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
@@ -56,7 +53,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifier implements SaveParameterInfo, TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
@@ -74,7 +71,6 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
     private long numShapelets = 0;
-    private long seed = 0;
     private boolean setSeed=false;
     private long timeLimit = Long.MAX_VALUE;
     private String checkpointFullPath; //location to check point 
@@ -104,13 +100,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     public MultivariateShapeletTransformClassifier(){
         configureDefaultEnsemble();
     }
-
-    
-    public void setSeed(long sd){
-        setSeed=true;
-        seed = sd;
-    }
-    
+  
     //careful when setting search type as you could set a type that violates the contract.
     public void setSearchType(ShapeletSearch.SearchType type) {
         searchType = type;
@@ -127,8 +117,8 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
     
     @Override
@@ -139,8 +129,8 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     @Override
     public String getParameters(){
         String paras=transform.getParameters();
-        String ensemble=this.ensemble.getParameters();
-        return "BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ensemble;
+        String ens=this.ensemble.getParameters();
+        return super.getParameters()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ens;
     }
     
     @Override
@@ -204,7 +194,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             format = doTransform ? createTransformData(data, timeLimit) : data;
             transformBuildTime=System.currentTimeMillis()-startTime;
             if(setSeed)
-                ensemble.setRandSeed((int) seed);
+                ensemble.setSeed((int) seed);
 
             redundantFeatures=InstanceTools.removeRedundantTrainAttributes(format);
 
@@ -375,13 +365,13 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         ShapeletTransformFactoryOptions options;
         switch(type){
             case INDEP:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("INDEPENDENT").apply(train, ShapeletTransformTimingUtilities.dayNano,seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("INDEPENDENT").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;                
             case MULTI_D:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_D").apply(train, ShapeletTransformTimingUtilities.dayNano,seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_D").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;
             case MULTI_I: default:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_I").apply(train, ShapeletTransformTimingUtilities.dayNano,seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_I").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;
         }
         

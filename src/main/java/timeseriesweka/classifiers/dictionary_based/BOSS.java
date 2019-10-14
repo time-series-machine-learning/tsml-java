@@ -14,39 +14,27 @@
  */
 package timeseriesweka.classifiers.dictionary_based;
 
-import java.security.InvalidParameterException;
 import java.util.*;
 
-import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import utilities.*;
-import utilities.samplers.*;
-import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
-import static weka.core.Utils.sum;
 
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
  * If parameters are known, use the nested class BOSSIndividual and directly provide them.
- *
- * Options to change the method of ensembling to randomly select parameters instead of searching.
- * Has the capability to contract train time and checkpoint when using a random ensemble.
  *
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *
@@ -57,7 +45,6 @@ import static weka.core.Utils.sum;
 public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator,
         TechnicalInformationHandler, MultiThreadable {
 
-    private int seed = 0;
     private Random rand;
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
@@ -89,7 +76,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        TechnicalInformation 	result;
+        TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
         result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
         result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
@@ -139,7 +126,7 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
     }
 
     @Override
-    public void setThreadAllowance(int numThreads) {
+    public void enableMultiThreading(int numThreads) {
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;
@@ -172,10 +159,6 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     public void setMaxEnsembleSize(int size) {
         maxEnsembleSize = size;
-    }
-
-    public void setSeed(int i) {
-        seed = i;
     }
 
     @Override
@@ -228,8 +211,9 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
         this.train = data;
 
-        if (multiThread && numThreads == 1){
-            numThreads = Runtime.getRuntime().availableProcessors();
+        if (multiThread){
+            if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
+            if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
         }
 
         //required to deal with multivariate datasets, each channel is split into its own instances
@@ -319,7 +303,8 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             trainResults.setParas(getParameters());
             double result = findEnsembleTrainAcc(data);
             trainResults.finaliseResults();
-            trainResults.writeFullResultsToFile(trainCVPath);
+            if (trainCVPath != null)
+                trainResults.writeFullResultsToFile(trainCVPath);
 
             System.out.println("CV acc ="+result);
 
@@ -348,22 +333,17 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         int requiredCorrect = (int)(lowestAcc*numInst);
 
         if (multiThread){
-            ex = Executors.newFixedThreadPool(numThreads);
-            ArrayList<BOSSIndividual.TrainNearestNeighbourThread> threads = new ArrayList<>(sum(numClassifiers));
+            ArrayList<Future<Double>> futures = new ArrayList<>(numInst);
 
-            for (int i = 0; i < numInst; ++i) {
-                BOSSIndividual.TrainNearestNeighbourThread t = boss.new TrainNearestNeighbourThread(i);
-                threads.add(t);
-                ex.execute(t);
-            }
+            for (int i = 0; i < numInst; ++i)
+                futures.add(ex.submit(boss.new TrainNearestNeighbourThread(i)));
 
-            ex.shutdown();
-            while (!ex.isTerminated());
-
-            for (BOSSIndividual.TrainNearestNeighbourThread t: threads){
-                if (t.nn == series.get(t.testIndex).classValue()) {
+            int idx = 0;
+            for (Future<Double> f: futures){
+                if (f.get() == series.get(idx).classValue()) {
                     ++correct;
                 }
+                idx++;
             }
         }
         else {
@@ -402,18 +382,25 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
             double[] probs = distributionForInstance(i, data.numClasses());
             predTime = System.nanoTime() - predTime;
 
-            double c = 0;
-            for (int j = 1; j < probs.length; j++)
-                if (probs[j] > probs[(int) c])
-                    c = j;
+            int maxClass = 0;
+            for (int n = 1; n < probs.length; ++n) {
+                if (probs[n] > probs[maxClass]) {
+                    maxClass = n;
+                }
+                else if (probs[n] == probs[maxClass]){
+                    if (rand.nextBoolean()){
+                        maxClass = n;
+                    }
+                }
+            }
 
             //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
-            if (c == data.get(i).classValue())
+            if (maxClass == data.get(i).classValue())
                 ++correct;
 
-            this.ensembleCvPreds[i] = c;
+            this.ensembleCvPreds[i] = maxClass;
 
-            trainResults.addPrediction(data.get(i).classValue(), probs, c, predTime, "");
+            trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
 
         double result = correct / data.numInstances();
@@ -446,27 +433,30 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         return this.ensembleCvPreds;
     }
 
-    private double[] distributionForInstance(int test, int numclasses) throws Exception {
-        double[][] classHist = new double[numSeries][numclasses];
+    private double[] distributionForInstance(int test, int numClasses) throws Exception {
+        double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
-        double sum[] = new double[numSeries];
+        double sum = 0;
 
         for (int n = 0; n < numSeries; n++) {
             for (BOSSIndividual classifier : classifiers[n]) {
                 double classification = classifier.classifyInstance(test);
 
-                classHist[n][(int) classification] += classifier.weight;
-                sum[n] += classifier.weight;
+                classHist[(int) classification] += classifier.weight;
+                sum += classifier.weight;
             }
         }
 
-        double[] distributions = new double[numclasses];
+        double[] distributions = new double[numClasses];
 
-        for (int n = 0; n < numSeries; n++){
-            if (sum[n] != 0)
-                for (int i = 0; i < classHist[n].length; ++i)
-                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+        if (sum != 0) {
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += (classHist[i] / sum) / numSeries;
+        }
+        else{
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += 1 / numClasses;
         }
 
         return distributions;
@@ -474,17 +464,16 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[] dist = distributionForInstance(instance);
+        double[] probs = distributionForInstance(instance);
 
-        double maxFreq=dist[0], maxClass=0;
-        for (int i = 1; i < dist.length; ++i) {
-            if (dist[i] > maxFreq) {
-                maxFreq = dist[i];
-                maxClass = i;
+        int maxClass = 0;
+        for (int n = 1; n < probs.length; ++n) {
+            if (probs[n] > probs[maxClass]) {
+                maxClass = n;
             }
-            else if (dist[i] == maxFreq){
+            else if (probs[n] == probs[maxClass]){
                 if (rand.nextBoolean()){
-                    maxClass = i;
+                    maxClass = n;
                 }
             }
         }
@@ -494,10 +483,11 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        double[][] classHist = new double[numSeries][instance.numClasses()];
+        int numClasses = train.numClasses();
+        double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
-        double sum[] = new double[numSeries];
+        double sum = 0;
 
         Instance[] series;
 
@@ -512,41 +502,44 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         }
 
         if (multiThread){
-            ex = Executors.newFixedThreadPool(numThreads);
-            ArrayList<BOSSIndividual.TestNearestNeighbourThread> threads = new ArrayList<>(sum(numClassifiers));
+            ArrayList<Future<Double>>[] futures = new ArrayList[numSeries];
 
             for (int n = 0; n < numSeries; n++) {
+                futures[n] = new ArrayList<>(numClassifiers[n]);
                 for (BOSSIndividual classifier : classifiers[n]) {
-                    BOSSIndividual.TestNearestNeighbourThread t = classifier.new TestNearestNeighbourThread(instance, classifier.weight, n);
-                    threads.add(t);
-                    ex.execute(t);
+                    futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(series[n])));
                 }
             }
 
-            ex.shutdown();
-            while (!ex.isTerminated());
-
-            for (BOSSIndividual.TestNearestNeighbourThread t: threads){
-                classHist[t.series][(int)t.nn] += t.weight;
-                sum[t.series] += t.weight;
+            for (int n = 0; n < numSeries; n++) {
+                int idx = 0;
+                for (Future<Double> f : futures[n]) {
+                    double weight = classifiers[n].get(idx).weight;
+                    classHist[f.get().intValue()] += weight;
+                    sum += weight;
+                    idx++;
+                }
             }
         }
         else {
             for (int n = 0; n < numSeries; n++) {
                 for (BOSSIndividual classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
-                    classHist[n][(int) classification] += classifier.weight;
-                    sum[n] += classifier.weight;
+                    classHist[(int) classification] += classifier.weight;
+                    sum += classifier.weight;
                 }
             }
         }
 
         double[] distributions = new double[instance.numClasses()];
 
-        for (int n = 0; n < numSeries; n++){
-            if (sum[n] != 0)
-                for (int i = 0; i < classHist[n].length; ++i)
-                    distributions[i] += (classHist[n][i] / sum[n]) / numSeries;
+        if (sum != 0) {
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += (classHist[i] / sum);
+        }
+        else{
+            for (int i = 0; i < classHist.length; ++i)
+                distributions[i] += 1 / numClasses;
         }
 
         return distributions;
@@ -557,15 +550,15 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\Data\\MultivariateTSCProblems\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];
@@ -574,21 +567,25 @@ public class BOSS extends AbstractClassifierWithTrainingInfo implements TrainAcc
         double accuracy;
 
         c = new BOSS();
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         c = new BOSS();
+        c.setFindTrainAccuracyEstimate(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 22/07/19
+        //Output 02/08/19
         /*
+        CV acc =0.9402985074626866
         BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [4]
-        BOSS accuracy on ERing fold 0 = 0.7925925925925926 numClassifiers = [4, 1, 3, 6]
+        CV acc =0.8333333333333334
+        BOSS accuracy on ERing fold 0 = 0.8333333333333334 numClassifiers = [4, 1, 3, 6]
         */
     }
 }

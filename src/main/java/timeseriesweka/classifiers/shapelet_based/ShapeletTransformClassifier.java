@@ -24,9 +24,8 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka_uea.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -35,8 +34,8 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import weka_uea.classifiers.ensembles.voting.MajorityConfidence;
-import weka_uea.classifiers.ensembles.weightings.TrainAcc;
+import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
+import weka_extras.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -44,11 +43,10 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
-import weka_uea.classifiers.ensembles.voting.MajorityVote;
-import weka_uea.classifiers.ensembles.weightings.EqualWeighting;
+import weka_extras.classifiers.ensembles.voting.MajorityVote;
+import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -58,16 +56,17 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import weka_uea.classifiers.ensembles.ContractRotationForest;
+import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
  *
  * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
  *  then classifies with rotation forest.
- * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
+ * If can be contracted to a maximum run time for shapelets, and can be configured for a different base classifier
+ * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, TrainTimeContractable {
+public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable{
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -82,7 +81,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     private boolean preferShortShapelets = false;
     private String shapeletOutputPath;
     int[] redundantFeatures;
-    private boolean doTransform=true;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
@@ -122,16 +120,19 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public ShapeletTransformClassifier(){
-        classifier= new ContractRotationForest();
-        
+        RotationForest rf= new RotationForest();
+        rf.setNumIterations(200);
+        classifier=rf;
         
 //        configureCAWPEEnsemble();
     }
 
-    
     public void setSeed(long sd){
         setSeed=true;
         seed = sd;
+    }
+    public void setClassifier(Classifier c){
+        classifier=c;
     }
     
     //careful when setting search type as you could set a type that violates the contract.
@@ -141,8 +142,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
 
 
     /*//if you want CAWPE to perform CV.
-    public void setPerformCV(boolean b) {
-        ensemble.setPerformCV(b);
+    public void setEstimateEnsemblePerformance(boolean b) {
+        ensemble.setEstimateEnsemblePerformance(b);
     }*/
  
         
@@ -150,8 +151,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public String getParameters(){
        String paras=transform.getParameters();
        String classifierParas="No Classifier Para Info";
-       if(classifier instanceof SaveParameterInfo) 
-            classifierParas=((SaveParameterInfo)classifier).getParameters();
+       if(classifier instanceof AbstractClassifierWithTrainingInfo) 
+            classifierParas=((AbstractClassifierWithTrainingInfo)classifier).getParameters();
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     
@@ -169,9 +170,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
-    public void doSTransform(boolean b){
-        doTransform=b;
-    }
     
     public long getTransformOpCount(){
         return transform.getCount();
@@ -217,8 +215,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         
         long startTime=System.nanoTime(); 
         long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
-        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
-        shapeletData = doTransform ? createTransformData(data, transformTime) : data;
+//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
+        shapeletData =  createTransformData(data, transformTime);
         transformBuildTime=System.nanoTime()-startTime;
 //        if(setSeed)
 //            classifier.setRandSeed((int) seed);
@@ -244,6 +242,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         long classifierTime=timeLimit-transformBuildTime;
         if(classifier instanceof TrainTimeContractable)
             ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
+//Here get the train estimate directly from classifier using cv for now        
+        
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
@@ -367,7 +367,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public double classifyInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
+        Instances temp  = transform.process(shapeletData);
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -380,7 +380,7 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public double[] distributionForInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
         
-        Instances temp  = doTransform ? transform.process(shapeletData) : shapeletData;
+        Instances temp  = transform.process(shapeletData);
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -480,7 +480,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         ShapeletTransformClassifier st= new ShapeletTransformClassifier();
         st.configureBasicEnsemble();
         //st.saveResults(trainS, testS);
-        st.doSTransform(true);
         st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
         st.setMinuteLimit(2);
         System.out.println("Start transform");
@@ -511,7 +510,6 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
         transform=st.transform;
         shapeletData=st.shapeletData;
         int[] redundantFeatures=st.redundantFeatures;
-        doTransform=st.doTransform;
         transformBuildTime=st.transformBuildTime;
         trainResults =st.trainResults;
         numShapeletsInTransform =st.numShapeletsInTransform;

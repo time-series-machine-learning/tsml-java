@@ -35,14 +35,14 @@ import statistics.simulators.SimulateSpectralData;
 import statistics.simulators.SimulateDictionaryData;
 import statistics.simulators.SimulateIntervalData;
 import statistics.simulators.SimulateShapeletData;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.InstanceTools;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import weka_uea.classifiers.ensembles.CAWPE;
-import weka_uea.classifiers.ensembles.SaveableEnsemble;
-import weka_uea.classifiers.tuned.TunedRandomForest;
+import weka_extras.classifiers.ensembles.CAWPE;
+import weka_extras.classifiers.ensembles.SaveableEnsemble;
+import weka_extras.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 import timeseriesweka.classifiers.TrainAccuracyEstimator;
@@ -272,8 +272,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof SaveParameterInfo)
-                p.writeLine(((SaveParameterInfo)c).getParameters());
+            if(c instanceof AbstractClassifierWithTrainingInfo)
+                p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else
@@ -382,7 +382,6 @@ public class SimulationExperiments {
 
     
     public static void main(String[] args){
-        DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\";
         runShapeletSimulatorExperiment();
     }
 }
