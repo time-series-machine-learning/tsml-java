@@ -14,6 +14,6 @@ The [CAWPE class](https://github.com/TonyBagnall/uea-tsc/blob/paper/cawpe/src/ma
 
 ### Authors
 
-* james.large@uea.ac.uk - lead author
+* james.large@uea.ac.uk - lead author 
 * j.lines@uea.ac.uk - secondary author
 * ajb@uea.ac.uk - corresponding author
