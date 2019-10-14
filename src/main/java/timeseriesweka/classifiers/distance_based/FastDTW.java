@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSByPercent;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.WindowSearcher;
+import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 
 /**

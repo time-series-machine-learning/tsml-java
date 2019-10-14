@@ -47,7 +47,7 @@ public class UCR_FastWWS {
 	public static void main(String[] args) throws Exception {
 		// Initialise
 		sampleType = "Single";				// Doing just 1 dataset, can be Sorted, Small, New or All
-		datasetName = "ElectricDevices";	// Name of dataset to be tested
+		datasetName = "ItalyPowerDemand";	// Name of dataset to be tested
 		method = "FastWWSearch";				// Method type in finding the best window
 		
 		// Get project and dataset path

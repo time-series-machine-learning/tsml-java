@@ -43,7 +43,7 @@ import weka.core.TechnicalInformationHandler;
 
 /**
  * A new Elastic Ensemble for sharing with others
-@article{lines15elastic,
+  @article{lines15elastic,
   title={Time Series Classification with Ensembles of Elastic Distance Measures},
   author={J. Lines and A. Bagnall},
   journal={Data Mining and Knowledge Discovery},
@@ -97,12 +97,12 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
     }
     
     
-    private final ConstituentClassifiers[] classifiersToUse;
-    private String datasetName;
-    private int resampleId;
-    private String resultsDir;
-    private double[] cvAccs;
-    private double[][] cvPreds;
+    protected ConstituentClassifiers[] classifiersToUse;
+    protected String datasetName;
+    protected int resampleId;
+    protected String resultsDir;
+    protected double[] cvAccs;
+    protected double[][] cvPreds;
     
     private boolean buildFromFile = false;
     private boolean writeToFile = false;
@@ -114,7 +114,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
     private static DerivativeFilter df = new DerivativeFilter();
     
     // utility to enable AJBs COTE 
-    double[] previousPredictions = null;
+    protected double[] previousPredictions = null;
     
     double ensembleCvAcc =-1;
     double[] ensembleCvPreds = null;
@@ -292,7 +292,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         this.resampleId = resampleId;
         this.writeToFile = true;
     }
-        
+  
     /**
      * Builds classifier. If building from file, cv weights and predictions will be loaded from file. If running from scratch, training cv will be performed for constituents to find best params, cv accs, and cv preds
      * @param train The training data
@@ -578,14 +578,14 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         System.out.println("to do");
         
     }
-    
+
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
         Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
         Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
-        
+
         int correct = 0;
         for(int i = 0; i < test.numInstances(); i++){
             if(test.instance(i).classValue()==ee.classifyInstance(test.instance(i))){
