@@ -19,6 +19,7 @@ package timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher;
 
 import timeseriesweka.classifiers.distance_based.FastWWS.items.MonoDoubleItemSet;
 import timeseriesweka.classifiers.distance_based.FastWWS.sequences.SymbolicSequence;
+import weka.classifiers.Classifier;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;

@@ -10,9 +10,10 @@ package timeseriesweka.classifiers.distance_based;
 import java.util.ArrayList;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSByPercent;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.WindowSearcher;
+import weka.classifiers.AbstractClassifier;
+import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import weka.core.*;
 
 /**

@@ -43,7 +43,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * A new Elastic Ensemble for sharing with others
-@article{lines15elastic,
+  @article{lines15elastic,
   title={Time Series Classification with Ensembles of Elastic Distance Measures},
   author={J. Lines and A. Bagnall},
   journal={Data Mining and Knowledge Discovery},
@@ -97,28 +97,28 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
     
     
-    private final ConstituentClassifiers[] classifiersToUse;
-    private String datasetName;
-    private int resampleId;
-    private String resultsDir;
-    private double[] cvAccs;
-    private double[][] cvPreds;
+    protected ConstituentClassifiers[] classifiersToUse;
+    protected String datasetName;
+    protected int resampleId;
+    protected String resultsDir;
+    protected double[] cvAccs;
+    protected double[][] cvPreds;
     
-    private boolean buildFromFile = false;
-    private boolean writeToFile = false;
-    private Instances train;
-    private Instances derTrain;
-    private Efficient1NN[] classifiers = null;
+    protected boolean buildFromFile = false;
+    protected boolean writeToFile = false;
+    protected Instances train;
+    protected Instances derTrain;
+    protected Efficient1NN[] classifiers = null;
     
-    private boolean writeEnsembleTrainingFile = false;
-    private String ensembleTrainFilePathAndName = null;
+    protected boolean writeEnsembleTrainingFile = false;
+    protected String ensembleTrainFilePathAndName = null;
     
     
-    private boolean usesDer = false;
-    private static DerivativeFilter df = new DerivativeFilter();
+    protected boolean usesDer = false;
+    protected static DerivativeFilter df = new DerivativeFilter();
     
     // utility to enable AJBs COTE 
-    double[] previousPredictions = null;
+    protected double[] previousPredictions = null;
     
     double ensembleCvAcc =-1;
     double[] ensembleCvPreds = null;
@@ -277,6 +277,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         this.writeEnsembleTrainingFile = true;
         ensembleTrainFilePathAndName = outputPathAndName;
     }
+
     @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){
         this.writeEnsembleTrainingFile =setCV;
@@ -592,14 +593,14 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         System.out.println("to do");
         
     }
-    
+
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
         Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
         Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
-        
+
         int correct = 0;
         for(int i = 0; i < test.numInstances(); i++){
             if(test.instance(i).classValue()==ee.classifyInstance(test.instance(i))){
