@@ -238,12 +238,7 @@ public abstract class Efficient1NN extends EnhancedAbstractClassifier implements
         return classifierIdentifier;
     }
 
-    @Override
-    public String getParameters() {
-        String paras = "BuildTime," + res.getBuildTime();
-        return paras;
-
-    }
+    
     // could parallelise here
 //    public void writeLOOCVOutput(String tscProblemDir, String datasetName, int resampleId, String outputResultsDir, boolean tidyUp) throws Exception{    
 //        for(int paramId = 0; paramId < 100; paramId++){
