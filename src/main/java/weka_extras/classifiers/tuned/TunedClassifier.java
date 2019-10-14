@@ -324,10 +324,14 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         return bestParas.toClassifierResultsParaLine(true);
     }
 
-    @Override //CheckpointClassifier
-    public void setSavePath(String path) {
-        this.SEP_CP_PS_paraWritePath = path;
-        this.SEP_CP_savingAllParameters = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            this.SEP_CP_PS_paraWritePath = path;
+            this.SEP_CP_savingAllParameters = true;
+        }
+        return validPath;
     }
 
     @Override //CheckpointClassifier

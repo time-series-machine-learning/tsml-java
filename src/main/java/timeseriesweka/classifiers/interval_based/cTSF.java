@@ -339,15 +339,14 @@ public class cTSF extends EnhancedAbstractClassifier
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
-
-        //path checkpoint files will be saved to
         File file = new File(checkpointPath + "TSF" + seed + ".ser");
-
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
-            System.out.println("Loading from checkpoint file");
+        //path checkpoint files will be saved to
+            if(debug)
+               System.out.println("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
-            checkpointTimeElapsed -= System.nanoTime()-t1;
+ //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
         //initialise variables
         else {
@@ -678,10 +677,14 @@ public class cTSF extends EnhancedAbstractClassifier
             System.out.println("Unable to read number of intervals, not set");
     }
 
-    @Override
-    public void setSavePath(String path) {
-        checkpointPath = path;
-        checkpoint = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            checkpointPath = path;
+            checkpoint = true;
+        }
+        return validPath;
     }
 
     @Override

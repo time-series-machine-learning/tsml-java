@@ -724,7 +724,7 @@ public class RotationForest
     m_RemoveUseless = new RemoveUseless();
     m_RemoveUseless.setInputFormat(data);
     data = Filter.useFilter(data, m_RemoveUseless);
-
+  
     m_Normalize = new Normalize();
     m_Normalize.setInputFormat(data);
     data = Filter.useFilter(data, m_Normalize);

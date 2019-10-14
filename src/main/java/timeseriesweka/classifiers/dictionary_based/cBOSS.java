@@ -262,10 +262,14 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     //Set the path where checkpointed versions will be stored
-    @Override
-    public void setSavePath(String path){
-        checkpointPath = path;
-        checkpoint = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            checkpointPath = path;
+            checkpoint = true;
+        }
+        return validPath;
     }
 
     //Define how to copy from a loaded object to this object
@@ -467,10 +471,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         //if checkpointing and serialised files exist load said files
         if (checkpoint && f.exists()) {
-            System.out.println("Loading from checkpoint file");
+            if(debug)
+                System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "BOSS.ser");
-            System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
+            if(debug)
+                System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
         }
         //initialise variables
         else {

@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,7 +39,13 @@ number
 public interface Checkpointable extends Serializable{
 
     //Set the path where checkpointed versions will be stored
-    public void setSavePath(String path);
+    default boolean setSavePath(String path){
+        File f = new File(path);
+        boolean success=true;
+        if(!f.isDirectory())
+            success=f.mkdirs();
+        return success;
+    }
     //Define how to copy from a loaded object to this object
     public void copyFromSerObject(Object obj) throws Exception;
 

@@ -213,6 +213,17 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * If successful this object is returned to state in which it was at creation of serialisation file.
      * @param serializePath Path to folder in which to save serialisation files.
      */
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+//            checkpointPath = path;
+//            checkpoint = true;
+        }
+        return validPath;
+    }
+
+/*
     @Override
     public void setSavePath(String serializePath){
         this.serialisePath = serializePath;
@@ -224,7 +235,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         cRISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
-
+*/
     public int getMaxLag(Instances instances){
         int maxLag = (instances.numAttributes()-1);
         if(DEFAULT_MAXLAG < maxLag)

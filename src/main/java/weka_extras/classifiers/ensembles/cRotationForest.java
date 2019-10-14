@@ -15,7 +15,7 @@
  */
 
 /*
- *    RotationForest.java
+ *    cRotationForest.java
  *    Copyright (C) 2008 Juan Jose Rodriguez
  *    Copyright (C) 2008 University of Waikato, Hamilton, New Zealand
  *      Contract Version by  Tony Bagnall, with enhancements by ?
@@ -56,7 +56,7 @@ import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 
 
-public class ContractRotationForest extends EnhancedAbstractClassifier
+public class cRotationForest extends EnhancedAbstractClassifier
   implements TrainTimeContractable, Checkpointable, Serializable{
   
     Classifier baseClassifier;
@@ -94,7 +94,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     int minNumTrees=50;
     int maxNumTrees=200;
     int maxNumAttributes;
-    String checkpointPath;
+    String checkpointPath=null;
+    boolean checkpoint=false;
     TimingModel tm;
     double timeUsed;
     double alpha=0.2;//Learning rate for timing update
@@ -102,7 +103,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
   /**
    * Constructor.
    */
-  public ContractRotationForest() {
+  public cRotationForest() {
     super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
       
     baseClassifier = new weka.classifiers.trees.J48();
@@ -253,23 +254,16 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         long startTime=System.nanoTime(); 
         String relationName=data.relationName();
         data = new Instances( data );
-        boolean loadedFromFile=false;
-        if(checkpointPath!=null){
-            //Look for previous model. Protocol for saving is ProblemName+ClassifierName.ser
-            String serPath=checkpointPath+"/"+relationName+"ContractRotationForest.ser";
-            System.out.println("Simple name = "+this.getClass().getSimpleName());
-            File f =new File(serPath);
-            if(f.exists()){
-                if(m_Debug)
-                    System.out.println("Serialised version exists, trying to load from "+serPath);
-                loadFromFile(serPath);
-                loadedFromFile=true;
-           }
-            else
-                if(m_Debug)
-                    System.out.println("No Serialised version at location "+serPath);                
-        } 
-        if(!loadedFromFile){
+        File file = new File(checkpointPath + "TSF" + seed + ".ser");
+        //if checkpointing and serialised files exist load said files
+        if (checkpoint && file.exists()){
+        //path checkpoint files will be saved to
+            if(debug)
+               System.out.println("Loading from checkpoint file");
+            loadFromFile(checkpointPath + "TSF" + seed + ".ser");
+ //               checkpointTimeElapsed -= System.nanoTime()-t1;
+        }
+        else{
             if (baseClassifier == null) {
                 throw new Exception("A base classifier has not been specified!");
             }
@@ -287,7 +281,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
         rand = new Random(seed);
 
-//This is from the RotationForest: remove zero variance and normalise by column 
+//This is from the RotationForest: remove zero variance and normalise attributes. 
+//Do this before loading from file, so we can perform checks of dataset?
         removeUseless = new RemoveUseless();
         removeUseless.setInputFormat(data);
         data = Filter.useFilter(data, removeUseless);
@@ -317,7 +312,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         double treeTime;
     //Re-estimate even if loading serialised, may be different hardware ....        
         estSingleTree=tm.estimateSingleTreeHours(n,m);
-        if(m_Debug){
+        if(debug){
             System.out.println("n ="+n+" m = "+m+" estSingleTree = "+estSingleTree);
             System.out.println("Contract time ="+contractHours+" hours ");
 
@@ -325,7 +320,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
         if((estSingleTree*minNumTrees)<contractHours){ 
-            if(m_Debug)
+            if(debug)
                 System.out.println("Think we are able to build at least 50 trees");
             boolean buildFullTree=true;
             int size;
@@ -360,7 +355,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 else
                     buildFullTree=true;
             //Checkpoint here   
-                    if(m_Debug)
+                    if(debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 if(checkpointPath!=null){
                     //save the serialised version
@@ -369,7 +364,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                         if(!f.isDirectory())
                             f.mkdirs();
                         saveToFile(checkpointPath+relationName+"ContractRotationForest.ser");
-                        if(m_Debug)
+                        if(debug)
                             System.out.println("HERE!!!  Saved to "+checkpointPath+relationName+"ContractRotationForest.ser");
                     }
                     catch(Exception e){
@@ -380,7 +375,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
 //CASE 2 and 3: dont think we can build min number of trees        
         else{
-            if(m_Debug)
+            if(debug)
                 System.out.println("Dont think we can build 50 trees in the time allowed ");
 //If m > n: SAMPLE ATTRIBUTES
             if(m>n){
@@ -390,7 +385,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 while(timeUsed<contractHours && numTrees<minNumTrees){
                     maxAtts=tm.estimateMaxAttributes(m,minNumTrees-numTrees,estSingleTree,contractHours);
                     int size=rand.nextInt(maxAtts/2)+maxAtts/2;
-                    if(m_Debug){
+                    if(debug){
                         System.out.print("Max estimated attributes ="+maxAtts);
                         System.out.println("    using "+size+" attributes, building single tree at a time. Total time used ="+timeUsed);
                     }
@@ -402,7 +397,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                     treeTime=(newTime-sTime)/(1000.0*60.0*60.0);
                     estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
 //                    (1-alpha)*estSingleTree+alpha*treeTime;
-                    if(m_Debug)
+                    if(debug)
                         System.out.println(" actual time used ="+timeUsed+" new est single tree = "+estSingleTree);
                     
                 //Checkpoint here   
@@ -415,14 +410,14 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                     maxAtts*=2;
                     if(maxAtts>size)
                         maxAtts=size;
-                    if(m_Debug)
+                    if(debug)
                         System.out.println("OVERTIME: using "+size+" attributes, building single tree at a time. Time used -"+timeUsed);
                     buildTreeAttSample(data,instancesOfClass,numTrees++,maxAtts);
             //Update time used
                     long newTime=System.currentTimeMillis(); 
                     timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
                 //Checkpoint here   
-                    if(m_Debug)
+                    if(debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 
                 }
@@ -430,7 +425,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             else{ //n>m
 //estimate maximum number of cases we can use                
                 int maxCases=tm.estimateMaxCases(n,minNumTrees,estSingleTree,contractHours);
-                if(m_Debug)
+                if(debug)
                     System.out.println("using max "+maxCases+" case, building single tree at a time");
                 long startBuild=System.currentTimeMillis(); 
                 while(timeUsed<contractHours && numTrees<minNumTrees){
@@ -449,14 +444,14 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                     long newTime=System.currentTimeMillis(); 
                     timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
                 //Checkpoint here   
-                    if(m_Debug)
+                    if(debug)
                         System.out.println("Built tree number "+numTrees+" in "+timeUsed+" hours ");
                 
                 }
             }
         }
         res.setBuildTime(System.nanoTime()-startTime);
-        if(m_Debug)
+        if(debug)
             System.out.println("Finished build");
 
     }
@@ -672,7 +667,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         classifiers.add(c);
     }
  
-
  
  private int setBatchSize(double singleTreeHours){
         if(singleTreeHours> CHECKPOINTINTERVAL)
@@ -965,16 +959,21 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
     }
 
-    @Override
-    public void setSavePath(String path) {
-        checkpointPath=path;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            checkpointPath = path;
+            checkpoint = true;
+        }
+        return validPath;
     }
 
     @Override
     public void copyFromSerObject(Object obj) throws Exception {
-        if(!(obj instanceof ContractRotationForest))
+        if(!(obj instanceof cRotationForest))
             throw new Exception("The SER file is not am instance of ContractRotationForest"); //To change body of generated methods, choose Tools | Templates.
-        ContractRotationForest saved= ((ContractRotationForest)obj);
+        cRotationForest saved= ((cRotationForest)obj);
 
 //Copy RotationForest attributes
         baseClassifier=saved.baseClassifier;
@@ -991,14 +990,14 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         normalize = saved.normalize;
 
   
-//Copy ContractRotationForest attributes
+//Copy ContractRotationForest attributes. Not su
         this.contractHours=saved.contractHours;
         res=saved.res;
         minNumTrees=saved.minNumTrees;
         maxNumTrees=saved.maxNumTrees;
         maxNumAttributes=saved.maxNumAttributes;
         checkpointPath=saved.checkpointPath;
-        m_Debug=saved.m_Debug;
+        debug=saved.debug;
         tm=saved.tm;
         timeUsed=saved.timeUsed;
         numTrees=saved.numTrees;
@@ -1011,7 +1010,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
    * @param argv the options
    */
   public static void main(String [] argv) throws Exception {
-      ContractRotationForest cf =new ContractRotationForest();
+      cRotationForest cf =new cRotationForest();
       Class cls=cf.getClass();
       System.out.println("Class canonical name ="+cls.getCanonicalName()+" class simple name "+cls.getSimpleName()+" class full name ="+cls.getName());
       String path="C:/temp/ItalyPowerDemandContractRotationForest.ser";
