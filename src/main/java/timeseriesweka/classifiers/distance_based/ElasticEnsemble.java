@@ -36,14 +36,14 @@ import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * A new Elastic Ensemble for sharing with others
-@article{lines15elastic,
+  @article{lines15elastic,
   title={Time Series Classification with Ensembles of Elastic Distance Measures},
   author={J. Lines and A. Bagnall},
   journal={Data Mining and Knowledge Discovery},
@@ -55,7 +55,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
  * @author sjx07ngu
  */
-public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implements WritableTestResults,TrainAccuracyEstimator,TechnicalInformationHandler{
+public class ElasticEnsemble extends EnhancedAbstractClassifier implements WritableTestResults,TechnicalInformationHandler{
 
     
     @Override
@@ -97,28 +97,24 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     }
     
     
-    private final ConstituentClassifiers[] classifiersToUse;
-    private String datasetName;
-    private int resampleId;
-    private String resultsDir;
-    private double[] cvAccs;
-    private double[][] cvPreds;
+    protected ConstituentClassifiers[] classifiersToUse;
+    protected String datasetName;
+    protected int resampleId;
+    protected String resultsDir;
+    protected double[] cvAccs;
+    protected double[][] cvPreds;
     
-    private boolean buildFromFile = false;
-    private boolean writeToFile = false;
-    private Instances train;
-    private Instances derTrain;
-    private Efficient1NN[] classifiers = null;
-    
-    private boolean writeEnsembleTrainingFile = false;
-    private String ensembleTrainFilePathAndName = null;
-    
-    
-    private boolean usesDer = false;
-    private static DerivativeFilter df = new DerivativeFilter();
+    protected boolean buildFromFile = false;
+    protected boolean writeToFile = false;
+    protected Instances train;
+    protected Instances derTrain;
+    protected Efficient1NN[] classifiers = null;
+        
+    protected boolean usesDer = false;
+    protected static DerivativeFilter df = new DerivativeFilter();
     
     // utility to enable AJBs COTE 
-    double[] previousPredictions = null;
+    protected double[] previousPredictions = null;
     
     double ensembleCvAcc =-1;
     double[] ensembleCvPreds = null;
@@ -127,7 +123,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
     public Capabilities getCapabilities() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
+    
     
     public String[] getIndividualClassifierNames() {
         String[] names= new String[this.classifiersToUse.length];
@@ -142,8 +138,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         return this.cvAccs;
     }
 
-    @Override
-    public double getTrainAcc() {
+
+    public double getTrainAcc() throws Exception {
         if(this.ensembleCvAcc != -1 && this.ensembleCvPreds!=null){
             return this.ensembleCvAcc;
         }
@@ -152,12 +148,13 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         return this.ensembleCvAcc;
     }
 
-//    @Override
-    public double[] getTrainPreds() {
+
+    public double[] getTrainPreds() throws Exception {
         if(this.ensembleCvPreds!=null){
             return this.ensembleCvPreds;
         }
         
+        long estTime = System.nanoTime();
         this.ensembleCvPreds = new double[train.numInstances()];
         
         double actual, pred;
@@ -166,6 +163,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         ArrayList<Double> bsfClassVals;
         double[] weightByClass;
         for(int i = 0; i < train.numInstances(); i++){
+            long predTime = System.nanoTime(); //TODO hack/incorrect until george overhaul in
+            
             actual = train.instance(i).classValue();
             bsfClassVals = null;
             bsfWeight = -1;
@@ -193,8 +192,26 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
                 correct++;
             }
             this.ensembleCvPreds[i]=pred;
+            
+            predTime = System.nanoTime() - predTime;
+            double[] dist = new double[train.numClasses()];
+            dist[(int)pred]++;
+            trainResults.addPrediction(actual, dist, pred, predTime, "");
         }
-        
+            
+        estTime = System.nanoTime() - estTime;
+        trainResults.setErrorEstimateTime(estTime);
+        trainResults.setErrorEstimateMethod("cv_loo");
+
+        trainResults.setClassifierName("EE");
+        trainResults.setDatasetName(train.relationName());
+        trainResults.setSplit("train");
+        //no foldid/seed
+        trainResults.setNumClasses(train.numClasses());
+        trainResults.setParas(getParameters());
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.finaliseResults();
+            
         this.ensembleCvAcc = (double)correct/train.numInstances();
         return this.ensembleCvPreds;
     }
@@ -215,6 +232,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * Default constructor; includes all constituent classifiers
      */
     public ElasticEnsemble(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifiersToUse = ConstituentClassifiers.values();
     }
     
@@ -223,6 +241,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param classifiersToUse ConstituentClassifiers[] list of classifiers to use as enums
      */
     public ElasticEnsemble(ConstituentClassifiers[] classifiersToUse){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifiersToUse = classifiersToUse;
     }
     
@@ -235,6 +254,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param resampleId  resampleId of the dataset to be loaded
      */
     public ElasticEnsemble(String resultsDir, String datasetName, int resampleId){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.resultsDir = resultsDir;
         this.datasetName = datasetName;
         this.resampleId = resampleId;
@@ -251,6 +271,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
      * @param classifiersToUse the classifiers to load
      */
     public ElasticEnsemble(String resultsDir, String datasetName, int resampleId, ConstituentClassifiers[] classifiersToUse){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.resultsDir = resultsDir;
         this.datasetName = datasetName;
         this.resampleId = resampleId;
@@ -271,28 +292,7 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         this.resampleId = resampleId;
         this.writeToFile = true;
     }
-    
-    @Override
-    public void writeTrainEstimatesToFile(String outputPathAndName){
-        this.writeEnsembleTrainingFile = true;
-        ensembleTrainFilePathAndName = outputPathAndName;
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        this.writeEnsembleTrainingFile =setCV;
-    }
-    
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return writeEnsembleTrainingFile;}
-    
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into trainResults.acc here
-        trainResults.setAcc(ensembleCvAcc);
-//TO DO: Write the other stats        
-        return trainResults;
-    }        
-    
+  
     /**
      * Builds classifier. If building from file, cv weights and predictions will be loaded from file. If running from scratch, training cv will be performed for constituents to find best params, cv accs, and cv preds
      * @param train The training data
@@ -373,22 +373,8 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
             }
             
             
-            if(this.writeEnsembleTrainingFile){
-                StringBuilder output = new StringBuilder();
-                
-                double[] ensembleCvPreds = this.getTrainPreds();
-                
-                output.append(train.relationName()).append(",EE,train\n");
-                output.append(this.getParameters()).append("\n");
-                output.append(this.getTrainAcc()).append("\n");
-                
-                for(int i = 0; i < train.numInstances(); i++){
-                    output.append(train.instance(i).classValue()).append(",").append(ensembleCvPreds[i]).append("\n");
-                }
-                
-                FileWriter fullTrain = new FileWriter(this.ensembleTrainFilePathAndName);
-                fullTrain.append(output);
-                fullTrain.close();
+            if(this.getEstimateOwnPerformance()){
+                this.getTrainPreds();
             }
         }
         trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
@@ -592,14 +578,14 @@ public class ElasticEnsemble extends AbstractClassifierWithTrainingInfo implemen
         System.out.println("to do");
         
     }
-    
+
     public static void main(String[] args) throws Exception{
 
         ElasticEnsemble ee = new ElasticEnsemble();
         Instances train = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TRAIN");
         Instances test = DatasetLoading.loadDataNullable("C:/users/sjx07ngu/dropbox/tsc problems/ItalyPowerDemand/ItalyPowerDemand_TEST");
         ee.buildClassifier(train);
-        
+
         int correct = 0;
         for(int i = 0; i < test.numInstances(); i++){
             if(test.instance(i).classValue()==ee.classifyInstance(test.instance(i))){

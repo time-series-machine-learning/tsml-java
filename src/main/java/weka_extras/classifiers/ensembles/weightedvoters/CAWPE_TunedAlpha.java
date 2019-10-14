@@ -105,11 +105,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         
         long buildTime = System.currentTimeMillis() - startTime; 
         trainResults.setBuildTime(buildTime);
-            
-        if (writeEnsembleTrainingFile)
-            writeResultsFile(ensembleName, getParameters(), trainResults, "train");
-        
-        
+                    
         this.testInstCounter = 0; //prep for start of testing
     }
     

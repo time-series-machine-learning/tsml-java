@@ -24,10 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.cloneArrayList;
 import utilities.InstanceTools;
-import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -43,7 +42,7 @@ year="2013"
 * 
  * @author Aaron Bostrom
  */
-public class FastShapelets extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler {
+public class FastShapelets extends EnhancedAbstractClassifier implements TechnicalInformationHandler {
       
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -94,6 +93,7 @@ public class FastShapelets extends AbstractClassifierWithTrainingInfo implements
     NN_ED nn;
 
     public FastShapelets() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         nn = new NN_ED();
     }
 

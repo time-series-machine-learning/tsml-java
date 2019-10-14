@@ -15,9 +15,8 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -42,7 +41,7 @@ year="2013"
 
  * @author James Large
  */
-public class SAXVSM extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
+public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
     Instances transformedData;
     Instances corpus;
@@ -69,6 +68,8 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
      * Will use parameter search during training
      */
     public SAXVSM() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = -1;
         this.SAX_alphabetSize = -1;
         this.windowSize = -1;
@@ -80,6 +81,8 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
      * Will build using only parameters passed 
      */
     public SAXVSM(int PAA_intervalsPerWindow, int SAX_alphabetSize, int windowSize) {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = PAA_intervalsPerWindow;
         this.SAX_alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;

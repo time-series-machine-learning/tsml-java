@@ -14,16 +14,12 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import fileIO.OutFile;
 
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Random;
 
 import timeseriesweka.classifiers.*;
-import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -40,9 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.Bagging;
-import weka.core.Capabilities;
-import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
@@ -113,8 +106,8 @@ import weka.core.Utils;
 
  **/
 
-public class cTSF extends AbstractClassifierWithTrainingInfo
-        implements TrainAccuracyEstimator, TechnicalInformationHandler,
+public class cTSF extends EnhancedAbstractClassifier
+        implements TechnicalInformationHandler,
         TrainTimeContractable, Checkpointable {
 //Static defaults
 
@@ -168,17 +161,15 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
 
     private boolean trainTimeContract = false;
     private long contractTime = 0;
-
+    
     protected static final long serialVersionUID = 32554L;
 
     public cTSF(){
-        rand=new Random();
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public cTSF(int s){
-        rand=new Random();
-        seed=s;
-        rand.setSeed(seed);
-        seedClassifier=true;
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        setSeed(seed);
     }
     /**
      *
@@ -201,52 +192,7 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble=!b;
     }
-
-    /**
-     * Seed experiments for reproducibility with the resample number
-     * @param s
-     */
-    @Override
-    public void setSeed(int s){
-        this.seedClassifier=true;
-        seed=s;
-        rand=new Random();
-        rand.setSeed(seed);
-    }
-    /**
-     * Stores the classifier train CV results and writes them to file.
-     * boolean trainCV is a little redundant, but nicer than checking path for null
-     * @param train
-     */
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainCVPath=train;
-        trainAccuracyEst=true;
-    }
-    /**
-     * We can perform trainCV without writing the results to file. The could be used,
-     * for example, in an ensemble this TSF is a member of
-     * @param setCV
-     */
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainAccuracyEst=setCV;
-    }
-    /**
-     * Maybe this method needs renaming?
-     * @return boolean, whether trainCV happens or not
-     */
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainAccuracyEst;}
-
-    /**
-     *
-     * @return a ClassifierResults object, which will be null if tainCV is null
-     */
-    @Override
-    public ClassifierResults getTrainResults(){
-        return trainResults;
-    }
+    
     /**
      * Perhaps make this coherent with setOptions(String[] ar)?
      * @return String written to results files
@@ -393,15 +339,14 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
-
-        //path checkpoint files will be saved to
         File file = new File(checkpointPath + "TSF" + seed + ".ser");
-
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
-            System.out.println("Loading from checkpoint file");
+        //path checkpoint files will be saved to
+            if(debug)
+               System.out.println("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
-            checkpointTimeElapsed -= System.nanoTime()-t1;
+ //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
         //initialise variables
         else {
@@ -732,15 +677,14 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
             System.out.println("Unable to read number of intervals, not set");
     }
 
-    @Override
-    public int getSeed() {
-        return seed;
-    }
-
-    @Override
-    public void setSavePath(String path) {
-        checkpointPath = path;
-        checkpoint = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            checkpointPath = path;
+            checkpoint = true;
+        }
+        return validPath;
     }
 
     @Override
@@ -914,9 +858,11 @@ public class cTSF extends AbstractClassifierWithTrainingInfo
         tsf.setSeed(0);
         tsf.setTrainTimeLimit((long)1.5e+10);
         tsf.setSavePath("C:\\temp\\");
-        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
+        tsf.setEstimateOwnPerformance(true);
         double a;
         tsf.buildClassifier(train);
+        ClassifierResults trainres = tsf.getTrainResults();
+        trainres.writeFullResultsToFile(resultsLocation+problem+"trainFold0.csv");
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         System.out.println(tsf.trainResults.getBuildTime());
         a=ClassifierTools.accuracy(test, tsf);

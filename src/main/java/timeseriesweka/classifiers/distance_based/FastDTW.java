@@ -10,7 +10,7 @@ package timeseriesweka.classifiers.distance_based;
 import java.util.ArrayList;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.FastWWSByPercent;
 import timeseriesweka.classifiers.distance_based.FastWWS.windowSearcher.WindowSearcher;
 import weka.classifiers.AbstractClassifier;
@@ -20,25 +20,25 @@ import weka.core.*;
  *
  * @author ajb
  */
-public class FastDTW extends AbstractClassifier  implements SaveParameterInfo{
+public class FastDTW extends EnhancedAbstractClassifier{
 
     WindowSearcher ws;
     protected ArrayList<Double> buildTimes;
-    protected ClassifierResults res =new ClassifierResults();
     
     public FastDTW(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         ws=new FastWWSByPercent();
     }
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        res.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         long startTime=System.nanoTime(); 
         ws.buildClassifier(data);
-        res.setBuildTime(System.nanoTime()-startTime);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.setMemory(usedBytes);
+        trainResults.setMemory(usedBytes);
     }
     public double classifyInstance(Instance data) throws Exception {
        return ws.classifyInstance(data);
@@ -46,7 +46,7 @@ public class FastDTW extends AbstractClassifier  implements SaveParameterInfo{
 
     @Override
     public String getParameters() {
-        String result="CVAcc,"+res.getAcc()+",Memory,"+res.getMemory();
+        String result="CVAcc,"+trainResults.getAcc()+",Memory,"+trainResults.getMemory();
         result+=",WindowSize,"+ws.getBestWin()+",Score,"+ws.getBestScore();
         return result;
     }

@@ -55,7 +55,7 @@ import static weka.core.Utils.sum;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable,
+public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;
@@ -64,7 +64,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
     private int ensembleSize = 50;
     private int ensembleSizePerChannel = -1;
-    private Random rand;
     private boolean randomCVAccEnsemble = false;
     private boolean useWeights = false;
 
@@ -121,8 +120,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private int[] lowestAccIdx;
     private double[] lowestAcc;
 
-    private String trainCVPath;
-    private boolean trainCV = false;
     private boolean fullTrainCVEstimate = false;
     private double[][] trainDistributions;
     private int[] idxSubsampleCount;
@@ -139,13 +136,14 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private int numThreads = 1;
     private boolean multiThread = false;
     private ExecutorService ex;
-
+    
     protected static final long serialVersionUID = 22554L;
 
     public cBOSS(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         useRecommendedSettings();
     }
-
+    
     @Override
     public TechnicalInformation getTechnicalInformation() {
         //TODO update
@@ -264,10 +262,14 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     }
 
     //Set the path where checkpointed versions will be stored
-    @Override
-    public void setSavePath(String path){
-        checkpointPath = path;
-        checkpoint = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            checkpointPath = path;
+            checkpoint = true;
+        }
+        return validPath;
     }
 
     //Define how to copy from a loaded object to this object
@@ -328,8 +330,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
-        trainCVPath = saved.trainCVPath;
-        trainCV = saved.trainCV;
         fullTrainCVEstimate = saved.fullTrainCVEstimate;
         trainDistributions = saved.trainDistributions;
         idxSubsampleCount = saved.idxSubsampleCount;
@@ -365,20 +365,6 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
     }
-
-    @Override
-    public void writeTrainEstimatesToFile(String outputPathAndName){
-        trainCVPath = outputPathAndName;
-        trainCV = true;
-    }
-
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainCV = setCV;
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainCV; }
 
     @Override
     public ClassifierResults getTrainResults(){
@@ -485,10 +471,12 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         //if checkpointing and serialised files exist load said files
         if (checkpoint && f.exists()) {
-            System.out.println("Loading from checkpoint file");
+            if(debug)
+                System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "BOSS.ser");
-            System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
+            if(debug)
+                System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading files");
         }
         //initialise variables
         else {
@@ -538,7 +526,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
 
         train = data;
 
-        if (trainCV){
+        if (getEstimateOwnPerformance()){
             trainDistributions = new double[data.numInstances()][data.numClasses()];
             idxSubsampleCount = new int[data.numInstances()];
         }
@@ -584,21 +572,10 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
-        if (trainCV) {
-            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            trainResults.setClassifierName("BOSS");
-            trainResults.setDatasetName(data.relationName());
-            trainResults.setFoldID(seed);
-            trainResults.setSplit("train");
-            trainResults.setParas(getParameters());
+        if (getEstimateOwnPerformance()) {
             ensembleCvAcc = findEnsembleTrainAcc(data);
-            trainResults.finaliseResults();
-            if (trainCVPath != null)
-                trainResults.writeFullResultsToFile(trainCVPath);
-
             System.out.println("CV acc =" + ensembleCvAcc);
-
-            trainCV = false;
+            setEstimateOwnPerformance(false);
         }
 
         //delete any serialised files and holding folder for checkpointing on completion
@@ -613,7 +590,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         lowestAcc = new double[numSeries];
         for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
 
-        if (trainCV){
+        if (getEstimateOwnPerformance()){
             filterTrainPreds = new ArrayList[numSeries];
             filterTrainIdx  = new ArrayList[numSeries];
             for (int n = 0; n < numSeries; n++){
@@ -653,7 +630,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (trainCV){
+                if (getEstimateOwnPerformance()){
                     filterTrainPreds[currentSeries].add(latestTrainPreds);
                     filterTrainIdx[currentSeries].add(latestTrainIdx);
                 }
@@ -666,7 +643,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                 classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
                 classifiers[currentSeries].add(lowestAccIdx[currentSeries], boss);
 
-                if (trainCV){
+                if (getEstimateOwnPerformance()){
                     filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
@@ -709,7 +686,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
 
-                        if (trainCV){
+                        if (getEstimateOwnPerformance()){
                             filterTrainPreds[n].remove(i);
                             filterTrainIdx[n].remove(i);
                         }
@@ -721,7 +698,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             }
         }
 
-        if (trainCV){
+        if (getEstimateOwnPerformance()){
             for (int n = 0; n < numSeries; n++) {
                 for (int i = 0; i < filterTrainIdx[n].size(); i++) {
                     ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
@@ -779,7 +756,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
             if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (trainCV){
+            if (getEstimateOwnPerformance()){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 for (int i = 0; i < latestTrainIdx.size(); i++){
                     idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
@@ -799,7 +776,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             checkContracts();
         }
 
-        if (trainCV){
+        if (getEstimateOwnPerformance()){
             latestTrainPreds = null;
             latestTrainIdx = null;
 
@@ -1098,7 +1075,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
     private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
-        if (trainCV){
+        if (getEstimateOwnPerformance()){
             latestTrainPreds = new ArrayList();
             latestTrainIdx = new ArrayList();
         }
@@ -1150,7 +1127,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
                     ++correct;
                 }
 
-                if (trainCV){
+                if (getEstimateOwnPerformance()){
                     latestTrainPreds.add((int)c);
                     latestTrainIdx.add(indicies[i]);
                 }
@@ -1174,6 +1151,13 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         int totalClassifers = sum(numClassifiers);
         double correct = 0;
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());        
+        
         if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
 
         for (int i = 0; i < data.numInstances(); ++i) {
@@ -1206,6 +1190,8 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, -1, "");
         }
 
+        trainResults.finaliseResults();
+        
         return correct / data.numInstances();
     }
 
@@ -1393,7 +1379,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1403,7 +1389,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.useRecommendedSettings();
         c.bayesianParameterSelection = false;
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1412,7 +1398,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new cBOSS();
         c.useRecommendedSettings();
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1421,7 +1407,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new cBOSS();
         c.useRecommendedSettings();
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1436,7 +1422,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.reduceTrainInstances = true;
         c.setMaxEvalPerClass(50);
         c.setMaxTrainInstances(500);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1451,7 +1437,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.reduceTrainInstances = true;
         c.setMaxEvalPerClass(50);
         c.setMaxTrainInstances(500);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1463,7 +1449,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1475,7 +1461,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setSeed(fold);
         c.setReduceTrainInstances(true);
         c.setTrainProportion(0.7);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1486,7 +1472,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1497,7 +1483,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c.setCleanupCheckpointFiles(true);
         c.setSavePath("D:\\");
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1506,7 +1492,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new cBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1515,7 +1501,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
         c = new cBOSS();
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
         c.setSeed(fold);
-        c.setFindTrainAccuracyEstimate(true);
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 

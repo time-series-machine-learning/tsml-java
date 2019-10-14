@@ -35,9 +35,9 @@ import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -63,9 +63,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedXGBoost extends AbstractClassifier implements SaveParameterInfo,DebugPrinting, TrainAccuracyEstimator, SaveEachParameter, ParameterSplittable {
-    int seed = 0;
-//    Random rng = null;
+public class TunedXGBoost extends EnhancedAbstractClassifier implements SaveParameterInfo, DebugPrinting, SaveEachParameter, ParameterSplittable {
 
     //data info
     int numTrainInsts = -1;
@@ -78,7 +76,6 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
     HashMap<String, DMatrix> watches = null;
     HashMap<String, Object> params = null;
     Booster booster = null;
-    ClassifierResults trainResults =new ClassifierResults();
 
     //hyperparameters - fixed
     float rowSubsampling = 0.8f; //aka rowSubsampling
@@ -116,17 +113,14 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
     //tuning/cv/jobsplitting
     int cvFolds = 10;
     boolean tuneParameters=false;
-    boolean estimateAcc=true;  //If there is no tuning, this will find the estimate with the fixed values
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
     ArrayList<Double> paramAccuracies;
     private long combinedBuildTime;
-    String trainPath="";
-    protected boolean findTrainAcc=true;
     boolean runSingleThreaded = false;
 
     public TunedXGBoost() {
-
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
 
     public static void setDefaultParaSearchSpace_1000paras() { 
@@ -140,14 +134,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         maxTreeDepthParaRange = new int[]  { 1,3,5,7 };
         numIterationsParaRange = new int[]  { 250, 500, 1000, 1500};
     }
-
-    public int getSeed() { 
-        return seed;  
-    }
-    public void setSeed(int rngSeed) { 
-        this.seed = rngSeed;
-    }
-
+    
     public boolean getTuneParameters() {
         return tuneParameters;
     }
@@ -277,7 +264,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
                     model.setMinChildWeight(minChildWeight);
                     model.setNumIterations(p4);
                     model.tuneParameters=false;
-                    model.estimateAcc=false;
+                    model.setEstimateOwnPerformance(false);
                     model.setSeed(seed);
                     tempResults=cv.crossValidateWithStats(model,trainCopy);
 
@@ -451,7 +438,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         xg.setMinChildWeight(minChildWeight);
         xg.setNumIterations(numIterations);
         xg.tuneParameters=false;
-        xg.estimateAcc=false;
+        xg.setEstimateOwnPerformance(false);
         xg.setSeed(seed);
 
         CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -481,7 +468,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
 
         buildActualClassifer();
 
-        if(estimateAcc && !tuneParameters) //if tuneparas, will take the cv results of the best para set
+        if(getEstimateOwnPerformance()&& !tuneParameters) //if tuneparas, will take the cv results of the best para set
             trainResults = estimateTrainAcc(trainInsts);
 
         if(saveEachParaAcc)
@@ -494,9 +481,6 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         trainResults.setClassifierName(tuneParameters ? "TunedXGBoost" : "XGBoost");
         trainResults.setDatasetName(trainInsts.relationName());
         trainResults.setParas(getParas());
-        if(trainPath!=null && !trainPath.equals("")){  //Save basic train results
-            trainResults.writeFullResultsToFile(trainPath);
-        } 
     }
 
     @Override
@@ -547,28 +531,6 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         return dmat;
     }
 
-
-    /**
-     * TrainAccuracyEstimate interface
-     * @param train
-     */
-    public void writeTrainEstimatesToFile(String train) {
-        trainPath=train;
-        findTrainAcc=true;
-    } 
- @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        findTrainAcc=setCV;
-    }
-
-    /**
-     * TrainAccuracyEstimate interface
-     * @return 
-     */
-    @Override
-     public ClassifierResults getTrainResults(){
-        return trainResults;
-    }  
 
     @Override
     public void setPathToSaveParameters(String r){
@@ -639,11 +601,6 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
         return getParameters();
     }
 
-    @Override
-    public double getAcc() {
-        return trainResults.getAcc();
-    }
-
     /**
      * Provides a smallish speedup when crossvalidating to tune hyperparameters. 
      * At current, will just speed up the search for the num iterations for a given set
@@ -677,7 +634,7 @@ public class TunedXGBoost extends AbstractClassifier implements SaveParameterInf
             for (int i = 0; i < numModels; i++) {
                 models[i] = new TunedXGBoost();
                 models[i].setTuneParameters(false);
-                models[i].estimateAcc = false;
+                models[i].setEstimateOwnPerformance(false);
                 models[i].setLearningRate(learningRate);
                 models[i].setMaxTreeDepth(maxTreeDepth);
                 models[i].setNumIterations(newNumIterations);

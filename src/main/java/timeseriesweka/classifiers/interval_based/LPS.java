@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Vector;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -67,7 +67,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LPS extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -91,6 +91,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     boolean paramSearch=true;
     double acc=0;
     public LPS(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         trees=new RandomRegressionTree[nosTrees];
     }
 
@@ -275,17 +276,17 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     
     
     
- public static void compareToPublished() throws Exception{
+ public static void compareToPublished(String datasetPath, String resultsPath) throws Exception{
      DecimalFormat df=new DecimalFormat("###.###");
-     OutFile res=new OutFile(DatasetLists.path+"recreatedLPS.csv");
+     OutFile res=new OutFile(resultsPath+"recreatedLPS.csv");
      int b=0;
      int t=0;
      System.out.println("problem,recreated,published");
      for(int i=0;i<problems.length;i++){
          String s=problems[i];
         System.out.print(s+",");
-        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TEST.arff");
         LPS l=new LPS();
         l.setParamSearch(false);
         l.buildClassifier(train);
@@ -315,11 +316,6 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         return ratioLevel+","+treeDepth;
     }
 
-    @Override
-    public double getAcc() {
-        return acc;
-    }
-    
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
