@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Vector;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -67,7 +67,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LPS extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -91,6 +91,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     boolean paramSearch=true;
     double acc=0;
     public LPS(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         trees=new RandomRegressionTree[nosTrees];
     }
 
@@ -315,11 +316,6 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         return ratioLevel+","+treeDepth;
     }
 
-    @Override
-    public double getAcc() {
-        return acc;
-    }
-    
     
     @Override
     public void buildClassifier(Instances data) throws Exception {

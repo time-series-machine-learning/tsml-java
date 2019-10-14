@@ -48,7 +48,7 @@ public class ApproxElasticEnsemble extends FastElasticEnsemble {
 
     @Override
     public void buildClassifier(Instances train) throws Exception {
-        trainResults.setBuildTime(System.currentTimeMillis());
+        long t1= System.nanoTime();
         this.train = train;
         this.derTrain = null;
         usesDer = false;
@@ -127,7 +127,7 @@ public class ApproxElasticEnsemble extends FastElasticEnsemble {
                 }
             }
 
-
+/*
             if (this.writeEnsembleTrainingFile) {
                 StringBuilder output = new StringBuilder();
 
@@ -145,8 +145,9 @@ public class ApproxElasticEnsemble extends FastElasticEnsemble {
                 fullTrain.append(output);
                 fullTrain.close();
             }
+*/
         }
-        trainResults.setBuildTime(System.currentTimeMillis() - trainResults.getBuildTime());
+        trainResults.setBuildTime(System.nanoTime() - t1);
 
     }
 

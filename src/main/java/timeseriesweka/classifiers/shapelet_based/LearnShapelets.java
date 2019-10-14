@@ -19,14 +19,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 
 import utilities.StatisticalUtilities;
 import utilities.InstanceTools;
 import static utilities.InstanceTools.fromWekaInstancesArray;
 import static utilities.StatisticalUtilities.calculateSigmoid;
-import weka.classifiers.*;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -42,7 +41,7 @@ import weka.core.TechnicalInformationHandler;
  * 
  */
 
-public class LearnShapelets extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LearnShapelets extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
 
   
     @Override
@@ -190,6 +189,7 @@ public class LearnShapelets extends AbstractClassifierWithTrainingInfo implement
     
     // constructor
     public LearnShapelets() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
     }
     
     @Override

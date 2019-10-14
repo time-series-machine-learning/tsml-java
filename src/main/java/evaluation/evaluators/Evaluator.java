@@ -17,12 +17,13 @@ package evaluation.evaluators;
 import evaluation.storage.ClassifierResults;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class Evaluator {
+public abstract class Evaluator implements Randomizable {
     
     //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
     public static boolean REGRESSION_HACK = false; //@matthew
@@ -54,10 +55,12 @@ public abstract class Evaluator {
         this.setClassMissing = setClassMissing;
     }
     
+    @Override
     public int getSeed() {
         return seed;
     }
     
+    @Override
     public void setSeed(int seed) {
         this.seed = seed;
     }

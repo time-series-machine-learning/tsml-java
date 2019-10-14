@@ -17,14 +17,10 @@
 
 package experiments;
 
-import evaluation.ClassifierResultsAnalysis;
-import evaluation.PerformanceMetric;
 import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,10 +33,16 @@ import java.util.logging.Logger;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
+import weka.core.Randomizable;
 import weka_extras.classifiers.ensembles.CAWPE;
 
 /**
  *
+ * Tests to compare test accuracies for important classifier on a quick italy power 
+ * demand run to saved expected results, and to recreate results/analysis for a cawpe paper section.
+ * 
+ * Just confirms that old results are still reproducible
+ * 
  * @author James Large (james.large@uea.ac.uk)
  */
 public class BasicReproductionTests {
@@ -72,8 +74,8 @@ public class BasicReproductionTests {
         
         tsClassifiers + "frequency_based.cRISE",
         
-        tsClassifiers + "hybrids.FlatCote", 
-        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
+//        tsClassifiers + "hybrids.FlatCote", 
+//        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
         
         tsClassifiers + "interval_based.LPS",
         tsClassifiers + "interval_based.TSBF",
@@ -86,7 +88,8 @@ public class BasicReproductionTests {
         extraClassifiers + "kNN",
         
         extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.ContractRotationForest",
+        extraClassifiers + "ensembles.HIVE_COTE",
+        extraClassifiers + "ensembles.cRotationForest",
         extraClassifiers + "ensembles.stackers.SMLR",
         
     };
@@ -249,11 +252,15 @@ public class BasicReproductionTests {
             Class c = Class.forName(fullClassifierName);
             inst = (Classifier) c.newInstance();
 
-            Method[] ms = c.getMethods();
-            for (Method m : ms) {
-                if (m.getName().equals("setSeed") || m.getName().equals("setRandSeed")) {
-                    m.invoke(inst, defaultSeed);
-                    break;
+            if (inst instanceof Randomizable)
+                ((Randomizable)inst).setSeed(defaultSeed);
+            else {
+                Method[] ms = c.getMethods();
+                for (Method m : ms) {
+                    if (m.getName().equals("setSeed") || m.getName().equals("setRandSeed")) {
+                        m.invoke(inst, defaultSeed);
+                        break;
+                    }
                 }
             }
 
@@ -482,8 +489,8 @@ public class BasicReproductionTests {
     
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
-//        generateMissingExpectedResults();
-//        
+        generateMissingExpectedResults();
+        System.exit(0);
         boolean classifiersComplete = confirmAllExpectedResultReproductions();
         boolean analysisReproduced = testBuildCAWPEPaper_AllResultsForFigure3();
 

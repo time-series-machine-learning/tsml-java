@@ -18,7 +18,7 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -77,7 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable, Checkpointable{
+public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;
@@ -109,12 +109,14 @@ public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTi
      * @param seed
      */
     public cRISE(long seed){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = seed;
         super.setSeed((int)seed);
         timer = new Timer();
     }
 
     public cRISE(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = 0;
         super.setSeed((int)seed);
         timer = new Timer();
@@ -211,6 +213,17 @@ public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTi
      * If successful this object is returned to state in which it was at creation of serialisation file.
      * @param serializePath Path to folder in which to save serialisation files.
      */
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+//            checkpointPath = path;
+//            checkpoint = true;
+        }
+        return validPath;
+    }
+
+/*
     @Override
     public void setSavePath(String serializePath){
         this.serialisePath = serializePath;
@@ -222,7 +235,7 @@ public class cRISE extends AbstractClassifierWithTrainingInfo implements TrainTi
         cRISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
-
+*/
     public int getMaxLag(Instances instances){
         int maxLag = (instances.numAttributes()-1);
         if(DEFAULT_MAXLAG < maxLag)

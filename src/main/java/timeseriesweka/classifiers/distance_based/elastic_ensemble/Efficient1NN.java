@@ -21,10 +21,10 @@ import java.util.Scanner;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.distance_based.FastEE.CandidateNN;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.DenseInstance;
@@ -44,7 +44,7 @@ import weka.core.Instances;
  *
  * @author Jason Lines (j.lines@uea.ac.uk)
  */
-public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo{
+public abstract class Efficient1NN extends EnhancedAbstractClassifier implements SaveParameterInfo{
     protected Instances train;
     protected Instances[] trainGroup;
     protected String classifierIdentifier;
@@ -56,8 +56,11 @@ public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo im
     private String outputDir;
     private String datasetName;
     private int resampleId;
-    private ClassifierResults res = new ClassifierResults();
 
+    public Efficient1NN() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
+    
     /**
      * Abstract method to calculates the distance between two Instance objects
      *
@@ -235,12 +238,7 @@ public abstract class Efficient1NN extends AbstractClassifierWithTrainingInfo im
         return classifierIdentifier;
     }
 
-    @Override
-    public String getParameters() {
-        String paras = "BuildTime," + res.getBuildTime();
-        return paras;
-
-    }
+    
     // could parallelise here
 //    public void writeLOOCVOutput(String tscProblemDir, String datasetName, int resampleId, String outputResultsDir, boolean tidyUp) throws Exception{    
 //        for(int paramId = 0; paramId < 100; paramId++){

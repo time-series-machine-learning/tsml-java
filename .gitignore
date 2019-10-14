@@ -42,3 +42,12 @@ defaultShapeletOutput.txt
 # testing and local results files
 Results/
 Analysis/
+src/main/java/development/DataProcessing.java
+src/main/java/development/LocalClassifierLists.java
+src/main/java/development/LocalCollateResults.java
+src/main/java/development/LocalExperiments.java
+src/main/java/development/LocalTransformExperiments.java
+src/main/java/development/LocalTransformLists.java
+src/main/java/development/OneOffCodeNothingToSeeHere.java
+src/main/java/development/ShapeletTransformLight.java
+src/main/java/development/UnivariateProcessing.java

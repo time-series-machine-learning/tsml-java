@@ -45,7 +45,7 @@ import statistics.simulators.SimulateShapeletData;
 import statistics.simulators.SimulateWholeSeriesData;
 import statistics.simulators.SimulateElasticData;
 import statistics.simulators.SimulateMatrixProfileData;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
@@ -432,8 +432,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof AbstractClassifierWithTrainingInfo)
-                p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier)
+                p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else
