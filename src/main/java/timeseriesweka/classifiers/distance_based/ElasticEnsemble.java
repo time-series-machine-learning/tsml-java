@@ -106,12 +106,12 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
     
     protected boolean buildFromFile = false;
     protected boolean writeToFile = false;
-    private Instances train;
-    private Instances derTrain;
-    private Efficient1NN[] classifiers = null;
+    protected Instances train;
+    protected Instances derTrain;
+    protected Efficient1NN[] classifiers = null;
         
-    private boolean usesDer = false;
-    private static DerivativeFilter df = new DerivativeFilter();
+    protected boolean usesDer = false;
+    protected static DerivativeFilter df = new DerivativeFilter();
     
     // utility to enable AJBs COTE 
     protected double[] previousPredictions = null;

@@ -37,6 +37,7 @@ import java.util.Scanner;
  *
  * @author Chang Wei (chang.tan@monash.edu)
  */
+
 public class FastElasticEnsemble extends ElasticEnsemble {
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -77,7 +78,7 @@ public class FastElasticEnsemble extends ElasticEnsemble {
         this.buildFromFile = true;
     }
 
-    @Override
+/*    @Override
     public double getTrainAcc() {
         if (this.ensembleCvAcc != -1 && this.ensembleCvPreds != null) {
             return this.ensembleCvAcc;
@@ -86,10 +87,10 @@ public class FastElasticEnsemble extends ElasticEnsemble {
         this.getTrainPreds();
         return this.ensembleCvAcc;
     }
-
+*/
     @Override
     public void buildClassifier(Instances train) throws Exception {
-        trainResults.setBuildTime(System.currentTimeMillis());
+        long t1= System.nanoTime();
         this.train = train;
         this.derTrain = null;
         usesDer = false;
@@ -167,7 +168,7 @@ public class FastElasticEnsemble extends ElasticEnsemble {
                 }
             }
 
-
+/*
             if (this.writeEnsembleTrainingFile) {
                 StringBuilder output = new StringBuilder();
 
@@ -175,7 +176,7 @@ public class FastElasticEnsemble extends ElasticEnsemble {
 
                 output.append(train.relationName()).append(",FastEE,train\n");
                 output.append(this.getParameters()).append("\n");
-                output.append(this.getTrainAcc()).append("\n");
+                output.append(trainResults.getAcc()).append("\n");
 
                 for (int i = 0; i < train.numInstances(); i++) {
                     output.append(train.instance(i).classValue()).append(",").append(ensembleCvPreds[i]).append("\n");
@@ -185,9 +186,9 @@ public class FastElasticEnsemble extends ElasticEnsemble {
                 fullTrain.append(output);
                 fullTrain.close();
             }
+   */     
         }
-        trainResults.setBuildTime(System.currentTimeMillis() - trainResults.getBuildTime());
-
+        trainResults.setBuildTime(System.nanoTime() - t1);
     }
 
     // classify instance with lower bounds
@@ -264,7 +265,7 @@ public class FastElasticEnsemble extends ElasticEnsemble {
 
         SequenceStatsCache cache = new SequenceStatsCache(test, test.numAttributes() - 1);
 
-        System.out.println("Train Acc: " + ee.getTrainAcc());
+        System.out.println("Train Acc: " + ee.trainResults.getAcc());
         int correct = 0;
         for (int i = 0; i < test.numInstances(); i++) {
             double actual = test.instance(i).classValue();
