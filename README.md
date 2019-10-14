@@ -4,7 +4,7 @@
 
 A stable supporting branch for the paper "Non-Invasive Detection of Forged Spirits with Spectroscopy and Machine Learning Classifiers" (under review), an extension of:
 
-Large, James, et al. "Detecting forged alcohol non-invasively through vibrational spectroscopy and machine learning." Pacific-Asia Conference on Knowledge Discovery and Data Mining. Springer, Cham, 2018.
+[Large, James, et al. "Detecting forged alcohol non-invasively through vibrational spectroscopy and machine learning." Pacific-Asia Conference on Knowledge Discovery and Data Mining. Springer, Cham, 2018.](https://link.springer.com/chapter/10.1007/978-3-319-93034-3_24)
 
 Datasets can be found [here](http://research.cmp.uea.ac.uk/DetectingForgedAlcohol)
 
