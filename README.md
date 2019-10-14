@@ -1,7 +1,5 @@
 # UEA Time Series Classification - CAWPE Stable Branch
-
-.. image:: https://travis-ci.com/uea-machine-learning/tsml.svg?branch=paper/cawpe
-    :target: https://travis-ci.com/uea-machine-learning/tsml
+[![Build Status](https://travis-ci.com/uea-machine-learning/tsml.svg?branch=paper/cawpe)](https://travis-ci.com/uea-machine-learning/tsml)
 
 This is a stable branch in support of the paper 'A probabilistic classifier ensemble weighting scheme based on cross-validated accuracy estimates'. It is intended to provde a snapshot of the code at the time of final submission, as well as a stable location for summaries of results. See the associated [website](http://www.timeseriesclassification.com/CAWPE.php) for more details. 
 
