@@ -104,8 +104,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
     protected double[] cvAccs;
     protected double[][] cvPreds;
     
-    private boolean buildFromFile = false;
-    private boolean writeToFile = false;
+    protected boolean buildFromFile = false;
+    protected boolean writeToFile = false;
     private Instances train;
     private Instances derTrain;
     private Efficient1NN[] classifiers = null;
