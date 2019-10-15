@@ -430,7 +430,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
-//        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
@@ -600,12 +599,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
             }
             for(int k=0;k<numClasses;k++)
                classProbs[i][k]/=numSubSeries; 
-        }
-        try {
-            trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
-        } catch (Exception e) {
-            System.err.println("Inheritance preventing me from throwing this error...");
-            System.err.println(e);
         }
     }
     @Override
@@ -794,7 +787,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
         System.out.println("Classifier built: Parameter info ="+tsbf.getParameters());
         double a=ClassifierTools.accuracy(test, tsbf);
         System.out.println("Test acc for "+datasetName+" = "+a);
-
 
     }
 }
