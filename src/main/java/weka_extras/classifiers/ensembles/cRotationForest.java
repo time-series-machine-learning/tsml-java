@@ -32,7 +32,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import weka.core.Attribute;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.OptionHandler;
@@ -480,16 +479,16 @@ public class cRotationForest extends EnhancedAbstractClassifier
         Instances[] reducedHeaders = new Instances[ g.length ];
         this.reducedHeaders.add(reducedHeaders);
 
-        FastVector transformedAttributes = new FastVector( data.numAttributes() );
+        ArrayList<Attribute> transformedAttributes = new ArrayList<>( data.numAttributes() );
         // Construction of the dataset for each group of attributes
         for( int j = 0; j < g.length; j++ ) {
-            FastVector fv = new FastVector( g[j].length + 1 );
+            ArrayList<Attribute> fv = new ArrayList<>( g[j].length + 1 );
             for( int k = 0; k < g[j].length; k++ ) {
               String newName = data.attribute( g[j][k] ).name()
                 + "_" + k;
-              fv.addElement( data.attribute( g[j][k] ).copy(newName) );
+              fv.add(data.attribute( g[j][k] ).copy(newName) );
             }
-            fv.addElement( data.classAttribute( ).copy() );
+            fv.add( (Attribute)data.classAttribute( ).copy() );
             Instances dataSubSet = new Instances( "rotated-" + i + "-" + j + "-", 
                 fv, 0);
             dataSubSet.setClassIndex( dataSubSet.numAttributes() - 1 );
@@ -539,11 +538,11 @@ public class cRotationForest extends EnhancedAbstractClassifier
             // transformed dataset
             for( int a = 0; a < projectedData.numAttributes() - 1; a++ ) {
                 String newName = projectedData.attribute(a).name() + "_" + j;
-                transformedAttributes.addElement( projectedData.attribute(a).copy(newName));
+                transformedAttributes.add( projectedData.attribute(a).copy(newName));
             }
         }
       
-        transformedAttributes.addElement( data.classAttribute().copy() );
+        transformedAttributes.add((Attribute)data.classAttribute().copy() );
         Instances buildClas = new Instances( "rotated-" + i + "-", 
             transformedAttributes, 0 );
         buildClas.setClassIndex( buildClas.numAttributes() - 1 );
@@ -584,16 +583,16 @@ public class cRotationForest extends EnhancedAbstractClassifier
             data.remove(rand.nextInt(data.numInstances()));
         
         
-        FastVector transformedAttributes = new FastVector( data.numAttributes() );
+        ArrayList<Attribute> transformedAttributes = new ArrayList<>( data.numAttributes() );
         // Construction of the dataset for each group of attributes
         for( int j = 0; j < g.length; j++ ) {
-            FastVector fv = new FastVector( g[j].length + 1 );
+            ArrayList<Attribute>  fv = new ArrayList<>( g[j].length + 1 );
             for( int k = 0; k < g[j].length; k++ ) {
               String newName = data.attribute( g[j][k] ).name()
                 + "_" + k;
-              fv.addElement( data.attribute( g[j][k] ).copy(newName) );
+              fv.add( data.attribute( g[j][k] ).copy(newName) );
             }
-            fv.addElement( data.classAttribute( ).copy() );
+            fv.add((Attribute)data.classAttribute( ).copy() );
             Instances dataSubSet = new Instances( "rotated-" + i + "-" + j + "-", 
                 fv, 0);
             dataSubSet.setClassIndex( dataSubSet.numAttributes() - 1 );
@@ -643,11 +642,11 @@ public class cRotationForest extends EnhancedAbstractClassifier
             // transformed dataset
             for( int a = 0; a < projectedData.numAttributes() - 1; a++ ) {
                 String newName = projectedData.attribute(a).name() + "_" + j;
-                transformedAttributes.addElement( projectedData.attribute(a).copy(newName));
+                transformedAttributes.add( projectedData.attribute(a).copy(newName));
             }
         }
       
-        transformedAttributes.addElement( data.classAttribute().copy() );
+        transformedAttributes.add((Attribute)data.classAttribute().copy() );
         Instances buildClas = new Instances( "rotated-" + i + "-", 
             transformedAttributes, 0 );
         buildClas.setClassIndex( buildClas.numAttributes() - 1 );

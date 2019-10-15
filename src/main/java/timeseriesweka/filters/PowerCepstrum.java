@@ -15,10 +15,10 @@
 package timeseriesweka.filters;
 
 import weka.core.Attribute;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
+
+import java.util.ArrayList;
 
 /**
  *
@@ -41,22 +41,23 @@ public class PowerCepstrum extends PowerSpectrum{
         
                 int length=(fftFilter.findLength(inputFormat));
                 length/=2;
-		FastVector atts=new FastVector();
+        ArrayList<Attribute> atts=new ArrayList<>();
 		String name;
 		for(int i=0;i<length;i++){
 			name = "PowerSpectrum_"+i;
-			atts.addElement(new Attribute(name));
+			atts.add(new Attribute(name));
 		}
 		
 		if(inputFormat.classIndex()>=0){	//Classification set, set class 
 			//Get the class values as a fast vector			
 			Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-			FastVector vals=new FastVector(target.numValues());
+            ArrayList<String> vals=new ArrayList<>(target.numValues());
 			for(int i=0;i<target.numValues();i++)
-				vals.addElement(target.value(i));
-			atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
-		}	
+				vals.add(target.value(i));
+			atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+		}
+
 		Instances result = new Instances("Cepstrum"+inputFormat.relationName(),atts,inputFormat.numInstances());
 		if(inputFormat.classIndex()>=0)
 			result.setClassIndex(result.numAttributes()-1);

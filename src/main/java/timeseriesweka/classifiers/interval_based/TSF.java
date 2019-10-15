@@ -16,7 +16,6 @@
 package timeseriesweka.classifiers.interval_based;
  
 import java.util.ArrayList;
-import java.util.Random;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -26,7 +25,6 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import java.io.File;
@@ -79,7 +77,7 @@ import timeseriesweka.classifiers.Tuneable;
  <!-- technical-bibtex-start -->
 * Bibtex
 * <pre>
-* @article{deng13forest,
+* article{deng13forest,
 * author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
 * title = {A time series forest for classification and feature extraction},
 * journal = {Information Sciences},
@@ -98,10 +96,10 @@ import timeseriesweka.classifiers.Tuneable;
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
  
-* @author ajb
-* @date 7/10/15
-* @update1 14/2/19
- @update2 13/9/19: Adjust to allow three methods for estimating test accuracy
+* author ajb
+* date 7/10/15
+* update1 14/2/19
+* update2 13/9/19: Adjust to allow three methods for estimating test accuracy
 
 **/
  
@@ -116,7 +114,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** numIntervalsFinder sets numIntervals in buildClassifier. */   
     private int numIntervals=0;
-    Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));   
+    private Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
     /** Secondary parameter, mainly there to avoid single item intervals, 
      which have no slope or std dev*/
     private int minIntervalLength=3;
@@ -151,8 +149,8 @@ public class TSF extends EnhancedAbstractClassifier
     * accuracy estimate
     */
 //    boolean findTrainPredictions=false;  
-    enum EstimatorMethod{CV,OOB};
-    EstimatorMethod estimator=EstimatorMethod.CV;
+    enum EstimatorMethod{CV,OOB}
+    private EstimatorMethod estimator=EstimatorMethod.CV;
     private String trainFoldPath="";
 /* If trainFoldPath is set, train results are overwritten with 
  each call to buildClassifier.*/    
@@ -180,7 +178,7 @@ public class TSF extends EnhancedAbstractClassifier
  
 /**
  * ok,  two methods are a bit pointless, experimenting with ensemble method
- * @param b 
+ * @param b boolean to set vote ensemble
  */   
     public void setVoteEnsemble(boolean b){
         voteEnsemble=b;
@@ -323,8 +321,8 @@ public class TSF extends EnhancedAbstractClassifier
  
         return result;
   }
-     
- 
+
+
 /**
  * main buildClassifier
  * @param data

@@ -19,7 +19,6 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
@@ -27,6 +26,8 @@ import weka.core.TechnicalInformation;
 import timeseriesweka.filters.BagOfPatternsFilter;
 import timeseriesweka.filters.SAX;
 import weka.core.TechnicalInformationHandler;
+
+import java.util.List;
 
 /**
  * Converts instances into Bag Of Patterns form, then gives to a 1NN 
@@ -61,7 +62,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
     private int SAX_alphabetSize;
     private int windowSize;
     
-    private FastVector alphabet;
+    private List<String> alphabet;
     
     private final boolean useParamSearch; //does user want parameter search to be performed
     

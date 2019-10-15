@@ -21,12 +21,8 @@ import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.DecimalFormat;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Vector;
+import java.util.*;
+
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
@@ -39,7 +35,6 @@ import weka.core.Capabilities;
 import weka.core.ContingencyTables;
 import weka.core.DenseInstance;
 import weka.core.Drawable;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Option;
 import weka.core.OptionHandler;
@@ -384,11 +379,11 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
 //Set up the instances for this tree            
 //2- Generate segments for each time series and 
 //        concatenate these segments rowwise, let resulting matrix be M
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             
@@ -468,11 +463,11 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
             
 
         for(int i=0;i<nosTrees;i++){    
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]);            
             for(int k=0;k<segLengths[i];k++){
@@ -603,9 +598,9 @@ M equals
     public void debugFeatureExtraction(){
       //determine minimum and maximum possible segment length
 
-            FastVector atts2=new FastVector();
+            ArrayList<Attribute> atts2=new ArrayList<>();
             for(int j=0;j<9;j++){
-                    atts2.addElement(new Attribute("SegFeature"+j));
+                    atts2.add(new Attribute("SegFeature"+j));
             }
             double[] t1={1,2,3,4,5,6,7,8};
             double[] t2={8,7,6,5,4,3,2,1};
@@ -651,11 +646,11 @@ M equals
             }
 //Set up the instances for this tree            
             Instances tr=null;     
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             Instances result = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             

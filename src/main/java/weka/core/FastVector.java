@@ -31,7 +31,7 @@ import java.util.Enumeration;
  * @author Eibe Frank (eibe@cs.waikato.ac.nz)
  * @version $Revision: 8034 $
  */
-@Deprecated 
+// Removing the Depreciated tag, as it is still used in weka @Deprecated
 public class FastVector<E> extends ArrayList<E> implements Copyable, RevisionHandler {
 
   /** for serialization */

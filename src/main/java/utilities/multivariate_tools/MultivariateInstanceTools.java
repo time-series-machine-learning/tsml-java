@@ -16,10 +16,11 @@ package utilities.multivariate_tools;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.NormalizeCase;
+
+import java.util.ArrayList;
 
 /**
  *
@@ -41,20 +42,20 @@ public class MultivariateInstanceTools {
         int dimensions = inst.length;
         int length = (firstInst.numAttributes()-1)*dimensions;
 
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         for (int i = 0; i < length; i++) {
             name = dataset + "_" + dimChars[i%dimensions] + "_" + (i/dimensions);
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         
         //clone the class values over. 
         //Could be from x,y,z doesn't matter.
         Attribute target = firstInst.attribute(firstInst.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        atts.addElement(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
+        atts.add(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
         
         //same number of xInstances 
         Instances result = new Instances(dataset, atts, firstInst.numInstances());
@@ -82,7 +83,7 @@ public class MultivariateInstanceTools {
     //assumes properly orderered for class values
     //all atts in inst1, then all atts in inst2 etc.
     public static Instances concatinateInstances(Instances[] data){
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList();
         String name;
         
         Instances firstInst = data[0];       
@@ -100,17 +101,17 @@ public class MultivariateInstanceTools {
             }
             
             name = "attribute_dimension_" + dim + "_" + localAtt++;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         
         //clone the class values over. 
         //Could be from x,y,z doesn't matter.
         Attribute target = firstInst.attribute(firstInst.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        atts.addElement(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
+        atts.add(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
         
         //same number of xInstances 
         Instances result = new Instances(firstInst.relationName() + "_concatinated", atts, firstInst.numInstances());
@@ -155,9 +156,9 @@ public class MultivariateInstanceTools {
     
     private static Instances createRelationHeader(int numAttsInChannel, int numChannels){
         //construct relational attribute vector.
-        FastVector relational_atts = new FastVector(numAttsInChannel);
+        ArrayList<Attribute> relational_atts = new ArrayList(numAttsInChannel);
         for (int i = 0; i < numAttsInChannel; i++) {
-            relational_atts.addElement(new Attribute("att" + i));
+            relational_atts.add(new Attribute("att" + i));
         }
         
         return new Instances("", relational_atts, numChannels);
@@ -174,22 +175,22 @@ public class MultivariateInstanceTools {
         int numAttsInChannel = instances[0].numAttributes()-1;
 
 
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         
         //construct relational attribute.#
         Instances relationHeader = createRelationHeader(numAttsInChannel, instances.length);
         relationHeader.setRelationName("relationalAtt");
         Attribute relational_att = new Attribute("relationalAtt", relationHeader, numAttsInChannel);        
-        attributes.addElement(relational_att);
+        attributes.add(relational_att);
         
         //clone the class values over. 
         //Could be from x,y,z doesn't matter.
         Attribute target = firstInst.attribute(firstInst.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        attributes.addElement(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
+        attributes.add(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
         
         Instances output = new Instances("", attributes, instances[0].numInstances());
         
@@ -227,18 +228,18 @@ public class MultivariateInstanceTools {
         //each channel we want to build an Instances object which contains the data, and the class attribute.
         for(int i=0; i< output.length; i++){
             //construct numeric attributes
-            FastVector atts = new FastVector();
+            ArrayList<Attribute> atts = new ArrayList<>();
             for (int att = 0; att < length; att++) {
-                atts.addElement(new Attribute("channel_"+i+"_"+att));
+                atts.add(new Attribute("channel_"+i+"_"+att));
             }
             
             //construct the class values atttribute.
             Attribute target = multiInstances.attribute(multiInstances.classIndex());
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList(target.numValues());
             for (int k = 0; k < target.numValues(); k++) {
-                vals.addElement(target.value(k));
+                vals.add(target.value(k));
             }
-            atts.addElement(new Attribute(multiInstances.attribute(multiInstances.classIndex()).name(), vals));
+            atts.add(new Attribute(multiInstances.attribute(multiInstances.classIndex()).name(), vals));
             
             output[i] = new Instances(multiInstances.relationName() + "_channel_" + i, atts, multiInstances.numInstances());
             output[i].setClassIndex(length);
@@ -394,21 +395,21 @@ public class MultivariateInstanceTools {
       }
       int d=numAtts/length;
       System.out.println("Number of atts ="+numAtts+" num dimensions ="+d);
-        FastVector attributes = new FastVector();
+      ArrayList<Attribute> attributes = new ArrayList<>();
         //construct relational attribute.#
         Instances relationHeader = createRelationHeader(length,d);
 //                System.out.println(relationHeader);
 
         relationHeader.setRelationName("relationalAtt");
         Attribute relational_att = new Attribute("relationalAtt", relationHeader, length);        
-        attributes.addElement(relational_att);
+        attributes.add(relational_att);
         //clone the class values over. 
         Attribute target = flat.attribute(flat.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        attributes.addElement(new Attribute(flat.attribute(flat.classIndex()).name(), vals));       
+        attributes.add(new Attribute(flat.attribute(flat.classIndex()).name(), vals));
         Instances output = new Instances(flat.relationName(), attributes, flat.numInstances());
         for(int i=0; i < flat.numInstances(); i++){
             //create each row.
@@ -441,20 +442,20 @@ public class MultivariateInstanceTools {
         int d=test.numAttributes();
         int m=test.numInstances();
         int count=0;
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         Instances relationHeader=MultivariateInstanceTools.createRelationHeader(m,d);
         
          //construct relational attribute.#
         relationHeader.setRelationName("relationalAtt");
         Attribute relational_att = new Attribute("relationalAtt", relationHeader, m);        
-        attributes.addElement(relational_att);
+        attributes.add(relational_att);
         //clone the class values over. 
         Attribute target = data.attribute(data.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<String>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        attributes.addElement(new Attribute(data.attribute(data.classIndex()).name(), vals));       
+        attributes.add(new Attribute(data.attribute(data.classIndex()).name(), vals));
         Instances output = new Instances(data.relationName(), attributes, data.numInstances());
         for(int i=0; i < data.numInstances(); i++){
             output.add(new DenseInstance(2));

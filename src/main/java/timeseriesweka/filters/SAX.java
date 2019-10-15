@@ -17,12 +17,14 @@ package timeseriesweka.filters;
 import experiments.data.DatasetLoading;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka.filters.SimpleBatchFilter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Filter to reduce dimensionality of and discretise a time series into SAX form, 
@@ -40,7 +42,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
     private int numIntervals = 8;
     private int alphabetSize = 4;
     private boolean useRealAttributes = false;
-    private FastVector alphabet = null;
+    private List<String> alphabet = null;
     
     private Instances inputFormat;
     
@@ -57,18 +59,17 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         return alphabetSize;
     }
     
-    public FastVector getAlphabet() {
+    public List<String> getAlphabet() {
         if (alphabet == null) 
             generateAlphabet();
         return alphabet;
     }
     
-    public static FastVector getAlphabet(int alphabetSize) {
-        FastVector alphabet = new FastVector();
+    public static List<String> getAlphabet(int alphabetSize) {
+        List<String> alphb = new ArrayList<>();
         for (int i = 0; i < alphabetSize; ++i)
-            alphabet.addElement(alphabetSymbols[i]);
-        
-        return alphabet;
+            alphb.add(alphabetSymbols[i]);
+        return alphb;
     }
     
     public void setNumIntervals(int intervals) {
@@ -84,9 +85,9 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
     }
     
     public void generateAlphabet() {
-        alphabet = new FastVector();
+        alphabet = new ArrayList<>();
         for (int i = 0; i < alphabetSize; ++i)
-            alphabet.addElement(alphabetSymbols[i]);
+            alphabet.add(alphabetSymbols[i]);
     }
 
     //lookup table for the breakpoints for a gaussian curve where the area under 
@@ -132,7 +133,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
             }
         }
         
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         
         //If the alphabet is to be considered as discrete values (i.e non real), 
         //generate nominal values based on alphabet size
@@ -150,18 +151,18 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
             else
                 att = new Attribute(name);
 
-            attributes.addElement(att);
+            attributes.add(att);
         }
 
         if (inputFormat.classIndex() >= 0) {	//Classification set, set class 
             //Get the class values as a fast vector			
             Attribute target = inputFormat.attribute(inputFormat.classIndex());
 
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList<>();
             for (int i = 0; i < target.numValues(); i++) {
-                vals.addElement(target.value(i));
+                vals.add(target.value(i));
             }
-            attributes.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+            attributes.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         }
         
         Instances result = new Instances("SAX" + inputFormat.relationName(), attributes, inputFormat.numInstances());
