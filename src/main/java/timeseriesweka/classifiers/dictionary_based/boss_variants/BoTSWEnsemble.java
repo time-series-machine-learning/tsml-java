@@ -33,7 +33,6 @@ import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SelectedTag;
@@ -741,7 +740,7 @@ public class BoTSWEnsemble extends EnhancedAbstractClassifier implements SavePar
                     features[i] = describeKeyPoints(fdData[i].gdata.guassSeries, fdData[i].keypoints);
 
                 //stuff features into instances format
-                FastVector<Attribute> atts = new FastVector<>();
+                ArrayList<Attribute> atts = new ArrayList<>();
                 assert(features[0][0].length == params.n_b*2);
                 for (int i = 0; i < features[0][0].length; ++i)
                     atts.add(new Attribute(""+i));
@@ -802,7 +801,7 @@ public class BoTSWEnsemble extends EnhancedAbstractClassifier implements SavePar
                 Timer svmTimer = new Timer("\t\t\ttrainingsvm");
 
                 //stuff back into instances
-                FastVector<Attribute> bagatts = new FastVector<>();
+                ArrayList<Attribute> bagatts = new ArrayList<>();
                 for (int i = 0; i < params.k; ++i)
                     bagatts.add(new Attribute(""+i));
 

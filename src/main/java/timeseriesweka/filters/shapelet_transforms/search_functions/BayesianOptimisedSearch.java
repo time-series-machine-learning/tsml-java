@@ -19,7 +19,6 @@ import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.meta.RotationForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -73,10 +72,10 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
     }
 
     public Instances ConvertShapeletsToInstances(ArrayList<Shapelet> shapelets) {
-        FastVector atts = new FastVector();
-        atts.addElement(new Attribute("Length"));
-        atts.addElement(new Attribute("StartPosition"));
-        atts.addElement(new Attribute("QualityValue"));
+        ArrayList<Attribute> atts = new ArrayList<>();
+        atts.add(new Attribute("Length"));
+        atts.add(new Attribute("StartPosition"));
+        atts.add(new Attribute("QualityValue"));
 
         //same number of xInstances 
         Instances result = new Instances("shapelets", atts, shapelets.size());

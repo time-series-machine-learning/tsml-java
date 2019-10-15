@@ -23,10 +23,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.InstanceTools;
@@ -35,9 +32,8 @@ import weka.core.Capabilities;
 import weka.classifiers.Classifier;
 import weka.core.TechnicalInformation;
 
-import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Set;
+
 import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
 import experiments.data.DatasetLoading;
@@ -46,7 +42,6 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
  
@@ -668,7 +663,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
             //this is the main source of memory problems, most bags will have many unique
             //keys of value 1 due to noise, thus FULL keyset is much larger than 
             //each individuals bag's keyset
-            FastVector<Attribute> attInfo = new FastVector<>();
+            ArrayList<Attribute> attInfo = new ArrayList<>();
             Set<String> wordsFound = new HashSet<>();
             for (Bag bag : bags) 
                 for (Entry<BitWord,Integer> entry : bag.entrySet()) 

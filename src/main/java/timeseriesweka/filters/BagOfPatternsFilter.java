@@ -15,14 +15,11 @@
 package timeseriesweka.filters;
 
 import experiments.data.DatasetLoading;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.TreeSet;
+
+import java.util.*;
+
 import utilities.ClassifierTools;
 import weka.core.Attribute;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
@@ -53,7 +50,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
     private boolean numerosityReduction = false; //can expand to different types of nr
     //like those in senin implementation later, if wanted
     
-    private FastVector alphabet = null;
+    private List<String> alphabet = null;
     
     private static final long serialVersionUID = 1L;
 
@@ -61,8 +58,8 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
         this.numIntervals = PAA_intervalsPerWindow;
         this.alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;
-        
         alphabet = SAX.getAlphabet(SAX_alphabetSize);
+
     }
     
     public int getWindowSize() {
@@ -166,7 +163,7 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
             }
         }
 
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         for (String word : dictionary) 
             attributes.add(new Attribute(word));
         
@@ -176,9 +173,9 @@ public class BagOfPatternsFilter extends SimpleBatchFilter {
             //Get the class values as a fast vector			
             Attribute target = inputFormat.attribute(inputFormat.classIndex());
 
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList<>(target.numValues());
             for (int i = 0; i < target.numValues(); i++) {
-                vals.addElement(target.value(i));
+                vals.add(target.value(i));
             }
             
             result.insertAttributeAt(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals), result.numAttributes());

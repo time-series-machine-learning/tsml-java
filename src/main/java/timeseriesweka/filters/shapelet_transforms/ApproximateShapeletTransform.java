@@ -21,7 +21,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
@@ -305,22 +304,22 @@ public class ApproximateShapeletTransform extends ShapeletTransform{
     //Method to determine output format of Piecewise Aggregate Approximation of the time series
     private Instances determinePAAOutputFormat(Instances inputFormat, int length) throws Exception{
 
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         for(int i = 0; i < length; i++){
             name = "PAA" + i;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
 
         if(inputFormat.classIndex() >= 0){ //Classification set, set class
             //Get the class values as a fast vector
             Attribute target = inputFormat.attribute(inputFormat.classIndex());
 
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList<>(target.numValues());
             for(int i = 0; i < target.numValues(); i++){
-                vals.addElement(target.value(i));
+                vals.add(target.value(i));
             }
-            atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+            atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         }
         Instances result = new Instances("PAA" + inputFormat.relationName(), atts, inputFormat.numInstances());
         if(inputFormat.classIndex() >= 0){
@@ -339,18 +338,18 @@ public class ApproximateShapeletTransform extends ShapeletTransform{
     
     //Method used for testing
     private double[] testPAA(double[] data) throws IOException{
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         for(int i = 0; i < data.length-1; i++){
             name = "Attribute" + i;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
 
-        FastVector classValues = new FastVector();
-        classValues.addElement("0");
-        classValues.addElement("1");
+        ArrayList<String> classValues = new ArrayList();
+        classValues.add("0");
+        classValues.add("1");
         Attribute classAtt = new Attribute("Binary", classValues);
-        atts.addElement(classAtt);
+        atts.add(classAtt);
         
         //Create dataset
         Instances instances = new Instances("Test", atts, 1);

@@ -15,10 +15,8 @@
 package timeseriesweka.filters;
 
 import java.util.ArrayList;
-import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
@@ -58,20 +56,20 @@ public class PAA extends SimpleBatchFilter {
         }
         
         //Set up instances size and format. 
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         
         for (int i = 0; i < numIntervals; i++)
-            attributes.addElement(new Attribute("PAAInterval_" + i));
+            attributes.add(new Attribute("PAAInterval_" + i));
 
         if (inputFormat.classIndex() >= 0) {	//Classification set, set class 
             //Get the class values as a fast vector			
             Attribute target = inputFormat.attribute(inputFormat.classIndex());
 
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList<>(target.numValues());
             for (int i = 0; i < target.numValues(); i++) {
-                vals.addElement(target.value(i));
+                vals.add(target.value(i));
             }
-            attributes.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+            attributes.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         }
         
         Instances result = new Instances("PAA" + inputFormat.relationName(), attributes, inputFormat.numInstances());
