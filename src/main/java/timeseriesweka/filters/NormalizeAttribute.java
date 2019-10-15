@@ -45,9 +45,10 @@ public class NormalizeAttribute extends SimpleBatchFilter{
 	double[] stdev;
 	int classIndex;
 	NormType norm=NormType.INTERVAL;
-/* 
- * 
- */
+
+	public NormalizeAttribute(){
+	}
+
 	public NormalizeAttribute(Instances data){
 		trainData=data;
 		classIndex=data.classIndex();
@@ -110,24 +111,28 @@ public class NormalizeAttribute extends SimpleBatchFilter{
 	public void setNormMethod(NormType n){
 		norm=n;
 	}
-	public Instances process(Instances inst) throws Exception {
-//Clones the data. Presupposes find stats has been called! 		
-		if(classIndex!=inst.classIndex())
-			throw new Exception("Wrong class index ="+inst.classIndex()+" expecting ="+classIndex);
 
-		  Instances result = new Instances(inst);
-		  switch(norm){
-		  case INTERVAL:
-			  intervalNorm(result);
-			  break;
-		  case STD_NORMAL:
-			  standardNorm(result);
-			  break;
-			  default:
-				  System.out.println(" Unknown norm!"+norm);
-				 throw new Exception("in process"); 
-		  }
-		  return result;
+
+	public Instances process(Instances inst) throws Exception {
+		if(trainData==null) {
+			trainData = inst;
+			classIndex = inst.classIndex();
+			//Finds all the stats, doesnt cost much more really
+			findStats(inst);
+		}
+		Instances result = new Instances(inst);
+		switch(norm){
+			case INTERVAL:
+				intervalNorm(result);
+				break;
+			case STD_NORMAL:
+				standardNorm(result);
+				break;
+			default:
+				System.out.println(" Unknown norm!"+norm);
+				throw new Exception("in process");
+		}
+		return result;
 	}
 /* Wont normalise the class value*/	
 	public void intervalNorm(Instances r){

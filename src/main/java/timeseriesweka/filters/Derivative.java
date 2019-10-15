@@ -23,7 +23,7 @@ import weka.filters.*;
 import java.util.ArrayList;
 
 
-public class DerivativeFilter extends SimpleBatchFilter{
+public class Derivative extends SimpleBatchFilter{
 
     @Override
     public String globalInfo() {

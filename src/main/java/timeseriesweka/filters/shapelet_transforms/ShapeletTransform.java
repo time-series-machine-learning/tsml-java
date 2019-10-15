@@ -90,7 +90,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     public int casesSoFar;
     public boolean searchComplete=false;
     
-    protected boolean supressOutput; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
+    protected boolean supressOutput=true; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
     protected int numShapelets;
     protected ArrayList<Shapelet> shapelets;
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
@@ -227,7 +227,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         this.shapelets = new ArrayList<>();
         this.m_FirstBatchDone = false;
         this.useCandidatePruning = false;
-        this.supressOutput = false;
         this.casesSoFar = 0;
         this.recordShapelets = true; // default action is to write an output file
         this.roundRobin = false;
@@ -272,6 +271,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     public void supressOutput() {
         this.supressOutput = true;
     }
+
+    public void setPrintDebug(boolean b) {
+        this.supressOutput = b;
+    }
+
 
     /**
      * Use candidate pruning technique when checking candidate quality. This

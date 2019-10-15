@@ -23,7 +23,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
-import timeseriesweka.filters.BagOfPatternsFilter;
 import timeseriesweka.filters.SAX;
 import weka.core.TechnicalInformationHandler;
 
@@ -57,7 +56,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
     public Instances matrix;
     public kNN knn;
     
-    private BagOfPatternsFilter bop;
+    private timeseriesweka.filters.BagOfPatterns bop;
     private int PAA_intervalsPerWindow;
     private int SAX_alphabetSize;
     private int windowSize;
@@ -91,7 +90,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
         this.SAX_alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;
         
-        bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);       
+        bop = new timeseriesweka.filters.BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         knn = new kNN(); //default to 1NN, Euclidean distance
         alphabet = SAX.getAlphabet(SAX_alphabetSize);
         
@@ -191,7 +190,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
             this.SAX_alphabetSize = params[1];
             this.windowSize = params[2];
             
-            bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+            bop = new timeseriesweka.filters.BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
             alphabet = SAX.getAlphabet(SAX_alphabetSize);
         }
         

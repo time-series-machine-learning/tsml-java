@@ -15,7 +15,7 @@
 package timeseriesweka.classifiers.distance_based.FastEE.lowerBounds;
 
 import timeseriesweka.elastic_distance_measures.DTW;
-import timeseriesweka.filters.DerivativeFilter;
+import timeseriesweka.filters.Derivative;
 import weka.core.Instance;
 
 import java.util.ArrayDeque;
@@ -37,7 +37,7 @@ import java.util.Deque;
  * @author Chang Wei Tan (chang.tan@monash.edu)
  */
 public class LbKeogh {
-    private static DerivativeFilter df = new DerivativeFilter();
+    private static Derivative df = new Derivative();
 
     public static void fillUL(final double[] sequence, final int window, final double[] U, final double[] L) {
         final int length = sequence.length;

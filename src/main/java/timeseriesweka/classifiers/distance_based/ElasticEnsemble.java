@@ -15,7 +15,6 @@
 package timeseriesweka.classifiers.distance_based;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
@@ -27,14 +26,11 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.LCSS1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.TWE1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
+import timeseriesweka.filters.Derivative;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.DerivativeFilter;
 import utilities.WritableTestResults;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
@@ -111,7 +107,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
     protected Efficient1NN[] classifiers = null;
         
     protected boolean usesDer = false;
-    protected static DerivativeFilter df = new DerivativeFilter();
+    protected static Derivative df = new Derivative();
     
     // utility to enable AJBs COTE 
     protected double[] previousPredictions = null;
