@@ -116,7 +116,7 @@ public class DTW1NN extends Efficient1NN {
 //        if(isDerivative){
 //            Instances temp = new Instances(instance.dataset(),1);
 //            temp.add(instance);
-//            temp = new DerivativeFilter().process(temp);
+//            temp = new Derivative().process(temp);
 //            return classifyInstance(temp.instance(0));
 //        }
 //        return super.classifyInstance(instance);

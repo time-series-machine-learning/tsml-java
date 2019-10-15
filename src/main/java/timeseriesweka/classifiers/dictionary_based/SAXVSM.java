@@ -22,7 +22,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
-import timeseriesweka.filters.BagOfPatternsFilter;
+import timeseriesweka.filters.BagOfPatterns;
 import weka.core.TechnicalInformationHandler;
 
 /**
@@ -46,7 +46,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
     Instances transformedData;
     Instances corpus;
 
-    private BagOfPatternsFilter bop;
+    private BagOfPatterns bop;
     private int PAA_intervalsPerWindow;
     private int SAX_alphabetSize;
     private int windowSize;
@@ -87,7 +87,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
         this.SAX_alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;
         
-        bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+        bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         
         useParamSearch = false;
     }
@@ -185,7 +185,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
             this.SAX_alphabetSize = params[1];
             this.windowSize = params[2];
             
-            bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+            bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         }
         
         if (PAA_intervalsPerWindow<1)

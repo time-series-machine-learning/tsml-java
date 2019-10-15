@@ -14,18 +14,28 @@
  */
 package experiments;
 
-import static experiments.ClassifierLists.setClassifierClassic;
+import timeseriesweka.filters.*;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import weka.classifiers.Classifier;
 import weka.filters.SimpleBatchFilter;
 
 /**
  *
- * @author a.bostrom1
+ * @author Aaron Bostrom and Tony Bagnall
  */
 public class TransformLists {
- 
-    
+
+    //All implemented classifiers in tsml
+    //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">
+    public static String[] allFilters={
+            "ACF","ACF_PACF","ARMA","BagOfPatterns","BinaryTransform","Clipping","Correlation",
+            "Cosine","Derivative","Differences","Fast_FTT", "FFT","Hilbert","MatrixProfile",
+            "MFCC","NormalizeAttribute","NormalizeCase","PAA","PACF","PowerCepstrum","RankORder",
+            "RunLength","SAX","ShapeletTransform","Sine","Spectrogram","SummaryStats"
+    };
+    //</editor-fold>
+
+
+
     public static SimpleBatchFilter setTransform(Experiments.ExperimentalArguments exp){
         return setClassicTransform(exp.classifierName, exp.foldId);
     }
@@ -36,9 +46,84 @@ public class TransformLists {
             case "ShapeletTransform": case "ST":
                 transformer = new ShapeletTransform();
                 break;
-            case "PCA":
-                transformer = new ShapeletTransform();
+            case "ACF":
+                transformer = new ACF();
                 break;
+            case "ACF_PACF":
+                transformer = new ACF_PACF();
+                break;
+            case "ARMA":
+                transformer = new ARMA();
+                break;
+            case "BagOfPatterns":
+                transformer = new BagOfPatterns();
+                break;
+            case "BinaryTransform":
+                transformer = new BinaryTransform();
+                break;
+            case "Clipping":
+                transformer = new Clipping();
+                break;
+            case "Cosine":
+                transformer = new Correlation();
+                break;
+            case "Derivative":
+                transformer = new Derivative();
+                break;
+            case "Fast_FFT":
+                transformer = new Fast_FFT();
+                break;
+            case "FFT":
+                transformer = new FFT();
+                break;
+            case "Hilbert":
+                transformer = new Hilbert();
+                break;
+            case "MatrixProfile":
+                transformer = new MatrixProfile();
+                break;
+            case "MFCC":
+                transformer = new MFCC();
+                break;
+            case "NormalizeAttribute":
+                transformer = new NormalizeAttribute();
+                break;
+            case "NormalizeCase":
+                transformer = new NormalizeCase();
+                break;
+            case "PAA":
+                transformer = new PAA();
+                break;
+            case "PACF":
+                transformer = new PACF();
+                break;
+            case "PowerCepstrum":
+                transformer = new PowerCepstrum();
+                break;
+            case "PowerSpectrum":
+                transformer = new PowerSpectrum();
+                break;
+            case "RankOrder":
+                transformer = new RankOrder();
+                break;
+            case "RunLength":
+                transformer = new RunLength();
+                break;
+            case "SAX":
+                transformer = new SAX();
+                break;
+            case "Sine":
+                transformer = new Sine();
+                break;
+            case "Spectrogram":
+                transformer = new Spectrogram();
+                break;
+            case "SummaryStats":
+                transformer = new SummaryStats();
+                break;
+
+
+
             default:
                 System.out.println("UNKNOWN CLASSIFIER "+classifierName);
                 System.exit(0);

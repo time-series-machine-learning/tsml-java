@@ -38,11 +38,16 @@ import weka.filters.SimpleBatchFilter;
  */
 public class MatrixProfile extends SimpleBatchFilter{
     
-    private int windowSize = 3;
+    private int windowSize = 10;
     private final int stride = 1; // to-do later (maybe!)
     private double[][] distances;
     private int[][] indices;
-    
+
+    public MatrixProfile(){
+        this(10);
+    }
+
+
     public MatrixProfile(int windowSize){
         this.windowSize = windowSize;
     }

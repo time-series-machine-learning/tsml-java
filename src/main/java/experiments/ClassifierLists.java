@@ -377,7 +377,7 @@ public class ClassifierLists {
    //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">    
     public static String[] allClassifiers={
 //Dictionary Based
-        "BOSS","BagOfPatterns","SAXVSM","SAX_1NN","WEASEL","cBOSS",
+        "BOSS","BagOfPatterns","SAXVSM","SAX_1NN","WEASEL","cBOSS","BOSSC45","BOSSSpatialPyramids","BOSSSpatialPyramids_BD","BoTSWEnsemble",
 //Frequency Based
         "RISE","cRISE",
 //Interval Based
@@ -389,7 +389,8 @@ public class ClassifierLists {
 };    
        //</editor-fold>       
 
-    
+
+
     
     public static void main(String[] args) throws Exception {
         System.out.println(setClassifierClassic("cBOSS", 0));
