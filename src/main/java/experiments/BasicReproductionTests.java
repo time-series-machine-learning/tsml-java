@@ -489,8 +489,8 @@ public class BasicReproductionTests {
     
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
-        generateMissingExpectedResults();
-        System.exit(0);
+//        generateMissingExpectedResults();
+
         boolean classifiersComplete = confirmAllExpectedResultReproductions();
         boolean analysisReproduced = testBuildCAWPEPaper_AllResultsForFigure3();
 
