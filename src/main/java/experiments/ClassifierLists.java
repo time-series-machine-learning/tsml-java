@@ -371,6 +371,26 @@ public class ClassifierLists {
         return setClassifier(exp);
     }
 
+    
+    
+//All implemented classifiers in tsml  
+   //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">    
+    public static String[] allClassifiers={
+//Dictionary Based
+        "BOSS","BagOfPatterns","SAXVSM","SAX_1NN","WEASEL","cBOSS",
+//Frequency Based
+        "RISE","cRISE",
+//Interval Based
+        "LPS","TSBF","TSF","cTSF",
+//Shapelet Based
+        "FastShapelets","LearnShapelets","ShapeletTransformClassifier",
+//Distance Based
+        "ApproxElasticEnsemble","DD_DTW","DTD_C","DTW_kNN","ElasticEnsemble","FastDTW","FastDTW_1NN","FastElasticEnsemble","NN_CID","ProximityForestWrapper","SlowDTW_1NN"
+};    
+       //</editor-fold>       
+
+    
+    
     public static void main(String[] args) throws Exception {
         System.out.println(setClassifierClassic("cBOSS", 0));
     }

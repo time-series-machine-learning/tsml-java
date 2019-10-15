@@ -543,7 +543,10 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
                     finalRandForest=new RandomForest();    
                     finalRandForest.setNumTrees(500);
                 //6. Form a CV estimate of accuracy to choose z value 
-                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,rand.nextInt());
+                    int folds=10;
+                    if(data.numInstances()<folds)
+                        folds=data.numInstances();
+                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest,folds,rand.nextInt());
                 }
                 if(acc>maxAcc){
                    if(!stepWise)

@@ -54,11 +54,7 @@ public class LearnShapelets extends EnhancedAbstractClassifier implements Parame
         result.setValue(TechnicalInformation.Field.YEAR, "2014");
         return result;
     }    
-        
-    
-    
-    boolean suppressOutput = false;
-    
+            
     // length of a time-series 
     public int seriesLength;
     // length of shapelet
@@ -744,12 +740,9 @@ public class LearnShapelets extends EnhancedAbstractClassifier implements Parame
         return nominalLabels.get(label_i);
     }
     
-    public void suppressOutput(){
-        suppressOutput = true;
-    }
     
     void print(String s){
-        if(!suppressOutput)
+        if(debug)
             System.out.println(s);
     }
 
