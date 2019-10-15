@@ -348,7 +348,8 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
             }
             ratioLevel=ratioLevels[bestRatio];
             treeDepth=treeDepths[bestTreeDepth];
-            System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
+            if(debug)
+                System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
         }
         
         

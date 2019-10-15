@@ -733,9 +733,11 @@ public abstract class Efficient1NN extends EnhancedAbstractClassifier implements
         int bsfParamId = -1;
         double[] bsfaccAndPreds = null;
 
-        System.out.print("[1-NN] Fast Parameter Search for " + this.classifierIdentifier + ", training ");
+        if(debug)
+            System.out.print("[1-NN] Fast Parameter Search for " + this.classifierIdentifier + ", training ");
         for (int paramId = 0; paramId < nParams; paramId++) {
-            System.out.print(".");
+            if(debug)
+                System.out.print(".");
             accAndPreds = fastParameterAccAndPred(train, paramId, train.size());
             if (accAndPreds[0] > bsfAcc) {
                 bsfAcc = accAndPreds[0];
@@ -743,7 +745,8 @@ public abstract class Efficient1NN extends EnhancedAbstractClassifier implements
                 bsfaccAndPreds = accAndPreds;
             }
         }
-        System.out.println();
+        if(debug)
+            System.out.println();
 
         this.buildClassifier(train);
         this.setParamsFromParamId(train, bsfParamId);
@@ -803,10 +806,12 @@ public abstract class Efficient1NN extends EnhancedAbstractClassifier implements
         bsfParamId = -1;
         double bsfAcc = -1;
         double[] bsfaccAndPreds = null;
-        System.out.print("[1-NN] Approximate Parameter Search for " + this.classifierIdentifier + ", training ");
+        if(debug)
+            System.out.print("[1-NN] Approximate Parameter Search for " + this.classifierIdentifier + ", training ");
 
         for (int paramId = 0; paramId < nParams; paramId++) {
-            System.out.print(".");
+            if(debug)
+                System.out.print(".");
             accAndPreds = approxParameterAccAndPred(train, paramId, nSamples);
             if (accAndPreds[0] > bsfAcc) {
                 bsfAcc = accAndPreds[0];
@@ -814,7 +819,8 @@ public abstract class Efficient1NN extends EnhancedAbstractClassifier implements
                 bsfaccAndPreds = accAndPreds;
             }
         }
-        System.out.println();
+        if(debug)
+            System.out.println();
 
         this.buildClassifier(train);
         this.setParamsFromParamId(train, bsfParamId);

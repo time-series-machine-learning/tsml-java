@@ -247,7 +247,7 @@ public class ClassifierTools {
 
     }
 		
-    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed){
+    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed) throws Exception{
         Random rand = new Random(seed);   // create seeded number generator
         Instances randData = new Instances(data);   // create copy of original data
         randData.randomize(rand);         // randomize data with number generator
@@ -257,19 +257,14 @@ public class ClassifierTools {
         for (int n = 0; n < folds; n++) {
            Instances train = randData.trainCV(folds, n);
            Instances test = randData.testCV(folds, n);
-           try{
-               c.buildClassifier(train);
-                for(Instance ins:test){
-                    int pred=(int)c.classifyInstance(ins);
-                    if(pred==ins.classValue())
-                        correct++;
-                }
+           c.buildClassifier(train);
+            for(Instance ins:test){
+                int pred=(int)c.classifyInstance(ins);
+                if(pred==ins.classValue())
+                    correct++;
+            }
 //                System.out.println("Finished fold "+n+" acc ="+((double)correct/((n+1)*test.numInstances())));
-           }catch(Exception e){
-               System.err.println("ERROR BUILDING FOLD "+n+" for data set "+data.relationName());
-               e.printStackTrace();
-               System.exit(1);
-           }
+  
         }            
         return ((double)correct)/total;
     }
