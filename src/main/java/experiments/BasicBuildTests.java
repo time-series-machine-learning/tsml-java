@@ -10,6 +10,8 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
 /**
+ * Does basic sanity check builds for all listed classifiers and transformers. Does not guarantee correctness,
+ * just checks they all build and produce output
  *
  * @author ajb
  */
@@ -38,7 +40,7 @@ public class BasicBuildTests {
     }
     public static void buildAllTransforms(String[] problems, String[] transforms, String path) {
         for(String str:problems){
-            System.out.println("Building all for problem "+str);
+            System.out.println("Transforming all all for problem "+str);
             Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN.arff");
             Instances test = DatasetLoading.loadData(path+str+"\\"+str+"_TEST.arff");
             for(String trans:transforms){
@@ -46,22 +48,29 @@ public class BasicBuildTests {
                 SimpleBatchFilter f = TransformLists.setClassicTransform(trans,0);
                 try{
                     Instances trainTrans=f.process(train);
-                    System.out.print("Train transformed successfully. Length = "+(trainTrans.numAttributes()-1));
+                    System.out.print("\tTrain transformed successfully. Prior to Trans length = "+(train.numAttributes()-1));
                     Instances testTrans=f.process(test);
-                    System.out.print("Test transformed successfully. Length = "+(testTrans.numAttributes()-1));
+                    System.out.println("\t\t   Test transformed successfully. Length = "+(testTrans.numAttributes()-1));
                 }catch(Exception e){
                     System.out.println("Transform failed to build with exception "+e);
-//                    e.printStackTrace();
+                    e.printStackTrace();
+                    System.exit(0);
                 }
             }
         }
     }
 
 
+
     public static void main(String[] args)  {
-        System.out.println("Testing core functionality of all TSC classifiers");
+        System.out.println("Testing all SimpleBatch filters do not crash");
         String dataPath="src\\main\\java\\experiments\\data\\tsc\\";
-        String[] problems={"Chinatown","ItalyPowerDemand","Beef"};
+        String[] problems={"ItalyPowerDemand","Chinatown","Beef"};
+        String[] transforms=TransformLists.allFilters;
+        buildAllTransforms(problems,transforms,dataPath);
+
+
+        System.out.println("Testing core functionality of all TSC classifiers");
         String[] classifiers=ClassifierLists.allClassifiers;
         buildAllClassifiers(problems,classifiers,dataPath);
     }

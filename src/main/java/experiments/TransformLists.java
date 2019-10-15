@@ -24,25 +24,27 @@ import weka.filters.SimpleBatchFilter;
  */
 public class TransformLists {
 
-    //All implemented classifiers in tsml
-    //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">
+    //All implemented time series related SimpleBatchFilters in tsml
+    //<editor-fold defaultstate="collapsed" desc="All time series related SimpleBatchFilters">
     public static String[] allFilters={
-            "ACF","ACF_PACF","ARMA","BagOfPatterns","BinaryTransform","Clipping","Correlation",
-            "Cosine","Derivative","Differences","Fast_FTT", "FFT","Hilbert","MatrixProfile",
-            "MFCC","NormalizeAttribute","NormalizeCase","PAA","PACF","PowerCepstrum","RankORder",
-            "RunLength","SAX","ShapeletTransform","Sine","Spectrogram","SummaryStats"
+            "ACF","ACF_PACF","ARMA","BagOfPatterns","BinaryTransform","Clipping",
+            "Cosine","Derivative","Differences","Fast_FFT", "FFT","Hilbert","MatrixProfile",
+            "NormalizeAttribute","NormalizeCase","PAA","PACF","PowerCepstrum","RankOrder",
+            "RunLength","SAX","Sine","SummaryStats","ShapeletTransform"
     };
     //</editor-fold>
-
-
+    //multivariate SimpleBatchFilters in tsml
+    //<editor-fold defaultstate="collapsed" desc="Filters that transform univariate into multivariate">
+    public static String[] multivariateFilters={"Spectrogram","MFCC"};
+    //</editor-fold>
 
     public static SimpleBatchFilter setTransform(Experiments.ExperimentalArguments exp){
         return setClassicTransform(exp.classifierName, exp.foldId);
     }
 
-    public static SimpleBatchFilter setClassicTransform(String classifierName, int foldId) {
+    public static SimpleBatchFilter setClassicTransform(String transformName, int foldId) {
         SimpleBatchFilter transformer = null;
-        switch(classifierName){
+        switch(transformName){
             case "ShapeletTransform": case "ST":
                 transformer = new ShapeletTransform();
                 break;
@@ -65,10 +67,13 @@ public class TransformLists {
                 transformer = new Clipping();
                 break;
             case "Cosine":
-                transformer = new Correlation();
+                transformer = new Cosine();
                 break;
             case "Derivative":
                 transformer = new Derivative();
+                break;
+            case "Differences":
+                transformer = new Differences();
                 break;
             case "Fast_FFT":
                 transformer = new Fast_FFT();
@@ -125,7 +130,7 @@ public class TransformLists {
 
 
             default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifierName);
+                System.out.println("UNKNOWN TRANSFORM "+transformName);
                 System.exit(0);
         }
         
