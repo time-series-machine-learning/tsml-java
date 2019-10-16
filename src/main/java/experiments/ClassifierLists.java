@@ -362,7 +362,7 @@ public class ClassifierLists {
      */
     public static String[] standard= {
         "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "PLSNominalClassifier","BayesNet","ED","C45",
-            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE"};
+            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -385,13 +385,11 @@ public class ClassifierLists {
             case "RandF":
                 RandomForest r=new RandomForest();
                 r.setNumTrees(500);
-                r.setSeed(fold);
                 c = r;
                 break;
             case "RotF":
                 RotationForest rf=new RotationForest();
                 rf.setNumIterations(200);
-                rf.setSeed(fold);
                 c = rf;
                 break;
             case "PLSNominalClassifier":
@@ -444,16 +442,15 @@ public class ClassifierLists {
             case "Logistic":
                 c= new Logistic();
                 break;
+            case "CAWPE":
+                c=new CAWPE();
+                break;
             case "NN":
                 kNN k=new kNN(100);
                 k.setCrossValidate(true);
                 k.normalise(false);
                 k.setDistanceFunction(new EuclideanDistance());
                 return k;
-            case "CAWPE":
-                c=new CAWPE();
-                ((CAWPE)c).setSeed(fold);
-                break;
             default:
                 System.out.println("Unknown standard classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between otherClassifiers and the switch statement ");
@@ -482,14 +479,12 @@ public class ClassifierLists {
         switch(classifier) {
             case "CAWPEPLUS":
                 c=new CAWPE();
-                ((CAWPE)c).setSeed(fold);
                 ((CAWPE)c).setupAdvancedSettings();
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){
                     String[] classifiers={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
-                    ((CAWPE)c).setSeed(fold);
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
@@ -503,7 +498,6 @@ public class ClassifierLists {
                     String[] cls={"TSF","BOSS","RISE","ST","ElasticEnsemble"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls);
@@ -517,7 +511,6 @@ public class ClassifierLists {
                     String[] cls2={"TSF","BOSS","RISE","ST"};
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(cls2);
@@ -611,6 +604,16 @@ public class ClassifierLists {
             System.out.println("Returned classifier "+c.getClass().getSimpleName());
         }
         for(String str:allMultivariate){
+            System.out.println("Initialising "+str);
+            Classifier c= setClassifierClassic(str,0);
+            System.out.println("Returned classifier "+c.getClass().getSimpleName());
+        }
+        for(String str:standard){
+            System.out.println("Initialising "+str);
+            Classifier c= setClassifierClassic(str,0);
+            System.out.println("Returned classifier "+c.getClass().getSimpleName());
+        }
+        for(String str:bespoke){
             System.out.println("Initialising "+str);
             Classifier c= setClassifierClassic(str,0);
             System.out.println("Returned classifier "+c.getClass().getSimpleName());
