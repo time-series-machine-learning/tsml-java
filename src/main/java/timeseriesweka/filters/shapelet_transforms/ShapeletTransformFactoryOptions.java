@@ -87,8 +87,7 @@ public class ShapeletTransformFactoryOptions {
     public boolean useRoundRobin(){
         return roundRobin;
     }
-    
-        
+
     public boolean useCandidatePruning(){
         return candidatePruning;
     }
@@ -164,7 +163,7 @@ public class ShapeletTransformFactoryOptions {
         }
         
         public Builder useBinaryClassValue(){
-            balanceClasses = true;
+            binaryClassValue = true;
             return this;
         }
         

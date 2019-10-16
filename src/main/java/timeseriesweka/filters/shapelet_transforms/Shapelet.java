@@ -58,6 +58,8 @@ public class Shapelet implements Comparable<Shapelet>, Serializable
     boolean useSeparationGap = false;
     public double classValue;
 
+    public double splitThreshold;
+
     public void setUseSeparationGap(boolean b)
     {
         useSeparationGap = true;
