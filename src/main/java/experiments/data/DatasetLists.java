@@ -15,7 +15,6 @@
 package experiments.data;
 
 
-import experiments.data.DatasetLoading;
 import fileIO.InFile;
 import fileIO.OutFile;
 import timeseriesweka.filters.SummaryStats;
@@ -45,7 +44,7 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
     
-    public static String clusterPath="/gpfs/home/ajb/";
+/*    public static String clusterPath="/gpfs/home/ajb/";
     public static String dropboxPath="C:/Users/ajb/Dropbox/";    
     public static String beastPath="//cmptscsvr.cmp.uea.ac.uk/ueatsc/Data/";
     public static  String path=clusterPath;    
@@ -53,7 +52,7 @@ public class DatasetLists {
     public static String problemPath=path+"/TSCProblems/";
     public static String resultsPath=path+"Results/";
     public static String uciPath=path+"UCIContinuous";
-    
+  */  
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
@@ -1390,7 +1389,7 @@ tiianic
         "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
         "ecoli","glass","hill-valley",
         "image-segmentation","ionosphere","iris","libras","magic",
-        "miniboone",
+//        "miniboone",
         "oocytes_merluccius_nucleus_4d","oocytes_trisopterus_states_5b",
         "optical","ozone","page-blocks","parkinsons","pendigits",
         "planning","post-operative","ringnorm","seeds","spambase",
@@ -1412,7 +1411,7 @@ tiianic
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
-  public static void processUCRData(){
+  public static void processUCRData(String problemPath){
       System.out.println(" nos files ="+tscProblems46.length);
       String s;
       for(int str=39;str<43;str++){
@@ -1502,7 +1501,7 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
   }
   
   
-  public static void listNotNormalisedList(String[] fileNames) throws Exception{
+  public static void listNotNormalisedList(String[] fileNames,String problemPath) throws Exception{
     TreeSet<String> notNormed=new TreeSet<>();
     DecimalFormat df = new DecimalFormat("###.######");
     for(String s:fileNames){
@@ -1541,7 +1540,7 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
 
   }
 
-public static void dataDescription(String[] fileNames){
+public static void dataDescription(String[] fileNames,String problemPath){
     //Produce summary descriptions
     //dropboxPath=uciPath;
         OutFile f=new OutFile(problemPath+"DataDimensions.csv");
@@ -1599,7 +1598,7 @@ public static void dataDescription(String[] fileNames){
 
 
 
-public static void dataDescriptionDataNotSplit(String[] fileNames){
+public static void dataDescriptionDataNotSplit(String[] fileNames, String problemPath){
     //Produce summary descriptions
     //dropboxPath=uciPath;
         OutFile f=new OutFile(problemPath+"DataDimensions.csv");
@@ -1676,7 +1675,7 @@ public static void createReadmeFiles(String[] problems){
         
 }
 
-public static void buildArffs(String[] problems){
+public static void buildArffs(String[] problems, String path){
     String header;
     InFile trainTxt,testTxt,hdr;
     OutFile trainArff,testArff;
@@ -1785,7 +1784,7 @@ public static void buildArffs(String[] problems){
     
 }
 
-public static void testArffs(String[] problems){
+public static void testArffs(String[] problems, String path){
     String header;
     Instances train,test;
     
@@ -1936,10 +1935,10 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
-    problemPath="E:\\Data\\ConcatenatedMTSC\\";
-    dataDescription(mtscProblems2018);
+    String problemPath="E:\\Data\\ConcatenatedMTSC\\";
+    dataDescription(mtscProblems2018,problemPath);
     System.exit(0);
-    path="E:\\Data\\TSCProblems2018\\";
+    String path="E:\\Data\\TSCProblems2018\\";
     makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
     OutFile of = new OutFile("C:\\temp\\TSCNoMissing.txt");
         for(String str:tscProblems2018){
@@ -1954,7 +1953,7 @@ public static void main(String[] args) throws Exception{
 //    testArffs(tscProblems2018);
 //    pack("Z:\\Data\\NewTSCProblems\\Car","c:\\temp\\car.zip");
 //    path="C:\\New TSC Data\\UCR_archive_2018_to_release\\";
-    buildArffs(test);
+    buildArffs(test,path);
 //    buildArffs(tscProblems2018);
 //    createReadmeFiles(tscProblems2018);
 //    describeTextFiles();

@@ -15,15 +15,14 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
-import timeseriesweka.filters.BagOfPatternsFilter;
+import timeseriesweka.filters.BagOfPatterns;
 import weka.core.TechnicalInformationHandler;
 
 /**
@@ -42,12 +41,12 @@ year="2013"
 
  * @author James Large
  */
-public class SAXVSM extends AbstractClassifierWithTrainingInfo implements TechnicalInformationHandler{
+public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
     Instances transformedData;
     Instances corpus;
 
-    private BagOfPatternsFilter bop;
+    private BagOfPatterns bop;
     private int PAA_intervalsPerWindow;
     private int SAX_alphabetSize;
     private int windowSize;
@@ -69,6 +68,8 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
      * Will use parameter search during training
      */
     public SAXVSM() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = -1;
         this.SAX_alphabetSize = -1;
         this.windowSize = -1;
@@ -80,11 +81,13 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
      * Will build using only parameters passed 
      */
     public SAXVSM(int PAA_intervalsPerWindow, int SAX_alphabetSize, int windowSize) {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = PAA_intervalsPerWindow;
         this.SAX_alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;
         
-        bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+        bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         
         useParamSearch = false;
     }
@@ -182,7 +185,7 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
             this.SAX_alphabetSize = params[1];
             this.windowSize = params[2];
             
-            bop = new BagOfPatternsFilter(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+            bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         }
         
         if (PAA_intervalsPerWindow<1)
@@ -353,7 +356,11 @@ public class SAXVSM extends AbstractClassifierWithTrainingInfo implements Techni
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new SAXVSM()));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAXVSM(), 0.7580174927113703, "2019/09/26"));
+        
          basicTest();
     }
 

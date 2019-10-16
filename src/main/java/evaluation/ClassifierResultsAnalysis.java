@@ -20,9 +20,6 @@ import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
 import evaluation.MultipleClassifiersPairwiseTest;
 import evaluation.storage.ClassifierResultsCollection;
-import experiments.data.DatasetLists;
-import experiments.Experiments;
-import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -96,10 +93,10 @@ public class ClassifierResultsAnalysis {
     protected static final String friedmanCDDiaDirName = "friedman/";
     protected static final String timingDiaFolderName = "dias_Timing/";
     public static final double FRIEDMANCDDIA_PVAL = 0.05;
-    private static final String testLabel = "TEST";
-    private static final String trainLabel = "TRAIN";
-    private static final String trainTestDiffLabel = "TRAINTESTDIFFS";
-    private static final String estimateLabel = "ESTIMATE";
+    public static final String testLabel = "TEST";
+    public static final String trainLabel = "TRAIN";
+    public static final String trainTestDiffLabel = "TRAINTESTDIFFS";
+    public static final String estimateLabel = "ESTIMATE";
     public static final String clusterGroupingIdentifier = "PostHocXmeansClustering";
         
     
@@ -279,7 +276,7 @@ public class ClassifierResultsAnalysis {
     
     protected static void writeTableFile(String filename, String tableName, double[][] accs, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
-        out.writeLine(tableName + ":" + fileHelper_tabulate(accs, cnames, dsets));
+        out.writeLine(tableName + fileHelper_tabulate(accs, cnames, dsets));
 //        out.writeLine("\navg:" + util_mean(accs));
         out.closeFile();
     }

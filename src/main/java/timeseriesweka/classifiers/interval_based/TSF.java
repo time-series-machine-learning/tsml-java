@@ -15,9 +15,7 @@
  */
 package timeseriesweka.classifiers.interval_based;
  
-import fileIO.OutFile;
 import java.util.ArrayList;
-import java.util.Random;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -27,22 +25,16 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.Bagging;
-import weka.core.Capabilities;
-import weka.core.Capabilities.Capability;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.Tuneable;
  
 /** 
@@ -85,7 +77,7 @@ import timeseriesweka.classifiers.Tuneable;
  <!-- technical-bibtex-start -->
 * Bibtex
 * <pre>
-* @article{deng13forest,
+* article{deng13forest,
 * author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
 * title = {A time series forest for classification and feature extraction},
 * journal = {Information Sciences},
@@ -104,15 +96,15 @@ import timeseriesweka.classifiers.Tuneable;
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
  
-* @author ajb
-* @date 7/10/15
-* @update1 14/2/19
- @update2 13/9/19: Adjust to allow three methods for estimating test accuracy
+* author ajb
+* date 7/10/15
+* update1 14/2/19
+* update2 13/9/19: Adjust to allow three methods for estimating test accuracy
 
 **/
  
-public class TSF extends AbstractClassifierWithTrainingInfo 
-        implements SaveParameterInfo, TrainAccuracyEstimator, Randomizable,TechnicalInformationHandler, Tuneable{
+public class TSF extends EnhancedAbstractClassifier 
+        implements TechnicalInformationHandler, Tuneable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -122,7 +114,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
  
     /** numIntervalsFinder sets numIntervals in buildClassifier. */   
     private int numIntervals=0;
-    Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));   
+    private Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
     /** Secondary parameter, mainly there to avoid single item intervals, 
      which have no slope or std dev*/
     private int minIntervalLength=3;
@@ -138,9 +130,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     /**Holding variable for test classification in order to retain the header info*/    
     private Instances testHolder;
  
-    /**Can seed for reproducibility*/
-    private Random rand;
-    private boolean setSeed=false;
  
 /** voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting */
@@ -156,26 +145,25 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     * 1. bagging == true: use the OOB accuracy from the final model
     * 2. bagging == false,estimator=CV: do a 10x CV on the train set with a clone 
     * of this classifier
-    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB 
+    * accuracy estimate
     */
-    boolean trainAccuracyEst=false;  
-    enum EstimatorMethod{CV,OOB};
-    EstimatorMethod estimator=EstimatorMethod.CV;
+//    boolean findTrainPredictions=false;  
+    enum EstimatorMethod{CV,OOB}
+    private EstimatorMethod estimator=EstimatorMethod.CV;
     private String trainFoldPath="";
 /* If trainFoldPath is set, train results are overwritten with 
  each call to buildClassifier.*/    
      
- 
- 
      
     public TSF(){
-        rand=new Random();
+//TSF Has the capability to form train estimates         
+//In order to do this, 
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public TSF(int s){
-        rand=new Random();
-        seed=s;
-        rand.setSeed(seed);
-        setSeed=true;
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        setSeed(s);
     }
 /**
  * 
@@ -190,7 +178,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
  
 /**
  * ok,  two methods are a bit pointless, experimenting with ensemble method
- * @param b 
+ * @param b boolean to set vote ensemble
  */   
     public void setVoteEnsemble(boolean b){
         voteEnsemble=b;
@@ -199,51 +187,6 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         voteEnsemble=!b;
     }
      
-/**
- * Seed experiments for reproducibility with the resample number
- * @param s 
- */   
-    @Override
-    public void setSeed(int s){
-        this.setSeed=true;
-        seed=s;
-        rand=new Random();
-        rand.setSeed(seed);
-    }
-/**
- * Stores the classifier train CV results and writes them to file. 
- * boolean trainCV is a little redundant, but nicer than checking path for null
- * @param train 
- */   
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainFoldPath=train;
-        trainAccuracyEst=true;
-    }
-/**
- * We can perform trainCV without writing the results to file. The could be used,
- * for example, in an ensemble this TSF is a member of
- * @param setCV 
- */
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean estimateAccuracy){
-        trainAccuracyEst=estimateAccuracy;
-    }
-/** 
- * Maybe this method needs renaming?
- * @return boolean, whether trainCV happens or not
- */   
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainAccuracyEst;}
-     
-/**
- * 
- * @return a ClassifierResults object, which will be null if tainCV is null
- */   
-    @Override
-     public ClassifierResults getTrainResults(){
-         return trainResults;
-     }        
 /**
  * Perhaps make this coherent with setOptions(String[] ar)?
  * @return String written to results files
@@ -378,8 +321,8 @@ public class TSF extends AbstractClassifierWithTrainingInfo
  
         return result;
   }
-     
- 
+
+
 /**
  * main buildClassifier
  * @param data
@@ -465,13 +408,13 @@ public class TSF extends AbstractClassifierWithTrainingInfo
             }
         //3. Create and build tree using all the features. Feature selection
             trees[i]=AbstractClassifier.makeCopy(base); 
-            if(setSeed && trees[i] instanceof Randomizable)
+            if(seedClassifier && trees[i] instanceof Randomizable)
                 ((Randomizable)trees[i]).setSeed(seed*(i+1));
             if(bagging){
                 inBag[i] = new boolean[result.numInstances()];
                 Instances bagData = result.resampleWithWeights(rand, inBag[i]);
                 trees[i].buildClassifier(bagData);
-                if(trainAccuracyEst){
+                if(getEstimateOwnPerformance()){
                     for(int j=0;j<result.numInstances();j++){
                         if(inBag[i][j])
                             continue;
@@ -493,7 +436,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
 *  2. with a 10xCV or (if 
 *  3. Build a bagged model simply to get the estimate. 
  */       
-        if(trainAccuracyEst){
+        if(getEstimateOwnPerformance()){
              if(bagging){
             // Use bag data. Normalise probs
                 long est1=System.nanoTime();
@@ -506,7 +449,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                     actuals[j]=data.instance(j).classValue();
                 }
                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-                trainResults.addAllPredictions(preds, trainDistributions, predTimes, null);
+                trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
                 trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
                 trainResults.setClassifierName("TSFBagging");
                 trainResults.setDatasetName(data.relationName());
@@ -525,14 +468,15 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 long est1=System.nanoTime();
                 int numFolds=setNumberOfFolds(data);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                if (setSeed)
-                  cv.setSeed(seed);
+                if (seedClassifier)
+                  cv.setSeed(seed*5);
                 cv.setNumFolds(numFolds);
                 TSF tsf=new TSF();
                 tsf.copyParameters(this);
-                tsf.setSeed(seed);
-                tsf.setFindTrainAccuracyEstimate(false);
-                trainResults=cv.crossValidateWithStats(tsf,data);
+                if (seedClassifier)
+                   tsf.setSeed(seed*100);
+                tsf.setEstimateOwnPerformance(false);
+                trainResults=cv.evaluate(tsf,data);
                 long est2=System.nanoTime();
                 trainResults.setErrorEstimateTime(est2-est1);
                 trainResults.setClassifierName("TSFCV");
@@ -546,7 +490,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
                 TSF tsf=new TSF();
                 tsf.copyParameters(this);
                 tsf.setSeed(seed);
-                tsf.setFindTrainAccuracyEstimate(true);
+                tsf.setEstimateOwnPerformance(true);
                 tsf.bagging=true;
                 tsf.buildClassifier(data);
                 trainResults=tsf.trainResults;
@@ -755,6 +699,10 @@ public class TSF extends AbstractClassifierWithTrainingInfo
     } 
      
     public static void main(String[] arg) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
+        
 // Basic correctness tests, including setting paras through 
         String dataLocation="Z:\\Data\\TSCProblems2018\\";
         String resultsLocation="C:\\temp\\";
@@ -766,7 +714,7 @@ public class TSF extends AbstractClassifierWithTrainingInfo
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.setSeed(0);
-        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
+//        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);

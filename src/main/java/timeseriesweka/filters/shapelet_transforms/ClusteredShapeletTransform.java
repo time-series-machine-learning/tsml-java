@@ -19,9 +19,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
@@ -72,7 +69,6 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
      * @param minShapeletLength The minimum shapelet langth.
      * @param maxShapeletLength The maximum shapelet length.
      * @param qualityChoice The quality measure to use for assessing candidates.
-     * @param cluster Whether to cluster the shapelets for the transform.
      * @param noClust The number of clusters.
      */
     public ClusteredShapeletTransform(int k, int minShapeletLength, 
@@ -125,7 +121,6 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
      * @param k The number of shapelets to store.
      * @param minShapeletLength The minimum shapelet langth.
      * @param maxShapeletLength The maximum shapelet length.
-     * @param cluster Whether to cluster the shapelets for the transform.
      * @param noClust The number of clusters.
      */
     public ClusteredShapeletTransform(int k, int minShapeletLength, 
@@ -216,20 +211,20 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
         if(s < 1 || s<noClust){
             throw new Exception("ShapeletFilter not initialised correctly - please specify a value of k that is greater than or equal to 1. You entered s="+s+" num clusters ="+noClust);
         }
-  
-        FastVector atts = new FastVector();
+
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         for(int i = 0; i < noClust; i++){
             name = "CShapelet_" + i;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         Attribute target = inputFormat.attribute(inputFormat.classIndex());
 
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList(target.numValues());
         for(int i = 0; i < target.numValues(); i++){
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+        atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         Instances result = new Instances("CShapelets" + inputFormat.relationName(), atts, inputFormat.numInstances());
         result.setClassIndex(result.numAttributes() - 1);
         return result;

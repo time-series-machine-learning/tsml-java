@@ -20,7 +20,6 @@ import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -29,10 +28,11 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.Tuneable;
 
 /**
  * Given 
@@ -57,10 +57,9 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class TunedClassifier extends AbstractClassifier 
-        implements SaveParameterInfo,TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
+public class TunedClassifier extends EnhancedAbstractClassifier 
+        implements SaveEachParameter,ParameterSplittable,Checkpointable, TrainTimeContractable {
 
-    int seed;
     ParameterSpace space = null;
     Tuner tuner = null;
     AbstractClassifier classifier = null;
@@ -81,35 +80,26 @@ public class TunedClassifier extends AbstractClassifier
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
-    
-    //these would refer to the results of the best parameter set
-    boolean TAE_writeTrainAcc = false; //TrainAccuracyEstimate
-    String TAE_trainAccWritePath; //TrainAccuracyEstimate
-    ClassifierResults TAE_trainResults = null; //TrainAccuracyEstimate
-    double TAE_trainAcc = -1; //TrainAccuracyEstimate
-    
     ////////// end interface variables
     
     
     public TunedClassifier() { 
-        this.tuner = new Tuner(); 
+        this(null, null, new Tuner()); 
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
-        this.classifier = classifier;
-        this.space = space;
-        this.tuner = new Tuner(); 
+        this(classifier, space, new Tuner());
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space, Tuner tuner) { 
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.classifier = classifier;
         this.space = space;
         this.tuner = tuner;
     }
     
-    void setSeed(int seed) { 
-        this.seed = seed;
-        
+    public void setSeed(int seed) { 
+        super.setSeed(seed);
         tuner.setSeed(seed);
         //no setSeed in abstractclassifier. i imagine most define it via setOptions,
         //so could add it a a parameter with only one possible value, or jsut set the seed
@@ -183,15 +173,17 @@ public class TunedClassifier extends AbstractClassifier
             msg += "Tuner not setup. ";
             somethingMissing = true;
         }
-        if (space == null) { 
-//todo if we end up going with some kind of default para space interface, 
-//collect paras from that if classifier is instanceof 
-            msg += "Parameter space not setup. ";
-            somethingMissing = true;
-        }
         if (classifier == null) {
             msg += "No classifier specified. ";
             somethingMissing = true;
+        }
+        if (space == null) { 
+            if (classifier instanceof Tuneable)
+                space = ((Tuneable)classifier).getDefaultParameterSearchSpace();
+            else {
+                msg += "Parameter space not setup. ";
+                somethingMissing = true;
+            }
         }
         if (somethingMissing) 
             throw new Exception("TunedClassifier: " + msg);
@@ -201,8 +193,8 @@ public class TunedClassifier extends AbstractClassifier
         //special case: if we've been set up to evaluate a particular parameter set in this execution
         //instead of search the full space, evaluate that parameter, write it, and quit
         if (PS_parameterSplitting && PS_paraSetID >= 0) {
-            TAE_trainResults = tuner.evaluateParameterSetByIndex(classifier, data, space, PS_paraSetID);
-            tuner.saveParaResults(PS_paraSetID, TAE_trainResults);
+            trainResults = tuner.evaluateParameterSetByIndex(classifier, data, space, PS_paraSetID);
+            tuner.saveParaResults(PS_paraSetID, trainResults);
             return;
             //todo think that's it?
         }
@@ -211,11 +203,7 @@ public class TunedClassifier extends AbstractClassifier
         ParameterResults best = tuner.tune(classifier, data, space);
         
         bestParas = best.paras;
-        TAE_trainResults = best.results;
-        TAE_trainAcc = best.results.getAcc();
-        
-        if (TAE_writeTrainAcc && TAE_trainAccWritePath != null)
-            TAE_trainResults.writeFullResultsToFile(TAE_trainAccWritePath);
+        trainResults = best.results;
         
         //apply best paras and build final classifier on full train data
         String[] options = best.paras.toOptionsList();
@@ -307,23 +295,6 @@ public class TunedClassifier extends AbstractClassifier
         return getParas(); 
     }
 
-    @Override //TrainAccuracyEstimate
-    public void setFindTrainAccuracyEstimate(boolean setCV) {
-        System.out.println("-------Inside setFindTrainAccuracyEstimate(..), but for TunedClassifier this is redundant");
-        //do nothing
-    }
-
-    @Override //TrainAccuracyEstimate
-    public void writeTrainEstimatesToFile(String train) {
-        this.TAE_trainAccWritePath = train;
-        this.TAE_writeTrainAcc = true;
-    }
-
-    @Override //TrainAccuracyEstimate
-    public ClassifierResults getTrainResults() {
-        return TAE_trainResults;
-    }
-
     @Override //SaveEachParameter
     public void setPathToSaveParameters(String r) {
         this.SEP_CP_PS_paraWritePath = r;
@@ -353,15 +324,14 @@ public class TunedClassifier extends AbstractClassifier
         return bestParas.toClassifierResultsParaLine(true);
     }
 
-    @Override //ParameterSplittable
-    public double getAcc() {
-        throw new UnsupportedOperationException("-------Dont think this is needed anywhere; testing. Part of the ParameterSplittable interface"); 
-    }
-
-    @Override //CheckpointClassifier
-    public void setSavePath(String path) {
-        this.SEP_CP_PS_paraWritePath = path;
-        this.SEP_CP_savingAllParameters = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            this.SEP_CP_PS_paraWritePath = path;
+            this.SEP_CP_savingAllParameters = true;
+        }
+        return validPath;
     }
 
     @Override //CheckpointClassifier

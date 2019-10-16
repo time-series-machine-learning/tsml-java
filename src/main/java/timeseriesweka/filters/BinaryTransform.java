@@ -21,7 +21,6 @@ import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
@@ -50,24 +49,24 @@ public class BinaryTransform extends SimpleBatchFilter{
             length--;
         
                 //Set up instances size and format. 
-        FastVector atts=new FastVector();
-        FastVector attributeValues=new FastVector();
-        attributeValues.addElement("0");
-        attributeValues.addElement("1");
+        ArrayList<Attribute> atts=new ArrayList<>();
+        ArrayList<String> attributeValues=new ArrayList<>();
+        attributeValues.add("0");
+        attributeValues.add("1");
 
         String name;
         for(int i=0;i<length;i++){
                 name = "Binary_"+i;
-                atts.addElement(new Attribute(name,attributeValues));
+                atts.add(new Attribute(name,attributeValues));
         }
         if(inputFormat.classIndex()>=0){	//Classification set, set class 
                 //Get the class values as a fast vector			
                 Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-                FastVector vals=new FastVector(target.numValues());
+            ArrayList<String>  vals=new ArrayList<>();
                 for(int i=0;i<target.numValues();i++)
-                        vals.addElement(target.value(i));
-                atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+                        vals.add(target.value(i));
+                atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
         }	
         Instances result = new Instances("Binary"+inputFormat.relationName(),atts,inputFormat.numInstances());
         if(inputFormat.classIndex()>=0){

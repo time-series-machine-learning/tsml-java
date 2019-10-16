@@ -15,11 +15,11 @@
 package timeseriesweka.filters;
 
 import java.io.FileReader;
+import java.util.ArrayList;
 
 import weka.filters.*;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -51,19 +51,19 @@ public class RunLength extends SimpleBatchFilter {
 	protected Instances determineOutputFormat(Instances inputFormat)
 			throws Exception {
 //Treating counts as reals
-		FastVector atts=new FastVector();
+		ArrayList<Attribute> atts=new ArrayList<>();
 		Attribute a;
 		for(int i=0;i<maxRunLength;i++){
 			  a=new Attribute("RunLengthCount"+(i+1));
-			  atts.addElement(a);
+			  atts.add(a);
 		}
 		if(inputFormat.classIndex()>=0){	//Classification set, set class 
 			//Get the class values as a fast vector			
 			Attribute target =inputFormat.attribute(inputFormat.classIndex());
-			FastVector vals=new FastVector(target.numValues());
+			ArrayList<String> vals=new ArrayList<>(target.numValues());
 			for(int i=0;i<target.numValues();i++)
-				vals.addElement(target.value(i));
-			atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+				vals.add(target.value(i));
+			atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
 
 		}	
 		Instances result = new Instances("RunLengths"+inputFormat.relationName(),atts,inputFormat.numInstances());

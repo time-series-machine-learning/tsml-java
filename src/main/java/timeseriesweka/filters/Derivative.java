@@ -16,13 +16,14 @@ package timeseriesweka.filters;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.*;
 
+import java.util.ArrayList;
 
-public class DerivativeFilter extends SimpleBatchFilter{
+
+public class Derivative extends SimpleBatchFilter{
 
     @Override
     public String globalInfo() {
@@ -33,22 +34,22 @@ public class DerivativeFilter extends SimpleBatchFilter{
     protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
         
         int numAttributes = inputFormat.numAttributes();
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         for(int i = 0; i < numAttributes-1; i++){
             name = "Attribute_" + i;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         
         if(inputFormat.classIndex() >= 0){ //Classification set, set class
             //Get the class values as a fast vector
             Attribute target = inputFormat.attribute(inputFormat.classIndex());
 //
-            FastVector vals = new FastVector(target.numValues());
+            ArrayList<String> vals = new ArrayList<>(target.numValues());
             for(int i = 0; i < target.numValues(); i++){
-                vals.addElement(target.value(i));
+                vals.add(target.value(i));
             }
-            atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+            atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         }
         Instances result = new Instances("derivativeTransform_" + inputFormat.relationName(), atts, inputFormat.numInstances());
         if(inputFormat.classIndex() >= 0){

@@ -18,6 +18,7 @@ import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -255,11 +256,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -888,11 +888,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -904,11 +903,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -2170,9 +2168,46 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return concatenatedResults;
     }
 
-
-
-
+    /**
+     * Creates a (shallow) copy of the given results object, and returns one that 
+     * is identical in all ways except for each probability distribution is rounded 
+     * to the number of decimal places it would be written to file with (default 6), 
+     * GenericTools.RESULTS_DECIMAL_FORMAT.format(d)
+     */
+    public static ClassifierResults util_roundAllPredictionDistsToDefaultPlaces(ClassifierResults res) throws Exception {
+        double[][] oldDists = res.getProbabilityDistributionsAsArray();
+        double[][] roundedDists = new double[oldDists.length][oldDists[0].length];
+        
+        for (int i = 0; i < oldDists.length; i++)
+            for (int j = 0; j < oldDists[i].length; j++)
+                //TODO this is horrible. 
+                roundedDists[i][j] = Double.valueOf(GenericTools.RESULTS_DECIMAL_FORMAT.format(oldDists[i][j])); 
+        
+        ClassifierResults newres = new ClassifierResults(res.getTrueClassValsAsArray(), 
+                res.getPredClassValsAsArray(), 
+                roundedDists, 
+                res.getPredictionTimesAsArray(), 
+                res.getPredDescriptionsAsArray());
+        
+        
+        newres.setClassifierName(res.getClassifierName());
+        newres.setDatasetName(res.getDatasetName());
+        newres.setFoldID(res.getFoldID());
+        newres.setTimeUnit(res.getTimeUnit());
+        newres.setDescription(res.getDescription());
+        
+        newres.setParas(res.paras);
+        
+        newres.setBuildTime(res.getBuildTime());
+        newres.setErrorEstimateTime(res.getErrorEstimateTime());
+        newres.setErrorEstimateMethod(res.getErrorEstimateMethod());
+        newres.setBenchmarkTime(res.getBenchmarkTime());
+        newres.setMemory(res.getMemory());
+        
+        newres.findAllStatsOnce();
+        
+        return newres;
+    }
 
 
 

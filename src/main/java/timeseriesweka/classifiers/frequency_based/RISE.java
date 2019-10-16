@@ -17,13 +17,10 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.filters.Fast_FFT;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.ClassifierTools;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -101,7 +98,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
+public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
     /** Ensemble base classifiers */
@@ -117,8 +114,6 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     private int minInterval=DEFAULT_MIN_INTERVAL;
 
     /**Can seed for reproducibility */
-    private Random rand;
-    private boolean setSeed=false;
     SimpleFilter[] filters;
     /** Power Spectrum transformer, probably dont need to store this here  */
 //    private PowerSpectrum ps=new PowerSpectrum();
@@ -128,6 +123,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     private boolean subSample=false;
     private double sampleProp=1;
     public RISE(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         filters=new SimpleFilter[3];
         ACF acf= new ACF();
         acf.setNormalized(false);
@@ -139,10 +135,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     }
     public RISE(int s){
         this();
-        seed=s;
-        setSeed=true;
-        rand.setSeed(seed);
-
+        setSeed(s);
     }
 
     /*
@@ -228,12 +221,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
      * Holders for the headers of each transform.
      */
     Instances[] testHolders;
-    @Override
-    public void setSeed(int s){
-        rand=new Random();
-        this.seed=s;
-        rand.setSeed(seed);
-    }
+    
     @Override
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
@@ -378,7 +366,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             else
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
             //if(baseClassifiers[i] instanceof Randomisable)
-            if(baseClassifiers[i] instanceof Randomizable && setSeed)
+            if(baseClassifiers[i] instanceof Randomizable && seedClassifier)
                 ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
@@ -433,7 +421,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 
     public static void main(String[] arg) throws Exception{
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
@@ -501,12 +489,6 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 */
     }
 
-    @Override
-    public int getSeed() {
-        if(setSeed)
-            return seed;
-        throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
-    }
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
    //TUNED TSC Classifiers
