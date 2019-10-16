@@ -9,6 +9,8 @@ import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 
+import java.sql.SQLOutput;
+
 import static experiments.data.DatasetLoading.loadDataNullable;
 
 public class Spectrogram extends SimpleBatchFilter {
@@ -62,6 +64,7 @@ public class Spectrogram extends SimpleBatchFilter {
                 signal[j] = instances.get(i).value(j);
             }
 
+            checkParameters(signal.length);
             spectrogram = spectrogram(signal, windowLength, overlap, nfft);
             spectrogramsInstances[i] = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
         }
@@ -70,6 +73,11 @@ public class Spectrogram extends SimpleBatchFilter {
 
     public int getNumWindows(int signalLength){
         return (int)Math.floor((signalLength - overlap)/(windowLength - overlap));
+    }
+
+    private void checkParameters(int signalLength){
+        windowLength = windowLength < (int)(signalLength * 0.25) ? windowLength : (int)(signalLength * 0.25);
+        overlap = overlap < (int)(windowLength * 0.5) ? overlap : (windowLength / 2);
     }
 
     public double[][] spectrogram(double[] signal, int windowWidth, int overlap, int nfft){
@@ -123,7 +131,8 @@ public class Spectrogram extends SimpleBatchFilter {
         Spectrogram spec = new Spectrogram(75, 70, 256);
         Instances[] data = new Instances[2];
 
-        data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + ".arff");
+        data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TRAIN.arff");
+        data[1] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TEST.arff");
         System.out.println(data[0].get(0).toString());
         data[1] = spec.process(data[0]);
         System.out.println();
@@ -131,6 +140,10 @@ public class Spectrogram extends SimpleBatchFilter {
             Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(i));
             System.out.println(temp[0]);
         }
-
+        System.out.println();
+        System.out.println("Signal length:" + (data[0].numAttributes() - 1));
+        System.out.println("Window length: " + spec.windowLength);
+        System.out.println("Overlap: " + spec.overlap);
+        System.out.println("NFFT: " + spec.nfft);
     }
 }
