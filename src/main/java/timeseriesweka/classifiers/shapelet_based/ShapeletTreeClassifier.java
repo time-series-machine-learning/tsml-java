@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.util.*;
 
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 import timeseriesweka.filters.shapelet_transforms.class_value.NormalClassValue;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
@@ -18,7 +19,7 @@ import weka.core.*;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
 
 
-public class ShapeletTreeClassifier extends AbstractClassifier implements TechnicalInformationHandler{
+public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
 
     @Override
@@ -71,6 +72,7 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
 
 
     public ShapeletTreeClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.root = new ShapeletNode();
         setQuality(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
         subseqDistance = new SubSeqDistance();
@@ -87,8 +89,9 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
         if(minLength < 1 || maxLength < 1){
             throw new Exception("Shapelet minimum or maximum length is incorrectly specified!");
         }
-
+        long t1=System.nanoTime();
         root.initialiseNode(data, minLength, maxLength,0);
+        trainResults.setBuildTime(System.nanoTime()-t1);
     }
 
     @Override
