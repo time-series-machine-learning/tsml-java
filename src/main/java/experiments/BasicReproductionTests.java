@@ -78,7 +78,6 @@ public class BasicReproductionTests {
 //        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
         
         tsClassifiers + "interval_based.LPS",
-        tsClassifiers + "interval_based.TSBF",
         tsClassifiers + "interval_based.cTSF",
         
         tsClassifiers + "shapelet_based.FastShapelets",
