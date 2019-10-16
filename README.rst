@@ -121,7 +121,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * George Oastler (@goastler), 
 * Matthew Middlehurst (@MatthewMiddlehurst), 
 * Michael Flynn (@Michael Flynn), 
-* Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), 
+* Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__,a.bostrom@nua.ac.uk), 
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
 
