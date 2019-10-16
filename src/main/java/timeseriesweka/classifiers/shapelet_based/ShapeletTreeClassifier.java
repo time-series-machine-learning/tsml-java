@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.util.*;
 
 import experiments.data.DatasetLoading;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
 import timeseriesweka.filters.shapelet_transforms.class_value.NormalClassValue;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
@@ -18,7 +19,7 @@ import weka.core.*;
 import timeseriesweka.filters.shapelet_transforms.Shapelet;
 
 
-public class ShapeletTreeClassifier extends AbstractClassifier implements TechnicalInformationHandler{
+public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
 
     @Override
@@ -71,6 +72,7 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
 
 
     public ShapeletTreeClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.root = new ShapeletNode();
         setQuality(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
         subseqDistance = new SubSeqDistance();
@@ -85,10 +87,14 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
     @Override
     public void buildClassifier(Instances data) throws Exception{
         if(minLength < 1 || maxLength < 1){
-            throw new Exception("Shapelet minimum or maximum length is incorrectly specified!");
+            if(debug)
+                System.out.println("Shapelet minimum or maximum length is incorrectly specified. Min = "+minLength+" max = "+maxLength+" setting to whole series");
+            minLength=3;
+            maxLength=data.numAttributes()-1;
         }
-
+        long t1=System.nanoTime();
         root.initialiseNode(data, minLength, maxLength,0);
+        trainResults.setBuildTime(System.nanoTime()-t1);
     }
 
     @Override
@@ -127,7 +133,8 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
             subseqDistance.init(data);
             classValue.init(data);
 
-            System.out.println(data.numInstances());
+            if(debug)
+                System.out.println(data.numInstances());
 
             // 1. check whether this is a leaf node with only one class present
             double firstClassValue = classValue.getClassValue(data.instance(0));
@@ -151,17 +158,15 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
 
                     // 2. split the data using the shapelet and create new data sets
                     double dist;
-//                                System.out.println("Threshold:"+shapelet.getThreshold());
-//                                System.out.println("length:"+shapelet.getLength());
                     ArrayList<Instance> splitLeft = new ArrayList<Instance>();
                     ArrayList<Instance> splitRight = new ArrayList<Instance>();
 
                     subseqDistance.setShapelet(shapelet); //set the shapelet for the distance function.
                     for(int i = 0; i < data.numInstances(); i++){
                         dist = subseqDistance.calculate(data.instance(i), i);
-//                                System.out.println("dist:"+dist);
 
-                        System.out.println(shapelet.splitThreshold + "  " + dist);
+                        if(debug)
+                            System.out.println(shapelet.splitThreshold + "  " + dist);
                         (dist < shapelet.splitThreshold ? splitLeft : splitRight).add(data.instance(i));
                     }
 
@@ -237,7 +242,8 @@ public class ShapeletTreeClassifier extends AbstractClassifier implements Techni
                 }
             }
         }
-        System.out.println("final.quality = " + bestShapelet.getQualityValue());
+        if(debug)
+            System.out.println("final.quality = " + bestShapelet.getQualityValue());
 
         return bestShapelet;
     }
