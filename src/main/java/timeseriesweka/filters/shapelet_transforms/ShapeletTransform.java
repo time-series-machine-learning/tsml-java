@@ -1287,12 +1287,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         long endTime1 = System.nanoTime();
 
         System.out.println("Transform time = " + (endTime1-startTime1)); 
-        
-        
-        
-        
-        
-        
+
     }
     
     public static void testFilterUsage(){
