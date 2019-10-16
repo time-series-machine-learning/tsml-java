@@ -14,11 +14,10 @@
  */ 
 package timeseriesweka.filters;
 
-import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
+import timeseriesweka.classifiers.distance_based.DTWCV;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 
@@ -107,7 +106,7 @@ public class Cosine extends SimpleBatchFilter {
             of1.writeString(cosTrain+"");
             of2.writeString(cosTest+"");
             System.out.println(" Cosine trans complete");
-            FastDTW_1NN a=new FastDTW_1NN();
+            DTWCV a=new DTWCV();
 //                a.normalise(false);
             a.buildClassifier(cosTrain);
             double acc=ClassifierTools.accuracy(cosTest, a);
