@@ -15,15 +15,12 @@
 package timeseriesweka.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
 import weka_extras.classifiers.kNN;
 import weka.core.Capabilities;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.SparseInstance;
 import timeseriesweka.filters.SAX;
 import weka.filters.unsupervised.instance.Randomize;
 
@@ -31,7 +28,7 @@ import weka.filters.unsupervised.instance.Randomize;
  *
  * @author James
  */
-public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
+public class SAX_1NN extends EnhancedAbstractClassifier {
 
     public Instances SAXdata;
     private kNN knn;
@@ -41,6 +38,8 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
     private final int SAX_alphabetSize;
     
     public SAX_1NN(int PAA_intervalsPerWindow, int SAX_alphabetSize) { 
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         this.PAA_intervalsPerWindow = PAA_intervalsPerWindow;
         this.SAX_alphabetSize = SAX_alphabetSize;
         
@@ -82,7 +81,11 @@ public class SAX_1NN extends AbstractClassifierWithTrainingInfo {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new SAX_1NN(10, 4)));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new SAX_1NN(10, 4), 0.9154518950437318, "2019_09_26"));
+        
         System.out.println("BagofPatternsTest\n\n");
         
         try {

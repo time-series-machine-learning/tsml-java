@@ -20,7 +20,6 @@ import weka.filters.*;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.RevisionUtils;

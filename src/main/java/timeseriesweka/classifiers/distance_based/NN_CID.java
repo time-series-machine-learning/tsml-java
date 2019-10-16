@@ -284,14 +284,14 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         
     }
     
-    public static void recreateDTWDistance(){
+    public static void recreateDTWDistance(String problemPath){
         int c=0;
         for(String s:DatasetLists.tscProblems46){
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
             k2.useDTW();
-            Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);
@@ -303,13 +303,13 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         System.out.println("CID Better on "+c+" out of "+DatasetLists.tscProblems46.length);
     }
     
-    public static void recreateEuclideanDistance(){
+    public static void recreateEuclideanDistance(String problemPath){
         int c=0;
         for(String s:DatasetLists.tscProblems46){
             kNN k= new kNN(1);
             NN_CID k2= new NN_CID();
-            Instances train=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TRAIN");
-            Instances test=DatasetLoading.loadDataNullable(DatasetLists.problemPath+s+"\\"+s+"_TEST");
+            Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
+            Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
             k.buildClassifier(train);
             k2.buildClassifier(train);
             double a1=ClassifierTools.accuracy(test, k);
@@ -321,7 +321,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
         System.out.println("CID Better on "+c+" out of "+DatasetLists.tscProblems46.length);
     }
     public static void main(String[]args){
-        recreateEuclideanDistance();
+        recreateEuclideanDistance("Z:\\ArchiveData\\univariate_arff\\");
 //        recreateDTWDistance();
     }
     int[][] DTWOptimalWindows={

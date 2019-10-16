@@ -17,15 +17,13 @@ package timeseriesweka.filters;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 /** 
   <!-- globalinfo-start -->
@@ -60,21 +58,21 @@ public class PowerSpectrum extends FFT {
         //Set up instances size and format.
         int length=(fftFilter.findLength(inputFormat));
         length/=2;
-        FastVector atts=new FastVector();
+    ArrayList<Attribute> atts=new ArrayList<>();
         String name;
         for(int i=0;i<length;i++){
                 name = "PowerSpectrum_"+i;
-                atts.addElement(new Attribute(name));
+                atts.add(new Attribute(name));
         }
 
         if(inputFormat.classIndex()>=0){	//Classification set, set class 
                 //Get the class values as a fast vector			
                 Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-                FastVector vals=new FastVector(target.numValues());
+                ArrayList<String> vals=new ArrayList(target.numValues());
                 for(int i=0;i<target.numValues();i++)
-                        vals.addElement(target.value(i));
-                atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+                        vals.add(target.value(i));
+                atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
         }	
         Instances result = new Instances("PowerSpectrum"+inputFormat.relationName(),atts,inputFormat.numInstances());
         if(inputFormat.classIndex()>=0)

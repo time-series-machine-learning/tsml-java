@@ -18,6 +18,7 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.Fast_FFT;
 import timeseriesweka.filters.ACF;
 import timeseriesweka.filters.ARMA;
@@ -76,7 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractable, Checkpointable{
+public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;
@@ -91,7 +92,8 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
     private final int DEFAULT_MINLAG = 1;
 
     private Timer timer = null;
-    private Random random = null;
+
+    //private Random random = null;
     private Classifier classifier = new RandomTree();
     private ArrayList<Classifier> baseClassifiers = null;
     private ArrayList<int[]> intervalsInfo = null;
@@ -107,14 +109,16 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
      * @param seed
      */
     public cRISE(long seed){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = seed;
-        random = new Random(seed);
+        super.setSeed((int)seed);
         timer = new Timer();
     }
 
     public cRISE(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         this.seed = 0;
-        random = new Random(0);
+        super.setSeed((int)seed);
         timer = new Timer();
         this.setTransformType(TransformType.ACF_PS);
     }
@@ -138,7 +142,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public void setSeed(long seed){
         this.seed = seed;
-        random = new Random(seed);
+        super.setSeed((int)seed);
     }
 
     /**
@@ -209,6 +213,17 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
      * If successful this object is returned to state in which it was at creation of serialisation file.
      * @param serializePath Path to folder in which to save serialisation files.
      */
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+//            checkpointPath = path;
+//            checkpoint = true;
+        }
+        return validPath;
+    }
+
+/*
     @Override
     public void setSavePath(String serializePath){
         this.serialisePath = serializePath;
@@ -220,7 +235,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         cRISE temp = readSerialise(seed);
         copyFromSerObject(temp);
     }
-
+*/
     public int getMaxLag(Instances instances){
         int maxLag = (instances.numAttributes()-1);
         if(DEFAULT_MAXLAG < maxLag)
@@ -279,7 +294,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
             //Select random value between 0 - (stabilise - 1)
             //Map value onto valid interval length based on previous length, correcting for occasions in which previous
             //length = 0 | length = maxLength.
-            int option = random.nextInt(stabilise - 1);
+            int option = rand.nextInt(stabilise - 1);
             if(rawIntervalIndexes.get(rawIntervalIndexes.size()-1) - ((stabilise - 1)/2) <= 2){
                 index = option + 2;
             }
@@ -293,7 +308,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         }else{
             //If stabilise is not set.
             //Select a new interval length at random (Selects in linear space and maps onto closest power of two).
-            int temp = random.nextInt(powersOf2.get(powersOf2.size() - 1)) + 1;
+            int temp = rand.nextInt(powersOf2.get(powersOf2.size() - 1)) + 1;
             while((temp & (temp - 1)) != 0)
                 temp++;
 
@@ -319,7 +334,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
         //Select random start index to take interval from.
         if ((instanceLength - intervalInfo[0]) != 0 ) {
-            intervalInfo[1] = random.nextInt(instanceLength - intervalInfo[0]);
+            intervalInfo[1] = rand.nextInt(instanceLength - intervalInfo[0]);
         }else{
             intervalInfo[1] = 0;
         }
@@ -329,7 +344,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         //e.g. if length is 8 down sample factor can be 1, 2, 4 or 8. Results in step lengths of, 8(8/1), 4(8/2), 2(8/4) or 1(8/8)
         //and total interval lengths of 1, 2, 4 or 8.
         if (downSample) {
-            intervalInfo[2] = powersOf2.get(random.nextInt(index) + 1);
+            intervalInfo[2] = powersOf2.get(rand.nextInt(index) + 1);
         }else{
             intervalInfo[2] = intervalInfo[0];
         }
@@ -542,7 +557,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
             this.maxIntervalLength = ((cRISE)temp).maxIntervalLength;
             this.minIntervalLength = ((cRISE)temp).minIntervalLength;
             this.numTrees = ((cRISE)temp).numTrees;
-            this.random = ((cRISE)temp).random;
+            this.rand = ((cRISE)temp).rand;
             this.rawIntervalIndexes = ((cRISE)temp).rawIntervalIndexes;
             this.serialisePath = ((cRISE)temp).serialisePath;
             this.stabilise = ((cRISE)temp).stabilise;
@@ -646,6 +661,8 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         if (timer.modelOutPath != null) {
             timer.saveModelToCSV(trainingData.relationName());
         }
+        super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
     }
 
     /**
@@ -916,7 +933,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
 
     public static void main(String[] args){
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
@@ -931,7 +948,7 @@ public class cRISE implements Classifier, SaveParameterInfo, TrainTimeContractab
         try {
             cRISE = new cRISE();
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_FFT);
+            cRISE.setTransformType(TransformType.ACF_PS);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF_PS");
             System.out.println("Accuracy: " + cr.getAcc());

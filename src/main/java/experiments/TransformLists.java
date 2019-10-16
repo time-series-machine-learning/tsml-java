@@ -14,33 +14,123 @@
  */
 package experiments;
 
-import static experiments.ClassifierLists.setClassifierClassic;
+import timeseriesweka.filters.*;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import weka.classifiers.Classifier;
 import weka.filters.SimpleBatchFilter;
 
 /**
  *
- * @author a.bostrom1
+ * @author Aaron Bostrom and Tony Bagnall
  */
 public class TransformLists {
- 
-    
+
+    //All implemented time series related SimpleBatchFilters in tsml
+    //<editor-fold defaultstate="collapsed" desc="All time series related SimpleBatchFilters">
+    public static String[] allFilters={
+            "ACF","ACF_PACF","ARMA","BagOfPatterns","BinaryTransform","Clipping",
+            "Cosine","Derivative","Differences","Fast_FFT", "FFT","Hilbert","MatrixProfile",
+            "NormalizeAttribute","NormalizeCase","PAA","PACF","PowerCepstrum","RankOrder",
+            "RunLength","SAX","Sine","SummaryStats","ShapeletTransform"
+    };
+    //</editor-fold>
+    //multivariate SimpleBatchFilters in tsml
+    //<editor-fold defaultstate="collapsed" desc="Filters that transform univariate into multivariate">
+    public static String[] multivariateFilters={"Spectrogram","MFCC"};
+    //</editor-fold>
+
     public static SimpleBatchFilter setTransform(Experiments.ExperimentalArguments exp){
         return setClassicTransform(exp.classifierName, exp.foldId);
     }
 
-    public static SimpleBatchFilter setClassicTransform(String classifierName, int foldId) {
+    public static SimpleBatchFilter setClassicTransform(String transformName, int foldId) {
         SimpleBatchFilter transformer = null;
-        switch(classifierName){
+        switch(transformName){
             case "ShapeletTransform": case "ST":
                 transformer = new ShapeletTransform();
                 break;
-            case "PCA":
-                transformer = new ShapeletTransform();
+            case "ACF":
+                transformer = new ACF();
                 break;
+            case "ACF_PACF":
+                transformer = new ACF_PACF();
+                break;
+            case "ARMA":
+                transformer = new ARMA();
+                break;
+            case "BagOfPatterns":
+                transformer = new BagOfPatterns();
+                break;
+            case "BinaryTransform":
+                transformer = new BinaryTransform();
+                break;
+            case "Clipping":
+                transformer = new Clipping();
+                break;
+            case "Cosine":
+                transformer = new Cosine();
+                break;
+            case "Derivative":
+                transformer = new Derivative();
+                break;
+            case "Differences":
+                transformer = new Differences();
+                break;
+            case "Fast_FFT":
+                transformer = new Fast_FFT();
+                break;
+            case "FFT":
+                transformer = new FFT();
+                break;
+            case "Hilbert":
+                transformer = new Hilbert();
+                break;
+            case "MatrixProfile":
+                transformer = new MatrixProfile();
+                break;
+            case "MFCC":
+                transformer = new MFCC();
+                break;
+            case "NormalizeAttribute":
+                transformer = new NormalizeAttribute();
+                break;
+            case "NormalizeCase":
+                transformer = new NormalizeCase();
+                break;
+            case "PAA":
+                transformer = new PAA();
+                break;
+            case "PACF":
+                transformer = new PACF();
+                break;
+            case "PowerCepstrum":
+                transformer = new PowerCepstrum();
+                break;
+            case "PowerSpectrum":
+                transformer = new PowerSpectrum();
+                break;
+            case "RankOrder":
+                transformer = new RankOrder();
+                break;
+            case "RunLength":
+                transformer = new RunLength();
+                break;
+            case "SAX":
+                transformer = new SAX();
+                break;
+            case "Sine":
+                transformer = new Sine();
+                break;
+            case "Spectrogram":
+                transformer = new Spectrogram();
+                break;
+            case "SummaryStats":
+                transformer = new SummaryStats();
+                break;
+
+
+
             default:
-                System.out.println("UNKNOWN CLASSIFIER "+classifierName);
+                System.out.println("UNKNOWN TRANSFORM "+transformName);
                 System.exit(0);
         }
         

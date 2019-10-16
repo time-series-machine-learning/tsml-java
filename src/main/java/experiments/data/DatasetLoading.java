@@ -45,13 +45,13 @@ public class DatasetLoading {
 
     private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
     
-    private static final String BAKED_IN_UCI_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "uci/";
-    private static final String BAKED_IN_TSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "tsc/";
-    private static final String BAKED_IN_MTSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "mtsc/";
+    public static final String BAKED_IN_UCI_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "uci/";
+    public static final String BAKED_IN_TSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "tsc/";
+    public static final String BAKED_IN_MTSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "mtsc/";
     
-    private static final String[] BAKED_IN_UCI_DATASETS = { "iris" };
-    private static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand" };
-    private static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
+    public static final String[] BAKED_IN_UCI_DATASETS = { "iris", "hayes-roth", "teaching" };
+    public static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand", "Beef" };
+    public static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
     
     private static String LOXO_ATT_ID = "experimentsSplitAttribute";
     private static double proportionKeptForTraining = 0.5;
@@ -155,6 +155,23 @@ public class DatasetLoading {
      */
     public static Instances[] sampleIris(int seed) throws Exception {
         return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
+    }
+    
+    /**
+     * Helper function for loading the baked-in Hayes-Roth dataset, one of the classical 
+     * UCI datasets for general classification
+     * 
+     * https://archive.ics.uci.edu/ml/datasets/Hayes-Roth
+     * 
+     * UCI data comes in a single file. The proportion of data kept for training is 
+     * defined by the static proportionKeptForTraining, default = 0.5
+     * 
+     * @param seed the seed for resampling the data.
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception if data loading or sampling failed
+     */
+    public static Instances[] sampleHayesRoth(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_UCI_DATA_PATH, "hayes-roth", seed);
     }
     
     
@@ -314,6 +331,22 @@ public class DatasetLoading {
         return inst;
     }
     
+
+    /**
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or returns null on any error, such as not finding the file or it being malformed
+     * 
+     * @param fullPath path to the file to try and load
+     * @return Instances from file.
+     */
+    public static Instances loadData(String fullPath) {
+        if (!fullPath.toLowerCase().endsWith(".arff"))
+            fullPath += ".arff";
+            
+        return loadDataNullable(new File(fullPath));
+    }
+
+
     
     /**
      * Loads the arff file at the target location and sets the last attribute to be the class value, 

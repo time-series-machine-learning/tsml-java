@@ -24,6 +24,7 @@ import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
+import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -189,6 +190,12 @@ public class ProximityForestWrapper extends AbstractClassifier {
     
     
     public static void main(String[] args) throws Exception {
+        
+//        ProximityForestWrapper pf = new ProximityForestWrapper();
+//        pf.setSeed(0);
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(pf));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(pf, 0.966958211856171, "2019_09_26"));
+        
         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
 
         exp.dataReadLocation = "Z:/Data/TSCProblems2015/";

@@ -469,10 +469,14 @@ public class Tuner
         //does anywhere set this to true but not give the path?. part of interface cleanup tests
     }
 
-    @Override //CheckpointClassifier
-    public void setSavePath(String path) {
-        this.parameterSavingPath = path;
-        this.saveParameters = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            this.parameterSavingPath = path;
+            this.saveParameters = true;
+        }
+        return validPath;
     }
 
     @Override //CheckpointClassifier

@@ -19,6 +19,8 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  *
@@ -35,8 +37,9 @@ public class FileHandlingTools {
           for (File subDirectory : directory.listFiles())
             recursiveDelete(subDirectory);
         }
-        if (!directory.delete())
-          throw new FileNotFoundException("Failed to delete file: " + directory);
+        Files.delete(directory.toPath());
+//        if (!directory.delete()) 
+//          throw new FileNotFoundException("Failed to delete file: " + directory);
     }
     
     /**
@@ -134,5 +137,4 @@ public class FileHandlingTools {
             }
         });
     }
-    
 }

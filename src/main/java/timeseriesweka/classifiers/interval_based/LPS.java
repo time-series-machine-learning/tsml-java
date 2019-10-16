@@ -21,13 +21,9 @@ import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.DecimalFormat;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Vector;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import java.util.*;
+
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -39,7 +35,6 @@ import weka.core.Capabilities;
 import weka.core.ContingencyTables;
 import weka.core.DenseInstance;
 import weka.core.Drawable;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Option;
 import weka.core.OptionHandler;
@@ -67,7 +62,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LPS extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -91,6 +86,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     boolean paramSearch=true;
     double acc=0;
     public LPS(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         trees=new RandomRegressionTree[nosTrees];
     }
 
@@ -275,17 +271,17 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     
     
     
- public static void compareToPublished() throws Exception{
+ public static void compareToPublished(String datasetPath, String resultsPath) throws Exception{
      DecimalFormat df=new DecimalFormat("###.###");
-     OutFile res=new OutFile(DatasetLists.path+"recreatedLPS.csv");
+     OutFile res=new OutFile(resultsPath+"recreatedLPS.csv");
      int b=0;
      int t=0;
      System.out.println("problem,recreated,published");
      for(int i=0;i<problems.length;i++){
          String s=problems[i];
         System.out.print(s+",");
-        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TEST.arff");
         LPS l=new LPS();
         l.setParamSearch(false);
         l.buildClassifier(train);
@@ -315,11 +311,6 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         return ratioLevel+","+treeDepth;
     }
 
-    @Override
-    public double getAcc() {
-        return acc;
-    }
-    
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -331,6 +322,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             int bestRatio=0;
             int bestTreeDepth=0;
             LPS trainer=new LPS();
+            if(seedClassifier)
+                trainer.setSeed(seed*42);
             trainer.nosTrees=50;
             trainer.setParamSearch(false);
             int folds=10;
@@ -339,7 +332,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
                 for(int j=0;j<treeDepths.length;j++){
                     trainer.treeDepth=treeDepths[j];
                     Evaluation eval=new Evaluation(data);
-                    eval.crossValidateModel(trainer, data, folds,new Random());
+                    eval.crossValidateModel(trainer, data, folds,rand);
                     double e=eval.errorRate();
                     if(e<bestErr){
                         bestErr=e;
@@ -350,7 +343,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             }
             ratioLevel=ratioLevels[bestRatio];
             treeDepth=treeDepths[bestTreeDepth];
-            System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
+            if(debug)
+                System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
         }
         
         
@@ -366,12 +360,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         for(int i=0;i<data.numInstances();i++)
             trainClassVals[i]=data.instance(i).classValue();
         classAtt=new int[nosTrees];
-        Random r= new Random();
         
 //For each tree 1 to N
         for(int i=0;i<nosTrees;i++){    
 //    %select random segment length for each tree
-            segLengths[i]=minSegment+r.nextInt(maxSegment-minSegment);
+            segLengths[i]=minSegment+rand.nextInt(maxSegment-minSegment);
 //    %select target segments randomly for each tree
 //   %ind=1:(2*nsegment);            
 //            int target=r.nextInt(2*nosSegments);    //times 2 for diffs
@@ -380,17 +373,17 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 //        stxdiff=randsample(tlen-segmentlen(i)-1,nsegment,true);
 //Sample with replacement.
             for(int j=0;j<nosSegments;j++){
-                segStarts[i][j]=r.nextInt(seriesLength-segLengths[i]);
-                segDiffStarts[i][j]=r.nextInt(seriesLength-segLengths[i]-1);
+                segStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]);
+                segDiffStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]-1);
             }
 //Set up the instances for this tree            
 //2- Generate segments for each time series and 
 //        concatenate these segments rowwise, let resulting matrix be M
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             
@@ -408,7 +401,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
                 }
             }
 //3- Choose a random target column from M, let this target column be t
-            classAtt[i]=r.nextInt(sequences.numAttributes());//
+            classAtt[i]=rand.nextInt(sequences.numAttributes());//
             sequences.setClassIndex(classAtt[i]);
             trees[i]= new RandomRegressionTree();
             trees[i].setMaxDepth(treeDepth);
@@ -470,11 +463,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             
 
         for(int i=0;i<nosTrees;i++){    
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]);            
             for(int k=0;k<segLengths[i];k++){
@@ -539,6 +532,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 
     public static void main(String[] args) throws Exception {
         
+//        LPS lps = new LPS();
+//        lps.setSeed(0);
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(lps));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(lps, 0.9339164237123421, "2019_09_26"));
+        
 //       compareToPublished();
 //        System.exit(0);
         LPS l=new LPS();
@@ -600,9 +598,9 @@ M equals
     public void debugFeatureExtraction(){
       //determine minimum and maximum possible segment length
 
-            FastVector atts2=new FastVector();
+            ArrayList<Attribute> atts2=new ArrayList<>();
             for(int j=0;j<9;j++){
-                    atts2.addElement(new Attribute("SegFeature"+j));
+                    atts2.add(new Attribute("SegFeature"+j));
             }
             double[] t1={1,2,3,4,5,6,7,8};
             double[] t2={8,7,6,5,4,3,2,1};
@@ -626,34 +624,33 @@ M equals
         segLengths=new int[nosTrees];
         segStarts=new int[nosTrees][nosSegments];
         segDiffStarts=new int[nosTrees][nosSegments];
-        Random r= new Random();
         
 //For each tree 1 to N
         for(int i=0;i<nosTrees;i++){    
 //    %select random segment length for each tree
-            segLengths[i]=minSegment+r.nextInt(maxSegment-minSegment);
+            segLengths[i]=minSegment+rand.nextInt(maxSegment-minSegment);
             segLengths[i]=3;
             System.out.println("SEG LENGTH ="+segLengths[i]);
 //    %select target segments randomly for each tree
 //   %ind=1:(2*nsegment);            
-            int target=r.nextInt(2*nosSegments);    //times 2 for diffs
+            int target=rand.nextInt(2*nosSegments);    //times 2 for diffs
 //        %construct segment matrix (both observed and difference)
 //        stx=randsample(tlen-segmentlen(i),nsegment,true); 
 //        stxdiff=randsample(tlen-segmentlen(i)-1,nsegment,true);
 //Sample with replacement.
             for(int j=0;j<nosSegments;j++){
-                segStarts[i][j]=r.nextInt(seriesLength-segLengths[i]);
-                segDiffStarts[i][j]=r.nextInt(seriesLength-segLengths[i]-1);
+                segStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]);
+                segDiffStarts[i][j]=rand.nextInt(seriesLength-segLengths[i]-1);
                 System.out.println("SEG START ="+segStarts[i][j]);
                 System.out.println("SEG DIFF START ="+segDiffStarts[i][j]);
             }
 //Set up the instances for this tree            
             Instances tr=null;     
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             Instances result = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             

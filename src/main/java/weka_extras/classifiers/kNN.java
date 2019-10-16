@@ -119,8 +119,8 @@ public class kNN extends IBk {
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
             for(String s:DatasetLists.uciFileNames){
-                Instances train=DatasetLoading.loadDataNullable(DatasetLists.uciPath+s+"\\"+s+"-train");
-                Instances test=DatasetLoading.loadDataNullable(DatasetLists.uciPath+s+"\\"+s+"-test");
+                Instances train=DatasetLoading.loadDataNullable("Z:/ArchiveData/Uci_arff/"+s+"/"+s+"-train");
+                Instances test=DatasetLoading.loadDataNullable("Z:/ArchiveData/Uci_arff/"+s+"/"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);
@@ -157,8 +157,8 @@ public class kNN extends IBk {
             int diff=0;
             DecimalFormat df = new DecimalFormat("####.###");
             for(String s:DatasetLists.uciFileNames){
-                Instances train=DatasetLoading.loadDataNullable(DatasetLists.uciPath+s+"\\"+s+"-train");
-                Instances test=DatasetLoading.loadDataNullable(DatasetLists.uciPath+s+"\\"+s+"-test");
+                Instances train=DatasetLoading.loadDataNullable("Z:/ArchiveData/Uci_arff/"+s+"\\"+s+"-train");
+                Instances test=DatasetLoading.loadDataNullable("Z:/ArchiveData/Uci_arff/"+s+"\\"+s+"-test");
                 try{
                     knn.buildClassifier(train);
     //                ib1.buildClassifier(train);

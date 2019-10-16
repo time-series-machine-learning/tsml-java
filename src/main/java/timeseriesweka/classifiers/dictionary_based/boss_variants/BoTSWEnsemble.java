@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based.boss_variants;
 
-import fileIO.OutFile;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -27,18 +26,17 @@ import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.Timer;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.core.TechnicalInformation;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 
 /**
@@ -64,7 +62,11 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * 
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
+public class BoTSWEnsemble extends EnhancedAbstractClassifier implements SaveParameterInfo {
+
+    public BoTSWEnsemble() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    }
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -86,12 +88,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
     private final Integer[] aRanges = { 4, 8 };
     private final Integer[] kRanges = { 32, 64, 128, 256, 512, 1024 };
     private final Integer[] csvmRanges = {1, 10, 100}; //not currently used, using 1NN
-    
+        
     private BoTSW.DistFunction dist = BoTSW.DistFunction.EUCLIDEAN_DISTANCE;
-    
-    private String trainCVPath;
-    private boolean trainCV=false;
-    private ClassifierResults res =new ClassifierResults();
 
     private Instances train;
     private double ensembleCvAcc = -1;
@@ -137,27 +135,6 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
             return -1;
         }
     }
-    
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainCVPath=train;
-        trainCV=true;
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainCV=setCV;
-    }
-    
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainCV;}
-    
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-//Not implemented?        res.acc=ensembleCvAcc;
-//TO DO: Write the other stats        
-        return res;
-    }        
 
     @Override
     public String getParameters() {
@@ -292,19 +269,8 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
             }
         }
         
-        if (trainCV) {
-            int folds=setNumberOfFolds(data);
-            OutFile of=new OutFile(trainCVPath);
-            of.writeLine(data.relationName()+",BoTSWEnsemble,train");
-           
-            double[][] results = findEnsembleTrainAcc(data);
-            of.writeLine(getParameters());
-            of.writeLine(results[0][0]+"");
-            ensembleCvAcc = results[0][0];
-            for(int i=1;i<results[0].length;i++)
-                of.writeLine(results[0][i]+","+results[1][i]);
-            System.out.println("CV acc ="+results[0][0]);
-        }
+        if (getEstimateOwnPerformance())
+            ensembleCvAcc = findEnsembleTrainAcc(data);
     }
 
     //[0] = index, [1] = acc
@@ -333,24 +299,43 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
         return false;
     }
     
-    private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
+    private double findEnsembleTrainAcc(Instances data) throws Exception {
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());
         
-        double[][] results = new double[2][data.numInstances() + 1];
-        
-        double correct = 0; 
+        double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
-            double c = classifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
-            if (c == data.get(i).classValue())
+            long predTime = System.nanoTime();
+            double[] probs = distributionForInstance(i, data.numClasses());
+            predTime = System.nanoTime() - predTime;
+
+            int maxClass = 0;
+            for (int n = 1; n < probs.length; ++n) {
+                if (probs[n] > probs[maxClass]) {
+                    maxClass = n;
+                }
+                else if (probs[n] == probs[maxClass]){
+                    if (rand.nextBoolean()){
+                        maxClass = n;
+                    }
+                }
+            }
+
+            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+            if (maxClass == data.get(i).classValue())
                 ++correct;
-            
-            results[0][i+1] = data.get(i).classValue();
-            results[1][i+1] = c;
+
+            trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
         
-        results[0][0] = correct / data.numInstances();
-        //TODO fill results[1][0]
+        trainResults.finaliseResults();
         
-        return results;
+        double result = correct / data.numInstances();
+        return result;
     }
     
     public double getEnsembleCvAcc(){
@@ -359,7 +344,7 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
         }
         
         try{
-            return this.findEnsembleTrainAcc(train)[0][0];
+            return this.findEnsembleTrainAcc(train);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -755,7 +740,7 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
                     features[i] = describeKeyPoints(fdData[i].gdata.guassSeries, fdData[i].keypoints);
 
                 //stuff features into instances format
-                FastVector<Attribute> atts = new FastVector<>();
+                ArrayList<Attribute> atts = new ArrayList<>();
                 assert(features[0][0].length == params.n_b*2);
                 for (int i = 0; i < features[0][0].length; ++i)
                     atts.add(new Attribute(""+i));
@@ -816,7 +801,7 @@ public class BoTSWEnsemble implements Classifier, SaveParameterInfo,TrainAccurac
                 Timer svmTimer = new Timer("\t\t\ttrainingsvm");
 
                 //stuff back into instances
-                FastVector<Attribute> bagatts = new FastVector<>();
+                ArrayList<Attribute> bagatts = new ArrayList<>();
                 for (int i = 0; i < params.k; ++i)
                     bagatts.add(new Attribute(""+i));
 

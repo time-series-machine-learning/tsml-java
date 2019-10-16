@@ -21,6 +21,7 @@
 
 package weka.filters.supervised.attribute;
 
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -33,17 +34,8 @@ import weka.attributeSelection.CfsSubsetEval;
 import weka.attributeSelection.Ranker;
 import weka.attributeSelection.UnsupervisedAttributeEvaluator;
 import weka.attributeSelection.UnsupervisedSubsetEvaluator;
-import weka.core.Capabilities;
+import weka.core.*;
 import weka.core.Capabilities.Capability;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.Option;
-import weka.core.OptionHandler;
-import weka.core.RevisionUtils;
-import weka.core.SparseInstance;
-import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SupervisedFilter;
 
@@ -480,29 +472,27 @@ public class AttributeSelection
    * @throws Exception if something goes wrong
    */
   protected void setOutputFormat() throws Exception {
-    Instances informat;
+    Instances inputFormat;
 
     if (m_SelectedAttributes == null) {
       setOutputFormat(null);
       return;
     }
 
-    FastVector attributes = new FastVector(m_SelectedAttributes.length);
+    ArrayList<Attribute> atts = new ArrayList<>(m_SelectedAttributes.length);
 
     int i;
     if (m_ASEvaluator instanceof AttributeTransformer) {
-      informat = ((AttributeTransformer)m_ASEvaluator).transformedHeader();
+      inputFormat = ((AttributeTransformer)m_ASEvaluator).transformedHeader();
     } else {
-      informat = getInputFormat();
+      inputFormat = getInputFormat();
     }
 
     for (i=0;i < m_SelectedAttributes.length;i++) {
-      attributes.
-	addElement(informat.attribute(m_SelectedAttributes[i]).copy());
+      atts.add((Attribute)inputFormat.attribute(m_SelectedAttributes[i]).copy());
     }
+    Instances outputFormat = new Instances(inputFormat.relationName(),atts,inputFormat.numInstances());
 
-    Instances outputFormat = 
-      new Instances(getInputFormat().relationName(), attributes, 0);
 
 
     if (!(m_ASEvaluator instanceof UnsupervisedSubsetEvaluator) &&
