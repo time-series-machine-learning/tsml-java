@@ -211,14 +211,13 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * CRISE will attempt to load serialisation file on method call using the seed set on instantiation as file
  identifier.
      * If successful this object is returned to state in which it was at creation of serialisation file.
-     * @param serializePath Path to folder in which to save serialisation files.
+     * @param serialisePath Path to folder in which to save serialisation files.
      */
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setSavePath(String serialisePath) {
+        boolean validPath=Checkpointable.super.setSavePath(serialisePath);
         if(validPath){
-//            checkpointPath = path;
-//            checkpoint = true;
+            this.serialisePath = serialisePath;
         }
         return validPath;
     }
@@ -595,6 +594,14 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
 
+        if(serialisePath != null){
+            cRISE temp = this.readSerialise(seed);
+            if(temp != null) {
+                this.copyFromSerObject(temp);
+                this.loadedFromFile = true;
+            }
+        }
+
         //If not loaded from file e.g. Starting fresh experiment.
         if (!loadedFromFile) {
             //Just used for getParameters.
@@ -649,10 +656,9 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
 
             //Serialise every 100 trees (if path has been set).
-//            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
-//                saveToFile(seed);
-//                System.out.print("");
-//            }
+            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
+                saveToFile(seed);
+            }
         }
         if (serialisePath != null) {
             saveToFile(seed);
@@ -933,7 +939,11 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
     public static void main(String[] args){
 
-        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TEST");
+        Instances data = dataTrain;
+        data.addAll(dataTest);
+
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
@@ -955,6 +965,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
             cRISE = new cRISE();
+            //cRISE.setSavePath("D:/Test/Testing/Serialising/");
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
@@ -966,3 +977,22 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         }
     }
 }
+
+/*
+Dataset = ADIAC
+With reload (@ 200 trees)
+    Accuracy: 0.7868020304568528
+    Build time (ns): 60958242098
+
+With reload (@ 500 trees (Completed build))
+    Accuracy: 0.7868020304568528
+    Build time (ns): 8844999832
+
+With no reload but serialising at 100 intervals.
+    Accuracy: 0.7868020304568528
+    Build time (ns): 96078716938
+
+No serialising
+    Accuracy: 0.7868020304568528
+    Build time (ns): 88964973765
+*/
