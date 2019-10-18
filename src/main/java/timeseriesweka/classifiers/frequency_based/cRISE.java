@@ -773,6 +773,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
                 + ", NumAtts," + data.numAttributes()
                 + ", MaxNumTrees," + numTrees
                 + ", MinIntervalLength," + minIntervalLength
+                + ", Filters, " + this.transformType.toString()
                 + ", Final Coefficients (time = a * x^2 + b * x + c)"
                 + ", a, " + timer.a
                 + ", b, " + timer.b
