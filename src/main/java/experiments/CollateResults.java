@@ -700,14 +700,14 @@ public static void basicSummaryComparisons(){
             m.runComparison(); 
        }
    }
-   public static String bakeOffPath="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
-   public static String hiveCotePath="Z:/Results/CollatedResults/HIVE-COTE2017/";
-   public static String bakeOffPathBeast="Z:/Results/CollatedResults/Bakeoff2015/byClassifier/";
-   public static String hiveCotePathBeast="Z:/Results/CollatedResults/HIVE-COTE2017/";
-   public static String reduxPathBeast="Z:/Results/CollatedResults/BakeoffRedux2019/";
-   public static String bakeOffPathCluster="/gpfs/home/ajb/Results/ReferenceResults/Bakeoff2015/ByClassifier/";
-   public static String hiveCotePathCluster="/gpfs/home/ajb/Results/ReferenceResults/HIVE-COTE2017/";
-   public static String reduxPathCluster="/gpfs/home/ajb/Results/ReferenceResults/BakeoffRedux2019/";
+   public static String bakeOffPath="Z:/ReferenceResults/CollatedResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePath="Z:/ReferenceResults/CollatedResults/HIVE-COTE2017/";
+   public static String bakeOffPathBeast="Z:/ReferenceResults/CollatedResults/Bakeoff2015/byClassifier/";
+   public static String hiveCotePathBeast="Z:/ReferenceResults/CollatedResults/HIVE-COTE2017/";
+   public static String reduxPathBeast="Z:/ReferenceResults/CollatedResults/BakeoffRedux2019/";
+   public static String bakeOffPathCluster="/gpfs/home/ajb/ReferenceResults/Bakeoff2015/ByClassifier/";
+   public static String hiveCotePathCluster="/gpfs/home/ajb/ReferenceResults/HIVE-COTE2017/";
+   public static String reduxPathCluster="/gpfs/home/ajb/ReferenceResults/BakeoffRedux2019/";
 
    
    

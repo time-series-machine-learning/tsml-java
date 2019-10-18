@@ -14,6 +14,7 @@
  */
 package timeseriesweka.examples;
 
+import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -28,24 +29,21 @@ import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import timeseriesweka.classifiers.hybrids.HiveCote;
-import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
 import statistics.simulators.SimulateDictionaryData;
 import statistics.simulators.SimulateIntervalData;
 import statistics.simulators.SimulateShapeletData;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
 import weka_extras.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  * 
@@ -99,7 +97,7 @@ public class SimulationExperiments {
                 c=new RotationForest();
                 break;
             case "DTW":
-                c=new FastDTW_1NN();
+                c=new DTWCV();
                 break;
              case "DD_DTW":
                 c=new DD_DTW();
@@ -252,12 +250,15 @@ public class SimulationExperiments {
         OutFile p=new OutFile(preds+"/testFold"+sample+".csv");
 
 // hack here to save internal CV for further ensembling   
-        if(c instanceof TrainAccuracyEstimator)
-            ((TrainAccuracyEstimator)c).writeTrainEstimatesToFile(preds+"/trainFold"+sample+".csv");
+        if(EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(c))
+            ((EnhancedAbstractClassifier)c).setEstimateOwnPerformance(true);
         if(c instanceof SaveableEnsemble)
            ((SaveableEnsemble)c).saveResults(preds+"/internalCV_"+sample+".csv",preds+"/internalTestPreds_"+sample+".csv");
         try{              
             c.buildClassifier(train);
+            if(EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(c))
+                ((EnhancedAbstractClassifier)c).getTrainResults().writeFullResultsToFile(preds+"/trainFold"+sample+".csv");
+            
             int[][] predictions=new int[test.numInstances()][2];
             for(int j=0;j<test.numInstances();j++){
                 predictions[j][0]=(int)test.instance(j).classValue();
@@ -272,8 +273,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof AbstractClassifierWithTrainingInfo)
-                p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier)
+                p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else
@@ -332,7 +333,7 @@ public class SimulationExperiments {
                         c=new RotationForest();
                         break;
                     case "DTW":
-                        c=new FastDTW_1NN();
+                        c=new DTWCV();
                         break;
                     case "EE":    
                         c=new ElasticEnsemble();

@@ -19,7 +19,7 @@ import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 import java.util.Random;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
@@ -95,7 +95,7 @@ information.
  * ARGUMENTS
  * 
  */
-public class TSBF extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class TSBF extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
 //Paras
     
 //<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper">        
@@ -212,6 +212,10 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
     System.out.println("Mean diff ="+meanDiff/problems.length+" Published better ="+publishedBetter);
         of.writeLine(",,,,Mean diff ="+meanDiff/problems.length+" Published better ="+publishedBetter);
 }          
+
+    public TSBF() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -426,7 +430,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
-//        trainResults.setBuildTime(System.currentTimeMillis());
         if(numReps>1){
             double bestOOB=1;
             TSBF bestRun=this;
@@ -539,7 +542,10 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
                     finalRandForest=new RandomForest();    
                     finalRandForest.setNumTrees(500);
                 //6. Form a CV estimate of accuracy to choose z value 
-                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest, 10,rand.nextInt());
+                    int folds=10;
+                    if(data.numInstances()<folds)
+                        folds=data.numInstances();
+                    acc=ClassifierTools.stratifiedCrossValidation(data, finalRandForest,folds,rand.nextInt());
                 }
                 if(acc>maxAcc){
                    if(!stepWise)
@@ -593,12 +599,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
             }
             for(int k=0;k<numClasses;k++)
                classProbs[i][k]/=numSubSeries; 
-        }
-        try {
-            trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
-        } catch (Exception e) {
-            System.err.println("Inheritance preventing me from throwing this error...");
-            System.err.println(e);
         }
     }
     @Override
@@ -787,7 +787,6 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
         System.out.println("Classifier built: Parameter info ="+tsbf.getParameters());
         double a=ClassifierTools.accuracy(test, tsbf);
         System.out.println("Test acc for "+datasetName+" = "+a);
-
 
     }
 }

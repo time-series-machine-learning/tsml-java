@@ -256,11 +256,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -889,11 +888,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -905,11 +903,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime

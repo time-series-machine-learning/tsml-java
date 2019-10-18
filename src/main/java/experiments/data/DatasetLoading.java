@@ -331,6 +331,22 @@ public class DatasetLoading {
         return inst;
     }
     
+
+    /**
+     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * or returns null on any error, such as not finding the file or it being malformed
+     * 
+     * @param fullPath path to the file to try and load
+     * @return Instances from file.
+     */
+    public static Instances loadData(String fullPath) {
+        if (!fullPath.toLowerCase().endsWith(".arff"))
+            fullPath += ".arff";
+            
+        return loadDataNullable(new File(fullPath));
+    }
+
+
     
     /**
      * Loads the arff file at the target location and sets the last attribute to be the class value, 

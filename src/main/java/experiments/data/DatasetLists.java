@@ -1389,7 +1389,7 @@ tiianic
         "conn-bench-sonar-mines-rocks","conn-bench-vowel-deterding",
         "ecoli","glass","hill-valley",
         "image-segmentation","ionosphere","iris","libras","magic",
-        "miniboone",
+//        "miniboone",
         "oocytes_merluccius_nucleus_4d","oocytes_trisopterus_states_5b",
         "optical","ozone","page-blocks","parkinsons","pendigits",
         "planning","post-operative","ringnorm","seeds","spambase",

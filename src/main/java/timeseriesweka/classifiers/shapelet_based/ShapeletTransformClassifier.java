@@ -42,8 +42,7 @@ import fileIO.OutFile;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
 import weka_extras.classifiers.ensembles.voting.MajorityVote;
 import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
@@ -56,7 +55,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import weka_extras.classifiers.ensembles.ContractRotationForest;
 
 /**
  *
@@ -66,7 +64,7 @@ import weka_extras.classifiers.ensembles.ContractRotationForest;
  * 
  * 
  */
-public class ShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable{
+public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
 //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -120,6 +118,8 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public ShapeletTransformClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
         RotationForest rf= new RotationForest();
         rf.setNumIterations(200);
         classifier=rf;
@@ -151,23 +151,9 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     public String getParameters(){
        String paras=transform.getParameters();
        String classifierParas="No Classifier Para Info";
-       if(classifier instanceof AbstractClassifierWithTrainingInfo) 
-            classifierParas=((AbstractClassifierWithTrainingInfo)classifier).getParameters();
+       if(classifier instanceof EnhancedAbstractClassifier) 
+            classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
         return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
-    }
-    
-//    @Override
-    public double getTrainAcc() {
-        if(classifier instanceof TrainAccuracyEstimator)
-            return ((TrainAccuracyEstimator)classifier).getTrainAcc();
-        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
-    }
-
-//    @Override
-    public double[] getTrainPreds() {
-        if(classifier instanceof TrainAccuracyEstimator)
-            return ((TrainAccuracyEstimator)classifier).getTrainPreds();
-        throw new RuntimeException(" ERRROR, the classifier is not a TrainAccuracyEstimator so cannot be accessed in this way: in ShapeletTransformClassifier");
     }
     
     

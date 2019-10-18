@@ -43,7 +43,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import timeseriesweka.classifiers.TrainTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *
@@ -53,7 +52,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different 
  * 
  */
-public class MultivariateShapeletTransformClassifier  extends AbstractClassifierWithTrainingInfo implements TrainAccuracyEstimator, TrainTimeContractable, Checkpointable{
+public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
     //Minimum number of instances per class in the train set
     public static final int minimumRepresentation = 25;
@@ -71,7 +70,6 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
     private long numShapelets = 0;
-    private boolean setSeed=false;
     private long timeLimit = Long.MAX_VALUE;
     private String checkpointFullPath; //location to check point 
     private boolean checkpoint=false;
@@ -90,7 +88,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             case "shapeleti": case "shapelet_i":
                 type=TransformType.MULTI_I;
                 break;
-            case "indep": case "shapelet_indep":
+            case "indep": case "shapelet_indep": case "shapeletindep":
                 type=TransformType.INDEP;
                 break;
                 
@@ -98,6 +96,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     }
     
     public MultivariateShapeletTransformClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         configureDefaultEnsemble();
     }
   
@@ -105,17 +104,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
     public void setSearchType(ShapeletSearch.SearchType type) {
         searchType = type;
     }
-
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        ensemble.writeTrainEstimatesToFile(train);
-    }
-@Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        ensemble.setFindTrainAccuracyEstimate(setCV);
-
-    }
-
+    
     /*//if you want CAWPE to perform CV.
     public void setEstimateEnsemblePerformance(boolean b) {
         ensemble.setEstimateEnsemblePerformance(b);
@@ -133,14 +122,14 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         return super.getParameters()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ens;
     }
     
-    @Override
+
     public double getTrainAcc() {
-        return ensemble.getTrainAcc();
+        return ensemble.getTrainResults().getAcc();
     }
 
-    @Override
+
     public double[] getTrainPreds() {
-        return ensemble.getTrainPreds();
+        return ensemble.getTrainResults().getPredClassValsAsArray();
     }
     
     public void doSTransform(boolean b){
@@ -193,7 +182,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             long startTime=System.currentTimeMillis(); 
             format = doTransform ? createTransformData(data, timeLimit) : data;
             transformBuildTime=System.currentTimeMillis()-startTime;
-            if(setSeed)
+            if(seedClassifier)
                 ensemble.setSeed((int) seed);
 
             redundantFeatures=InstanceTools.removeRedundantTrainAttributes(format);
@@ -236,14 +225,14 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         PolyKernel kl = new PolyKernel();
         kl.setExponent(2);
         smo.setKernel(kl);
-        if (setSeed)
+        if (seedClassifier)
             smo.setRandomSeed((int)seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVMQ";
 
         RandomForest r=new RandomForest();
         r.setNumTrees(500);
-        if(setSeed)
+        if(seedClassifier)
            r.setSeed((int)seed);            
         classifiers[1] = r;
         classifierNames[1] = "RandF";
@@ -251,7 +240,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             
         RotationForest rf=new RotationForest();
         rf.setNumIterations(100);
-        if(setSeed)
+        if(seedClassifier)
            rf.setSeed((int)seed);
         classifiers[2] = rf;
         classifierNames[2] = "RotF";
@@ -288,14 +277,14 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         PolyKernel kl = new PolyKernel();
         kl.setExponent(2);
         smo.setKernel(kl);
-        if (setSeed)
+        if (seedClassifier)
             smo.setRandomSeed((int)seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVMQ";
 
         RandomForest r=new RandomForest();
         r.setNumTrees(500);
-        if(setSeed)
+        if(seedClassifier)
            r.setSeed((int)seed);            
         classifiers[1] = r;
         classifierNames[1] = "RandF";
@@ -303,7 +292,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
             
         RotationForest rf=new RotationForest();
         rf.setNumIterations(100);
-        if(setSeed)
+        if(seedClassifier)
            rf.setSeed((int)seed);
         classifiers[2] = rf;
         classifierNames[2] = "RotF";
@@ -408,8 +397,12 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
 /**
  * Checkpoint methods
  */
-    public void setSavePath(String path){
-        checkpointFullPath=path;
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            this.checkpointFullPath=path;
+        }
+        return validPath;
     }
     public void copyFromSerObject(Object obj) throws Exception{
         if(!(obj instanceof MultivariateShapeletTransformClassifier))
@@ -430,7 +423,7 @@ public class MultivariateShapeletTransformClassifier  extends AbstractClassifier
         searchType =st.searchType;
         numShapelets  =st.numShapelets;
         seed =st.seed;
-        setSeed=st.setSeed;
+        seedClassifier=st.seedClassifier;
         timeLimit =st.timeLimit;
 
         

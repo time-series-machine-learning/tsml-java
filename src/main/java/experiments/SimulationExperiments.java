@@ -14,7 +14,7 @@
  */
 package experiments;
 
-import experiments.data.DatasetLists;
+import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -22,7 +22,6 @@ import timeseriesweka.classifiers.interval_based.TSBF;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.distance_based.DTD_C;
 import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.frequency_based.RISE;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
@@ -45,10 +44,9 @@ import statistics.simulators.SimulateShapeletData;
 import statistics.simulators.SimulateWholeSeriesData;
 import statistics.simulators.SimulateElasticData;
 import statistics.simulators.SimulateMatrixProfileData;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
@@ -432,8 +430,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof AbstractClassifierWithTrainingInfo)
-                p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier)
+                p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else
@@ -532,7 +530,7 @@ public class SimulationExperiments {
                         c=new RotationForest();
                         break;
                     case "DTW":
-                        c=new FastDTW_1NN();
+                        c=new DTWCV();
                         break;
                     case "EE":    
                         c=new ElasticEnsemble();

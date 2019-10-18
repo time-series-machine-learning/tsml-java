@@ -38,7 +38,6 @@ import weka.classifiers.trees.RandomTree;
 import weka.core.Instances;
 import weka.core.Utils;
 import weka_extras.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /**
  *This classifier is enhanced so that classifier builds a random forest with the 
@@ -64,9 +63,20 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
     1, 10, sqrt(m) [R default], log_2(m)+1 [Weka default], m [full set]}
     (4 values)+add an option to choose randomly for each tree?
     grid search is then just 55 values and because it uses OOB no CV is required 
- * @author aj
+ * @author ajb
+    * 
+    * 
+    * 
+    * 
+    * 
+    * 
+    * NOTE jamesl: this classifier is now out of step with the current intended purpose usage of 
+    * EnhancedAbstractClassifier (in that, it extend RandomForest directly
+    * which does not extend that)
+    * 
+    * Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
  */
-public class TunedRandomForest extends RandomForest implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class TunedRandomForest extends RandomForest implements SaveParameterInfo,SaveEachParameter,ParameterSplittable{
     boolean tuneParameters=true;
     int[] paraSpace1;//Maximum tree depth, m_MaxDepth
     int[] paraSpace2;//Number of features per tree,m_numFeatures
@@ -125,10 +135,6 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         return getParameters();
     }
     @Override
-    public double getAcc() {
-        return res.getAcc();
-    }
-    @Override
     public void setParametersFromIndex(int x) {
         tuneParameters=false;
 //Three paras, evenly distributed, 1 to maxPerPara.
@@ -166,11 +172,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     }
 
    
-   @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-        return res;
-    }  
+
 //SaveParameterInfo    
     @Override
     public String getParameters() {
@@ -214,18 +216,15 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     public void setNumFeaturesRange(int[] d){
         paraSpace2=d;
     }
- @Override
     public void writeTrainEstimatesToFile(String train) {
         trainPath=train;
         estimateAcc=true;
     }    
- @Override
     public void setFindTrainAccuracyEstimate(boolean setCV){
         estimateAcc=setCV;
     }
     
     
-    @Override
     public boolean findsTrainAccuracyEstimate(){ return estimateAcc;}
     protected final void setStandardParaSearchSpace(int m){
 //Need to know the number  of features to do this

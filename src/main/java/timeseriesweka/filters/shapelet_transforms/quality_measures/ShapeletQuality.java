@@ -86,7 +86,7 @@ public class ShapeletQuality {
     }
     
     private static List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> createBound(){
-        List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> cons = new ArrayList();
+        List<BiFunction<ClassCounts, Integer, ShapeletQualityBound>> cons = new ArrayList<>();
         cons.add(InformationGainBound::new);
         cons.add(FStatBound::new);
         cons.add(KruskalWallisBound::new);
@@ -104,8 +104,7 @@ public class ShapeletQuality {
     }
     
     public void setBsfQuality(double bsf){
-        if(bound.isPresent())
-            bound.get().setBsfQuality(bsf);
+        bound.ifPresent(shapeletQualityBound -> shapeletQualityBound.setBsfQuality(bsf));
     }
     
     public boolean pruneCandidate(){
@@ -113,8 +112,7 @@ public class ShapeletQuality {
     }
     
     public void updateOrderLine(OrderLineObj obj){
-        if(bound.isPresent())
-            bound.get().updateOrderLine(obj);
+        bound.ifPresent(shapeletQualityBound -> shapeletQualityBound.updateOrderLine(obj));
     }
     
 }

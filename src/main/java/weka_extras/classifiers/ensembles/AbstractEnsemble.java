@@ -28,11 +28,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.Checkpointable;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.TestTimeContractable;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import timeseriesweka.classifiers.TrainTimeContractable;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
@@ -59,7 +58,7 @@ import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * as well as the following: 
  * 
  *      Current functionality
- *          - TrainAccuracyEstimator
+ *          - Can estimate own performance on train data
  *          - Optional filewriting for individuals' and ensemble's results
  *          - Can train from scratch, or build on results saved to file in ClassifierResults format
  *          - Can thread the component evaluation/building, current just assigning one thread per base classifier
@@ -68,7 +67,7 @@ import weka_extras.classifiers.ensembles.weightings.ModuleWeightingScheme;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInfo implements DebugPrinting, TrainAccuracyEstimator, MultiThreadable {
+public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implements DebugPrinting, MultiThreadable {
 
     //Main ensemble design decisions/variables
     protected String ensembleName;
@@ -79,9 +78,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected SimpleBatchFilter transform;
 
     protected Instances trainInsts;
-    protected boolean estimateEnsemblePerformance = true;
 
-    //protected ClassifierResults trainResults; inherited from AbstractClassifierWithTrainingInfo data generated during buildclassifier if above = true
+    //protected ClassifierResults trainResults; inherited from EnhancedAbstractClassifier data generated during buildclassifier if above = true
     protected ClassifierResults testResults;//data generated during testing
 
     //saved after building so that it can be added to our test results, even if for some reason 
@@ -97,7 +95,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected Instance prevTestInstance;
 
     //results file handling
-    protected boolean writeEnsembleTrainingFile = false;
     protected boolean readIndividualsResults = false;
     protected boolean writeIndividualsResults = false;
     protected boolean resultsFilesParametersInitialised;
@@ -105,9 +102,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     //MultiThreadable
     protected int numThreads = 1;
     protected boolean multiThread = false;
-    
-    
-    
+        
     /**
      * An annoying compromise to deal with base classfiers that dont produce dists 
      * while getting their train estimate. Off by default, shouldnt be turned on for 
@@ -144,6 +139,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     protected String datasetName;
 
     public AbstractEnsemble() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setupDefaultEnsembleSettings();
     }
     
@@ -214,8 +210,12 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             testResults = null;
         }
 
-        public boolean isTrainAccuracyEstimator() {
-            return classifier instanceof TrainAccuracyEstimator;
+        public boolean isAbleToEstimateOwnPerformance() {
+            return classifierAbleToEstimateOwnPerformance(classifier);
+        }
+        
+        public boolean isEstimatingOwnPerformance() {
+            return classifierIsEstimatingOwnPerformance(classifier);
         }
         
         public boolean isTrainTimeContractable() {
@@ -329,10 +329,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             modules[m] = new EnsembleModule(classifierNames[m], classifiers[m], classifierParameters[m]);
     }
     
-    public void setEstimateEnsemblePerformance(boolean b) {
-        estimateEnsemblePerformance = b;
-    }
-
     protected void initialiseModules() throws Exception {
         //currently will only have file reading ON or OFF (not load some files, train the rest)
         //having that creates many, many, many annoying issues, especially when classifying test cases
@@ -367,9 +363,9 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             Callable<ClassifierResults> moduleBuild = () -> {
                 ClassifierResults trainResults = null;
                 
-                if (classifier instanceof TrainAccuracyEstimator) { 
+                if (EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(classifier)) { 
                     classifier.buildClassifier(trainInsts);
-                    trainResults = ((TrainAccuracyEstimator)classifier).getTrainResults();
+                    trainResults = ((EnhancedAbstractClassifier)classifier).getTrainResults();
                 }
                 else { 
                     trainResults = eval.evaluate(classifier, trainInsts);
@@ -404,8 +400,8 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             
             if (writeIndividualsResults) { //if we're doing trainFold# file writing
                 String params = modules[i].getParameters();
-                if (modules[i].getClassifier() instanceof AbstractClassifierWithTrainingInfo)
-                    params = ((AbstractClassifierWithTrainingInfo)modules[i].getClassifier()).getParameters();
+                if (modules[i].getClassifier() instanceof EnhancedAbstractClassifier)
+                    params = ((EnhancedAbstractClassifier)modules[i].getClassifier()).getParameters();
                 writeResultsFile(modules[i].getModuleName(), params, modules[i].trainResults, "train"); //write results out
             }
         }
@@ -491,7 +487,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     }
 
     protected boolean needIndividualTrainPreds() {
-        return estimateEnsemblePerformance || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
+        return getEstimateOwnPerformance() || weightingScheme.needTrainPreds || votingScheme.needTrainPreds;
     }
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
@@ -703,16 +699,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         return classifierNames;
     }
 
-    @Override
-    public double[] getTrainPreds() {
-        return trainResults.getPredClassValsAsArray();
-    }
-
-    @Override
-    public double getTrainAcc() {
-        return trainResults.getAcc();
-    }
-
     public String getEnsembleName() {
         return ensembleName;
     }
@@ -797,21 +783,6 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
     public void setTransform(SimpleBatchFilter transform){
         this.transform = transform;
     }
-    
-    @Override //TrainAccuracyEstimate
-    public void writeTrainEstimatesToFile(String path) {
-        estimateEnsemblePerformance=true;
-        writeEnsembleTrainingFile=true;
-        
-        setResultsFileWritingLocation(path);
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean estimatePerformance){
-        estimateEnsemblePerformance=estimatePerformance;
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return estimateEnsemblePerformance;}
 
     @Override
     public ClassifierResults getTrainResults(){
@@ -918,7 +889,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
                 //assumption that the estimate time is already accounted for in the build
                 //time of TrainAccuracyEstimators, i.e. those classifiers that will 
                 //estimate their own accuracy during the normal course of training
-                if (!(module.getClassifier() instanceof TrainAccuracyEstimator))
+                if (!EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(module.getClassifier()))
                     buildTime += module.trainResults.getErrorEstimateTime();
             }
         }
@@ -926,7 +897,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         trainResults = new ClassifierResults();
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         
-        if(estimateEnsemblePerformance)
+        if(getEstimateOwnPerformance())
             trainResults = estimateEnsemblePerformance(data); //combine modules to find overall ensemble trainpreds
         
         //HACK FOR CAWPE_EXTENSION PAPER: 
@@ -939,10 +910,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
         trainResults.turnOffZeroTimingsErrors();
         trainResults.setBuildTime(buildTime);
         trainResults.turnOnZeroTimingsErrors();
-        
-        if (writeEnsembleTrainingFile)
-            writeEnsembleTrainAccuracyEstimateResultsFile();
-        
+                
         this.testInstCounter = 0; //prep for start of testing
         this.prevTestInstance = null;
     }
@@ -1203,7 +1171,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setWriteIndividualsTrainResultsFiles(true);
-            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
+            cawpe.setEstimateOwnPerformance(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);
@@ -1245,7 +1213,7 @@ public abstract class AbstractEnsemble extends AbstractClassifierWithTrainingInf
             CAWPE cawpe = new CAWPE();
             cawpe.setResultsFileLocationParameters("C:/Temp/EnsembleTests"+testID+"/", dataset, fold);
             cawpe.setBuildIndividualsFromResultsFiles(true);
-            cawpe.setEstimateEnsemblePerformance(true); //now defaults to true
+            cawpe.setEstimateOwnPerformance(true); //now defaults to true
             cawpe.setSeed(fold);
 
             cawpe.buildClassifier(train);

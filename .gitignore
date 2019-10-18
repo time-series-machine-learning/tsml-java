@@ -32,6 +32,7 @@ build/
 gradle/
 /nbproject/private/
 /dist/
+src/main/java/development/
 
 # netbeans
 build.xml
@@ -42,3 +43,6 @@ defaultShapeletOutput.txt
 # testing and local results files
 Results/
 Analysis/
+src/main/java/development/
+src/main/java/development/DataProcessing.java
+src/main/java/development/DataProcessing.java

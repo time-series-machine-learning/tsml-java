@@ -37,9 +37,11 @@ import java.io.Writer;
  * @author Len Trigg (eibe@cs.waikato.ac.nz)
  * @author Fracpete (fracpete at waikato dot ac dot nz)
  * @version $Revision: 8034 $
- * @deprecated Use <code>weka.core.matrix.Matrix</code> instead - only for
- * backwards compatibility. 
- */
+
+ * deprecated Use <code>weka.core.matrix.Matrix</code> instead - only for
+ * backwards compatibility.
+ * Still used mby evaluation\ConfusionMatrix and PrincipalComponents
+ * */
 public class Matrix 
   implements Cloneable, Serializable, RevisionHandler {
 

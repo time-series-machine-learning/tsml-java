@@ -36,7 +36,7 @@ import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.File;
 import java.text.DecimalFormat;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -296,8 +296,8 @@ public class ClassificationExamples {
             acc/=data[1].numInstances();
             OutFile p=new OutFile(resultsPath+"/testFold"+fold+".csv");
             p.writeLine(train.relationName()+","+c.getClass().getName()+",test");
-            if(c instanceof AbstractClassifierWithTrainingInfo){
-              p.writeLine(((AbstractClassifierWithTrainingInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier){
+              p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             }else
                 p.writeLine("No parameter info");
             p.writeLine(acc+"");

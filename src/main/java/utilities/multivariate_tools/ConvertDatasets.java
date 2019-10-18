@@ -26,7 +26,6 @@ import java.util.Set;
 import static utilities.GenericTools.indexOf;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instances;
 /**
  *
@@ -270,20 +269,20 @@ public class ConvertDatasets {
         int dimRows = dataRows.size();
         
         // create a list of attributes features + label
-        FastVector attributes = new FastVector();
+        ArrayList<Attribute> attributes = new ArrayList<>();
         for (int i = 0; i < dimCols; i++) {
-            attributes.addElement(new Attribute("attr" + String.valueOf(i + 1)));
+            attributes.add(new Attribute("attr" + String.valueOf(i + 1)));
         }
         
         //also add the classValue.
         //figure out how many classValues there are.
         double[] values = uniqueValues(classVals);
         Arrays.sort(values);
-        FastVector vals = new FastVector(values.length);
+        ArrayList<String> vals = new ArrayList<>(values.length);
         for (int i = 0; i < values.length; i++) {
-            vals.addElement(""+values[i]);
+            vals.add(""+values[i]);
         }
-        attributes.addElement(new Attribute("classAttribute", vals));
+        attributes.add(new Attribute("classAttribute", vals));
         
         // add the attributes 
         output = new Instances("", attributes, dataRows.size());

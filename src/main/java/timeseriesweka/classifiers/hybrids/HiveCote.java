@@ -15,6 +15,7 @@
 package timeseriesweka.classifiers.hybrids;
 
 
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.interval_based.TSF;
 import timeseriesweka.classifiers.frequency_based.RISE;
@@ -27,10 +28,9 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka_extras.classifiers.ensembles.CAWPE;
@@ -77,7 +77,7 @@ DEVELOPMENT NOTES for any users added by ajb on 23/7/18:
 * To review: whole file writing thing. 
 
 */
-public class HiveCote extends AbstractClassifierWithTrainingInfo implements TrainTimeContractable,TechnicalInformationHandler{
+public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeContractable,TechnicalInformationHandler{
 
 
     private ArrayList<Classifier> classifiers;
@@ -98,10 +98,12 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     private int contractHours=MAXCONTRACTHOURS;  //Default to maximum 7 days run time
     
     public HiveCote(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.setDefaultEnsembles();
     }
     
     public HiveCote(ArrayList<Classifier> classifiers, ArrayList<String> classifierNames){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.classifiers = classifiers;
         this.names = classifierNames;
         if(contractTime){
@@ -147,7 +149,10 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers = new ArrayList<>();
         names = new ArrayList<>();
         
-        classifiers.add(new ElasticEnsemble());
+        ElasticEnsemble ee = new ElasticEnsemble();
+        ee.setEstimateOwnPerformance(true);
+        classifiers.add(ee);
+        
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
 //        CAWPE h = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
@@ -158,10 +163,14 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
         classifiers.add(stc); // to get around the issue of needing training data 
         RISE rise = new RISE();
         classifiers.add(rise);
-        classifiers.add(new BOSS());
+        
+        BOSS boss = new BOSS();
+        boss.setEstimateOwnPerformance(true);
+        classifiers.add(boss);
+        
         TSF tsf=new TSF();
         tsf.setEstimatorMethod("CV");
-        tsf.setFindTrainAccuracyEstimate(true);
+        tsf.setEstimateOwnPerformance(true);
         classifiers.add(tsf);
         
         names.add("EE");
@@ -202,15 +211,15 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
             
 // if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
 // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
-            if(classifiers.get(i) instanceof TrainAccuracyEstimator){
+            if(EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(classifiers.get(i))){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
-                
-                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), ((TrainAccuracyEstimator) classifiers.get(i)).getTrainAcc());
+                ClassifierResults res= ((EnhancedAbstractClassifier)classifiers.get(i)).getTrainResults();
+                modules[i] = new ConstituentHiveEnsemble(this.names.get(i), this.classifiers.get(i), res.getAcc());
                 
                 if(this.fileWriting){    
                     outputFilePathAndName = fileOutputDir+names.get(i)+"/Predictions/"+this.fileOutputDataset+"/trainFold"+this.fileOutputResampleId+".csv";    
-                    genericCvResultsFileWriter(outputFilePathAndName, train, ((TrainAccuracyEstimator)(modules[i].classifier)).getTrainPreds(), this.fileOutputDataset, modules[i].classifierName, ((AbstractClassifierWithTrainingInfo)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
+                    genericCvResultsFileWriter(outputFilePathAndName, train, res.getPredClassValsAsArray(), this.fileOutputDataset, modules[i].classifierName, ((EnhancedAbstractClassifier)(modules[i].classifier)).getParameters(), modules[i].ensembleCvAcc);
                 }
                 
                 
@@ -660,6 +669,8 @@ public class HiveCote extends AbstractClassifierWithTrainingInfo implements Trai
     
     public static void main(String[] args) throws Exception{
        
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new HiveCote()));
+        
         String dataDir = "C:/users/ajb/dropbox/Code2019/tsml/src/main/java/experiments/data/tsc/";
         String datasetName = "Chinatown";
         Instances train = DatasetLoading.loadDataNullable(dataDir+datasetName+"/"+datasetName+"_TRAIN");
