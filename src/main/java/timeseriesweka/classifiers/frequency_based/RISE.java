@@ -175,6 +175,7 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
                     break;
                 case "PS": case "PowerSpectrum":
                     filters[count]= new PowerSpectrum();
+                    ((PowerSpectrum)filters[count]).useFFT();
                     break;
                 case "FFT":
                     filters[count] = new Fast_FFT();
