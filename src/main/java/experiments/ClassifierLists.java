@@ -463,7 +463,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {   };
+    public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CAWPE_AS_COTE","CAWPE_AS_COTE_NO_EE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -483,7 +483,7 @@ public class ClassifierLists {
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){
-                    String[] classifiers={"TSF","BOSS","RISE","ST"};
+                    String[] classifiers={"TSF","BOSS","RISE","STC","EE"};
                     c=new CAWPE();
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
