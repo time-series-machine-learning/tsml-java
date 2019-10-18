@@ -13,7 +13,6 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.distance_based;
-import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
@@ -25,7 +24,6 @@ import weka_extras.classifiers.SaveEachParameter;
 import weka.core.*;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
-import utilities.GenericTools;
 
 /* 
  * The reason for specialising is this class has the option of searching for 
@@ -63,7 +61,7 @@ CHECK THIS: For implementation reasons, a window size of 1
 is equivalent to Euclidean distance (rather than a window size of 0
  */
 
-public class FastDTW_1NN extends EnhancedAbstractClassifier implements SaveEachParameter,ParameterSplittable{
+public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -90,7 +88,7 @@ public class FastDTW_1NN extends EnhancedAbstractClassifier implements SaveEachP
     
     public void setFindTrainAccuracyEstimate(boolean setCV){
         if(setCV==true)
-            throw new UnsupportedOperationException("Doing a top leve CV is not yet possible for FastDTW_1NN. It cross validates to optimize, so could store those, but will be biased"); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException("Doing a top leve CV is not yet possible for DTWCV. It cross validates to optimize, so could store those, but will be biased"); //To change body of generated methods, choose Tools | Templates.
 //This method doe
     }
      
@@ -100,12 +98,12 @@ public class FastDTW_1NN extends EnhancedAbstractClassifier implements SaveEachP
         return getParameters();
     }
 
-    public FastDTW_1NN(){
+    public DTWCV(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);        
         dtw=new DTW();
         accuracy=new ArrayList<>();
     }
-    public FastDTW_1NN(DTW_DistanceBasic d){
+    public DTWCV(DTW_DistanceBasic d){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=d;
         accuracy=new ArrayList<>();
@@ -216,7 +214,7 @@ public class FastDTW_1NN extends EnhancedAbstractClassifier implements SaveEachP
             trainResults.setErrorEstimateTime(estTime);
             trainResults.setErrorEstimateMethod("cv_loo");
             
-            trainResults.setClassifierName("FastDTW_1NN");
+            trainResults.setClassifierName("DTWCV");
             trainResults.setDatasetName(train.relationName());
             trainResults.setSplit("train");
             //no foldid/seed
@@ -318,7 +316,7 @@ answer is to store those without the abandon in a hash table indexed by i and j,
         return a/(double)trainSize;
     }
     public static void main(String[] args) throws Exception{
-            FastDTW_1NN c = new FastDTW_1NN();
+            DTWCV c = new DTWCV();
             String path="C:\\Research\\Data\\Time Series Data\\Time Series Classification\\";
 
             Instances test=DatasetLoading.loadDataNullable(path+"Coffee\\Coffee_TEST.arff");

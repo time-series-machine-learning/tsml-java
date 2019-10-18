@@ -14,6 +14,7 @@
  */
 package timeseriesweka.examples;
 
+import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -28,7 +29,6 @@ import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
 import timeseriesweka.classifiers.distance_based.DD_DTW;
 import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
 import timeseriesweka.classifiers.hybrids.HiveCote;
-import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
@@ -38,7 +38,6 @@ import statistics.simulators.SimulateShapeletData;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka_extras.classifiers.ensembles.SaveableEnsemble;
@@ -98,7 +97,7 @@ public class SimulationExperiments {
                 c=new RotationForest();
                 break;
             case "DTW":
-                c=new FastDTW_1NN();
+                c=new DTWCV();
                 break;
              case "DD_DTW":
                 c=new DD_DTW();
@@ -334,7 +333,7 @@ public class SimulationExperiments {
                         c=new RotationForest();
                         break;
                     case "DTW":
-                        c=new FastDTW_1NN();
+                        c=new DTWCV();
                         break;
                     case "EE":    
                         c=new ElasticEnsemble();

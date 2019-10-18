@@ -71,7 +71,7 @@ public class BasicBuildTests {
 
 
         System.out.println("Testing core functionality of all TSC classifiers");
-        String[] classifiers=ClassifierLists.allClassifiers;
+        String[] classifiers=ClassifierLists.allUnivariate;
         buildAllClassifiers(problems,classifiers,dataPath);
     }
 }
