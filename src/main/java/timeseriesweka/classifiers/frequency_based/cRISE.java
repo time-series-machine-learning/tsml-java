@@ -956,12 +956,10 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
     public static void main(String[] args){
 
-        /*Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TRAIN");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TRAIN");
         Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TEST");
         Instances data = dataTrain;
-        data.addAll(dataTest);*/
-
-        Instances data = loadDataNullable("D:/Test/Datasets/Truncated/CatsDogs/CatsDogs.arff");
+        data.addAll(dataTest);
 
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
@@ -975,13 +973,13 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            /*cRISE = new cRISE();
+            cRISE = new cRISE();
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_PS);
+            cRISE.setTransformType(TransformType.MFCC);
             cr = sse.evaluate(cRISE, data);
-            System.out.println("ACF_PS");
+            System.out.println("MFCC");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
             cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");
