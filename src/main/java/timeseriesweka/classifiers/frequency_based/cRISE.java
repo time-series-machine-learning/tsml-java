@@ -118,7 +118,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         this.seed = 0;
         super.setSeed((int)seed);
         timer = new Timer();
-        this.setTransformType(TransformType.ACF_PS);
+        this.setTransformType(TransformType.ACF_FFT);
     }
 
     public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
