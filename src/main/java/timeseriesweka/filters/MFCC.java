@@ -20,10 +20,10 @@ public class MFCC extends SimpleBatchFilter{
     //Check whether there is an attribute called samplerate and use that before deleting it.
     Boolean checkForSampleRate = true;
     int nfft = 512;
-    int sampleRate = 4000;
+    int sampleRate = 16000;
     Spectrogram spectrogram;
     FastCosineTransformer dct = new FastCosineTransformer(DctNormalization.STANDARD_DCT_I);
-    int numFilterBanks = 33;
+    int numFilterBanks = 65;
     double[][] filterBank = null;
     double[][] melFreqCepsCo = null;
     //Upper and lower frequencies the filter bank will be applied to (Freq. outside of these will not contribute to overall output.).
@@ -58,6 +58,15 @@ public class MFCC extends SimpleBatchFilter{
 
         instances.setClassIndex(instances.numAttributes() - 1);
         return instances;
+    }
+
+    public Instances determineOutputFormatForFirstChannel(Instances instances){
+        try {
+            return determineOutputFormat(instances);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**

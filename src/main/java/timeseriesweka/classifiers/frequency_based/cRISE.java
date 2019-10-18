@@ -19,10 +19,8 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import timeseriesweka.filters.Fast_FFT;
-import timeseriesweka.filters.ACF;
-import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.PowerSpectrum;
+import timeseriesweka.filters.*;
+import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -123,7 +121,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         this.setTransformType(TransformType.ACF_PS);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
 
     /**
      * Function used to reset internal state of classifier.
@@ -453,6 +451,21 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
                     e.printStackTrace();
                 }
                 break;
+            case MFCC:
+                MFCC MFCC= new MFCC();
+                try {
+                    Instances temptemp;
+                    temptemp = MFCC.process(instances);
+                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
+                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
+                    for (int i = 0; i < instances.size(); i++) {
+                        temp.add(temptemptemp[i]);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+
             case ACF_PS:
                 temp = transformInstances(instances, TransformType.ACF);
                 temp.setClassIndex(-1);
@@ -714,7 +727,11 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
             //Transform interval instance into PS, ACF, ACF_PS or ACF_PS_AR
             if (transformType != null) {
-                intervalInstance = transformInstances(instances, transformType).firstInstance();
+                try{
+                    intervalInstance = transformInstances(instances, transformType).firstInstance();
+                }catch(Exception e){
+                    intervalInstance = transformInstances(instances, transformType).firstInstance();
+                }
             }
 
             double[] temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
@@ -939,10 +956,12 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
     public static void main(String[] args){
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TEST");
+        /*Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TEST");
         Instances data = dataTrain;
-        data.addAll(dataTest);
+        data.addAll(dataTest);*/
+
+        Instances data = loadDataNullable("D:/Test/Datasets/Truncated/CatsDogs/CatsDogs.arff");
 
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
@@ -956,13 +975,13 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            cRISE = new cRISE();
+            /*cRISE = new cRISE();
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.ACF_PS);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF_PS");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
 
             cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");

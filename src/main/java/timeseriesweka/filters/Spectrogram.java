@@ -62,8 +62,6 @@ public class Spectrogram extends SimpleBatchFilter {
             for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
                 signal[j] = instances.get(i).value(j);
             }
-
-            checkParameters(signal.length);
             spectrogram = spectrogram(signal, windowLength, overlap, nfft);
             spectrogramsInstances[i] = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
         }
@@ -71,15 +69,16 @@ public class Spectrogram extends SimpleBatchFilter {
     }
 
     public int getNumWindows(int signalLength){
-        return (int)Math.floor((signalLength - overlap)/(windowLength - overlap));
+            return (int)Math.floor((signalLength - overlap)/(windowLength - overlap));
     }
 
     private void checkParameters(int signalLength){
-        windowLength = windowLength < (int)(signalLength * 0.25) ? windowLength : (int)(signalLength * 0.25);
+        windowLength = windowLength < (int)(signalLength * 0.5) ? windowLength : (int)(signalLength * 0.5);
         overlap = overlap < (int)(windowLength * 0.5) ? overlap : (windowLength / 2);
     }
 
     public double[][] spectrogram(double[] signal, int windowWidth, int overlap, int nfft){
+        checkParameters(signal.length);
         int numWindows = getNumWindows(signal.length);
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
         double[][] spectrogram = new double[numWindows][nfft/2];
@@ -89,8 +88,8 @@ public class Spectrogram extends SimpleBatchFilter {
             for (int j = 0; j < nfft; j++) {
                 STFFT[j] = new Complex(0.0, 0.0);
             }
-            for (int j = 0; j < windowWidth; j++) {
-                double temp = signal[j + (i * (windowWidth - overlap))]*(0.56 - 0.46*Math.cos(2*Math.PI*((double)j/(double)windowWidth)));
+            for (int j = 0; j < windowLength; j++) {
+                double temp = signal[j + (i * (this.windowLength - this.overlap))]*(0.56 - 0.46*Math.cos(2*Math.PI*((double)j/(double)this.windowLength)));
                 STFFT[j] = new Complex(temp, 0.0);
             }
             STFFT = fft.transform(STFFT, TransformType.FORWARD);
