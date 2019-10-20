@@ -75,7 +75,7 @@ public class ClassifierLists {
             "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
             "DD_DTW","DTD_C", "NN_CID","MSM","TWE","WDTW",
 //Dictionary Based
-            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "BOSSSpatialPyramids","BoTSWEnsemble",
+            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS","BoTSWEnsemble",
 //Interval Based
             "LPS","TSF","cTSF",
 //Frequency Based
@@ -157,7 +157,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "BOSSSpatialPyramids", "BoTSWEnsemble"};
+        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS", "BoTSWEnsemble"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -182,7 +182,7 @@ public class ClassifierLists {
             case "BOSSC45":
                 c = new BOSSC45();
                 break;
-            case "BOSSSpatialPyramids":
+            case "SpatialBOSS":
                 c = new SpatialBOSS();
                 break;
             case "BoTSWEnsemble":
