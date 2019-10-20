@@ -18,7 +18,7 @@ package experiments;
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSC45;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSSpatialPyramids;
+import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import timeseriesweka.classifiers.distance_based.*;
 import timeseriesweka.classifiers.frequency_based.cRISE;
@@ -29,7 +29,6 @@ import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.interval_based.TSBF;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
@@ -184,7 +183,7 @@ public class ClassifierLists {
                 c = new BOSSC45();
                 break;
             case "BOSSSpatialPyramids":
-                c = new BOSSSpatialPyramids();
+                c = new SpatialBOSS();
                 break;
             case "BoTSWEnsemble":
                 c = new BoTSWEnsemble();

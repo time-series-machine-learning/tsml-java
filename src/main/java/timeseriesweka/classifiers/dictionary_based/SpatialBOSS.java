@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package timeseriesweka.classifiers.dictionary_based.boss_variants;
+package timeseriesweka.classifiers.dictionary_based;
 
 
 import java.io.File;
@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import utilities.ClassifierTools;
-import timeseriesweka.classifiers.dictionary_based.BitWord;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -63,7 +62,7 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
  * Base algorithm information found in BOSS.java
  * Spatial Pyramids based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements SaveParameterInfo {
+public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -116,7 +115,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
      * 
      * @param normalise whether or not to normalise by dropping the first Fourier coefficient
      */
-    public BOSSSpatialPyramids(boolean normalise) {
+    public SpatialBOSS(boolean normalise) {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { normalise };
     }
@@ -125,7 +124,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
      * During buildClassifier(...), will search through normalisation as well as 
      * window size and word length if no particular normalisation option is provided
      */
-    public BOSSSpatialPyramids() {
+    public SpatialBOSS() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { true, false };
     }  
@@ -298,7 +297,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
             if (!f.isDirectory())
                 f.mkdirs();
         }
-        
+        long t1=System.nanoTime();
         classifiers = new LinkedList<BOSSWindow>();
         
         
@@ -408,7 +407,9 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
                 }
             }
         }
-        
+        //end train time in nanoseconds
+        trainResults.setBuildTime(System.nanoTime() - t1);
+
         if (getEstimateOwnPerformance())
             findEnsembleTrainAcc(data);
     }
@@ -566,7 +567,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
         Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
         
-        Classifier c = new BOSSSpatialPyramids();
+        Classifier c = new SpatialBOSS();
         c.buildClassifier(train);
         double accuracy = ClassifierTools.accuracy(test, c);
         
@@ -584,7 +585,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
             Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
             System.out.println(train.relationName());
             
-            BOSSSpatialPyramids boss = new BOSSSpatialPyramids();
+            SpatialBOSS boss = new SpatialBOSS();
             
             //TRAINING
             System.out.println("Training starting");
@@ -619,7 +620,7 @@ public class BOSSSpatialPyramids extends EnhancedAbstractClassifier implements S
         Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dset+"\\"+dset+"_TEST.arff");
          
-        Classifier c = new BOSSSpatialPyramids();
+        Classifier c = new SpatialBOSS();
          
         //c.setCVPath("C:\\tempproject\\BOSSEnsembleCVtest.csv");
          
