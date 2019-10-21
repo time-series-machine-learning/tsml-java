@@ -64,10 +64,12 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
 
   // chi-squared test
   public static double chi = 0.1;
+  public static int limit = 1000;
 
   // default liblinear parameters
   public static double bias = 1;
   public static double p = 0.1;
+
   public static int iterations = 5000;
   public static double c = 1;
   public static SolverType solverType = SolverType.L2R_LR_DUAL;
@@ -759,7 +761,6 @@ public class WEASEL extends AbstractClassifierWithTrainingInfo implements TrainA
       }
 
       // limit number of features per window size to avoid excessive features
-      int limit = 100;
       if (values.size() > limit) {
         // sort by p_value-squared value
         Collections.sort(values, new Comparator<PValueKey>() {
