@@ -1229,7 +1229,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         }
         return str;
     }
-    
+
+
+
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets+",roundrobin,"+roundRobin
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()
