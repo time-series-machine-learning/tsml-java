@@ -18,7 +18,6 @@ import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
-import evaluation.MultipleClassifiersPairwiseTest;
 import evaluation.storage.ClassifierResultsCollection;
 import fileIO.OutFile;
 import java.io.File;
@@ -91,7 +90,11 @@ public class ClassifierResultsAnalysis {
     protected static final String cdDiaFolderName = "dias_CriticalDifference/";
     protected static final String pairwiseCDDiaDirName = "pairwise/";
     protected static final String friedmanCDDiaDirName = "friedman/";
-    protected static final String timingDiaFolderName = "dias_Timing/";
+
+    //todo being used for both raw and benchmarked 2019/10/21
+    //eval_timings... editing folder name before own ana, then resetting. fix.
+    protected static String timingDiaFolderName = "dias_Timing/";
+
     public static final double FRIEDMANCDDIA_PVAL = 0.05;
     public static final String testLabel = "TEST";
     public static final String trainLabel = "TRAIN";
@@ -121,11 +124,8 @@ public class ClassifierResultsAnalysis {
      * @param metrics a list of PerformanceMetrics that effectively are able to summarise a ClassifierResults 
      *          object into a single double, the prediction set's score. e.g. accuracy for these predictions
      *          These metrics will also have indications of how comparisons of this metric should be calculated and represented
-     * @param results A list of results for each classifier, for each dataset, for each resample, for each split {train,test}
-     *          at minimum: 1 classifier on 1 dataset on 1 resample, test results. Though an analysis on just this data wouldnt be too interesting
-     *          At present, there CANNOT BE ANY MISSING RESULTS. i.e., no null entries.
-     * @param dsets An array of the names of the datasets that the classifiers were evaluated on, it is assumed that this array is parallel
-     *          with the datasets dimension of the results lists. 
+     * @param results a ClassifierResultsCollection containing test (and optionally train) results of 1/more classifiers on 1/more datasets over 1/more resamples.
+     *          Classifier and dataset names are retrieved from this object
      * @param dsetGroupings Optional, a map { grouping name, groupings } of maps { group name, datasets in groups } that describe different subsets of 
      *          the data within which to repeat the analysis, e.g one group might be 2class datasets vs multiclass datasets. The analysis would 
      *          aid in seeing if one classifier has a competitive advantage over the others within different data characteristics/groupings
@@ -184,20 +184,38 @@ public class ClassifierResultsAnalysis {
         //timings will attempt to always be summarised if they are present, so handle them here as a special case
         //and add them onto the list of metrics
         String[][] trainTestTimingSummary = new String[][] { };
-        try { 
-            trainTestTimingSummary = eval_timings(outPath, expname, results, null); //dont bother with groupings for timings
+        try {
+            trainTestTimingSummary = eval_timingsRAW(outPath, expname, results, null); //dont bother with groupings for timings
         } catch (FileNotFoundException fnf) {
-            System.out.println("Something went wrong while writing timing files, likely "
+            System.out.println("Something went wrong while writing RAW timing files, likely "
                     + "later stages of analysis could not find files that should have been made"
                     + "internally in earlier stages of the pipeline, FATAL");
             fnf.printStackTrace();
             System.exit(0);
         } catch (Exception ex) {
-            System.out.println("Something went wrong while writing timing files. But NOT "
-                    + "a filenotfound error. Either timings werent found, some NaN erros occurred,"
+            System.out.println("Something went wrong while writing RAW timing files. But NOT "
+                    + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
                     + " etc. Todo look into cases of this as they crop up.\n"
-                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the timings");
+                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the RAW timings");
         }
+
+        // TODO proper support for benchmarked timings, link up to the diagram creation code, global summary files, etc
+        // currently standalone
+        try {
+            eval_timingsBENCHMARKED(outPath, expname, results, null); //dont bother with groupings for timings
+        } catch (FileNotFoundException fnf) {
+            System.out.println("Something went wrong while writing BENCHMARKED timing files, likely "
+                    + "later stages of analysis could not find files that should have been made"
+                    + "internally in earlier stages of the pipeline, FATAL");
+            fnf.printStackTrace();
+            System.exit(0);
+        } catch (Exception ex) {
+            System.out.println("Something went wrong while writing BENCHMARKED timing files. But NOT "
+                    + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
+                    + " etc. Todo look into cases of this as they crop up.\n"
+                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the BENCHMARKED timings");
+        }
+        //end benchmarked
         
         //TODO clean all of this timing stuff up, it's jsut another layer of hacky nonsense. 
         //just need a CLEAN break of 'does everything have timings? do all the timing analysis. 
@@ -274,16 +292,27 @@ public class ClassifierResultsAnalysis {
     
     
     
-    protected static void writeTableFile(String filename, String tableName, double[][] accs, String[] cnames, String[] dsets) {
+    protected static void writeTableFile_ClassifierDataset(String filename, String tableName, double[][] scores, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
-        out.writeLine(tableName + fileHelper_tabulate(accs, cnames, dsets));
-//        out.writeLine("\navg:" + util_mean(accs));
+        out.writeLine(tableName + fileHelper_tabulate(scores, cnames, dsets));
         out.closeFile();
     }
     
-    protected static void writeTableFileRaw(String filename, double[][] accs, String[] cnames) {
+    protected static void writeRawTableFile_ClassifierDataset(String filename, double[][] scores, String[] cnames) {
         OutFile out=new OutFile(filename);
-        out.writeLine(fileHelper_tabulateRaw(accs, cnames));
+        out.writeLine(fileHelper_tabulateRaw(scores, cnames));
+        out.closeFile();
+    }
+
+    protected static void writeTableFile_ClassifierDatasetFolds(String filename, String tableName, double[][][] scores, String[] cnames, String[] dsets) {
+        OutFile out=new OutFile(filename);
+        out.writeLine(tableName + fileHelper_tabulate(scores, cnames, dsets));
+        out.closeFile();
+    }
+
+    protected static void writeRawTableFile_ClassifierDatasetFolds(String filename, double[][][] scores, String[] cnames) {
+        OutFile out=new OutFile(filename);
+        out.writeLine(fileHelper_tabulateRaw(scores, cnames));
         out.closeFile();
     }
     
@@ -413,7 +442,7 @@ public class ClassifierResultsAnalysis {
         double[][] stddevsFoldVals = findStddevsOverFolds(foldVals);
         double[][] ranks = findRanks(dsetVals, metric.maximise);
         
-        int[] ordering = ordering = findOrdering(ranks); 
+        int[] ordering = findOrdering(ranks);
         //ordering is now an array of value referring to the rank-order of the element at each index
         //e.g [1, 4, 2, 3] means that the first (in index 0) classifier is best, third is next, then fourth, then second
         
@@ -447,9 +476,9 @@ public class ClassifierResultsAnalysis {
                             negatedDsetVals[i][j] = dsetVals[i][j] * -1;
                         }
                     }
-                    writeTableFileRaw(cdName, negatedDsetVals, cnames);
+                    writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
                 } else {
-                    writeTableFileRaw(cdName, dsetVals, cnames);
+                    writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
                 } 
             } //end cd dia qol
 
@@ -457,24 +486,24 @@ public class ClassifierResultsAnalysis {
             String pwsFolder = expRootDirectory + pairwiseScatterDiaPath;
             (new File(pwsFolder)).mkdirs();
             String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name)+".csv";
-            writeTableFileRaw(pwsName, dsetVals, cnames);
+            writeRawTableFile_ClassifierDataset(pwsName, dsetVals, cnames);
             //end pairwisescatter qol
             
             //qol for timing dia creation, make a copy of the avgs files with headers
             if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.totalTestTime) || metric.equals(PerformanceMetric.avgTestPredTime)) {
-                String timingDir = expRootDirectory+timingDiaFolderName+"/";
+                String timingDir = expRootDirectory+ timingDiaFolderName;
                 (new File(timingDir)).mkdirs();
                 String fname = timingDir+fileNameBuild_avgsFile(evalSet,metric);
-                writeTableFile(fname, evalSet+metric, dsetVals, cnames, dsets);
+                writeTableFile_ClassifierDataset(fname, evalSet+metric, dsetVals, cnames, dsets);
             }
             //end timing dia qol
         }
         
         
-        writeTableFile(outPath + fileNameBuild_ranksFile(evalSet, metric), evalSet+metric+"RANKS", ranks, cnames, dsets);
-        writeTableFile(outPath + fileNameBuild_avgsFile(evalSet, metric), evalSet+metric, dsetVals, cnames, dsets);
-        writeTableFileRaw(outPath + fileNameBuild_rawAvgsFile(evalSet, metric), dsetVals, cnames); //for matlab stuff
-        writeTableFile(outPath + fileNameBuild_stddevFile(evalSet, metric), evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
+        writeTableFile_ClassifierDataset(outPath + fileNameBuild_ranksFile(evalSet, metric), evalSet+metric+"RANKS", ranks, cnames, dsets);
+        writeTableFile_ClassifierDataset(outPath + fileNameBuild_avgsFile(evalSet, metric), evalSet+metric, dsetVals, cnames, dsets);
+        writeRawTableFile_ClassifierDataset(outPath + fileNameBuild_rawAvgsFile(evalSet, metric), dsetVals, cnames); //for matlab stuff
+        writeTableFile_ClassifierDataset(outPath + fileNameBuild_stddevFile(evalSet, metric), evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
         
         String[] groupingSummary = { "" };
         if (dsetGroupings != null && dsetGroupings.size() != 0)
@@ -798,17 +827,19 @@ public class ClassifierResultsAnalysis {
         return eval_metricOnSplit(outPath, filename, null, testLabel, metric, testFolds, cnames, dsets, dsetGroupings);
     }
 
-    protected static String[/*{train,test}*/][] eval_timings(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {        
+    protected static String[/*{train,test}*/][] eval_timingsRAW(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
         String[] cnames = results.getClassifierNamesInOutput();
         String[] dsets = results.getDatasetNamesInOutput();
-        
+
+        timingDiaFolderName = timingDiaFolderName.replace("g/", "gRAW/");
+
         PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
 //        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
         
-        outPath += "Timings/"; //special case for timings
+        outPath += "TimingsRAW/"; //special case for timings
         new File(outPath).mkdirs();        
         
-        double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
+        double[][][] trainTimes = results.sliceSplit("train").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
         if (trainTimes != null)
             trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings); 
@@ -822,7 +853,56 @@ public class ClassifierResultsAnalysis {
 //        String[] estimateResStr = null;
 //        if (estimateTimes != null)
 //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
-  
+
+        timingDiaFolderName = timingDiaFolderName.replace("gRAW/", "g/");
+
+        return new String[][] { trainResStr, testResStr };
+//        return new String[][] { trainResStr, testResStr, estimateResStr };
+    }
+
+    protected static String[/*{train,test}*/][] eval_timingsBENCHMARKED(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
+        String[] cnames = results.getClassifierNamesInOutput();
+        String[] dsets = results.getDatasetNamesInOutput();
+
+        timingDiaFolderName = timingDiaFolderName.replace("g/", "gBENCHMARKED/");
+
+        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
+        PerformanceMetric benchmarkTimeMetric = PerformanceMetric.benchmarkTime;
+//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+
+        outPath += "TimingsBENCHMARKED/"; //special case for timings
+        new File(outPath).mkdirs();
+
+        double[][][] benchmarkTrainTimes = results.sliceSplit("train").retrieveDoubles(benchmarkTimeMetric.getter)[0];
+        double[][][] correctedTrainTimes = util_correctTimingsForBenchmarks(
+                results.sliceSplit("train").retrieveDoubles(trainTimeMetric.getter)[0],
+                benchmarkTrainTimes
+        );
+
+        String[] trainResStr = null;
+        if (correctedTrainTimes != null) {
+            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, correctedTrainTimes, cnames, dsets, dsetGroupings);
+            writeTableFile_ClassifierDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkTrainTimes, cnames, dsets);
+        }
+
+        double[][][] benchmarkTestTimes = results.sliceSplit("test").retrieveDoubles(benchmarkTimeMetric.getter)[0];
+        double[][][] correctedTestTimes = util_correctTimingsForBenchmarks(
+                results.sliceSplit("test").retrieveDoubles(testTimeMetric.getter)[0],
+                benchmarkTestTimes
+        );
+        String[] testResStr = null;
+        if (correctedTestTimes != null) {
+            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, testTimeMetric, correctedTestTimes, cnames, dsets, dsetGroupings);
+            writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkTestTimes, cnames, dsets);
+        }
+
+//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
+//        String[] estimateResStr = null;
+//        if (estimateTimes != null)
+//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
+
+        timingDiaFolderName = timingDiaFolderName.replace("gBENCHMARKED/", "g/");
+
         return new String[][] { trainResStr, testResStr };
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
@@ -854,7 +934,7 @@ public class ClassifierResultsAnalysis {
     protected static void matlab_buildTimingsDias(List<PerformanceMetric> metrics) {        
         MatlabController proxy = MatlabController.getInstance();
         
-        String diaFolder = expRootDirectory+"/"+timingDiaFolderName+"/";
+        String diaFolder = expRootDirectory+"/"+ timingDiaFolderName +"/";
         for (PerformanceMetric metric : metrics) {
             String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ? testLabel : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
@@ -882,34 +962,21 @@ public class ClassifierResultsAnalysis {
             
             out.closeFile();
         }
-        
-        
-        OutFile out = new OutFile(outPath + "TEXASPLOT_"+splitLabel+".csv");
-        out.writeString(cnames[0]);
-        for (int c = 1; c < cnames.length; c++)
-            out.writeString("," + cnames[c]);
-        out.writeLine("");
-        
-        for (int d = 0; d < dsets.length; d++) {
-            for (int f = 0; f < folds[0][0].length; f++) {
-                out.writeDouble(folds[0][d][f]);
-                for (int c = 1; c < cnames.length; c++)
-                    out.writeString("," + folds[c][d][f]);
-                out.writeLine("");
-            }
-        }
-        out.closeFile();
+
+        writeRawTableFile_ClassifierDatasetFolds(outPath + "TEXASPLOT_"+splitLabel+".csv", folds, cnames);
     }
-    
+
+
+
     protected static String fileHelper_tabulate(double[][] res, String[] cnames, String[] dsets) {
         StringBuilder sb = new StringBuilder();
         sb.append(fileHelper_header(cnames));
         
-        for (int i = 0; i < res[0].length; ++i) {
-            sb.append("\n").append(dsets[i]);
+        for (int dset = 0; dset < res[0].length; ++dset) {
+            sb.append("\n").append(dsets[dset]);
 
-            for (int j = 0; j < res.length; j++)
-                sb.append("," + res[j][i]);
+            for (int classifier = 0; classifier < res.length; classifier++)
+                sb.append("," + res[classifier][dset]);
         }      
         return sb.toString();
     }
@@ -918,11 +985,39 @@ public class ClassifierResultsAnalysis {
         StringBuilder sb = new StringBuilder();
         sb.append(fileHelper_header(cnames).substring(1));
         
-        for (int i = 0; i < res[0].length; ++i) {
-            sb.append("\n").append(res[0][i]);
-            for (int j = 1; j < res.length; j++)
-                sb.append("," + res[j][i]);
+        for (int dset = 0; dset < res[0].length; ++dset) {
+            sb.append("\n").append(res[0][dset]);
+            for (int classifier = 1; classifier < res.length; classifier++)
+                sb.append("," + res[classifier][dset]);
         }      
+        return sb.toString();
+    }
+
+    protected static String fileHelper_tabulate(double[][][] res, String[] cnames, String[] dsets) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(fileHelper_header(cnames));
+
+        for (int dset = 0; dset < res[0].length; ++dset) {
+            for (int fold = 0; fold < res[0][0].length; fold++) {
+                sb.append("\n").append(dsets[dset]).append("_").append(fold);
+                for (int classifier = 0; classifier < res.length; classifier++)
+                    sb.append("," + res[classifier][dset][fold]);
+            }
+        }
+        return sb.toString();
+    }
+
+    protected static String fileHelper_tabulateRaw(double[][][] res, String[] cnames) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(fileHelper_header(cnames).substring(1));
+
+        for (int dset = 0; dset < res[0].length; ++dset) {
+            for (int fold = 0; fold < res[0][0].length; fold++) {
+                sb.append("\n").append(res[0][dset][fold]);
+                for (int classifier = 1; classifier < res.length; classifier++)
+                    sb.append("," + res[classifier][dset][fold]);
+            }
+        }
         return sb.toString();
     }
     
@@ -947,6 +1042,15 @@ public class ClassifierResultsAnalysis {
             sb.append(",").append(StatisticalUtilities.standardDeviation(res[i], false, StatisticalUtilities.mean(res[i], false)));
         
         return sb.toString();
+    }
+
+    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
+        for (int classifier = 0; classifier < timings.length; classifier++)
+            for (int dset = 0; dset < timings[0].length; dset++)
+                for (int fold = 0; fold < timings[0][0].length; fold++)
+                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
+
+        return timings;
     }
     
     protected static double[][][] findTrainTestDiffs(double[][][] trainFoldAccs, double[][][] testFoldAccs) {
@@ -1401,9 +1505,9 @@ public class ClassifierResultsAnalysis {
         
         for (int i = 0; i < metrics.size(); i++) {
             if (metrics.get(i).equals(PerformanceMetric.buildTime))
-                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel);
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel, "RAW");
             else if (metrics.get(i).equals(PerformanceMetric.totalTestTime) || metrics.get(i).equals(testTimeMetric))
-                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel);
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel, "RAW");
             else 
                 jxl_buildStatSheets(wb, basePath, metrics.get(i), i);
         }
@@ -1431,17 +1535,17 @@ public class ClassifierResultsAnalysis {
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
     }
     
-    protected static void jxl_buildStatSheets_timings(WritableWorkbook wb, String basePath, PerformanceMetric metric, int statIndex, String evalSet) {        
+    protected static void jxl_buildStatSheets_timings(WritableWorkbook wb, String basePath, PerformanceMetric metric, int statIndex, String evalSet, String timingType) {
         // ************* the difference: timings folder assumed instead of going by the specific metric name
         //i.e Timings/TRAIN/TrainTimings and Timings/TEST/TestTimings    
         //instead of TrainTimings/TRAIN/TrainTimings ... 
-        String metricPath = basePath + "Timings/" + evalSet + "/";
+        String metricPath = basePath + "Timings"+timingType+"/" + evalSet + "/";
         
-        WritableSheet avgsSheet = wb.createSheet(metric.name, wb.getNumberOfSheets());
+        WritableSheet avgsSheet = wb.createSheet(metric.name+timingType, wb.getNumberOfSheets());
         String testCSV = metricPath + fileNameBuild_avgsFile(evalSet, metric);
         jxl_copyCSVIntoSheet(avgsSheet, testCSV);
 
-        WritableSheet summarySheet = wb.createSheet(metric.name+"SigDiffs", wb.getNumberOfSheets());
+        WritableSheet summarySheet = wb.createSheet(metric.name+timingType+"SigDiffs", wb.getNumberOfSheets());
         String summaryCSV = metricPath + fileNameBuild_summaryFile(evalSet, metric);
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
 

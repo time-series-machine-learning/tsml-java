@@ -404,7 +404,7 @@ public class Experiments  {
      * 5) Samples the dataset.
      * 6) If we're good to go, runs the experiment.
      */
-    public static void setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
+    public static ClassifierResults[] setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
         //todo: when we convert to e.g argparse4j for parameter passing, add a para 
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there. 
@@ -449,7 +449,7 @@ public class Experiments  {
         //Check whether fold already exists, if so, dont do it, just quit
         if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-            return;
+            return null;
         }
         else {     
             Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
@@ -475,12 +475,14 @@ public class Experiments  {
                 targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
                 if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
                     LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                    return;
+                    return null;
                 }
             }
 
-            double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
+            ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
+
+            return results;
         }
     }
     
@@ -508,7 +510,7 @@ public class Experiments  {
      */
 
 
-    public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
+    public static ClassifierResults[] runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
         
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
@@ -521,8 +523,10 @@ public class Experiments  {
         //these train results shall now be initialised regardless of whether
         //we're going to write them out, to store at minimum the build times
         ClassifierResults trainResults = new ClassifierResults();
-        ClassifierResults testResults = new ClassifierResults(); 
-        
+        ClassifierResults testResults = new ClassifierResults();
+
+        long benchmark = findBenchmarkTime(expSettings);
+
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
                 
         try {
@@ -544,7 +548,7 @@ public class Experiments  {
             buildTime = System.nanoTime() - buildTime;
             LOGGER.log(Level.FINE, "Training complete");
 
-            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime);
+            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
             //At this stage, regardless of whether the classifier is able to estimate it's 
             //own accuracy or not, train results should contain either
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false 
@@ -564,15 +568,13 @@ public class Experiments  {
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
                 //no reason not to check again
                 if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    long testBenchmark = findBenchmarkTime(expSettings);
-                    
                     testResults = evaluateClassifier(expSettings, classifier, testSet);
                     assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
                     
                     testResults.setParas(trainResults.getParas());
                     
                     testResults.turnOffZeroTimingsErrors();
-                    testResults.setBenchmarkTime(testBenchmark);
+                    testResults.setBenchmarkTime(benchmark);
                     testResults.setBuildTime(trainResults.getBuildTime());
                     testResults.turnOnZeroTimingsErrors();
                     
@@ -585,16 +587,16 @@ public class Experiments  {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);
                 }
-                return testResults.getAcc();
+                return new ClassifierResults[] { trainResults, testResults };
             } 
             else {
-                return 0; //not error, but we dont have a test acc. just returning 0 for now
+                return new ClassifierResults[] { trainResults, null }; //not error, but we dont have a test acc. just returning 0 for now
             }
         } 
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            return -1; //error state
+            return null; //error state
         }
     }
 
@@ -618,7 +620,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception 
      */
-    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime) throws Exception { 
+    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
         
         /*
         if estimateacc { //want full predictions
@@ -647,8 +649,11 @@ public class Experiments  {
             
             if (classifier instanceof EnhancedAbstractClassifier) {
                 EnhancedAbstractClassifier eac = ((EnhancedAbstractClassifier)classifier);
-                if (eac.getEstimateOwnPerformance())
-                    return eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
+                if (eac.getEstimateOwnPerformance()) {
+                    ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
+                    res.setBenchmarkTime(benchmarkTime);
+                    return res;
+                }
                 else {
                     timingToUpdateWith = eac.getTrainResults().getBuildTime(); //update with classifier's own timings instead
                     paras = eac.getParameters();
@@ -658,13 +663,18 @@ public class Experiments  {
             //update the externally produced results with the appropriate timing
             trainResults.setBuildTime(timingToUpdateWith);
             trainResults.setBuildPlusEstimateTime(timingToUpdateWith + trainResults.getErrorEstimateTime());
+            trainResults.setBenchmarkTime(benchmarkTime);
             trainResults.setParas(paras);
         }
         else { // just want the timings
-            if (classifier instanceof EnhancedAbstractClassifier)
-                return ((EnhancedAbstractClassifier)classifier).getTrainResults(); //classifier recorded timings/paras internally, just return that directly
-            else 
+            if (classifier instanceof EnhancedAbstractClassifier) {
+                trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
+                trainResults.setBenchmarkTime(benchmarkTime);
+            }
+            else {
                 trainResults.setBuildTime(buildTime);
+                trainResults.setBenchmarkTime(benchmarkTime);
+            }
         }
         
         return trainResults;
