@@ -18,7 +18,7 @@ package experiments;
 import experiments.Experiments.ExperimentalArguments;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSC45;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSSpatialPyramids;
+import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import timeseriesweka.classifiers.distance_based.*;
 import timeseriesweka.classifiers.frequency_based.cRISE;
@@ -29,7 +29,6 @@ import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
 import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
 import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.interval_based.TSBF;
 import timeseriesweka.classifiers.interval_based.LPS;
 import timeseriesweka.classifiers.frequency_based.RISE;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
@@ -76,7 +75,7 @@ public class ClassifierLists {
             "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
             "DD_DTW","DTD_C", "NN_CID","MSM","TWE","WDTW",
 //Dictionary Based
-            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "BOSSSpatialPyramids","BoTSWEnsemble",
+            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS","BoTSWEnsemble",
 //Interval Based
             "LPS","TSF","cTSF",
 //Frequency Based
@@ -158,7 +157,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "BOSSSpatialPyramids", "BoTSWEnsemble"};
+        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS", "BoTSWEnsemble"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -183,8 +182,8 @@ public class ClassifierLists {
             case "BOSSC45":
                 c = new BOSSC45();
                 break;
-            case "BOSSSpatialPyramids":
-                c = new BOSSSpatialPyramids();
+            case "SpatialBOSS":
+                c = new SpatialBOSS();
                 break;
             case "BoTSWEnsemble":
                 c = new BoTSWEnsemble();
@@ -463,7 +462,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {   };
+    public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CAWPE_AS_COTE","CAWPE_AS_COTE_NO_EE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -483,7 +482,7 @@ public class ClassifierLists {
                 break;
             case "CAWPEFROMFILE":
                 if(canLoadFromFile){
-                    String[] classifiers={"TSF","BOSS","RISE","ST"};
+                    String[] classifiers={"TSF","BOSS","RISE","STC","EE"};
                     c=new CAWPE();
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
