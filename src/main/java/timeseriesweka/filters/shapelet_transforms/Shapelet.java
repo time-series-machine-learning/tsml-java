@@ -155,7 +155,7 @@ public class Shapelet implements Comparable<Shapelet>, Serializable
     }
     
     //this rertuns the first channel.
-    public double[] getUniveriateShapeletContent(){
+    public double[] getUnivariateShapeletContent(){
         return content.getShapeletContent(0);
     }
 
