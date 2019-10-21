@@ -279,7 +279,7 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
 
   @Override
   public void buildClassifier(final Instances samples) throws Exception {
-    long t1=System.currentTimeMillis();
+    long t1=System.nanoTime();
 
     if (samples.classIndex() != samples.numAttributes()-1)
       throw new Exception("WEASEL_BuildClassifier: Class attribute not set as last attribute in dataset");
@@ -369,7 +369,7 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
     
     //NOTE TODO : prior to refactor, the estimate time was being included in the build time
     //measurement. I have retained that here for continuity, shout at jamesl otherwise
-    long t2=System.currentTimeMillis();
+    long t2=System.nanoTime();
     trainResults.setClassifierName(getClassifierName());
     trainResults.setParas(classifierName);
     trainResults.setBuildTime(t2-t1);
