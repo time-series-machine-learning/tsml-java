@@ -72,10 +72,10 @@ public class StackingOnExtendedSetOfFeatures extends AbstractStacking {
             instData[i++] = entropy;
         }
         
-        assert(i == numOutputAtts-2);
+        assert(i == numOutputAtts-1);
         
         if (classVal != null)
-            instData[numOutputAtts-1] = classVal; 
+            instData[i] = classVal; 
         //else irrelevent 
         
         instsHeader.add(new DenseInstance(1.0, instData));

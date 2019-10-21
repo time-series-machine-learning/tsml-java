@@ -16,7 +16,6 @@ package timeseriesweka.filters;
 
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
-import utilities.ClassifierTools;
 import static utilities.rescalers.ZNormalisation.ROUNDING_ERROR_CORRECTION;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -39,11 +38,16 @@ import weka.filters.SimpleBatchFilter;
  */
 public class MatrixProfile extends SimpleBatchFilter{
     
-    private int windowSize = 3;
+    private int windowSize = 10;
     private final int stride = 1; // to-do later (maybe!)
     private double[][] distances;
     private int[][] indices;
-    
+
+    public MatrixProfile(){
+        this(10);
+    }
+
+
     public MatrixProfile(int windowSize){
         this.windowSize = windowSize;
     }
@@ -54,15 +58,15 @@ public class MatrixProfile extends SimpleBatchFilter{
         int seriesLength = instances.numAttributes()-(instances.classIndex()>=0?1:0);
         
         if(windowSize < 3){
-            throw new Exception("Error: window must be at least 3. You have specified "+windowSize);
+//            throw new Exception("Error: window must be at least 3. You have specified "+windowSize);
+            if(m_Debug)
+                System.out.println("Error: window must be at least 3. You have specified "+windowSize+" Setting it to 3");
+            windowSize=3;
         }
-        
-        if(windowSize > seriesLength){
-            throw new Exception("Error: window must be smaller than the number of attributes. Window length: "+windowSize+", series length: "+seriesLength);
-        }
-        
-        if(seriesLength/4 < windowSize){
-            throw new Exception("Error: the series length must be at least 4 times larger than the window size to satisfy the exclusion zone criteria for trivial matches. These instances have a series length of "+seriesLength+"; the maximum window size is therefore "+(seriesLength/4)+" and you have specified "+windowSize);
+        else if(windowSize>seriesLength/4){
+            if(m_Debug)
+                System.out.println("Error: the series length must be at least 4 times larger than the window size to satisfy the exclusion zone criteria for trivial matches. These instances have a series length of "+seriesLength+"; the maximum window size is therefore "+(seriesLength/4)+" and you have specified "+windowSize);
+            windowSize=seriesLength/4;
         }
         
         SingleInstanceMatrixProfile mpIns;

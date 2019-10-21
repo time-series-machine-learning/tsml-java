@@ -15,14 +15,12 @@ package timeseriesweka.classifiers.frequency_based;
  */
 import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 import timeseriesweka.filters.Fast_FFT;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.ClassifierTools;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -42,6 +40,7 @@ import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
 import timeseriesweka.classifiers.SubSampleTrainer;
+import timeseriesweka.classifiers.Tuneable;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
@@ -58,7 +57,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 * A2. Test whether we need all four components, particularly AR and PACF!
 * A3. Implement speed up to avoid recalculating ACF each time
 * A4. Compare to python version
-* 
+*
  <!-- globalinfo-start -->
  * Random Interval Spectral Ensemble
  *
@@ -87,10 +86,10 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  <!-- technical-bibtex-end -->
  <!-- options-start -->
  * Valid options are: <p/>
- * 
+ *
  * <pre> -T
  *  set number of trees.</pre>
- * 
+ *
  * <pre> -F
  *  set number of features.</pre>
  <!-- options-end -->
@@ -99,33 +98,32 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  **/
 
 
-public class RISE extends AbstractClassifierWithTrainingInfo implements SaveParameterInfo, SubSampleTrainer, Randomizable,TechnicalInformationHandler{
+public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer, Randomizable,TechnicalInformationHandler, Tuneable{
     /** Default to a random tree */
     private Classifier baseClassifierTemplate=new RandomTree();
-    /** Ensemble base classifiers */    
+    /** Ensemble base classifiers */
     private Classifier[] baseClassifiers;
-    /** Ensemble size */    
+    /** Ensemble size */
     private static int DEFAULT_NUM_CLASSIFIERS=500;
     private int numBaseClassifiers=DEFAULT_NUM_CLASSIFIERS;
-    /** Random Intervals for the transform. INTERVAL BOUNDS ARE INCLUSIVE  */  
+    /** Random Intervals for the transform. INTERVAL BOUNDS ARE INCLUSIVE  */
     private int[] startPoints;
     private int[] endPoints;
-    /** Minimum size of all intervals */    
+    /** Minimum size of all intervals */
     private static int DEFAULT_MIN_INTERVAL=16;
     private int minInterval=DEFAULT_MIN_INTERVAL;
-    
+
     /**Can seed for reproducibility */
-    private Random rand;
-    private boolean setSeed=false;
     SimpleFilter[] filters;
-    /** Power Spectrum transformer, probably dont need to store this here  */   
+    /** Power Spectrum transformer, probably dont need to store this here  */
 //    private PowerSpectrum ps=new PowerSpectrum();
-    
+
     /** If we are estimating the CV, it is possible to sample fewer elements. **/
-    //Really should try bagging this!    
+    //Really should try bagging this!
     private boolean subSample=false;
     private double sampleProp=1;
     public RISE(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
         filters=new SimpleFilter[3];
         ACF acf= new ACF();
         acf.setNormalized(false);
@@ -137,17 +135,22 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     }
     public RISE(int s){
         this();
-        seed=s;
-        setSeed=true;
-        rand.setSeed(seed);
-        
+        setSeed(s);
     }
+
+    /*
+     * New default for speed.
+     */
+    public void setFastRISE(){
+        this.setTransforms("FFT", "ACF");
+    }
+
     /**
      * This interface is not formalised and needs to be considered in the next
      * review
      * @param prop
-     * @param s 
-     */    
+     * @param s
+     */
     @Override
     public void subSampleTrain(double prop, int s){
         subSample=true;
@@ -172,6 +175,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                     break;
                 case "PS": case "PowerSpectrum":
                     filters[count]= new PowerSpectrum();
+                    ((PowerSpectrum)filters[count]).useFFT();
                     break;
                 case "FFT":
                     filters[count] = new Fast_FFT();
@@ -192,37 +196,33 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             filters=temp;
         }
     }
-    
+
     /**
     * Changes the base classifier,
     * @param c new base classifier
-    */    
+    */
     public void setBaseClassifier(Classifier c){
         baseClassifierTemplate=c;
     }
     /**
-     * 
+     *
      * @param k Ensemble size
      */
     public void setNumClassifiers(int k){
         numBaseClassifiers=k;
     }
     /**
-     * 
+     *
      * @return number of classifiers in the ensemble
      */
-    public int getNumClassifiers(){ 
+    public int getNumClassifiers(){
         return numBaseClassifiers;
     }
     /**
-     * Holders for the headers of each transform. 
-     */    
+     * Holders for the headers of each transform.
+     */
     Instances[] testHolders;
-    public void setSeed(int s){
-        rand=new Random();
-        this.seed=seed;
-        rand.setSeed(seed);
-    }
+    
     @Override
     public TechnicalInformation getTechnicalInformation() {
     TechnicalInformation 	result;
@@ -234,12 +234,12 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
     result.setValue(TechnicalInformation.Field.VOLUME, "12");
     result.setValue(TechnicalInformation.Field.NUMBER, "5");
     result.setValue(TechnicalInformation.Field.PAGES, "NA");
-    
+
     return result;
   }
   /**
    * Parses a given list of options to set the parameters of the classifier.
-   * We use this for the tuning mechanism, setting parameters through setOptions 
+   * We use this for the tuning mechanism, setting parameters through setOptions
    <!-- options-start -->
    * Valid options are: <p/>
    * <pre> -K
@@ -251,7 +251,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
    * <pre> -T
         transforms, a space separated list.
    * </pre>
-   * 
+   *
    <!-- options-end -->
    *
    * @param options the list of options as an array of strings
@@ -264,15 +264,18 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             numBaseClassifiers = Integer.parseInt(numCls);
         else
             numBaseClassifiers = DEFAULT_NUM_CLASSIFIERS;
-    /** Minimum sizer of all intervals */    
+    /** Minimum size of all intervals */
         String minInt=Utils.getOption('I', options);
         if (minInt.length() != 0)
             minInterval=Integer.parseInt(minInt);
-    /** Transforms to use */    
+    /** Transforms to use */
+
         String trans=Utils.getOption('T', options);
-        String[] t= trans.split(" ");
-//NEED TO CHECK THIS WORKS        
-        setTransforms(t);
+        if(trans.length()!=0){
+            String[] t= trans.split(" ");
+    //NEED TO CHECK THIS WORKS
+            setTransforms(t);
+        }
     }
 
     @Override
@@ -281,9 +284,9 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         for(int i=0;i<filters.length;i++)
             str+=",Filter"+i+","+filters[i].getClass().getSimpleName();
         return str;
-        
+
     }
-  
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         // can classifier handle the data?
@@ -295,18 +298,18 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         endPoints =new int[numBaseClassifiers];
 //      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         long start=System.currentTimeMillis();
-        //Option to sub sample for training        
+        //Option to sub sample for training
          if(subSample){
             data=subSample(data,sampleProp,seed);
             System.out.println(" TRAIN SET SIZE NOW "+data.numInstances());
         }
-         
-        //Initialise the memory 
+
+        //Initialise the memory
         baseClassifiers=new Classifier[numBaseClassifiers];
         testHolders=new Instances[numBaseClassifiers];
         //Select random intervals for each tree
         for(int i=0;i<numBaseClassifiers;i++){
-            //Do whole series for first classifier            
+            //Do whole series for first classifier
             if(i==0){
                 startPoints[i]=0;
                 endPoints[i]=m-1;
@@ -315,9 +318,9 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                 //Random interval at least minInterval in size
                 startPoints[i]=rand.nextInt(m-minInterval);
                 //This avoid calling nextInt(0)
-                if(startPoints[i]==m-1-minInterval) 
+                if(startPoints[i]==m-1-minInterval)
                     endPoints[i]=m-1;
-                else{    
+                else{
                     endPoints[i]=rand.nextInt(m-startPoints[i]);
                     if(endPoints[i]<minInterval)
                         endPoints[i]=minInterval;
@@ -332,13 +335,13 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                     name = "F"+j;
                     atts.add(new Attribute(name));
             }
-            //Get the class values as a fast vector			
+            //Get the class values as a fast vector
             Attribute target =data.attribute(data.classIndex());
             ArrayList<String> vals=new ArrayList<>(target.numValues());
             for(int j=0;j<target.numValues();j++)
                     vals.add(target.value(j));
             atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));
-            //create blank instances with the correct class value                
+            //create blank instances with the correct class value
             Instances result = new Instances("Tree",atts,data.numInstances());
             result.setClassIndex(result.numAttributes()-1);
             for(int j=0;j<data.numInstances();j++){
@@ -346,11 +349,11 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
                 double[] v=data.instance(j).toDoubleArray();
                 for(int k=0;k<numFeatures;k++)
                     in.setValue(k,v[startPoints[i]+k]);
-            //Set interval features                
+            //Set interval features
                 in.setValue(result.numAttributes()-1,data.instance(j).classValue());
                 result.add(in);
             }
-            testHolders[i] =new Instances(result,0);       
+            testHolders[i] =new Instances(result,0);
             DenseInstance in=new DenseInstance(result.numAttributes());
             testHolders[i].add(in);
             //Perform the transform
@@ -358,13 +361,13 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
 
 //Build Classifier: Defaults to a RandomTree, but WHY ALL THE ATTS?
             if(baseClassifierTemplate instanceof RandomTree){
-                baseClassifiers[i]=new RandomTree();   
+                baseClassifiers[i]=new RandomTree();
                 ((RandomTree)baseClassifiers[i]).setKValue(numFeatures);
             }
             else
                baseClassifiers[i]=AbstractClassifier.makeCopy(baseClassifierTemplate);
             //if(baseClassifiers[i] instanceof Randomisable)
-            if(baseClassifiers[i] instanceof Randomizable && setSeed)
+            if(baseClassifiers[i] instanceof Randomizable && seedClassifier)
                 ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
@@ -377,7 +380,7 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             Instances[] t=new Instances[filters.length];
             for(int j=0;j<filters.length;j++){
 // Im not sure this a sensible or robust way of doing this
-//What if L meant something else to the SimpleFilter? 
+//What if L meant something else to the SimpleFilter?
 //Can you use a whole string, e.g. MAXLAG?
                 filters[j].setOptions(new String[]{"L",maxLag+""});
                 filters[j].setInputFormat(result);
@@ -410,16 +413,16 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
             Instances temp=filterData(testHolders[i]);
             int c=(int)baseClassifiers[i].classifyInstance(temp.instance(0));
             votes[c]++;
-            
+
         }
         for(int i=0;i<votes.length;i++)
             votes[i]/=baseClassifiers.length;
         return votes;
     }
-   
+
     public static void main(String[] arg) throws Exception{
 
-        Instances data = loadDataNullable(DatasetLists.beastPath + "TSCProblems" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
@@ -460,37 +463,51 @@ public class RISE extends AbstractClassifierWithTrainingInfo implements SavePara
         for(Filter f: rif.filters)
             System.out.println(f);
         System.exit(0);
-        
+
         rif.buildClassifier(train);
         System.out.println("build ok:");
         double a=ClassifierTools.accuracy(test, rif);
         System.out.println(" Accuracy ="+a);*/
 /*
-        //Get the class values as a fast vector			
+        //Get the class values as a fast vector
         Attribute target =data.attribute(data.classIndex());
 
         FastVector vals=new FastVector(target.numValues());
         for(int j=0;j<target.numValues();j++)
                 vals.addElement(target.value(j));
         atts.addElement(new Attribute(data.attribute(data.classIndex()).name(),vals));
-//Does this create the actual instances?                
+//Does this create the actual instances?
         Instances result = new Instances("Tree",atts,data.numInstances());
         for(int i=0;i<data.numInstances();i++){
             DenseInstance in=new DenseInstance(result.numAttributes());
             result.add(in);
         }
         result.setClassIndex(result.numAttributes()-1);
-        Instances testHolder =new Instances(result,10);       
-//For each tree   
+        Instances testHolder =new Instances(result,10);
+//For each tree
         System.out.println("Train size "+result.numInstances());
         System.out.println("Test size "+testHolder.numInstances());
 */
     }
 
     @Override
-    public int getSeed() {
-        if(setSeed)
-            return seed;
-        throw new RuntimeException("RISE: calling getSeed but setSeed is false"); //To change body of generated methods, choose Tools | Templates.
+    public ParameterSpace getDefaultParameterSearchSpace(){
+   //TUNED TSC Classifiers
+   
+//   TESTY
+  /* Valid options are: <p/>
+  * <pre> -T Number of base classifiers.
+   * <pre> -I min Interval, integer, should be in range 3 to m-MINa check in build classifier is made to see if if.
+   * </pre>   */
+        ParameterSpace ps=new ParameterSpace();
+        String[] numTrees={"100","200","300","400","500","600"};
+        ps.addParameter("-K", numTrees);
+        String[] minInterv={"4","8","16","32","64","128"};
+        ps.addParameter("-I", minInterv);
+        String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
+        ps.addParameter("-T", transforms);
+        return ps;
     }
+
+
 }

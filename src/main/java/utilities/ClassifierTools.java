@@ -18,8 +18,10 @@ package utilities;
 
  */
 
+import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
+import experiments.data.DatasetLoading;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Random;
@@ -245,7 +247,7 @@ public class ClassifierTools {
 
     }
 		
-    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed){
+    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed) throws Exception{
         Random rand = new Random(seed);   // create seeded number generator
         Instances randData = new Instances(data);   // create copy of original data
         randData.randomize(rand);         // randomize data with number generator
@@ -255,19 +257,14 @@ public class ClassifierTools {
         for (int n = 0; n < folds; n++) {
            Instances train = randData.trainCV(folds, n);
            Instances test = randData.testCV(folds, n);
-           try{
-               c.buildClassifier(train);
-                for(Instance ins:test){
-                    int pred=(int)c.classifyInstance(ins);
-                    if(pred==ins.classValue())
-                        correct++;
-                }
+           c.buildClassifier(train);
+            for(Instance ins:test){
+                int pred=(int)c.classifyInstance(ins);
+                if(pred==ins.classValue())
+                    correct++;
+            }
 //                System.out.println("Finished fold "+n+" acc ="+((double)correct/((n+1)*test.numInstances())));
-           }catch(Exception e){
-               System.err.println("ERROR BUILDING FOLD "+n+" for data set "+data.relationName());
-               e.printStackTrace();
-               System.exit(1);
-           }
+  
         }            
         return ((double)correct)/total;
     }
@@ -699,4 +696,41 @@ public class ClassifierTools {
         return data;
     }
         
+    
+    /**
+     * Simple utility method to evaluate the given classifier on the ItalyPowerDemand dataset (fold 0)
+     * and return the results. 
+     */
+    public static ClassifierResults testUtils_evalOnIPD(Classifier c) throws Exception { 
+        int seed = 0;
+        
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(seed, true, true);
+        
+        return eval.evaluate(c, data[0], data[1]);
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * in order to get the expected accuracy in the first place. It is up to the human 
+     * that the value returned is in fact 'correct' to the best of their knowledge, 
+     * tests of this nature will only confirm reproducability, but the classifier
+     * could e.g. be consistently WRONG.
+     */
+    public static double testUtils_getIPDAcc(Classifier c) throws Exception { 
+        return testUtils_evalOnIPD(c).getAcc();
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * and compare the test accuracy to a given expected value (defined by prior 
+     * experimentation/confirmation by human). 
+     */
+    public static boolean testUtils_confirmIPDReproduction(Classifier c, double expectedTestAccuracy, String dateOfExpectedAcc) throws Exception { 
+        ClassifierResults res = testUtils_evalOnIPD(c);
+        System.out.println("Expected accuracy generated " + dateOfExpectedAcc);
+        System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
+        return res.getAcc() == expectedTestAccuracy;
+    }
+    
 }

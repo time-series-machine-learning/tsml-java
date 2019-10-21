@@ -13,30 +13,24 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.distance_based;
-import fileIO.OutFile;
 import java.util.ArrayList;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
-import utilities.ClassifierTools;
-import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka_extras.classifiers.SaveEachParameter;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
 import weka.core.*;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
 /* 
 This classifier does the full 101 parameter searches for window. 
 It is only here for comparison to faster methods
  */
 
-public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInfo, TrainAccuracyEstimator,SaveEachParameter,ParameterSplittable{
+public class SlowDTW_1NN extends EnhancedAbstractClassifier  implements SaveEachParameter,ParameterSplittable{
     private boolean optimiseWindow=false;
     private double windowSize=1;
     private int maxPercentageWarp=100;
@@ -48,11 +42,9 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     HashMap<Integer,Double> distances;
     double maxR=1;
     ArrayList<Double> accuracy=new ArrayList<>();
-    String trainPath;
     protected String resultsPath;
     protected boolean saveEachParaAcc=false;
-    private ClassifierResults res =new ClassifierResults();
-    
+        
     @Override
     public void setPathToSaveParameters(String r){
             resultsPath=r;
@@ -62,48 +54,30 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     public void setSaveEachParaAcc(boolean b){
         saveEachParaAcc=b;
     }
- @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainPath=train;
-    }  
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        if(setCV==true)
-            throw new UnsupportedOperationException("Doing a top leve CV is not yet possible for SlowDTW_1NN. It cross validates to optimize, so could store those, but will be biased"); //To change body of generated methods, choose Tools | Templates.
-//This method doe
-    }
-    
     
 //Think this always does para search?
 //    @Override
 //    public boolean findsTrainAccuracyEstimate(){ return findTrainAcc;}
-    
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-        return res;
-    }      
+       
       @Override
     public String getParas() { //This is redundant really.
         return getParameters();
     }
 
-    @Override
-    public double getAcc() {
-        return res.getAcc();
-    }  
 
     public SlowDTW_1NN(){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=new DTW();
         accuracy=new ArrayList<>();
     }
     public SlowDTW_1NN(DTW_DistanceBasic d){
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);    
         dtw=d;
         accuracy=new ArrayList<>();
     }
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.getBuildTime()+",CVAcc,"+res.getAcc()+",Memory,"+res.getMemory();
+        String result="BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",Memory,"+trainResults.getMemory();
         result+=",BestWarpPercent,"+bestWarp+",AllAccs,";
        for(double d:accuracy)
             result+=","+d;
@@ -122,8 +96,8 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
     public int getWindowSize(){ return dtw.getWindowSize(train.numAttributes()-1);}
 
     @Override
-    public void buildClassifier(Instances d){
-        res =new ClassifierResults();
+    public void buildClassifier(Instances d) throws Exception{
+        trainResults =new ClassifierResults();
         long t=System.nanoTime();
         
         train=d;
@@ -152,40 +126,20 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
             System.out.println("OPTIMAL WINDOW ="+maxR+" % which gives a warp of"+bestWarp+" data");
   //          dtw=new DTW();
             dtw.setR(maxR/100.0);
-            res.setAcc(maxAcc);
+            trainResults.setAcc(maxAcc);
         }
         try {
-            res.setBuildTime(System.nanoTime()-t);
+            trainResults.setBuildTime(System.nanoTime()-t);
         } catch (Exception e) {
             System.err.println("Inheritance preventing me from throwing this error...");
             System.err.println(e);
         }
         Runtime rt = Runtime.getRuntime();
         long usedBytes = (rt.totalMemory() - rt.freeMemory());
-        res.setMemory(usedBytes);
+        trainResults.setMemory(usedBytes);
         
         
-        if(trainPath!=null && trainPath!=""){  //Save basic train results
-//            
-//NEED TO FIND THE TRAIN ESTIMATES FOR EACH TEST HERE            
-//            OutFile f= new OutFile(trainPath);
-//            f.writeLine(train.relationName()+",FastDTW_1NN,Train");
-//            f.writeLine(getParameters());
-//            f.writeLine(res.getAcc()+"");
-//            for(int i=0;i<train.numInstances();i++){
-//                Instance test=train.remove(i);
-//                int pred=(int)classifyInstance(test);
-//                f.writeString((int)test.classValue()+","+pred+",");
-//                for(int j=0;j<train.numClasses();j++){
-//                    if(j==pred)
-//                        f.writeString(",1");
-//                    else
-//                        f.writeString(",0");
-//                }
-//                f.writeString("\n");
-//                train.add(i,test);
-//            }
-
+        if(getEstimateOwnPerformance()){  //Save basic train results
             long estTime = System.nanoTime();
             for(int i=0;i<train.numInstances();i++){
                 Instance test=train.remove(i);
@@ -197,30 +151,22 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
                 double[] dist = new double[train.numClasses()];
                 dist[pred] = 1.0;
                 
-                res.addPrediction(test.classValue(), dist, pred, predTime, "");
+                trainResults.addPrediction(test.classValue(), dist, pred, predTime, "");
                     
                 train.add(i,test);
             }
             estTime = System.nanoTime() - estTime;
-            res.setErrorEstimateTime(estTime);
-            res.setErrorEstimateMethod("cv_loo");
+            trainResults.setErrorEstimateTime(estTime);
+            trainResults.setErrorEstimateMethod("cv_loo");
             
-            res.setClassifierName("SlowDTW_1NN");
-            res.setDatasetName(train.relationName());
-            res.setSplit("train");
+            trainResults.setClassifierName("SlowDTW_1NN");
+            trainResults.setDatasetName(train.relationName());
+            trainResults.setSplit("train");
             //no foldid/seed
-            res.setNumClasses(train.numClasses());
-            res.setParas(getParameters());
-            res.setTimeUnit(TimeUnit.NANOSECONDS);
-            
-            
-            try {
-                res.writeFullResultsToFile(trainPath);
-            } catch(Exception e) {
-                System.out.println("Train file writing failed, cannot throw exception up since "
-                        + "dependent class does not handle it and dont want to change it. "
-                        + "As with previous implementation of train file writing, just going to continue");
-            }
+            trainResults.setNumClasses(train.numClasses());
+            trainResults.setParas(getParameters());
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            trainResults.finaliseResults();
         }        
         
     }
@@ -309,7 +255,7 @@ answer is to store those without the abandon in a hash table indexed by i and j,
 //        System.out.println("trainSize ="+trainSize+" stored ="+storeCount+" recovered "+recoverCount);
         return a/(double)trainSize;
     }
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
             SlowDTW_1NN c = new SlowDTW_1NN();
             String path="C:\\Research\\Data\\Time Series Data\\Time Series Classification\\";
 

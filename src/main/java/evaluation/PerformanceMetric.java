@@ -46,7 +46,9 @@ public class PerformanceMetric {
     /**
      * currently only used for the pairwise scatter diagrams in the pipeline, 
      * this refers to the descriptor for comparing the scores of a metric between 
-     * classifiers. e.g 'this is {better,worse,slower} than that' 
+     * classifiers
+     *
+     * If the raw value of a is HIGHER than b, then a is {better,worse,slower,faster,etc.} than b
      */
     public String comparisonDescriptor;
     
@@ -83,6 +85,10 @@ public class PerformanceMetric {
     public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis,         median, min, slower);
     public static PerformanceMetric totalTestTime   = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_totalTestTimeDoubleMillis,      median, min, slower);
     public static PerformanceMetric avgTestPredTime = new PerformanceMetric("AvgPredTimes", ClassifierResults.GETTER_avgTestPredTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric fromScratchEstimateTime = new PerformanceMetric("FromScratchEstimateTimes", ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric totalBuildPlusEstimateTime = new PerformanceMetric("TotalBuildPlusEstimateTimes", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillis, median, min, slower);
+    public static PerformanceMetric additionalTimeForEstimate = new PerformanceMetric("AdditionalTimesForEstimates", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillis, median, min, slower);
+    public static PerformanceMetric benchmarkTime = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
