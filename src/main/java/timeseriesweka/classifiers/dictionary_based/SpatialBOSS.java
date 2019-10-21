@@ -27,6 +27,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import experiments.Experiments;
 import utilities.InstanceTools;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.core.TechnicalInformation;
@@ -504,7 +506,9 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         for (BOSSWindow classifier : classifiers) {
             if (serOption == SerialiseOptions.STORE_LOAD)
                 classifier.load();
+
             double classification = classifier.classifyInstance(test);
+
             if (serOption == SerialiseOptions.STORE_LOAD)
                 classifier.clearClassifier();
             classHist[(int)classification]++;
@@ -562,15 +566,27 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     }
 
      public static void main(String[] args) throws Exception{
+//         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+//         exp.dataReadLocation =  "C:/TSCProblems2018/";
+//         exp.resultsWriteLocation = "C:/Temp/spatialboss/";
+//         exp.classifierName = "SpatialBOSS";
+//         exp.datasetName = "Arrowhead";
+//         exp.generateErrorEstimateOnTrainSet = true;
+//         exp.forceEvaluation = true;
+//         exp.foldId = 1;
+//
+//         Experiments.setupAndRunExperiment(exp);
+
+
         //Minimum working example
         String dataset = "ItalyPowerDemand";
         Instances train = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("C:\\TSC Problems\\"+dataset+"\\"+dataset+"_TEST.arff");
-        
+
         Classifier c = new SpatialBOSS();
         c.buildClassifier(train);
         double accuracy = ClassifierTools.accuracy(test, c);
-        
+
         System.out.println("BOSSEnsembleSP accuracy on " + dataset + " fold 0 = " + accuracy);
         
         //Other examples/tests
@@ -1334,7 +1350,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
          * @return classification
          */
         public double classifyInstance(int test) {
-            double bestSimilarity = 0.0;
+            double bestSimilarity = -1.0;
             double nn = -1.0;
 
             SPBag testSPBag = bags.get(test);
