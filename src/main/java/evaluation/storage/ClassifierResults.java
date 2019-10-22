@@ -391,6 +391,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.errorEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime - cr.buildTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
 
     private static double toDoubleMillis(long time, TimeUnit unit) {
         if (time < 0)
