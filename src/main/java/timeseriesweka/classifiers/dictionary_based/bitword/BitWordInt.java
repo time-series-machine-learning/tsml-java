@@ -38,16 +38,21 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         STRING;         //as string of actual characters
     }
 
-    protected static final String[] alphabet = { "a","b","c","d","e","f","g","h","i","j" };
+    private static final String[] alphabet = { "a","b","c","d","e","f","g","h","i","j" };
 
-    protected static String[] alphabetSymbols = { "a","b","c","d" };
+    private static String[] alphabetSymbols = { "a","b","c","d" };
 
-    protected int word;
-    protected byte length;
+    private int word;
+    private byte length;
+
+    //ALPHABETSIZE CURRENTLY ASSUMED TO BE 4, THEREFORE 2 BITS PER LETTER, AND MAX WORD LENGTH 16
+    public static final int WORD_SPACE = 32; //length of int
+    public static final int BITS_PER_LETTER = 2;
+    public static final int MAX_LENGTH = 16; //WORD_SPACE/BITS_PER_LETTER;
 
     //masks
-    protected static final int POP_MASK = 0b11;
-    protected static final int [] LETTER_MASKS = { //again, assumes alphabetsize = 4 still
+    private static final int POP_MASK = 0b11;
+    private static final int [] LETTER_MASKS = { //again, assumes alphabetsize = 4 still
             0b00000000000000000000000000000011,
             0b00000000000000000000000000001100,
             0b00000000000000000000000000110000,
@@ -65,80 +70,82 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
             0b00110000000000000000000000000000,
             0b11000000000000000000000000000000
     };
-    
-    //ALPHABETSIZE CURRENTLY ASSUMED TO BE 4, THEREFORE 2 BITS PER LETTER, AND MAX WORD LENGTH 16
-    public static final int WORD_SPACE = 32; //length of int
-    public static final int BITS_PER_LETTER = 2;
-    public static final int MAX_LENGTH = 16; //WORD_SPACE/BITS_PER_LETTER;
-    
+
     public BitWordInt() {
         word = 0;
         length = 32;
     }
-    
+
     public BitWordInt(BitWordInt bw) {
         this.word = bw.word;
         this.length = bw.length;
     }
-     
+
     public BitWordInt(int length) {//throws Exception {
 //        if (length > MAX_LENGTH)
 //            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + length);
-        
+
         word = 0;
-        this.length = (byte)length;
+        length = length;
     }
-    
-    
+
+
     public BitWordInt(int [] letters) throws Exception {
         setWord(letters);
     }
-    
+
+    public int getWord() { return word; }
+    public int getLength() { return length; }
+
     public void setWord(int [] letters) {// throws Exception {
 //         if (letters.length > MAX_LENGTH)
 //            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
-         
-         word = 0;
-         length = (byte)letters.length;
-         
-         packAll(letters);
+
+        word = 0;
+        length = (byte)letters.length;
+
+        packAll(letters);
     }
-    
+
     public void push(int letter) {
-        word = ((Integer)word << BITS_PER_LETTER) | letter;
+        word = (word << BITS_PER_LETTER) | letter;
         ++length;
     }
-    
+
     public int pop() {
-        int letter = (Integer)word & POP_MASK;
+        int letter = word & POP_MASK;
         shorten(1);
         return letter;
     }
-    
+
     public void packAll(int [] letters) {
         for (int i = 0; i < letters.length; ++i)
             push(letters[i]);
     }
-    
+
     public int[] unpackAll() {
         int [] letters = new int[length];
-        
+
         int shift = WORD_SPACE-(length*BITS_PER_LETTER); //first shift, increment latter
-        for (int i = length-1; i > -1; --i) {    
+        for (int i = length-1; i > -1; --i) {
             //left shift to left end to remove earlier letters, right shift to right end to remove latter
-            letters[length-1-i] = (int)((Integer)word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
-            
+            letters[length-1-i] = (int)(word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+
             shift += BITS_PER_LETTER;
         }
-        
-        
-            
+
+
+
         return letters;
     }
-    
+
+    public void shortenByFourierCoefficient() {
+        shorten(2); //1 real/imag pair
+    }
+
     public void shorten(int amount) {
         length -= amount;
-        word = (Integer)word >>> amount*BITS_PER_LETTER;
+        word >>>= amount*BITS_PER_LETTER;
     }
 
     @Override
@@ -146,13 +153,6 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         return Integer.compare(word, o.word);
     }
 
-    public void shortenByFourierCoefficient() {
-        shorten(2); //1 real/imag pair
-    }
-
-    public int getWord() { return word; }
-    public int getLength() { return length; }
-    
     @Override
     public boolean equals(Object other) {
         if (other instanceof BitWordInt)
@@ -167,7 +167,7 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         hash = 29 * hash + this.length;
         return hash;
     }
-    
+
     public String buildString() {
         int [] letters = unpackAll();
         StringBuilder word = new StringBuilder();
@@ -175,15 +175,17 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
             word.append(alphabet[letters[i]]);
         return word.toString();
     }
-    
+
     @Override
-    public String toString() { return toString(PrintFormat.BINARY); }
+    public String toString() {
+        return Arrays.toString(unpackAll());
+    }
     public String toString(PrintFormat format) {
         switch (format) {
             case RAW:
-                return String.valueOf(Integer.toString((Integer)word));
-            case BINARY: 
-                return String.format("%"+WORD_SPACE+"s", Integer.toBinaryString((Integer)word)).replace(' ', '0');
+                return String.valueOf(Integer.toString(word));
+            case BINARY:
+                return String.format("%"+WORD_SPACE+"s", Integer.toBinaryString(word)).replace(' ', '0');
             case LETTERS: {
                 return Arrays.toString(unpackAll());
             }
@@ -194,14 +196,14 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
                 return "err"; //impossible with enum, but must have return
         }
     }
-    
+
     public static void main(String [] args) throws Exception {
         quickTest();
         //buildMasks();
 
-        
+
     }
-    
+
     private static void buildMasks() {
         for (int i = 0; i < 16; ++i) {
             System.out.print("0b");
@@ -213,8 +215,8 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
             System.out.println(",");
         }
     }
-    
-    private static void quickTest() throws Exception { 
+
+    private static void quickTest() throws Exception {
         int [] letters = {0,1,2,3,2,1,2,0,1};
         BitWordInt w = new BitWordInt(letters);
         System.out.println(Arrays.toString(letters));
@@ -224,11 +226,11 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         System.out.println(w.toString(PrintFormat.LETTERS));
         w.shortenByFourierCoefficient();
         System.out.println(w.toString(PrintFormat.LETTERS));
-        
-        
+
+
         System.out.println("  ");
-        
-        
+
+
         int [] letters2 = {0,1,2,3,2,1,2,0};
         BitWordInt w2 = new BitWordInt(letters2);
         System.out.println(Arrays.toString(letters2));

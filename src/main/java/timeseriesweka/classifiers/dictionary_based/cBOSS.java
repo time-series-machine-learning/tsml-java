@@ -638,7 +638,7 @@ public class cBOSS extends AbstractClassifierWithTrainingInfo implements TrainAc
             boss.cleanAfterBuild = true;
             boss.seed = seed;
             boss.buildClassifier(data);
-            boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE /*numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]*/);
+            boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);

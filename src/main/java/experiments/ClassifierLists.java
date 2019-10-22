@@ -44,6 +44,8 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.distance_based.ProximityForestWrapper;
+import timeseriesweka.filters.SummaryStats;
+import weka.classifiers.meta.FilteredClassifier;
 import weka_extras.classifiers.ensembles.CAWPE;
 import weka_extras.classifiers.PLSNominalClassifier;
 import weka_extras.classifiers.tuned.TunedXGBoost;
@@ -61,6 +63,7 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -110,7 +113,7 @@ public class ClassifierLists {
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
                 ((TunedXGBoost)c).setSmallParaSearchSpace_64paras();
                 break;
-            case "ProximityForest":
+            case "ProximityForest": case "PF":
                 c = new ProximityForestWrapper();
                 break;            
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
@@ -226,7 +229,7 @@ public class ClassifierLists {
                 break;
             case "CAWPE_AS_COTE":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","RBOSS","RISE","ST","EE"};//RotF for ST
+                    String[] cls={"TSF","cBOSS","cRISE","ST","EE"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((CAWPE)c).setSeed(fold);  
@@ -304,6 +307,12 @@ public class ClassifierLists {
             case "ShapeletTransform": case "ST": case "ST_Ensemble": case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
                 ((ShapeletTransformClassifier)c).setSeed(fold);
+                ((ShapeletTransformClassifier) c).setTrainTimeLimit(TimeUnit.HOURS, 4);
+                ((ShapeletTransformClassifier) c).setShapeletOutputFilePath("D:\\BTData\\CallCenterVolumeData\\Shapelets\\" + dataset + "\\");
+                break;
+            case "STFull":
+                c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setSeed(fold);
                 break;
             case "TSBF":
                 c=new TSBF();
@@ -351,6 +360,11 @@ public class ClassifierLists {
                 ((cBOSSSP) c).setSeed(fold);
                 ((cBOSSSP) c).experimentOption = 5;
                 break;
+            case "HIBISPcBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 6;
+                break;
 
 
             case "WEASEL":
@@ -380,6 +394,11 @@ public class ClassifierLists {
                 ((RISE) c).setSeed(fold);
                 ((RISE) c).setTransforms("PS","ACF");
                 break;
+            case "cRISE":
+                c=new cRISE();
+                ((cRISE) c).setSeed(fold);
+                ((cRISE) c).setTransformType(cRISE.TransformType.ACF_PS);
+                break;
             case "TSF":
                 c=new TSF();
                 ((TSF)c).setSeed(fold);
@@ -400,6 +419,14 @@ public class ClassifierLists {
                 c=new cTSF();
                 ((cTSF) c).setSeed(fold);
                 ((cTSF) c).setSavePath("D:\\UEAMachineLearning\\CallDetectionSimulation\\checkpointfiles\\");
+                break;
+
+            case "RFSS":
+                c=new FilteredClassifier();
+                RotationForest f = new RotationForest();
+                f.setSeed(fold);
+                ((FilteredClassifier)c).setClassifier(f);
+                ((FilteredClassifier)c).setFilter(new SummaryStats());
                 break;
 
            default:

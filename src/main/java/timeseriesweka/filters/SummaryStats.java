@@ -28,11 +28,11 @@ import weka.filters.SimpleBatchFilter;
      * copyright: Anthony Bagnall
 
  * Global stats:
- * 		mean, variance, skewness, kurtosis,min, max, range, 
+ * 		mean, variance, skewness, kurtosis,slope, min, max,,
  * */
 public class SummaryStats extends SimpleBatchFilter {
-        private int numMoments=4;
-        public void setNumMoments(int m){numMoments=4;}
+        private int numMoments=5;
+        public void setNumMoments(int m){numMoments=5;}
 	private static final long serialVersionUID = 1L;
 
         protected Instances determineOutputFormat(Instances inputFormat)
@@ -108,7 +108,13 @@ public Instances process(Instances inst) throws Exception {
 **/
             double max=-Double.MAX_VALUE;
             double min=Double.MAX_VALUE;
-            double sum = 0;      
+            double sum = 0;
+
+            //for slope
+            double sumX = 0;
+            double sumXY = 0;
+            double sumXX = 0;
+
             //Find mean
             for(int j=0;j<d.length;j++){
                 sum = sum+d[j];
@@ -116,6 +122,10 @@ public Instances process(Instances inst) throws Exception {
                     max=d[j];
                 if(d[j]<min)
                     min=d[j];
+
+                sumX += j;
+                sumXX+= j*j;
+                sumXY+= d[j]*(j);
             }
             moments[0] = sum/d.length;
             double totalVar=0;
@@ -135,6 +145,19 @@ public Instances process(Instances inst) throws Exception {
             moments[2] = skew/d.length;
             double kur = totalKur/(standardDeviation*standardDeviation*standardDeviation*standardDeviation);
             moments[3] = kur/d.length;
+
+            //slope
+            double slope = (sumXY-(sumX*sum)/d.length);
+            double denom=sumXX-(sumX*sumX)/d.length;
+            if(denom!=0)
+                slope/=denom;
+            else
+                slope=0;
+
+            if(standardDeviation == 0)
+                slope=0;
+
+            moments[4] = slope;
             
           //Extract out the terms and set the attributes
             Instance newInst=null;
@@ -166,11 +189,11 @@ public Instances process(Instances inst) throws Exception {
 	
 		
             try{
-                Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
-//                Instances filter=new SummaryStats().process(test);
-               SummaryStats m=new SummaryStats();
-               m.setInputFormat(test);
-               Instances filter=Filter.useFilter(test,m);
+                Instances test=DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN.arff");
+               Instances filter=new SummaryStats().process(test);
+//               SummaryStats m=new SummaryStats();
+//               m.setInputFormat(test);
+//               Instances filter=Filter.useFilter(test,m);
                System.out.println(filter);
             }
             catch(Exception e){

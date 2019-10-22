@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import net.sourceforge.sizeof.SizeOf;
 import weka_extras.classifiers.SaveEachParameter;
 import weka_extras.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -581,6 +582,8 @@ public class Experiments  {
                     
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testBenchmark);
+
+                    testResults.setMemory(SizeOf.deepSizeOf(classifier));
                     
                     if (classifier instanceof TrainAccuracyEstimator) {
                         //if this classifier is recording it's own results, use the build time it found

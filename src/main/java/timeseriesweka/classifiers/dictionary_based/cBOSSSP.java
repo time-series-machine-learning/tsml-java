@@ -474,7 +474,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
         if (experimentOption == 1){
             chiLimits = new double[]{ 0.3 };
         }
-        else if (experimentOption == 2){
+        else if (experimentOption == 2 || experimentOption == 6){
             chiLimits = new double[]{ 0 };
         }
         else if (experimentOption == 4){

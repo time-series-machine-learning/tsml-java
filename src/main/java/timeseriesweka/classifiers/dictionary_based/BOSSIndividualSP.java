@@ -773,7 +773,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5) chiSquared();
+        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6) chiSquared();
 
         if (cleanAfterBuild) {
             clean();
@@ -829,7 +829,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
-        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5) {
+        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6) {
             SPBag oldBag = testBag;
             testBag = new SPBag(oldBag.classVal);
             for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
@@ -845,7 +845,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
         for (int i = 0; i < bags.size(); ++i) {
             double dist;
-            if (experimentOption == 3) dist = histogramIntersection(testBag, bags.get(i));
+            if (experimentOption == 3 || experimentOption == 6) dist = histogramIntersection(testBag, bags.get(i));
             else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {

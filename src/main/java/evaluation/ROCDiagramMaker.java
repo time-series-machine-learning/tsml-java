@@ -131,10 +131,10 @@ public class ROCDiagramMaker {
     
     public static void main(String[] args) throws Exception {
         
-        String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
-        String dset = "JWRorJWB_BlackBottle";
-        String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
-        int numFolds = 10;
+        String baseReadPath = "D:\\BTData\\CallCenterVolumeData\\ResultsCV\\";
+        String dset = "CallCenterProfilesNormalised";
+        String[] cnames = { "ST" };
+        int numFolds = 1;
         
         ClassifierResults[][] res = new ClassifierResults[cnames.length][numFolds];
         for (int i = 0; i < res.length; i++) {
@@ -144,7 +144,7 @@ public class ROCDiagramMaker {
         }
         
         ClassifierResults[] concatenatedRes = ClassifierResults.concatenateClassifierResults(res);
-        matlab_buildROCDiagrams("C:/Temp/rocDiaTest/", "testDias", dset, concatenatedRes, cnames);
+        matlab_buildROCDiagrams("D:\\BTData\\CallCenterVolumeData\\Shapelets\\", "testDias", dset, concatenatedRes, cnames);
         
         //single fold 
 //        String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
