@@ -27,5 +27,4 @@ public interface ParameterSplittable extends Serializable{
     */
     public void setParametersFromIndex(int x);
     public String getParas();
-    double getAcc();    
 }

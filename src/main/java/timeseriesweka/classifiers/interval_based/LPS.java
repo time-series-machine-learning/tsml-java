@@ -21,13 +21,9 @@ import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.DecimalFormat;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Vector;
-import timeseriesweka.classifiers.AbstractClassifierWithTrainingInfo;
+import java.util.*;
+
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -39,7 +35,6 @@ import weka.core.Capabilities;
 import weka.core.ContingencyTables;
 import weka.core.DenseInstance;
 import weka.core.Drawable;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Option;
 import weka.core.OptionHandler;
@@ -67,7 +62,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable,TechnicalInformationHandler{
+public class LPS extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -91,6 +86,7 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     boolean paramSearch=true;
     double acc=0;
     public LPS(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         trees=new RandomRegressionTree[nosTrees];
     }
 
@@ -275,17 +271,17 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
     
     
     
- public static void compareToPublished() throws Exception{
+ public static void compareToPublished(String datasetPath, String resultsPath) throws Exception{
      DecimalFormat df=new DecimalFormat("###.###");
-     OutFile res=new OutFile(DatasetLists.path+"recreatedLPS.csv");
+     OutFile res=new OutFile(resultsPath+"recreatedLPS.csv");
      int b=0;
      int t=0;
      System.out.println("problem,recreated,published");
      for(int i=0;i<problems.length;i++){
          String s=problems[i];
         System.out.print(s+",");
-        Instances train = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\"+s+"\\"+s+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable(datasetPath+s+"\\"+s+"_TEST.arff");
         LPS l=new LPS();
         l.setParamSearch(false);
         l.buildClassifier(train);
@@ -315,11 +311,6 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
         return ratioLevel+","+treeDepth;
     }
 
-    @Override
-    public double getAcc() {
-        return acc;
-    }
-    
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -352,7 +343,8 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             }
             ratioLevel=ratioLevels[bestRatio];
             treeDepth=treeDepths[bestTreeDepth];
-            System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
+            if(debug)
+                System.out.println("Best ratio level ="+ratioLevel+" best tree depth ="+treeDepth+" with CV error ="+bestErr);
         }
         
         
@@ -387,11 +379,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
 //Set up the instances for this tree            
 //2- Generate segments for each time series and 
 //        concatenate these segments rowwise, let resulting matrix be M
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             
@@ -471,11 +463,11 @@ public class LPS extends AbstractClassifierWithTrainingInfo implements Parameter
             
 
         for(int i=0;i<nosTrees;i++){    
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             sequences = new Instances("SubsequenceIntervals",atts,segLengths[i]);            
             for(int k=0;k<segLengths[i];k++){
@@ -606,9 +598,9 @@ M equals
     public void debugFeatureExtraction(){
       //determine minimum and maximum possible segment length
 
-            FastVector atts2=new FastVector();
+            ArrayList<Attribute> atts2=new ArrayList<>();
             for(int j=0;j<9;j++){
-                    atts2.addElement(new Attribute("SegFeature"+j));
+                    atts2.add(new Attribute("SegFeature"+j));
             }
             double[] t1={1,2,3,4,5,6,7,8};
             double[] t2={8,7,6,5,4,3,2,1};
@@ -654,11 +646,11 @@ M equals
             }
 //Set up the instances for this tree            
             Instances tr=null;     
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int j=0;j<2*nosSegments;j++){
                     name = "SegFeature"+j;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             Instances result = new Instances("SubsequenceIntervals",atts,segLengths[i]*data.numInstances());            
             

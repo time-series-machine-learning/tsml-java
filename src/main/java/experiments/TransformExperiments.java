@@ -41,10 +41,10 @@ public class TransformExperiments {
     
     private final static Logger LOGGER = Logger.getLogger(TransformExperiments.class.getName());
     
-     public static boolean debug = false;
-    
+    public static boolean debug = false;
+
     public static void main(String[] args) throws Exception {
-        
+        System.out.println("Tony Dev Test");
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             SetupTransformExperiment(expSettings);
@@ -64,7 +64,6 @@ public class TransformExperiments {
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
-            System.out.println("");
 
             ExperimentalArguments expSettings = new ExperimentalArguments(settings);
             SetupTransformExperiment(expSettings);
@@ -82,7 +81,7 @@ public class TransformExperiments {
         
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + Long.toString(expSettings.contractTrainTimeHours) + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + expSettings.contractTrainTimeHours + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -94,7 +93,6 @@ public class TransformExperiments {
         if (experiments.CollateResults.validateSingleFoldFile(transformWriteLocation) && experiments.CollateResults.validateSingleFoldFile(additionalWriteLocation)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+additionalWriteLocation+", exiting.");
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+transformWriteLocation+", exiting.");
-            return;
         }
         else{
             SimpleBatchFilter transformer = TransformLists.setTransform(expSettings);

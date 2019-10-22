@@ -19,10 +19,11 @@ import weka.filters.*;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
+
+import java.util.ArrayList;
 
 /** 
   <!-- globalinfo-start -->
@@ -68,20 +69,20 @@ public class ARMA extends SimpleBatchFilter {
             else
                     maxLag=(inputFormat.numAttributes()>maxLag)?maxLag:inputFormat.numAttributes();
             //Set up instances size and format. 
-            FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList<>();
             String name;
             for(int i=0;i<maxLag;i++){
                     name = "ARMA_"+i;
-                    atts.addElement(new Attribute(name));
+                    atts.add(new Attribute(name));
             }
             if(inputFormat.classIndex()>=0){	//Classification set, set class 
 //Get the class values as a fast vector			
                     Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-                    FastVector vals=new FastVector(target.numValues());
+                    ArrayList<String> vals=new ArrayList<>(target.numValues());
                     for(int i=0;i<target.numValues();i++)
-                            vals.addElement(target.value(i));
-                    atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+                            vals.add(target.value(i));
+                    atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
 
             }	
             Instances result = new Instances("ARMA"+inputFormat.relationName(),atts,inputFormat.numInstances());

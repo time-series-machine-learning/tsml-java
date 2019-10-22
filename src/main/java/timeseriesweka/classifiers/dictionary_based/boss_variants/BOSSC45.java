@@ -14,7 +14,6 @@
  */
 package timeseriesweka.classifiers.dictionary_based.boss_variants;
 
-import fileIO.OutFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream; 
@@ -24,10 +23,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import utilities.InstanceTools;
@@ -36,21 +32,18 @@ import weka.core.Capabilities;
 import weka.classifiers.Classifier;
 import weka.core.TechnicalInformation;
 
-import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Set;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
+
 import timeseriesweka.classifiers.dictionary_based.BitWord;
 import utilities.ClassifierTools;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.util.concurrent.TimeUnit;
+import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
  
 /**
  * BOSS + C45 tree classifier with parameter search and ensembling, if parameters are 
@@ -74,7 +67,7 @@ import timeseriesweka.classifiers.TrainAccuracyEstimator;
  * BOSS implementation based on the algorithm described in getTechnicalInformation()
  * C45 done using the WEKA implementation 'weka.classifiers.trees.J48'
  */
-public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstimator {
+public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameterInfo {
     
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -100,7 +93,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
     private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int alphabetSize = 4;
     //private boolean norm;
-    
+        
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -121,10 +114,6 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
      
     private boolean[] normOptions;
     
-    private String trainCVPath;
-    private boolean trainCV=false;
-    private ClassifierResults res =new ClassifierResults();
-    
     /**
      * Providing a particular value for normalisation will force that option, if 
      * whether to normalise should be a parameter to be searched, use default constructor
@@ -132,6 +121,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
      * @param normalise whether or not to normalise by dropping the first Fourier coefficient
      */
     public BOSSC45(boolean normalise) {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { normalise };
     }
     
@@ -140,6 +130,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
      * window size and word length if no particular normalisation option is provided
      */
     public BOSSC45() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         normOptions = new boolean[] { true, false };
     }  
 
@@ -253,27 +244,6 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
         }
     }
     
-    @Override
-    public void writeTrainEstimatesToFile(String train) {
-        trainCVPath=train;
-        trainCV=true;
-    }
-    @Override
-    public void setFindTrainAccuracyEstimate(boolean setCV){
-        trainCV=setCV;
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate(){ return trainCV;}
-    
-    @Override
-    public ClassifierResults getTrainResults(){
-//Temporary : copy stuff into res.acc here
-//Not implemented?        res.acc=ensembleCvAcc;
-//TO DO: Write the other stats        
-        return res;
-    }        
-
     @Override
     public String getParameters() {
         StringBuilder sb = new StringBuilder();
@@ -420,18 +390,9 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
         //final members known, now build the final trees on the full train data (rather than train/validation set)
         for (BOSSWindow window : classifiers)
             window.classifier.buildFullForest();
-        
-        if (trainCV) {
-            OutFile of=new OutFile(trainCVPath);
-            of.writeLine(data.relationName()+",BOSSEnsemble,train");
-           
-            double[][] results = findEnsembleTrainAcc(data);
-            of.writeLine(getParameters());
-            of.writeLine(results[0][0]+"");
-            for(int i=1;i<results[0].length;i++)
-                of.writeLine(results[0][i]+","+results[1][i]);
-            System.out.println("CV acc ="+results[0][0]);
-        }
+      
+        if (getEstimateOwnPerformance())
+            findEnsembleTrainAcc(data);
     }
 
     //[0] = index, [1] = acc
@@ -460,24 +421,43 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
         return false;
     }
     
-    private double[][] findEnsembleTrainAcc(Instances data) throws Exception {
+    private double findEnsembleTrainAcc(Instances data) throws Exception {
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        trainResults.setSplit("train");
+        trainResults.setParas(getParameters());
         
-        double[][] results = new double[2][data.numInstances() + 1];
-        
-        double correct = 0; 
+        double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
-            double c = classifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
-            if (c == data.get(i).classValue())
+            long predTime = System.nanoTime();
+            double[] probs = distributionForInstance(i, data.numClasses());
+            predTime = System.nanoTime() - predTime;
+
+            int maxClass = 0;
+            for (int n = 1; n < probs.length; ++n) {
+                if (probs[n] > probs[maxClass]) {
+                    maxClass = n;
+                }
+                else if (probs[n] == probs[maxClass]){
+                    if (rand.nextBoolean()){
+                        maxClass = n;
+                    }
+                }
+            }
+
+            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+            if (maxClass == data.get(i).classValue())
                 ++correct;
-            
-            results[0][i+1] = data.get(i).classValue();
-            results[1][i+1] = c;
+
+            trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
         
-        results[0][0] = correct / data.numInstances();
-        //TODO fill results[1][0]
+        trainResults.finaliseResults();
         
-        return results;
+        double result = correct / data.numInstances();
+        return result;
     }
     
     /**
@@ -683,7 +663,7 @@ public class BOSSC45 implements Classifier, SaveParameterInfo,TrainAccuracyEstim
             //this is the main source of memory problems, most bags will have many unique
             //keys of value 1 due to noise, thus FULL keyset is much larger than 
             //each individuals bag's keyset
-            FastVector<Attribute> attInfo = new FastVector<>();
+            ArrayList<Attribute> attInfo = new ArrayList<>();
             Set<String> wordsFound = new HashSet<>();
             for (Bag bag : bags) 
                 for (Entry<BitWord,Integer> entry : bag.entrySet()) 

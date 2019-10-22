@@ -16,14 +16,15 @@ package timeseriesweka.filters;
 
 
 import experiments.data.DatasetLoading;
-import utilities.ClassifierTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
+
+import java.util.ArrayList;
+
 /* simple Filter that just summarises the series
      * copyright: Anthony Bagnall
 
@@ -43,24 +44,24 @@ public class SummaryStats extends SimpleBatchFilter {
 			if(!inputFormat.attribute(i).isNumeric())
 				throw new Exception("Non numeric attribute not allowed in SummaryStats");
 	//Set up instances size and format. 
-	FastVector atts=new FastVector();
+            ArrayList<Attribute> atts=new ArrayList();
         String source=inputFormat.relationName();
 	String name;
 	for(int i=0;i<numMoments;i++){
 		name =source+"Moment_"+(i+1);
-		atts.addElement(new Attribute(name));
+		atts.add(new Attribute(name));
 	}
-	atts.addElement(new Attribute(source+"MIN"));
-	atts.addElement(new Attribute(source+"MAX"));
+	atts.add(new Attribute(source+"MIN"));
+	atts.add(new Attribute(source+"MAX"));
         
 	if(inputFormat.classIndex()>=0){	//Classification set, set class 
 		//Get the class values as a fast vector			
 		Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-		FastVector vals=new FastVector(target.numValues());
+        ArrayList<String> vals=new ArrayList<>(target.numValues());
 		for(int i=0;i<target.numValues();i++)
-			vals.addElement(target.value(i));
-		atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+			vals.add(target.value(i));
+		atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
 	}	
 	Instances result = new Instances("Moments"+inputFormat.relationName(),atts,inputFormat.numInstances());
 	if(inputFormat.classIndex()>=0){

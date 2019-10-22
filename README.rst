@@ -123,6 +123,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * Michael Flynn (@Michael Flynn), 
 * Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), 
 * Patrick Schäfer (@patrickzib)
+* Chang Wei Tan (@ChangWeiTan)
 
 We welcome anyone who would like to contribute their algorithms! 
 

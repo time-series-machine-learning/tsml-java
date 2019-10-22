@@ -25,7 +25,6 @@ import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.DistanceFunction;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -240,9 +239,9 @@ public class InstanceTools {
         int dimColumns = data[0].length;
 
         // create a list of attributes features + label
-        FastVector attributes = new FastVector(dimColumns);
+        ArrayList<Attribute> attributes = new ArrayList<>(dimColumns);
         for (int i = 0; i < dimColumns; i++) {
-            attributes.addElement(new Attribute("attr" + String.valueOf(i + 1)));
+            attributes.add(new Attribute("attr" + String.valueOf(i + 1)));
         }
 
         // add the attributes 
@@ -268,6 +267,7 @@ public class InstanceTools {
         wekaInstances.setClassIndex(wekaInstances.numAttributes()-1);
         return wekaInstances;
     }
+
 
     //converts a 2d array into a weka Instances, appending the ith classlabel onto the ith row of data for each instance
     public static Instances toWekaInstances(double[][] data, double[] classLabels) {
@@ -656,7 +656,7 @@ public class InstanceTools {
     //similar to concatinate, but interweaves the attributes. 
     //all of att_0 in each instance, then att_1 etc.
     public static Instances mergeInstances(String dataset, Instances[] inst, String[] dimChars){
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         
         Instances firstInst = inst[0];
@@ -667,17 +667,17 @@ public class InstanceTools {
         
         for (int i = 0; i < length; i++) {
             name = dataset + "_" + dimChars[i%dimensions] + "_" + (i/dimensions);
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         
         //clone the class values over. 
         //Could be from x,y,z doesn't matter.
         Attribute target = firstInst.attribute(firstInst.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        atts.addElement(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
+        atts.add(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
         
         //same number of xInstances 
         Instances result = new Instances(dataset + "_merged", atts, firstInst.numInstances());

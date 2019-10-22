@@ -16,10 +16,8 @@ Instances data=ds.generateData();
 package statistics.simulators;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.NormalizeCase;
@@ -95,18 +93,18 @@ public class DataSimulator {
             for(int i=0;i<casesPerClass.length;i++)
                 casesPerClass[i]=nosPerClass;
         }
-        FastVector atts=new FastVector();
+        ArrayList<Attribute> atts=new ArrayList();
         nosClasses=casesPerClass.length;
         int totalCases=casesPerClass[0];
         for(int i=1;i<casesPerClass.length;i++)
                 totalCases+=casesPerClass[i];
         for(int i=1;i<=seriesLength;i++){
-                atts.addElement(new Attribute(models.get(0).getAttributeName()+i));
+                atts.add(new Attribute(models.get(0).getAttributeName()+i));
         }
-        FastVector fv=new FastVector();
+        ArrayList<String> fv=new ArrayList<>();
         for(int i=0;i<nosClasses;i++)
-                fv.addElement(""+i);
-        atts.addElement(new Attribute("Target",fv));
+                fv.add(""+i);
+        atts.add(new Attribute("Target",fv));
         data = new Instances(models.get(0).getModelType(),atts,totalCases);
 
         double[] d;

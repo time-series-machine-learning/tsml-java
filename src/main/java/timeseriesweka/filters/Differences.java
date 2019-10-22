@@ -16,11 +16,13 @@ package timeseriesweka.filters;
 
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
+
+import java.util.ArrayList;
+
 /* simple Filter that just creates a new series of differences order k.
  * The new series has k fewer attributes than the original
  * */
@@ -38,24 +40,25 @@ public class Differences extends SimpleBatchFilter {
 	throws Exception {
 	//Check all attributes are real valued, otherwise throw exception
 	for(int i=0;i<inputFormat.numAttributes();i++)
-		if(inputFormat.classIndex()!=i)
-			if(!inputFormat.attribute(i).isNumeric())
+		if(inputFormat.classIndex()!=i) {
+			if (!inputFormat.attribute(i).isNumeric())
 				throw new Exception("Non numeric attribute not allowed in Moments");
-	//Set up instances size and format. 
-	FastVector atts=new FastVector();
+		}
+	//Set up instances size and format.
+		ArrayList<Attribute> atts = new ArrayList<>();
 	String name;
 	for(int i=0;i<inputFormat.numAttributes()-order-1;i++){
 		name = attName+"Difference"+order+"_"+(i+1);
-		atts.addElement(new Attribute(name));
+		atts.add(new Attribute(name));
 	}
 	if(inputFormat.classIndex()>=0){	//Classification set, set class 
 		//Get the class values as a fast vector			
 		Attribute target =inputFormat.attribute(inputFormat.classIndex());
 
-		FastVector vals=new FastVector(target.numValues());
+		ArrayList<String> vals=new ArrayList<>();
 		for(int i=0;i<target.numValues();i++)
-			vals.addElement(target.value(i));
-		atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
+			vals.add(target.value(i));
+		atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),vals));
 	}	
 	Instances result = new Instances("Difference"+order+inputFormat.relationName(),atts,inputFormat.numInstances());
 	if(inputFormat.classIndex()>=0){

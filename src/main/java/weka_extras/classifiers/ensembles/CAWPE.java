@@ -119,6 +119,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * Weight: TrainAcc(4) (train accuracies to the power 4)
      * Vote: MajorityConfidence (summing probability distributions)
      */
+    @Override //Abstract Ensemble 
     public final void setupDefaultEnsembleSettings() {
         this.ensembleName = "CAWPE";
         
@@ -314,9 +315,6 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         setClassifiers(classifiers, classifierNames, null);
     }
 
-
-    
-    
    
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";
@@ -448,7 +446,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod07/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod17/";
         
         //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
@@ -589,7 +587,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         c.setBuildIndividualsFromResultsFiles(true);
                         c.setResultsFileLocationParameters(writePath, dset, fold);
                         c.setSeed(fold);
-                        c.setEstimateEnsemblePerformance(true);
+                        c.setEstimateOwnPerformance(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
                         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
