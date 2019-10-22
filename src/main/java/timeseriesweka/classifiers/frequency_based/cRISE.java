@@ -102,6 +102,9 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     private String serialisePath = null;
     private Instances data = null;
 
+    //Updated work
+    private ArrayList<int[]> startEndPoints = null;
+
     /**
      * Constructor
      * @param seed
@@ -134,6 +137,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         intervalsInfo = new ArrayList<>();
         intervalsAttIndexes = new ArrayList<>();
         rawIntervalIndexes = new ArrayList<>();
+        startEndPoints = new ArrayList<>();
         PS = new PowerSpectrum();
         treeCount = 0;
     }
@@ -647,7 +651,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
             //Produce intervalInstances from trainingData using interval attributes.
             Instances intervalInstances;
-            intervalInstances = produceIntervalInstances(maxIntervalLength, trainingData);
+            //intervalInstances = produceIntervalInstances(maxIntervalLength, trainingData);
+            intervalInstances = produceIntervalInstancesUpdate(maxIntervalLength, trainingData);
 
             //Transform instances.
             if (transformType != null) {
@@ -682,6 +687,51 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         }
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
+    }
+
+    private Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
+        Instances intervalInstances;
+        ArrayList<Attribute>attributes = new ArrayList<>();
+        ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
+
+        startEndPoints.add(new int[2]);
+        startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((trainingData.numAttributes() - 1)- minIntervalLength);
+        //This avoid calling nextInt(0)
+        if(startEndPoints.get(startEndPoints.size() - 1)[0]== (trainingData.size() - 1) - 1 - minIntervalLength)
+            startEndPoints.get(startEndPoints.size() - 1)[1]= trainingData.size() - 1 - 1;
+        else{
+            startEndPoints.get(startEndPoints.size() - 1)[1]=rand.nextInt(minIntervalLength - startEndPoints.get(startEndPoints.size() - 1)[0]);
+            if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
+                startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
+            startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
+        }
+
+        int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]);
+
+        for (int i = 0; i < nearestPowerOfTwo; i ++) {
+            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.size() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute(trainingData.attribute(trainingData.numAttributes() -1).name());
+            attributes.add(att);
+        }
+
+        attributes.add(trainingData.attribute(trainingData.numAttributes()-1));
+        intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
+        double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
+
+        for (int i = 0; i < trainingData.size(); i++) {
+            for (int j = 0; j < nearestPowerOfTwo; j++) {
+                double value = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.size() - 1 ? trainingData.get(i).value(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                intervalInstanceValues[j] = value;
+            }
+
+            DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
+            intervalInstance.replaceMissingValues(intervalInstanceValues);
+            intervalInstance.setValue(intervalInstanceValues.length-1, trainingData.get(i).classValue());
+            intervalInstances.add(intervalInstance);
+        }
+
+        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
+
+        return intervalInstances;
     }
 
     /**
