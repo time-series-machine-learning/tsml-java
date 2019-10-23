@@ -24,6 +24,7 @@ import timeseriesweka.classifiers.distance_based.*;
 import timeseriesweka.classifiers.frequency_based.cRISE;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
+import timeseriesweka.classifiers.hybrids.TSCHIEFWrapper;
 import timeseriesweka.classifiers.interval_based.cTSF;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -293,7 +294,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -306,6 +307,10 @@ public class ClassifierLists {
             case "HiveCote":
                 c=new HiveCote();
                 ((HiveCote)c).setContract(48);
+                break;
+            case "TSCHIEF":
+                c=new TSCHIEFWrapper();
+                ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
