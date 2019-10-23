@@ -420,6 +420,35 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         return testInstances.firstInstance();
     }
 
+    private Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
+        Instances intervalInstances = null;
+        ArrayList<Attribute>attributes = new ArrayList<>();
+        int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]);
+
+        for (int i = 0; i < nearestPowerOfTwo; i ++) {
+            Attribute att = i + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.attribute(i + startEndPoints.get(classifierNum)[0]) : new Attribute("att"+ (i + 1 + startEndPoints.get(classifierNum)[0]));
+            attributes.add(att);
+        }
+
+        attributes.add(testInstance.attribute(testInstance.numAttributes()-1));
+        intervalInstances = new Instances(testInstance.dataset().relationName(), attributes, 1);
+        double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
+
+        for (int j = 0; j < nearestPowerOfTwo; j++) {
+            double value = j + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
+            intervalInstanceValues[j] = value;
+        }
+
+        DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
+        intervalInstance.replaceMissingValues(intervalInstanceValues);
+        intervalInstance.setValue(intervalInstanceValues.length-1, testInstance.classValue());
+        intervalInstances.add(intervalInstance);
+
+        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
+
+        return intervalInstances;
+    }
+
     /**
      * Transforms instances into either PS ACF or concatenation based on {@code setTransformType}
      * @param instances
@@ -697,10 +726,10 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         startEndPoints.add(new int[2]);
         startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((trainingData.numAttributes() - 1)- minIntervalLength);
         //This avoid calling nextInt(0)
-        if(startEndPoints.get(startEndPoints.size() - 1)[0]== (trainingData.size() - 1) - 1 - minIntervalLength)
-            startEndPoints.get(startEndPoints.size() - 1)[1]= trainingData.size() - 1 - 1;
+        if(startEndPoints.get(startEndPoints.size() - 1)[0] == (trainingData.numAttributes() - 1) - 1 - minIntervalLength)
+            startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1 - 1;
         else{
-            startEndPoints.get(startEndPoints.size() - 1)[1]=rand.nextInt(minIntervalLength - startEndPoints.get(startEndPoints.size() - 1)[0]);
+            startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((trainingData.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0]);
             if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
                 startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
             startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
@@ -709,17 +738,21 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]);
 
         for (int i = 0; i < nearestPowerOfTwo; i ++) {
-            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.size() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute(trainingData.attribute(trainingData.numAttributes() -1).name());
+            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
             attributes.add(att);
         }
 
         attributes.add(trainingData.attribute(trainingData.numAttributes()-1));
-        intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
+        try{
+            intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
+        }catch(Exception e){
+            intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
+        }
         double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
 
         for (int i = 0; i < trainingData.size(); i++) {
             for (int j = 0; j < nearestPowerOfTwo; j++) {
-                double value = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.size() - 1 ? trainingData.get(i).value(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
                 intervalInstanceValues[j] = value;
             }
 
@@ -760,12 +793,12 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public double[] distributionForInstance(Instance testInstance) throws Exception {
         double[]distribution = new double[testInstance.numClasses()];
-        ArrayList<Attribute> attributes;
+        //ArrayList<Attribute> attributes;
 
         //For every base classifier.
         for (int i = 0; i < baseClassifiers.size(); i++) {
             //Transform instance into interval instance.
-            attributes = new ArrayList<>();
+            /*attributes = new ArrayList<>();
             for (int j = 0; j < intervalsAttIndexes.get(i).size(); j++) {
                 attributes.add(testInstance.attribute(intervalsAttIndexes.get(i).get(j)));
             }
@@ -773,18 +806,25 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             Instances instances = new Instances("relationName", attributes, 1);
             Instance intervalInstance = produceIntervalInstance(testInstance, i);
             instances.add(intervalInstance);
-            instances.setClassIndex(intervalInstance.numAttributes() - 1);
+            instances.setClassIndex(intervalInstance.numAttributes() - 1);*/
 
+
+            Instance intervalInstance = null;
             //Transform interval instance into PS, ACF, ACF_PS or ACF_PS_AR
             if (transformType != null) {
                 try{
-                    intervalInstance = transformInstances(instances, transformType).firstInstance();
+                    intervalInstance = transformInstances(produceIntervalInstanceUpdate(testInstance, i), transformType).firstInstance();
                 }catch(Exception e){
-                    intervalInstance = transformInstances(instances, transformType).firstInstance();
+                    intervalInstance = transformInstances(produceIntervalInstanceUpdate(testInstance, i), transformType).firstInstance();
                 }
             }
 
-            double[] temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
+            double[] temp = null;
+            try{
+                temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
+            }catch(Exception e){
+                temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
+            }
             for (int j = 0; j < testInstance.numClasses(); j++) {
                 distribution[j] += temp[j];
             }
@@ -1007,8 +1047,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
     public static void main(String[] args){
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
@@ -1024,13 +1064,13 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            cRISE = new cRISE();
+            /*cRISE = new cRISE();
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.MFCC);
+            cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
             System.out.println("MFCC");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
 
             cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");

@@ -422,7 +422,11 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
 
     public static void main(String[] arg) throws Exception{
 
-        Instances data = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2]);
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TEST");
+        Instances data = dataTrain;
+        data.addAll(dataTest);
+
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
