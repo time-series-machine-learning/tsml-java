@@ -17,7 +17,7 @@ import java.util.Random;
 
 public class TSCHIEFWrapper extends AbstractClassifier implements MultiThreadable {
 
-    private int numThreads = 10;
+    private int numThreads = 1;
 
     private int num_trees = 500;
     private int ee = 5;
