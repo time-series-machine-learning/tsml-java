@@ -427,6 +427,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
         for (int i = 0; i < nearestPowerOfTwo; i ++) {
             Attribute att = i + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.attribute(i + startEndPoints.get(classifierNum)[0]) : new Attribute("att"+ (i + 1 + startEndPoints.get(classifierNum)[0]));
+            //Attribute att = i + startEndPoints.get(classifierNum)[0] < (startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]) ? testInstance.attribute(i + startEndPoints.get(classifierNum)[0]) : new Attribute("att"+ (i + 1 + startEndPoints.get(classifierNum)[0]));
             attributes.add(att);
         }
 
@@ -435,7 +436,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
 
         for (int j = 0; j < nearestPowerOfTwo; j++) {
-            double value = j + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
+            //double value = j + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
+            double value = j + startEndPoints.get(classifierNum)[0] < (startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]) ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
             intervalInstanceValues[j] = value;
         }
 
@@ -738,7 +740,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]);
 
         for (int i = 0; i < nearestPowerOfTwo; i ++) {
-            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
+            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < (startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]) ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
+            //Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
             attributes.add(att);
         }
 
@@ -752,7 +755,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
         for (int i = 0; i < trainingData.size(); i++) {
             for (int j = 0; j < nearestPowerOfTwo; j++) {
-                double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                //double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < (startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]) ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
                 intervalInstanceValues[j] = value;
             }
 
