@@ -238,7 +238,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 */
     public int getMaxLag(Instances instances){
-        int maxLag = (instances.numAttributes()-1);
+        int maxLag = (instances.numAttributes()-1)/4;
         if(DEFAULT_MAXLAG < maxLag)
             maxLag = DEFAULT_MAXLAG;
         /*if(maxLag < DEFAULT_MINLAG)
@@ -462,7 +462,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         switch(transformType){
             case ACF:
                 ACF acf = new ACF();
-                acf.setMaxLag(getMaxLag(instances));
+                //acf.setMaxLag(getMaxLag(instances));
                 acf.setNormalized(false);
                 try {
                     temp = acf.process(instances);
@@ -481,6 +481,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             case FFT:
                 Fast_FFT Fast_FFT = new Fast_FFT();
                 try {
+                    int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) < instances.numAttributes()-1 ? ((int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2) : ((int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1));
+                    Fast_FFT.setNFFT(512);
                     temp = Fast_FFT.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -502,17 +504,17 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
                 break;
 
             case ACF_PS:
-                temp = transformInstances(instances, TransformType.ACF);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
+                temp = transformInstances(instances, TransformType.ACF);
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case ACF_FFT:
-                temp = transformInstances(instances, TransformType.ACF);
+                temp = transformInstances(instances, TransformType.FFT);
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case FACF_FFT:
@@ -661,8 +663,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             if(maxIntervalLength > trainingData.numAttributes()-1 || maxIntervalLength <= 0){
                 maxIntervalLength = trainingData.numAttributes()-1;
             }
-            if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= (int)Math.sqrt(trainingData.numAttributes()-1)){
-                minIntervalLength = (int)Math.sqrt(trainingData.numAttributes()-1);
+            if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= 0){
+                minIntervalLength = (trainingData.numAttributes()-1)/2;
             }
 
         }
@@ -829,9 +831,10 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             }catch(Exception e){
                 temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
             }
-            for (int j = 0; j < testInstance.numClasses(); j++) {
+            /*for (int j = 0; j < testInstance.numClasses(); j++) {
                 distribution[j] += temp[j];
-            }
+            }*/
+            distribution[(int)baseClassifiers.get(i).classifyInstance((intervalInstance))]++;
         }
         for (int j = 0; j < testInstance.numClasses(); j++) {
             distribution[j] /= baseClassifiers.size();
