@@ -38,31 +38,34 @@ public class SimulateDictionaryData extends DataSimulator{
      * returned will be empty if the casesPerClass parameter does not contain
      * exactly two values.
      */
-    public static Instances generateDictionaryData(int seriesLength, int []casesPerClass)
+    public static Instances generateDictionaryData(int seriesLength, int []casesPerClass, int[] shapesPerClass)
     {        
         if( casesPerClass.length != 2)
         {
             System.err.println("Incorrect parameters, dataset will not be co"
                     + "rrect.");
-            int[] tmp = {0,0};
+            int[] tmp = {10,10};
             casesPerClass = tmp;
             
         }
         DictionaryModel[] shapeMod = new DictionaryModel[casesPerClass.length];
-        populateRepeatedShapeletArray(shapeMod, seriesLength);
-//        for(DictionaryModel s:shapeMod)
-//            System.out.println("Shapel Model "+s);
+        System.out.println("Populating shape array ...");
+        populateRepeatedShapeletArray(shapeMod, seriesLength,shapesPerClass);
+        System.out.println("Creating simulator ...");
         sim = new DataSimulator(shapeMod);
         sim.setSeriesLength(seriesLength);
         sim.setCasesPerClass(casesPerClass);
+        System.out.println("Generating Data ... ");
         Instances d=sim.generateDataSet();
         return d;          
     }
+    public static Instances generateDictionaryData(int seriesLength, int []casesPerClass){
+        return generateDictionaryData(seriesLength, casesPerClass,shapeletsPerClass);
+    }
+
    /**
      * This is a support method for generateShapeletData
      * 
-     * @param array An array of two ShapeletModel2 models, representing the 
-     * simulated shapes inserted into the respective classes.
      * @param seriesLength The length of the series.
      */
     private static void populateRepeatedShapeletArray(DictionaryModel [] s, int seriesLength)
@@ -82,6 +85,25 @@ public class SimulateDictionaryData extends DataSimulator{
         for(int i=1;i<s.length;i++)
             s[i].setShape2Type(st);
     }
+
+    private static void populateRepeatedShapeletArray(DictionaryModel [] s, int seriesLength, int[] shapeletsPerClass)
+    {
+        if(s.length!=shapeletsPerClass.length){//ERROR
+            throw new RuntimeException("Error, mismatch in number of classes: "+s.length+" VS "+shapeletsPerClass.length);
+        }
+        for(int i=0;i<s.length;i++){
+            double[] p1={seriesLength,shapeletsPerClass[(0+i)],shapeletsPerClass[(1+i)%2],shapeLength};
+            s[i]=new DictionaryModel(p1);
+        }
+//Fix all the shape types to be the same as first
+        DictionaryModel.ShapeType st = s[0].getShape1();
+        for(int i=1;i<s.length;i++)
+            s[i].setShape1Type(st);
+        st = s[0].getShape2();
+        for(int i=1;i<s.length;i++)
+            s[i].setShape2Type(st);
+    }
+
 
     public static void generateExampleData(){
         int seriesLength=1000;
