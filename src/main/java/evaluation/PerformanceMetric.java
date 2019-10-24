@@ -89,6 +89,7 @@ public class PerformanceMetric {
     public static PerformanceMetric totalBuildPlusEstimateTime = new PerformanceMetric("TotalBuildPlusEstimateTimes", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillis, median, min, slower);
     public static PerformanceMetric additionalTimeForEstimate = new PerformanceMetric("AdditionalTimesForEstimates", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillis, median, min, slower);
     public static PerformanceMetric benchmarkTime = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower);
+    public static PerformanceMetric memory          = new PerformanceMetric("AvgMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
@@ -118,6 +119,9 @@ public class PerformanceMetric {
         stats.add(recall);
         stats.add(sensitivity);
         stats.add(specificity);
+
+        //stats.add(memory);
+
         return stats;
     }
 }
