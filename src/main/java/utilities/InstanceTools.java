@@ -765,4 +765,14 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
+
+    public static Instance reverseSeries(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            newInst.setValue(i, inst.value(inst.numAttributes()-i-2));
+        }
+
+        return newInst;
+    }
 }

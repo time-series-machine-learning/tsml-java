@@ -591,7 +591,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (getEstimateOwnPerformance()) {
             ensembleCvAcc = findEnsembleTrainAcc(data);
             System.out.println("CV acc =" + ensembleCvAcc);
-            setEstimateOwnPerformance(false);
         }
 
         //delete any serialised files and holding folder for checkpointing on completion
