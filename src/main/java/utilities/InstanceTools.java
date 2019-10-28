@@ -775,4 +775,42 @@ public class InstanceTools {
 
         return newInst;
     }
+
+    public static Instance shiftSeries(Instance inst, int shift){
+        Instance newInst = new DenseInstance(inst);
+
+        return newInst;
+    }
+
+    public static Instance randomlyAddToSeriesValues(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+
+        return newInst;
+    }
+
+    public static Instance randomlySubtractFromSeriesValues(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+
+        return newInst;
+    }
+
+    public static Instance randomlyAlterSeries(Instance inst, Random rand){
+        Instance newInst = new DenseInstance(inst);
+
+        if (rand.nextBoolean()){
+            newInst = reverseSeries(newInst);
+        }
+
+        int shift = rand.nextInt(240)-120;
+        newInst = shiftSeries(newInst, shift);
+
+        if (rand.nextBoolean()){
+            newInst = randomlyAddToSeriesValues(newInst);
+        }
+        else{
+            newInst = randomlyAddToSeriesValues(newInst);
+        }
+
+        return newInst;
+    }
 }
