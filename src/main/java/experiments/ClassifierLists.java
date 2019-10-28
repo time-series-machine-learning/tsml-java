@@ -60,6 +60,7 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -468,7 +469,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC_SpatialBOSS","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB"};
+            "CAWPE_AS_COTE_NO_EE","HC_SpatialBOSS","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -580,8 +581,32 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
+//            "FullHC","FullHC-SB","FullHC-SB-PF"
+            case "FullHC":
+                ArrayList<Classifier> cls=new ArrayList<>();
+                cls.add(new TSF());
+                cls.add(new BOSS());
+                cls.add(new RISE());
+                cls.add(new ShapeletTransformClassifier());
+                cls.add(new ElasticEnsemble());
+                String[] clsNames={"TSF","BOSS","RISE","STC","ElasticEnsemble"};
+                ArrayList<String> names = new ArrayList<>(Arrays.asList(clsNames));
+                c=new HiveCote(cls,names);
+                ((HiveCote)c).setContract(4);
+                break;
 
-
+            case "FullHC-SB":
+                ArrayList<Classifier> cls2=new ArrayList<>();
+                cls2.add(new TSF());
+                cls2.add(new SpatialBOSS());
+                cls2.add(new RISE());
+                cls2.add(new ShapeletTransformClassifier());
+                cls2.add(new ElasticEnsemble());
+                String[] clsNames2={"TSF","SpatialBOSS","RISE","STC","ElasticEnsemble"};
+                ArrayList<String> names2 = new ArrayList<>(Arrays.asList(clsNames2));
+                c=new HiveCote(cls2,names2);
+                ((HiveCote)c).setContract(4);
+                break;
             default:
                 System.out.println("Unknown bespoke classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between bespokeClassifiers and the switch statement ");
