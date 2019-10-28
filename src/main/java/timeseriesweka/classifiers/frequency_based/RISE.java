@@ -422,8 +422,8 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
 
     public static void main(String[] arg) throws Exception{
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[2] + "/" + DatasetLists.tscProblems85[2] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
@@ -440,18 +440,18 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
         System.out.println("\n");
         try {
             RISE = new RISE();
-            RISE.setTransforms("ACF", "PS");
+            RISE.setTransforms("PS", "ACF");
             cr = sse.evaluate(RISE, data);
-            System.out.println("ACF_PS");
+            System.out.println("PS_ACF");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
-            RISE = new RISE();
+            /*RISE = new RISE();
             cr = sse.evaluate(RISE, data);
             System.out.println("ACF_FFT");
             RISE.setTransforms("ACF", "FFT");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
         } catch (Exception e) {
             e.printStackTrace();
         }
