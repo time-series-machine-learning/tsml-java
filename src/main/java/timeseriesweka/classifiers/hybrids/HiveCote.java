@@ -104,11 +104,21 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
     
     public HiveCote(ArrayList<Classifier> classifiers, ArrayList<String> classifierNames){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        setClassifiers(classifiers,classifierNames);
         this.classifiers = classifiers;
         this.names = classifierNames;
         if(contractTime){
             setTrainTimeLimit(TimeUnit.HOURS,contractHours);
         }
+
+    }
+    public final void setClassifiers(ArrayList<Classifier> classifiers, ArrayList<String> classifierNames){
+        for(Classifier c: classifiers) {
+            if (c instanceof EnhancedAbstractClassifier)
+                if (((EnhancedAbstractClassifier) c).ableToEstimateOwnPerformance())
+                    ((EnhancedAbstractClassifier) c).setEstimateOwnPerformance(true);
+        }
+
     }
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -211,6 +221,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
             
 // if classifier is an implementation of TrainAccuracyEstimator, no need to cv for ensemble accuracy as it can self-report
 // e.g. of the default modules, EE, CAWPE, and BOSS should all have this functionality (group a); RISE and TSF do not currently (group b) so must manualy cv
+
             if(EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(classifiers.get(i))){
                 optionalOutputLine("training (group a): "+this.names.get(i));
                 classifiers.get(i).buildClassifier(train);
