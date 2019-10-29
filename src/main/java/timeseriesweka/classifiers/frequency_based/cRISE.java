@@ -20,6 +20,7 @@ import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.*;
+import utilities.ClassifierTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -85,7 +86,6 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     private boolean downSample = false;
     private boolean loadedFromFile = false;
     private int stabilise = 0;
-    private long seed = 0;
     private final int DEFAULT_MAXLAG = 100;
     private final int DEFAULT_MINLAG = 1;
 
@@ -110,8 +110,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * @param seed
      */
     public cRISE(long seed){
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
-        this.seed = seed;
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         super.setSeed((int)seed);
         timer = new Timer();
     }
@@ -140,11 +139,6 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         startEndPoints = new ArrayList<>();
         PS = new PowerSpectrum();
         treeCount = 0;
-    }
-
-    public void setSeed(long seed){
-        this.seed = seed;
-        super.setSeed((int)seed);
     }
 
     /**
@@ -1083,14 +1077,22 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
 
-            cRISE = new cRISE();
+            /*cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        cRISE = new cRISE();
+        try {
+            ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(cRISE);
+            temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
         } catch (Exception e) {
             e.printStackTrace();
         }
