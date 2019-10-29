@@ -1058,9 +1058,9 @@ public class DatasetLists {
 			"Beef", // 30,30,470,5
 			"Car", // 60,60,577,4
 			"Coffee", // 28,28,286,2
-			"Cricket_X", // 390,390,300,12
-			"Cricket_Y", // 390,390,300,12
-			"Cricket_Z", // 390,390,300,12
+			"CricketX", // 390,390,300,12
+			"CricketY", // 390,390,300,12
+			"CricketZ", // 390,390,300,12
 			"DiatomSizeReduction", // 16,306,345,4
 			"fish", // 175,175,463,7
 			"GunPoint", // 50,150,150,2

@@ -19,10 +19,9 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import timeseriesweka.filters.Fast_FFT;
-import timeseriesweka.filters.ACF;
-import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.PowerSpectrum;
+import timeseriesweka.filters.*;
+import utilities.ClassifierTools;
+import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -87,7 +86,6 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     private boolean downSample = false;
     private boolean loadedFromFile = false;
     private int stabilise = 0;
-    private long seed = 0;
     private final int DEFAULT_MAXLAG = 100;
     private final int DEFAULT_MINLAG = 1;
 
@@ -104,13 +102,15 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     private String serialisePath = null;
     private Instances data = null;
 
+    //Updated work
+    private ArrayList<int[]> startEndPoints = null;
+
     /**
      * Constructor
      * @param seed
      */
     public cRISE(long seed){
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
-        this.seed = seed;
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         super.setSeed((int)seed);
         timer = new Timer();
     }
@@ -120,10 +120,10 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         this.seed = 0;
         super.setSeed((int)seed);
         timer = new Timer();
-        this.setTransformType(TransformType.ACF_PS);
+        this.setTransformType(TransformType.ACF_FFT);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
 
     /**
      * Function used to reset internal state of classifier.
@@ -136,13 +136,9 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         intervalsInfo = new ArrayList<>();
         intervalsAttIndexes = new ArrayList<>();
         rawIntervalIndexes = new ArrayList<>();
+        startEndPoints = new ArrayList<>();
         PS = new PowerSpectrum();
         treeCount = 0;
-    }
-
-    public void setSeed(long seed){
-        this.seed = seed;
-        super.setSeed((int)seed);
     }
 
     /**
@@ -236,7 +232,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 */
     public int getMaxLag(Instances instances){
-        int maxLag = (instances.numAttributes()-1);
+        int maxLag = (instances.numAttributes()-1)/4;
         if(DEFAULT_MAXLAG < maxLag)
             maxLag = DEFAULT_MAXLAG;
         /*if(maxLag < DEFAULT_MINLAG)
@@ -418,6 +414,38 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         return testInstances.firstInstance();
     }
 
+    private Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
+        Instances intervalInstances = null;
+        ArrayList<Attribute>attributes = new ArrayList<>();
+        //int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]);
+        int nearestPowerOfTwo = startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0];
+
+        for (int i = 0; i < nearestPowerOfTwo; i ++) {
+            Attribute att = i + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.attribute(i + startEndPoints.get(classifierNum)[0]) : new Attribute("att"+ (i + 1 + startEndPoints.get(classifierNum)[0]));
+            //Attribute att = i + startEndPoints.get(classifierNum)[0] < (startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]) ? testInstance.attribute(i + startEndPoints.get(classifierNum)[0]) : new Attribute("att"+ (i + 1 + startEndPoints.get(classifierNum)[0]));
+            attributes.add(att);
+        }
+
+        attributes.add(testInstance.attribute(testInstance.numAttributes()-1));
+        intervalInstances = new Instances(testInstance.dataset().relationName(), attributes, 1);
+        double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
+
+        for (int j = 0; j < nearestPowerOfTwo; j++) {
+            double value = j + startEndPoints.get(classifierNum)[0] < testInstance.numAttributes() - 1 ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
+            //double value = j + startEndPoints.get(classifierNum)[0] < (startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]) ? testInstance.value(j + startEndPoints.get(classifierNum)[0]) : 0.0;
+            intervalInstanceValues[j] = value;
+        }
+
+        DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
+        intervalInstance.replaceMissingValues(intervalInstanceValues);
+        intervalInstance.setValue(intervalInstanceValues.length-1, testInstance.classValue());
+        intervalInstances.add(intervalInstance);
+
+        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
+
+        return intervalInstances;
+    }
+
     /**
      * Transforms instances into either PS ACF or concatenation based on {@code setTransformType}
      * @param instances
@@ -429,7 +457,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         switch(transformType){
             case ACF:
                 ACF acf = new ACF();
-                acf.setMaxLag(getMaxLag(instances));
+                //acf.setMaxLag(getMaxLag(instances));
                 acf.setNormalized(false);
                 try {
                     temp = acf.process(instances);
@@ -448,23 +476,41 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             case FFT:
                 Fast_FFT Fast_FFT = new Fast_FFT();
                 try {
+                    //int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) < instances.numAttributes()-1 ? ((int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2) : ((int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1));
+                    int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2;
+                    Fast_FFT.setNFFT(nfft);
                     temp = Fast_FFT.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
+            case MFCC:
+                MFCC MFCC= new MFCC();
+                try {
+                    Instances temptemp;
+                    temptemp = MFCC.process(instances);
+                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
+                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
+                    for (int i = 0; i < instances.size(); i++) {
+                        temp.add(temptemptemp[i]);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+
             case ACF_PS:
-                temp = transformInstances(instances, TransformType.ACF);
+                temp = transformInstances(instances, TransformType.PS);
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.PS));
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case ACF_FFT:
-                temp = transformInstances(instances, TransformType.ACF);
+                temp = transformInstances(instances, TransformType.FFT);
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case FACF_FFT:
@@ -613,8 +659,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             if(maxIntervalLength > trainingData.numAttributes()-1 || maxIntervalLength <= 0){
                 maxIntervalLength = trainingData.numAttributes()-1;
             }
-            if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= (int)Math.sqrt(trainingData.numAttributes()-1)){
-                minIntervalLength = (int)Math.sqrt(trainingData.numAttributes()-1);
+            if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= 0){
+                minIntervalLength = (trainingData.numAttributes()-1)/2;
             }
 
         }
@@ -634,7 +680,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
             //Produce intervalInstances from trainingData using interval attributes.
             Instances intervalInstances;
-            intervalInstances = produceIntervalInstances(maxIntervalLength, trainingData);
+            //intervalInstances = produceIntervalInstances(maxIntervalLength, trainingData);
+            intervalInstances = produceIntervalInstancesUpdate(maxIntervalLength, trainingData);
 
             //Transform instances.
             if (transformType != null) {
@@ -671,6 +718,59 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
     }
 
+    private Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
+        Instances intervalInstances;
+        ArrayList<Attribute>attributes = new ArrayList<>();
+        ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
+
+        startEndPoints.add(new int[2]);
+        if(startEndPoints.size() == 1){
+            startEndPoints.get(startEndPoints.size() - 1)[0] = 0;
+            startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1;
+        }else{
+            startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((trainingData.numAttributes() - 1)- minIntervalLength);
+            //This avoid calling nextInt(0)
+            if(startEndPoints.get(startEndPoints.size() - 1)[0] == (trainingData.numAttributes() - 1) - 1 - minIntervalLength)
+                startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1 - 1;
+            else{
+                startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((trainingData.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0]);
+                if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
+                    startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
+                startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
+            }
+        }
+
+        //int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]);
+        int nearestPowerOfTwo = startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0];
+
+        for (int i = 0; i < nearestPowerOfTwo; i ++) {
+            //Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < (startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]) ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
+            Attribute att = i + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.attribute(i + startEndPoints.get(startEndPoints.size() - 1)[0]) : new Attribute("att" + (i + 1 + startEndPoints.get(startEndPoints.size() - 1)[0]));
+            attributes.add(att);
+        }
+
+        attributes.add(trainingData.attribute(trainingData.numAttributes()-1));
+        intervalInstances = new Instances(trainingData.relationName(), attributes, trainingData.size());
+        double[] intervalInstanceValues = new double[nearestPowerOfTwo + 1];
+
+        for (int i = 0; i < trainingData.size(); i++) {
+            for (int j = 0; j < nearestPowerOfTwo; j++) {
+                double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < trainingData.numAttributes() - 1 ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                //double value = j + startEndPoints.get(startEndPoints.size() - 1)[0] < (startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0]) ? trainingData.get(i).value(j + startEndPoints.get(startEndPoints.size() - 1)[0]) : 0.0;
+                intervalInstanceValues[j] = value;
+            }
+
+            DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
+            intervalInstance.replaceMissingValues(intervalInstanceValues);
+            intervalInstance.setValue(intervalInstanceValues.length-1, trainingData.get(i).classValue());
+            intervalInstances.add(intervalInstance);
+        }
+
+        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
+
+        return intervalInstances;
+    }
+
     /**
      * Classify one instance from test set.
      * @param instance the instance to be classified
@@ -697,12 +797,12 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public double[] distributionForInstance(Instance testInstance) throws Exception {
         double[]distribution = new double[testInstance.numClasses()];
-        ArrayList<Attribute> attributes;
+        //ArrayList<Attribute> attributes;
 
         //For every base classifier.
         for (int i = 0; i < baseClassifiers.size(); i++) {
             //Transform instance into interval instance.
-            attributes = new ArrayList<>();
+            /*attributes = new ArrayList<>();
             for (int j = 0; j < intervalsAttIndexes.get(i).size(); j++) {
                 attributes.add(testInstance.attribute(intervalsAttIndexes.get(i).get(j)));
             }
@@ -710,17 +810,29 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             Instances instances = new Instances("relationName", attributes, 1);
             Instance intervalInstance = produceIntervalInstance(testInstance, i);
             instances.add(intervalInstance);
-            instances.setClassIndex(intervalInstance.numAttributes() - 1);
+            instances.setClassIndex(intervalInstance.numAttributes() - 1);*/
 
+
+            Instance intervalInstance = null;
             //Transform interval instance into PS, ACF, ACF_PS or ACF_PS_AR
             if (transformType != null) {
-                intervalInstance = transformInstances(instances, transformType).firstInstance();
+                try{
+                    intervalInstance = transformInstances(produceIntervalInstanceUpdate(testInstance, i), transformType).firstInstance();
+                }catch(Exception e){
+                    intervalInstance = transformInstances(produceIntervalInstanceUpdate(testInstance, i), transformType).firstInstance();
+                }
             }
 
-            double[] temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
-            for (int j = 0; j < testInstance.numClasses(); j++) {
+           /* double[] temp = null;
+            try{
+                temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
+            }catch(Exception e){
+                temp = baseClassifiers.get(i).distributionForInstance(intervalInstance);
+            }*/
+            /*for (int j = 0; j < testInstance.numClasses(); j++) {
                 distribution[j] += temp[j];
-            }
+            }*/
+            distribution[(int)baseClassifiers.get(i).classifyInstance((intervalInstance))]++;
         }
         for (int j = 0; j < testInstance.numClasses(); j++) {
             distribution[j] /= baseClassifiers.size();
@@ -756,6 +868,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
                 + ", NumAtts," + data.numAttributes()
                 + ", MaxNumTrees," + numTrees
                 + ", MinIntervalLength," + minIntervalLength
+                + ", Filters, " + this.transformType.toString()
                 + ", Final Coefficients (time = a * x^2 + b * x + c)"
                 + ", a, " + timer.a
                 + ", b, " + timer.b
@@ -939,15 +1052,15 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
 
     public static void main(String[] args){
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems85[0] + "/" + DatasetLists.tscProblems85[0] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
         sse.setPropInstancesInTrain(0.5);
-        sse.setSeed(0);
+        sse.setSeed(1);
 
         cRISE cRISE = null;
         System.out.println("Dataset name: " + data.relationName());
@@ -956,22 +1069,30 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            cRISE = new cRISE();
+            /*cRISE = new cRISE();
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_PS);
+            cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
-            System.out.println("ACF_PS");
+            System.out.println("MFCC");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
 
-            cRISE = new cRISE();
+            /*cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(cRISE, data);
-            System.out.println("ACF_FFT");
+            System.out.println("ACF");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        cRISE = new cRISE();
+        try {
+            ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(cRISE);
+            temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
         } catch (Exception e) {
             e.printStackTrace();
         }
