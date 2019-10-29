@@ -50,7 +50,7 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
 
 /**
- * BOSSSpatialPyramids classifier with parameter search and ensembling, if parameters are known, 
+ * SpatialBOSS classifier with parameter search and ensembling, if parameters are known,
  * use nested 'BOSSSpatialPyramidsIndividual' classifier and directly provide them.
  * 
  * Intended use is with the default constructor, however can force the normalisation 
