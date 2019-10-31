@@ -136,7 +136,6 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
     @Override
     public ClassifierResults getTrainResults(){
-//        trainResults.setAcc(ensembleCvAcc);
         return trainResults;
     }
 
