@@ -46,3 +46,6 @@ Analysis/
 src/main/java/development/
 src/main/java/development/DataProcessing.java
 src/main/java/development/DataProcessing.java
+
+# Personal working environments.
+src/main/java/Michael/*
