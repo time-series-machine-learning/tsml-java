@@ -14,6 +14,8 @@
  */
 package experiments;
 
+import com.sun.management.GarbageCollectionNotificationInfo;
+import com.sun.management.GarbageCollectorMXBean;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
@@ -30,6 +32,9 @@ import timeseriesweka.classifiers.hybrids.HiveCote;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -57,6 +62,11 @@ import utilities.ClassifierTools;
 import weka_extras.classifiers.kNN;
 import weka.core.Instance;
 import timeseriesweka.filters.NormalizeCase;
+
+import javax.management.Notification;
+import javax.management.openmbean.CompositeData;
+import com.sun.management.*;
+
 /*
 
 Class to run one of various simulations.  
@@ -1075,7 +1085,7 @@ public class SimulationExperiments {
                 File f3 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv");
                 File f4 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/mem" + seriesLength + ".csv");
                 if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
-                    System.out.println("SKIPPING train size = "+seriesLength+" as all already present");
+                    System.out.println("SKIPPING series length = "+seriesLength+" as all already present");
                     continue;
                 }
 
@@ -1097,7 +1107,7 @@ public class SimulationExperiments {
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
-                System.out.println("Train Size =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -1254,5 +1264,84 @@ public class SimulationExperiments {
     }
 
 
+
+
+
+
+    public static void dictionarySimulatorThreadExperiment() throws Exception {
+        Model.setDefaultSigma(1);
+        boolean overwrite=false;
+        int experiments=1;
+        for(int seriesLength=300;seriesLength<=300;seriesLength+=300) {
+            int[] casesPerClass = new int[2];
+            casesPerClass[0] = casesPerClass[1] = 100;
+            int[] shapesPerClass = new int[]{5, 20};
+            double[] acc = new double[4];
+            long[] trainTime = new long[4];
+            long[] testTime = new long[4];
+            long[] mem = new long[4];
+            long t1, t2;
+            String[] classifierNames = {"BOSS"};//, "cBOSS", "SpatialBOSS", "WEASEL"};
+
+            MemoryMXBean mx= ManagementFactory.getMemoryMXBean();
+            Notification notif;
+/*            GarbageCollectorMXBean gc=mx.
+            // receive the notification emitted by a GarbageCollectorMXBean and set to notif
+            synchronized (mx){
+                mx.wait();
+            }
+            notif=mx.get
+            String notifType = "TESTY"; //notif.getType();
+            if (notifType.equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+                // retrieve the garbage collection notification information
+                CompositeData cd = (CompositeData) notif.getUserData();
+                GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from(cd);
+
+
+            }
+*/
+            for (int i = 0; i < experiments; i++) {
+                Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
+                System.out.println(" Testing thread model: series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                for (int j = 0; j < classifierNames.length; j++) {
+                    System.gc();
+                    long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                    Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
+                    t1 = System.nanoTime();
+                    c.buildClassifier(split[0]);
+                    trainTime[j] = System.nanoTime() - t1;
+                    t1 = System.nanoTime();
+                    acc[j] = ClassifierTools.accuracy(split[1], c);
+                    testTime[j] = System.nanoTime() - t1;
+                    System.gc();
+                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+
+                    System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
+                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                }
+            }
+        }
+
+    }
+
+
+    public static class ThreadExperiment implements Runnable{
+        Classifier c;
+        Instances train;
+       public ThreadExperiment(Classifier c, Instances train){
+           this.c=c;
+           this.train=train;
+       }
+
+        @Override
+        public void run() {
+           try {
+               c.buildClassifier(train);
+           }catch(Exception e){
+               System.out.println("Classifier threw exception in Thread Experiment");
+           }
+        }
+    }
 
 }

@@ -1070,7 +1070,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
         if (predDistributions == null || predClassValues == null ||
                 predDistributions.isEmpty() || predClassValues.isEmpty())
-            throw new Exception("finaliseTestResults(): no test predictions stored for this module");
+            throw new Exception("finaliseTestResults(): no predictions stored for this module");
 
         double correct = .0;
         for (int inst = 0; inst < predClassValues.size(); inst++)
