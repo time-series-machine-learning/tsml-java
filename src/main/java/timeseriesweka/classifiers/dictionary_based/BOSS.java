@@ -136,7 +136,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
     @Override
     public ClassifierResults getTrainResults(){
-        trainResults.setAcc(ensembleCvAcc);
+//        trainResults.setAcc(ensembleCvAcc);
         return trainResults;
     }
 
@@ -278,8 +278,9 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
         //Estimate train accuracy
         if (getEstimateOwnPerformance()) {
+//            trainResults.finaliseResults();
             double result = findEnsembleTrainAcc(data);
-            System.out.println("CV acc ="+result);
+//            System.out.println("CV acc ="+result);
         }
     }
 
@@ -355,7 +356,10 @@ public class BOSS extends EnhancedAbstractClassifier implements
         trainResults.setParas(getParameters());
         
         double correct = 0;
+        double[] actuals=new double[data.numInstances()];
+
         for (int i = 0; i < data.numInstances(); ++i) {
+            actuals[i]=data.instance(i).classValue();
             long predTime = System.nanoTime();
             double[] probs = distributionForInstance(i, data.numClasses());
             predTime = System.nanoTime() - predTime;
@@ -371,17 +375,14 @@ public class BOSS extends EnhancedAbstractClassifier implements
                     }
                 }
             }
-
-            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+           //No need to do it againclassifyInstance(i, data.numClasses());
+            // classify series i, while ignoring its corresponding histogram i
             if (maxClass == data.get(i).classValue())
                 ++correct;
-
             this.ensembleCvPreds[i] = maxClass;
-
             trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
-        
-        trainResults.finaliseResults();
+        trainResults.finaliseResults(actuals);
         
         double result = correct / data.numInstances();
         return result;
