@@ -135,8 +135,13 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
      * write path not set, will simply pick the first one given.
      */
     protected String writeResultsFilesDirectory;
-    protected int resampleIdentifier;
     protected String datasetName;
+
+    /**
+     * resampleIdentifier is now deprecated, using ONLY the seed for both fold-file naming purposes and any internal
+     * seeding required, e.g tie resolution
+     */
+    //protected int resampleIdentifier;
 
     public AbstractEnsemble() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -473,14 +478,14 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             }
 
             if (!trainResultsLoaded)
-                errors.log("\nTRAIN results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "' not found. ");
+                errors.log("\nTRAIN results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "' not found. ");
             else if (needIndividualTrainPreds() && modules[m].trainResults.getProbabilityDistributions().isEmpty())
-                errors.log("\nNo pred/distribution for instance data found in TRAIN results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "'. ");
+                errors.log("\nNo pred/distribution for instance data found in TRAIN results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "'. ");
 
             if (!testResultsLoaded)
-                errors.log("\nTEST results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "' not found. ");
+                errors.log("\nTEST results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "' not found. ");
             else if (modules[m].testResults.numInstances()==0)
-                errors.log("\nNo prediction data found in TEST results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + resampleIdentifier + "'. ");
+                errors.log("\nNo prediction data found in TEST results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "'. ");
         }
 
         errors.throwIfErrors();
@@ -491,7 +496,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
     }
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
-        File file = new File(readResultsFilesDirectory+classifierName+"/Predictions/"+datasetName+"/"+trainOrTest+"Fold"+resampleIdentifier+".csv");
+        File file = new File(readResultsFilesDirectory+classifierName+"/Predictions/"+datasetName+"/"+trainOrTest+"Fold"+seed+".csv");
         if(!file.exists() || file.length() == 0)
             return null;
         else
@@ -527,11 +532,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
      * arnt found, or will try to carry on (e.g train the classifiers normally)
      */
     public void setResultsFileLocationParameters(String individualResultsFilesDirectory, String datasetName, int resampleIdentifier) {
-        resultsFilesParametersInitialised = true;
-
-        this.readResultsFilesDirectories = new String [] {individualResultsFilesDirectory};
-        this.datasetName = datasetName;
-        this.resampleIdentifier = resampleIdentifier;
+        setResultsFileLocationParameters(new String[] { individualResultsFilesDirectory }, datasetName, resampleIdentifier);
     }
 
     /**
@@ -546,7 +547,11 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
 
         this.readResultsFilesDirectories = individualResultsFilesDirectories;
         this.datasetName = datasetName;
-        this.resampleIdentifier = resampleIdentifier;
+
+        if (this.seedClassifier && this.seed != resampleIdentifier)
+            System.out.println("**************WARNING: have set the seed via setSeed() already, but now setting up to build the ensemble" +
+                    " from file with a different fold id identifier. Using the new value for future seeding operations");
+        setSeed(resampleIdentifier);
     }
 
     /**
@@ -1045,7 +1050,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         sb.append("\nweight scheme: ").append(weightingScheme);
         sb.append("\nvote scheme: ").append(votingScheme);
         sb.append("\ndataset: ").append(datasetName);
-        sb.append("\nfold: ").append(resampleIdentifier);
+        sb.append("\nfold: ").append(seed);
         sb.append("\ntrain acc: ").append(trainResults.getAcc());
         sb.append("\ntest acc: ").append(builtFromFile ? testResults.getAcc() : "NA");
 
