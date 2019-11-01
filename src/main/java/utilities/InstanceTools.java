@@ -779,17 +779,52 @@ public class InstanceTools {
     public static Instance shiftSeries(Instance inst, int shift){
         Instance newInst = new DenseInstance(inst);
 
+        if (shift < 0){
+            shift = Math.abs(shift);
+
+            for (int i = 0; i < inst.numAttributes()-shift-1; i++){
+                newInst.setValue(i, inst.value(i+shift));
+            }
+
+            for (int i = inst.numAttributes()-shift-1; i < inst.numAttributes()-1; i++){
+                newInst.setValue(i, 0);
+            }
+        }
+        else if (shift > 0){
+            for (int i = 0; i < shift; i++){
+                newInst.setValue(i, 0);
+            }
+
+            for (int i = shift; i < inst.numAttributes()-1; i++){
+                newInst.setValue(i, inst.value(i-shift));
+            }
+        }
+
         return newInst;
     }
 
-    public static Instance randomlyAddToSeriesValues(Instance inst){
+    public static Instance randomlyAddToSeriesValues(Instance inst, Random rand, int minAdd, int maxAdd, int maxValue){
         Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            int n = rand.nextInt(maxAdd+1-minAdd)+minAdd;
+            double newVal = inst.value(i)+n;
+            if (newVal > maxValue) newVal = maxValue;
+            newInst.setValue(i, newVal);
+        }
 
         return newInst;
     }
 
-    public static Instance randomlySubtractFromSeriesValues(Instance inst){
+    public static Instance randomlySubtractFromSeriesValues(Instance inst, Random rand, int minSubtract, int maxSubtract, int minValue){
         Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            int n = rand.nextInt(maxSubtract+1-maxSubtract)+maxSubtract;
+            double newVal = inst.value(i)-n;
+            if (newVal < minValue) newVal = minValue;
+            newInst.setValue(i, newVal);
+        }
 
         return newInst;
     }
@@ -805,10 +840,10 @@ public class InstanceTools {
         newInst = shiftSeries(newInst, shift);
 
         if (rand.nextBoolean()){
-            newInst = randomlyAddToSeriesValues(newInst);
+            newInst = randomlyAddToSeriesValues(newInst, rand, 0, 5, Integer.MAX_VALUE);
         }
         else{
-            newInst = randomlyAddToSeriesValues(newInst);
+            newInst = randomlySubtractFromSeriesValues(newInst, rand, 0, 5, 0);
         }
 
         return newInst;
