@@ -203,7 +203,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         useWeights = true;
         reduceTrainInstances = true;
         trainProportion = 0.7;
-        bayesianParameterSelection = true;
+//        bayesianParameterSelection = true;
     }
 
     //pass in an enum of hour, minute, day, and the amount of them.
@@ -368,7 +368,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public ClassifierResults getTrainResults(){
-        trainResults.setAcc(ensembleCvAcc);
+//        trainResults.setAcc(ensembleCvAcc);
         return trainResults;
     }
 
@@ -447,7 +447,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         trainResults.setBuildTime(System.nanoTime());
-
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
 
@@ -588,9 +587,13 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
+//TO DO: SORT THIS BIT OUT
+
         if (getEstimateOwnPerformance()) {
+//            trainResults.finaliseResults();
             ensembleCvAcc = findEnsembleTrainAcc(data);
-            System.out.println("CV acc =" + ensembleCvAcc);
+//            System.out.println("CV acc =" + ensembleCvAcc);
+//            setEstimateOwnPerformance(false);
         }
 
         //delete any serialised files and holding folder for checkpointing on completion
@@ -1189,15 +1192,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     }
                 }
             }
-
             if (maxClass == data.get(i).classValue())
                 ++correct;
-
             this.ensembleCvPreds[i] = maxClass;
-
             trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, -1, "");
         }
-
         trainResults.finaliseResults();
         
         return correct / data.numInstances();
