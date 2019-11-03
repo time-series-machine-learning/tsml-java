@@ -952,9 +952,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-        //collateSimulatorResults();
-        dictionarySimulatorChangingSeriesLength();
-//        dictionarySimulatorChangingTrainSize();
+        collateSimulatorResults();
+//        dictionarySimulatorChangingSeriesLength();
+  //      dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
         smoothingTests();
@@ -999,7 +999,7 @@ public class SimulationExperiments {
         boolean overwrite=false;
         int experiments=100;
         String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments/";
-        for(int trainSize=140;trainSize<=400;trainSize+=40) {
+        for(int trainSize=240;trainSize<=400;trainSize+=20) {
             File path = new File(writePath + "DictionaryTrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1260,6 +1260,96 @@ public class SimulationExperiments {
                 }
                 outDiffs[i].writeString("\n");
             }
+
+            for(int seriesLength=300;seriesLength<=1000;seriesLength+=100) {
+                File test;
+                int lines = 0;
+                String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
+                f = new File(fPath);
+                if (!f.exists()) {
+                    System.out.println("File " + s + seriesLength + " does not exist on" + fPath+"  skipping " + seriesLength);
+                    continue;
+                }
+                //How many have we got?
+                InFile inf = new InFile(fPath);
+                int l = inf.countLines();
+                System.out.println(seriesLength + " has " + l + " lines");
+                inf = new InFile(fPath);
+                double[][] vals = new double[l][numClassifiers];
+                double[][] diffs = new double[l][numClassifiers-1];
+                for (int j = 0; j < l; j++) {
+                    String[] line = inf.readLine().split(",");
+                    vals[j][0] = Double.parseDouble(line[1]);
+                    for (int k = 1; k < numClassifiers; k++) {
+                        vals[j][k] = Double.parseDouble(line[k + 1]);
+                        diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                    }
+                }
+                //Find means
+                double[] means = new double[numClassifiers];
+                double[] meanDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    means[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        means[k] += vals[j][k];
+                    }
+                    means[k] /= l;
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    meanDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        meanDiffs[k] += diffs[j][k];
+                    }
+                    meanDiffs[k] /= l;
+                }
+                double[] confInterval = new double[numClassifiers];
+                double[] confIntervalDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    confInterval[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confInterval[k] += (vals[j][k]-means[k])*(vals[j][k]-means[k]);
+                    }
+                    confInterval[k] /= l-1;
+                    confInterval[k]=Math.sqrt(confInterval[k]);
+                    confInterval[k]/=Math.sqrt(l);
+                    confInterval[k]*=1.96;
+
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    confIntervalDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confIntervalDiffs[k] += (diffs[j][k]- meanDiffs[k])*(diffs[j][k]- meanDiffs[k]);
+                    }
+                    confIntervalDiffs[k] /= (l-1);
+                    confIntervalDiffs[k]=Math.sqrt(confIntervalDiffs[k]);
+                    confIntervalDiffs[k]/=Math.sqrt(l);
+                    confIntervalDiffs[k]*=1.96;
+                }
+
+
+                //Write to file
+                out[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + means[k]);
+                }
+                out[i].writeString(",");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + confInterval[k]);
+                }
+
+                out[i].writeString("\n");
+                outDiffs[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + meanDiffs[k]);
+                }
+                outDiffs[i].writeString(",");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + confIntervalDiffs[k]);
+                }
+                outDiffs[i].writeString("\n");
+            }
+
+
         }
     }
 
