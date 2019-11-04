@@ -79,7 +79,7 @@ public class ClassifierLists {
             "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
             "DD_DTW","DTD_C", "NN_CID","MSM","TWE","WDTW",
 //Dictionary Based
-            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS","BoTSWEnsemble",
+            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS","BoTSWEnsemble",
 //Interval Based
             "LPS","TSF","cTSF",
 //Frequency Based
@@ -161,7 +161,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "SpatialBOSS", "BoTSWEnsemble"};
+        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -186,7 +186,7 @@ public class ClassifierLists {
             case "BOSSC45":
                 c = new BOSSC45();
                 break;
-            case "SpatialBOSS":
+            case "SpatialBOSS": case "S-BOSS":
                 c = new SpatialBOSS();
                 break;
             case "BoTSWEnsemble":
@@ -606,7 +606,7 @@ public class ClassifierLists {
                 break;
             case "HC-PF-SB":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","SpatialBOSS","RISE","STC","ProximityForest"};//RotF for ST
+                    String[] cls={"TSF","S-BOSS","RISE","STC","ProximityForest"};//RotF for ST
                     c=new CAWPE();
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((CAWPE)c).setSeed(fold);
@@ -653,7 +653,7 @@ public class ClassifierLists {
                 cls2.add(new RISE());
                 cls2.add(new ShapeletTransformClassifier());
                 cls2.add(new ElasticEnsemble());
-                String[] clsNames2={"TSF","SpatialBOSS","RISE","STC","ElasticEnsemble"};
+                String[] clsNames2={"TSF","S-BOSS","RISE","STC","ElasticEnsemble"};
                 ArrayList<String> names2 = new ArrayList<>(Arrays.asList(clsNames2));
                 c=new HiveCote(cls2,names2);
                 ((HiveCote)c).setContract(4);

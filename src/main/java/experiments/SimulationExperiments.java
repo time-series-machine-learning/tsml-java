@@ -14,8 +14,8 @@
  */
 package experiments;
 
-import com.sun.management.GarbageCollectionNotificationInfo;
-import com.sun.management.GarbageCollectorMXBean;
+//import com.sun.management.GarbageCollectionNotificationInfo;
+//import com.sun.management.GarbageCollectorMXBean;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
@@ -952,9 +952,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-        collateSimulatorResults();
-//        dictionarySimulatorChangingSeriesLength();
-  //      dictionarySimulatorChangingTrainSize();
+ //       collateSimulatorResults();
+        dictionarySimulatorChangingSeriesLength();
+//        dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
         smoothingTests();
@@ -996,10 +996,10 @@ public class SimulationExperiments {
 
     public static void dictionarySimulatorChangingTrainSize() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=false;
-        int experiments=100;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments/";
-        for(int trainSize=240;trainSize<=400;trainSize+=20) {
+        boolean overwrite=true;
+        int experiments=30;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
+        for(int trainSize=20;trainSize<=400;trainSize+=20) {
             File path = new File(writePath + "DictionaryTrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1019,7 +1019,7 @@ public class SimulationExperiments {
             OutFile memFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/mem" + trainSize + ".csv");
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = trainSize * 5;
+            casesPerClass[0] = casesPerClass[1] = trainSize;
             int[] shapesPerClass = new int[]{5, 20};
             int seriesLength = 500;
             double[] acc = new double[4];
@@ -1030,8 +1030,8 @@ public class SimulationExperiments {
             String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(500, casesPerClass, shapesPerClass);
-                Instances[] split = InstanceTools.resampleInstances(data, i, 0.1);
-                System.out.println("Train Size =" + trainSize + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
+                System.out.println("Train Size =" + trainSize + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -1075,8 +1075,8 @@ public class SimulationExperiments {
         Model.setDefaultSigma(1);
         boolean overwrite=false;
         int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments/";
-        for(int seriesLength=300;seriesLength<=1000;seriesLength+=100) {
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
+        for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
             File path = new File(writePath + "DictionarySeriesLength" + seriesLength);
             path.mkdirs();
             if(!overwrite) {
