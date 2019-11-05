@@ -442,13 +442,15 @@ public class TSF extends EnhancedAbstractClassifier
                 long est1=System.nanoTime();
                 double[] preds=new double[data.numInstances()];
                 double[] actuals=new double[data.numInstances()];
+                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
                 for(int j=0;j<data.numInstances();j++){
+                    long predTime = System.nanoTime();
                     for(int k=0;k<trainDistributions[j].length;k++)
                         trainDistributions[j][k]/=oobCounts[j];
                     preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
                     actuals[j]=data.instance(j).classValue();
+                    predTimes[j]=System.nanoTime()-predTime;
                 }
-                long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
                 trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
                 trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
                 trainResults.setClassifierName("TSFBagging");

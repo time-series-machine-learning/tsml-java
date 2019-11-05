@@ -47,5 +47,6 @@ src/main/java/development/
 src/main/java/development/DataProcessing.java
 src/main/java/development/DataProcessing.java
 
-# Personal
-src/main/java/Michael/
+# Personal working environments.
+src/main/java/Michael/*
+>>>>>>> 3f2f8bbd785e80510d05b34b290de3516d17fff7

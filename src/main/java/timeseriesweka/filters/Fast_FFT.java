@@ -51,9 +51,9 @@ public class Fast_FFT extends SimpleBatchFilter{
             nfft = (int)inputFormat.get(0).value(inputFormat.attribute("samplerate"));
             inputFormat.deleteAttributeAt(inputFormat.attribute("samplerate").index());
         }else{
-            nfft = inputFormat.numAttributes() - 1;
+            //nfft = inputFormat.numAttributes() - 1;
         }
-        nearestPowerOF2(nfft);
+        //nearestPowerOF2(nfft);
 
         FastVector attributes = new FastVector(nfft/2);
         for (int i = 0; i < (nfft/2); i++) {
