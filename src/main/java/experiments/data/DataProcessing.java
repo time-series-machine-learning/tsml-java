@@ -7,9 +7,7 @@ for TSC, the basic univariate syntax is
  */
 package experiments.data;
 
-import development.LocalCollateResults;
-import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
+import experiments.CollateResults;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -23,20 +21,15 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
-import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
-import static weka.core.TechnicalInformation.Field.URL;
 
 /**
  * Sorting out the new archive
@@ -246,8 +239,8 @@ public class DataProcessing {
     //TODO CHECK TO SEE IF FILES ALREADY MADE
     public static Instances[] convertToUnivariate(String path, String dest, String prob){
         
-        if (!LocalCollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")
-                || !LocalCollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TEST")){
+        if (!CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")
+                || !CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TEST")){
         
             Instances train =DatasetLoading.loadDataNullable(path+prob+"/"+prob+"_TRAIN");
             Instances test =DatasetLoading.loadDataNullable(path+prob+"/"+prob+"_TEST");
@@ -312,7 +305,7 @@ public class DataProcessing {
     //TODO CHECK TO SEE IF FILES ALREADY MADE
     public static Instances convertToUnivariateTrain(String path, String dest, String prob){
         
-        if (!LocalCollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")){
+        if (!CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")){
         
             Instances train =DatasetLoading.loadDataNullable(path+prob+"/"+prob+"_TRAIN");
 
