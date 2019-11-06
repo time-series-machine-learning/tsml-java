@@ -44,12 +44,10 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTreeClassifier;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
-import weka_extras.classifiers.ensembles.CAWPE;
-import weka_extras.classifiers.PLSNominalClassifier;
-import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
-import weka_extras.classifiers.ensembles.weightings.TrainAcc;
-import weka_extras.classifiers.kNN;
-import weka_extras.classifiers.tuned.TunedXGBoost;
+import machine_learning.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.PLSNominalClassifier;
+import machine_learning.classifiers.kNN;
+import machine_learning.classifiers.tuned.TunedXGBoost;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -471,7 +469,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
+            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -530,6 +528,23 @@ public class ClassifierLists {
             case "HC-Standard":
                 if(canLoadFromFile){
                     String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    c=new CAWPE();
+//                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
+//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
+
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setSeed(fold);
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-NewBOSS":
+                if(canLoadFromFile){
+                    String[] cls={"TSF","BOSS-New","RISE","STC","EE"};//RotF for ST
                     c=new CAWPE();
 //                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
 //                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());

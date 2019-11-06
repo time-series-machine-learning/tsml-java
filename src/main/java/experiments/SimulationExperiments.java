@@ -53,19 +53,17 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
-import weka_extras.classifiers.ensembles.CAWPE;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Instance;
 import timeseriesweka.filters.NormalizeCase;
 
 import javax.management.Notification;
-import javax.management.openmbean.CompositeData;
-import com.sun.management.*;
 
 /*
 
@@ -952,8 +950,8 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
- //       collateSimulatorResults();
-        dictionarySimulatorChangingSeriesLength();
+        collateSimulatorResults();
+ //       dictionarySimulatorChangingSeriesLength();
 //        dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
@@ -1149,7 +1147,7 @@ public class SimulationExperiments {
 
     public static void collateSimulatorResults(){
         String type="Dictionary";
-        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments\\";
+        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments2\\";
         File f= new File(path+type+"Summary");
         f.mkdirs();
         String[] files={"mem","testAcc","testTime","trainTime"};
@@ -1261,7 +1259,7 @@ public class SimulationExperiments {
                 outDiffs[i].writeString("\n");
             }
 
-            for(int seriesLength=300;seriesLength<=1000;seriesLength+=100) {
+            for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";

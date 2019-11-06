@@ -39,9 +39,9 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
-import weka_extras.classifiers.ensembles.CAWPE;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
-import weka_extras.classifiers.tuned.TunedRandomForest;
+import machine_learning.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 

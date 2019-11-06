@@ -4,7 +4,7 @@ import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.dictionary_based.BOSSIndividual;
 import timeseriesweka.classifiers.dictionary_based.BitWord;
 import weka.core.Instances;
-import weka_extras.clusterers.PAM;
+import machine_learning.clusterers.PAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;

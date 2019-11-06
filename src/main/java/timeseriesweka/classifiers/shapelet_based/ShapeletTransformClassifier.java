@@ -25,7 +25,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import utilities.InstanceTools;
-import weka_extras.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
@@ -34,8 +34,8 @@ import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuali
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
-import weka_extras.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -44,8 +44,8 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 
-import weka_extras.classifiers.ensembles.voting.MajorityVote;
-import weka_extras.classifiers.ensembles.weightings.EqualWeighting;
+import machine_learning.classifiers.ensembles.voting.MajorityVote;
+import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;

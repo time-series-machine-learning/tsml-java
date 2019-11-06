@@ -19,13 +19,10 @@ import timeseriesweka.classifiers.distance_based.FastEE.CandidateNN;
 import timeseriesweka.classifiers.distance_based.FastEE.assessingNN.LazyAssessNN_WDTW;
 import timeseriesweka.classifiers.distance_based.FastEE.lowerBounds.LbWdtw;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
-import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.WeightedDTW;
 
 import java.util.ArrayList;

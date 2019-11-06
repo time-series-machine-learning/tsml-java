@@ -33,7 +33,6 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka_extras.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;

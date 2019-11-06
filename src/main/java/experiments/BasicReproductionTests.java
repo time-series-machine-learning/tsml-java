@@ -34,7 +34,7 @@ import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
-import weka_extras.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.CAWPE;
 
 /**
  *
