@@ -494,7 +494,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             "PB", "MV", "WMV", "RC", "NBC"
         };
 
-        String pkg = "weka_extras.classifiers.ensembles.";
+        String pkg = "machine_learning.classifiers.ensembles.";
         Class[] ensembleClasses = {
             Class.forName(pkg + "CAWPE"),
             Class.forName(pkg + "EnsembleSelection"),
