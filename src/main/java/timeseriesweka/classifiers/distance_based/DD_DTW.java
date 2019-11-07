@@ -15,9 +15,9 @@
 package timeseriesweka.classifiers.distance_based;
 
 import java.text.DecimalFormat;
-import utilities.ClassifierTools;
+
 import utilities.InstanceTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;
@@ -27,7 +27,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
-import weka.core.TechnicalInformationHandler;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**

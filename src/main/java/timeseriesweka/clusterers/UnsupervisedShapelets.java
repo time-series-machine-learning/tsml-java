@@ -6,7 +6,7 @@ import java.util.Arrays;
 import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka_extras.clusterers.KMeans;
+import machine_learning.clusterers.KMeans;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.InstanceTools.deleteClassAttribute;

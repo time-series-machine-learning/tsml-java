@@ -13,12 +13,10 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers.distance_based;
-import java.io.FileReader;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 
 import weka.core.*;
 
-import weka.core.EuclideanDistance;
 import timeseriesweka.elastic_distance_measures.DTW;
 
 /* This class is a specialisation of kNN that can only be used with the efficient DTW distance

@@ -20,7 +20,7 @@ import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
-import weka_extras.classifiers.SaveEachParameter;
+import machine_learning.classifiers.SaveEachParameter;
 import weka.core.*;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;

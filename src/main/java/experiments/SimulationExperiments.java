@@ -14,8 +14,8 @@
  */
 package experiments;
 
-import com.sun.management.GarbageCollectionNotificationInfo;
-import com.sun.management.GarbageCollectorMXBean;
+//import com.sun.management.GarbageCollectionNotificationInfo;
+//import com.sun.management.GarbageCollectorMXBean;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.distance_based.DTWCV;
 import timeseriesweka.classifiers.hybrids.FlatCote;
@@ -53,19 +53,17 @@ import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
-import weka_extras.classifiers.ensembles.CAWPE;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import timeseriesweka.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Instance;
 import timeseriesweka.filters.NormalizeCase;
 
 import javax.management.Notification;
-import javax.management.openmbean.CompositeData;
-import com.sun.management.*;
 
 /*
 
@@ -952,8 +950,8 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-        //collateSimulatorResults();
-        dictionarySimulatorChangingSeriesLength();
+        collateSimulatorResults();
+ //       dictionarySimulatorChangingSeriesLength();
 //        dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
@@ -996,10 +994,10 @@ public class SimulationExperiments {
 
     public static void dictionarySimulatorChangingTrainSize() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=false;
-        int experiments=100;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments/";
-        for(int trainSize=140;trainSize<=400;trainSize+=40) {
+        boolean overwrite=true;
+        int experiments=30;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
+        for(int trainSize=20;trainSize<=400;trainSize+=20) {
             File path = new File(writePath + "DictionaryTrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1019,7 +1017,7 @@ public class SimulationExperiments {
             OutFile memFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/mem" + trainSize + ".csv");
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = trainSize * 5;
+            casesPerClass[0] = casesPerClass[1] = trainSize;
             int[] shapesPerClass = new int[]{5, 20};
             int seriesLength = 500;
             double[] acc = new double[4];
@@ -1030,8 +1028,8 @@ public class SimulationExperiments {
             String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(500, casesPerClass, shapesPerClass);
-                Instances[] split = InstanceTools.resampleInstances(data, i, 0.1);
-                System.out.println("Train Size =" + trainSize + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
+                System.out.println("Train Size =" + trainSize + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -1075,8 +1073,8 @@ public class SimulationExperiments {
         Model.setDefaultSigma(1);
         boolean overwrite=false;
         int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments/";
-        for(int seriesLength=300;seriesLength<=1000;seriesLength+=100) {
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
+        for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
             File path = new File(writePath + "DictionarySeriesLength" + seriesLength);
             path.mkdirs();
             if(!overwrite) {
@@ -1149,7 +1147,7 @@ public class SimulationExperiments {
 
     public static void collateSimulatorResults(){
         String type="Dictionary";
-        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments\\";
+        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments2\\";
         File f= new File(path+type+"Summary");
         f.mkdirs();
         String[] files={"mem","testAcc","testTime","trainTime"};
@@ -1260,6 +1258,96 @@ public class SimulationExperiments {
                 }
                 outDiffs[i].writeString("\n");
             }
+
+            for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
+                File test;
+                int lines = 0;
+                String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
+                f = new File(fPath);
+                if (!f.exists()) {
+                    System.out.println("File " + s + seriesLength + " does not exist on" + fPath+"  skipping " + seriesLength);
+                    continue;
+                }
+                //How many have we got?
+                InFile inf = new InFile(fPath);
+                int l = inf.countLines();
+                System.out.println(seriesLength + " has " + l + " lines");
+                inf = new InFile(fPath);
+                double[][] vals = new double[l][numClassifiers];
+                double[][] diffs = new double[l][numClassifiers-1];
+                for (int j = 0; j < l; j++) {
+                    String[] line = inf.readLine().split(",");
+                    vals[j][0] = Double.parseDouble(line[1]);
+                    for (int k = 1; k < numClassifiers; k++) {
+                        vals[j][k] = Double.parseDouble(line[k + 1]);
+                        diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                    }
+                }
+                //Find means
+                double[] means = new double[numClassifiers];
+                double[] meanDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    means[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        means[k] += vals[j][k];
+                    }
+                    means[k] /= l;
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    meanDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        meanDiffs[k] += diffs[j][k];
+                    }
+                    meanDiffs[k] /= l;
+                }
+                double[] confInterval = new double[numClassifiers];
+                double[] confIntervalDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    confInterval[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confInterval[k] += (vals[j][k]-means[k])*(vals[j][k]-means[k]);
+                    }
+                    confInterval[k] /= l-1;
+                    confInterval[k]=Math.sqrt(confInterval[k]);
+                    confInterval[k]/=Math.sqrt(l);
+                    confInterval[k]*=1.96;
+
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    confIntervalDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confIntervalDiffs[k] += (diffs[j][k]- meanDiffs[k])*(diffs[j][k]- meanDiffs[k]);
+                    }
+                    confIntervalDiffs[k] /= (l-1);
+                    confIntervalDiffs[k]=Math.sqrt(confIntervalDiffs[k]);
+                    confIntervalDiffs[k]/=Math.sqrt(l);
+                    confIntervalDiffs[k]*=1.96;
+                }
+
+
+                //Write to file
+                out[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + means[k]);
+                }
+                out[i].writeString(",");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + confInterval[k]);
+                }
+
+                out[i].writeString("\n");
+                outDiffs[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + meanDiffs[k]);
+                }
+                outDiffs[i].writeString(",");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + confIntervalDiffs[k]);
+                }
+                outDiffs[i].writeString("\n");
+            }
+
+
         }
     }
 

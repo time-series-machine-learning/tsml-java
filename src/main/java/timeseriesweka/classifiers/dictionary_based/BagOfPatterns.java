@@ -17,7 +17,7 @@ package timeseriesweka.classifiers.dictionary_based;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;

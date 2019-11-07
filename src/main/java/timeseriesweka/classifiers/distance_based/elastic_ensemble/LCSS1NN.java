@@ -21,8 +21,7 @@ import timeseriesweka.classifiers.distance_based.FastEE.assessingNN.LazyAssessNN
 import timeseriesweka.classifiers.distance_based.FastEE.lowerBounds.LbLcss;
 import timeseriesweka.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
 import timeseriesweka.elastic_distance_measures.LCSSDistance;
-import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
