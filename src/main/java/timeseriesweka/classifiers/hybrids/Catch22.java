@@ -129,7 +129,7 @@ public class Catch22 extends AbstractClassifier {
     }
 
     private static double outlierInclude(double[] arr, boolean positive){
-        int total = 0;
+        double total = 0;
         double threshold = 0;
 
         for (double val : arr){
@@ -141,83 +141,67 @@ public class Catch22 extends AbstractClassifier {
             }
         }
 
-        int numThresholds = (int)(threshold/0.01);
+        int numThresholds = (int)(threshold/0.01)+1;
         double[] means = new double[numThresholds];
         double[] dists = new double[numThresholds];
         double[] medians = new double[numThresholds];
-        for (double d = 0; d < threshold; d += 0.01){
+        for (int i = 0; i < numThresholds; i += 1){
+            double d = i*0.01;
+
             ArrayList<Double> r = new ArrayList();
             if (positive){
-                for (int i = 0; i < arr.length; i++) if (arr[i] >= d) r.add((double)i+1);
+                for (int n = 0; n < arr.length; n++) if (arr[n] >= d) r.add((double)n+1);
             }
             else{
-                for (int i = 0; i < arr.length; i++) if (arr[i] <= -d) r.add((double)i+1);
+                for (int n = 0; n < arr.length; n++) if (arr[n] <= -d) r.add((double)n+1);
             }
 
             double[] diff = new double[r.size()-1];
-            for (int i = 0; i < diff.length; i++){
-                diff[i] = r.get(i+1) - r.get(i);
+            for (int n = 0; n < diff.length; n++){
+                diff[n] = r.get(n+1) - r.get(n);
             }
-            int idx = (int)d*100;
+            int idx = (int)(d*100);
 
             means[idx] = mean(diff);
             dists[idx] = diff.length/total*100;
 
+
             medians[idx] = median(r.toArray(new Double[0]))/(arr.length/2)-1;
         }
 
-//        fbi = findFirstTrue(isnan(msDt(:,1)));
-//        if fbi ~= 0
-//        msDt = msDt(1:fbi-1,:);
-//        thr = thr(1:fbi-1);
-//        end
-//
-//        mj = findLastTrue(msDt(:,3) > 2);
-//        if mj ~= 0
-//        msDt = msDt(1:mj,:);
-//        thr = thr(1:mj);
-//        end
-//
-//        function out = findFirstTrue(y)
-//
-//        out = 0;
-//
-//        coder.varsize('out', [1 1], [0 0]);
-//
-//        for i = 1:length(y)
-//        if y(i)
-//        out = i;
-//        return
-//                end
-//        end
-//
-//                end
-//
-//        function out = findLastTrue(y)
-//
-//        out = 0;
-//
-//        coder.varsize('out', [1 1], [0 0]);
-//
-//        for i = length(y):-1:1
-//        if y(i)
-//        out = i;
-//        return
-//                end
-//        end
-//
-//                end
-//
-//        return median(msDt(:,4));
+        int firstNanIdx = -1;
+        for (int i = 0; i < means.length; i++){
+            if (Double.isNaN(means[i])){
+                firstNanIdx = i;
+                break;
+            }
+        }
 
-        return 0;
+        if (firstNanIdx != -1){
+            dists = Arrays.copyOf(dists, firstNanIdx);
+            medians = Arrays.copyOf(medians, firstNanIdx);
+        }
+
+        int thresholdIdx = -1;
+        for (int i = dists.length-1; i >= 0; i--){
+            if (dists[i] > 2){
+                thresholdIdx = i;
+                break;
+            }
+        }
+
+        if (thresholdIdx != -1){
+            medians = Arrays.copyOf(medians, thresholdIdx+1);
+        }
+
+        return median(medians);
     }
 
     public static void main(String[] args) throws Exception {
         int fold = 0;
 
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "FordA";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
