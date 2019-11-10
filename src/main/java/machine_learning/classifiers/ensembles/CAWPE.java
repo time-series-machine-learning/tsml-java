@@ -260,9 +260,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
         cv.setNumFolds(10);
         this.trainEstimator = cv; 
-
-        Classifier[] classifiers = new Classifier[8];
-        String[] classifierNames = new String[8];
+        int numClassifiers=7;
+        Classifier[] classifiers = new Classifier[numClassifiers];
+        String[] classifierNames = new String[numClassifiers];
 
         kNN k=new kNN(100);
         k.setCrossValidate(true);
@@ -302,15 +302,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         classifiers[5] = r;
         classifierNames[5] = "RandF";
 
-
         RotationForest rf=new RotationForest();
         rf.setNumIterations(50);
         rf.setSeed(seed);
         classifiers[6] = rf;
         classifierNames[6] = "RotF";
 
-        classifiers[7] = new BayesNet();
-        classifierNames[7] = "bayesNet";
+//        classifiers[7] = new BayesNet();
+//        classifierNames[7] = "bayesNet";
 
         setClassifiers(classifiers, classifierNames, null);
     }
