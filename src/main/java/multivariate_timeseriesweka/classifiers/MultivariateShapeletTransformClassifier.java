@@ -24,13 +24,13 @@ import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
 
 import utilities.InstanceTools;
-import weka_extras.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import weka_extras.classifiers.ensembles.voting.MajorityConfidence;
-import weka_extras.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;

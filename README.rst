@@ -41,7 +41,7 @@ Our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/ja
 `timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/timeseriesweka>`__ and `multivariate_timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/multivariate_timeseriesweka>`__ 
     contain the TSC algorithms we have implemented, for univariate and multivariate classification respectively. 
 
-`weka_extras/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/weka_extras>`__ 
+`machine_learning/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/machine_learning>`__
     contains extra algorithm implementations that are not specific to TSC, such as generalised ensembles or classifier tuners. 
 
 Implemented Algorithms
@@ -50,7 +50,7 @@ Implemented Algorithms
 Classifiers
 ```````````
 
-The lists of implemented TSC algorithms shall continue to grow over time. These are all in addition to the standard Weka classifiers and non-TSC algorithms defined under the weka_extras package. 
+The lists of implemented TSC algorithms shall continue to grow over time. These are all in addition to the standard Weka classifiers and non-TSC algorithms defined under the machine_learning package.
 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 

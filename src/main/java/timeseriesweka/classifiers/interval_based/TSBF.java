@@ -14,18 +14,15 @@
  */
 package timeseriesweka.classifiers.interval_based;
 
-import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
-import java.text.DecimalFormat;
-import java.util.Random;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.interval_based.TSF.FeatureSet;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import weka_extras.classifiers.tuned.TunedRandomForest;
+import machine_learning.classifiers.tuned.TunedRandomForest;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

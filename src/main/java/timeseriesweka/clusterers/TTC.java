@@ -5,8 +5,8 @@ import timeseriesweka.elastic_distance_measures.DTW;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
-import weka_extras.clusterers.CAST;
-import weka_extras.clusterers.PAM;
+import machine_learning.clusterers.CAST;
+import machine_learning.clusterers.PAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;
