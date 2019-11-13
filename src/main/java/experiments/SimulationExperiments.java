@@ -950,9 +950,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-        collateSimulatorResults();
- //       dictionarySimulatorChangingSeriesLength();
-//        dictionarySimulatorChangingTrainSize();
+  //      collateSimulatorResults();
+        dictionarySimulatorChangingSeriesLength();
+ //       dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
         smoothingTests();
@@ -995,9 +995,9 @@ public class SimulationExperiments {
     public static void dictionarySimulatorChangingTrainSize() throws Exception {
         Model.setDefaultSigma(1);
         boolean overwrite=true;
-        int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
-        for(int trainSize=20;trainSize<=400;trainSize+=20) {
+        int experiments=2;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor/";
+        for(int trainSize=500;trainSize<=10000;trainSize+=500) {
             File path = new File(writePath + "DictionaryTrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1020,18 +1020,21 @@ public class SimulationExperiments {
             casesPerClass[0] = casesPerClass[1] = trainSize;
             int[] shapesPerClass = new int[]{5, 20};
             int seriesLength = 500;
-            double[] acc = new double[4];
-            long[] trainTime = new long[4];
-            long[] testTime = new long[4];
-            long[] mem = new long[4];
             long t1, t2;
-            String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
+            String[] classifierNames = {"cBOSS", "WEASEL"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(500, casesPerClass, shapesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
                 System.out.println("Train Size =" + trainSize + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                     Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
                     t1 = System.nanoTime();
@@ -1041,10 +1044,10 @@ public class SimulationExperiments {
                     acc[j] = ClassifierTools.accuracy(split[1], c);
                     testTime[j] = System.nanoTime() - t1;
                     System.gc();
-                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
-
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
                     System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
-                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
                 }
                 accFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++)
@@ -1060,7 +1063,11 @@ public class SimulationExperiments {
                 testTimeFile.writeString("\n");
                 memFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++) {
-                    memFile.writeString("," + mem[j]);
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
                 }
                 memFile.writeString("\n");
             }
@@ -1071,10 +1078,10 @@ public class SimulationExperiments {
 
     public static void dictionarySimulatorChangingSeriesLength() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=false;
-        int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
-        for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
+        boolean overwrite=true;
+        int experiments=2;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor/";
+        for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
             File path = new File(writePath + "DictionarySeriesLength" + seriesLength);
             path.mkdirs();
             if(!overwrite) {
@@ -1094,20 +1101,23 @@ public class SimulationExperiments {
             OutFile memFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength  + "/mem" + seriesLength + ".csv");
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = 100;
+            casesPerClass[0] = casesPerClass[1] = 50;
             int[] shapesPerClass = new int[]{5, 20};
-            double[] acc = new double[4];
-            long[] trainTime = new long[4];
-            long[] testTime = new long[4];
-            long[] mem = new long[4];
             long t1, t2;
-            String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
+            String[] classifierNames = {"cBOSS","S-BOSS","WEASEL","BOSS"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
                 System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                     Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
                     t1 = System.nanoTime();
@@ -1117,10 +1127,10 @@ public class SimulationExperiments {
                     acc[j] = ClassifierTools.accuracy(split[1], c);
                     testTime[j] = System.nanoTime() - t1;
                     System.gc();
-                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
-
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
                     System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
-                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
                 }
                 accFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++)
@@ -1136,7 +1146,11 @@ public class SimulationExperiments {
                 testTimeFile.writeString("\n");
                 memFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++) {
-                    memFile.writeString("," + mem[j]);
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
                 }
                 memFile.writeString("\n");
             }

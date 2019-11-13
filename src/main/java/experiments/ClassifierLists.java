@@ -16,6 +16,7 @@ package experiments;
 
 
 import experiments.Experiments.ExperimentalArguments;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.dictionary_based.*;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSC45;
 import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
@@ -469,7 +470,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
+            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -532,6 +533,22 @@ public class ClassifierLists {
 //                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
 //                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
 
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setSeed(fold);
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-Alpha1":
+                if(canLoadFromFile){
+                    String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    c=new CAWPE();
+                    ((CAWPE)c).setWeightingScheme(new TrainAcc(1));
+//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((CAWPE)c).setSeed(fold);
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
