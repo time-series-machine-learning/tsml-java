@@ -480,6 +480,9 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
         else if (experimentOption == 4){
             levels = new Integer[]{ 1 };
         }
+        else if (experimentOption == 5){
+            chiLimits = new double[]{ 0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0/7, 0.8, 0.9, 1 };
+        }
 
 
         trainResults.setBuildTime(System.nanoTime());
@@ -662,7 +665,8 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
             boss.maxWindowSize = maxWindow;
 
             boss.buildClassifier(data);
-            boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
+            if (experimentOption == 9) boss.accuracy = boss.trainAcc();
+            else boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
@@ -1411,7 +1415,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
         int fold = 0;
 
         //Minimum working example
-        String dataset = "Earthquakes";
+        String dataset = "ItalyPowerDemand";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1433,7 +1437,7 @@ public class cBOSSSP extends AbstractClassifierWithTrainingInfo implements Train
 //        c.bayesianParameterSelection = false;
         c.setSeed(fold);
 //        c.setFindTrainAccuracyEstimate(true);
-        c.experimentOption = 2;
+        c.experimentOption = 9;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 

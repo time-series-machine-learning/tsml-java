@@ -4,14 +4,14 @@ import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.DoubleIntCursor;
 import com.carrotsearch.hppc.cursors.ObjectDoubleCursor;
 import com.carrotsearch.hppc.cursors.ObjectIntCursor;
+import evaluation.evaluators.CrossValidationEvaluator;
 import timeseriesweka.classifiers.MultiThreadable;
 import timeseriesweka.classifiers.dictionary_based.bitword.BitWordLong;
 import utilities.generic_storage.ComparablePair;
 import weka.classifiers.AbstractClassifier;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.Statistics;
-import weka.core.UnassignedClassException;
+import weka.classifiers.Classifier;
+import weka.classifiers.functions.Logistic;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -73,6 +73,14 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     protected Random rand;
 
     protected static final long serialVersionUID = 22551L;
+
+
+
+    Instances transformedData;
+    Instances header;
+    Classifier classifier;
+    HashMap<ComparablePair<BitWordLong, Byte>, Integer> words;
+
 
     public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, double chiLimit, boolean multiThread, int numThreads, ExecutorService ex) {
         this.wordLength = wordLength;
@@ -174,6 +182,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
     public void clean() {
         SFAwords = null;
+
+        if (experimentOption == 9){
+            bags = null;
+        }
     }
 
     protected double[][] performDFT(double[][] windows) {
@@ -702,8 +714,11 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
+        int limitVal = 100000;
+        if (experimentOption == 8) limitVal = 200000;
+
         // limit number of features avoid excessive features
-        int limit = (int)(chiLimit * 100000);
+        int limit = (int)(chiLimit * limitVal);
 
         if (experimentOption == 1){
             limit = 10 * (maxWindowSize-windowSize+10) * levels;
@@ -773,7 +788,46 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7) chiSquared();
+        if (chiLimit < 1 && experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7) chiSquared();
+
+        if (experimentOption == 9) {
+            words = new HashMap();
+
+            int idx = 0;
+            for (SPBag bag: bags){
+                for (ComparablePair<BitWordLong, Byte> word : bag.keySet()){
+                    if (!words.containsKey(word)){
+                        words.put(word, idx);
+                        idx++;
+                    }
+                }
+            }
+
+            ArrayList<Attribute> atts = new ArrayList();
+            for (int n = 0; n < words.size(); n++) {
+                atts.add(new Attribute("att" + n));
+            }
+            atts.add(data.classAttribute());
+
+            transformedData = new Instances("Histograms", atts, 0);
+            transformedData.setClassIndex(transformedData.numAttributes() - 1);
+            header = new Instances(transformedData);
+
+            for (int inst = 0; inst < data.numInstances(); ++inst) {
+                SPBag bag = bags.get(inst);
+                double[] values = new double[words.size() + 1];
+
+                for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : bag.entrySet()) {
+                    values[words.get(entry.getKey())] = entry.getValue();
+                }
+                values[words.size()] = data.get(inst).classValue();
+
+                transformedData.add(new DenseInstance(1, values));
+            }
+
+            classifier = new Logistic();
+            classifier.buildClassifier(transformedData);
+        }
 
         if (cleanAfterBuild) {
             clean();
@@ -822,14 +876,14 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             sim += Math.min(valA,valB);
         }
 
-        return -sim;
+        return sim;
     }
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
-        if (experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7) {
+        if (chiLimit < 1 && experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7) {
             SPBag oldBag = testBag;
             testBag = new SPBag(oldBag.classVal);
             for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
@@ -839,22 +893,41 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        //1NN BOSS distance
-        double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        if (experimentOption == 9){
+            double[] values = new double[words.size() + 1];
 
-        for (int i = 0; i < bags.size(); ++i) {
-            double dist;
-            if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7) dist = histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
-
-            if (dist < bestDist) {
-                bestDist = dist;
-                nn = bags.get(i).getClassVal();
+            for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : testBag.entrySet()) {
+                Integer idx = words.get(entry.getKey());
+                if (idx != null) {
+                    values[idx] = entry.getValue();
+                }
             }
-        }
+            values[words.size()] = -1;
 
-        return nn;
+            header.add(new DenseInstance(1, values));
+            double pred = classifier.classifyInstance(header.firstInstance());
+            header.remove(0);
+            return pred;
+        }
+        else {
+            //1NN BOSS distance
+            double bestDist = Double.MAX_VALUE;
+            double nn = 0;
+
+            for (int i = 0; i < bags.size(); ++i) {
+                double dist;
+                if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7)
+                    dist = -histogramIntersection(testBag, bags.get(i));
+                else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    nn = bags.get(i).getClassVal();
+                }
+            }
+
+            return nn;
+        }
     }
 
     /**
@@ -876,7 +949,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             if (i == testIndex) //skip 'this' one, leave-one-out
                 continue;
 
-            double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+
+            double dist;
+            if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7) dist = -histogramIntersection(testBag, bags.get(i));
+            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
@@ -885,6 +961,15 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         }
 
         return nn;
+    }
+
+    public double trainAcc() throws Exception{
+        CrossValidationEvaluator cv = new CrossValidationEvaluator();
+        cv.setSeed(seed);
+        cv.setNumFolds(10);
+        double result = cv.crossValidateWithStats(new Logistic(), transformedData).getAcc();
+        transformedData = null;
+        return result;
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{

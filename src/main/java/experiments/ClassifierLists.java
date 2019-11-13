@@ -370,6 +370,16 @@ public class ClassifierLists {
                 ((cBOSSSP) c).setSeed(fold);
                 ((cBOSSSP) c).experimentOption = 7;
                 break;
+            case "WiseFScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 8;
+                break;
+            case "LogisticFScBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 9;
+                break;
 
 
             case "WEASEL":
