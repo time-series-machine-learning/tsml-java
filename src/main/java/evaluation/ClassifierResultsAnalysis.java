@@ -224,10 +224,10 @@ public class ClassifierResultsAnalysis {
         //using the presence of summaries for train and test timings as an indicator that they are present 
         List<PerformanceMetric> timeMetrics = new ArrayList<>();
         
-        if (trainTestTimingSummary != null) { 
+        if (trainTestTimingSummary != null) {
             timeMetrics.add(PerformanceMetric.buildTime);
             timeMetrics.add(testTimeMetric);
-//            timeMetrics.add(estimateTimeMetric); 
+            timeMetrics.add(estimateTimeMetric);
             for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
                 String label = timeMetrics.get(j).name;
                 if (trainTestTimingSummary[j] != null) {
@@ -650,7 +650,7 @@ public class ClassifierResultsAnalysis {
                 }
                 
                 //collect the wins for the group
-                Scanner ranksFileIn = new Scanner(new File(groupingMethodPath+metric+"/"+evalSet+"/"+groupName+"/"+groupFileName+"_"+evalSet+metric+"RANKS.csv"));      
+                Scanner ranksFileIn = new Scanner(new File(groupingMethodPath+metric+"/"+evalSet+"/"+groupName+"/"+evalSet+metric+"_RANKS.csv"));
                 classifierNamesLine = ranksFileIn.nextLine().split(",");
                 double[] winCounts = new double[classifierNamesLine.length];
                 while (ranksFileIn.hasNextLine()) {
