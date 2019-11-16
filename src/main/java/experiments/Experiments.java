@@ -91,6 +91,9 @@ public class Experiments  {
 
     public static boolean debug = false;
 
+    private static boolean testFoldExists;
+    private static boolean trainFoldExists;
+
     /**
      * If true, experiments will not print or log to stdout/err anything other that exceptions (SEVERE)
      */
@@ -462,9 +465,15 @@ public class Experiments  {
             f.mkdirs();
 
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+        String targetFileNameTrain = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
+
+        testFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileName);
+        trainFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileNameTrain);
 
         //Check whether fold already exists, if so, dont do it, just quit
-        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+        if (!expSettings.forceEvaluation &&
+                ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
+                        (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
             return null;
         }
@@ -547,7 +556,7 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet) {
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -557,7 +566,6 @@ public class Experiments  {
                     trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
             }
             LOGGER.log(Level.FINE, "Train estimate ready.");
-
 
             //Build on the full train data here
             long buildTime = System.nanoTime();
@@ -571,7 +579,7 @@ public class Experiments  {
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet)
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists)
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
 
