@@ -18,11 +18,10 @@ package utilities;
 
  */
 
-import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import experiments.data.DatasetLoading;
-import java.io.FileReader;
+
 import java.util.ArrayList;
 import java.util.Random;
 import weka.classifiers.*;
@@ -32,7 +31,6 @@ import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
@@ -45,14 +43,10 @@ import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 
 import fileIO.OutFile;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.converters.ArffSaver;
 
 /**
  * @author ajb

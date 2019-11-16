@@ -14,8 +14,8 @@
  */
 package experiments;
 
-import weka_extras.classifiers.SaveEachParameter;
-import weka_extras.classifiers.tuned.TunedRandomForest;
+import machine_learning.classifiers.SaveEachParameter;
+import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
@@ -48,7 +48,7 @@ import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 
 /**

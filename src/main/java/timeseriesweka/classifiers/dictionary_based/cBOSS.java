@@ -203,7 +203,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         useWeights = true;
         reduceTrainInstances = true;
         trainProportion = 0.7;
-//        bayesianParameterSelection = true;
+        //bayesianParameterSelection = true;
     }
 
     //pass in an enum of hour, minute, day, and the amount of them.

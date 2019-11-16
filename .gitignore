@@ -49,3 +49,4 @@ src/main/java/development/DataProcessing.java
 
 # Personal working environments.
 src/main/java/Michael/*
+out/production/classes/META-INF/tsml.main.kotlin_module

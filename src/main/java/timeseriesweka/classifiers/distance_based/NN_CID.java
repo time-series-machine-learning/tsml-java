@@ -16,7 +16,7 @@ package timeseriesweka.classifiers.distance_based;
 
 import experiments.data.DatasetLists;
 import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import timeseriesweka.classifiers.SaveParameterInfo;
