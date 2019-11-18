@@ -193,6 +193,7 @@ public class ClassifierResultsAnalysis {
             fnf.printStackTrace();
             System.exit(0);
         } catch (Exception ex) {
+            ex.printStackTrace();
             System.out.println("Something went wrong while writing RAW timing files. But NOT "
                     + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
                     + " etc. Todo look into cases of this as they crop up.\n"
@@ -210,6 +211,7 @@ public class ClassifierResultsAnalysis {
             fnf.printStackTrace();
             System.exit(0);
         } catch (Exception ex) {
+            ex.printStackTrace();
             System.out.println("Something went wrong while writing BENCHMARKED timing files. But NOT "
                     + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
                     + " etc. Todo look into cases of this as they crop up.\n"
@@ -838,8 +840,11 @@ public class ClassifierResultsAnalysis {
         
         outPath += "TimingsRAW/"; //special case for timings
         new File(outPath).mkdirs();        
-        
-        double[][][] trainTimes = results.sliceSplit("train").retrieveDoubles(trainTimeMetric.getter)[0];
+
+        // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
+        // train files in comparison set up
+
+        double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
         if (trainTimes != null)
             trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings); 
@@ -873,9 +878,12 @@ public class ClassifierResultsAnalysis {
         outPath += "TimingsBENCHMARKED/"; //special case for timings
         new File(outPath).mkdirs();
 
-        double[][][] benchmarkTrainTimes = results.sliceSplit("train").retrieveDoubles(benchmarkTimeMetric.getter)[0];
+        // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
+        // train files in comparison set up
+
+        double[][][] benchmarkTrainTimes = results.sliceSplit("test").retrieveDoubles(benchmarkTimeMetric.getter)[0];
         double[][][] correctedTrainTimes = util_correctTimingsForBenchmarks(
-                results.sliceSplit("train").retrieveDoubles(trainTimeMetric.getter)[0],
+                results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0],
                 benchmarkTrainTimes
         );
 

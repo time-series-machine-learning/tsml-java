@@ -47,21 +47,38 @@ public class Catch22 extends AbstractClassifier {
         }
 
         for (Instance inst : data){
-            double[] featureSet = new double[23];
-            double[] arr = extractTimeSeries(inst);
-
-            featureSet[0] = histMode5DN(arr);
-            featureSet[1] = histMode10DN(arr);
-            featureSet[2] = binaryStatsMeanLongstretch1SB(arr);
-            featureSet[3] = outlierIncludeP001mdrmdDN(arr);
-            featureSet[4] = outlierIncludeN001mdrmdDN(arr);
-
-            featureSet[22] = inst.classValue();
-
-            transformedData.add(new DenseInstance(1, featureSet));
+            transformedData.add(singleTransform(inst, inst.classValue()));
         }
 
         cls.buildClassifier(transformedData);
+    }
+
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        Instance transformedInst = singleTransform(instance, -1);
+        transformedInst.setDataset(header);
+        return cls.classifyInstance(transformedInst);
+    }
+
+    public double[] distributionForInstance(Instance instance) throws Exception {
+        Instance transformedInst = singleTransform(instance, -1);
+        transformedInst.setDataset(header);
+        return cls.distributionForInstance(transformedInst);
+    }
+
+    public static Instance singleTransform(Instance inst, double classVal){
+        double[] featureSet = new double[23];
+        double[] arr = extractTimeSeries(inst);
+
+        featureSet[0] = histMode5DN(arr);
+        featureSet[1] = histMode10DN(arr);
+        featureSet[2] = binaryStatsMeanLongstretch1SB(arr);
+        featureSet[3] = outlierIncludeP001mdrmdDN(arr);
+        featureSet[4] = outlierIncludeN001mdrmdDN(arr);
+
+        featureSet[22] = classVal;
+
+        return new DenseInstance(1, featureSet);
     }
 
     private static double histMode5DN(double[] arr){
