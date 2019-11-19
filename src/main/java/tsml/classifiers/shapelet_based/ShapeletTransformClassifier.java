@@ -1,0 +1,565 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package tsml.classifiers.shapelet_based;
+
+import experiments.data.DatasetLoading;
+import tsml.filters.shapelet_transforms.ShapeletTransformFactory;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_transforms.Shapelet;
+import tsml.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
+import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import utilities.InstanceTools;
+import machine_learning.classifiers.ensembles.CAWPE;
+import weka.core.Instance;
+import weka.core.Instances;
+import static tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
+import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
+import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
+import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import fileIO.FullAccessOutFile;
+import fileIO.OutFile;
+
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import tsml.classifiers.EnhancedAbstractClassifier;
+
+import machine_learning.classifiers.ensembles.voting.MajorityVote;
+import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
+import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.functions.SMO;
+import weka.classifiers.functions.supportVector.PolyKernel;
+import weka.classifiers.lazy.IBk;
+import weka.classifiers.meta.RotationForest;
+import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
+import tsml.classifiers.TrainTimeContractable;
+import weka.core.TechnicalInformation;
+
+/**
+ * ShapeletTransformClassifier
+ * Builds a time series classifier by first extracting the best numShapeletsInTransform
+ *
+ * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
+ *  then classifies with rotation forest.
+ * If can be contracted to a maximum run time for shapelets, and can be configured for a different base classifier
+ * 
+ * 
+ */
+public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
+//Basic pipeline is transform, then build classifier on transformed space
+    private ShapeletTransform transform;
+//Transformed shapelets header info stored here
+    private Instances shapeletData;
+//Final classifier built on transformed shapelet
+    private Classifier classifier;
+
+/** Shapelet transform parameters that can be configured through the STC ***/
+//This is really just to avoid interfacing directly to the transform
+//If condensing the search set, this is the minimum number of instances per class to search
+  public static final int minimumRepresentation = 25;
+  //Default number in transform
+    private static int MAXTRANSFORMSIZE=1000; 
+    private boolean preferShortShapelets = false;
+    private long transformBuildTime;
+    private int numShapeletsInTransform = MAXTRANSFORMSIZE;
+    private SearchType searchType = SearchType.IMP_RANDOM;
+    private long numShapelets = 0;
+    private boolean setSeed=false;
+    private long timeLimit = Long.MAX_VALUE;
+
+/** Shapelet saving options **/
+    private String shapeletOutputPath;
+    private String checkpointFullPath=""; //location to check point
+    private boolean checkpoint=false;
+    private boolean saveShapelets=false;
+    private String shapeletPath="";
+
+    public TechnicalInformation getTechnicalInformation() {
+        TechnicalInformation    result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "authors");
+        result.setValue(TechnicalInformation.Field.YEAR, "A shapelet transform for time series classification");
+        result.setValue(TechnicalInformation.Field.TITLE, "stuff");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "places");
+        result.setValue(TechnicalInformation.Field.VOLUME, "vol");
+        result.setValue(TechnicalInformation.Field.PAGES, "pages");
+
+        return result;
+    }
+
+    //Can be configured to multivariate
+    enum TransformType{UNI,MULTI_D,MULTI_I};
+    TransformType type=TransformType.UNI;
+    
+    public void setTransformType(TransformType t){
+        type=t;
+    }
+
+/** Redundant features in the shapelet space are removed **/
+    int[] redundantFeatures;
+
+    public void saveShapelets(String filePathForShapelets){
+        shapeletPath=filePathForShapelets;
+        saveShapelets=true;
+    }
+    public void setTransformType(String t){
+        t=t.toLowerCase();
+        switch(t){
+            case "univariate": case "uni":
+                type=TransformType.UNI;
+                break;
+            case "shapeletd": case "shapelet_d": case "dependent":
+                type=TransformType.MULTI_D;
+                break;
+            case "shapeleti": case "shapelet_i":
+                type=TransformType.MULTI_I;
+                break;
+                
+        }
+    }
+    
+    public ShapeletTransformClassifier(){
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        
+        RotationForest rf= new RotationForest();
+        rf.setNumIterations(200);
+        classifier=rf;
+    }
+
+    public void setClassifier(Classifier c){
+        classifier=c;
+    }
+
+    /**
+     * Set the search type, as defined in ShapeletSearch.SearchType
+     *
+     * Not configured to work with contracting yet.
+     *
+      * @param type: Search type with valid values  SearchType {FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
+     */
+    public void setSearchType(ShapeletSearch.SearchType type) {
+        searchType = type;
+    }
+
+    @Override
+    public String getParameters(){
+       String paras=transform.getParameters();
+       String classifierParas="No Classifier Para Info";
+       if(classifier instanceof EnhancedAbstractClassifier) 
+            classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
+        return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
+    }
+    
+    
+    public long getTransformOpCount(){
+        return transform.getCount();
+    }
+    
+    
+    public Instances transformDataset(Instances data){
+        if(transform.isFirstBatchDone())
+            return transform.process(data);
+        return null;
+    }
+    
+    //pass in an enum of hour, minut, day, and the amount of them. 
+    @Override
+    public void setTrainTimeLimit(TimeUnit time, long amount) {
+        //min,hour,day in longs.
+        switch(time){
+            case NANOSECONDS:
+                timeLimit = amount;
+                break;
+            case MINUTES:
+                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
+                break;
+            case HOURS:
+                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
+                break;
+            case DAYS:
+                timeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
+                break;
+            default:
+                throw new InvalidParameterException("Invalid time unit");
+        }
+    }
+    
+    public void setNumberOfShapelets(long numS){
+        numShapelets = numS;
+    }
+    
+    @Override
+    public void buildClassifier(Instances data) throws Exception {
+    // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        
+        long startTime=System.nanoTime();
+//Give 2/3 time for transform, 1/3 for classifier.
+        long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
+//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
+        configureShapeletTransform(data, transformTime);
+        shapeletData = transform.process(data);
+
+        transformBuildTime=System.nanoTime()-startTime;
+        redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
+        if(saveShapelets){
+            System.out.println("Shapelet Saving  ....");
+            //NO, do it properly.
+            DatasetLoading.saveDataset(shapeletData,shapeletPath+"Transforms"+seed);
+//            FullAccessOutFile of=new FullAccessOutFile(shapeletPath+"Transforms"+seed+".arff");
+//            of.writeString(shapeletData.toString());
+//            of.closeFile();
+            FullAccessOutFile of=new FullAccessOutFile(shapeletPath+"Shaplelets"+seed+".csv");
+            of.writeLine("BuildTime,"+(System.nanoTime()-startTime));
+            of.writeLine("NumShapelets,"+transform.getNumberOfShapelets());
+            of.writeLine("Count(not sure!),"+transform.getCount());
+            of.writeString("ShapeletLengths");
+            ArrayList<Integer> lengths=transform.getShapeletLengths();
+            for(Integer i:lengths)
+                of.writeString(","+i);
+            of.writeString("\n");
+            of.writeString(transform.toString());
+/*            ArrayList<Shapelet>  shapelets= transform.getShapelets();
+            of.writeLine("SHAPELETS:");
+            for(Shapelet s:shapelets){
+                double[] d=s.getUnivariateShapeletContent();
+                for(double x:d)
+                    of.writeString(x+",");
+                of.writeString("\n");
+*/
+            of.closeFile();
+        }
+        long classifierTime=timeLimit-transformBuildTime;
+        if(classifier instanceof TrainTimeContractable)
+            ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
+//Here get the train estimate directly from classifier using cv for now        
+        
+        classifier.buildClassifier(shapeletData);
+        shapeletData=new Instances(data,0);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
+    }
+/**
+ * Classifiers used in the HIVE COTE paper
+ */    
+    public void configureCAWPEEnsemble(){
+//HIVE_SHAPELET_SVMQ    HIVE_SHAPELET_RandF    HIVE_SHAPELET_RotF    
+//HIVE_SHAPELET_NN    HIVE_SHAPELET_NB    HIVE_SHAPELET_C45    HIVE_SHAPELET_SVML   
+        classifier=new CAWPE();
+        ((CAWPE)classifier).setWeightingScheme(new TrainAcc(1));
+        ((CAWPE)classifier).setVotingScheme(new MajorityConfidence());
+        Classifier[] classifiers = new Classifier[7];
+        String[] classifierNames = new String[7];        
+        SMO smo = new SMO();
+        smo.turnChecksOff();
+        smo.setBuildLogisticModels(true);
+        PolyKernel kl = new PolyKernel();
+        kl.setExponent(2);
+        smo.setKernel(kl);
+        if (setSeed)
+            smo.setRandomSeed((int)seed);
+        classifiers[0] = smo;
+        classifierNames[0] = "SVMQ";
+
+        RandomForest r=new RandomForest();
+        r.setNumTrees(500);
+        if(setSeed)
+           r.setSeed((int)seed);            
+        classifiers[1] = r;
+        classifierNames[1] = "RandF";
+            
+            
+        RotationForest rf=new RotationForest();
+        rf.setNumIterations(100);
+        if(setSeed)
+           rf.setSeed((int)seed);
+        classifiers[2] = rf;
+        classifierNames[2] = "RotF";
+        IBk nn=new IBk();
+        classifiers[3] = nn;
+        classifierNames[3] = "NN";
+        NaiveBayes nb=new NaiveBayes();
+        classifiers[4] = nb;
+        classifierNames[4] = "NB";
+        J48 c45=new J48();
+        classifiers[5] = c45;
+        classifierNames[5] = "C45";
+        SMO svml = new SMO();
+        svml.turnChecksOff();
+        svml.setBuildLogisticModels(true);
+        PolyKernel k2 = new PolyKernel();
+        k2.setExponent(1);
+        smo.setKernel(k2);
+        classifiers[6] = svml;
+        classifierNames[6] = "SVML";
+        ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);
+    }
+//This sets up the ensemble to work within the time constraints of the problem    
+    public void configureEnsemble(){
+        ((CAWPE)classifier).setWeightingScheme(new TrainAcc(4));
+        ((CAWPE)classifier).setVotingScheme(new MajorityConfidence());
+        
+        Classifier[] classifiers = new Classifier[3];
+        String[] classifierNames = new String[3];
+        SMO smo = new SMO();
+        smo.turnChecksOff();
+        smo.setBuildLogisticModels(true);
+        PolyKernel kl = new PolyKernel();
+        kl.setExponent(2);
+        smo.setKernel(kl);
+        if (setSeed)
+            smo.setRandomSeed((int)seed);
+        classifiers[0] = smo;
+        classifierNames[0] = "SVMQ";
+
+        RandomForest r=new RandomForest();
+        r.setNumTrees(500);
+        if(setSeed)
+           r.setSeed((int)seed);            
+        classifiers[1] = r;
+        classifierNames[1] = "RandF";
+            
+            
+        RotationForest rf=new RotationForest();
+        rf.setNumIterations(100);
+        if(setSeed)
+           rf.setSeed((int)seed);
+        classifiers[2] = rf;
+        classifierNames[2] = "RotF";
+       ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);        
+    }
+    
+
+    
+    public void configureBasicEnsemble(){
+// Random forest only
+        classifier=new CAWPE();
+        Classifier[] classifiers = new Classifier[1];
+        String[] classifierNames = new String[1];
+        RandomForest r=new RandomForest();
+        r.setNumTrees(500);
+        if(setSeed)
+           r.setSeed((int)seed);            
+        classifiers[0] = r;
+        classifierNames[0] = "RandF";
+
+
+        ((CAWPE)classifier).setWeightingScheme(new EqualWeighting());
+        ((CAWPE)classifier).setVotingScheme(new MajorityVote());
+        RotationForest rf=new RotationForest();
+        rf.setNumIterations(100);
+        if(setSeed)
+           rf.setSeed((int)seed);
+        ((CAWPE)classifier).setClassifiers(classifiers, classifierNames, null);
+    }
+    
+
+    @Override
+    public double classifyInstance(Instance ins) throws Exception{
+        shapeletData.add(ins);
+        
+        Instances temp  = transform.process(shapeletData);
+//Delete redundant
+        for(int del:redundantFeatures)
+            temp.deleteAttributeAt(del);
+        
+        Instance test  = temp.get(0);
+        shapeletData.remove(0);
+        return classifier.classifyInstance(test);
+    }
+     @Override
+    public double[] distributionForInstance(Instance ins) throws Exception{
+        shapeletData.add(ins);
+        
+        Instances temp  = transform.process(shapeletData);
+//Delete redundant
+        for(int del:redundantFeatures)
+            temp.deleteAttributeAt(del);
+        
+        Instance test  = temp.get(0);
+        shapeletData.remove(0);
+        return classifier.distributionForInstance(test);
+    }
+    
+    public void setShapeletOutputFilePath(String path){
+        shapeletOutputPath = path;
+    }
+    
+    public void preferShortShapelets(){
+        preferShortShapelets = true;
+    }
+/**
+ * ADAPT FOR MTSC
+ * @param train data set
+ * @param time in nanoseconds that are assigned to building the shapelet
+ */
+    public void configureShapeletTransform(Instances train, long time){
+        int n = train.numInstances();
+        int m = train.numAttributes()-1;
+//Set the number of shapelets to keep, max is MAXTRANSFORMSIZE (500)
+//numShapeletsInTransform
+//    n*m < 1000 ? n*m: 1000;   
+        if(n*m<numShapeletsInTransform)
+            numShapeletsInTransform=n*m;
+//**** CONFIGURE TRANSFORM OPTIONS ****/
+        ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
+        //Distance type options: {NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED,
+        //I dont know what these mean!
+        // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
+
+        optionsBuilder.setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE);
+        //Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN
+        optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
+
+        //These make shapelets binary in terms of quality measure (one vs all)
+        //QUESTION: if two classes, it doesnt use class balancing? is that intentional?
+        if(train.numClasses() > 2){
+            optionsBuilder.useBinaryClassValue();
+            optionsBuilder.useClassBalancing();
+        }
+        //Method of selecting series to search. Round Robin takes one of each class in turn
+        optionsBuilder.useRoundRobin();
+        //Candidate pruning: think this removes
+        optionsBuilder.useCandidatePruning();
+
+/*** DETERMINE THE SEARCH OPTIONS
+ * This is done strangely by having a Builder static nested within ShapeletSearchOptions
+ * which is just a clone of the outer class. Makes no sense to me.
+ * ***/
+        ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
+        searchBuilder.setMin(3);
+        searchBuilder.setMax(m);
+// SET UP TIME CONTRACT
+//how much time do we have vs. how long our algorithm will take.
+// How many operations can we perform based on time contract.
+//Very confusing way to do it.
+        BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
+
+        BigInteger opCount = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
+
+//Need more operations than we are allowed
+        if(opCount.compareTo(opCountTarget) > 0){
+            BigDecimal oct = new BigDecimal(opCountTarget);
+            BigDecimal oc = new BigDecimal(opCount);
+            BigDecimal prop = oct.divide(oc, MathContext.DECIMAL64);
+            
+//if we've not set a shapelet count, calculate one, based on the time set.
+//But what if num shapelets is set? Why are we doing the big decimal nonsense
+            if(numShapelets == 0){
+
+
+                numShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n,m,3,m);
+                numShapelets *= prop.doubleValue();
+            }
+             
+//we need to find at least one shapelet in every series. Not done if not in this if statement?
+            if(setSeed)
+                searchBuilder.setSeed(2*seed);
+//Surely needs to be done outside this if statement? It defaults to FULL, so I guess the logic
+//is if we have time to do full we do full, but that is unknown to user who sets search type.
+            searchBuilder.setSearchType(searchType);
+            searchBuilder.setNumShapelets(numShapelets);
+            // WHY IS THIS DONE after setNumShapelets?? can't have more final shapelets than we actually search through.
+            numShapeletsInTransform =  numShapelets > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapelets;
+        }
+
+
+        //Surely should be taken from searchBuilder?
+        optionsBuilder.setKShapelets(numShapeletsInTransform);
+        optionsBuilder.setSearchOptions(searchBuilder.build());
+
+        transform = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
+        if(!debug)
+            transform.supressOutput();
+        
+        if(shapeletOutputPath != null)
+            transform.setLogOutputFile(shapeletOutputPath);
+        
+        if(preferShortShapelets)
+            transform.setShapeletComparator(new Shapelet.ShortOrder());
+//WHY IS THIS DONE AGAIN, SURELY DONE BY OPTIONS BUILDER (line 468 above)
+        transform.setNumberOfShapelets((int)numShapeletsInTransform);
+    }
+    
+    public static void main(String[] args) throws Exception {
+//        String dataLocation = "C:\\Temp\\TSC\\";
+        String dataLocation = "E:\\Data\\TSCProblems2018\\";
+        String saveLocation = "C:\\Temp\\TSC\\";
+        String datasetName = "FordA";
+        int fold = 0;
+        
+        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
+        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
+        String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
+        String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
+        String preds=saveLocation+datasetName;
+        System.out.println("Data Loaded");
+        ShapeletTransformClassifier st= new ShapeletTransformClassifier();
+        st.configureBasicEnsemble();
+        //st.saveResults(trainS, testS);
+        st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
+        st.setMinuteLimit(2);
+        System.out.println("Start transform");
+        
+        long t1= System.currentTimeMillis();
+        st.configureShapeletTransform(train,st.timeLimit);
+        Instances stTrain=st.transform.process(train);
+        long t2= System.currentTimeMillis();
+        System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");
+        OutFile out=new OutFile(saveLocation+"ST_"+datasetName+".arff");
+        out.writeString(stTrain.toString());
+        
+    }
+/**
+ * Checkpoint methods
+ */
+    public void setSavePath(String path){
+        checkpointFullPath=path;
+    }
+    public void copyFromSerObject(Object obj) throws Exception{
+        if(!(obj instanceof ShapeletTransformClassifier))
+            throw new Exception("Not a ShapeletTransformClassifier object");
+//Copy meta data
+        ShapeletTransformClassifier st=(ShapeletTransformClassifier)obj;
+//We assume the classifiers have not been built, so are basically copying over the set up
+        classifier=st.classifier;
+        preferShortShapelets = st.preferShortShapelets;
+        shapeletOutputPath=st.shapeletOutputPath;
+        transform=st.transform;
+        shapeletData=st.shapeletData;
+        int[] redundantFeatures=st.redundantFeatures;
+        transformBuildTime=st.transformBuildTime;
+        trainResults =st.trainResults;
+        numShapeletsInTransform =st.numShapeletsInTransform;
+        searchType =st.searchType;
+        numShapelets  =st.numShapelets;
+        seed =st.seed;
+        setSeed=st.setSeed;
+        timeLimit =st.timeLimit;
+
+        
+    }
+
+    
+}

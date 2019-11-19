@@ -27,16 +27,16 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.ClassifierTools;
+
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import weka_extras.classifiers.SaveEachParameter;
+import machine_learning.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 
 /**
  *
@@ -469,10 +469,14 @@ public class Tuner
         //does anywhere set this to true but not give the path?. part of interface cleanup tests
     }
 
-    @Override //CheckpointClassifier
-    public void setSavePath(String path) {
-        this.parameterSavingPath = path;
-        this.saveParameters = true;
+    @Override //Checkpointable
+    public boolean setSavePath(String path) {
+        boolean validPath=Checkpointable.super.setSavePath(path);
+        if(validPath){
+            this.parameterSavingPath = path;
+            this.saveParameters = true;
+        }
+        return validPath;
     }
 
     @Override //CheckpointClassifier

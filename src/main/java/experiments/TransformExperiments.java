@@ -22,13 +22,13 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.dayNano;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import static tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities.dayNano;
+import static tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
 import weka.core.converters.ArffSaver;
 import weka.filters.SimpleBatchFilter;
@@ -41,10 +41,10 @@ public class TransformExperiments {
     
     private final static Logger LOGGER = Logger.getLogger(TransformExperiments.class.getName());
     
-     public static boolean debug = false;
-    
+    public static boolean debug = false;
+
     public static void main(String[] args) throws Exception {
-        
+        System.out.println("Tony Dev Test");
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             SetupTransformExperiment(expSettings);
@@ -64,7 +64,6 @@ public class TransformExperiments {
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
-            System.out.println("");
 
             ExperimentalArguments expSettings = new ExperimentalArguments(settings);
             SetupTransformExperiment(expSettings);
@@ -82,7 +81,7 @@ public class TransformExperiments {
         
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + Long.toString(expSettings.contractTrainTimeHours) + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + expSettings.contractTrainTimeHours + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -94,7 +93,6 @@ public class TransformExperiments {
         if (experiments.CollateResults.validateSingleFoldFile(transformWriteLocation) && experiments.CollateResults.validateSingleFoldFile(additionalWriteLocation)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+additionalWriteLocation+", exiting.");
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+transformWriteLocation+", exiting.");
-            return;
         }
         else{
             SimpleBatchFilter transformer = TransformLists.setTransform(expSettings);

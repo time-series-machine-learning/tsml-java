@@ -19,7 +19,7 @@ import fileIO.OutFile;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
-import timeseriesweka.filters.SummaryStats;
+import tsml.filters.SummaryStats;
 import static utilities.InstanceTools.createClassInstancesMap;
 import weka.core.Instances;
 
@@ -33,11 +33,11 @@ public class CalculateDatasetsStats {
     public static void main(String[] args) throws Exception {
                 
         //load datasets
-        for(String dataset : multivariate_timeseriesweka.DataSets.arransList){
+        for(String dataset : experiments.multivariate.DataSets.arransList){
             
-            OutFile out = new OutFile(multivariate_timeseriesweka.DataSets.dropboxPath + dataset +"_summarystats.txt");
+            OutFile out = new OutFile(experiments.multivariate.DataSets.dropboxPath + dataset +"_summarystats.txt");
             
-            Instances train = DatasetLoading.loadDataNullable(multivariate_timeseriesweka.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff");
+            Instances train = DatasetLoading.loadDataNullable(experiments.multivariate.DataSets.dropboxPath + dataset + "/" + dataset +"_TRAIN.arff");
             Instances[] channels = utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances(train);
             
             out.writeLine("num instances " + train.numInstances());

@@ -25,7 +25,6 @@ import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.DistanceFunction;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -240,9 +239,9 @@ public class InstanceTools {
         int dimColumns = data[0].length;
 
         // create a list of attributes features + label
-        FastVector attributes = new FastVector(dimColumns);
+        ArrayList<Attribute> attributes = new ArrayList<>(dimColumns);
         for (int i = 0; i < dimColumns; i++) {
-            attributes.addElement(new Attribute("attr" + String.valueOf(i + 1)));
+            attributes.add(new Attribute("attr" + String.valueOf(i + 1)));
         }
 
         // add the attributes 
@@ -268,6 +267,7 @@ public class InstanceTools {
         wekaInstances.setClassIndex(wekaInstances.numAttributes()-1);
         return wekaInstances;
     }
+
 
     //converts a 2d array into a weka Instances, appending the ith classlabel onto the ith row of data for each instance
     public static Instances toWekaInstances(double[][] data, double[] classLabels) {
@@ -481,7 +481,16 @@ public class InstanceTools {
         return del;
         
     }
-    
+
+    /**
+     * Removes attributes deemed redundant. These are either
+     * 1. All one value (i.e. constant)
+     * 2. Some odd test to count the number different to the one before.
+     * I think this is meant to count the number of different values?
+     * It would be good to delete attributes that are identical to other attributes.
+     * @param train instances from which to remove redundant attributes
+     * @return array of indexes of attributes remove
+     */
      //Returns the *shifted* indexes, so just deleting them should work
 //Removes all constant attributes or attributes with just a single value
     public static int[] removeRedundantTrainAttributes(Instances train){
@@ -500,7 +509,9 @@ public class InstanceTools {
             if(j==train.numInstances())
                 remove=true;
             else{
-//Test if just a single value to remove
+//Test pairwise similarity?
+//I think this is meant to test how many different values there are. If so, it should be
+//done with a HashSet of doubles. This counts how many values are identical to their predecessor
                 count =0;
                 for(j=1;j<train.numInstances();j++){
                     if(train.instance(j-1).value(i)==train.instance(j).value(i))
@@ -509,16 +520,14 @@ public class InstanceTools {
                 if(train.numInstances()-count<minNumDifferent+1)
                     remove=true;
             }
-            if(remove)
-            {
-    // Remove from train
+            if(remove){
+    // Remove from data
                 train.deleteAttributeAt(i);
                 list.add(i);
-    // Remove from test            
             }else{
                 i++;
             }
-            count++;
+  //          count++;
         }
         int[] del=new int[list.size()];
         count=0;
@@ -656,7 +665,7 @@ public class InstanceTools {
     //similar to concatinate, but interweaves the attributes. 
     //all of att_0 in each instance, then att_1 etc.
     public static Instances mergeInstances(String dataset, Instances[] inst, String[] dimChars){
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         
         Instances firstInst = inst[0];
@@ -667,17 +676,17 @@ public class InstanceTools {
         
         for (int i = 0; i < length; i++) {
             name = dataset + "_" + dimChars[i%dimensions] + "_" + (i/dimensions);
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
         
         //clone the class values over. 
         //Could be from x,y,z doesn't matter.
         Attribute target = firstInst.attribute(firstInst.classIndex());
-        FastVector vals = new FastVector(target.numValues());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
         for (int i = 0; i < target.numValues(); i++) {
-            vals.addElement(target.value(i));
+            vals.add(target.value(i));
         }
-        atts.addElement(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
+        atts.add(new Attribute(firstInst.attribute(firstInst.classIndex()).name(), vals));
         
         //same number of xInstances 
         Instances result = new Instances(dataset + "_merged", atts, firstInst.numInstances());
