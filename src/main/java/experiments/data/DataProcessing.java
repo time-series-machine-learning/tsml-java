@@ -23,7 +23,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import multivariate_timeseriesweka.classifiers.NN_ED_I;
+import tsml.classifiers.multivariate.NN_ED_I;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;

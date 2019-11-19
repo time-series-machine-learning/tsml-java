@@ -14,8 +14,8 @@
  */
 package experiments;
 
-import timeseriesweka.filters.*;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.*;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
 import weka.filters.SimpleBatchFilter;
 
 /**

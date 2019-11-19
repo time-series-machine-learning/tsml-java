@@ -58,8 +58,8 @@ public class BasicReproductionTests {
         new File(reproductionDirectory).mkdirs();
     }
     
-    private static final String tsClassifiers = "timeseriesweka.classifiers.";
-    private static final String extraClassifiers = "weka_extras.classifiers.";
+    private static final String tsClassifiers = "tsml.classifiers.";
+    private static final String extraClassifiers = "machine_learning.classifiers.";
     
     public static final String[] classifierPaths = {
         
