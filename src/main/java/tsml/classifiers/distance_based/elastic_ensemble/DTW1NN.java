@@ -15,10 +15,10 @@
 package tsml.classifiers.distance_based.elastic_ensemble;
 
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.FastEE.CandidateNN;
-import tsml.classifiers.distance_based.FastEE.assessingNN.LazyAssessNN_DTW;
-import tsml.classifiers.distance_based.FastEE.lowerBounds.LbKeogh;
-import tsml.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.CandidateNN;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.assessingNN.LazyAssessNN_DTW;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.lowerBounds.LbKeogh;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
 import tsml.elastic_distance_measures.DTW;
 import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
