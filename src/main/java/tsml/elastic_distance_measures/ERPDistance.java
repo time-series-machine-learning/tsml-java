@@ -27,7 +27,7 @@ Modified by Jason Lines (j.lines@uea.ac.uk)
 
  */
 
-import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.results.WarpingPathResults;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import weka.core.Instance;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;

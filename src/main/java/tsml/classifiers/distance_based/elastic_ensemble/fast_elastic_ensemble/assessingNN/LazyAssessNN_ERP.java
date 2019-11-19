@@ -15,7 +15,7 @@
 package tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.assessingNN;
 
 
-import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.results.WarpingPathResults;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
 import tsml.elastic_distance_measures.ERPDistance;
 import weka.core.Instance;
