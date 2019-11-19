@@ -12,6 +12,7 @@ import weka.core.Instance;
  */
 public final class DTW extends DTW_DistanceBasic {
 
+
     /**
      * @param a
      * @param b
