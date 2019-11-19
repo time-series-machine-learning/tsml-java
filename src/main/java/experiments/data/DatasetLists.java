@@ -17,7 +17,7 @@ package experiments.data;
 
 import fileIO.InFile;
 import fileIO.OutFile;
-import timeseriesweka.filters.SummaryStats;
+import tsml.filters.SummaryStats;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.IBk;

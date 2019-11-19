@@ -20,9 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import timeseriesweka.filters.SummaryStats;
+
+import tsml.filters.SummaryStats;
 import static utilities.InstanceTools.createClassInstancesMap;
 import weka.core.Instances;
 

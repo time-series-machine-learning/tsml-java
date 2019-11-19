@@ -1,0 +1,191 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package tsml.filters.shapelet_transforms.search_functions;
+
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
+import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.FULL;
+
+/**
+ *
+ * @author Aaron Bostrom
+ * ANY comments in this are added by Tony
+ *
+ */
+public class ShapeletSearchOptions {
+
+    private final int min; //Min length of shapelets
+    private final int max; //Max length of shapelets
+    private final long seed;
+    private final long numShapelets;//IS THIS THE NUMBER  OF SHAPELETS SEARCHED??
+    private final int lengthInc;//No idea. Some form of skipping paras?
+    private final int posInc;//No idea. Some form of skipping para?
+    private final float proportion; //No idea
+    private final int maxIterations; //No idea
+    private final long timeLimit;//Is this in conjunction with numShapelets?
+    private final SearchType searchType;
+    private final int numDimensions;//Number of dimensions in the data
+    private final int[] lengthDistribution;//Huh?
+
+    /**
+     *     Why a protected constructor? So you have to go through ShapeletSearchOptions.Builder in
+     *     order to configure
+     *             ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
+     */
+    protected ShapeletSearchOptions(Builder ops){
+        min = ops.min;
+        max = ops.max;
+        seed = ops.seed;
+        numShapelets= ops.numShapelets;
+        lengthInc = ops.lengthInc;
+        posInc = ops.posInc;
+        proportion = ops.proportion;
+        maxIterations = ops.maxIterations;
+        timeLimit = ops.timeLimit;
+        searchType = ops.searchType;
+        numDimensions = ops.numDimensions;
+        lengthDistribution = ops.lengthDistribution;
+    }
+
+    /**
+     * Class for building the ShapeletSearchOptions. I see no reason for this,
+     * why not just have ShapeletSearchOptions? Or at least as an inner class not nested!
+      */
+    public static class Builder{
+        private int min;
+        private int max;
+        private long seed;
+        private long numShapelets;
+        private int lengthInc = 1;
+        private int posInc = 1;
+        private float proportion = 1.0f;
+        private int maxIterations;
+        private long timeLimit;
+        private SearchType searchType;
+        private int[] lengthDistribution;
+        private int numDimensions = 1;
+
+//Setters: why do they all return themselves?
+        public Builder setNumDimensions(int dim){
+            numDimensions = dim;
+            return this;
+        }
+        public Builder setLengthDistribution(int[] lengthDist){
+            lengthDistribution = lengthDist;
+            return this;
+        }
+        public Builder setSearchType(SearchType st){
+            searchType = st;
+            return this;
+        }
+        
+        public Builder setTimeLimit(long lim){
+            timeLimit = lim;
+            return this;
+        }
+        
+        public Builder setMin(int min) {
+            this.min = min;
+            return this;
+        }
+
+        public Builder setMax(int max) {
+            this.max = max;
+             return this;
+        }
+
+        public Builder setSeed(long seed) {
+            this.seed = seed;
+             return this;
+        }
+
+        public Builder setNumShapelets(long numShapelets) {
+            this.numShapelets = numShapelets;
+             return this;
+        }
+
+        public Builder setLengthInc(int lengthInc) {
+            this.lengthInc = lengthInc;
+             return this;
+        }
+
+        public Builder setPosInc(int posInc) {
+            this.posInc = posInc;
+             return this;
+        }
+
+        public Builder setProportion(float proportion) {
+            this.proportion = proportion;
+             return this;
+        }
+
+        public Builder setMaxIterations(int maxIterations) {
+            this.maxIterations = maxIterations;
+             return this;
+        }
+        
+        public ShapeletSearchOptions build(){
+            setDefaults();
+            return new ShapeletSearchOptions(this);
+        }
+        
+        public void setDefaults(){
+            if(searchType == null){
+                searchType = FULL;
+            }
+        }
+    }
+
+
+    //Getters
+    public int getMin() {
+        return min;
+    }
+    public int getMax() {
+        return max;
+    }
+    public long getSeed() {
+        return seed;
+    }
+    public long getNumShapelets() {
+        return numShapelets;
+    }
+    public int getLengthInc() {
+        return lengthInc;
+    }
+    public int getPosInc() {
+        return posInc;
+    }
+    public float getProportion() {
+        return proportion;
+    }
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+    public long getTimeLimit() {
+        return timeLimit;
+    }
+    public SearchType getSearchType(){
+        return searchType;
+    }
+    public int[] getLengthDistribution() {
+        return lengthDistribution;
+    }
+    public int getNumDimensions(){
+        return numDimensions;
+    }
+
+
+
+}

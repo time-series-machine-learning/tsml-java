@@ -24,7 +24,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.elastic_distance_measures.DTW_DistanceBasic;
+import tsml.elastic_distance_measures.DTW_DistanceBasic;
 import static utilities.InstanceTools.findMinDistance;
 
 /**

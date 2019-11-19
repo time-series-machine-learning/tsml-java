@@ -19,7 +19,7 @@ import fileIO.OutFile;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
-import timeseriesweka.filters.SummaryStats;
+import tsml.filters.SummaryStats;
 import static utilities.InstanceTools.createClassInstancesMap;
 import weka.core.Instances;
 

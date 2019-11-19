@@ -19,10 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import multivariate_timeseriesweka.classifiers.ConcatenateClassifier;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.dictionary_based.BOSS;
+import tsml.classifiers.distance_based.ElasticEnsemble;
+import tsml.classifiers.shapelet_based.LearnShapelets;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 
 /**
  *

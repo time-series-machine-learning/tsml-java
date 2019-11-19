@@ -14,11 +14,11 @@
  */
 package multivariate_timeseriesweka.classifiers;
 
-import timeseriesweka.classifiers.*;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import tsml.classifiers.*;
+import tsml.filters.shapelet_transforms.ShapeletTransformFactory;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
+import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import java.io.File;
 import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
@@ -27,11 +27,11 @@ import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.filters.shapelet_transforms.DefaultShapeletOptions;
+import tsml.filters.shapelet_transforms.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.classifiers.Classifier;
@@ -42,7 +42,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.TrainTimeContractable;
 
 /**
  *

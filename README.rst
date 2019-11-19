@@ -38,7 +38,7 @@ Our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/ja
 `experiments/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/experiments>`__ 
     contains classes specifying the experimental pipelines we utilise, and lists of classifier and dataset specifications. The 'main' class is `Experiments.java <https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/experiments/Experiments.java>`__, however other experiments classes exist for running on simulation datasets or for generating transforms of time series for later classification, such as with the Shapelet Transform. 
 
-`timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/timeseriesweka>`__ and `multivariate_timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/multivariate_timeseriesweka>`__ 
+`tsml/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/tsml>`__ and `multivariate_timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/multivariate_timeseriesweka>`__
     contain the TSC algorithms we have implemented, for univariate and multivariate classification respectively. 
 
 `machine_learning/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/machine_learning>`__
