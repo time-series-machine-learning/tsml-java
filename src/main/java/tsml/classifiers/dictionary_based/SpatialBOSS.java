@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
 import weka.core.TechnicalInformation;
@@ -89,8 +91,8 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     private final Integer[] levels = { 1, 2, 3 };
     private final int alphabetSize = 4;
     
-    
-    public enum SerialiseOptions { 
+
+    public enum SerialiseOptions {
         //dont do any seriealising, run as normal
         NONE, 
         
@@ -109,7 +111,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     private static String serFileLoc = "BOSSWindowSers\\";
      
     private boolean[] normOptions;
-        
+
     /**
      * Providing a particular value for normalisation will force that option, if 
      * whether to normalise should be a parameter to be searched, use default constructor
@@ -241,7 +243,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             return -1;
         }
     }
- 
+
 
     @Override
     public String getParameters() {
@@ -284,7 +286,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     public void setSerFileLoc(String path) {
         serFileLoc = path;
     }
-        
+
     @Override
     public void buildClassifier(final Instances data) throws Exception {
         if (data.classIndex() != data.numAttributes()-1)
@@ -673,7 +675,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
      */
     public static class BOSSSpatialPyramidsIndividual implements Classifier, Serializable {
 
-        protected BitWord [][] SFAwords; //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
+        protected BitWordInt[][] SFAwords; //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
         public ArrayList<SPBag> bags; //histograms of words of the current wordlength with numerosity reduction applied (if selected)
         protected double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
@@ -726,7 +728,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         }
 
         //map of <word, level> => count
-        public static class SPBag extends HashMap<ComparablePair<BitWord, Integer>, Double> {
+        public static class SPBag extends HashMap<ComparablePair<BitWordInt, Integer>, Double> {
             double classVal;
 
             public SPBag() {
@@ -1007,13 +1009,13 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
          */
         protected SPBag createSPBagSingle(double[][] dfts) {
             SPBag bag = new SPBag();
-            BitWord lastWord = new BitWord();
+            BitWordInt lastWord = new BitWordInt();
 
             int wInd = 0;
             int trivialMatchCount = 0;
 
             for (double[] d : dfts) {
-                BitWord word = createWord(d);
+                BitWordInt word = createWord(d);
 
                 //add to bag, unless num reduction applies
                 if (numerosityReduction && word.equals(lastWord)) {
@@ -1037,8 +1039,8 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             return bag;
         }
 
-        protected BitWord createWord(double[] dft) {
-            BitWord word = new BitWord(wordLength);
+        protected BitWordInt createWord(double[] dft) {
+            BitWordInt word = new BitWordInt(wordLength);
             for (int l = 0; l < wordLength; ++l) {//for each letter
                 for (int bp = 0; bp < alphabetSize; ++bp) {//run through breakpoints until right one found
                     if (dft[l] <= breakpoints[l][bp]) {
@@ -1111,15 +1113,15 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         protected SPBag shortenSPBag(int newWordLength, int bagIndex) {
             SPBag newSPBag = new SPBag();
 
-            for (BitWord word : SFAwords[bagIndex]) {
-                BitWord shortWord = new BitWord(word);
+            for (BitWordInt word : SFAwords[bagIndex]) {
+                BitWordInt shortWord = new BitWordInt(word);
                 shortWord.shortenByFourierCoefficient();
 
                 Double val = newSPBag.get(shortWord);
                 if (val == null)
                     val = 0.0;
 
-                newSPBag.put(new ComparablePair<BitWord, Integer>(shortWord, 0), val + 1.0);
+                newSPBag.put(new ComparablePair<BitWordInt, Integer>(shortWord, 0), val + 1.0);
             }
 
             return newSPBag;
@@ -1132,15 +1134,15 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
          *      classifier. if false, this is a standalone classifier with pre-defined wordlength (etc),
          *      and therefore sfawords are that particular length already, no need to shorten
          */
-        protected SPBag createSPBagFromWords(int thisWordLength, BitWord[] words, boolean wordLengthSearching) {
+        protected SPBag createSPBagFromWords(int thisWordLength, BitWordInt[] words, boolean wordLengthSearching) {
             SPBag bag = new SPBag();
-            BitWord lastWord = new BitWord();
+            BitWordInt lastWord = new BitWordInt();
 
             int wInd = 0;
             int trivialMatchCount = 0; //keeps track of how many words have been the same so far
 
-            for (BitWord w : words) {
-                BitWord word = new BitWord(w);
+            for (BitWordInt w : words) {
+                BitWordInt word = new BitWordInt(w);
                 if (wordLengthSearching)
                     word.shorten(16-thisWordLength); //TODO hack, word.length=16=maxwordlength, wordLength of 'this' BOSSSpatialPyramids instance unreliable, length of SFAwords = maxlength
 
@@ -1183,7 +1185,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         }
 
         protected void applyPyramidWeights(SPBag bag) {
-            for (Entry<ComparablePair<BitWord, Integer>, Double> ent : bag.entrySet()) {
+            for (Entry<ComparablePair<BitWordInt, Integer>, Double> ent : bag.entrySet()) {
                 //find level that this quadrant is on
                 int quadrant = ent.getKey().var2;
                 int qEnd = 0; 
@@ -1198,7 +1200,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             }
         }
 
-        protected void addWordToPyramid(BitWord word, int wInd, SPBag bag) {
+        protected void addWordToPyramid(BitWordInt word, int wInd, SPBag bag) {
             int qStart = 0; //for this level, whats the start index for quadrants
             //e.g level 0 = 0
             //    level 1 = 1
@@ -1210,7 +1212,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
                 int pos = wInd + (windowSize/2); //use the middle of the window as its position
                 int quadrant = qStart + (pos/quadrantSize); 
 
-                ComparablePair<BitWord, Integer> key = new ComparablePair<>(word, quadrant);
+                ComparablePair<BitWordInt, Integer> key = new ComparablePair<>(word, quadrant);
                 Double val = bag.get(key);
 
                 if (val == null)
@@ -1221,9 +1223,9 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             }
         }
 
-        protected BitWord[] createSFAwords(Instance inst) throws Exception {
+        protected BitWordInt[] createSFAwords(Instance inst) throws Exception {
             double[][] dfts2 = performMFT(toArrayNoClass(inst)); //approximation     
-            BitWord[] words2 = new BitWord[dfts2.length];
+            BitWordInt[] words2 = new BitWordInt[dfts2.length];
             for (int window = 0; window < dfts2.length; ++window) 
                 words2[window] = createWord(dfts2[window]);//discretisation
 
@@ -1239,7 +1241,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
             breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
 
-            SFAwords = new BitWord[data.numInstances()][];
+            SFAwords = new BitWordInt[data.numInstances()][];
             bags = new ArrayList<>(data.numInstances());
 
             for (int inst = 0; inst < data.numInstances(); ++inst) {
@@ -1259,7 +1261,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
@@ -1281,7 +1283,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
@@ -1303,7 +1305,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
             double sim = 0.0;
 
-            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
