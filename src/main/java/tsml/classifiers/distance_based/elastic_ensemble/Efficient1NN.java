@@ -21,8 +21,8 @@ import java.util.Scanner;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.FastEE.CandidateNN;
-import tsml.classifiers.distance_based.FastEE.utils.SequenceStatsCache;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.CandidateNN;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
 import weka.core.DenseInstance;

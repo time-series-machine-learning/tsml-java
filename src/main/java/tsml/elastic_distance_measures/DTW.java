@@ -3,8 +3,8 @@ DTW with early abandon
  */
 package tsml.elastic_distance_measures;
 
-import tsml.classifiers.distance_based.FastEE.results.WarpingPathResults;
-import tsml.classifiers.distance_based.FastEE.utils.GenericTools;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.results.WarpingPathResults;
+import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.GenericTools;
 import weka.core.Instance;
 
 /**
