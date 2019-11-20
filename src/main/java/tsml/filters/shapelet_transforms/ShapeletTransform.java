@@ -76,7 +76,7 @@ import utilities.rescalers.ZStandardisation;
  */
 public class ShapeletTransform extends SimpleBatchFilter implements Serializable,TechnicalInformationHandler{
 //Global defaults. Max should be a lambda set to series length
-    public final static int DEFAULT_NUMSHAPELETS = 300;
+    public final static int DEFAULT_NUMSHAPELETS = 500;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
 
@@ -90,7 +90,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     public boolean searchComplete=false;
     
     protected boolean supressOutput=true; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
-    protected int numShapelets;
+    protected int numShapelets; //The maximum number of shapelets in the transform. This is different to the total number of shapelets to look for
+
     protected ArrayList<Shapelet> shapelets;
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
     protected boolean recordShapelets; // default action is to write an output file

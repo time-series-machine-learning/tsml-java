@@ -482,6 +482,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
         if(setSeed)
             searchBuilder.setSeed(2*seed);
+        if(numShapelets==0)//k has not been set, it should be!
+            numShapelets=ShapeletTransform.DEFAULT_NUMSHAPELETS;
 //Set builder up with any time based constraints, defined by numShapelets>0
         searchBuilder.setSearchType(searchType);
         searchBuilder.setNumShapelets(numShapelets);
