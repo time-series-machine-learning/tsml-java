@@ -1,11 +1,17 @@
 package tsml.classifiers.dictionary_based;
 
+import com.carrotsearch.hppc.*;
+import com.carrotsearch.hppc.cursors.DoubleIntCursor;
+import com.carrotsearch.hppc.cursors.ObjectDoubleCursor;
+import com.carrotsearch.hppc.cursors.ObjectIntCursor;
+import evaluation.evaluators.CrossValidationEvaluator;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
+import utilities.generic_storage.SerializableComparablePair;
 import weka.classifiers.AbstractClassifier;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.UnassignedClassException;
+import weka.classifiers.Classifier;
+import weka.classifiers.functions.Logistic;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -26,13 +32,13 @@ import java.util.concurrent.Future;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual>, MultiThreadable {
+public class BOSSIndividualSP extends AbstractClassifier implements Serializable, Comparable<BOSSIndividualSP>, MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     protected BitWordInt[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
-    protected ArrayList<Bag> bags;
+    protected ArrayList<SPBag> bags;
 
     //breakpoints to be found by MCB
     protected double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
@@ -45,6 +51,10 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     protected boolean numerosityReduction = true;
     protected boolean cleanAfterBuild = false;
 
+    protected int levels;
+    protected double levelWeighting = 0.5;
+    protected int seriesLength;
+
     protected double accuracy = -1;
     protected double weight = 1;
     protected ArrayList<Integer> subsampleIndices;
@@ -56,32 +66,34 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     protected int seed = 0;
     protected Random rand;
 
-    protected static final long serialVersionUID = 22551L;
+    protected static final long serialVersionUID = 222551L;
 
-    public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise, boolean multiThread, int numThreads, ExecutorService ex) {
+    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean multiThread, int numThreads, ExecutorService ex) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
         this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
         this.norm = normalise;
+        this.levels = levels;
         this.multiThread = multiThread;
         this.numThreads = numThreads;
         this.ex = ex;
     }
 
-    public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise) {
+    public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
         this.inverseSqrtWindowSize = 1.0 / Math.sqrt(windowSize);
         this.norm = normalise;
+        this.levels = levels;
     }
 
     /**
      * Used when shortening histograms, copies 'meta' data over, but with shorter
      * word length, actual shortening happens separately
      */
-    public BOSSIndividual(BOSSIndividual boss, int wordLength) {
+    public BOSSIndividualSP(BOSSIndividualSP boss, int wordLength) {
         this.wordLength = wordLength;
 
         this.windowSize = boss.windowSize;
@@ -89,6 +101,10 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         this.alphabetSize = boss.alphabetSize;
         this.norm = boss.norm;
         this.numerosityReduction = boss.numerosityReduction;
+
+        this.levels = boss.levels;
+        this.levelWeighting = boss.levelWeighting;
+        this.seriesLength = boss.seriesLength;
 
         this.SFAwords = boss.SFAwords;
         this.breakpoints = boss.breakpoints;
@@ -104,7 +120,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     }
 
     @Override
-    public int compareTo(BOSSIndividual o) {
+    public int compareTo(BOSSIndividualSP o) {
         return Double.compare(this.accuracy, o.accuracy);
     }
 
@@ -113,15 +129,15 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         this.numThreads = numThreads;
     }
 
-    public static class Bag extends HashMap<BitWordInt, Integer> {
+    //map of <word, level> => count
+    public static class SPBag extends HashMap<SerializableComparablePair<BitWordInt, Byte>, Integer> {
         double classVal;
-        protected static final long serialVersionUID = 22552L;
 
-        public Bag() {
+        public SPBag() {
             super();
         }
 
-        public Bag(int classValue) {
+        public SPBag(double classValue) {
             super();
             classVal = classValue;
         }
@@ -135,7 +151,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     public int getAlphabetSize() { return alphabetSize; }
     public boolean isNorm() { return norm; }
 
-    public ArrayList<Bag> getBags() { return bags; }
+    public ArrayList<SPBag> getBags() { return bags; }
 
     /**
      * @return { numIntervals(word length), alphabetSize, slidingWindowSize, normalise? }
@@ -379,23 +395,36 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      *
      * to be used e.g to transform new test instances
      */
-    protected Bag createBagSingle(double[][] dfts) {
-        Bag bag = new Bag();
+    protected SPBag createSPBagSingle(double[][] dfts) {
+        SPBag bag = new SPBag();
         BitWordInt lastWord = new BitWordInt();
+        BitWordInt[] words = new BitWordInt[dfts.length];
+
+        int wInd = 0;
+        int trivialMatchCount = 0;
 
         for (double[] d : dfts) {
             BitWordInt word = createWord(d);
+            words[wInd] = word;
+
             //add to bag, unless num reduction applies
-            if (numerosityReduction && word.equals(lastWord))
-                continue;
+            if (numerosityReduction && word.equals(lastWord)) {
+                ++trivialMatchCount;
+                ++wInd;
+            }
+            else {
+                //if a run of equivalent words, those words essentially representing the same
+                //elongated pattern. still apply numerosity reduction, however use the central
+                //time position of the elongated pattern to represent its position
+                addWordToPyramid(word, wInd - (trivialMatchCount/2), bag);
 
-            Integer val = bag.get(word);
-            if (val == null)
-                val = 0;
-            bag.put(word, ++val);
-
-            lastWord = word;
+                lastWord = word;
+                trivialMatchCount = 0;
+                ++wInd;
+            }
         }
+
+        applyPyramidWeights(bag);
 
         return bag;
     }
@@ -430,24 +459,25 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     }
 
     /**
-     * @return BOSSTransform-ed bag, built using current parameters
+     * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    public Bag BOSSTransform(Instance inst) {
-        double[][] mfts = performMFT(toArrayNoClass(inst)); //approximation
-        Bag bag = createBagSingle(mfts); //discretisation/bagging
-        bag.setClassVal(inst.classValue());
+    public SPBag BOSSSpatialPyramidsTransform(Instance inst) {
 
-        return bag;
+        double[][] mfts = performMFT(toArrayNoClass(inst)); //approximation
+        SPBag bag2 = createSPBagSingle(mfts); //discretisation/bagging
+        bag2.setClassVal(inst.classValue());
+
+        return bag2;
     }
 
     /**
-     * Shortens all bags in this BOSS instance (histograms) to the newWordLength, if wordlengths
+     * Shortens all bags in this BOSSSpatialPyramids_Redo instance (histograms) to the newWordLength, if wordlengths
      * are same, instance is UNCHANGED
      *
      * @param newWordLength wordLength to shorten it to
      * @return new boss classifier with newWordLength, or passed in classifier if wordlengths are same
      */
-    public BOSSIndividual buildShortenedBags(int newWordLength) throws Exception {
+    public BOSSIndividualSP buildShortenedSPBags(int newWordLength) throws Exception {
         if (newWordLength == wordLength) //case of first iteration of word length search in ensemble
             return this;
         if (newWordLength > wordLength)
@@ -455,13 +485,13 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         if (newWordLength < 2)
             throw new Exception("Invalid wordlength requested, current:"+wordLength+", requested:"+newWordLength);
 
-        BOSSIndividual newBoss = new BOSSIndividual(this, newWordLength);
+        BOSSIndividualSP newBoss = new BOSSIndividualSP(this, newWordLength);
 
         //build hists with new word length from SFA words, and copy over the class values of original insts
         for (int i = 0; i < bags.size(); ++i) {
-            Bag newBag = createBagFromWords(newWordLength, SFAwords[i]);
-            newBag.setClassVal(bags.get(i).getClassVal());
-            newBoss.bags.add(newBag);
+            SPBag newSPBag = createSPBagFromWords(newWordLength, SFAwords[i]);
+            newSPBag.setClassVal(bags.get(i).getClassVal());
+            newBoss.bags.add(newSPBag);
         }
 
         return newBoss;
@@ -470,28 +500,96 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    protected Bag createBagFromWords(int thisWordLength, BitWordInt[] words) {
-        Bag bag = new Bag();
+    protected SPBag createSPBagFromWords(int thisWordLength, BitWordInt[] words) {
+        SPBag bag = new SPBag();
         BitWordInt lastWord = new BitWordInt();
+        BitWordInt[] newWords = new BitWordInt[words.length];
+
+        int wInd = 0;
+        int trivialMatchCount = 0; //keeps track of how many words have been the same so far
 
         for (BitWordInt w : words) {
             BitWordInt word = new BitWordInt(w);
             if (wordLength != thisWordLength)
-                word.shorten(BitWordInt.MAX_LENGTH-thisWordLength);
+                word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
+            newWords[wInd] = word;
 
             //add to bag, unless num reduction applies
-            if (numerosityReduction && word.equals(lastWord))
-                continue;
+            if (numerosityReduction && word.equals(lastWord)) {
+                ++trivialMatchCount;
+                ++wInd;
+            }
+            else {
+                //if a run of equivalent words, those words essentially representing the same
+                //elongated pattern. still apply numerosity reduction, however use the central
+                //time position to represent its position
+                addWordToPyramid(word, wInd - (trivialMatchCount/2), bag);
 
-            Integer val = bag.get(word);
-            if (val == null)
-                val = 0;
-            bag.put(word, ++val);
-
-            lastWord = word;
+                lastWord = word;
+                trivialMatchCount = 0;
+                ++wInd;
+            }
         }
 
+        applyPyramidWeights(bag);
+
         return bag;
+    }
+
+    protected void changeNumLevels(int newLevels) {
+        //curently, simply remaking bags from words
+        //alternatively: un-weight all bags, add(run through SFAwords again)/remove levels, re-weight all
+
+        if (newLevels == this.levels)
+            return;
+
+        this.levels = newLevels;
+
+        for (int inst = 0; inst < bags.size(); ++inst) {
+            SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]); //rebuild bag
+            bag.setClassVal(bags.get(inst).classVal);
+            bags.set(inst, bag); //overwrite old
+        }
+    }
+
+    protected void applyPyramidWeights(SPBag bag) {
+        for (Map.Entry<SerializableComparablePair<BitWordInt, Byte>, Integer> ent : bag.entrySet()) {
+            //find level that this quadrant is on
+            int quadrant = ent.getKey().var2;
+            int qEnd = 0;
+            int level = 0;
+            while (qEnd < quadrant) {
+                int numQuadrants = (int)Math.pow(2, ++level);
+                qEnd+=numQuadrants;
+            }
+
+            //double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
+            int val = ent.getValue() * (int)Math.pow(2,level);
+            bag.put(ent.getKey(), val);
+        }
+    }
+
+    protected void addWordToPyramid(BitWordInt word, int wInd, SPBag bag) {
+        int qStart = 0; //for this level, whats the start index for quadrants
+        //e.g level 0 = 0
+        //    level 1 = 1
+        //    level 2 = 3
+        for (int l = 0; l < levels; ++l) {
+            //need to do the cell finding thing in the regular grid
+            int numQuadrants = (int)Math.pow(2, l);
+            int quadrantSize = seriesLength / numQuadrants;
+            int pos = wInd + (windowSize/2); //use the middle of the window as its position
+            int quadrant = qStart + (pos/quadrantSize);
+
+            SerializableComparablePair<BitWordInt, Byte> key = new SerializableComparablePair<>(word, (byte)quadrant);
+            Integer val = bag.get(key);
+
+            if (val == null)
+                val = 0;
+            bag.put(key, ++val);
+
+            qStart += numQuadrants;
+        }
     }
 
     protected BitWordInt[] createSFAwords(Instance inst) {
@@ -512,24 +610,25 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         SFAwords = new BitWordInt[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
+        seriesLength = data.numAttributes()-1;
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            ArrayList<Future<Bag>> futures = new ArrayList<>(data.numInstances());
+            ArrayList<Future<SPBag>> futures = new ArrayList<>(data.numInstances());
 
             for (int inst = 0; inst < data.numInstances(); ++inst)
                 futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
 
-            for (Future<Bag> f: futures)
+            for (Future<SPBag> f: futures)
                 bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
                 SFAwords[inst] = createSFAwords(data.get(inst));
 
-                Bag bag = createBagFromWords(wordLength, SFAwords[inst]);
+                SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
                 try {
                     bag.setClassVal(data.get(inst).classValue());
                 }
@@ -546,17 +645,17 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     }
 
     /**
-     * Computes BOSS distance between two bags d(test, train), is NON-SYMETRIC operation, ie d(a,b) != d(b,a).
+     * Computes BOSSSpatialPyramids distance between two bags d(test, train), is NON-SYMETRIC operation, ie d(a,b) != d(b,a).
      *
-     * Quits early if the dist-so-far is greater than bestDist (assumed dist is still the squared distance), and returns Double.MAX_VALUE
+     * Quits early if the dist-so-far is greater than bestDist (assumed is in fact the dist still squared), and returns Double.MAX_VALUE
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSdistance(Bag instA, Bag instB, double bestDist) {
+    public double BOSSSpatialPyramidsDistance(SPBag instA, SPBag instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (Map.Entry<BitWordInt, Integer> entry : instA.entrySet()) {
+        for (Map.Entry<SerializableComparablePair<BitWordInt, Byte>, Integer> entry : instA.entrySet()) {
             Integer valA = entry.getValue();
             Integer valB = instB.get(entry.getKey());
             if (valB == null)
@@ -570,16 +669,37 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         return dist;
     }
 
+    public double histogramIntersection(SPBag instA, SPBag instB) {
+        //min vals of keys that exist in only one of the bags will always be 0
+        //therefore want to only bother looking at counts of words in both bags
+        //therefore will simply loop over words in a, skipping those that dont appear in b
+        //no need to loop over b, since only words missed will be those not in a anyway
+
+        double sim = 0.0;
+
+        for (Map.Entry<SerializableComparablePair<BitWordInt, Byte>, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
+            if (valB == null)
+                continue;
+
+            sim += Math.min(valA,valB);
+        }
+
+        return sim;
+    }
+
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        BOSSIndividual.Bag testBag = BOSSTransform(instance);
+        BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
-        double nn = -1;
+        double nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
-            double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+            double dist = -histogramIntersection(testBag, bags.get(i));
+            //double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
@@ -599,17 +719,18 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        BOSSIndividual.Bag testBag = bags.get(testIndex);
+        BOSSIndividualSP.SPBag testBag = bags.get(testIndex);
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
-        double nn = -1;
+        double nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
             if (i == testIndex) //skip 'this' one, leave-one-out
                 continue;
 
-            double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+            double dist = -histogramIntersection(testBag, bags.get(i));
+            //double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
@@ -629,14 +750,14 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         @Override
         public Double call() {
-            BOSSIndividual.Bag testBag = BOSSTransform(inst);
+            BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(inst);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
-            double nn = -1;
+            double nn = 0;
 
             for (int i = 0; i < bags.size(); ++i) {
-                double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
@@ -657,17 +778,17 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         @Override
         public Double call() {
-            BOSSIndividual.Bag testBag = bags.get(testIndex);
+            BOSSIndividualSP.SPBag testBag = bags.get(testIndex);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
-            double nn = -1;
+            double nn = 0;
 
             for (int i = 0; i < bags.size(); ++i) {
                 if (i == testIndex) //skip 'this' one, leave-one-out
                     continue;
 
-                double dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
@@ -679,7 +800,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         }
     }
 
-    private class TransformThread implements Callable<Bag>{
+    private class TransformThread implements Callable<SPBag>{
         int i;
         Instance inst;
 
@@ -689,10 +810,10 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         }
 
         @Override
-        public Bag call() {
+        public SPBag call() {
             SFAwords[i] = createSFAwords(inst);
 
-            Bag bag = createBagFromWords(wordLength, SFAwords[i]);
+            SPBag bag = createSPBagFromWords(wordLength, SFAwords[i]);
             try {
                 bag.setClassVal(inst.classValue());
             }

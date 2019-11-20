@@ -34,7 +34,7 @@ import weka.core.TechnicalInformation;
 
 import java.util.Map.Entry;
 
-import tsml.classifiers.dictionary_based.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.ClassifierTools;
 import experiments.data.DatasetLoading;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +93,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
     private final Integer[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int alphabetSize = 4;
     //private boolean norm;
-        
+
     public enum SerialiseOptions { 
         //dont do any seriealising, run as normal
         NONE, 
@@ -113,7 +113,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
     private static String serFileLoc = "BOSSWindowSers\\";
      
     private boolean[] normOptions;
-    
+
     /**
      * Providing a particular value for normalisation will force that option, if 
      * whether to normalise should be a parameter to be searched, use default constructor
@@ -243,7 +243,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
             return -1;
         }
     }
-    
+
     @Override
     public String getParameters() {
         StringBuilder sb = new StringBuilder();
@@ -390,7 +390,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
         //final members known, now build the final trees on the full train data (rather than train/validation set)
         for (BOSSWindow window : classifiers)
             window.classifier.buildFullForest();
-      
+
         if (getEstimateOwnPerformance())
             findEnsembleTrainAcc(data);
     }
@@ -666,7 +666,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
             ArrayList<Attribute> attInfo = new ArrayList<>();
             Set<String> wordsFound = new HashSet<>();
             for (Bag bag : bags) 
-                for (Entry<BitWord,Integer> entry : bag.entrySet()) 
+                for (Entry<BitWordInt,Integer> entry : bag.entrySet())
                     wordsFound.add(entry.getKey().toString());
             for (String word : wordsFound) 
                 attInfo.add(new Attribute(word));
@@ -685,7 +685,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
                 init[init.length-1] = bag.getClassVal();
 
                 bagInsts.add(new DenseInstance(1, init));
-                for (Entry<BitWord,Integer> entry : bag.entrySet())
+                for (Entry<BitWordInt,Integer> entry : bag.entrySet())
                     bagInsts.get(i).setValue(bagInsts.attribute(entry.getKey().toString()), entry.getValue());
 
                 i++;
@@ -768,7 +768,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
 
             //TEMPORARILY create it on the end of the train insts to easily copy over the attribute data.
             bagInsts.add(new DenseInstance(1, init));
-            for (Entry<BitWord,Integer> entry : testBag.entrySet()) {
+            for (Entry<BitWordInt,Integer> entry : testBag.entrySet()) {
                 Attribute att = bagInsts.attribute(entry.getKey().toString());
                 if (att != null)
                     bagInsts.get(bagInsts.size()-1).setValue(att, entry.getValue());
@@ -790,7 +790,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
 
             //TEMPORARILY create it on the end of the train isnts to easily copy over the attribute data.
             bagInsts.add(new DenseInstance(1, init));
-            for (Entry<BitWord,Integer> entry : testBag.entrySet()) {
+            for (Entry<BitWordInt,Integer> entry : testBag.entrySet()) {
                 Attribute att = bagInsts.attribute(entry.getKey().toString());
                 if (att != null)
                     bagInsts.get(bagInsts.numInstances()-1).setValue(att, entry.getValue());
