@@ -44,7 +44,7 @@ public class GeneticSearch extends ImpRandomSearch{
     }
 
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
        evaluated = 0;
         
        double[] series = timeSeries.toDoubleArray();

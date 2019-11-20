@@ -64,7 +64,9 @@ import weka.core.TechnicalInformation;
  * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
  *  then classifies with rotation forest.
  * If can be contracted to a maximum run time for shapelets, and can be configured for a different base classifier
- * 
+ *
+ * //Subsequence distances in SubsSeqDistance : defines how to do sDist, outcomes should be the same, difference efficiency
+ *
  * 
  */
 public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
@@ -81,13 +83,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
   public static final int minimumRepresentation = 25;
   //Default number in transform
     private static int MAXTRANSFORMSIZE=1000; 
-    private boolean preferShortShapelets = false;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
+    private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMP_ONLINE;
+
     private long numShapelets = 0;
     private boolean setSeed=false;
-    private long timeLimit = Long.MAX_VALUE;
+    private long timeLimit = 0;
 
 /** Shapelet saving options **/
     private String shapeletOutputPath;
@@ -406,9 +409,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         shapeletOutputPath = path;
     }
     
-    public void preferShortShapelets(){
-        preferShortShapelets = true;
-    }
 /**
  * ADAPT FOR MTSC
  * @param train data set
@@ -424,28 +424,29 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             numShapeletsInTransform=n*m;
 //**** CONFIGURE TRANSFORM OPTIONS ****/
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
-        //Distance type options: {NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED,
-        //I dont know what these mean!
+        //Distance type options: {NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED,: See class for info, refactor IMP (improved)
         // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
-
-        optionsBuilder.setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE);
-        //Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN
+//Refactor IMP_ONLINE NAME
+        optionsBuilder.setDistanceType(distType);
+//Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN: change to an ST Parameter
         optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
 
-        //These make shapelets binary in terms of quality measure (one vs all)
-        //QUESTION: if two classes, it doesnt use class balancing? is that intentional?
+//These make shapelets binary in terms of quality measure (one vs all)
+//Balancing on two class problems generally makes things worse, check out DAWAK
         if(train.numClasses() > 2){
             optionsBuilder.useBinaryClassValue();
             optionsBuilder.useClassBalancing();
         }
-        //Method of selecting series to search. Round Robin takes one of each class in turn
+//Method of selecting series to search. Round Robin takes one of each class in turn
+//Defaults to just sequencially scanning by series
         optionsBuilder.useRoundRobin();
-        //Candidate pruning: think this removes
+//Candidate pruning:   from the original Ye paper, abandons the whole shapelet based on the order line
         optionsBuilder.useCandidatePruning();
 
 /*** DETERMINE THE SEARCH OPTIONS
- * This is done strangely by having a Builder static nested within ShapeletSearchOptions
- * which is just a clone of the outer class. Makes no sense to me.
+ * This is done by having a Builder static nested within ShapeletSearchOptions
+ * which is just a clone of the outer class. This is a style choice in order to make sure the options are immutable
+ * once it has been configured and built.
  * ***/
         ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
         searchBuilder.setMin(3);
@@ -453,53 +454,50 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 // SET UP TIME CONTRACT
 //how much time do we have vs. how long our algorithm will take.
 // How many operations can we perform based on time contract.
-//Very confusing way to do it.
-        BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
-
-        BigInteger opCount = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
-
-//Need more operations than we are allowed
-        if(opCount.compareTo(opCountTarget) > 0){
-            BigDecimal oct = new BigDecimal(opCountTarget);
-            BigDecimal oc = new BigDecimal(opCount);
-            BigDecimal prop = oct.divide(oc, MathContext.DECIMAL64);
-            
-//if we've not set a shapelet count, calculate one, based on the time set.
-//But what if num shapelets is set? Why are we doing the big decimal nonsense
-            if(numShapelets == 0){
-
-
-                numShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n,m,3,m);
-                numShapelets *= prop.doubleValue();
-            }
-             
-//we need to find at least one shapelet in every series. Not done if not in this if statement?
-            if(setSeed)
-                searchBuilder.setSeed(2*seed);
-//Surely needs to be done outside this if statement? It defaults to FULL, so I guess the logic
-//is if we have time to do full we do full, but that is unknown to user who sets search type.
-            searchBuilder.setSearchType(searchType);
-            searchBuilder.setNumShapelets(numShapelets);
-            // WHY IS THIS DONE after setNumShapelets?? can't have more final shapelets than we actually search through.
-            numShapeletsInTransform =  numShapelets > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapelets;
+        if(numShapelets>0 && time >0){
+            throw new UnsupportedOperationException(("You twat! both num shapelets and time has been set!! what shall we do???"));
         }
 
+        if(time>0) { //contract time in nanoseconds: need to tidy this up.
+//nanoToOp is currently a hard coded to 10 nanosecs in ShapeletTransformTimingUtilities
+// Operations contract
+            BigInteger allowedNumberOfOperations = new BigInteger(Long.toString(time / nanoToOp));
+// Operations required
+            BigInteger requiredNumberOfOperations = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
+//Need more operations than we are allowed
+            if (requiredNumberOfOperations.compareTo(allowedNumberOfOperations) > 0) {
+                BigDecimal oct = new BigDecimal(allowedNumberOfOperations);
+                BigDecimal oc = new BigDecimal(requiredNumberOfOperations);
+                BigDecimal prop = oct.divide(oc, MathContext.DECIMAL64);
 
-        //Surely should be taken from searchBuilder?
+//if we've not set a shapelet count, calculate one, based on the time set.
+//But what if num shapelets is set? Why are we doing the big decimal nonsense
+                numShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+                numShapelets *= prop.doubleValue();
+            }
+            else {
+                //Set to search for full. This is debatable, but seems sensible!
+                searchType=SearchType.FULL;
+            }
+        }
+        if(setSeed)
+            searchBuilder.setSeed(2*seed);
+//Set builder up with any time based constraints, defined by numShapelets>0
+        searchBuilder.setSearchType(searchType);
+        searchBuilder.setNumShapelets(numShapelets);
+
+//Configure the transform Options builder now we can build a searcher
+        numShapeletsInTransform =  numShapelets > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapelets;
         optionsBuilder.setKShapelets(numShapeletsInTransform);
         optionsBuilder.setSearchOptions(searchBuilder.build());
 
+//Finally the transform
         transform = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
         if(!debug)
             transform.supressOutput();
         
         if(shapeletOutputPath != null)
             transform.setLogOutputFile(shapeletOutputPath);
-        
-        if(preferShortShapelets)
-            transform.setShapeletComparator(new Shapelet.ShortOrder());
-//WHY IS THIS DONE AGAIN, SURELY DONE BY OPTIONS BUILDER (line 468 above)
-        transform.setNumberOfShapelets((int)numShapeletsInTransform);
     }
     
     public static void main(String[] args) throws Exception {
@@ -544,7 +542,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         ShapeletTransformClassifier st=(ShapeletTransformClassifier)obj;
 //We assume the classifiers have not been built, so are basically copying over the set up
         classifier=st.classifier;
-        preferShortShapelets = st.preferShortShapelets;
         shapeletOutputPath=st.shapeletOutputPath;
         transform=st.transform;
         shapeletData=st.shapeletData;

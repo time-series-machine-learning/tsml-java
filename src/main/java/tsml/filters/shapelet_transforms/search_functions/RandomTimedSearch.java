@@ -35,7 +35,7 @@ public class RandomTimedSearch extends RandomSearch{
     }
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         
         long currentTime =0;
         

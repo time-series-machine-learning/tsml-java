@@ -33,7 +33,8 @@ public class ShapeletSearchFactory {
     public ShapeletSearchFactory(ShapeletSearchOptions ops){
         options = ops;
     }
-    
+
+    //Aaron likes C++. This is just an indexed list of constructors for possible search technique
     private static List<Function<ShapeletSearchOptions, ShapeletSearch>> createSearchConstructors(){
         List<Function<ShapeletSearchOptions, ShapeletSearch>> sCons = new ArrayList();
         sCons.add(ShapeletSearch::new);

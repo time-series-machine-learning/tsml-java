@@ -21,6 +21,8 @@ import tsml.filters.shapelet_transforms.Shapelet;
 /**
  *
  * @author raj09hxu
+ *
+ * random search of shapelet locations, possibly with replacement, need to check
  */
 public class RandomSearch extends ShapeletSearch{
         
@@ -37,7 +39,7 @@ public class RandomSearch extends ShapeletSearch{
     }
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         

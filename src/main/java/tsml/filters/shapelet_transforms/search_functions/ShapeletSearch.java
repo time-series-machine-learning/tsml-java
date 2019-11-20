@@ -24,11 +24,17 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.channelLeng
 /**
  *
  * @author Aaron Bostrom
- *
+ * Base class for ShapeletSearch that uses full enumeration.
+ * Subclasses override SearchForShapeletsInSeries to define how to search a single series
  */
 public class ShapeletSearch implements Serializable{
-    
-    public enum SearchType {FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
+
+//Defines the search technique defined in this package.
+    public enum SearchType {FULL, //Evaluate all shapelets using
+                            FS,
+                            GENETIC,
+                            RANDOM,
+                    LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
     
     
     //Immutable class to store search params. 
@@ -139,10 +145,10 @@ public class ShapeletSearch implements Serializable{
     }
     
     //given a series and a function to find a shapelet 
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         
-        //for univariate this will just 
+        //for univariate this will just evaluate all shapelets
         for (int length = minShapeletLength; length <= maxShapeletLength; length+=lengthIncrement) {
             //for all possible starting positions of that length. -1 to remove classValue but would be +1 (m-l+1) so cancel.
             for (int start = 0; start < seriesLength - length; start+=positionIncrement) {

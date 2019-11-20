@@ -447,4 +447,16 @@ public class DefaultShapeletOptions {
                                             .build();
         return options;
     }
+
+
+    public static void main(String[] args){
+
+
+        Instances train = null;
+
+
+        ShapeletTransformFactoryOptions options = TIMED_FACTORY_OPTIONS.get("RANDOM").apply(train, 100000l, 0l);
+        ShapeletTransform st = new ShapeletTransformFactory(options).getTransform();
+
+    }
 }

@@ -83,7 +83,7 @@ public class MagnifySearch extends ImpRandomSearch{
     }
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
         ArrayList<Shapelet> candidateList = new ArrayList<>();
         
         if(!seriesToConsider.get(currentSeries++)) return candidateList;

@@ -120,7 +120,7 @@ public class GraceShapeletTransform extends ShapeletTransform {
         //set the clas value of the series we're working with.
         classValue.setShapeletValue(data.get(currentSeries));
 
-        seriesShapelets = searchFunction.SearchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
+        seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
         
         Collections.sort(seriesShapelets, shapeletComparator);
 

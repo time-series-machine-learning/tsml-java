@@ -34,7 +34,7 @@ public class LocalSearch extends RandomTimedSearch{
     }
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         
         int numLengths = maxShapeletLength - minShapeletLength /*+ 1*/; //want max value to be inclusive.

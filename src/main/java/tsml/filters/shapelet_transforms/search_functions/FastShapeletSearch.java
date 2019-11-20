@@ -55,7 +55,7 @@ public class FastShapeletSearch extends ShapeletSearch implements Serializable{
     }
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
 
         int index = utilities.InstanceTools.indexOf(inputData, timeSeries);
         

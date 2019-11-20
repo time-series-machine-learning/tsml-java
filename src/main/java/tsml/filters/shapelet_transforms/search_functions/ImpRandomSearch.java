@@ -24,6 +24,8 @@ import weka.core.Instances;
 /**
  *
  * @author Aaron
+ *
+ *  * random search of shapelet locations, possibly without replacement as the improvement, need to check
  */
 public class ImpRandomSearch extends RandomSearch{
     
@@ -67,7 +69,7 @@ public class ImpRandomSearch extends RandomSearch{
     
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(currentSeries);

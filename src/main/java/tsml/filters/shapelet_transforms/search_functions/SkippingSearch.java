@@ -43,7 +43,7 @@ public class SkippingSearch extends ShapeletSearch{
     
     
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         //we want to store a startLength and startPos for each class and cycle them when we're skipping.
         int index = (int)timeSeries.classValue();
         int start = positions[index];

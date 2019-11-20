@@ -583,7 +583,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
             //set the clas value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
            
-            seriesShapelets = searchFunction.SearchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
+            seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
 
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);

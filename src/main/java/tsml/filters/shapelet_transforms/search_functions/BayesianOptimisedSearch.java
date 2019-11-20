@@ -42,7 +42,7 @@ public class BayesianOptimisedSearch extends ImpRandomSearch {
     }
 
     @Override
-    public ArrayList<Shapelet> SearchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate) {
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate) {
 
         evaluatedShapelets = new ArrayList<>();
 

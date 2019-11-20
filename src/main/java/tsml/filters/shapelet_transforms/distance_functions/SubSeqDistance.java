@@ -26,20 +26,22 @@ import weka.core.Instance;
 /**
  *
  * @author Aaron, who does not like commenting code
+ *
+ * this implements the basic functionality of sDist in various ways
  */
 public class SubSeqDistance implements Serializable{
 
-//Where is this used?
+//Each enum represents a class in this package
     public enum DistanceType{
-        NORMAL,
-        ONLINE, //Errr?
-        IMP_ONLINE, //Not sure
-        CACHED, //??
-        ONLINE_CACHED, //??
-//These three are for multivariate I think!
-        DEPENDENT, //Uses pointwise distance
-        INDEPENDENT, //Uses the sum
-        DIMENSION //Dunno
+        NORMAL,         // Standard full scan (with early abandon) is this class
+        ONLINE,         // Faster normalisation for extracted subsequences (avoids a call to RescalerType
+        IMP_ONLINE,     // online calculation with variable start and bespoke abandon SEE DAWAK PAPER
+        CACHED,         // Mueen's pre-cached version see Logical Shapelets paper
+        ONLINE_CACHED,  // Untested hybrid between online and caching, unpublished, TO REMOVE
+    // These three are for multivariate
+        DEPENDENT,      // Uses pointwise distance over dimensions
+        INDEPENDENT,    // Uses the average over individual dimensions
+        DIMENSION       // Aaron's weird one: slide single series over all dimensions
     };
 
 //And this?
