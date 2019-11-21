@@ -16,32 +16,33 @@ package experiments;
 
 
 import experiments.Experiments.ExperimentalArguments;
-import timeseriesweka.classifiers.dictionary_based.*;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSC45;
-import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
-import timeseriesweka.classifiers.distance_based.*;
-import timeseriesweka.classifiers.frequency_based.cRISE;
-import timeseriesweka.classifiers.hybrids.FlatCote;
-import timeseriesweka.classifiers.hybrids.HiveCote;
-import timeseriesweka.classifiers.hybrids.TSCHIEFWrapper;
-import timeseriesweka.classifiers.interval_based.cTSF;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.shapelet_based.FastShapelets;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
-import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.interval_based.LPS;
-import timeseriesweka.classifiers.frequency_based.RISE;
-import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
-import multivariate_timeseriesweka.classifiers.NN_DTW_A;
-import multivariate_timeseriesweka.classifiers.NN_DTW_D;
-import multivariate_timeseriesweka.classifiers.NN_DTW_I;
-import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTreeClassifier;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import tsml.classifiers.dictionary_based.*;
+import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
+import tsml.classifiers.dictionary_based.SpatialBOSS;
+import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
+import tsml.classifiers.distance_based.*;
+import tsml.classifiers.frequency_based.cRISE;
+import tsml.classifiers.hybrids.FlatCote;
+import tsml.classifiers.hybrids.HiveCote;
+import tsml.classifiers.hybrids.TSCHIEFWrapper;
+import tsml.classifiers.interval_based.cTSF;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.shapelet_based.FastShapelets;
+import tsml.classifiers.shapelet_based.LearnShapelets;
+import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.interval_based.LPS;
+import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
+import tsml.classifiers.multivariate.NN_DTW_A;
+import tsml.classifiers.multivariate.NN_DTW_D;
+import tsml.classifiers.multivariate.NN_DTW_I;
+import tsml.classifiers.multivariate.NN_ED_I;
+import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import tsml.classifiers.shapelet_based.ShapeletTreeClassifier;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -469,7 +470,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
+            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -532,6 +533,22 @@ public class ClassifierLists {
 //                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
 //                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
 
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setSeed(fold);
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-Alpha1":
+                if(canLoadFromFile){
+                    String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    c=new CAWPE();
+                    ((CAWPE)c).setWeightingScheme(new TrainAcc(1));
+//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
                     ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((CAWPE)c).setSeed(fold);
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);

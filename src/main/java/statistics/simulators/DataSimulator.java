@@ -20,7 +20,7 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.filters.NormalizeCase;
 
 /**
  *

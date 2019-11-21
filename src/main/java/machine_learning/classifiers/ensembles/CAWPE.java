@@ -30,7 +30,6 @@ import evaluation.evaluators.StratifiedResamplesEvaluator;
 import evaluation.storage.ClassifierResults;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
-import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -42,7 +41,7 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import timeseriesweka.filters.SAX;
+import tsml.filters.SAX;
 import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.TechnicalInformation;
@@ -260,9 +259,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
         cv.setNumFolds(10);
         this.trainEstimator = cv; 
-
-        Classifier[] classifiers = new Classifier[8];
-        String[] classifierNames = new String[8];
+        int numClassifiers=7;
+        Classifier[] classifiers = new Classifier[numClassifiers];
+        String[] classifierNames = new String[numClassifiers];
 
         kNN k=new kNN(100);
         k.setCrossValidate(true);
@@ -302,15 +301,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         classifiers[5] = r;
         classifierNames[5] = "RandF";
 
-
         RotationForest rf=new RotationForest();
         rf.setNumIterations(50);
         rf.setSeed(seed);
         classifiers[6] = rf;
         classifierNames[6] = "RotF";
 
-        classifiers[7] = new BayesNet();
-        classifierNames[7] = "bayesNet";
+//        classifiers[7] = new BayesNet();
+//        classifierNames[7] = "bayesNet";
 
         setClassifiers(classifiers, classifierNames, null);
     }

@@ -16,19 +16,19 @@ package experiments;
 
 //import com.sun.management.GarbageCollectionNotificationInfo;
 //import com.sun.management.GarbageCollectorMXBean;
-import timeseriesweka.classifiers.dictionary_based.*;
-import timeseriesweka.classifiers.distance_based.DTWCV;
-import timeseriesweka.classifiers.hybrids.FlatCote;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
-import timeseriesweka.classifiers.shapelet_based.FastShapelets;
-import timeseriesweka.classifiers.interval_based.TSBF;
-import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.distance_based.DTD_C;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.interval_based.LPS;
-import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
-import timeseriesweka.classifiers.distance_based.DD_DTW;
-import timeseriesweka.classifiers.hybrids.HiveCote;
+import tsml.classifiers.dictionary_based.*;
+import tsml.classifiers.distance_based.DTWCV;
+import tsml.classifiers.hybrids.FlatCote;
+import tsml.classifiers.shapelet_based.LearnShapelets;
+import tsml.classifiers.shapelet_based.FastShapelets;
+import tsml.classifiers.interval_based.TSBF;
+import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.distance_based.DTD_C;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.interval_based.LPS;
+import tsml.classifiers.distance_based.ElasticEnsemble;
+import tsml.classifiers.distance_based.DD_DTW;
+import tsml.classifiers.hybrids.HiveCote;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -49,19 +49,19 @@ import statistics.simulators.SimulateShapeletData;
 import statistics.simulators.SimulateWholeSeriesData;
 import statistics.simulators.SimulateElasticData;
 import statistics.simulators.SimulateMatrixProfileData;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import timeseriesweka.filters.MatrixProfile;
+import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import tsml.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.filters.NormalizeCase;
 
 import javax.management.Notification;
 
@@ -950,9 +950,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-        collateSimulatorResults();
- //       dictionarySimulatorChangingSeriesLength();
-//        dictionarySimulatorChangingTrainSize();
+  //      collateSimulatorResults();
+   //     dictionarySimulatorChangingSeriesLength();
+      dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
         smoothingTests();
@@ -994,10 +994,11 @@ public class SimulationExperiments {
 
     public static void dictionarySimulatorChangingTrainSize() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=true;
-        int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
-        for(int trainSize=20;trainSize<=400;trainSize+=20) {
+        boolean overwrite=false;
+        int seriesLength = 1000;
+        int experiments=2;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor2/";
+        for(int trainSize=500;trainSize<=10000;trainSize+=500) {
             File path = new File(writePath + "DictionaryTrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1010,28 +1011,31 @@ public class SimulationExperiments {
                     continue;
                 }
 
+
             }
             OutFile accFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/testAcc" + trainSize + ".csv");
             OutFile trainTimeFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize +"/trainTime" + trainSize + ".csv");
             OutFile testTimeFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/testTime" + trainSize + ".csv");
             OutFile memFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/mem" + trainSize + ".csv");
-            System.out.println(" Generating simulated data ....");
+            System.out.println(" Generating simulated data for n ="+trainSize+" Series Length ="+seriesLength+" ....");
             int[] casesPerClass = new int[2];
             casesPerClass[0] = casesPerClass[1] = trainSize;
             int[] shapesPerClass = new int[]{5, 20};
-            int seriesLength = 500;
-            double[] acc = new double[4];
-            long[] trainTime = new long[4];
-            long[] testTime = new long[4];
-            long[] mem = new long[4];
             long t1, t2;
-            String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
+            String[] classifierNames = {"cBOSS", "BOSS","WEASEL","S-BOSS"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(500, casesPerClass, shapesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
-                System.out.println("Train Size =" + trainSize + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                System.out.println("Series Length =" + seriesLength + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                     Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
                     t1 = System.nanoTime();
@@ -1041,10 +1045,10 @@ public class SimulationExperiments {
                     acc[j] = ClassifierTools.accuracy(split[1], c);
                     testTime[j] = System.nanoTime() - t1;
                     System.gc();
-                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
-
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
                     System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
-                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
                 }
                 accFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++)
@@ -1060,7 +1064,11 @@ public class SimulationExperiments {
                 testTimeFile.writeString("\n");
                 memFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++) {
-                    memFile.writeString("," + mem[j]);
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
                 }
                 memFile.writeString("\n");
             }
@@ -1071,17 +1079,19 @@ public class SimulationExperiments {
 
     public static void dictionarySimulatorChangingSeriesLength() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=false;
-        int experiments=30;
-        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperiments2/";
-        for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
-            File path = new File(writePath + "DictionarySeriesLength" + seriesLength);
+        boolean overwrite=true;
+        int experiments=2;
+        int numCases=2000;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor/";
+        for(int seriesLength=5000;seriesLength<=10000;seriesLength+=5000) {
+            String dir="Cases1000SeriesLength";
+            File path = new File(writePath +dir+ seriesLength);
             path.mkdirs();
             if(!overwrite) {
-                File f1 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/testAcc" + seriesLength + ".csv");
-                File f2 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/trainTime" + seriesLength + ".csv");
-                File f3 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv");
-                File f4 = new File(writePath + "DictionarySeriesLength" + seriesLength + "/mem" + seriesLength + ".csv");
+                File f1 = new File(writePath + dir + seriesLength + "/testAcc" + seriesLength + ".csv");
+                File f2 = new File(writePath + dir + seriesLength + "/trainTime" + seriesLength + ".csv");
+                File f3 = new File(writePath + dir + seriesLength + "/testTime" + seriesLength + ".csv");
+                File f4 = new File(writePath + dir + seriesLength + "/mem" + seriesLength + ".csv");
                 if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
                     System.out.println("SKIPPING series length = "+seriesLength+" as all already present");
                     continue;
@@ -1094,20 +1104,24 @@ public class SimulationExperiments {
             OutFile memFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength  + "/mem" + seriesLength + ".csv");
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = 100;
+
+            casesPerClass[0] = casesPerClass[1] = numCases/2;
             int[] shapesPerClass = new int[]{5, 20};
-            double[] acc = new double[4];
-            long[] trainTime = new long[4];
-            long[] testTime = new long[4];
-            long[] mem = new long[4];
             long t1, t2;
-            String[] classifierNames = {"BOSS", "cBOSS", "SpatialBOSS", "WEASEL"};
+            String[] classifierNames = {"cBOSS","S-BOSS","WEASEL","BOSS"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
                 Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
                 System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
                     long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                     Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
                     t1 = System.nanoTime();
@@ -1117,10 +1131,10 @@ public class SimulationExperiments {
                     acc[j] = ClassifierTools.accuracy(split[1], c);
                     testTime[j] = System.nanoTime() - t1;
                     System.gc();
-                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
-
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
                     System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
-                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
                 }
                 accFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++)
@@ -1136,7 +1150,11 @@ public class SimulationExperiments {
                 testTimeFile.writeString("\n");
                 memFile.writeString(i + "");
                 for (int j = 0; j < classifierNames.length; j++) {
-                    memFile.writeString("," + mem[j]);
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
                 }
                 memFile.writeString("\n");
             }

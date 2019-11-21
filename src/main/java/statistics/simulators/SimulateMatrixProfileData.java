@@ -4,12 +4,12 @@ package statistics.simulators;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 
-import timeseriesweka.filters.MatrixProfile;
+import tsml.filters.MatrixProfile;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.filters.NormalizeCase;
 
 /**
  *
