@@ -17,7 +17,6 @@ package tsml.classifiers.shapelet_based;
 import experiments.data.DatasetLoading;
 import tsml.filters.shapelet_transforms.ShapeletTransformFactory;
 import tsml.filters.shapelet_transforms.ShapeletTransform;
-import tsml.filters.shapelet_transforms.Shapelet;
 import tsml.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
 import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
 import java.io.File;
@@ -88,7 +87,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private SearchType searchType = SearchType.IMP_RANDOM;
     private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMP_ONLINE;
 
-    private long numShapelets = 0;
+    /** The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
+     * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
+     * If this is zero and no contract time is set, a full evaluation is done.
+      */
+    private long numShapeletsToEvaluate = 0;
     private boolean setSeed=false;
     private long timeLimit = 0;
 
@@ -209,10 +212,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
     }
     
-    public void setNumberOfShapelets(long numS){
-        numShapelets = numS;
+    public void setNumberOfShapeletsToEvaluate(long numS){
+        numShapeletsToEvaluate = numS;
     }
-    
+    public void setNumberOfShapeletsInTransform(int numS){
+        numShapeletsInTransform = numS;
+    }
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
@@ -412,7 +418,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 /**
  * ADAPT FOR MTSC
  * @param train data set
- * @param time in nanoseconds that are assigned to building the shapelet
+ * @param time in nanoseconds that is allowed for the shapelet search
  */
     public void configureShapeletTransform(Instances train, long time){
         int n = train.numInstances();
@@ -454,7 +460,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 // SET UP TIME CONTRACT
 //how much time do we have vs. how long our algorithm will take.
 // How many operations can we perform based on time contract.
-        if(numShapelets>0 && time >0){
+        if(numShapeletsToEvaluate >0 && time >0){
             throw new UnsupportedOperationException(("You twat! both num shapelets and time has been set!! what shall we do???"));
         }
 
@@ -472,8 +478,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
 //if we've not set a shapelet count, calculate one, based on the time set.
 //But what if num shapelets is set? Why are we doing the big decimal nonsense
-                numShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-                numShapelets *= prop.doubleValue();
+                numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+                numShapeletsToEvaluate *= prop.doubleValue();
             }
             else {
                 //Set to search for full. This is debatable, but seems sensible!
@@ -482,14 +488,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
         if(setSeed)
             searchBuilder.setSeed(2*seed);
-        if(numShapelets==0)//k has not been set, it should be!
-            numShapelets=ShapeletTransform.DEFAULT_NUMSHAPELETS;
+        if(numShapeletsToEvaluate ==0)//k has not been set, it should be!
+            numShapeletsToEvaluate =ShapeletTransform.DEFAULT_NUMSHAPELETS;
 //Set builder up with any time based constraints, defined by numShapelets>0
         searchBuilder.setSearchType(searchType);
-        searchBuilder.setNumShapelets(numShapelets);
+        searchBuilder.setNumShapelets(numShapeletsToEvaluate);
 
 //Configure the transform Options builder now we can build a searcher
-        numShapeletsInTransform =  numShapelets > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapelets;
+        numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
         optionsBuilder.setKShapelets(numShapeletsInTransform);
         optionsBuilder.setSearchOptions(searchBuilder.build());
 
@@ -552,7 +558,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         trainResults =st.trainResults;
         numShapeletsInTransform =st.numShapeletsInTransform;
         searchType =st.searchType;
-        numShapelets  =st.numShapelets;
+        numShapeletsToEvaluate =st.numShapeletsToEvaluate;
         seed =st.seed;
         setSeed=st.setSeed;
         timeLimit =st.timeLimit;

@@ -47,7 +47,7 @@ public class ShapeletSearchOptions {
         min = ops.min;
         max = ops.max;
         seed = ops.seed;
-        numShapelets= ops.numShapelets;
+        numShapelets= ops.numShapelets; //This is I think the number to search IN TOTAL, not for a single series
         lengthInc = ops.lengthInc;
         posInc = ops.posInc;
         proportion = ops.proportion;
@@ -58,15 +58,11 @@ public class ShapeletSearchOptions {
         lengthDistribution = ops.lengthDistribution;
     }
 
-    /**
-     * Class for building the ShapeletSearchOptions. I see no reason for this,
-     * why not just have ShapeletSearchOptions? Or at least as an inner class not nested!
-      */
     public static class Builder{
         private int min;
         private int max;
         private long seed;
-        private long numShapelets;
+        private long numShapelets; //Number to search or number in transform???
         private int lengthInc = 1;
         private int posInc = 1;
         private float proportion = 1.0f;

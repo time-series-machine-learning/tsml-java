@@ -47,7 +47,7 @@ public class RandomSearch extends ShapeletSearch{
         
         visited = new boolean[numLengths][];
         
-        //Only consider a fixed amount of shapelets.
+        //Only consider a fixed number of shapelets per series.
         for(int i=0; i<numShapelets; i++ ){
             int lengthIndex = random.nextInt(numLengths);
             int length = lengthIndex + minShapeletLength; //offset the index by the min value.

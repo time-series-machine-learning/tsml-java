@@ -32,7 +32,7 @@ public class ShapeletSearch implements Serializable{
 //Defines the search technique defined in this package.
     public enum SearchType {FULL, //Evaluate all shapelets using
                             FS,
-                            GENETIC,
+                            GENETIC,//This can be
                             RANDOM,
                     LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
     
