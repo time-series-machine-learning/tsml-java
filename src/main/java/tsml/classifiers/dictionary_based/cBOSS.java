@@ -624,7 +624,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
-                if (boss.weight == 0) boss.weight = 1;
+                if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
@@ -755,7 +755,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             if (useWeights){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 boss.weight = Math.pow(boss.accuracy, 4);
-                if (boss.weight == 0) boss.weight = 1;
+                if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) {

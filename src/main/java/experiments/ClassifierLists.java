@@ -155,7 +155,10 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble"};
+        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble",
+
+            "KTunecSBOSS", "WeightTunecSBOSS", "cSBOSS", "HIcSBOSS", "HISPcBOSS"};
+
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -239,6 +242,28 @@ public class ClassifierLists {
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
                 ((cBOSSSP) c).experimentOption = 9;
+                break;
+            case "cSBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 10;
+                break;
+            case "HIcSBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 11;
+                break;
+            case "KTunecSBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 10;
+                ((cBOSSSP) c).tuneK = true;
+                break;
+            case "WeightTunecSBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).experimentOption = 10;
+                ((cBOSSSP) c).tuneWeight = true;
                 break;
 
 

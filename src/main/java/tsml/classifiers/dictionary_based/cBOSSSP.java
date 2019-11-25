@@ -62,6 +62,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     public int experimentOption = 0;
     public int maxWindow;
+    public boolean tuneK = false;
+    public boolean tuneWeight = false;
 
 
     private ArrayList<Double>[] paramAccuracy;
@@ -384,7 +386,6 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     @Override
     public ClassifierResults getTrainResults(){
-//        trainResults.setAcc(ensembleCvAcc);
         return trainResults;
     }
 
@@ -475,6 +476,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         else if (experimentOption == 5){
             chiLimits = new double[]{ 0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0/7, 0.8, 0.9, 1 };
         }
+        else if (experimentOption == 10 || experimentOption == 11){
+            chiLimits = new double[]{ 0 };
+            bayesianParameterSelection = false;
+        }
 
 
         trainResults.setBuildTime(System.nanoTime());
@@ -550,7 +555,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 lowestAcc = new double[numSeries];
                 for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance() || tuneWeight){
                     filterTrainPreds = new ArrayList[numSeries];
                     filterTrainIdx  = new ArrayList[numSeries];
                     for (int n = 0; n < numSeries; n++){
@@ -572,7 +577,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
         train = data;
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance() || tuneWeight){
             trainDistributions = new double[data.numInstances()][data.numClasses()];
             idxSubsampleCount = new int[data.numInstances()];
         }
@@ -648,6 +653,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             boss.experimentOption = experimentOption;
             boss.maxWindowSize = maxWindow;
+            boss.tuningK = tuneK;
+            boss.numClasses = data.numClasses();
 
             boss.buildClassifier(data);
             if (experimentOption == 9) boss.accuracy = boss.trainAcc();
@@ -655,7 +662,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
-                if (boss.weight == 0) boss.weight = 1;
+                if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
@@ -670,7 +677,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance() || tuneWeight){
                     filterTrainPreds[currentSeries].add(latestTrainPreds);
                     filterTrainIdx[currentSeries].add(latestTrainIdx);
                 }
@@ -683,7 +690,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
                 classifiers[currentSeries].add(lowestAccIdx[currentSeries], boss);
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance() || tuneWeight){
                     filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
@@ -712,6 +719,18 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             checkContracts();
         }
 
+        if (tuneK){
+            for (LinkedList<BOSSIndividualSP> channel: classifiers){
+                for (BOSSIndividualSP cls: channel){
+                    cls.tuneK();
+                }
+            }
+        }
+
+        if (tuneWeight){
+            tuneWeight();
+        }
+
         if (cutoff){
             for (int n = 0; n < numSeries; n++) {
                 double maxAcc = 0;
@@ -726,7 +745,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
 
-                        if (getEstimateOwnPerformance()){
+                        if (getEstimateOwnPerformance() || tuneWeight){
                             filterTrainPreds[n].remove(i);
                             filterTrainIdx[n].remove(i);
                         }
@@ -738,7 +757,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             }
         }
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance() || tuneWeight){
             for (int n = 0; n < numSeries; n++) {
                 for (int i = 0; i < filterTrainIdx[n].size(); i++) {
                     ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
@@ -786,7 +805,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             if (useWeights){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 boss.weight = Math.pow(boss.accuracy, 4);
-                if (boss.weight == 0) boss.weight = 1;
+                if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) {
@@ -796,7 +815,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
             if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (getEstimateOwnPerformance()){
+            if (getEstimateOwnPerformance() || tuneWeight){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 for (int i = 0; i < latestTrainIdx.size(); i++){
                     idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
@@ -816,7 +835,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             checkContracts();
         }
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance() || tuneWeight){
             latestTrainPreds = null;
             latestTrainIdx = null;
 
@@ -1121,7 +1140,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private double individualTrainAcc(BOSSIndividualSP boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance() || tuneWeight){
             latestTrainPreds = new ArrayList();
             latestTrainIdx = new ArrayList();
         }
@@ -1173,7 +1192,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                     ++correct;
                 }
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance() || tuneWeight){
                     latestTrainPreds.add((int)c);
                     if (boss.subsampleIndices != null) {
                         latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
@@ -1401,6 +1420,32 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         return distributions;
     }
 
+    public void tuneWeight() throws Exception {
+        double maxAcc = -1;
+        double maxPow = -1;
+
+        for (int n = 1; n <= 8; n++){
+            for (LinkedList<BOSSIndividualSP> channel: classifiers){
+                for (BOSSIndividualSP cls: channel){
+                    cls.weight = Math.pow(cls.accuracy, n);
+                }
+            }
+
+            ensembleCvAcc = findEnsembleTrainAcc(train);
+
+            if (ensembleCvAcc > maxAcc){
+                maxAcc = ensembleCvAcc;
+                maxPow = n;
+            }
+        }
+
+        for (LinkedList<BOSSIndividualSP> channel: classifiers){
+            for (BOSSIndividualSP cls: channel){
+                cls.weight = Math.pow(cls.accuracy, maxPow);
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception{
         int fold = 0;
 
@@ -1427,7 +1472,9 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 //        c.bayesianParameterSelection = false;
         c.setSeed(fold);
 //        c.setFindTrainAccuracyEstimate(true);
-        c.experimentOption = 9;
+        c.experimentOption = 10;
+        c.tuneK = true;
+        //c.tuneWeight = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
