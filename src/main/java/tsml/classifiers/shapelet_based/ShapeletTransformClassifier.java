@@ -68,7 +68,10 @@ import weka.core.TechnicalInformation;
  * 
  */
 public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
-//Basic pipeline is transform, then build classifier on transformed space
+    enum ShapeletConfig{BAKEOFF,DAWAK,LATEST}
+
+    ShapeletConfig sConfig=ShapeletConfig.DAWAK;
+    //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
     private Instances shapeletData;
@@ -189,7 +192,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         return null;
     }
     
-    //pass in an enum of hour, minut, day, and the amount of them. 
+    //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTrainTimeLimit(TimeUnit time, long amount) {
         //min,hour,day in longs.
@@ -230,7 +233,18 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Give 2/3 time for transform, 1/3 for classifier.
         long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
 //        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
-        transform=configureShapeletTransform(data, transformTime);
+        switch(sConfig){
+            case BAKEOFF:
+    //To do, configure for bakeoff.
+            case DAWAK:
+    //To do, configure for DAWAK.
+            case LATEST://Default config
+                transform=configureShapeletTransform(data, transformTime);
+            default:
+                transform=configureShapeletTransform(data, transformTime);
+
+        }
+
         shapeletData = transform.process(data);
 
         transformBuildTime=System.nanoTime()-startTime; //Need to store this

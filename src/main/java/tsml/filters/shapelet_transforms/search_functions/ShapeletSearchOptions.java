@@ -33,7 +33,7 @@ public class ShapeletSearchOptions {
     private final int max; //Max length of shapelets
     private final long seed;
 
-    private final long numShapelets;    //The number of shapelets to sample PER SERIES used in RandomSearch and subclasses
+    private final long numShapeletsToEvaluate;    //The number of shapelets to sample PER SERIES used in RandomSearch and subclasses
     private final int lengthIncrement;  //Defaults to 1 in ShapeletSearch, SkippingSearch will use this to avoid full search
     private final int posIncrement;     //Defaults to 1 in ShapeletSearch, SkippingSearch will use this to avoid full search
     private final float proportion;     //  Used in TabuSearch, RefinedRandomSearch, SubsampleRandomSearch, MagnifySearch
@@ -49,7 +49,7 @@ public class ShapeletSearchOptions {
         min = ops.min;
         max = ops.max;
         seed = ops.seed;
-        numShapelets= ops.numShapelets; //The number of shapelets to sample PER SERIES
+        numShapeletsToEvaluate = ops.numShapelets; //The number of shapelets to sample PER SERIES
         lengthIncrement = ops.lengthInc;
         posIncrement = ops.posInc;
         proportion = ops.proportion;
@@ -64,7 +64,7 @@ public class ShapeletSearchOptions {
         private int min;
         private int max;
         private long seed;
-        private long numShapelets; //Number to search or number in transform???
+        private long numShapelets; //Number of shapelets to evaluate PER SERIES
         private int lengthInc = 1;
         private int posInc = 1;
         private float proportion = 1.0f;
@@ -156,8 +156,8 @@ public class ShapeletSearchOptions {
     public long getSeed() {
         return seed;
     }
-    public long getNumShapelets() {
-        return numShapelets;
+    public long getNumShapeletsToEvaluate() {
+        return numShapeletsToEvaluate;
     }
     public int getLengthIncrement() {
         return lengthIncrement;

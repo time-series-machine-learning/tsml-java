@@ -81,7 +81,6 @@ public class ShapeletSearch implements Serializable{
         public default Shapelet process(Instance candidate, int start, int length) {return process(candidate, start, length, 0);}
         public Shapelet process(Instance candidate, int start, int length, int dimension);
     }
-    
     ArrayList<String> shapeletsVisited = new ArrayList<>();
     int seriesCount;
     
@@ -130,7 +129,9 @@ public class ShapeletSearch implements Serializable{
     public int getMax(){
         return maxShapeletLength;
     }
-    
+    public String getSearchType(){
+        return options.getSearchType().toString();
+    }
     public void init(Instances input){
         inputData = input;
         

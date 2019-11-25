@@ -22,17 +22,17 @@ import tsml.filters.shapelet_transforms.Shapelet;
  *
  * @author raj09hxu
  *
- * random search of shapelet locations, possibly with replacement, need to check
+ * random search of shapelet locations, does not visit the same shapelet twice
  */
 public class RandomSearch extends ShapeletSearch{
         
     protected Random random;
-    protected long numPerSeries;
-    protected boolean[][] visited;
+    protected long numPerSeries;    //Number of shapelets to sample per series
+    protected boolean[][] visited;  //
     
     protected RandomSearch(ShapeletSearchOptions ops) {
         super(ops);    
-        numPerSeries = ops.getNumShapelets();
+        numPerSeries = ops.getNumShapeletsToEvaluate();
         random = new Random(ops.getSeed());
     }
     

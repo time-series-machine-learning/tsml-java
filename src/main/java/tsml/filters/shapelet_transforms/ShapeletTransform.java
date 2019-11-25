@@ -96,8 +96,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
     protected boolean recordShapelets; // default action is to write an output file
     protected boolean roundRobin;
-    protected long numShapeletsEvaluated=0;
-
+    protected long numShapeletsEvaluated=0;//This counts the total number of shapelets returned by searchForShapeletsInSeries. It does not include early abandoned shapelets
+    protected long numEarlyAbandons=0;//This counts number of shapelets early abandoned
     protected transient ShapeletQuality quality;
     
     /*protected transient QualityMeasures.ShapeletQualityMeasure qualityMeasure;
@@ -824,6 +824,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
             
             //Check if it is possible to prune the candidate
             if (quality.pruneCandidate()) {
+                numEarlyAbandons++;
                 return null;
             }
 
@@ -1198,14 +1199,14 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         return str;
     }
 
-
+//searchFunction
 
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets
-                +",numShapeletsEvaluated,"+numShapeletsEvaluated
-                +",roundrobin,"+roundRobin
+                +",numShapeletsEvaluated,"+numShapeletsEvaluated+",numEarlyAbandons,"+numEarlyAbandons
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()
-                + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName();
+                + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName()
+                +",roundrobin,"+roundRobin;
         return str;
     }
     /**
