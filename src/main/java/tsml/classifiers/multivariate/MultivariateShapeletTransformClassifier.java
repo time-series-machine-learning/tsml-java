@@ -68,7 +68,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     private long transformBuildTime;
     protected ClassifierResults res =new ClassifierResults();
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
-    private SearchType searchType = SearchType.IMP_RANDOM;
+    private SearchType searchType = SearchType.IMPROVED_RANDOM;
     private long numShapelets = 0;
     private long timeLimit = Long.MAX_VALUE;
     private String checkpointFullPath; //location to check point 

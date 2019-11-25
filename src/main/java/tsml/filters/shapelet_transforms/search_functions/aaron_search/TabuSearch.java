@@ -12,13 +12,14 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import weka.core.Instances;
 import tsml.filters.shapelet_transforms.Shapelet;
@@ -85,7 +86,7 @@ public class TabuSearch extends ImprovedRandomSearch {
     
     
     @Override
-    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         
@@ -215,7 +216,7 @@ public class TabuSearch extends ImprovedRandomSearch {
         //3 -> 100 series. 100 shapelets.
         
         //will aim to make a searchFactory so you dont hand build a searchFunction.
-        ShapeletSearchOptions tabuOptions = new ShapeletSearchOptions.Builder().setMin(3).setMax(100).setNumShapelets(1000).setSeed(0).build();
+        ShapeletSearchOptions tabuOptions = new ShapeletSearchOptions.Builder().setMin(3).setMax(100).setNumShapeletsToEvaluate(1000).setSeed(0).build();
         
         TabuSearch tb = new  TabuSearch(tabuOptions);
         //edge case neighbour hood testing

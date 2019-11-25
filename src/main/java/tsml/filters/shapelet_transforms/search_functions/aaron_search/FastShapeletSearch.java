@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import weka.core.Instances;
 import tsml.filters.shapelet_transforms.Shapelet;

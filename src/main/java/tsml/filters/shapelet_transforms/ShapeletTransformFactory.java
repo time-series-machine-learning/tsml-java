@@ -87,8 +87,8 @@ public class ShapeletTransformFactory {
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder()
                                         .setMin(3)
                                         .setMax(m)
-                                        .setSearchType(ShapeletSearch.SearchType.IMP_RANDOM)
-                                        .setNumShapelets(numShapeletsToEvaluate)
+                                        .setSearchType(ShapeletSearch.SearchType.IMPROVED_RANDOM)
+                                        .setNumShapeletsToEvaluate(numShapeletsToEvaluate)
                                         .setSeed(seed)
                                         .build();
                 

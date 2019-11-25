@@ -12,33 +12,35 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 import java.util.Random;
+
+import tsml.filters.shapelet_transforms.search_functions.RandomSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import tsml.filters.shapelet_transforms.Shapelet;
 /**
  *
- * @author Aaron Bostrom and Tony Bagnall
- * random search of shapelet locations, does not visit the same shapelet twice
-
-
+ * @author raj09hxu
  */
-public class RandomSearch extends ShapeletSearch{
+public class RandomTimedSearch extends RandomSearch {
         
-    protected Random random;
-    protected long numPerSeries;    //Number of shapelets to sample per series
-    protected boolean[][] visited;  //
-    
-    protected RandomSearch(ShapeletSearchOptions ops) {
+    protected long timeLimit;
+
+    protected RandomTimedSearch(ShapeletSearchOptions ops) {
         super(ops);    
-        numPerSeries = ops.getNumShapeletsToEvaluate();
+        
+        timeLimit = ops.getTimeLimit();
+        
         random = new Random(ops.getSeed());
     }
     
     @Override
     public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+        
+        long currentTime =0;
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         
@@ -46,8 +48,8 @@ public class RandomSearch extends ShapeletSearch{
         
         visited = new boolean[numLengths][];
         
-        //Only consider a fixed number of shapelets per series.
-        for(int i = 0; i< numPerSeries; i++ ){
+        //you only get a 1/nth of the time.
+        while((timeLimit/inputData.numInstances()) > currentTime){
             int lengthIndex = random.nextInt(numLengths);
             int length = lengthIndex + minShapeletLength; //offset the index by the min value.
             
@@ -59,7 +61,12 @@ public class RandomSearch extends ShapeletSearch{
             
             Shapelet shape = visitCandidate(timeSeries, start, length, checkCandidate);
             if(shape != null)
-                seriesShapelets.add(shape);           
+                seriesShapelets.add(shape);
+
+            
+            //we add time, even if we've visited it, this is just incase we end up stuck in some
+            // improbable recursive loop.
+            currentTime += calculateTimeToRun(inputData.numInstances(), seriesLength-1, length); //n,m,l            
         }
 
         for(int i=0; i<visited.length; i++){
@@ -76,30 +83,11 @@ public class RandomSearch extends ShapeletSearch{
         return seriesShapelets;
     }
     
-        
-    protected void initVisitedMemory(int seriesLength, int length){
-        int lengthIndex = getLengthIndex(length);
-        if(visited[lengthIndex] == null){
-            int maxPositions = seriesLength - length;
-            visited[lengthIndex] = new boolean[maxPositions];
-        }  
+            
+    protected long calculateTimeToRun(int n, int m, int length){
+        long time = (m - length + 1) * length; //number of subsequeneces in the seuquenece, and we do euclidean comparison length times for each.
+        return time * (n-1); //we calculate this for n-1 series.
     }
     
-        
-    protected int getLengthIndex(int length){
-        return length - minShapeletLength;
-    }
-      
-    public long getNumPerSeries(){ return numPerSeries;}
-    protected Shapelet visitCandidate(Instance series, int start, int length, ProcessCandidate checkCandidate){
-        initVisitedMemory(series.numAttributes(), length);
-        int lengthIndex = getLengthIndex(length);
-        Shapelet shape = null;     
-        if(!visited[lengthIndex][start]){
-            shape = checkCandidate.process(series, start, length);
-            visited[lengthIndex][start] = true;
-        }
-        return shape;
-    }
 
 }

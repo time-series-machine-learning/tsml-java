@@ -171,14 +171,14 @@ public class TransformExperiments {
                         System.out.println(numShapeletsToSearchFor);
                         //make sure the k shapelets is less than the amount we're looking at.
                         numShapeletsInTransform =  numShapeletsToSearchFor > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToSearchFor;
-                        searchType = ShapeletSearch.SearchType.IMP_RANDOM;
+                        searchType = ShapeletSearch.SearchType.IMPROVED_RANDOM;
                     }
                 }
                 ShapeletSearchOptions sops = new ShapeletSearchOptions.Builder()
                         .setSearchType(searchType)
                         .setMin(3).setMax(m)
                         .setSeed(expSettings.foldId)
-                        .setNumShapelets(numShapeletsToSearchFor)
+                        .setNumShapeletsToEvaluate(numShapeletsToSearchFor)
                         .build();
 
                 st.setSearchFunction(new ShapeletSearchFactory(sops).getShapeletSearch());

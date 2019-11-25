@@ -12,12 +12,14 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import tsml.filters.shapelet_transforms.Shapelet;
+import tsml.filters.shapelet_transforms.search_functions.RandomSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -25,9 +27,11 @@ import weka.core.Instances;
  *
  * @author Aaron
  *
-        random search of shapelet locations, possibly without replacement as the improvement, need to check
+random search of shapelet locations with replacement seems
+to be the improvement.
+
  */
-public class ImprovedRandomSearch extends RandomSearch{
+public class ImprovedRandomSearch extends RandomSearch {
     
      protected Map<Integer, ArrayList<CandidateSearchData>> shapeletsToFind = new HashMap<>();
     
@@ -69,7 +73,7 @@ public class ImprovedRandomSearch extends RandomSearch{
     
     
     @Override
-    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(currentSeries);

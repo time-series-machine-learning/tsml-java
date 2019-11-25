@@ -14,6 +14,8 @@
  */
 package tsml.filters.shapelet_transforms.search_functions;
 
+import tsml.filters.shapelet_transforms.search_functions.aaron_search.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;

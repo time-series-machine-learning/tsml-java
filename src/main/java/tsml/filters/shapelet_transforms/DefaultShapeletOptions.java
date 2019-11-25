@@ -25,7 +25,7 @@ import static tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities.
 import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.FULL;
-import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.IMP_RANDOM;
+import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.IMPROVED_RANDOM;
 import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.MAGNIFY;
 import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType.TABU;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
@@ -105,8 +105,8 @@ public class DefaultShapeletOptions {
              
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
-            searchBuilder.setSearchType(IMP_RANDOM);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setSearchType(IMPROVED_RANDOM);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;
@@ -153,8 +153,8 @@ public class DefaultShapeletOptions {
              
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
-            searchBuilder.setSearchType(IMP_RANDOM);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setSearchType(IMPROVED_RANDOM);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;
@@ -201,8 +201,8 @@ public class DefaultShapeletOptions {
              
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
-            searchBuilder.setSearchType(IMP_RANDOM);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setSearchType(IMPROVED_RANDOM);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;
@@ -291,7 +291,7 @@ public class DefaultShapeletOptions {
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
             searchBuilder.setSearchType(TABU);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;
@@ -337,8 +337,8 @@ public class DefaultShapeletOptions {
              
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
-            searchBuilder.setSearchType(IMP_RANDOM);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setSearchType(IMPROVED_RANDOM);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;
@@ -385,7 +385,7 @@ public class DefaultShapeletOptions {
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
             searchBuilder.setSearchType(MAGNIFY);
-            searchBuilder.setNumShapelets(numShapelets);
+            searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
             K =  numShapelets > K ? K : (int) numShapelets;

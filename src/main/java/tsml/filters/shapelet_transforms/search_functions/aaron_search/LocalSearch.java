@@ -12,10 +12,12 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import tsml.filters.shapelet_transforms.Shapelet;
 /**
@@ -34,7 +36,7 @@ public class LocalSearch extends RandomTimedSearch{
     }
     
     @Override
-    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
         
         int numLengths = maxShapeletLength - minShapeletLength /*+ 1*/; //want max value to be inclusive.
@@ -65,7 +67,7 @@ public class LocalSearch extends RandomTimedSearch{
 
     private static final int START_DEC = 0, START_INC = 1, LENGTH_DEC = 2, LENGTH_INC = 3;
     
-    private Shapelet evaluateShapelet(Instance series, int start, int length, ProcessCandidate checkCandidate) {
+    private Shapelet evaluateShapelet(Instance series, int start, int length, ShapeletSearch.ProcessCandidate checkCandidate) {
         //we've not eval'd this shapelet; consider and put in list.
         Shapelet shapelet = visitCandidate(series, start, length, checkCandidate);
 

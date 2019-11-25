@@ -12,21 +12,23 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
-
+import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
-
 /**
  *
- * @author Aaron
+ * @author raj09hxu
+ *
+ * Tony adds, 25/11/19: refined in interesting ways no doubt, but I have no idea how.
  */
-public class SubsampleRandomSearch extends ImprovedRandomSearch {
+public class RefinedRandomSearch extends ImprovedRandomSearch {
 
     float shapeletToSeriesRatio;
     
-    protected SubsampleRandomSearch(ShapeletSearchOptions ops) {
+    protected RefinedRandomSearch(ShapeletSearchOptions ops) {
         super(ops);
         
         shapeletToSeriesRatio = ops.getProportion();
@@ -34,11 +36,20 @@ public class SubsampleRandomSearch extends ImprovedRandomSearch {
        
     @Override
     public void init(Instances input){
-        super.init(input);
-        
-        int numInstances = (int) (input.numInstances() * shapeletToSeriesRatio) ;
+        super.init(input); 
+        int numInstances = input.numInstances();
         int numAttributes = seriesLength - 1;
         
+         float currentRatio;
+         do{
+            long totalShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(--numInstances, numAttributes, minShapeletLength, maxShapeletLength);
+            currentRatio = (float) numPerSeries / (float) totalShapelets;
+            
+            if(numInstances == 25) break; // any less than 25 and we've sampled too far (Subject to change and discussion).
+            
+        }while(currentRatio < shapeletToSeriesRatio);
+         
+
         inputData = input;
         int numLengths = maxShapeletLength - minShapeletLength; //want max value to be inclusive.
         
@@ -50,6 +61,7 @@ public class SubsampleRandomSearch extends ImprovedRandomSearch {
             int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.
             int position  = random.nextInt(numAttributes - length + 1); // can only have valid start positions based on the length. the upper bound is exclusive. 
             int dimension = random.nextInt(numDimensions);
+            //so for the m-m+1 case it always resolves to 0.
             
             //find the shapelets for that series.
             ArrayList<CandidateSearchData> shapeletList = shapeletsToFind.get(series);
@@ -62,4 +74,6 @@ public class SubsampleRandomSearch extends ImprovedRandomSearch {
             shapeletsToFind.put(series, shapeletList);
         }          
     }
+    
+    
 }

@@ -12,12 +12,13 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import static utilities.GenericTools.randomRange;
 
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import weka.core.Instance;
 import weka.core.Instances;
 import tsml.filters.shapelet_transforms.Shapelet;
@@ -83,7 +84,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
     }
     
     @Override
-    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         ArrayList<Shapelet> candidateList = new ArrayList<>();
         
         if(!seriesToConsider.get(currentSeries++)) return candidateList;
@@ -165,7 +166,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
     
     
     public static void main(String[] args){
-        ShapeletSearchOptions magnifyOptions = new ShapeletSearchOptions.Builder().setMin(3).setMax(100).setNumShapelets(1000).setSeed(0).build();
+        ShapeletSearchOptions magnifyOptions = new ShapeletSearchOptions.Builder().setMin(3).setMax(100).setNumShapeletsToEvaluate(1000).setSeed(0).build();
         MagnifySearch ps = new MagnifySearch(magnifyOptions);
         
         for(int i=0; i<100; i++)

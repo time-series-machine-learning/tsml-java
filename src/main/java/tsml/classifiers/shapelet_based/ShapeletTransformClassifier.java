@@ -86,7 +86,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private static int MAXTRANSFORMSIZE=1000;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
-    private SearchType searchType = SearchType.IMP_RANDOM;
+    private SearchType searchType = SearchType.RANDOM;
     private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
 
     /** The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
@@ -252,9 +252,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         if(debug) {
-            System.out.println("NANOS: Transform contract =" + transformTimeLimit + " Actual transform time = " + transformBuildTime+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit));
-            System.out.println("SECONDS:Transform contract =" +(transformTimeLimit/1000000000L)+" Actual transform time = " + (transformBuildTime / 1000000000L));
-            System.out.println("MINUTES:Transform contract =" +(transformTimeLimit/60000000000L)+" Actual transform time = " + (transformBuildTime / 60000000000L));
+            System.out.println("DATASET: num cases "+data.numInstances()+" series length "+(data.numAttributes()-1));
+//            System.out.println("NANOS: Transform contract =" + transformTimeLimit + " Actual transform time = " + transformBuildTime+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit));
+            System.out.println("SECONDS:Transform contract =" +(transformTimeLimit/1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit)));
+            System.out.println(" Transform getParas  ="+transform.getParameters());
+            //            System.out.println("MINUTES:Transform contract =" +(transformTimeLimit/60000000000L)+" Actual transform time = " + (transformBuildTime / 60000000000L));
         }
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
@@ -459,7 +461,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
         //Distance type options: {NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED,: See class for info, refactor IMP (improved)
         // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
-//Refactor IMP_ONLINE NAME
         optionsBuilder.setDistanceType(distType);
 //Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN: change to an ST Parameter
         optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
@@ -489,28 +490,29 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         if(time>0) { //contract time in nanoseconds used to estimate numShapelets to evaluate and the proportion
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
             proportionToEvaluate=estimatePropOfFullSearch(m,n,time);
-            if(debug) {
-                System.out.println(" Total number of shapelets = " + numShapeletsToEvaluate);
-                System.out.println(" Proportion to evaluate = " + proportionToEvaluate+" = "+(proportionToEvaluate*numShapeletsToEvaluate)+" shapelets");
-            }
             numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
+            if(debug) {
+                System.out.println(" Total number of shapelets = " + numShapeletsInProblem);
+                System.out.println(" Proportion to evaluate = " + proportionToEvaluate);
+                System.out.println(" Number to evaluate = " + numShapeletsToEvaluate);
+            }
         }
         else if(numShapeletsToEvaluate==0){ //We are doing a full search
             //Set to search for full. This is debatable, but seems sensible!
-            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(1, m, 3, m);
             searchType=SearchType.FULL;
         }
         if(proportionToEvaluate==1.0)
             searchType=SearchType.FULL;
 
-        if(numShapeletsToEvaluate==0)//Got to do 1 per series
-            numShapeletsToEvaluate=n;
+//        if(numShapeletsToEvaluate<n)//Got to do 1 per series
+//            numShapeletsToEvaluate=n;
 //      else: user has set numShapeletsToEvaluate
         if(setSeed)
             searchBuilder.setSeed(2*seed);
 //Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
         searchBuilder.setSearchType(searchType);
-        searchBuilder.setNumShapelets(numShapeletsToEvaluate/n);//This is ignored if full search is performed
+        searchBuilder.setNumShapeletsToEvaluate(numShapeletsToEvaluate);//This is ignored if full search is performed
 
 //if we are evaluating fewer than are in the transform we must change this
         numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
@@ -521,9 +523,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
 //Finally, get the transform from a Factory with the options set by the builder
         ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
-        if(!debug)
+        if(debug) {
+            shapeletOutputPath = "C:\\Temp\\STC_1\\Test_shapelets.csv";
+            st.setPrintDebug(true);
+        }
+        else
             st.supressOutput();
-        
+
         if(shapeletOutputPath != null)
             st.setLogOutputFile(shapeletOutputPath);
         return st;

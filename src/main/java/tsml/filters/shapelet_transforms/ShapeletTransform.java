@@ -31,6 +31,8 @@ import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import tsml.filters.shapelet_transforms.search_functions.RandomSearch;
 import utilities.ClassifierTools;
 import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
@@ -463,17 +465,17 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     @Override
     public Instances process(Instances data) throws IllegalArgumentException {
         inputData = data;
-
         //check the input data is correct and assess whether the filter has been setup correctly.
         inputCheck(data);
         
         //checks if the shapelets haven't been found yet, finds them if it needs too.
-        if (!m_FirstBatchDone && !searchComplete){ //  
+        if (!m_FirstBatchDone && !searchComplete){
             trainShapelets(data);
             searchComplete=true;
-            //we log the count from the subseqdistance before we reset it in the transform.
+            //we log the count from the subsequence distance before we reset it in the transform.
             //we only care about the count from the train.
             count = subseqDistance.getCount();
+
         }
 
         //build the transformed dataset with the shapelets we've found either on this data, or the previous training data
@@ -568,12 +570,12 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
      */
     public ArrayList<Shapelet> findBestKShapeletsCache(Instances data) {
         ArrayList<Shapelet> seriesShapelets;                                    // temp store of all shapelets for each time series
-
+        // temp store of all shapelets for each time series
         //for all time series
         outputPrint("Processing data: ");
 
         int dataSize = data.numInstances();
-      
+
         //for all possible time series.
         for(; casesSoFar < dataSize; casesSoFar++) {
             outputPrint("data : " + casesSoFar);
@@ -585,7 +587,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
             subseqDistance.setSeries(casesSoFar);
             //set the class value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
-           
+
             seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
             numShapeletsEvaluated+=seriesShapelets.size();
             if(seriesShapelets != null){

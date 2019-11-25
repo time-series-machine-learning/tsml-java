@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
@@ -11,6 +11,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.filters.shapelet_transforms.Shapelet;
 import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import utilities.ClassifierTools;
 import utilities.numericalmethods.NelderMead;
 import weka.classifiers.functions.GaussianProcesses;
@@ -50,7 +53,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
 
         //do the random presamples.
         for (int i = 0; i < pre_samples; i++) {
-            CandidateSearchData pair = GetRandomShapelet();
+            ShapeletSearch.CandidateSearchData pair = GetRandomShapelet();
             evaluatePair(timeSeries, checkCandidate, pair);
         }
 
@@ -93,7 +96,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
         return result;
     }
 
-    public Instance ConvertPairToInstance(CandidateSearchData pair) {
+    public Instance ConvertPairToInstance(ShapeletSearch.CandidateSearchData pair) {
         DenseInstance new_inst = new DenseInstance(3);
         new_inst.setValue(0, pair.getStartPosition());
         new_inst.setValue(1, pair.getLength());
@@ -102,7 +105,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
         return new_inst;
     }
 
-    public Shapelet evaluatePair(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate, CandidateSearchData pair) {
+    public Shapelet evaluatePair(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate, ShapeletSearch.CandidateSearchData pair) {
         Shapelet shape = checkCandidate.process(timeSeries, pair.getStartPosition(), pair.getLength());
         
         System.out.println("quality value: "+ shape.qualityValue);
@@ -111,14 +114,14 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
         return shape;
     }
 
-    public CandidateSearchData GetRandomShapelet() {
+    public ShapeletSearch.CandidateSearchData GetRandomShapelet() {
         int numLengths = maxShapeletLength - minShapeletLength; //want max value to be inclusive.
         int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.
         int position = random.nextInt(seriesLength - length); // can only have valid start positions based on the length. (numAtts-1)-l+1
         //find the shapelets for that series.
 
         //add the random shapelet to the length
-        return new CandidateSearchData(position,length);
+        return new ShapeletSearch.CandidateSearchData(position,length);
     }
 
     
@@ -150,7 +153,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
     
     public GaussianProcesses current_gp;
     
-    public CandidateSearchData GetRandomShapeletFromGP(GaussianProcesses gp) throws Exception {
+    public ShapeletSearch.CandidateSearchData GetRandomShapeletFromGP(GaussianProcesses gp) throws Exception {
         
         NelderMead nm  = new NelderMead();
         
@@ -167,7 +170,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
         nm.descend(this::GetIG, simplex);
         
         double[] params = nm.getResult();
-        CandidateSearchData  bsf_pair = new CandidateSearchData((int)params[0], (int)params[1]);
+        ShapeletSearch.CandidateSearchData bsf_pair = new ShapeletSearch.CandidateSearchData((int)params[0], (int)params[1]);
         double bsf_ig= nm.getScore();
 
         System.out.println("predicted ig" + bsf_ig);
@@ -190,7 +193,7 @@ public class BayesianOptimisedSearch extends ImprovedRandomSearch {
                 .setSearchType(ShapeletSearch.SearchType.BO_SEARCH)
                 .setMin(3).setMax(m)
                 .setSeed(1)
-                .setNumShapelets(100)
+                .setNumShapeletsToEvaluate(100)
                 .build();
 
         ShapeletTransform st = new ShapeletTransform();

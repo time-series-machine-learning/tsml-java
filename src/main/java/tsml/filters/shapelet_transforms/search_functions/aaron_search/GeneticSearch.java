@@ -12,10 +12,13 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms.search_functions;
+package tsml.filters.shapelet_transforms.search_functions.aaron_search;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import utilities.generic_storage.Pair;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -44,7 +47,7 @@ public class GeneticSearch extends ImprovedRandomSearch {
     }
 
     @Override
-    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
+    public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ShapeletSearch.ProcessCandidate checkCandidate){
        evaluated = 0;
         
        double[] series = timeSeries.toDoubleArray();
@@ -82,7 +85,7 @@ public class GeneticSearch extends ImprovedRandomSearch {
     private static final int tournamentSize = 5;
     private static final boolean elitism = true;
     
-    private List<Shapelet> evolvePopulation(Instance timeSeries, List<Shapelet> shapesIn, ProcessCandidate checkCandidate){
+    private List<Shapelet> evolvePopulation(Instance timeSeries, List<Shapelet> shapesIn, ShapeletSearch.ProcessCandidate checkCandidate){
         List<Shapelet> newPopulation = new ArrayList<>();
         List<Pair<Integer, Integer>> populationToBe = new ArrayList<>();
 
