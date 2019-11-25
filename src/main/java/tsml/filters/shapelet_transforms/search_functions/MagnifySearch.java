@@ -25,7 +25,7 @@ import tsml.filters.shapelet_transforms.Shapelet;
  *
  * @author raj09hxu
  */
-public class MagnifySearch extends ImpRandomSearch{
+public class MagnifySearch extends ImprovedRandomSearch {
 
     int numShapeletsPerSeries;
     
@@ -53,7 +53,7 @@ public class MagnifySearch extends ImpRandomSearch{
 
         
         float subsampleSize = (float) inputData.numInstances() * proportion;
-        numShapeletsPerSeries = (int) ((float) numShapelets / subsampleSize);  
+        numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
         seriesToConsider = new BitSet(inputData.numInstances());
         
         //if we're looking at less than root(m) shapelets per series. sample to root n.
@@ -61,7 +61,7 @@ public class MagnifySearch extends ImpRandomSearch{
             //recalc prop and subsample size.
             proportion =  ((float) Math.sqrt(inputData.numInstances()) / (float)inputData.numInstances());
             subsampleSize = (float) inputData.numInstances() * proportion;
-            numShapeletsPerSeries = (int) ((float) numShapelets / subsampleSize); 
+            numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
             System.out.println("sampling");
         }
         

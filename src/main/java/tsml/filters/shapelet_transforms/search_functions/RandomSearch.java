@@ -27,14 +27,12 @@ import tsml.filters.shapelet_transforms.Shapelet;
 public class RandomSearch extends ShapeletSearch{
         
     protected Random random;
-    protected long numShapelets;
-    
+    protected long numPerSeries;
     protected boolean[][] visited;
     
     protected RandomSearch(ShapeletSearchOptions ops) {
         super(ops);    
-        
-        numShapelets = ops.getNumShapelets();
+        numPerSeries = ops.getNumShapelets();
         random = new Random(ops.getSeed());
     }
     
@@ -48,7 +46,7 @@ public class RandomSearch extends ShapeletSearch{
         visited = new boolean[numLengths][];
         
         //Only consider a fixed number of shapelets per series.
-        for(int i=0; i<numShapelets; i++ ){
+        for(int i = 0; i< numPerSeries; i++ ){
             int lengthIndex = random.nextInt(numLengths);
             int length = lengthIndex + minShapeletLength; //offset the index by the min value.
             

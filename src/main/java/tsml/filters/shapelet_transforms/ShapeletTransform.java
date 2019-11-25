@@ -90,13 +90,13 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     public boolean searchComplete=false;
     
     protected boolean supressOutput=true; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
-    protected int numShapelets; //The maximum number of shapelets in the transform. This is different to the total number of shapelets to look for
+    protected int numShapelets; //The maximum number of shapelets in the transform. This is K and is different to the total number of shapelets to look for/looked for
 
     protected ArrayList<Shapelet> shapelets;
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
     protected boolean recordShapelets; // default action is to write an output file
     protected boolean roundRobin;
-
+    protected long numShapeletsEvaluated=0;
 
     protected transient ShapeletQuality quality;
     
@@ -110,7 +110,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     protected Comparator<Shapelet> shapeletComparator;
 
     protected SubSeqDistance subseqDistance;
+
     protected NormalClassValue classValue;
+
     protected ShapeletSearch searchFunction;
     protected String serialName;
     protected Shapelet worstShapelet;
@@ -486,7 +488,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         searchFunction.init(inputData);
                 //setup subseqDistance
         subseqDistance.init(inputData);
-        //setup classsValue
+        //setup classValue
         classValue.init(inputData);
                 
         shapelets = findBestKShapeletsCache(inputData); // get k shapelets
@@ -581,11 +583,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
             //set the series we're working with.
             subseqDistance.setSeries(casesSoFar);
-            //set the clas value of the series we're working with.
+            //set the class value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
            
             seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
-
+            numShapeletsEvaluated+=seriesShapelets.size();
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
                 
@@ -1199,7 +1201,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
 
     public String getParameters(){
-        String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets+",roundrobin,"+roundRobin
+        String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets
+                +",numShapeletsEvaluated,"+numShapeletsEvaluated
+                +",roundrobin,"+roundRobin
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()
                 + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName();
         return str;
@@ -1235,7 +1239,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
 
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
-                                            .setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE)
+                                            .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
                                             .setKShapelets(train.numInstances()*10)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
@@ -1316,7 +1320,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
                                                 
             
             ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
-                                                .setDistanceType(SubSeqDistance.DistanceType.IMP_ONLINE)
+                                                .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
                                                 .setKShapelets(train.numInstances()*10)
                                                 .useBinaryClassValue()
                                                 .useClassBalancing()

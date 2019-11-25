@@ -21,7 +21,7 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class RefinedRandomSearch extends ImpRandomSearch{
+public class RefinedRandomSearch extends ImprovedRandomSearch {
 
     float shapeletToSeriesRatio;
     
@@ -40,7 +40,7 @@ public class RefinedRandomSearch extends ImpRandomSearch{
          float currentRatio;
          do{
             long totalShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(--numInstances, numAttributes, minShapeletLength, maxShapeletLength);
-            currentRatio = (float) numShapelets / (float) totalShapelets;
+            currentRatio = (float) numPerSeries / (float) totalShapelets;
             
             if(numInstances == 25) break; // any less than 25 and we've sampled too far (Subject to change and discussion).
             
@@ -52,7 +52,7 @@ public class RefinedRandomSearch extends ImpRandomSearch{
         
         
         //generate the random shapelets we're going to visit.
-        for(int i=0; i<numShapelets; i++){
+        for(int i = 0; i< numPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(numInstances);
             int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.

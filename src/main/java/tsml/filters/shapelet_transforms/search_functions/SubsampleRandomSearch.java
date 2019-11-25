@@ -22,7 +22,7 @@ import weka.core.Instances;
  *
  * @author Aaron
  */
-public class SubsampleRandomSearch extends ImpRandomSearch{
+public class SubsampleRandomSearch extends ImprovedRandomSearch {
 
     float shapeletToSeriesRatio;
     
@@ -44,7 +44,7 @@ public class SubsampleRandomSearch extends ImpRandomSearch{
         
         
         //generate the random shapelets we're going to visit.
-        for(int i=0; i<numShapelets; i++){
+        for(int i = 0; i< numPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(numInstances);
             int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.

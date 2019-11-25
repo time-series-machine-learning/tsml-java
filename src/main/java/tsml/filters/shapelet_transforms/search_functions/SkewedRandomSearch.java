@@ -23,7 +23,7 @@ import weka.core.Instances;
  *
  * @author Aaron
  */
-public class SkewedRandomSearch extends ImpRandomSearch{
+public class SkewedRandomSearch extends ImprovedRandomSearch {
     
     int[] lengthDistribution;
     int[] cumulativeDistribution;
@@ -40,7 +40,7 @@ public class SkewedRandomSearch extends ImpRandomSearch{
 
         cumulativeDistribution = findCumulativeCounts(lengthDistribution);
         //generate the random shapelets we're going to visit.
-        for(int i=0; i<numShapelets; i++){
+        for(int i = 0; i< numPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(input.numInstances());
             

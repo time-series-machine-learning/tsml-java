@@ -113,8 +113,8 @@ public class ShapeletSearch implements Serializable{
         
         minShapeletLength = ops.getMin();
         maxShapeletLength = ops.getMax();
-        lengthIncrement = ops.getLengthInc();
-        positionIncrement = ops.getPosInc();      
+        lengthIncrement = ops.getLengthIncrement();
+        positionIncrement = ops.getPosIncrement();
         numDimensions = ops.getNumDimensions();
     }
     

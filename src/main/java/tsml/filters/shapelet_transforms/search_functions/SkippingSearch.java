@@ -21,6 +21,8 @@ import tsml.filters.shapelet_transforms.Shapelet;
 /**
  *
  * @author Aaron
+ *
+ * Skipping search. Assume it just jumps through a range of
  */
 public class SkippingSearch extends ShapeletSearch{
     

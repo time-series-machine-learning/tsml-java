@@ -47,7 +47,7 @@ public class ShapeletSearchFactory {
         sCons.add(SkippingSearch::new);
         sCons.add(TabuSearch::new);
         sCons.add(RefinedRandomSearch::new);
-        sCons.add(ImpRandomSearch::new);
+        sCons.add(ImprovedRandomSearch::new);
         sCons.add(SubsampleRandomSearch::new);
         sCons.add(SkewedRandomSearch::new);
         sCons.add(BayesianOptimisedSearch::new);

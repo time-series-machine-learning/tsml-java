@@ -34,7 +34,7 @@ import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.Distan
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.CACHED;
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.DEPENDENT;
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.DIMENSION;
-import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.IMP_ONLINE;
+import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.IMPROVED_ONLINE;
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.INDEPENDENT;
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.NORMAL;
 import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.ONLINE;
@@ -49,11 +49,11 @@ public class ShapeletTransformFactory {
     private static final Map<DistanceType, Supplier<SubSeqDistance>> distanceFunctions = createDistanceTable();
     
     private static Map<DistanceType, Supplier<SubSeqDistance>> createDistanceTable(){
-        //istanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT};
+        //DistanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT};
         Map<DistanceType, Supplier<SubSeqDistance>> dCons = new HashMap();
         dCons.put(NORMAL, SubSeqDistance::new);
         dCons.put(ONLINE, OnlineSubSeqDistance::new);
-        dCons.put(IMP_ONLINE, ImprovedOnlineSubSeqDistance::new);
+        dCons.put(IMPROVED_ONLINE, ImprovedOnlineSubSeqDistance::new);
         dCons.put(CACHED, CachedSubSeqDistance::new);
         dCons.put(ONLINE_CACHED, OnlineCachedSubSeqDistance::new);
         dCons.put(DEPENDENT, MultivariateDependentDistance::new);

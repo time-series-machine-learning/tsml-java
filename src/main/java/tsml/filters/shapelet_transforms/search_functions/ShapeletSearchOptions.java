@@ -21,22 +21,24 @@ import static tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.S
  *
  * @author Aaron Bostrom
  * ANY comments in this are added by Tony
- *
+ * This is a configuration utility for the class ShapeletSearch, used in the complex initialisation method
+ * of Aaron's invention
  */
 public class ShapeletSearchOptions {
 
+    private final long timeLimit;//Is this in conjunction with numShapelets?
+    private final SearchType searchType;
+    private final int numDimensions;        //Number of dimensions in the data
     private final int min; //Min length of shapelets
     private final int max; //Max length of shapelets
     private final long seed;
-    private final long numShapelets;//IS THIS THE NUMBER  OF SHAPELETS SEARCHED??
-    private final int lengthInc;//No idea. Some form of skipping paras?
-    private final int posInc;//No idea. Some form of skipping para?
-    private final float proportion; //No idea
-    private final int maxIterations; //No idea
-    private final long timeLimit;//Is this in conjunction with numShapelets?
-    private final SearchType searchType;
-    private final int numDimensions;//Number of dimensions in the data
-    private final int[] lengthDistribution;//Huh?
+
+    private final long numShapelets;    //The number of shapelets to sample PER SERIES used in RandomSearch and subclasses
+    private final int lengthIncrement;  //Defaults to 1 in ShapeletSearch, SkippingSearch will use this to avoid full search
+    private final int posIncrement;     //Defaults to 1 in ShapeletSearch, SkippingSearch will use this to avoid full search
+    private final float proportion;     //  Used in TabuSearch, RefinedRandomSearch, SubsampleRandomSearch, MagnifySearch
+    private final int maxIterations;    // Used in LocalSearch to determine the number of search steps to take
+    private final int[] lengthDistribution; // used in SkewedRandomSearch
 
     /**
      *     Why a protected constructor? So you have to go through ShapeletSearchOptions.Builder in
@@ -47,9 +49,9 @@ public class ShapeletSearchOptions {
         min = ops.min;
         max = ops.max;
         seed = ops.seed;
-        numShapelets= ops.numShapelets; //This is I think the number to search IN TOTAL, not for a single series
-        lengthInc = ops.lengthInc;
-        posInc = ops.posInc;
+        numShapelets= ops.numShapelets; //The number of shapelets to sample PER SERIES
+        lengthIncrement = ops.lengthInc;
+        posIncrement = ops.posInc;
         proportion = ops.proportion;
         maxIterations = ops.maxIterations;
         timeLimit = ops.timeLimit;
@@ -157,11 +159,11 @@ public class ShapeletSearchOptions {
     public long getNumShapelets() {
         return numShapelets;
     }
-    public int getLengthInc() {
-        return lengthInc;
+    public int getLengthIncrement() {
+        return lengthIncrement;
     }
-    public int getPosInc() {
-        return posInc;
+    public int getPosIncrement() {
+        return posIncrement;
     }
     public float getProportion() {
         return proportion;

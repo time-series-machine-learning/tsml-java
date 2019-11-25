@@ -24,8 +24,10 @@ import weka.core.Instances;
 /**
  *
  * @author a.bostrom1
+ *
+ * This code has not been integrated into
  */
-public class BayesianOptimisedSearch extends ImpRandomSearch {
+public class BayesianOptimisedSearch extends ImprovedRandomSearch {
 
     public ArrayList<Shapelet> evaluatedShapelets; //not the right type yet.
 

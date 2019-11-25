@@ -27,7 +27,6 @@ import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import static tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
 import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
 import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
@@ -81,11 +80,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //If condensing the search set, this is the minimum number of instances per class to search
   public static final int minimumRepresentation = 25;
   //Default number in transform
-    private static int MAXTRANSFORMSIZE=1000; 
+    private static int MAXTRANSFORMSIZE=1000;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMP_RANDOM;
-    private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMP_ONLINE;
+    private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
 
     /** The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
@@ -175,7 +174,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
        String classifierParas="No Classifier Para Info";
        if(classifier instanceof EnhancedAbstractClassifier) 
             classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
-        return "BuildTime,"+trainResults.getBuildTime()+",CVAcc,"+trainResults.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
+        return "TransformBuildTime,"+transformBuildTime+",timeContractNanos,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     
     
@@ -197,6 +196,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         switch(time){
             case NANOSECONDS:
                 timeLimit = amount;
+                break;
+            case SECONDS:
+                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
                 break;
             case MINUTES:
                 timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
@@ -228,10 +230,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Give 2/3 time for transform, 1/3 for classifier.
         long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
 //        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
-        configureShapeletTransform(data, transformTime);
+        transform=configureShapeletTransform(data, transformTime);
         shapeletData = transform.process(data);
 
-        transformBuildTime=System.nanoTime()-startTime;
+        transformBuildTime=System.nanoTime()-startTime; //Need to store this
+        if(debug) {
+            System.out.println("NANOS: Transform contract =" + transformTime + " Actual transform time = " + transformBuildTime+" Proprtion of contract used ="+((double)transformBuildTime/transformTime));
+            System.out.println("SECONDS:Transform contract =" +(transformTime/1000000000L)+" Actual transform time = " + (transformBuildTime / 1000000000L));
+            System.out.println("MINUTES:Transform contract =" +(transformTime/60000000000L)+" Actual transform time = " + (transformBuildTime / 60000000000L));
+        }
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
             System.out.println("Shapelet Saving  ....");
@@ -416,19 +423,22 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     }
     
 /**
- * ADAPT FOR MTSC
+ * configuring a ShapeletTransform involves configuring a ShapeletTransformFactoryOptions object (via a OptionsBuilder
+ * and SearchBuilder)
+ *
  * @param train data set
  * @param time in nanoseconds that is allowed for the shapelet search
  */
-    public void configureShapeletTransform(Instances train, long time){
+    public ShapeletTransform configureShapeletTransform(Instances train, long time){
         int n = train.numInstances();
         int m = train.numAttributes()-1;
-//Set the number of shapelets to keep, max is MAXTRANSFORMSIZE (500)
-//numShapeletsInTransform
-//    n*m < 1000 ? n*m: 1000;   
+//numShapeletsInTransform defaults to MAXTRANSFORMSIZE (500), can be set by user.
+//  for very small problems, this number may be far to large, so we will reduce it here.
+
         if(n*m<numShapeletsInTransform)
             numShapeletsInTransform=n*m;
-//**** CONFIGURE TRANSFORM OPTIONS ****/
+
+        //**** CONFIGURE TRANSFORM OPTIONS ****/
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
         //Distance type options: {NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED,: See class for info, refactor IMP (improved)
         // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
@@ -457,57 +467,68 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
         searchBuilder.setMin(3);
         searchBuilder.setMax(m);
-// SET UP TIME CONTRACT
-//how much time do we have vs. how long our algorithm will take.
 // How many operations can we perform based on time contract.
         if(numShapeletsToEvaluate >0 && time >0){
             throw new UnsupportedOperationException(("You twat! both num shapelets and time has been set!! what shall we do???"));
         }
-
         if(time>0) { //contract time in nanoseconds: need to tidy this up.
-//nanoToOp is currently a hard coded to 10 nanosecs in ShapeletTransformTimingUtilities
-// Operations contract
-            BigInteger allowedNumberOfOperations = new BigInteger(Long.toString(time / nanoToOp));
-// Operations required
-            BigInteger requiredNumberOfOperations = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
-//Need more operations than we are allowed
-            if (requiredNumberOfOperations.compareTo(allowedNumberOfOperations) > 0) {
-                BigDecimal oct = new BigDecimal(allowedNumberOfOperations);
-                BigDecimal oc = new BigDecimal(requiredNumberOfOperations);
-                BigDecimal prop = oct.divide(oc, MathContext.DECIMAL64);
-
-//if we've not set a shapelet count, calculate one, based on the time set.
-//But what if num shapelets is set? Why are we doing the big decimal nonsense
-                numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-                numShapeletsToEvaluate *= prop.doubleValue();
+            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            double p=estimatePropOfFullSearch(m,n,time);
+            if(debug) {
+                System.out.println(" Total number of shapelets = " + numShapeletsToEvaluate);
+                System.out.println(" Proportion to evaluate = " + p+" = "+(p*numShapeletsToEvaluate)+" shapelets");
             }
-            else {
-                //Set to search for full. This is debatable, but seems sensible!
-                searchType=SearchType.FULL;
-            }
+            numShapeletsToEvaluate *= p;
+           }
+        else if(numShapeletsToEvaluate==0){ //We are doing a full search
+            //Set to search for full. This is debatable, but seems sensible!
+            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            searchType=SearchType.FULL;
         }
+        if(numShapeletsToEvaluate==0)//Got to do 1 per series
+            numShapeletsToEvaluate=n;
+//      else: user has set numShapeletsToEvaluate
         if(setSeed)
             searchBuilder.setSeed(2*seed);
-        if(numShapeletsToEvaluate ==0)//k has not been set, it should be!
-            numShapeletsToEvaluate =ShapeletTransform.DEFAULT_NUMSHAPELETS;
-//Set builder up with any time based constraints, defined by numShapelets>0
+//Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
         searchBuilder.setSearchType(searchType);
-        searchBuilder.setNumShapelets(numShapeletsToEvaluate);
+        searchBuilder.setNumShapelets(numShapeletsToEvaluate/n);
 
-//Configure the transform Options builder now we can build a searcher
+//if we are evaluating fewer than are in the transform we must change this
         numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
+        if(debug)
+            System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate);
         optionsBuilder.setKShapelets(numShapeletsInTransform);
         optionsBuilder.setSearchOptions(searchBuilder.build());
 
-//Finally the transform
-        transform = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
+//Finally, get the transform from a Factory with the options set by the builder
+        ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
         if(!debug)
-            transform.supressOutput();
+            st.supressOutput();
         
         if(shapeletOutputPath != null)
-            transform.setLogOutputFile(shapeletOutputPath);
+            st.setLogOutputFile(shapeletOutputPath);
+        return st;
+
     }
-    
+    private double estimatePropOfFullSearch(int n, int m, long time){
+//nanoToOp is currently a hard coded to 10 nanosecs in ShapeletTransformTimingUtilities. This is a bit crap
+//HERE we can estimate it for this run
+        long nanoTimeForOp=ShapeletTransformTimingUtilities.nanoToOp;
+// Operations contract
+        BigInteger allowedNumberOfOperations = new BigInteger(Long.toString(time / nanoTimeForOp));
+// Operations required
+        BigInteger requiredNumberOfOperations = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
+//Need more operations than we are allowed
+        double p=1;
+        if (requiredNumberOfOperations.compareTo(allowedNumberOfOperations) > 0) {
+            BigDecimal oct = new BigDecimal(allowedNumberOfOperations);
+            BigDecimal oc = new BigDecimal(requiredNumberOfOperations);
+            BigDecimal prop = oct.divide(oc, MathContext.DECIMAL64);
+            p= prop.doubleValue();
+        }
+        return p;
+    }
     public static void main(String[] args) throws Exception {
 //        String dataLocation = "C:\\Temp\\TSC\\";
         String dataLocation = "E:\\Data\\TSCProblems2018\\";

@@ -26,7 +26,7 @@ import tsml.filters.shapelet_transforms.Shapelet;
  *
  * @author raj09hxu
  */
-public class TabuSearch extends ImpRandomSearch{
+public class TabuSearch extends ImprovedRandomSearch {
     int neighbourhoodWidth = 3;     //3x3 
     
     int maxTabuSize = 50;
@@ -50,7 +50,7 @@ public class TabuSearch extends ImpRandomSearch{
         super.init(input);
         
         float subsampleSize = (float) inputData.numInstances() * proportion;
-        numShapeletsPerSeries = (int) ((float) numShapelets / subsampleSize);  
+        numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
         seriesToConsider = new BitSet(inputData.numInstances());
         
         
@@ -61,7 +61,7 @@ public class TabuSearch extends ImpRandomSearch{
             //recalc prop and subsample size.
             proportion =  ((float) Math.sqrt(inputData.numInstances()) / (float)inputData.numInstances());
             subsampleSize = (float) inputData.numInstances() * proportion;
-            numShapeletsPerSeries = (int) ((float) numShapelets / subsampleSize);  
+            numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
             System.out.println("subsampleSize " + (int)subsampleSize);
         }
                     

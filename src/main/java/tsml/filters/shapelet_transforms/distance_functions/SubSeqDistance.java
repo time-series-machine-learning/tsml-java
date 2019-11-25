@@ -35,7 +35,7 @@ public class SubSeqDistance implements Serializable{
     public enum DistanceType{
         NORMAL,         // Standard full scan (with early abandon) is this class
         ONLINE,         // Faster normalisation for extracted subsequences (avoids a call to RescalerType
-        IMP_ONLINE,     // online calculation with variable start and bespoke abandon SEE DAWAK PAPER
+        IMPROVED_ONLINE,     // online calculation with variable start and bespoke abandon SEE DAWAK PAPER
         CACHED,         // Mueen's pre-cached version see Logical Shapelets paper
         ONLINE_CACHED,  // Untested hybrid between online and caching, unpublished, TO REMOVE
     // These three are for multivariate

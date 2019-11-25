@@ -26,7 +26,7 @@ import tsml.filters.shapelet_transforms.Shapelet;
  * @author raj09hxu
  */
 @Deprecated
-public class GeneticSearch extends ImpRandomSearch{
+public class GeneticSearch extends ImprovedRandomSearch {
 
     int initialPopulationSize = 50;
     private int numShapeletsPerSeries;
@@ -40,7 +40,7 @@ public class GeneticSearch extends ImpRandomSearch{
     public void init(Instances input){
         super.init(input);
        
-        numShapeletsPerSeries = (int) (numShapelets / inputData.numInstances());  
+        numShapeletsPerSeries = (int) (numPerSeries / inputData.numInstances());
     }
 
     @Override
