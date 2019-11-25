@@ -40,9 +40,12 @@ public class ShapeletSearchFactory {
     private static List<Function<ShapeletSearchOptions, ShapeletSearch>> createSearchConstructors(){
         List<Function<ShapeletSearchOptions, ShapeletSearch>> sCons = new ArrayList();
         sCons.add(ShapeletSearch::new);
+        sCons.add(RandomSearch::new);
+/*      All the below have been moved to aaron_search. The constructors are all protected for some reason
+so that needs refactoring to be used here.
+        sCons.add(BayesianOptimisedSearch::new);
         sCons.add(FastShapeletSearch::new);
         sCons.add(GeneticSearch::new);
-        sCons.add(RandomSearch::new);
         sCons.add(LocalSearch::new);
         sCons.add(MagnifySearch::new);
         sCons.add(RandomTimedSearch::new);
@@ -52,8 +55,7 @@ public class ShapeletSearchFactory {
         sCons.add(ImprovedRandomSearch::new);
         sCons.add(SubsampleRandomSearch::new);
         sCons.add(SkewedRandomSearch::new);
-        sCons.add(BayesianOptimisedSearch::new);
-        return sCons;
+ */      return sCons;
     }
     
     public ShapeletSearch getShapeletSearch(){

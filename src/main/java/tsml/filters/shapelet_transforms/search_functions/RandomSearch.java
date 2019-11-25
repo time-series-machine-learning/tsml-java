@@ -29,7 +29,7 @@ public class RandomSearch extends ShapeletSearch{
         
     protected Random random;
     protected long numPerSeries;    //Number of shapelets to sample per series
-    protected boolean[][] visited;  //
+    protected boolean[][] visited;  //boolean array, row is length of shapelet, column is location in series.
     
     protected RandomSearch(ShapeletSearchOptions ops) {
         super(ops);    

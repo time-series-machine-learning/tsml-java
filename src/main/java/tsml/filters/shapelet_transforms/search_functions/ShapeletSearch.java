@@ -48,13 +48,13 @@ public class ShapeletSearch implements Serializable{
         private final int length;
         private final int dimension; //this can be optional. If included it relates to the dimension of the data the shapelet is associated with
         
-        protected CandidateSearchData(int pos,int len){
+        public CandidateSearchData(int pos,int len){
             startPosition = pos;
             length = len;
             dimension = 0;
         }
-        
-        protected CandidateSearchData(int pos,int len,int dim){
+
+        public CandidateSearchData(int pos,int len,int dim){
             startPosition = pos;
             length = len;
             dimension = dim;
