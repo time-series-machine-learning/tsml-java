@@ -93,9 +93,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
      * If this is zero and no contract time is set, a full evaluation is done.
       */
+    private long numShapeletsInProblem = 0;
     private long numShapeletsToEvaluate = 0;
     private boolean setSeed=false;
-    private long timeLimit = 0;
+    private long totalTimeLimit = 0;
+    private long transformTimeLimit = 0;
 
 /** Shapelet saving options **/
     private String shapeletOutputPath;
@@ -103,7 +105,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private boolean checkpoint=false;
     private boolean saveShapelets=false;
     private String shapeletPath="";
-
+    private double proportionToEvaluate=1;
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -177,7 +179,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
        String classifierParas="No Classifier Para Info";
        if(classifier instanceof EnhancedAbstractClassifier) 
             classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
-        return "TransformBuildTime,"+transformBuildTime+",timeContractNanos,"+timeLimit+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
+        return "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ totalTimeLimit+",transformTimeContract,"+ transformTimeLimit+",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate+",TransformParas,"+paras+",ClassifierParas,"+classifierParas;
     }
     
     
@@ -198,19 +200,19 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         //min,hour,day in longs.
         switch(time){
             case NANOSECONDS:
-                timeLimit = amount;
+                totalTimeLimit = amount;
                 break;
             case SECONDS:
-                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
+                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
                 break;
             case MINUTES:
-                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
+                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
                 break;
             case HOURS:
-                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
+                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
                 break;
             case DAYS:
-                timeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
+                totalTimeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
                 break;
             default:
                 throw new InvalidParameterException("Invalid time unit");
@@ -231,17 +233,18 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier.
-        long transformTime=(long)((((double)timeLimit)*2.0)/3.0);
-//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTime);
+        transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
+//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTimeLimit);
         switch(sConfig){
             case BAKEOFF:
     //To do, configure for bakeoff.
             case DAWAK:
     //To do, configure for DAWAK.
             case LATEST://Default config
-                transform=configureShapeletTransform(data, transformTime);
+                transform=configureShapeletTransform(data, transformTimeLimit);
+                break;
             default:
-                transform=configureShapeletTransform(data, transformTime);
+                transform=configureShapeletTransform(data, transformTimeLimit);
 
         }
 
@@ -249,9 +252,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         if(debug) {
-            System.out.println("NANOS: Transform contract =" + transformTime + " Actual transform time = " + transformBuildTime+" Proprtion of contract used ="+((double)transformBuildTime/transformTime));
-            System.out.println("SECONDS:Transform contract =" +(transformTime/1000000000L)+" Actual transform time = " + (transformBuildTime / 1000000000L));
-            System.out.println("MINUTES:Transform contract =" +(transformTime/60000000000L)+" Actual transform time = " + (transformBuildTime / 60000000000L));
+            System.out.println("NANOS: Transform contract =" + transformTimeLimit + " Actual transform time = " + transformBuildTime+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit));
+            System.out.println("SECONDS:Transform contract =" +(transformTimeLimit/1000000000L)+" Actual transform time = " + (transformBuildTime / 1000000000L));
+            System.out.println("MINUTES:Transform contract =" +(transformTimeLimit/60000000000L)+" Actual transform time = " + (transformBuildTime / 60000000000L));
         }
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
@@ -281,7 +284,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 */
             of.closeFile();
         }
-        long classifierTime=timeLimit-transformBuildTime;
+        long classifierTime= totalTimeLimit -transformBuildTime;
         if(classifier instanceof TrainTimeContractable)
             ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
 //Here get the train estimate directly from classifier using cv for now        
@@ -482,23 +485,24 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         searchBuilder.setMin(3);
         searchBuilder.setMax(m);
 // How many operations can we perform based on time contract.
-        if(numShapeletsToEvaluate >0 && time >0){
-            throw new UnsupportedOperationException(("You twat! both num shapelets and time has been set!! what shall we do???"));
-        }
-        if(time>0) { //contract time in nanoseconds: need to tidy this up.
-            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-            double p=estimatePropOfFullSearch(m,n,time);
+//if both time and numShapeletsToEvaluate have been set, time trumps numShapeletsToEvaluate
+        if(time>0) { //contract time in nanoseconds used to estimate numShapelets to evaluate and the proportion
+            numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            proportionToEvaluate=estimatePropOfFullSearch(m,n,time);
             if(debug) {
                 System.out.println(" Total number of shapelets = " + numShapeletsToEvaluate);
-                System.out.println(" Proportion to evaluate = " + p+" = "+(p*numShapeletsToEvaluate)+" shapelets");
+                System.out.println(" Proportion to evaluate = " + proportionToEvaluate+" = "+(proportionToEvaluate*numShapeletsToEvaluate)+" shapelets");
             }
-            numShapeletsToEvaluate *= p;
-           }
+            numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
+        }
         else if(numShapeletsToEvaluate==0){ //We are doing a full search
             //Set to search for full. This is debatable, but seems sensible!
             numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
             searchType=SearchType.FULL;
         }
+        if(proportionToEvaluate==1.0)
+            searchType=SearchType.FULL;
+
         if(numShapeletsToEvaluate==0)//Got to do 1 per series
             numShapeletsToEvaluate=n;
 //      else: user has set numShapeletsToEvaluate
@@ -506,7 +510,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             searchBuilder.setSeed(2*seed);
 //Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
         searchBuilder.setSearchType(searchType);
-        searchBuilder.setNumShapelets(numShapeletsToEvaluate/n);
+        searchBuilder.setNumShapelets(numShapeletsToEvaluate/n);//This is ignored if full search is performed
 
 //if we are evaluating fewer than are in the transform we must change this
         numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
@@ -564,7 +568,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         System.out.println("Start transform");
         
         long t1= System.currentTimeMillis();
-        st.configureShapeletTransform(train,st.timeLimit);
+        st.configureShapeletTransform(train,st.totalTimeLimit);
         Instances stTrain=st.transform.process(train);
         long t2= System.currentTimeMillis();
         System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");
@@ -596,7 +600,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         numShapeletsToEvaluate =st.numShapeletsToEvaluate;
         seed =st.seed;
         setSeed=st.setSeed;
-        timeLimit =st.timeLimit;
+        totalTimeLimit =st.totalTimeLimit;
 
         
     }
