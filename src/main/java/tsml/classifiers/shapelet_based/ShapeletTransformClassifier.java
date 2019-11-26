@@ -536,7 +536,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Defaults to just sequentially scanning by series
         optionsBuilder.useRoundRobin();
 //Candidate pruning:   from the original Ye paper, abandons the whole shapelet based on the order line
-        optionsBuilder.useCandidatePruning();
+ //       if(train.numClasses() < 5)
+         optionsBuilder.useCandidatePruning();
 
 /*** DETERMINE THE SEARCH OPTIONS . Also sets numShapeletsToEvaluate, numShapeletsInTransform, proportionToEvaluate and can
  * force full search if contract greater than time required for full search ***/
@@ -574,7 +575,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //if both time and numShapeletsToEvaluate have been set, time trumps numShapeletsToEvaluate
         if(time>0) { //contract time in nanoseconds used to estimate the proportion and hence the number of shapelets to evaluate
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-            proportionToEvaluate=estimatePropOfFullSearch(m,n,time);
+            proportionToEvaluate=estimatePropOfFullSearch(n,m,time);
             if(proportionToEvaluate==1.0) {
                 searchType = SearchType.FULL;
                 numShapeletsToEvaluate=numShapeletsInProblem;
