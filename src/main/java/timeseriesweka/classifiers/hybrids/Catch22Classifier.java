@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.hybrids;
 
 import experiments.data.DatasetLoading;
+import timeseriesweka.filters.FFT;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.J48;
@@ -18,21 +19,22 @@ import static utilities.GenericTools.max;
 import static utilities.GenericTools.min;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.StatisticalUtilities.median;
+import static utilities.StatisticalUtilities.standardDeviation;
 import static utilities.Utilities.argMax;
 import static utilities.Utilities.extractTimeSeries;
 
-public class Catch22 extends AbstractClassifier {
+public class Catch22Classifier extends AbstractClassifier {
 
     private Classifier cls = new J48();
     private boolean norm = true;
 
     private Instances header;
 
-    public Catch22(){}
+    public Catch22Classifier(){}
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        ArrayList<Attribute> atts = new ArrayList();
+        ArrayList<Attribute> atts = new ArrayList<>();
         for (int i = 0; i < 22; i++){
             atts.add(new Attribute("att" + i));
         }
@@ -75,6 +77,11 @@ public class Catch22 extends AbstractClassifier {
         featureSet[2] = binaryStatsMeanLongstretch1SB(arr);
         featureSet[3] = outlierIncludeP001mdrmdDN(arr);
         featureSet[4] = outlierIncludeN001mdrmdDN(arr);
+        featureSet[5] = f1ecacCO(arr);
+        featureSet[6] = firstMinacCO(arr);
+        featureSet[7] = summariesWelchRectArea51SP(arr);
+        featureSet[8] = summariesWelchRectCentroidSP(arr);
+        featureSet[9] = localSimpleMean3StderrFC(arr);
 
         featureSet[22] = classVal;
 
@@ -117,6 +124,63 @@ public class Catch22 extends AbstractClassifier {
 
     private static double outlierIncludeN001mdrmdDN(double[] arr){
         return outlierInclude(arr, false);
+    }
+
+    private static double f1ecacCO(double[] arr){
+        double threshold = 0.36787944117144233; //1/Math.exp(1);
+
+        double[] ac = new double[arr.length-1];
+        ac[0] = 1;
+
+        for (int i = 1; i < arr.length-1; i++) {
+            ac[i] = autoCorr(arr,i);
+
+            if ((ac[i-1]-threshold)*(ac[i]-threshold) < 0){
+                return i;
+            }
+        }
+
+        return arr.length-1;
+    }
+
+    private static double firstMinacCO(double[] arr){
+        double[] ac = new double[arr.length-1];
+
+        for (int i = 0; i < arr.length-1; i++) {
+            ac[i] = autoCorr(arr,i+1);
+
+            if (i == 1 && ac[1] > ac[0]) {
+                return 1;
+            }
+            else if (i > 1 && ac[i-2] > ac[i-1] && ac[i-1] < ac[i]) {
+                return i;
+            }
+        }
+
+        return arr.length-1;
+    }
+
+    private static double summariesWelchRectArea51SP(double[] arr){
+        return summariesWelchRect(arr, false);
+    }
+
+    private static double summariesWelchRectCentroidSP(double[] arr){
+        return summariesWelchRect(arr, true);
+    }
+
+    private static double localSimpleMean3StderrFC(double[] arr){
+        int[] eval = new int[arr.length-3];
+        for (int i = 0; i < arr.length-3; i++){
+            eval[i] = i+3;
+        }
+
+        double[] res = new double[eval.length];
+        for (int i = 0; i < eval.length; i++){
+            double[] train = {arr[eval[i]-3], arr[eval[i]-2], arr[eval[i]-1]};
+            res[i] = mean(train) - arr[eval[i]];
+        }
+
+        return standardDeviation(res, false);
     }
 
     private static double histogramMode(double[] arr, int numBins){
@@ -165,7 +229,7 @@ public class Catch22 extends AbstractClassifier {
         for (int i = 0; i < numThresholds; i += 1){
             double d = i*0.01;
 
-            ArrayList<Double> r = new ArrayList();
+            ArrayList<Double> r = new ArrayList<>();
             if (positive){
                 for (int n = 0; n < arr.length; n++) if (arr[n] >= d) r.add((double)n+1);
             }
@@ -181,7 +245,6 @@ public class Catch22 extends AbstractClassifier {
 
             means[idx] = mean(diff);
             dists[idx] = diff.length/total*100;
-
 
             medians[idx] = median(r.toArray(new Double[0]))/(arr.length/2)-1;
         }
@@ -214,6 +277,90 @@ public class Catch22 extends AbstractClassifier {
         return median(medians);
     }
 
+    public static double autoCorr(double[] arr, int lag){
+        int length = (int)FFT.MathsPower2.roundPow2((float)arr.length);
+
+        FFT.Complex[] c = new FFT.Complex[length];
+        double mean = mean(arr);
+        for (int i = 0; i < arr.length; i++){
+            c[i] = new FFT.Complex(arr[i]-mean, 0);
+        }
+        for (int i = arr.length; i < length; i++){
+            c[i] = new FFT.Complex(0,0);
+        }
+
+        FFT fft = new FFT();
+        fft.fft(c, length);
+
+        for (int i = 0; i < length; i++){
+           c[i].multiply(new FFT.Complex(c[i].getReal(), -c[i].getImag()));
+        }
+
+        fft.inverseFFT(c, length);
+
+        double[] acf = new double[arr.length];
+        float f = c[0].getReal();
+        for (int i = 0; i < arr.length; i++){
+            acf[i] = c[i].getReal()/f;
+        }
+
+        return acf[lag];
+    }
+
+    private static double summariesWelchRect(double[] arr, boolean centroid){
+        int length = (int)FFT.MathsPower2.roundPow2((float)arr.length);
+
+        FFT.Complex[] c = new FFT.Complex[length];
+        double mean = mean(arr);
+        for (int i = 0; i < arr.length; i++){
+            c[i] = new FFT.Complex(arr[i]-mean, 0);
+        }
+        for (int i = arr.length; i < length; i++){
+            c[i] = new FFT.Complex(0,0);
+        }
+
+        FFT fft = new FFT();
+        fft.fft(c, length);
+
+        int newLength = length/2+1;
+        double[] p = new double[newLength];
+        p[0] = (Math.pow(c[0].getMagnitude(),2)/arr.length)/(2*Math.PI);
+        for (int i = 1; i < newLength-1; i++){
+            p[i] = ((Math.pow(c[i].getMagnitude(),2)/arr.length)*2)/(2*Math.PI);
+        }
+        p[newLength-1] = (Math.pow(c[newLength-1].getMagnitude(),2)/arr.length)/(2*Math.PI);
+
+        double[] w = new double[newLength];
+        for (int i = 0; i < newLength; i++) {
+            w[i] = i * (1.0 / length) * Math.PI * 2;
+        }
+
+        if (centroid) {
+            double[] cs = new double[newLength];
+            cs[0] = p[0];
+            for (int i = 1; i < newLength; i++){
+                cs[i] = cs[i-1] + p[i];
+            }
+
+            double threshold = cs[newLength - 1] / 2;
+            for (int i = 0; i < newLength; i++) {
+                if (cs[i] > threshold) {
+                    return w[i];
+                }
+            }
+            return Double.NaN;
+        }
+        else{
+            double tau = Math.floor(newLength/5);
+            double sum = 0;
+            for (int i = 0; i < tau; i++){
+                sum += p[i];
+            }
+
+            return sum * (w[1] - w[0]);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         int fold = 0;
 
@@ -242,5 +389,10 @@ public class Catch22 extends AbstractClassifier {
         System.out.println(binaryStatsMeanLongstretch1SB(inst));
         System.out.println(outlierIncludeP001mdrmdDN(inst));
         System.out.println(outlierIncludeN001mdrmdDN(inst));
+        System.out.println(f1ecacCO(inst));
+        System.out.println(firstMinacCO(inst));
+        System.out.println(summariesWelchRectArea51SP(inst));
+        System.out.println(summariesWelchRectCentroidSP(inst));
+        System.out.println(localSimpleMean3StderrFC(inst));
     }
 }

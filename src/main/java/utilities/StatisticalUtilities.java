@@ -64,6 +64,20 @@ public class StatisticalUtilities {
             return (copy[copy.length/2 - 1] + copy[copy.length/2]) / 2;
     }
 
+    public static double standardDeviation(double[] values, boolean classVal) {
+        double mean = mean(values, classVal);
+        double sumSquaresDiffs = 0;
+        int offset = classVal ? 1 : 0;
+
+        for (int i = 0; i < values.length - offset; i++) {
+            double diff = values[i] - mean;
+
+            sumSquaresDiffs += diff * diff;
+        }
+
+        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
+    }
+
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
 //        double mean = mean(values, classVal);
         double sumSquaresDiffs = 0;
@@ -77,6 +91,7 @@ public class StatisticalUtilities {
 
         return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
+
     // normalize the vector to mean 0 and std 1
     public static double[] normalize(double[] vector, boolean classVal) {
         double mean = mean(vector, classVal);
