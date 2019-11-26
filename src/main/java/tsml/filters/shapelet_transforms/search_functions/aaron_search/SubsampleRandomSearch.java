@@ -27,7 +27,7 @@ public class SubsampleRandomSearch extends ImprovedRandomSearch {
 
     float shapeletToSeriesRatio;
     
-    protected SubsampleRandomSearch(ShapeletSearchOptions ops) {
+    public SubsampleRandomSearch(ShapeletSearchOptions ops) {
         super(ops);
         
         shapeletToSeriesRatio = ops.getProportion();

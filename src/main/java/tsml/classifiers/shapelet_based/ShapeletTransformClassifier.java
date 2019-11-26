@@ -83,21 +83,21 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //If condensing the search set, this is the minimum number of instances per class to search
   public static final int minimumRepresentation = 25;
   //Default number in transform
-    private static int MAXTRANSFORMSIZE=1000;
+    public static int MAXTRANSFORMSIZE=1000;
     private long transformBuildTime;
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.RANDOM;
     private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
 
+    private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
     /** The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
      * If this is zero and no contract time is set, a full evaluation is done.
       */
-    private long numShapeletsInProblem = 0;
-    private long numShapeletsToEvaluate = 0;
-    private boolean setSeed=false;
-    private long totalTimeLimit = 0;
-    private long transformTimeLimit = 0;
+    private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
+    private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
+    private long totalTimeLimit = 0; //Time limit for transform + classifier, fixed by user
+    private long transformTimeLimit = 0;//Time limit assigned to transform, based on totalTimeLimit, but fixed in buildClassifier
 
 /** Shapelet saving options **/
     private String shapeletOutputPath;
@@ -105,7 +105,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private boolean checkpoint=false;
     private boolean saveShapelets=false;
     private String shapeletPath="";
-    private double proportionToEvaluate=1;
+
+    //Can ditch this?
+    private boolean setSeed=false;
+
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
@@ -237,7 +240,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTimeLimit);
         switch(sConfig){
             case BAKEOFF:
-    //To do, configure for bakeoff.
+    //To do, configure for bakeoff/hive-cote
             case DAWAK:
     //To do, configure for DAWAK.
             case LATEST://Default config
@@ -249,7 +252,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
 
         shapeletData = transform.process(data);
-
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         if(debug) {
             System.out.println("DATASET: num cases "+data.numInstances()+" series length "+(data.numAttributes()-1));
@@ -290,7 +292,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         if(classifier instanceof TrainTimeContractable)
             ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
 //Here get the train estimate directly from classifier using cv for now        
-        
+        if(debug)
+            System.out.println("Starting build classifier ......");
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
@@ -440,8 +443,66 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     public void setShapeletOutputFilePath(String path){
         shapeletOutputPath = path;
     }
-    
-/**
+
+
+
+    /**
+     * configuring a ShapeletTransform involves configuring a ShapeletTransformFactoryOptions object (via a OptionsBuilder
+     * and SearchBuilder)
+     *
+     * @param train data set
+     * @param time in nanoseconds that is allowed for the shapelet search
+  Work in progress NOT TO USE YET*/
+    public ShapeletTransform configureBakeoffShapeletTransform(Instances train, long time){
+        int n = train.numInstances();
+        int m = train.numAttributes()-1;
+//numShapeletsInTransform defaults to MAXTRANSFORMSIZE (500), can be set by user.
+//  for very small problems, this number may be far to large, so we will reduce it here.
+
+        if(n*m<numShapeletsInTransform)
+            numShapeletsInTransform=n*m;
+
+        //**** CONFIGURE TRANSFORM OPTIONS ****/
+        ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
+        //Distance type options are in package distance_functions: {NORMAL, ONLINE, IMPROVED_ONLINE, CACHED, ONLINE_CACHED,: See class for info,
+        // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
+        optionsBuilder.setDistanceType(distType);
+//Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN: change to an ST Parameter
+        optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
+
+//Method of selecting series to search. Round Robin takes one of each class in turn
+//Defaults to just sequentially scanning by series
+        optionsBuilder.useRoundRobin();
+//Candidate pruning:   from the original Ye paper, abandons the whole shapelet based on the order line
+//this is only really sensible if a two class problem: the threshold computation rises quickly with number of classes
+        if(train.numClasses() <4){
+            optionsBuilder.useCandidatePruning();
+        }
+
+/*** DETERMINE THE SEARCH OPTIONS . Also sets numShapeletsToEvaluate, numShapeletsInTransform, proportionToEvaluate and can
+ * force full search if contract greater than time required for full search ***/
+        ShapeletSearchOptions.Builder searchBuilder =configureSearchBuilder(n,m, time);
+
+//if we are evaluating fewer than are in the transform we must change this
+        numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
+        if(debug)
+            System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" number per series = "+numShapeletsToEvaluate/n);
+        optionsBuilder.setKShapelets(numShapeletsInTransform);
+        optionsBuilder.setSearchOptions(searchBuilder.build());
+
+//Finally, get the transform from a Factory with the options set by the builder
+        ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
+        st.setPrintDebug(true);
+
+        if(shapeletOutputPath != null)
+            st.setLogOutputFile(shapeletOutputPath);
+        return st;
+
+    }
+
+
+
+    /**
  * configuring a ShapeletTransform involves configuring a ShapeletTransformFactoryOptions object (via a OptionsBuilder
  * and SearchBuilder)
  *
@@ -472,47 +533,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             optionsBuilder.useClassBalancing();
         }
 //Method of selecting series to search. Round Robin takes one of each class in turn
-//Defaults to just sequencially scanning by series
+//Defaults to just sequentially scanning by series
         optionsBuilder.useRoundRobin();
 //Candidate pruning:   from the original Ye paper, abandons the whole shapelet based on the order line
         optionsBuilder.useCandidatePruning();
 
-/*** DETERMINE THE SEARCH OPTIONS
- * This is done by having a Builder static nested within ShapeletSearchOptions
- * which is just a clone of the outer class. This is a style choice in order to make sure the options are immutable
- * once it has been configured and built.
- * ***/
-        ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
-        searchBuilder.setMin(3);
-        searchBuilder.setMax(m);
-// How many operations can we perform based on time contract.
-//if both time and numShapeletsToEvaluate have been set, time trumps numShapeletsToEvaluate
-        if(time>0) { //contract time in nanoseconds used to estimate numShapelets to evaluate and the proportion
-            numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-            proportionToEvaluate=estimatePropOfFullSearch(m,n,time);
-            numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
-            if(debug) {
-                System.out.println(" Total number of shapelets = " + numShapeletsInProblem);
-                System.out.println(" Proportion to evaluate = " + proportionToEvaluate);
-                System.out.println(" Number to evaluate = " + numShapeletsToEvaluate);
-            }
-        }
-        else if(numShapeletsToEvaluate==0){ //We are doing a full search
-            //Set to search for full. This is debatable, but seems sensible!
-            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(1, m, 3, m);
-            searchType=SearchType.FULL;
-        }
-        if(proportionToEvaluate==1.0)
-            searchType=SearchType.FULL;
-
-//        if(numShapeletsToEvaluate<n)//Got to do 1 per series
-//            numShapeletsToEvaluate=n;
-//      else: user has set numShapeletsToEvaluate
-        if(setSeed)
-            searchBuilder.setSeed(2*seed);
-//Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
-        searchBuilder.setSearchType(searchType);
-        searchBuilder.setNumShapeletsToEvaluate(numShapeletsToEvaluate);//This is ignored if full search is performed
+/*** DETERMINE THE SEARCH OPTIONS . Also sets numShapeletsToEvaluate, numShapeletsInTransform, proportionToEvaluate and can
+ * force full search if contract greater than time required for full search ***/
+        ShapeletSearchOptions.Builder searchBuilder =configureSearchBuilder(n,m, time);
 
 //if we are evaluating fewer than are in the transform we must change this
         numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
@@ -523,17 +551,58 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
 //Finally, get the transform from a Factory with the options set by the builder
         ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
-        if(debug) {
-            shapeletOutputPath = "C:\\Temp\\STC_1\\Test_shapelets.csv";
-            st.setPrintDebug(true);
-        }
-        else
-            st.supressOutput();
+        st.setPrintDebug(true);
 
         if(shapeletOutputPath != null)
             st.setLogOutputFile(shapeletOutputPath);
         return st;
 
+    }
+
+    /**
+     * * Configure the search algorithm.
+     * This is done by having a Builder static nested within ShapeletSearchOptions
+     *  which is just a clone of the outer class. This is a style choice in order to make sure the options are immutable
+     *  once it has been configured and built.
+      * @return Builder to configure shapelet search
+     */
+    private ShapeletSearchOptions.Builder configureSearchBuilder(int n, int m, long time){
+        ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
+        searchBuilder.setMin(3);
+        searchBuilder.setMax(m);
+// How many operations can we perform based on time contract.
+//if both time and numShapeletsToEvaluate have been set, time trumps numShapeletsToEvaluate
+        if(time>0) { //contract time in nanoseconds used to estimate the proportion and hence the number of shapelets to evaluate
+            numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            proportionToEvaluate=estimatePropOfFullSearch(m,n,time);
+            if(proportionToEvaluate==1.0) {
+                searchType = SearchType.FULL;
+                numShapeletsToEvaluate=numShapeletsInProblem;
+            }
+            else
+                numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
+            if(debug) {
+                System.out.println(" Contract time (secs) = " + time/1000000000);
+                System.out.println(" Total number of shapelets = " + numShapeletsInProblem);
+                System.out.println(" Proportion to evaluate = " + proportionToEvaluate);
+                System.out.println(" Number to evaluate = " + numShapeletsToEvaluate);
+            }
+        }
+        else if(numShapeletsToEvaluate==0){ //User has not explicitly set time or number to evaluate, so we are doing a full search
+            //Set to search for full. This is debatable, but seems sensible!
+            numShapeletsToEvaluate = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
+            searchType=SearchType.FULL;
+        }
+        if(numShapeletsToEvaluate<n)//Got to do 1 per series. Really should reduce if we do this.
+            numShapeletsToEvaluate=n;
+    //      else: user has set numShapeletsToEvaluate
+        if(setSeed)
+            searchBuilder.setSeed(2*seed);
+//Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
+        searchBuilder.setSearchType(searchType);
+        //Searching requires the number of shapelets PER SERIES, not the total number.
+        searchBuilder.setNumShapeletsToEvaluate(numShapeletsToEvaluate/n);//This is ignored if full search is performed
+        return searchBuilder;
     }
     private double estimatePropOfFullSearch(int n, int m, long time){
 //nanoToOp is currently a hard coded to 10 nanosecs in ShapeletTransformTimingUtilities. This is a bit crap

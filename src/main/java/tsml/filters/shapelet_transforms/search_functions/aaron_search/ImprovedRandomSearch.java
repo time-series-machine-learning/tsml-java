@@ -41,7 +41,7 @@ public class ImprovedRandomSearch extends RandomSearch {
         return shapeletsToFind;
     }
         
-    protected ImprovedRandomSearch(ShapeletSearchOptions ops) {
+    public ImprovedRandomSearch(ShapeletSearchOptions ops) {
         super(ops);
     }
 

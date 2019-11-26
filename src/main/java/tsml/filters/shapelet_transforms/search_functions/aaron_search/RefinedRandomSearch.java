@@ -28,7 +28,7 @@ public class RefinedRandomSearch extends ImprovedRandomSearch {
 
     float shapeletToSeriesRatio;
     
-    protected RefinedRandomSearch(ShapeletSearchOptions ops) {
+    public RefinedRandomSearch(ShapeletSearchOptions ops) {
         super(ops);
         
         shapeletToSeriesRatio = ops.getProportion();

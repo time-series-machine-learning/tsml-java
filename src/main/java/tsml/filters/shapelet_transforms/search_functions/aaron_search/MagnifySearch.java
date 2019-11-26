@@ -34,7 +34,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
     //how many times do we want to make our search area smaller.
     int maxDepth = 3;
 
-    protected MagnifySearch(ShapeletSearchOptions ops) {
+    public MagnifySearch(ShapeletSearchOptions ops) {
         super(ops);
         
         proportion = ops.getProportion();

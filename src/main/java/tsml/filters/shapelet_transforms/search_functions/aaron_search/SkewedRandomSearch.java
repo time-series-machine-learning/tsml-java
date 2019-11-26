@@ -29,7 +29,7 @@ public class SkewedRandomSearch extends ImprovedRandomSearch {
     int[] lengthDistribution;
     int[] cumulativeDistribution;
     
-    protected SkewedRandomSearch(ShapeletSearchOptions sops){
+    public SkewedRandomSearch(ShapeletSearchOptions sops){
         super(sops);
         
         lengthDistribution = sops.getLengthDistribution();

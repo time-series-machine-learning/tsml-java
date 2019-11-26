@@ -119,7 +119,7 @@ public abstract class ShapeletQualityBound implements Serializable {
      * @return true if candidate can be pruned otherwise false
      */
     public boolean pruneCandidate() {
-            //Check if the required amont of data has been observed and
+            //Check if the required amount of data has been observed and
         //best quality so far set
         if (bsfQuality == Double.MAX_VALUE || orderLine.size() * 100 / numInstances <= percentage) {
             return false;

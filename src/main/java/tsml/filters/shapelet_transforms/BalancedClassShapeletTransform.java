@@ -24,7 +24,8 @@ import java.util.TreeMap;
 import weka.core.Instances;
 /**
  *
- * @author raj09hxu
+ * @author Aaron Bostrom
+ *
  */
 public class BalancedClassShapeletTransform extends ShapeletTransform implements Serializable
 {
@@ -35,7 +36,7 @@ public class BalancedClassShapeletTransform extends ShapeletTransform implements
      *
      * @param data the data that the shapelets will be taken from
      * @return an ArrayList of FullShapeletTransform objects in order of their
-     * fitness (by infoGain, seperationGap then shortest length)
+     * fitness (by infoGain, separationGap then shortest length)
      */
     @Override
     public ArrayList<Shapelet> findBestKShapeletsCache(Instances data){
@@ -53,14 +54,13 @@ public class BalancedClassShapeletTransform extends ShapeletTransform implements
         int proportion = numShapelets/kShapeletsMap.keySet().size();
         
         //for all time series
-        outputPrint("Processing data: ");
+        outputPrint("Processing data for numShapelets "+numShapelets+ " with proportion = "+proportion);
 
         int dataSize = data.numInstances();
         //for all possible time series.
         while(casesSoFar < dataSize)
         {
-            outputPrint("data : " + casesSoFar);
-            
+
             //get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
 
@@ -75,7 +75,8 @@ public class BalancedClassShapeletTransform extends ShapeletTransform implements
             classValue.setShapeletValue(data.get(casesSoFar));
             
             seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
-            
+            numShapeletsEvaluated+=seriesShapelets.size();
+//            outputPrint("BalancedClassST: data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons);
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
                 if(isRemoveSelfSimilar())

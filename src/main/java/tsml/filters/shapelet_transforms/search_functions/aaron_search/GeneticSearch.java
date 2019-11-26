@@ -35,7 +35,7 @@ public class GeneticSearch extends ImprovedRandomSearch {
     private int numShapeletsPerSeries;
     private int evaluated;
     
-    protected GeneticSearch(ShapeletSearchOptions sop){
+    public GeneticSearch(ShapeletSearchOptions sop){
         super(sop);
     }
     

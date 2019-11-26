@@ -12,13 +12,15 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms;
+package tsml.filters.shapelet_transforms.old_code;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import tsml.filters.shapelet_transforms.ShapeletTransform;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -32,10 +34,11 @@ import weka.filters.unsupervised.instance.Resample;
  * is achieved by means of sampling the dataset according to supplied percentages
  * 
  * @author Edgaras Baranauskas
+ *
+ * To possibly be depreciated
  */
 
-@Deprecated
-public class ApproximateShapeletTransform extends ShapeletTransform{
+public class ApproximateShapeletTransform extends ShapeletTransform {
     /**
      * Size of the subsample, as a percentage of the original set 
      */
@@ -128,7 +131,7 @@ public class ApproximateShapeletTransform extends ShapeletTransform{
         Instances orderedInst = null;
         if(!this.m_FirstBatchDone){
             sampledIDs = new ArrayList<Integer>();
-            dataInst = approximateInstanes(dataInst);
+            dataInst = approximateInstances(dataInst);
             
             //Sort data in round robin order
             dataSourceIDs = new int[dataInst.numInstances()];
@@ -156,8 +159,8 @@ public class ApproximateShapeletTransform extends ShapeletTransform{
         return this.buildTansformedDataset(dataInst);
     }
     
-    //Method to apprimiate the training data
-    private Instances approximateInstanes(Instances data){
+    //Method to approximate the training data
+    private Instances approximateInstances(Instances data){
         Instances output = sampleInstances(data);
         output = performPAA(output);
         

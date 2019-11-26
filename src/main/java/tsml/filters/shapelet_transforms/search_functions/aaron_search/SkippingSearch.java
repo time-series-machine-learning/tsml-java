@@ -32,7 +32,7 @@ public class SkippingSearch extends ShapeletSearch {
     int[] positions;
     int[] lengths;
     
-    protected SkippingSearch(ShapeletSearchOptions sops){
+    public SkippingSearch(ShapeletSearchOptions sops){
         super(sops);
         
     }

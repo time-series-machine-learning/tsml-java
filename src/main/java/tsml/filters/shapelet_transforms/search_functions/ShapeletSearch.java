@@ -32,12 +32,11 @@ public class ShapeletSearch implements Serializable{
 
 //Defines the search technique defined in this package.
     public enum SearchType {FULL, //Evaluate all shapelets using
-                            GENETIC,//This can be
                             RANDOM,
 //ALL of the below are things Aaron tried in his thesis (package aaron_search)
 //It is not commented and somewhat untested.
-                    FS, //Fast shapeletes
-                    LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMPROVED_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
+        GENETIC, FS, //Fast shapeletes
+        LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMPROVED_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
     
     
     //Immutable class to store search params. 
@@ -46,7 +45,8 @@ public class ShapeletSearch implements Serializable{
     protected static class CandidateSearchData{
         private final int startPosition;
         private final int length;
-        private final int dimension; //this can be optional. If included it relates to the dimension of the data the shapelet is associated with
+        private final int dimension; //this is optional, for use with multivariate data.
+                                    // If included it relates to the dimension of the data the shapelet is associated with
         
         public CandidateSearchData(int pos,int len){
             startPosition = pos;

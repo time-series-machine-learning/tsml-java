@@ -29,7 +29,7 @@ public class LocalSearch extends RandomTimedSearch{
     
     int maxIterations;
     
-    protected LocalSearch(ShapeletSearchOptions ops) {
+    public LocalSearch(ShapeletSearchOptions ops) {
         super(ops);
         
         maxIterations = ops.getMaxIterations();

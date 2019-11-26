@@ -27,22 +27,36 @@ import java.util.function.Function;
  * @author Aaron
  */
 public class ShapeletSearchFactory {
-    private static final List<Function<ShapeletSearchOptions, ShapeletSearch>> searchConstructors = createSearchConstructors();
-    //{FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE, SKEWED};
-
     ShapeletSearchOptions options;
     
     public ShapeletSearchFactory(ShapeletSearchOptions ops){
         options = ops;
     }
+  /**
+      * @return a Shapelet search configured by the options
+     */
+    public ShapeletSearch getShapeletSearch(){
+        switch(options.getSearchType()){
+            case FULL:
+                return new ShapeletSearch(options);
+            case RANDOM:
+                return new RandomSearch(options);
+            default:
+                throw new UnsupportedOperationException(" Currently only FULL and RANDOM shapelet search are allowed" +
+                        "you passed" + options.getSearchType()+" the others are in package aaron_search and are not debugged");
+        }
+    }
 
+//    private static final List<Function<ShapeletSearchOptions, ShapeletSearch>> searchConstructors = createSearchConstructors();
+    //{FULL, FS, GENETIC, RANDOM, LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMP_RANDOM, SUBSAMPLE, SKEWED};
+/*
     //Aaron likes C++. This is just an indexed list of constructors for possible search technique
     private static List<Function<ShapeletSearchOptions, ShapeletSearch>> createSearchConstructors(){
         List<Function<ShapeletSearchOptions, ShapeletSearch>> sCons = new ArrayList();
         sCons.add(ShapeletSearch::new);
         sCons.add(RandomSearch::new);
-/*      All the below have been moved to aaron_search. The constructors are all protected for some reason
-so that needs refactoring to be used here.
+//      All the below have been moved to aaron_search. The constructors are all protected for some reason
+//so that needs refactoring to be used here.
         sCons.add(BayesianOptimisedSearch::new);
         sCons.add(FastShapeletSearch::new);
         sCons.add(GeneticSearch::new);
@@ -55,14 +69,11 @@ so that needs refactoring to be used here.
         sCons.add(ImprovedRandomSearch::new);
         sCons.add(SubsampleRandomSearch::new);
         sCons.add(SkewedRandomSearch::new);
- */      return sCons;
+        return sCons;
     }
-    
-    public ShapeletSearch getShapeletSearch(){
-        return searchConstructors.get(options.getSearchType().ordinal()).apply(options);
-    }
-    
-    
+
+*/
+
     public static void main(String[] args) {
         System.out.println(new ShapeletSearchFactory(new ShapeletSearchOptions.Builder()
                                                     .setSearchType(ShapeletSearch.SearchType.FULL)

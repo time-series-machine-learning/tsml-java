@@ -40,7 +40,7 @@ public class TabuSearch extends ImprovedRandomSearch {
     
     float proportion = 1.0f;
     
-    protected TabuSearch(ShapeletSearchOptions ops) {
+    public TabuSearch(ShapeletSearchOptions ops) {
         super(ops);
         
         proportion = ops.getProportion();

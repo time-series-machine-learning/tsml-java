@@ -125,6 +125,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     
     protected long count;
 
+
     public void setSubSeqDistance(SubSeqDistance ssd) {
         subseqDistance = ssd;
     }
@@ -223,6 +224,16 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     }
 
     /**
+     * Shouldnt really hav this method, but it is a convenience to allow refactoring
+     * ClusteredShapeletTransform
+     * @param s
+     */
+    public void setShapelets(ArrayList<Shapelet> s) {
+        this.shapelets=s;
+    }
+
+
+    /**
      * Set the transform to round robin the data or not. This transform defaults
      * round robin to false to keep the instances in the same order as the
      * original data. If round robin is set to true, the transformed data will
@@ -242,8 +253,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         this.supressOutput = true;
     }
 
+
     public void setPrintDebug(boolean b) {
-        this.supressOutput = b;
+        this.supressOutput = !b;
     }
 
 
@@ -473,7 +485,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
             trainShapelets(data);
             searchComplete=true;
             //we log the count from the subsequence distance before we reset it in the transform.
-            //we only care about the count from the train.
+            //we only care about the count from the train. What is it counting?
             count = subseqDistance.getCount();
 
         }
@@ -563,7 +575,14 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
     /**
      * protected method for extracting k shapelets.
-     *
+     * this method extracts shapelets series by series, using the searchFunction method searchForShapeletsInSeries,
+     *  which itself uses checkCandidate
+     * 1. The search method determines the method of choosing shapelets. By default all are evaluated (ShapeletSearch)
+     * or the alternative RandomSearch, which finds a fixed number of shapelets determined by the time contract.
+     * 2. The qualityFunction assesses each candidate, and uses the worstShapelet (set in checkCandidate) to test for inclusion and
+     * any lower bounding. I dont think it uses it to test for inclusion.
+     * 3. self similar are removed by default, and the method combine is used to merge the current candidates and
+     * the new ones
      * @param data the data that the shapelets will be taken from
      * @return an ArrayList of FullShapeletTransform objects in order of their
      * fitness (by infoGain, seperationGap then shortest length)
@@ -575,10 +594,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         outputPrint("Processing data: ");
 
         int dataSize = data.numInstances();
-
         //for all possible time series.
         for(; casesSoFar < dataSize; casesSoFar++) {
-            outputPrint("data : " + casesSoFar);
 
             //set the worst Shapelet so far, as long as the shapelet set is full.
             worstShapelet = kShapelets.size() == numShapelets ? kShapelets.get(numShapelets - 1) : null;
@@ -590,6 +607,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
             seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
             numShapeletsEvaluated+=seriesShapelets.size();
+            outputPrint("data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons+" worst so far ="+worstShapelet);
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
                 
@@ -670,7 +688,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
      * FullShapeletTransform objects from the union of the input ArrayLists
      */
     protected ArrayList<Shapelet> combine(int k, ArrayList<Shapelet> kBestSoFar, ArrayList<Shapelet> timeSeriesShapelets) {
-        //both kBestSofar and timeSeries are sorted so we can explot this.
+        //both kBestSofar and timeSeries are sorted so we can exploit this.
         //maintain a pointer for each list.
         ArrayList<Shapelet> newBestSoFar = new ArrayList<>();
 
@@ -753,7 +771,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
                 return false; // stop evaluating. we no longer have any matches.
             }
             
-            System.out.println("matched length and IG.");
 
             //if we're here then evaluate the shapelet distance. if they're equal in the comparator it means same length, same IG.
             double dist = this.subseqDistance.distanceToShapelet(shape);
@@ -1208,7 +1225,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
                 +",numShapeletsEvaluated,"+numShapeletsEvaluated+",numEarlyAbandons,"+numEarlyAbandons
                 + ",searchFunction,"+this.searchFunction.getSearchType()
                 + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName()
-                +",roundrobin,"+roundRobin;
+                +",roundrobin,"+roundRobin+",earlyAbandon,"+useCandidatePruning+",TransformClass,"+this.getClass().getSimpleName();
         return str;
     }
     /**

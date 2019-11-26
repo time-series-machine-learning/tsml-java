@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms;
+package tsml.filters.shapelet_transforms.old_code;
 
 import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+
+import tsml.filters.shapelet_transforms.Shapelet;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
 import weka.core.Instances;
 
 /**

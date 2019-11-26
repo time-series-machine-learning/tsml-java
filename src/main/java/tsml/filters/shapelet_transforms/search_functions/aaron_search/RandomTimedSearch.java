@@ -29,7 +29,7 @@ public class RandomTimedSearch extends RandomSearch {
         
     protected long timeLimit;
 
-    protected RandomTimedSearch(ShapeletSearchOptions ops) {
+    public RandomTimedSearch(ShapeletSearchOptions ops) {
         super(ops);    
         
         timeLimit = ops.getTimeLimit();

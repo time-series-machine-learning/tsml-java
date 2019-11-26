@@ -12,12 +12,15 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters.shapelet_transforms;
+package tsml.filters.shapelet_transforms.old_code;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import tsml.filters.shapelet_transforms.Shapelet;
+import tsml.filters.shapelet_transforms.ShapeletTransform;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
@@ -191,10 +194,10 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
  // We only want the shapelets from st, so could optimize this to not work out the transform too. However, cleaner this way          
         if(!st.isFirstBatchDone())
             st.process(data);
-        allShapelets=st.shapelets;
+        allShapelets=st.getShapelets();
         clusterShapelets();
         
-        this.st.shapelets = clusteredShapelets;
+        this.st.setShapelets(clusteredShapelets);
         return st.buildTansformedDataset(data);
     }
     
