@@ -88,6 +88,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.RANDOM;
     private SubSeqDistance.DistanceType distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
+    private ShapeletQuality.ShapeletQualityChoice qualityMeasure=ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
 
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
     /** The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
@@ -235,12 +236,17 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         getCapabilities().testWithFail(data);
         
         long startTime=System.nanoTime();
-//Give 2/3 time for transform, 1/3 for classifier.
+//Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
         transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
 //        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTimeLimit);
         switch(sConfig){
             case BAKEOFF:
-    //To do, configure for bakeoff/hive-cote
+    //To do, configure for bakeoff/hive-cote. Full enumeration, early abandon, CAWPE basic config
+                transform=configureBakeoffShapeletTransform(data, transformTimeLimit);
+                CAWPE base= new CAWPE();
+                base.setupOriginalHESCASettings();
+                base.setEstimateOwnPerformance(false);//Defaults to false anyway
+                classifier=base;
             case DAWAK:
     //To do, configure for DAWAK.
             case LATEST://Default config
@@ -458,42 +464,43 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         int m = train.numAttributes()-1;
 //numShapeletsInTransform defaults to MAXTRANSFORMSIZE (500), can be set by user.
 //  for very small problems, this number may be far to large, so we will reduce it here.
-
+        numShapeletsInTransform=10*n;
         if(n*m<numShapeletsInTransform)
             numShapeletsInTransform=n*m;
+        distType=SubSeqDistance.DistanceType.NORMAL;
+        qualityMeasure=ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
+        searchType=ShapeletSearch.SearchType.FULL;
 
         //**** CONFIGURE TRANSFORM OPTIONS ****/
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
         //Distance type options are in package distance_functions: {NORMAL, ONLINE, IMPROVED_ONLINE, CACHED, ONLINE_CACHED,: See class for info,
-        // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION};
+        // and three options for multivariate: DEPENDENT, INDEPENDENT, DIMENSION}; enum is in SubSeqDistance
         optionsBuilder.setDistanceType(distType);
 //Quality measure options {INFORMATION_GAIN, F_STAT, KRUSKALL_WALLIS, MOODS_MEDIAN: change to an ST Parameter
-        optionsBuilder.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
+        optionsBuilder.setQualityMeasure(qualityMeasure);
 
 //Method of selecting series to search. Round Robin takes one of each class in turn
 //Defaults to just sequentially scanning by series
         optionsBuilder.useRoundRobin();
 //Candidate pruning:   from the original Ye paper, abandons the whole shapelet based on the order line
 //this is only really sensible if a two class problem: the threshold computation rises quickly with number of classes
-        if(train.numClasses() <4){
+        if(train.numClasses() <10){
             optionsBuilder.useCandidatePruning();
         }
 
 /*** DETERMINE THE SEARCH OPTIONS . Also sets numShapeletsToEvaluate, numShapeletsInTransform, proportionToEvaluate and can
  * force full search if contract greater than time required for full search ***/
-        ShapeletSearchOptions.Builder searchBuilder =configureSearchBuilder(n,m, time);
-
-//if we are evaluating fewer than are in the transform we must change this
-        numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
-        if(debug)
-            System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" number per series = "+numShapeletsToEvaluate/n);
+        ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
+        searchBuilder.setMin(3);
+        searchBuilder.setMax(m);
+        if(setSeed)
+            searchBuilder.setSeed(2*seed);
+//Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
+        searchBuilder.setSearchType(searchType);
         optionsBuilder.setKShapelets(numShapeletsInTransform);
         optionsBuilder.setSearchOptions(searchBuilder.build());
-
 //Finally, get the transform from a Factory with the options set by the builder
         ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
-        st.setPrintDebug(true);
-
         if(shapeletOutputPath != null)
             st.setLogOutputFile(shapeletOutputPath);
         return st;
