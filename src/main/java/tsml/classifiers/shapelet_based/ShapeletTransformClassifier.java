@@ -68,9 +68,6 @@ import weka.core.TechnicalInformation;
  * 
  */
 public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
-    enum ShapeletConfig{BAKEOFF,DAWAK,LATEST}
-
-    ShapeletConfig sConfig=ShapeletConfig.DAWAK;
     //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;
 //Transformed shapelets header info stored here
@@ -129,6 +126,25 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     
     public void setTransformType(TransformType t){
         type=t;
+    }
+    enum ShapeletConfig{BAKEOFF,DAWAK,LATEST}
+    ShapeletConfig sConfig=ShapeletConfig.LATEST;
+
+    public void setConfiguration(ShapeletConfig s){
+        sConfig=s;
+    }
+    public void setConfiguration(String s){
+        s=s.toUpperCase();
+        switch(s){
+            case "BAKEOFF": case "BAKE OFF": case "BAKE-OFF":
+                sConfig=ShapeletConfig.BAKEOFF;
+                break;
+            case "DAWAK": case "BINARY": case "AARON":
+                sConfig=ShapeletConfig.DAWAK;
+                break;
+            case "LATEST": default:
+                sConfig=ShapeletConfig.LATEST;
+        }
     }
 
 /** Redundant features in the shapelet space are removed **/
