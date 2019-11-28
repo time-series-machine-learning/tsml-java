@@ -508,6 +508,46 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     }
 
 
+    public ShapeletTransform configureDawakShapeletTransform(Instances train, long time){
+        int n = train.numInstances();
+        int m = train.numAttributes()-1;
+//numShapeletsInTransform defaults to MAXTRANSFORMSIZE (500), can be set by user.
+//  for very small problems, this number may be far to large, so we will reduce it here.
+        numShapeletsInTransform=10*n;
+        distType=SubSeqDistance.DistanceType.IMPROVED_ONLINE;
+        qualityMeasure=ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
+        searchType=ShapeletSearch.SearchType.FULL;
+
+        //**** CONFIGURE TRANSFORM OPTIONS ****/
+        ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();
+        optionsBuilder.setDistanceType(distType);
+        optionsBuilder.setQualityMeasure(qualityMeasure);
+        optionsBuilder.useRoundRobin();
+        optionsBuilder.useCandidatePruning();
+        optionsBuilder.setKShapelets(numShapeletsInTransform);
+
+        if(train.numClasses() > 2) {
+            optionsBuilder.useBinaryClassValue();
+            optionsBuilder.useClassBalancing();
+        }
+
+        ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
+        searchBuilder.setMin(3);
+        searchBuilder.setMax(m);
+        if(setSeed)
+            searchBuilder.setSeed(2*seed);
+//Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
+        searchBuilder.setSearchType(searchType);
+
+        optionsBuilder.setSearchOptions(searchBuilder.build());
+//Finally, get the transform from a Factory with the options set by the builder
+        ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
+        if(shapeletOutputPath != null)
+            st.setLogOutputFile(shapeletOutputPath);
+        return st;
+    }
+
+
 
     /**
  * configuring a ShapeletTransform involves configuring a ShapeletTransformFactoryOptions object (via a OptionsBuilder
