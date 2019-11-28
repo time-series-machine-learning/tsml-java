@@ -1218,13 +1218,18 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         return str;
     }
 
-//searchFunction
+    public String getShapeletCounts() {
+        return "numShapelets," + numShapelets + ",numShapeletsEvaluated," + numShapeletsEvaluated + ",numEarlyAbandons," + numEarlyAbandons;
+    }
+
+    //searchFunction
 
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets
                 +",numShapeletsEvaluated,"+numShapeletsEvaluated+",numEarlyAbandons,"+numEarlyAbandons
                 + ",searchFunction,"+this.searchFunction.getSearchType()
                 + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName()
+                +",subseqDistance"+subseqDistance.toString()
                 +",roundrobin,"+roundRobin+",earlyAbandon,"+useCandidatePruning+",TransformClass,"+this.getClass().getSimpleName();
         return str;
     }
