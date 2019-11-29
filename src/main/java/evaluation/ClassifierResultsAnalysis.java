@@ -78,11 +78,15 @@ public class ClassifierResultsAnalysis {
     public static boolean buildMatlabDiagrams = false;
     public static boolean testResultsOnly = false;
 
-    //    PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+//        PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
     public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
+    public static PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.avgTestPredTimeBenchmarked;
 
     //    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.additionalTimeForEstimate;
+    //    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.additionalTimeForEstimateBenchmarked;
     public static PerformanceMetric estimateTimeMetric = PerformanceMetric.fromScratchEstimateTime;
+    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.fromScratchEstimateTimeBenchmarked;
 
     //final id's and path suffixes
     protected static final String matlabFilePath = "src/main/matlab/";
@@ -93,7 +97,9 @@ public class ClassifierResultsAnalysis {
 
     //todo being used for both raw and benchmarked 2019/10/21
     //eval_timings... editing folder name before own ana, then resetting. fix.
-    protected static String timingDiaFolderName = "dias_Timing/";
+    protected static String timingDiaFolderName = "dias_Timings";
+    protected static String timingDiaFolderName_raw = "dias_TimingsRAW";
+    protected static String timingDiaFolderName_benchmark = "dias_TimingsBENCHMARKED";
 
     public static final double FRIEDMANCDDIA_PVAL = 0.05;
     public static final String testLabel = "TEST";
@@ -180,12 +186,21 @@ public class ClassifierResultsAnalysis {
         }
         // END USER DEFINED STATS
 
+
+
+
+
+
         // START TIMINGS 
         //timings will attempt to always be summarised if they are present, so handle them here as a special case
         //and add them onto the list of metrics
-        String[][] trainTestTimingSummary = new String[][] { };
+        String[][] trainTestTimingSummaries = new String[4][];
         try {
-            trainTestTimingSummary = eval_timingsRAW(outPath, expname, results, null); //dont bother with groupings for timings
+            String[][] trainTestTimingSummaryRaw = eval_timingsRAW(outPath, expname, results, null); //dont bother with groupings for timings
+
+            trainTestTimingSummaries[0] = trainTestTimingSummaryRaw[0];
+            trainTestTimingSummaries[1] = trainTestTimingSummaryRaw[1];
+
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing RAW timing files, likely "
                     + "later stages of analysis could not find files that should have been made"
@@ -203,7 +218,10 @@ public class ClassifierResultsAnalysis {
         // TODO proper support for benchmarked timings, link up to the diagram creation code, global summary files, etc
         // currently standalone
         try {
-            eval_timingsBENCHMARKED(outPath, expname, results, null); //dont bother with groupings for timings
+            String[][] trainTestTimingSummaryBenchmarked = eval_timingsBENCHMARKED(outPath, expname, results, null); //dont bother with groupings for timings
+
+            trainTestTimingSummaries[2] = trainTestTimingSummaryBenchmarked[0];
+            trainTestTimingSummaries[3] = trainTestTimingSummaryBenchmarked[1];
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing BENCHMARKED timing files, likely "
                     + "later stages of analysis could not find files that should have been made"
@@ -226,27 +244,29 @@ public class ClassifierResultsAnalysis {
         //using the presence of summaries for train and test timings as an indicator that they are present
         List<PerformanceMetric> timeMetrics = new ArrayList<>();
 
-        if (trainTestTimingSummary != null) {
+        if (trainTestTimingSummaries != null) {
             timeMetrics.add(PerformanceMetric.buildTime);
             timeMetrics.add(testTimeMetric);
+            timeMetrics.add(PerformanceMetric.buildTimeBenchmarked);
+            timeMetrics.add(benchmarkedTestTimeMetric);
 //            timeMetrics.add(estimateTimeMetric);
-            for (int j = trainTestTimingSummary.length-1; j >= 0; j--) {
+            for (int j = trainTestTimingSummaries.length-1; j >= 0; j--) {
                 String label = timeMetrics.get(j).name;
-                if (trainTestTimingSummary[j] != null) {
+                if (trainTestTimingSummaries[j] != null) {
                     //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
                     metrics.add(timeMetrics.get(j));
 
                     bigSummary.writeString(label + ":");
-                    bigSummary.writeLine(trainTestTimingSummary[j][0]);
+                    bigSummary.writeLine(trainTestTimingSummaries[j][0]);
 
                     smallSummary.writeString(label + ":");
-                    smallSummary.writeLine(trainTestTimingSummary[j][1]);
+                    smallSummary.writeLine(trainTestTimingSummaries[j][1]);
 
-                    statCliquesForCDDias.add(trainTestTimingSummary[j][2]);
+                    statCliquesForCDDias.add(trainTestTimingSummaries[j][2]);
                 }
                 else {
-                    //not present, ignore, and remvoe from list of time-specific metrics
-                    //to be passed to the timign dia creator
+                    //not present, ignore, and remove from list of time-specific metrics
+                    //to be passed to the timing dia creator
                     timeMetrics.remove(j);
 
                     bigSummary.writeString(label + ":  MISSING\n\n");
@@ -492,8 +512,9 @@ public class ClassifierResultsAnalysis {
             //end pairwisescatter qol
 
             //qol for timing dia creation, make a copy of the avgs files with headers
-            if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.totalTestTime) || metric.equals(PerformanceMetric.avgTestPredTime)) {
-                String timingDir = expRootDirectory+ timingDiaFolderName;
+            if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.totalTestTime) || metric.equals(PerformanceMetric.avgTestPredTime) ||
+                    metric.equals(PerformanceMetric.buildTimeBenchmarked) || metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(PerformanceMetric.avgTestPredTimeBenchmarked)) {
+                String timingDir = expRootDirectory+ timingDiaFolderName + "/";
                 (new File(timingDir)).mkdirs();
                 String fname = timingDir+fileNameBuild_avgsFile(evalSet,metric);
                 writeTableFile_ClassifierDataset(fname, evalSet+metric, dsetVals, cnames, dsets);
@@ -833,16 +854,15 @@ public class ClassifierResultsAnalysis {
         String[] cnames = results.getClassifierNamesInOutput();
         String[] dsets = results.getDatasetNamesInOutput();
 
-        timingDiaFolderName = timingDiaFolderName.replace("g/", "gRAW/");
+        timingDiaFolderName = timingDiaFolderName_raw;
 
         PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
-//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
 
         outPath += "TimingsRAW/"; //special case for timings
         new File(outPath).mkdirs();
 
         // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
-        // train files in comparison set up
+        // train files in comparison set up. build times should be same in both trainFoldX and testFoldX file anyway
 
         double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
@@ -859,8 +879,6 @@ public class ClassifierResultsAnalysis {
 //        if (estimateTimes != null)
 //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
-        timingDiaFolderName = timingDiaFolderName.replace("gRAW/", "g/");
-
         return new String[][] { trainResStr, testResStr };
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
@@ -869,47 +887,36 @@ public class ClassifierResultsAnalysis {
         String[] cnames = results.getClassifierNamesInOutput();
         String[] dsets = results.getDatasetNamesInOutput();
 
-        timingDiaFolderName = timingDiaFolderName.replace("g/", "gBENCHMARKED/");
+        timingDiaFolderName = timingDiaFolderName_benchmark;
 
-        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
-        PerformanceMetric benchmarkTimeMetric = PerformanceMetric.benchmarkTime;
-//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTimeBenchmarked;
 
         outPath += "TimingsBENCHMARKED/"; //special case for timings
         new File(outPath).mkdirs();
 
         // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
-        // train files in comparison set up
+        // train files in comparison set up. build times should be same in both trainFoldX and testFoldX file anyway
 
-        double[][][] benchmarkTrainTimes = results.sliceSplit("test").retrieveDoubles(benchmarkTimeMetric.getter)[0];
-        double[][][] correctedTrainTimes = util_correctTimingsForBenchmarks(
-                results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0],
-                benchmarkTrainTimes
-        );
+        double[][][] benchmarkedTrainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
 
         String[] trainResStr = null;
-        if (correctedTrainTimes != null) {
-            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, correctedTrainTimes, cnames, dsets, dsetGroupings);
-            writeTableFile_ClassifierDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkTrainTimes, cnames, dsets);
+        if (benchmarkedTrainTimes != null) {
+            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, benchmarkedTrainTimes, cnames, dsets, dsetGroupings);
+            writeTableFile_ClassifierDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkedTrainTimes, cnames, dsets);
         }
 
-        double[][][] benchmarkTestTimes = results.sliceSplit("test").retrieveDoubles(benchmarkTimeMetric.getter)[0];
-        double[][][] correctedTestTimes = util_correctTimingsForBenchmarks(
-                results.sliceSplit("test").retrieveDoubles(testTimeMetric.getter)[0],
-                benchmarkTestTimes
-        );
+        double[][][] benchmarkedTestTimes = results.sliceSplit("test").retrieveDoubles(benchmarkedTestTimeMetric.getter)[0];
+
         String[] testResStr = null;
-        if (correctedTestTimes != null) {
-            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, testTimeMetric, correctedTestTimes, cnames, dsets, dsetGroupings);
-            writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkTestTimes, cnames, dsets);
+        if (benchmarkedTestTimes != null) {
+            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, benchmarkedTestTimeMetric, benchmarkedTestTimes, cnames, dsets, dsetGroupings);
+            writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
         }
 
 //        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
 //        String[] estimateResStr = null;
 //        if (estimateTimes != null)
 //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
-
-        timingDiaFolderName = timingDiaFolderName.replace("gBENCHMARKED/", "g/");
 
         return new String[][] { trainResStr, testResStr };
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
@@ -942,11 +949,13 @@ public class ClassifierResultsAnalysis {
     protected static void matlab_buildTimingsDias(List<PerformanceMetric> metrics) {
         MatlabController proxy = MatlabController.getInstance();
 
-        String diaFolder = expRootDirectory+"/"+ timingDiaFolderName +"/";
         for (PerformanceMetric metric : metrics) {
+
+            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? timingDiaFolderName_benchmark : timingDiaFolderName_raw) + "/";
+
             String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ? testLabel : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
-            proxy.eval("timingsLinePlot('"+diaFolder+filenameNoExtension+"', '"+evalSet.toLowerCase()+"');");
+            proxy.eval("timingsLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "');");
         }
     }
 
@@ -1052,14 +1061,14 @@ public class ClassifierResultsAnalysis {
         return sb.toString();
     }
 
-    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
-        for (int classifier = 0; classifier < timings.length; classifier++)
-            for (int dset = 0; dset < timings[0].length; dset++)
-                for (int fold = 0; fold < timings[0][0].length; fold++)
-                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
-
-        return timings;
-    }
+//    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
+//        for (int classifier = 0; classifier < timings.length; classifier++)
+//            for (int dset = 0; dset < timings[0].length; dset++)
+//                for (int fold = 0; fold < timings[0][0].length; fold++)
+//                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
+//
+//        return timings;
+//    }
 
     protected static double[][][] findTrainTestDiffs(double[][][] trainFoldAccs, double[][][] testFoldAccs) {
         double[][][] diffs = new double[trainFoldAccs.length][trainFoldAccs[0].length][trainFoldAccs[0][0].length];
@@ -1514,8 +1523,12 @@ public class ClassifierResultsAnalysis {
         for (int i = 0; i < metrics.size(); i++) {
             if (metrics.get(i).equals(PerformanceMetric.buildTime))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel, "RAW");
-            else if (metrics.get(i).equals(PerformanceMetric.totalTestTime) || metrics.get(i).equals(testTimeMetric))
+            else if (metrics.get(i).equals(testTimeMetric))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel, "RAW");
+            else if (metrics.get(i).equals(PerformanceMetric.buildTimeBenchmarked))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel, "BENCHMARKED");
+            else if (metrics.get(i).equals(benchmarkedTestTimeMetric))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel, "BENCHMARKED");
             else
                 jxl_buildStatSheets(wb, basePath, metrics.get(i), i);
         }
@@ -1549,11 +1562,11 @@ public class ClassifierResultsAnalysis {
         //instead of TrainTimings/TRAIN/TrainTimings ... 
         String metricPath = basePath + "Timings"+timingType+"/" + evalSet + "/";
 
-        WritableSheet avgsSheet = wb.createSheet(metric.name+timingType, wb.getNumberOfSheets());
+        WritableSheet avgsSheet = wb.createSheet(metric.name, wb.getNumberOfSheets());
         String testCSV = metricPath + fileNameBuild_avgsFile(evalSet, metric);
         jxl_copyCSVIntoSheet(avgsSheet, testCSV);
 
-        WritableSheet summarySheet = wb.createSheet(metric.name+timingType+"SigDiffs", wb.getNumberOfSheets());
+        WritableSheet summarySheet = wb.createSheet(metric.name+"SigDiffs", wb.getNumberOfSheets());
         String summaryCSV = metricPath + fileNameBuild_summaryFile(evalSet, metric);
         jxl_copyCSVIntoSheet(summarySheet, summaryCSV);
 
@@ -1662,7 +1675,7 @@ public class ClassifierResultsAnalysis {
                         concat.append("'");
                         concat.append(c2name.replaceAll("_", "\\\\_"));
                         concat.append("'");
-                        proxy.eval("labels = {" + concat.toString() + "}");
+                        proxy.eval("labels = {" + concat.toString() + "};");
 
 //                        System.out.println("array = ["+ pwrt.toStringValues(false) + "];");
 //                        System.out.println("labels = {" + concat.toString() + "}");

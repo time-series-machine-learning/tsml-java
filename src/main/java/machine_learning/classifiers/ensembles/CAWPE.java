@@ -528,9 +528,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
-            setTestResultsOnly(false).
-//            setBuildMatlabDiagrams(true).
-            setBuildMatlabDiagrams(false).
+            setTestResultsOnly(true).
+            setBuildMatlabDiagrams(true).
+            setUseAccuracyOnly().
+//            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
