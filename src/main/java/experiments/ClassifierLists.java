@@ -45,6 +45,8 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTreeClassifier;
+import timeseriesweka.filters.SummaryStats;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -210,7 +212,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF", "Catch22TSF"};
+    public static String[] interval= {"LPS","TSF","cTSF", "Catch22TSF", "Catch22TSF100", "TSF100"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -226,9 +228,21 @@ public class ClassifierLists {
             case "cTSF":
                 c=new cTSF();
                 break;
+
+
             case "Catch22TSF":
                 c=new Catch22TSF();
                 break;
+            case "Catch22TSF100":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).setNumTrees(100);
+                break;
+            case "TSF100":
+                c=new TSF();
+                ((TSF)c).setNumTrees(100);
+                break;
+
+
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -301,7 +315,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22","SSRF"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -319,6 +333,8 @@ public class ClassifierLists {
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
+
+
             case "Catch22":
                 c=new Catch22Classifier();
                 RandomForest rf = new RandomForest();
@@ -326,6 +342,15 @@ public class ClassifierLists {
                 rf.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rf);
                 break;
+            case "SSRF":
+                c=new FilteredClassifier();
+                RandomForest rf2 = new RandomForest();
+                rf2.setNumTrees(100);
+                rf2.setSeed(fold);
+                ((FilteredClassifier)c).setClassifier(rf2);
+                ((FilteredClassifier)c).setFilter(new SummaryStats());
+                break;
+
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between array hybrids and the switch statement ");
