@@ -350,22 +350,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     
      /**
      *
-     * @param type
+     * @param rescaler
      */
-    public void setRescalerType(RescalerType type){
-         //TODO: don't like this, should change to match QualityChoice. 
-        SeriesRescaler sr;
-        switch(type){
-            case NONE:
-                sr = new NoRescaling();
-                break;
-            case STANDARDISATION:
-                sr = new ZStandardisation();
-                break;
-            default:
-                sr = new ZNormalisation();
-        }
-       this.subseqDistance.seriesRescaler = sr;
+    public void setRescaler(SeriesRescaler rescaler){
+        if(subseqDistance != null)
+            this.subseqDistance.seriesRescaler = rescaler;
     }
     
         /**
