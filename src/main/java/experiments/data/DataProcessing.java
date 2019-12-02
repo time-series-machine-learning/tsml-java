@@ -1546,7 +1546,7 @@ testSimpleClassifier();
 
     public static void generateAllResamplesInARFF(){
         //       String path = "C:\\Users\\ajb\\Dropbox\\Working docs\\Data Resample Debug\\Data\\";
-        String path = "E:\\Datasets\\Univariate_arff\\";
+        String path = "Z:\\ArchiveData\\";
         String[] datasets=DatasetLists.tscProblems2018;
 //        datasets=new String[]{"Chinatown"};
         for(String problem:datasets){
