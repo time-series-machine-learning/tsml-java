@@ -32,27 +32,19 @@ import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
 import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
-import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
 import java.security.InvalidParameterException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 
-import machine_learning.classifiers.ensembles.voting.MajorityVote;
-import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import weka.classifiers.Classifier;
-import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.functions.SMO;
-import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
-import weka.classifiers.trees.J48;
-import weka.classifiers.trees.RandomForest;
 import tsml.classifiers.TrainTimeContractable;
 import weka.core.TechnicalInformation;
 
@@ -107,14 +99,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private long transformTimeLimit = 0;//Time limit assigned to transform, based on totalTimeLimit, but fixed in buildClassifier
 
 /** Shapelet saving options **/
-    private String shapeletOutputPath;
     private String checkpointFullPath=""; //location to check point
     private boolean checkpoint=false;
+    private String shapeletOutputPath;
     private boolean saveShapelets=false;
-    private String shapeletPath="";
 
-    //Can ditch this?
-    private boolean setSeed=false;
 
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
@@ -136,13 +125,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     public void setTransformType(TransformType t){
         type=t;
     }
-    enum ShapeletConfig{BAKEOFF,DAWAK,LATEST}//Not sure I should do this like this. MAybe just have a default then methods to configure.
-    ShapeletConfig sConfig=ShapeletConfig.LATEST;
+    enum ShapeletConfig{BAKEOFF,DAWAK,LATEST,USER}//Not sure I should do this like this. MAybe just have a default then methods to configure.
+    ShapeletConfig sConfig=ShapeletConfig.USER;//The default or user set up, to avoid overwriting user defined config
 
     public void setConfiguration(ShapeletConfig s){
         sConfig=s;
     }
-    public void setConfiguration(String s){
+    public final void setConfiguration(String s){
         s=s.toUpperCase();
         switch(s){
             case "BAKEOFF": case "BAKE OFF": case "BAKE-OFF":
@@ -159,10 +148,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 /** Redundant features in the shapelet space are removed **/
     int[] redundantFeatures;
 
-    public void saveShapelets(String filePathForShapelets){
-        shapeletPath=filePathForShapelets;
-        saveShapelets=true;
-    }
     public void setTransformType(String t){
         t=t.toLowerCase();
         switch(t){
@@ -181,10 +166,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     
     public ShapeletTransformClassifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        
-        RotationForest rf= new RotationForest();
-        rf.setNumIterations(200);
-        classifier=rf;
+        setConfiguration(ShapeletConfig.DAWAK);
     }
 
     public void setClassifier(Classifier c){
@@ -219,8 +201,23 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         str+=","+paras+","+classifierParas;
         return str;
     }
-    
-    
+
+
+    public String getTransformParameters(){
+        String paras=transform.getShapeletCounts();
+        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ totalTimeLimit+",transformTimeContract,"+ transformTimeLimit;
+        //Shapelet numbers and contract info
+        str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
+        //transform config
+        str+=",SearchType,"+searchType+",DistType,"+distType+",QualityMeasure,"+qualityMeasure+",RescaleType,"+rescaleType;
+        str+=",UseRoundRobin,"+useRoundRobin+",UseCandidatePruning,"+useCandidatePruning+",UseClassBalancing,"+useClassBalancing+",useBinaryClassValue,"+useBinaryClassValue;
+        str+=",useBinaryClassValue,"+useBinaryClassValue+",minShapeletLength,"+minShapeletLength+",maxShapeletLength,"+maxShapeletlength+",ConfigSetup,"+sConfig;
+        str+=","+paras;
+        return str;
+    }
+
+
+
     public long getTransformOpCount(){
         return transform.getCount();
     }
@@ -272,10 +269,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
         transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
-//        System.out.println("Time limit = "+timeLimit+"  transform time "+transformTimeLimit);
+//        Set up the transform and classifier.
         switch(sConfig){
             case BAKEOFF:
-    //To do, configure for bakeoff/hive-cote. Full enumeration, early abandon, CAWPE basic config
+    //Full enumeration, early abandon, CAWPE basic config, 10n shapelets in transform, capped at n*m
                 configureBakeoffShapeletTransform(data);
                 CAWPE base= new CAWPE();
                 base.setupOriginalHESCASettings();
@@ -283,19 +280,21 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
                 classifier=base;
                 break;
             case DAWAK:
-    //To do, configure for DAWAK.
-                //To do, configure for bakeoff/hive-cote. Full enumeration, early abandon, CAWPE basic config
+    //As with bakeoff, but with binary shapelets and class balancing when #classes > 2, 10n shapelets in transform, uncapped!
                 configureDawakShapeletTransform(data);
                 base= new CAWPE();
                 base.setupOriginalHESCASettings();
                 base.setEstimateOwnPerformance(false);//Defaults to false anyway
                 classifier=base;
                 break;
-            case LATEST:  //Default config
-                configureShapeletTransformTimeContract(data, transformTimeLimit);
+            case LATEST:  //Default config. This is now Dawak like, but with a capped #shapelets and a rotation forest classifier
+                configureShapeletTransformTimeDefault(data);
                 classifier=new RotationForest();
                 ((RotationForest)classifier).setNumIterations(200);
         }
+        if(transformTimeLimit>0)
+            configureTrainTimeContract(data,transformTimeLimit);
+
         transform=buildTransform(data);
         shapeletData = transform.process(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
@@ -308,22 +307,21 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets){
-            System.out.println("Shapelet Saving  ....");
-            //NO, do it properly.
-            DatasetLoading.saveDataset(shapeletData,shapeletPath+"Transforms"+seed);
-//            FullAccessOutFile of=new FullAccessOutFile(shapeletPath+"Transforms"+seed+".arff");
-//            of.writeString(shapeletData.toString());
-//            of.closeFile();
-            FullAccessOutFile of=new FullAccessOutFile(shapeletPath+"Shaplelets"+seed+".csv");
-            of.writeLine("BuildTime,"+(System.nanoTime()-startTime));
+            System.out.println("Saving the transform as an arff file and the transform data in different files. The shapelets will also be saved by the transform in the same location.");
+            //Write shapelet transform to arff file
+            DatasetLoading.saveDataset(shapeletData,shapeletOutputPath+"shapeletTransform"+seed);
+            FullAccessOutFile of=new FullAccessOutFile(shapeletOutputPath+"shapleletInform"+seed+".csv");
+            String str= getTransformParameters();
+            Date date = new Date();
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            of.writeLine("Generated by ShapeletTransformClassifier.java on " + formatter.format(date));
+            of.writeLine(str);
             of.writeLine("NumShapelets,"+transform.getNumberOfShapelets());
-            of.writeLine("Count(not sure!),"+transform.getCount());
+            of.writeLine("Operations count(not sure!),"+transform.getCount());
             of.writeString("ShapeletLengths");
             ArrayList<Integer> lengths=transform.getShapeletLengths();
             for(Integer i:lengths)
                 of.writeString(","+i);
-            of.writeString("\n");
-            of.writeString(transform.toString());
 /*            ArrayList<Shapelet>  shapelets= transform.getShapelets();
             of.writeLine("SHAPELETS:");
             for(Shapelet s:shapelets){
@@ -374,6 +372,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     
     public void setShapeletOutputFilePath(String path){
         shapeletOutputPath = path;
+        saveShapelets=true;
     }
 
     public ShapeletTransform buildTransform(Instances data){
@@ -391,7 +390,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             optionsBuilder.useBinaryClassValue();
         if(useRoundRobin)
             optionsBuilder.useRoundRobin();
-        if(setSeed)
+        if(seedClassifier)
             searchBuilder.setSeed(2*seed);
 //NEED TO SET RESCALE TYPE HERE
 //Set builder up with any time based constraints, defined by numShapeletsToEvaluate>0
@@ -407,8 +406,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         optionsBuilder.setSearchOptions(searchBuilder.build());
 //Finally, get the transform from a Factory with the options set by the builder
         ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
-        if(shapeletOutputPath != null)
-            st.setLogOutputFile(shapeletOutputPath);
+        if(saveShapelets && shapeletOutputPath != null)
+            st.setLogOutputFile(shapeletOutputPath+data.relationName()+"Shapelets.csv");
         return st;
 
     }
@@ -437,7 +436,8 @@ public void configureDawakShapeletTransform(Instances train){
 
     minShapeletLength=3;
     maxShapeletlength=m;
-    numShapeletsInTransform=10*n;//Got to cap this surely!
+    if(numShapeletsInTransform==MAXTRANSFORMSIZE)//It has not then been set by the user
+        numShapeletsInTransform=  10*n < MAXTRANSFORMSIZE ? 10*n: MAXTRANSFORMSIZE;        //Got to cap this surely!
 
 }
     /**
@@ -461,8 +461,8 @@ public void configureDawakShapeletTransform(Instances train){
         minShapeletLength=3;
         maxShapeletlength=m;
         numShapeletsInTransform=10*n;
-        if(n*m<numShapeletsInTransform)
-            numShapeletsInTransform=n*m;
+        if(numShapeletsInTransform==MAXTRANSFORMSIZE)//It has not then been set by the user
+            numShapeletsInTransform=  10*n < MAXTRANSFORMSIZE ? 10*n: MAXTRANSFORMSIZE;        //Got to cap this surely!
 
 
     }
@@ -472,33 +472,46 @@ public void configureDawakShapeletTransform(Instances train){
     /**
  * configuring a ShapeletTransform involves configuring a ShapeletTransformFactoryOptions object (via a OptionsBuilder
  * and SearchBuilder)
- *
+ * The default config is from the Dawak paper, except with a cap on the number of shapelets in the transform.
  * @param train data set
- * @param time in nanoseconds that is allowed for the shapelet search
  */
-    public void configureShapeletTransformTimeContract(Instances train, long time){
+    public void configureShapeletTransformTimeDefault(Instances train) {
         int n = train.numInstances();
-        int m = train.numAttributes()-1;
-        distType=SubSeqDistance.DistanceType.IMPROVED_ONLINE;
-        qualityMeasure=ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
-        searchType=ShapeletSearch.SearchType.FULL;
-        rescaleType=SubSeqDistance.RescalerType.NORMALISATION;
-        useRoundRobin=true;
-        useCandidatePruning=true;
-        if(train.numClasses() > 2) {
+        int m = train.numAttributes() - 1;
+        distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
+        qualityMeasure = ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
+        searchType = ShapeletSearch.SearchType.FULL;
+        rescaleType = SubSeqDistance.RescalerType.NORMALISATION;
+        useRoundRobin = true;
+        useCandidatePruning = true;
+        if (train.numClasses() > 2) {
             useBinaryClassValue = true;
             useClassBalancing = true;
-        }else{
-            useBinaryClassValue = true;
-            useClassBalancing = true;
+        } else {
+            useBinaryClassValue = false;
+            useClassBalancing = false;
         }
-        minShapeletLength=3;
-        maxShapeletlength=m;
-        if(n*m<numShapeletsInTransform)
-            numShapeletsInTransform=n*m;
+        minShapeletLength = 3;
+        maxShapeletlength = m;
+        if(numShapeletsInTransform==MAXTRANSFORMSIZE)//It has not then been set by the user
+            numShapeletsInTransform=  10*n < MAXTRANSFORMSIZE ? 10*n: MAXTRANSFORMSIZE;        //Got to cap this surely!
+    }
+
+    /**
+     * This method estimates how many shapelets per series (numShapeletsToEvaluate) can be evaluated given a specific time contract.
+     * Note the user can set numShapeletsToEvaluate explicitly. The user can also set the contract time explicitly, thus invoking
+     * this method in buildClassifier. If both numShapeletsToEvaluate and time have been set, we have a contradiction from the user.
+     * We assume time take precedence, and overwrite numShapeletsToEvaluate
+      * @param train train data
+     * @param time contract time in nanoseconds
+     */
+    public void configureTrainTimeContract(Instances train, long time){
 //Configure the search options if a contract has been ser
+        int n = train.numInstances();
+        int m = train.numAttributes() - 1;
         if(debug)
-            System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate);
+            System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
+
         if(time>0) { //contract time in nanoseconds used to estimate the proportion and hence the number of shapelets to evaluate
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
             proportionToEvaluate=estimatePropOfFullSearch(n,m,time);
@@ -509,7 +522,6 @@ public void configureDawakShapeletTransform(Instances train){
             else
                 numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
             if(debug) {
-                System.out.println(" Contract time (secs) = " + time/1000000000);
                 System.out.println(" Total number of shapelets = " + numShapeletsInProblem);
                 System.out.println(" Proportion to evaluate = " + proportionToEvaluate);
                 System.out.println(" Number to evaluate = " + numShapeletsToEvaluate);
@@ -564,7 +576,8 @@ public void configureDawakShapeletTransform(Instances train){
         System.out.println("Start transform");
         
         long t1= System.currentTimeMillis();
-        st.configureShapeletTransformTimeContract(train,st.totalTimeLimit);
+        st.configureShapeletTransformTimeDefault(train);
+        st.configureTrainTimeContract(train,st.totalTimeLimit);
         Instances stTrain=st.transform.process(train);
         long t2= System.currentTimeMillis();
         System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");
@@ -595,7 +608,7 @@ public void configureDawakShapeletTransform(Instances train){
         searchType =st.searchType;
         numShapeletsToEvaluate =st.numShapeletsToEvaluate;
         seed =st.seed;
-        setSeed=st.setSeed;
+        seedClassifier=st.seedClassifier;
         totalTimeLimit =st.totalTimeLimit;
 
         
