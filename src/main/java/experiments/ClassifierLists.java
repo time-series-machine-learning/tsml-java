@@ -23,9 +23,11 @@ import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import timeseriesweka.classifiers.distance_based.*;
 import timeseriesweka.classifiers.frequency_based.cRISE;
+import timeseriesweka.classifiers.hybrids.Catch22Classifier;
 import timeseriesweka.classifiers.hybrids.FlatCote;
 import timeseriesweka.classifiers.hybrids.HiveCote;
 import timeseriesweka.classifiers.hybrids.TSCHIEFWrapper;
+import timeseriesweka.classifiers.interval_based.Catch22TSF;
 import timeseriesweka.classifiers.interval_based.cTSF;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
 import timeseriesweka.classifiers.shapelet_based.FastShapelets;
@@ -208,7 +210,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF"};
+    public static String[] interval= {"LPS","TSF","cTSF", "Catch22TSF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -223,6 +225,9 @@ public class ClassifierLists {
                 break;
             case "cTSF":
                 c=new cTSF();
+                break;
+            case "Catch22TSF":
+                c=new Catch22TSF();
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
@@ -296,7 +301,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -313,6 +318,13 @@ public class ClassifierLists {
             case "TSCHIEF":
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
+                break;
+            case "Catch22":
+                c=new Catch22Classifier();
+                RandomForest rf = new RandomForest();
+                rf.setNumTrees(100);
+                rf.setSeed(fold);
+                ((Catch22Classifier)c).setClassifier(rf);
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");

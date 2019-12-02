@@ -363,6 +363,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         //Amount of padding required for FFT
         private int paddedLength(int oldLength){
             int length = (int)MathsPower2.roundPow2((float)oldLength);
+            if (length < oldLength) length *= 2;
                 
             if(length<oldLength){
                 length *= 2; //need to be here? review whole method
