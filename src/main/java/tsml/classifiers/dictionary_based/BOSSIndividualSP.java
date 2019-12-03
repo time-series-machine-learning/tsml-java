@@ -1027,6 +1027,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public void tuneK(){
         int mostCorrect = 0;
 
+        if (bags.size() < maxK) maxK = bags.size()-1;
+
         for (int k = 1; k <= maxK; k+=2){
             int correct = 0;
 
