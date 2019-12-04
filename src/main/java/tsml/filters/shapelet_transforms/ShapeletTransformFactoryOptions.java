@@ -26,6 +26,10 @@ import static tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance
 /**
  *
  * @author Aaron
+ * This is a holder for the shapelet options which are then used to build the Transform in ShapeletTransformFactory.
+ * We have a Builder class, that clones the Options class, that sets up the Factory class, that builds the Transform
+ *
+ * I knew an old lady who swallowed a fly, perhaps she'll die?  This could usefully be restructured ....
  */
 public class ShapeletTransformFactoryOptions {
    
@@ -40,8 +44,9 @@ public class ShapeletTransformFactoryOptions {
     private final ShapeletQualityChoice qualityChoice;
     private final ShapeletSearchOptions searchOptions;
     private final RescalerType rescalerType;
-    
-    
+    public enum TransformType{ORIGINAL,BALANCED,CONTRACT}
+    private TransformType transformType;
+
     private ShapeletTransformFactoryOptions(Builder options){
         minLength = options.minLength;
         maxLength = options.maxLength;
@@ -54,12 +59,14 @@ public class ShapeletTransformFactoryOptions {
         roundRobin = options.roundRobin;
         candidatePruning = options.candidatePruning;
         rescalerType = options.rescalerType;
+        transformType =options.transformType;
     }
 
     public RescalerType  getRescalerType(){
         return rescalerType;
     }
-    
+
+    public TransformType getTransformType(){ return transformType;}
     public boolean isBalanceClasses() {
         return balanceClasses;
     }
@@ -70,23 +77,18 @@ public class ShapeletTransformFactoryOptions {
     public int getMinLength() {
         return minLength;
     }
-
     public int getMaxLength() {
         return maxLength;
     }
-
     public int getkShapelets() {
         return kShapelets;
     }
-    
     public DistanceType getDistance() {
         return distance;
     }
-    
     public boolean useRoundRobin(){
         return roundRobin;
     }
-
     public boolean useCandidatePruning(){
         return candidatePruning;
     }
@@ -103,7 +105,10 @@ public class ShapeletTransformFactoryOptions {
     public String toString(){
         return minLength + " " + maxLength + " " + kShapelets + " " + balanceClasses;
     }
-    
+
+    /** Funny inner class that serves no purpose but to confuse ... and why does everything return this?!?
+     *
+      */
     public static class Builder {
         
         private int minLength;
@@ -117,7 +122,8 @@ public class ShapeletTransformFactoryOptions {
         private ShapeletQualityChoice qualityChoice;
         private ShapeletSearchOptions searchOptions;
         private RescalerType rescalerType;
-        
+        private TransformType transformType;
+
         
         public Builder useRoundRobin(){
             roundRobin = true;
@@ -145,7 +151,10 @@ public class ShapeletTransformFactoryOptions {
             minLength = min;
             return this;
         }
-        
+        public Builder setTransformType(TransformType t){
+            transformType =t;
+            return this;
+        }
         public Builder setMaxLength(int max){
             maxLength = max;
             return this;

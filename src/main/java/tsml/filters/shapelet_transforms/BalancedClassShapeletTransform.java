@@ -106,7 +106,7 @@ public class BalancedClassShapeletTransform extends ShapeletTransform implements
         return kShapelets;
     }
        
-    private ArrayList<Shapelet> buildKShapeletsFromMap(Map<Double, ArrayList<Shapelet>> kShapeletsMap)
+    protected ArrayList<Shapelet> buildKShapeletsFromMap(Map<Double, ArrayList<Shapelet>> kShapeletsMap)
     {
        ArrayList<Shapelet> kShapelets = new ArrayList<>();
        

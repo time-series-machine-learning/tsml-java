@@ -50,7 +50,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
         //one relational and a class att.
         maxDepth = 3;
         inputData = input;
-        seriesLength = getSeriesLength();
+        seriesLength = setSeriesLength();
 
         
         float subsampleSize = (float) inputData.numInstances() * proportion;

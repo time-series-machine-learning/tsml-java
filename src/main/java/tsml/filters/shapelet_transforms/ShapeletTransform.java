@@ -108,6 +108,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     
     protected boolean useCandidatePruning;
     protected boolean useRoundRobin;
+    protected boolean useBalancedClasses;
 
     protected Comparator<Shapelet> shapeletComparator;
 
@@ -212,7 +213,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
         this.searchFunction = new ShapeletSearchFactory(sOp).getShapeletSearch();
     }
-
+    public long getNumShapeletsPerSeries(){ return searchFunction.getNumShapeletsPerSeries();}
     /**
      * Returns the set of shapelets for this transform as an ArrayList.
      *
@@ -244,6 +245,9 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     public void setRoundRobin(boolean val) {
         this.roundRobin = val;
     }
+    public void setUseBalancedClasses(boolean val) {
+        this.useBalancedClasses = val;
+    }
 
     /**
      * Supresses filter output to the console; useful when running timing
@@ -254,8 +258,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     }
 
 
-    public void setPrintDebug(boolean b) {
+    public void setSuppressOutput(boolean b) {
         this.supressOutput = !b;
+    }
+    public boolean getSuppressOutput() {
+        return this.supressOutput;
     }
 
 
@@ -291,7 +298,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     }
 
     /**
-     *
+     * set the number of shapelets in the transform
      * @return
      */
     public int getNumberOfShapelets() {
@@ -383,24 +390,23 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
      * @param inputFormat the format of the input data
      * @return a new Instances object in the desired output format
      */
-    //TODO: Fix depecrated FastVector
     @Override
     protected Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
 
         if (this.numShapelets < 1) {
             
             System.out.println(this.numShapelets);
-            throw new IllegalArgumentException("ShapeletFilter not initialised correctly - please specify a value of k that is greater than or equal to 1");
+            throw new IllegalArgumentException("ShapeletTransform not initialised correctly - please specify a value of k (this.numShapelets) that is greater than or equal to 1. It is currently set tp "+this.numShapelets);
         }
 
         //Set up instances size and format.
         //int length = this.numShapelets;
         int length = this.shapelets.size();
-        FastVector atts = new FastVector();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
         for (int i = 0; i < length; i++) {
             name = "Shapelet_" + i;
-            atts.addElement(new Attribute(name));
+            atts.add(new Attribute(name));
         }
 
         if (inputFormat.classIndex() >= 0) {
@@ -412,7 +418,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
             for (int i = 0; i < target.numValues(); i++) {
                 vals.addElement(target.value(i));
             }
-            atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
+            atts.add(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
         }
         Instances result = new Instances("Shapelets" + inputFormat.relationName(), atts, inputFormat.numInstances());
         if (inputFormat.classIndex() >= 0) {
@@ -468,7 +474,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         inputData = data;
         //check the input data is correct and assess whether the filter has been setup correctly.
         inputCheck(data);
-        
+
         //checks if the shapelets haven't been found yet, finds them if it needs too.
         if (!m_FirstBatchDone && !searchComplete){
             trainShapelets(data);
@@ -486,18 +492,17 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     protected void trainShapelets(Instances data) {
         //we might round robin the data in here. So we need to override the input data with the new ordering.
         inputData = initDataSource(data);
-        
         searchFunction.setComparator(shapeletComparator);
         searchFunction.init(inputData);
                 //setup subseqDistance
         subseqDistance.init(inputData);
         //setup classValue
         classValue.init(inputData);
-                
+        outputPrint("num shapelets before search "+numShapelets);
+
         shapelets = findBestKShapeletsCache(inputData); // get k shapelets
         m_FirstBatchDone = true;
-
-        outputPrint(shapelets.size() + " Shapelets have been generated");
+        outputPrint(shapelets.size() + " Shapelets have been generated num shapelets now "+numShapelets);
         
         //we don't need to undo the roundRobin because we clone the data into a different order.
     }
@@ -505,7 +510,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
     private Instances initDataSource(Instances data) {
 
         int dataSize = data.numInstances();
-        // shapelets discovery has not yet been caried out, so this must be training data
+        // shapelets discovery has not yet been carried out, so this must be training data
         dataSourceIDs = new int[dataSize];
         
         Instances dataset = data;
@@ -523,7 +528,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
     //given a set of instances transform it by the internal shapelets.
     public Instances buildTansformedDataset(Instances data) {
-        
         //Reorder the training data and reset the shapelet indexes
         Instances output = determineOutputFormat(data);
 
@@ -657,8 +661,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         classValue.init(data);
         //setup subseqDistance
         subseqDistance.init(data);
-        initDataSource(data);
-        return findBestKShapeletsCache(data);
+        Instances newData=initDataSource(data);
+        return findBestKShapeletsCache(newData);
     }
 
 
@@ -1218,7 +1222,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
                 +",numShapeletsEvaluated,"+numShapeletsEvaluated+",numEarlyAbandons,"+numEarlyAbandons
                 + ",searchFunction,"+this.searchFunction.getSearchType()
                 + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName()
-                +",subseqDistance"+subseqDistance.toString()
+                +",subseqDistance,"+this.subseqDistance.getClass().getSimpleName()
                 +",roundrobin,"+roundRobin+",earlyAbandon,"+useCandidatePruning+",TransformClass,"+this.getClass().getSimpleName();
         return str;
     }

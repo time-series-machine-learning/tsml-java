@@ -109,7 +109,8 @@ public class ShapeletSearch implements Serializable{
     protected Instances inputData;
     
     transient protected ShapeletSearchOptions options;
-    
+
+    public long getNumShapeletsPerSeries(){ return options.getNumShapeletsToEvaluate();}
     protected ShapeletSearch(ShapeletSearchOptions ops){
         options = ops;
         
@@ -141,11 +142,15 @@ public class ShapeletSearch implements Serializable{
         //we need to detect whether it's multivariate or univariate.
         //this feels like a hack. BOO.
         //one relational and a class att.
-        seriesLength = getSeriesLength();
+        //TO DO: Tony says: this is both a hack and incorrect: it is counting the class value.
+        seriesLength = setSeriesLength();
     }
-    
     public int getSeriesLength(){
-        return inputData.numAttributes() >= maxShapeletLength ? inputData.numAttributes() : channelLength(inputData) + 1; //we add one here, because lots of code assumes it has a class value on the end/ 
+        return seriesLength; //we add one here, because lots of code assumes it has a class value on the end/ TO DO: CLARIFY THIS
+    }
+
+    public int setSeriesLength(){
+        return inputData.numAttributes() >= maxShapeletLength ? inputData.numAttributes() : channelLength(inputData) + 1; //we add one here, because lots of code assumes it has a class value on the end/
     }
     
     //given a series and a function to find a shapelet 

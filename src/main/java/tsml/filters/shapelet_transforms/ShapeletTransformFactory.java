@@ -86,7 +86,9 @@ public class ShapeletTransformFactory {
     
     public ShapeletTransform getTransform(){
         //build shapelet transform based on options.
-        ShapeletTransform st = createTransform(options.isBalanceClasses());
+        ShapeletTransform st = createTransform(options.getTransformType(),options.isBalanceClasses());
+//        ShapeletTransform st = createTransform(options.isBalanceClasses());
+        st.setUseBalancedClasses(options.isBalanceClasses());
         st.setClassValue(createClassValue(options.isBinaryClassValue()));
         st.setShapeletMinAndMax(options.getMinLength(), options.getMaxLength());
         st.setNumberOfShapelets(options.getkShapelets());
@@ -96,6 +98,8 @@ public class ShapeletTransformFactory {
         st.setQualityMeasure(options.getQualityChoice());
         st.setRoundRobin(options.useRoundRobin());
         st.setCandidatePruning(options.useCandidatePruning());
+        st.setNumberOfShapelets(options.getkShapelets());
+        st.setShapeletMinAndMax(options.getMinLength(),options.getMaxLength());
         //st.supressOutput();
         return st;
     }
@@ -136,7 +140,16 @@ public class ShapeletTransformFactory {
     private ShapeletTransform createTransform(boolean balance){
         return balance ?  new BalancedClassShapeletTransform() : new ShapeletTransform();
     }
-    
+    private ShapeletTransform createTransform(ShapeletTransformFactoryOptions.TransformType t, boolean balance){
+//This horrible hack will be removed when its all tested to work, see comments at the top of cShapeletTransform
+        ShapeletTransform st;
+        if(t==ShapeletTransformFactoryOptions.TransformType.CONTRACT)
+            st = new cShapeletTransform();
+        else
+            st = balance ?  new BalancedClassShapeletTransform() : new ShapeletTransform();
+        return st;
+    }
+
     private SubSeqDistance createDistance(DistanceType dist){
             return distanceFunctions.get(dist).get();
     }

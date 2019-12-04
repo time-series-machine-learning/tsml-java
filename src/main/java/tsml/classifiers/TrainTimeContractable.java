@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
 * BOSS (check), TSF (check)
- * @author raj09hxu
  */
 public interface TrainTimeContractable {
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
