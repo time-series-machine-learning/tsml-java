@@ -16,9 +16,7 @@ package utilities;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * A class offering statistical utility functions like the average and the
@@ -45,9 +43,12 @@ public class StatisticalUtilities {
     
     // jamesl
     // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
-    // can make O(n) if wanted later 
-    public static double median(double[] values) {
-        double[] copy = Arrays.copyOf(values, values.length);
+    // can make O(n) if wanted later
+    public static double median(double[] values) { return median(values, true); }
+
+    public static double median(double[] values, boolean copyArr) {
+        double[] copy;
+        if (copyArr) copy = Arrays.copyOf(values, values.length); else copy = values;
         Arrays.sort(copy);
         if (copy.length % 2 == 1)
             return copy[copy.length/2];
@@ -55,13 +56,16 @@ public class StatisticalUtilities {
             return (copy[copy.length/2 - 1] + copy[copy.length/2]) / 2;
     }
 
-    public static double median(Double[] values) {
-        Double[] copy = Arrays.copyOf(values, values.length);
-        Arrays.sort(copy);
-        if (copy.length % 2 == 1)
-            return copy[copy.length/2];
+    public static double median(ArrayList<Double> values) { return median(values, true); }
+
+    public static double median(ArrayList<Double> values, boolean copyArr) {
+        ArrayList<Double> copy;
+        if (copyArr) copy = new ArrayList<>(values); else copy = values;
+        Collections.sort(copy);
+        if (copy.size() % 2 == 1)
+            return copy.get(copy.size()/2);
         else
-            return (copy[copy.length/2 - 1] + copy[copy.length/2]) / 2;
+            return (copy.get(copy.size()/2 - 1) + copy.get(copy.size()/2)) / 2;
     }
 
     public static double standardDeviation(double[] values, boolean classVal) {
