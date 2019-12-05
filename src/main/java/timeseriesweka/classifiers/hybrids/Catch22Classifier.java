@@ -50,6 +50,8 @@ public class Catch22Classifier extends AbstractClassifier {
         this.cls = cls;
     }
 
+    public void setNormalise(boolean b) { this.norm = b; }
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         ArrayList<Attribute> atts = new ArrayList<>();
@@ -79,13 +81,33 @@ public class Catch22Classifier extends AbstractClassifier {
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        Instance transformedInst = singleTransform(instance, -1);
+        Instance newInst;
+        if (norm){
+            newInst = new DenseInstance(instance);
+            newInst.setDataset(instance.dataset());
+            zNormaliseWithClass(newInst);
+        }
+        else{
+            newInst = instance;
+        }
+
+        Instance transformedInst = singleTransform(newInst, -1);
         transformedInst.setDataset(header);
         return cls.classifyInstance(transformedInst);
     }
 
     public double[] distributionForInstance(Instance instance) throws Exception {
-        Instance transformedInst = singleTransform(instance, -1);
+        Instance newInst;
+        if (norm){
+            newInst = new DenseInstance(instance);
+            newInst.setDataset(instance.dataset());
+            zNormaliseWithClass(newInst);
+        }
+        else{
+            newInst = instance;
+        }
+
+        Instance transformedInst = singleTransform(newInst, -1);
         transformedInst.setDataset(header);
         return cls.distributionForInstance(transformedInst);
     }
@@ -1334,88 +1356,88 @@ public class Catch22Classifier extends AbstractClassifier {
     public static void main(String[] args) throws Exception {
         int fold = 0;
 
-        //for (int i = 0; i < DatasetLists.tscProblems112.length; i++) {
+        for (int i = 0; i < DatasetLists.tscProblems112.length; i++) {
         //for (int i = 1; i < 2; i++) {
             //Minimum working example
-            String dataset = "Beef";
-            //String dataset = DatasetLists.tscProblems112[i];
+            //String dataset = "Beef";
+            String dataset = DatasetLists.tscProblems112[i];
             Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\" + dataset + "_TRAIN.arff");
             Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\" + dataset + "_TEST.arff");
             Instances[] data = resampleTrainAndTestInstances(train, test, fold);
             train = data[0];
             test = data[1];
 
-//            Catch22Classifier c;
-//            double accuracy;
+            Catch22Classifier c;
+            double accuracy;
+
+            c = new Catch22Classifier();
+            RandomForest rf = new RandomForest();
+            rf.setNumTrees(100);
+            rf.setSeed(0);
+            c.setClassifier(rf);
+            c.buildClassifier(train);
+            accuracy = ClassifierTools.accuracy(test, c);
+
+            System.out.println("Catch22 accuracy on " + i + " " + dataset + " fold " + fold + " = " + accuracy);
+        }
+
+//        double[] arr = extractTimeSeries(train.get(0));
+//        System.out.println(Arrays.toString(arr));
 //
-//            c = new Catch22Classifier();
-//            RandomForest rf = new RandomForest();
-//            rf.setNumTrees(100);
-//            rf.setSeed(0);
-//            c.setClassifier(rf);
-//            c.buildClassifier(train);
-//            accuracy = ClassifierTools.accuracy(test, c);
-//
-//            System.out.println("Catch22 accuracy on " + i + " " + dataset + " fold " + fold + " = " + accuracy);
+//        double min = Double.MAX_VALUE;
+//        double max = Double.MIN_VALUE;
+//        for(int i = 0; i < arr.length; i++) {
+//            if (arr[i] < min) {
+//                min = arr[i];
+//            }
+//            if (arr[i] > max) {
+//                max = arr[i];
+//            }
 //        }
-
-        double[] arr = extractTimeSeries(train.get(0));
-        System.out.println(Arrays.toString(arr));
-
-        double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
-        for(int i = 0; i < arr.length; i++) {
-            if (arr[i] < min) {
-                min = arr[i];
-            }
-            if (arr[i] > max) {
-                max = arr[i];
-            }
-        }
-
-        double mean = mean(arr);
-
-        int length = (int)FFT.MathsPower2.roundPow2((float)arr.length);
-        if (length < arr.length) length *= 2;
-        FFT.Complex[] fft = new FFT.Complex[length];
-        for (int i = 0; i < arr.length; i++){
-            fft[i] = new FFT.Complex(arr[i]-mean, 0);
-        }
-        for (int i = arr.length; i < length; i++){
-            fft[i] = new FFT.Complex(0,0);
-        }
-
-        FFT t = new FFT();
-        t.fft(fft, length);
-
-        FFT.Complex[] fftClone = new FFT.Complex[length];
-        for (int i = 0; i < length; i++){
-            fftClone[i] = (FFT.Complex)fft[i].clone();
-        }
-        double[] ac = autoCorr(arr, fftClone);
-
-        System.out.println(histMode5DN(arr, min, max));
-        System.out.println(histMode10DN(arr, min, max));
-        System.out.println(embed2DistTauDExpfitMeandiffCO(arr, ac));
-        System.out.println(f1ecacCO(ac));
-        System.out.println(firstMinacCO(ac));
-        System.out.println(histogramAMIeven25CO(arr, min, max));
-        System.out.println(trev1NumCO(arr));
-        System.out.println(outlierIncludeP001mdrmdDN(arr));
-        System.out.println(outlierIncludeN001mdrmdDN(arr));
-        System.out.println(localSimpleMean1TauresratFC(arr, ac));
-        System.out.println(localSimpleMean3StderrFC(arr));
-        System.out.println(autoMutualInfoStats40GaussianFmmiIN(ac));
-        System.out.println(hrvClassicPnn40MD(arr));
-        System.out.println(binaryStatsDiffLongstretch0SB(arr)); //
-        System.out.println(binaryStatsMeanLongstretch1SB(arr, mean)); //
-        System.out.println(motifThreeQuantileHhSB(arr));
-        System.out.println(fluctAnal2Rsrangefit501LogiPropR1SC(arr));
-        System.out.println(fluctAnal2Dfa5012LogiPropR1SC(arr));
-        System.out.println(summariesWelchRectArea51SP(arr, fft));
-        System.out.println(summariesWelchRectCentroidSP(arr, fft));
-        System.out.println(transitionMatrix3acSumdiagcovSB(arr, ac));
-        System.out.println(periodicityWangTh001PD(arr));
+//
+//        double mean = mean(arr);
+//
+//        int length = (int)FFT.MathsPower2.roundPow2((float)arr.length);
+//        if (length < arr.length) length *= 2;
+//        FFT.Complex[] fft = new FFT.Complex[length];
+//        for (int i = 0; i < arr.length; i++){
+//            fft[i] = new FFT.Complex(arr[i]-mean, 0);
+//        }
+//        for (int i = arr.length; i < length; i++){
+//            fft[i] = new FFT.Complex(0,0);
+//        }
+//
+//        FFT t = new FFT();
+//        t.fft(fft, length);
+//
+//        FFT.Complex[] fftClone = new FFT.Complex[length];
+//        for (int i = 0; i < length; i++){
+//            fftClone[i] = (FFT.Complex)fft[i].clone();
+//        }
+//        double[] ac = autoCorr(arr, fftClone);
+//
+//        System.out.println(histMode5DN(arr, min, max));
+//        System.out.println(histMode10DN(arr, min, max));
+//        System.out.println(embed2DistTauDExpfitMeandiffCO(arr, ac));
+//        System.out.println(f1ecacCO(ac));
+//        System.out.println(firstMinacCO(ac));
+//        System.out.println(histogramAMIeven25CO(arr, min, max));
+//        System.out.println(trev1NumCO(arr));
+//        System.out.println(outlierIncludeP001mdrmdDN(arr));
+//        System.out.println(outlierIncludeN001mdrmdDN(arr));
+//        System.out.println(localSimpleMean1TauresratFC(arr, ac));
+//        System.out.println(localSimpleMean3StderrFC(arr));
+//        System.out.println(autoMutualInfoStats40GaussianFmmiIN(ac));
+//        System.out.println(hrvClassicPnn40MD(arr));
+//        System.out.println(binaryStatsDiffLongstretch0SB(arr)); //
+//        System.out.println(binaryStatsMeanLongstretch1SB(arr, mean)); //
+//        System.out.println(motifThreeQuantileHhSB(arr));
+//        System.out.println(fluctAnal2Rsrangefit501LogiPropR1SC(arr));
+//        System.out.println(fluctAnal2Dfa5012LogiPropR1SC(arr));
+//        System.out.println(summariesWelchRectArea51SP(arr, fft));
+//        System.out.println(summariesWelchRectCentroidSP(arr, fft));
+//        System.out.println(transitionMatrix3acSumdiagcovSB(arr, ac));
+//        System.out.println(periodicityWangTh001PD(arr));
 
 
 //        for (int i = 1; i < train.numInstances(); i++){

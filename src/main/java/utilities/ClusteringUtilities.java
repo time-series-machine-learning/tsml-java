@@ -97,7 +97,7 @@ public class ClusteringUtilities {
         double meanSum = 0;
         int length = inst.numAttributes()-1;
 
-        for (int i = 0; i < length+1; i++){
+        for (int i = 0; i < inst.numAttributes(); i++){
             if (inst.classIndex() != i) {
                 meanSum += inst.value(i);
             }
@@ -107,7 +107,7 @@ public class ClusteringUtilities {
 
         double squareSum = 0;
 
-        for (int i = 0; i < length+1; i++){
+        for (int i = 0; i < inst.numAttributes(); i++){
             if (inst.classIndex() != i) {
                 double temp = inst.value(i) - mean;
                 squareSum += temp * temp;
@@ -120,7 +120,7 @@ public class ClusteringUtilities {
             stdev = 1;
         }
 
-        for (int i = 0; i < length+1; i++){
+        for (int i = 0; i < inst.numAttributes(); i++){
             if (inst.classIndex() != i) {
                 inst.setValue(i, (inst.value(i) - mean) / stdev);
             }
