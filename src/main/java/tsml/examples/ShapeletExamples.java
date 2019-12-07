@@ -30,12 +30,12 @@ package tsml.examples;
  * permissible for the four quality measures.
  */
 import tsml.filters.shapelet_filters.old_code.ClusteredShapeletTransform;
-import tsml.filters.shapelet_filters.ShapeletTransform;
-import tsml.filters.shapelet_filters.distance_functions.ImprovedOnlineSubSeqDistance;
-import tsml.filters.shapelet_filters.distance_functions.CachedSubSeqDistance;
-import tsml.filters.shapelet_filters.distance_functions.SubSeqDistance;
-import tsml.filters.shapelet_filters.distance_functions.OnlineSubSeqDistance;
-import tsml.filters.shapelet_filters.old_code.ApproximateShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineSubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.CachedSubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.OnlineSubSeqDistance;
+import tsml.filters.shapelet_filters.old_code.ApproximateShapeletFilter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -63,7 +63,7 @@ import java.util.logging.Logger;
  * QualityMeasures.
  */
 import weka.core.*;
-import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality.ShapeletQualityChoice;
+import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 
 /**
  * This class is a helper class to describe the structure of our shapelet code and
@@ -73,12 +73,12 @@ import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality.ShapeletQu
  */
 public class ShapeletExamples {
 
-    public static ShapeletTransform st;
+    public static ShapeletFilter st;
     public static Instances basicTransformExample(Instances train){
  /*Class to demonstrate the usage of the ShapeletTransform. Returns the 
   * transformed set of instances  
   */
-        st =new ShapeletTransform();
+        st =new ShapeletFilter();
         st.setSubSeqDistance(new OnlineSubSeqDistance());
 /*The number of shapelets defaults to 100. we recommend setting it to a large
 value, since there will be many duplicates and there is little overhead in 
@@ -88,8 +88,8 @@ value, since there will be many duplicates and there is little overhead in
 //Let m=train.numAttributes()-1 (series length)
 //Let n=   train.numInstances() (number of series)      
         int nosShapelets=(train.numAttributes()-1)*train.numInstances()/5;
-        if(nosShapelets<ShapeletTransform.DEFAULT_NUMSHAPELETS)
-            nosShapelets=ShapeletTransform.DEFAULT_NUMSHAPELETS;
+        if(nosShapelets< ShapeletFilter.DEFAULT_NUMSHAPELETS)
+            nosShapelets= ShapeletFilter.DEFAULT_NUMSHAPELETS;
         st.setNumberOfShapelets(nosShapelets);
 /* Two other key parameters are minShapeletLength and maxShapeletLength. For 
  * each value between these two, a full search is performed, which is 
@@ -98,8 +98,8 @@ value, since there will be many duplicates and there is little overhead in
  */
         int minLength=5;
         int maxLength=(train.numAttributes()-1)/10;
-        if(maxLength<ShapeletTransform.DEFAULT_MINSHAPELETLENGTH)
-            maxLength=ShapeletTransform.DEFAULT_MINSHAPELETLENGTH;
+        if(maxLength< ShapeletFilter.DEFAULT_MINSHAPELETLENGTH)
+            maxLength= ShapeletFilter.DEFAULT_MINSHAPELETLENGTH;
         st.setShapeletMinAndMax(minLength, maxLength);
 
 /*Next you need to set the quality measure. This defaults to IG, but         
@@ -152,7 +152,7 @@ value, since there will be many duplicates and there is little overhead in
 
     }
     
-    public static void initializeShapelet(ShapeletTransform s,Instances train){
+    public static void initializeShapelet(ShapeletFilter s, Instances train){
 //       int nosShapelets=(train.numAttributes()-1)*train.numInstances()/5;
        s.setNumberOfShapelets(1);        
        int minLength=15;
@@ -167,9 +167,9 @@ value, since there will be many duplicates and there is little overhead in
         Instances shapeletT=null;
 
         SubSeqDistance[] ssq = {new SubSeqDistance(), new OnlineSubSeqDistance(), new CachedSubSeqDistance(), new ImprovedOnlineSubSeqDistance()};
-        ShapeletTransform[] st = new ShapeletTransform[ssq.length];
+        ShapeletFilter[] st = new ShapeletFilter[ssq.length];
         for(int i=0; i< st.length; i++){
-            st[i] = new ShapeletTransform();
+            st[i] = new ShapeletFilter();
             st[i].setSubSeqDistance(ssq[i]);
             initializeShapelet(st[i], train);
         }   
@@ -206,17 +206,17 @@ value, since there will be many duplicates and there is little overhead in
 //Time the speed up from early abandon of the four distance measures.
 
         //IG:         
-        ShapeletTransform[] s=new ShapeletTransform[4];
-        ShapeletTransform[] pruned=new ShapeletTransform[4];
+        ShapeletFilter[] s=new ShapeletFilter[4];
+        ShapeletFilter[] pruned=new ShapeletFilter[4];
         for(int i=0;i<s.length;i++){
-            s[i]=new ShapeletTransform();
-            pruned[i]=new ShapeletTransform();
+            s[i]=new ShapeletFilter();
+            pruned[i]=new ShapeletFilter();
         }
-        for(ShapeletTransform s1:s){
+        for(ShapeletFilter s1:s){
             initializeShapelet(s1,train);
             s1.setCandidatePruning(false);
         }
-        for(ShapeletTransform s1:pruned){
+        for(ShapeletFilter s1:pruned){
             initializeShapelet(s1,train);
             s1.setCandidatePruning(true);
         }
@@ -254,19 +254,19 @@ value, since there will be many duplicates and there is little overhead in
         /*Class to demonstrate the usage of the ApproximateShapeletTransform. Returns the 
          * transformed set of instances  
          */
-        st = new ApproximateShapeletTransform();
+        st = new ApproximateShapeletFilter();
         
         //Parameters that are relevant to all types of transforms that extend FullShapeletTransform:
         //1. Number of shapelets to be stored
         int nosShapelets=(train.numAttributes()-1)*train.numInstances()/5;
-        if(nosShapelets<ShapeletTransform.DEFAULT_NUMSHAPELETS)
-            nosShapelets=ShapeletTransform.DEFAULT_NUMSHAPELETS;
+        if(nosShapelets< ShapeletFilter.DEFAULT_NUMSHAPELETS)
+            nosShapelets= ShapeletFilter.DEFAULT_NUMSHAPELETS;
         st.setNumberOfShapelets(nosShapelets);
         //2. Shapelet lenght range to be eplored
         int minLength=5;
         int maxLength=(train.numAttributes()-1)/10;
-        if(maxLength<ShapeletTransform.DEFAULT_MINSHAPELETLENGTH)
-            maxLength=ShapeletTransform.DEFAULT_MINSHAPELETLENGTH;
+        if(maxLength< ShapeletFilter.DEFAULT_MINSHAPELETLENGTH)
+            maxLength= ShapeletFilter.DEFAULT_MINSHAPELETLENGTH;
         st.setShapeletMinAndMax(minLength, maxLength);
         //3. Quality measure
         st.setQualityMeasure(ShapeletQualityChoice.F_STAT);
@@ -293,7 +293,7 @@ value, since there will be many duplicates and there is little overhead in
             
         try {
             // Parameter 1 - datast sampling level, Parameter 2 - PAA approximation level
-            ((ApproximateShapeletTransform)st).setSampleLevels(50, 50);
+            ((ApproximateShapeletFilter)st).setSampleLevels(50, 50);
         } catch (IOException ex) {
             Logger.getLogger(ShapeletExamples.class.getName()).log(Level.SEVERE, null, ex);
         }

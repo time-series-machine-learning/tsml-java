@@ -30,7 +30,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.EnhancedAbstractClassifier;
 
-import tsml.filters.shapelet_filters.ShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletFilter;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -675,7 +675,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
     
   
     
-    public static class DefaultShapeletTransformPlaceholder extends ShapeletTransform{}
+    public static class DefaultShapeletFilterPlaceholder extends ShapeletFilter {}
     
     public static void main(String[] args) throws Exception{
        

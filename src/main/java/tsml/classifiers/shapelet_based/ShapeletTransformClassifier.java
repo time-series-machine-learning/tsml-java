@@ -21,15 +21,19 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+
+import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
+import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.shapelet_filters.distance_functions.SubSeqDistance;
-import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearch;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearch.SearchType;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearchOptions;
+import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -59,7 +63,7 @@ import weka.core.TechnicalInformation;
  */
 public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
     //Basic pipeline is transform, then build classifier on transformed space
-    private ShapeletTransform transform;    //Configurable ST
+    private ShapeletFilter transform;    //Configurable ST
 
     private Instances shapeletData;         //Transformed shapelets header info stored here
     private Classifier classifier;          //Final classifier built on transformed shapelet
@@ -296,8 +300,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         transform.setSuppressOutput(debug);
         transform.supressOutput();
 //The cConfig CONTRACT option is currently hacked into buildTransfom. here for now
-        if(transform instanceof cShapeletTransform)
-            ((cShapeletTransform)transform).setContractTime(transformTimeLimit);
+        if(transform instanceof cShapeletFilter)
+            ((cShapeletFilter)transform).setContractTime(transformTimeLimit);
 
         shapeletData = transform.process(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
@@ -388,7 +392,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 */
         of.closeFile();
     }
-    public ShapeletTransform buildTransform(Instances data){
+    public ShapeletFilter buildTransform(Instances data){
         //**** CONFIGURE TRANSFORM OPTIONS ****/
         ShapeletTransformFactoryOptions.Builder optionsBuilder = new ShapeletTransformFactoryOptions.Builder();//
         ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
@@ -425,7 +429,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //            ((cShapeletTransform)transform).setContractTime(transformTimeLimit);
 
 //Finally, get the transform from a Factory with the options set by the builder
-        ShapeletTransform st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
+        ShapeletFilter st = new ShapeletTransformFactory(optionsBuilder.build()).getTransform();
         if(saveShapelets && shapeletOutputPath != null)
             st.setLogOutputFile(shapeletOutputPath+"Workspace/"+data.relationName()+"/shapelets"+seed+".csv");
         return st;

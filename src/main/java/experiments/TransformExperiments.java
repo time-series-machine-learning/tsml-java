@@ -22,13 +22,13 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import tsml.filters.shapelet_filters.ShapeletTransform;
-import tsml.filters.shapelet_filters.ShapeletTransformTimingUtilities;
-import static tsml.filters.shapelet_filters.ShapeletTransformTimingUtilities.dayNano;
-import static tsml.filters.shapelet_filters.ShapeletTransformTimingUtilities.nanoToOp;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearch;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearchFactory;
-import tsml.filters.shapelet_filters.search_functions.ShapeletSearchOptions;
+import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
+import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.dayNano;
+import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.nanoToOp;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
 import weka.core.converters.ArffSaver;
 import weka.filters.SimpleBatchFilter;
@@ -141,7 +141,7 @@ public class TransformExperiments {
                 
                 
                 /*TODO: Can tidy it up big time. Or move some of this else where.*/
-                ShapeletTransform st = (ShapeletTransform)transformer;
+                ShapeletFilter st = (ShapeletFilter)transformer;
                 //do contracting.
                 int m = train.numAttributes()-1;
                 int n = train.numInstances();
@@ -205,7 +205,7 @@ public class TransformExperiments {
         switch(expSettings.classifierName){
             
             case"ST": case "ShapeletTransform":
-                ShapeletTransform st = (ShapeletTransform) transformer;
+                ShapeletFilter st = (ShapeletFilter) transformer;
                 st.writeAdditionalData(additionalDataFilePath, expSettings.foldId);
                 break;
             

@@ -12,26 +12,42 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */   
-package tsml.transformers;
+package tsml.filters.shapelet_filters;
 
-import tsml.transformers.shapelet_tools.OrderLineObj;
-import tsml.transformers.shapelet_tools.Shapelet;
-import tsml.transformers.shapelet_tools.ShapeletCandidate;
+import experiments.data.DatasetLoading;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Scanner;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import tsml.transformers.shapelet_tools.*;
+import utilities.ClassifierTools;
+import utilities.class_counts.ClassCounts;
+import weka.classifiers.meta.RotationForest;
+import weka.core.*;
+import weka.filters.SimpleBatchFilter;
+import tsml.transformers.shapelet_tools.class_value.BinaryClassValue;
 import tsml.transformers.shapelet_tools.class_value.NormalClassValue;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
-import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import utilities.class_counts.ClassCounts;
+import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineSubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import utilities.rescalers.SeriesRescaler;
-import weka.core.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
 
@@ -54,11 +70,9 @@ import java.util.logging.Logger;
  * Lines J., Davis, L., Hills, J., Bagnall, A.: A shapelet transform for time series
  * classification. In: Proc. 18th ACM SIGKDD (2012)</a>
  *
- * @author Jason Lines, Aaron Bostrom and Tony Bagnall
- *
- * Refactored version for
+ * @author Aaron Bostrom
  */
-public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer{
+public class ShapeletFilter extends SimpleBatchFilter implements Serializable,TechnicalInformationHandler{
 //Global defaults. Max should be a lambda set to series length
     public final static int DEFAULT_NUMSHAPELETS = 500;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
@@ -91,6 +105,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     protected boolean useCandidatePruning;
     protected boolean useRoundRobin;
     protected boolean useBalancedClasses;
+
     protected Comparator<Shapelet> shapeletComparator;
 
     protected SubSeqDistance subseqDistance;
@@ -106,13 +121,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     protected ArrayList<Shapelet> kShapelets;
     
     protected long count;
-//Automatically set to false after the search, the user can force a new search by calling forceFindShapelets
-    protected boolean findShapelets=true;
 
-    /**
-     * Call this to force a new search of shapelets even if one has been already done
-     */
-    public void forceFindShapelets(){findShapelets=true;}
 
     public void setSubSeqDistance(SubSeqDistance ssd) {
         subseqDistance = ssd;
@@ -132,7 +141,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     /**
      * Default constructor; Quality measure defaults to information gain.
      */
-    public ShapeletTransform() {
+    public ShapeletFilter() {
         this(DEFAULT_NUMSHAPELETS, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
     }
     
@@ -142,11 +151,11 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      *
      * @param shapes
      */
-    public ShapeletTransform(ArrayList<Shapelet> shapes) {
+    public ShapeletFilter(ArrayList<Shapelet> shapes) {
         this();
         this.shapelets = shapes;
+        this.m_FirstBatchDone = true;
         this.numShapelets = shapelets.size();
-        findShapelets=false;
     }
 
     /**
@@ -154,7 +163,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      *
      * @param k the number of shapelets to be generated
      */
-    public ShapeletTransform(int k) {
+    public ShapeletFilter(int k) {
         this(k, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
     }
 
@@ -166,7 +175,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @param minShapeletLength minimum length of shapelets
      * @param maxShapeletLength maximum length of shapelets
      */
-    public ShapeletTransform(int k, int minShapeletLength, int maxShapeletLength) {
+    public ShapeletFilter(int k, int minShapeletLength, int maxShapeletLength) {
         this(k, minShapeletLength, maxShapeletLength, ShapeletQualityChoice.INFORMATION_GAIN);
 
     }
@@ -181,9 +190,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @param qualityChoice the shapelet quality measure to be used with this
      * filter
      */    
-    public ShapeletTransform(int k, int minShapeletLength, int maxShapeletLength, ShapeletQualityChoice qualityChoice) {
+    public ShapeletFilter(int k, int minShapeletLength, int maxShapeletLength, ShapeletQualityChoice qualityChoice) {
         this.numShapelets = k;
         this.shapelets = new ArrayList<>();
+        this.m_FirstBatchDone = false;
         this.useCandidatePruning = false;
         this.casesSoFar = 0;
         this.recordShapelets = true; // default action is to write an output file
@@ -377,7 +387,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @return a new Instances object in the desired output format
      */
     @Override
-    public Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
+    protected Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
 
         if (this.numShapelets < 1) {
             
@@ -425,28 +435,53 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             maxPossibleLength -= 1;
         }
     }
+
+    /**
+     * The main logic of the filter; when called for the first time, k shapelets
+     * are extracted from the input Instances 'data'. The input 'data' is
+     * transformed by the k shapelets, and the filtered data is returned as an
+     * output.
+     * <p>
+     * If called multiple times, shapelet extraction DOES NOT take place again;
+     * once k shapelets are established from the initial call to process(), the
+     * k shapelets are used to transform subsequent Instances.
+     * <p>
+     * Intended use:
+     * <p>
+     * 1. Extract k shapelets from raw training data to build filter;
+     * <p>
+     * 2. Use the filter to transform the raw training data into transformed
+     * training data;
+     * <p>
+     * 3. Use the filter to transform the raw testing data into transformed
+     * testing data (e.g. filter never extracts shapelets from training data,
+     * therefore avoiding bias);
+     * <p>
+     * 4. Build a classifier using transformed training data, perform
+     * classification on transformed test data.
+     *
+     * @param data the input data to be transformed (and to find the shapelets
+     * if this is the first run)
+     * @return the transformed representation of data, according to the
+     * distances from each instance to each of the k shapelets
+     */
     @Override
-    public void fit(Instances data){
+    public Instances process(Instances data) throws IllegalArgumentException {
         inputData = data;
         //check the input data is correct and assess whether the filter has been setup correctly.
         inputCheck(data);
-        if(findShapelets) {
+
+        //checks if the shapelets haven't been found yet, finds them if it needs too.
+        if (!m_FirstBatchDone && !searchComplete){
             trainShapelets(data);
-            searchComplete = true;
+            searchComplete=true;
             //we log the count from the subsequence distance before we reset it in the transform.
             //we only care about the count from the train. What is it counting?
             count = subseqDistance.getCount();
+
         }
-    }
-    @Override
-    public Instance transform(Instance data){
-        throw new UnsupportedOperationException("NOT IMPLEMENTED YET (ShapeletTransform.transfor");
-//        return buildTansformedDataset(data);
-    }
 
-
-    @Override
-    public Instances transform(Instances data) throws IllegalArgumentException {
+        //build the transformed dataset with the shapelets we've found either on this data, or the previous training data
         return buildTansformedDataset(data);
     }
 
@@ -462,6 +497,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         outputPrint("num shapelets before search "+numShapelets);
 
         shapelets = findBestKShapeletsCache(inputData); // get k shapelets
+        m_FirstBatchDone = true;
         outputPrint(shapelets.size() + " Shapelets have been generated num shapelets now "+numShapelets);
         
         //we don't need to undo the roundRobin because we clone the data into a different order.
@@ -880,7 +916,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * original log file
      * @throws Exception
      */
-    public static ShapeletTransform createFilterFromFile(String fileName) throws Exception {
+    public static ShapeletFilter createFilterFromFile(String fileName) throws Exception {
         return createFilterFromFile(fileName, Integer.MAX_VALUE);
     }
 
@@ -917,7 +953,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         try (FileWriter out = new FileWriter(file)) {
             writeShapelets(kShapelets, out);
         } catch (IOException ex) {
-            Logger.getLogger(ShapeletTransform.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ShapeletFilter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -936,7 +972,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(ShapeletTransform.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ShapeletFilter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -949,7 +985,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public ArrayList<Integer> getShapeletLengths() {
         ArrayList<Integer> shapeletLengths = new ArrayList<>();
 
-        if (findShapelets) {
+        if (m_FirstBatchDone) {
             for (Shapelet s : this.shapelets) {
                 shapeletLengths.add(s.getLength());
             }
@@ -970,13 +1006,13 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * original log file
      * @throws Exception
      */
-    public static ShapeletTransform createFilterFromFile(String fileName, int maxShapelets) throws Exception {
+    public static ShapeletFilter createFilterFromFile(String fileName, int maxShapelets) throws Exception {
 
         File input = new File(fileName);
         Scanner scan = new Scanner(input);
         scan.useDelimiter("\n");
 
-        ShapeletTransform sf = new ShapeletTransform();
+        ShapeletFilter sf = new ShapeletFilter();
         ArrayList<Shapelet> shapelets = new ArrayList<>();
 
         String shapeletContentString;
@@ -1031,8 +1067,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             shapeletCount++;
         }
         sf.shapelets = shapelets;
-        sf.searchComplete = true;
-        sf.findShapelets=false;
+        sf.m_FirstBatchDone = true;
         sf.numShapelets = shapelets.size();
         sf.setShapeletMinAndMax(1, 1);
 
@@ -1047,7 +1082,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @param f
      * @return a duplicate FullShapeletTransform to the object that created the
      * original log file
-     * @throws FileNotFoundException
+     * @throws java.io.FileNotFoundException
      */
     public static ArrayList<Shapelet> readShapeletCSV(File f) throws FileNotFoundException{
         ArrayList<Shapelet> shapelets = new ArrayList<>();
@@ -1201,9 +1236,132 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
         return subseqDistOpCount;
     }
+    public static void basicTest(){
+        String dataLocation = "E:\\Data\\TSCProblems2018\\";
+        String saveLocation = "C:\\Temp\\TSC\\";
+        final String dataset = "FordA";
+        final int fold = 1;
+        final String filePath = dataLocation + File.separator + dataset + File.separator + dataset;
+        Instances test, train;
+        test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
+         ShapeletSearchOptions searchOptions = new ShapeletSearchOptions.Builder()
+                                            .setMin(3)
+                                            .setMax(train.numAttributes()-1)
+                                            .setSearchType(ShapeletSearch.SearchType.FULL)
+                                            .build();
+
+
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+                                            .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
+                                            .setKShapelets(train.numInstances()*10)
+                                            .useBinaryClassValue()
+                                            .useClassBalancing()
+                                            .useCandidatePruning()
+                                            .useRoundRobin()
+                                            .setSearchOptions(searchOptions)
+                                            .build();
+
+        ShapeletFilter transform = new ShapeletTransformFactory(options).getTransform();
+        transform.setLogOutputFile(saveLocation+"fordAOutput.csv");
+
+        long startTime1 = System.nanoTime();
+
+        Instances tranTrain1 = transform.process(train);
+        Instances tranTest1 = transform.process(test);
+
+        long endTime1 = System.nanoTime();
+
+        System.out.println("Transform time = " + (endTime1-startTime1)); 
+
+    }
+    
+    public static void testFilterUsage(){
+        String filePath ="Z:\\ArchiveData\\Univariate_ts\\";
+        String problem="Chinatown";
+        Instances test, train;
+        test = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TEST");
+        train = DatasetLoading.loadDataNullable(filePath + problem+"\\"+problem+"_TRAIN");
+        ShapeletFilter shapeletFilter = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24);
+        
+        
+        
+    }
     public static void main(String[] args){
+        try {
+            final String resampleLocation = "D:\\Research TSC\\Data\\TSCProblems2018";
+            final String dataset = "Yoga";
+            final int fold = 1;
+            final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
+            Instances test, train;
+            test = DatasetLoading.loadDataNullable(filePath + "_TEST");
+            train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
+            //use fold as the seed.
+            //train = InstanceTools.subSample(train, 100, fold);
+            
+            
+            ShapeletFilter transform = new ShapeletFilter();
+            transform.setRoundRobin(true);
+            //construct shapelet classifiers.
+            transform.setClassValue(new BinaryClassValue());
+            transform.setSubSeqDistance(new ImprovedOnlineSubSeqDistance());
+            transform.setShapeletMinAndMax(3, train.numAttributes() - 1);
+            transform.useCandidatePruning();
+            transform.setNumberOfShapelets(train.numInstances() * 10);
+            transform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
+            transform.supressOutput();
+            transform.setPruneMatchingShapelets(true);
+            
+            long startTime = System.nanoTime();
+           
+            Instances tranTrain = transform.process(train);
+            Instances tranTest = transform.process(test);
+            
+            long endTime = System.nanoTime();
+            
+            RotationForest rot1 = new RotationForest();
+            rot1.buildClassifier(tranTrain);
+            double accuracy = ClassifierTools.accuracy(tranTest, rot1);
+            
+            System.out.println("Shapelet transform "+ accuracy + " time " + (endTime-startTime));
+            
 
-
+            ShapeletSearchOptions searchOptions = new ShapeletSearchOptions.Builder()
+                                                .setMin(3)
+                                                .setMax(train.numAttributes()-1)
+                                                .setSearchType(ShapeletSearch.SearchType.FULL)
+                                                .build();
+                                                
+            
+            ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+                                                .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
+                                                .setKShapelets(train.numInstances()*10)
+                                                .useBinaryClassValue()
+                                                .useClassBalancing()
+                                                .useCandidatePruning()
+                                                .useRoundRobin()
+                                                .setSearchOptions(searchOptions)
+                                                .build();
+            
+            ShapeletFilter transform1 = new ShapeletTransformFactory(options).getTransform();
+            transform1.supressOutput();
+            
+            long startTime1 = System.nanoTime();
+            
+            Instances tranTrain1 = transform.process(train);
+            Instances tranTest1 = transform.process(test);
+            
+            long endTime1 = System.nanoTime();
+            
+            
+            RotationForest rot2 = new RotationForest();
+            rot2.buildClassifier(tranTrain1);
+            double accuracy1 = ClassifierTools.accuracy(tranTest1, rot2);
+            
+            System.out.println("Fast shapelet transform "+ accuracy1 + " time " + (endTime1-startTime1));
+        } catch (Exception ex) {
+            Logger.getLogger(ShapeletFilter.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -1268,6 +1426,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         result.setValue(TechnicalInformation.Field.PAGES, "pages");
 
         return result;
+    }
+    @Override
+    public String globalInfo() {
+        return "Shapelet Transform with settings =";
     }
 
 }
