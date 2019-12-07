@@ -15,7 +15,7 @@
 package tsml.classifiers.shapelet_based;
 
 import experiments.data.DatasetLoading;
-import tsml.filters.shapelet_transforms.*;
+import tsml.filters.shapelet_filters.*;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -25,11 +25,11 @@ import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
-import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality;
-import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
-import tsml.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
+import tsml.filters.shapelet_filters.distance_functions.SubSeqDistance;
+import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality;
+import tsml.filters.shapelet_filters.search_functions.ShapeletSearch;
+import tsml.filters.shapelet_filters.search_functions.ShapeletSearch.SearchType;
+import tsml.filters.shapelet_filters.search_functions.ShapeletSearchOptions;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import tsml.classifiers.EnhancedAbstractClassifier;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.meta.RotationForest;
 import tsml.classifiers.TrainTimeContractable;
 import weka.core.TechnicalInformation;
 

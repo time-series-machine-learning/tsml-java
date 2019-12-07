@@ -30,7 +30,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.EnhancedAbstractClassifier;
 
-import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletTransform;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;

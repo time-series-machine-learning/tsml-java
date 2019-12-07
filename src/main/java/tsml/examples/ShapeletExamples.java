@@ -29,13 +29,13 @@ package tsml.examples;
  * implementations. This is used to determine whether an early abandonment is 
  * permissible for the four quality measures.
  */
-import tsml.filters.shapelet_transforms.old_code.ClusteredShapeletTransform;
-import tsml.filters.shapelet_transforms.ShapeletTransform;
-import tsml.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
-import tsml.filters.shapelet_transforms.distance_functions.CachedSubSeqDistance;
-import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
-import tsml.filters.shapelet_transforms.distance_functions.OnlineSubSeqDistance;
-import tsml.filters.shapelet_transforms.old_code.ApproximateShapeletTransform;
+import tsml.filters.shapelet_filters.old_code.ClusteredShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletTransform;
+import tsml.filters.shapelet_filters.distance_functions.ImprovedOnlineSubSeqDistance;
+import tsml.filters.shapelet_filters.distance_functions.CachedSubSeqDistance;
+import tsml.filters.shapelet_filters.distance_functions.SubSeqDistance;
+import tsml.filters.shapelet_filters.distance_functions.OnlineSubSeqDistance;
+import tsml.filters.shapelet_filters.old_code.ApproximateShapeletTransform;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -63,7 +63,7 @@ import java.util.logging.Logger;
  * QualityMeasures.
  */
 import weka.core.*;
-import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
+import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 
 /**
  * This class is a helper class to describe the structure of our shapelet code and

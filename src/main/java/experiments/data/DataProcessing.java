@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -32,11 +33,131 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Sorting out the new archive
+ * Sorting out the new archive, some general utility functions
  * @author ajb
  */
 public class DataProcessing {
-    
+
+
+    public static void collateShapeletParameters(String readPath,String classifier,String[] problems) throws Exception {
+//ONE FOLD ONLY
+//1. List of full transforms vs random
+        int count=0;
+        int full=0;
+        int withinContract=0;
+        File of=new File(readPath+classifier+"/ParameterSummary/");
+        of.mkdirs();
+
+        OutFile timings = new OutFile(readPath+classifier+"/ParameterSummary/BuildTime"+classifier+".csv");
+        OutFile numShapelets = new OutFile(readPath+classifier+"/ParameterSummary/NumShapelets"+classifier+".csv");
+        OutFile combo = new OutFile(readPath+classifier+"/ParameterSummary/combo"+classifier+".csv");
+        OutFile timeRegression = new OutFile(readPath+classifier+"/ParameterSummary/singleShapeletTrainTime.arff");
+        timeRegression.writeLine("@Relation ShapeletTrainTimeRegression");
+        timeRegression.writeLine("@Attribute dataSet String");
+        timeRegression.writeLine("@Attribute log(n) real");
+        timeRegression.writeLine("@Attribute log(m) real");
+        timeRegression.writeLine("@Attribute log(s) real");
+        timeRegression.writeLine("@data");
+
+        //FORMAT by column: SearchType (full/random), transformContract (secs), transformActual (secs), proportion
+        DecimalFormat df= new DecimalFormat("##.##");
+        double meanProportion=0;
+        double meanOutForFull=0;
+        timings.writeLine("problem,SearchType(Full/Random), transformContract(secs),transformActual(secs),proportionTimeUsed,classifierTime");
+        numShapelets.writeLine("problem,SearchType(Full/Random),numShapeletsInProblem,ProportionToEvaluate," +
+                "numShapeletsInTransform,NumberShapeletsEvaluated,NumberShapeletsEarlyAbandoned");
+        combo.writeString("problem,SearchType(Full/Random), transformContract(secs),transformActual(secs),proportionTimeUsed,classifierTime");
+        combo.writeLine(",numShapeletsInProblem,ProportionToEvaluate,NumToEvaluate," +
+                "NumInTransform,NumberEvaluated,NumberEarlyAbandoned,TotalNumber,TimePerShapelet,FullTimeEstimate(hrs),withinContract");
+        for (String problem : problems) {
+//            Instances data=DatasetLoading.loadData(""+problem+"/"+problem+"_TRAIN.arff");
+            for(int i=0;i<30;i++) {
+                File f = new File(readPath + classifier + "/Predictions/" + problem + "/testFold"+i+".csv");
+                if (f.exists()) {
+                    timings.writeString(problem);
+                    numShapelets.writeString(problem);
+                    combo.writeString(problem);
+                    count++;
+                    InFile inf = new InFile(readPath + classifier + "/Predictions/" + problem + "/testFold"+i+".csv");
+                    String str = inf.readLine();
+                    str = inf.readLine();
+                    String[] split = str.split(",");
+                    System.out.println(problem + "  Full/Random = " + split[22]);
+                    timings.writeString("," + split[11]); //Full/Random
+                    combo.writeString("," + split[11]); //Full/Random
+                    double contract = Double.parseDouble(split[5]);//Contracted time
+                    contract /= 1000000000.0;
+                    timings.writeString("," + df.format(contract));//Contract time
+                    combo.writeString("," + df.format(contract));
+                    double actual = Double.parseDouble(split[1]); //Actual transform time
+                    actual /= 1000000000.0;
+
+                    timings.writeString("," + df.format(actual)); //Actual time
+                    combo.writeString("," + df.format(actual));
+                    if (contract > 0) {
+                        timings.writeString("," + df.format(actual / contract));//Proportion
+                        combo.writeString("," + df.format(actual / contract));
+                    } else {
+                        timings.writeString("," + 1.0);//Proportion
+                        combo.writeString("," + 1.0);
+                    }
+
+                    String str2 = inf.readLine();
+                    String[] split2 = str2.split(",");
+                    double totalTime = Double.parseDouble(split[1]);//Total Time
+
+                    totalTime /= 1000000000.0;
+                    timings.writeLine("," + df.format(totalTime - actual));//Classifier time
+                    combo.writeString("," + df.format(totalTime - actual));
+
+                    if (split[11].equals("FULL")) {
+                        full++;
+                        if (actual < contract)
+                            withinContract++;
+                        else
+                            meanOutForFull += actual / contract;
+                    } else
+                        meanProportion += actual / contract;
+                    numShapelets.writeString("," + split[11]); //Full/Random
+                    numShapelets.writeString("," + split[7]);//Shapelets in problem
+                    int totalShapelets = Integer.parseInt(split[7]);
+                    numShapelets.writeString("," + split[9]);//Proportion to evaluate
+                    numShapelets.writeString("," + split[33]);//Shapelets in transform
+                    numShapelets.writeString("," + split[35]);//Shapelets fully evaluated
+                    numShapelets.writeLine("," + split[37]);//Shapelets abandoned
+                    combo.writeString("," + split[7]);//Shapelets in problem
+                    combo.writeString("," + split[9]);//Proportion to evaluate
+                    int toEvaluate = (int) (Double.parseDouble(split[7]) * Double.parseDouble(split[9]));
+                    combo.writeString("," + toEvaluate);//Number to evaluate for full
+                    combo.writeString("," + split[33]);//Shapelets in transform
+                    combo.writeString("," + split[35]);//Shapelets evaluated
+                    combo.writeString("," + split[37]);//Shapelets abandoned
+                    double totalEvals = Double.parseDouble(split[35]) + Double.parseDouble(split[37]);
+                    System.out.println("Total evals");
+                    combo.writeString("," + (long) totalEvals);//number actually evaluated
+                    double timePerS = actual / totalEvals;
+                    combo.writeString("," + timePerS);//Time per shapelet (secs)
+                    double hrsToFull = timePerS * totalShapelets / (60 * 60);
+                    combo.writeString("," + hrsToFull);//Time for full
+                    if (timePerS * totalShapelets < contract || split[11].equals("FULL"))
+                        combo.writeLine(",YES");
+                    else
+                        combo.writeLine(",NO");
+                    timeRegression.writeLine(timePerS+"");
+
+                }
+            }
+        }
+        timings.closeFile();
+        numShapelets.closeFile();
+        System.out.println(count+" problems present");
+        System.out.println(" Mean proportion actual/contract for random ="+meanProportion/(count-full));
+        System.out.println(" number of full transforms = "+full+" number full actually within contract ="+withinContract);
+        System.out.println(" Mean proportion fill given out of contract "+meanOutForFull/(full-withinContract));
+    }
+
+
+
     public static void makeZips(String[] directories, String dest,String ... source) {
         File inf=new File(dest);
         inf.mkdirs();

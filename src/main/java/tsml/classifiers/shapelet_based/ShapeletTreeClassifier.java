@@ -6,16 +6,16 @@ import java.util.*;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.filters.shapelet_transforms.OrderLineObj;
-import tsml.filters.shapelet_transforms.class_value.NormalClassValue;
-import tsml.filters.shapelet_transforms.distance_functions.SubSeqDistance;
-import tsml.filters.shapelet_transforms.quality_measures.InformationGain;
-import tsml.filters.shapelet_transforms.quality_measures.ShapeletQuality;
+import tsml.filters.shapelet_filters.OrderLineObj;
+import tsml.filters.shapelet_filters.class_value.NormalClassValue;
+import tsml.filters.shapelet_filters.distance_functions.SubSeqDistance;
+import tsml.filters.shapelet_filters.quality_measures.InformationGain;
+import tsml.filters.shapelet_filters.quality_measures.ShapeletQuality;
 import utilities.ClassifierTools;
 import utilities.class_counts.ClassCounts;
 import weka.core.*;
 
-import tsml.filters.shapelet_transforms.Shapelet;
+import tsml.filters.shapelet_filters.Shapelet;
 
 
 public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implements TechnicalInformationHandler{

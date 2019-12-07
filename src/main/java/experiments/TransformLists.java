@@ -15,7 +15,7 @@
 package experiments;
 
 import tsml.filters.*;
-import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletTransform;
 import weka.filters.SimpleBatchFilter;
 
 /**
