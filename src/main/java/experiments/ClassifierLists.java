@@ -23,10 +23,7 @@ import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
 import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import timeseriesweka.classifiers.distance_based.*;
 import timeseriesweka.classifiers.frequency_based.cRISE;
-import timeseriesweka.classifiers.hybrids.Catch22Classifier;
-import timeseriesweka.classifiers.hybrids.FlatCote;
-import timeseriesweka.classifiers.hybrids.HiveCote;
-import timeseriesweka.classifiers.hybrids.TSCHIEFWrapper;
+import timeseriesweka.classifiers.hybrids.*;
 import timeseriesweka.classifiers.interval_based.Catch22TSF;
 import timeseriesweka.classifiers.interval_based.cTSF;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -45,6 +42,7 @@ import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import timeseriesweka.classifiers.shapelet_based.ShapeletTreeClassifier;
+import timeseriesweka.filters.FeatureSetTSF;
 import timeseriesweka.filters.SummaryStats;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.EuclideanDistance;
@@ -212,7 +210,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF", "Catch22TSF", "Catch22TSF100", "TSF100"};
+    public static String[] interval= {"LPS","TSF","cTSF", "Catch22NormTSF", "Catch22TSF", "Catch22TSF100", "Catch22TSF100exp1", "TSF100"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -233,9 +231,17 @@ public class ClassifierLists {
             case "Catch22TSF":
                 c=new Catch22TSF();
                 break;
+            case "Catch22NormTSF":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).norm = true;
+                break;
             case "Catch22TSF100":
                 c=new Catch22TSF();
                 ((Catch22TSF)c).setNumTrees(100);
+                break;
+            case "Catch22TSF100exp1":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 1;
                 break;
             case "TSF100":
                 c=new TSF();
@@ -315,7 +321,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22","SSRF"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22","Catch22Old","Catch22Norm","Catch22RotF","SSRF","TSF-SS"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -342,6 +348,28 @@ public class ClassifierLists {
                 rf.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rf);
                 break;
+            case "Catch22Old":
+                c=new Catch22ClassifierOld();
+                RandomForest rf4 = new RandomForest();
+                rf4.setNumTrees(100);
+                rf4.setSeed(fold);
+                ((Catch22ClassifierOld)c).setClassifier(rf4);
+                break;
+            case "Catch22Norm":
+                c=new Catch22Classifier();
+                RandomForest rf3 = new RandomForest();
+                rf3.setNumTrees(100);
+                rf3.setSeed(fold);
+                ((Catch22Classifier)c).setClassifier(rf3);
+                ((Catch22Classifier) c).setNormalise(false);
+                break;
+            case "Catch22RotF":
+                c=new Catch22Classifier();
+                RotationForest rtf = new RotationForest();
+                rtf.setNumIterations(100);
+                rtf.setSeed(fold);
+                ((Catch22Classifier)c).setClassifier(rtf);
+                break;
             case "SSRF":
                 c=new FilteredClassifier();
                 RandomForest rf2 = new RandomForest();
@@ -349,6 +377,14 @@ public class ClassifierLists {
                 rf2.setSeed(fold);
                 ((FilteredClassifier)c).setClassifier(rf2);
                 ((FilteredClassifier)c).setFilter(new SummaryStats());
+                break;
+            case "TSF-SS":
+                c=new FilteredClassifier();
+                RandomForest rf5 = new RandomForest();
+                rf5.setNumTrees(100);
+                rf5.setSeed(fold);
+                ((FilteredClassifier)c).setClassifier(rf5);
+                ((FilteredClassifier)c).setFilter(new FeatureSetTSF());
                 break;
 
             default:

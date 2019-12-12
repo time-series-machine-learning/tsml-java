@@ -113,72 +113,8 @@ public class Catch22Classifier extends AbstractClassifier {
     }
 
     public static Instance singleTransform(Instance inst, double classVal){
-        double[] featureSet = new double[23];
         double[] arr = extractTimeSeries(inst);
-
-        double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
-        for(int i = 0; i < arr.length; i++) {
-            if (arr[i] < min) {
-                min = arr[i];
-            }
-            if (arr[i] > max) {
-                max = arr[i];
-            }
-        }
-
-        double mean = mean(arr);
-
-        int length = (int)FFT.MathsPower2.roundPow2((float)arr.length);
-        if (length < arr.length) length *= 2;
-        FFT.Complex[] fft = new FFT.Complex[length];
-        for (int i = 0; i < arr.length; i++){
-            fft[i] = new FFT.Complex(arr[i]-mean, 0);
-        }
-        for (int i = arr.length; i < length; i++){
-            fft[i] = new FFT.Complex(0,0);
-        }
-
-        FFT t = new FFT();
-        t.fft(fft, length);
-
-        FFT.Complex[] fftClone = new FFT.Complex[length];
-        for (int i = 0; i < length; i++){
-            fftClone[i] = (FFT.Complex)fft[i].clone();
-        }
-        double[] ac = autoCorr(arr, fftClone);
-
-        featureSet[0] = histMode5DN(arr, min, max);
-        featureSet[1] = histMode10DN(arr, min, max);
-        featureSet[2] = binaryStatsMeanLongstretch1SB(arr, mean);
-        featureSet[3] = outlierIncludeP001mdrmdDN(arr);
-        featureSet[4] = outlierIncludeN001mdrmdDN(arr);
-        featureSet[5] = f1ecacCO(ac);
-        featureSet[6] = firstMinacCO(ac);
-        featureSet[7] = summariesWelchRectArea51SP(arr, fft);
-        featureSet[8] = summariesWelchRectCentroidSP(arr, fft);
-        featureSet[9] = localSimpleMean3StderrFC(arr);
-        featureSet[10] = trev1NumCO(arr);
-        featureSet[11] = histogramAMIeven25CO(arr, min, max);
-        featureSet[12] = autoMutualInfoStats40GaussianFmmiIN(ac);
-        featureSet[13] = hrvClassicPnn40MD(arr);
-        featureSet[14] = binaryStatsDiffLongstretch0SB(arr);
-        featureSet[15] = motifThreeQuantileHhSB(arr);
-        featureSet[16] = localSimpleMean1TauresratFC(arr, ac);
-        featureSet[17] = embed2DistTauDExpfitMeandiffCO(arr, ac);
-        featureSet[18] = fluctAnal2Dfa5012LogiPropR1SC(arr);
-        featureSet[19] = fluctAnal2Rsrangefit501LogiPropR1SC(arr);
-        featureSet[20] = transitionMatrix3acSumdiagcovSB(arr, ac);
-        featureSet[21] = periodicityWangTh001PD(arr);
-
-        featureSet[22] = classVal;
-
-        for (int i = 0; i < featureSet.length; i++){
-            if (Double.isNaN(featureSet[i]) || Double.isInfinite(featureSet[i])){
-                featureSet[i] = 0;
-            }
-        }
-
+        double[] featureSet = singleTransform(arr, classVal);
         return new DenseInstance(1, featureSet);
     }
 
@@ -208,7 +144,6 @@ public class Catch22Classifier extends AbstractClassifier {
         for (int i = arr.length; i < length; i++){
             fft[i] = new FFT.Complex(0,0);
         }
-
         FFT t = new FFT();
         t.fft(fft, length);
 
@@ -636,15 +571,6 @@ public class Catch22Classifier extends AbstractClassifier {
 
     //Periodicity measure of (Wang et al. 2007)
     private static double periodicityWangTh001PD(double[] arr){
-//        // NaN check
-//        for(int i = 0; i < size; i++)
-//        {
-//            if(isnan(y[i]))
-//            {
-//                return 0;
-//            }
-//        }
-
         double[] ySpline = splineFit(arr);
 
         double[] ySub = new double[arr.length];
@@ -913,7 +839,7 @@ public class Catch22Classifier extends AbstractClassifier {
         }
     }
 
-    public static double[] localSimpleMean(double[] arr, int trainLength){
+    private static double[] localSimpleMean(double[] arr, int trainLength){
         double[] res = new double[arr.length-trainLength];
         for (int i = 0; i < res.length; i++){
             double sum = 0;
@@ -995,8 +921,6 @@ public class Catch22Classifier extends AbstractClassifier {
                     f[i] += Math.pow(max(buffer[n]) - min(buffer[n]), 2);
                 }
             }
-
-            //System.out.println(buffer.length);
 
             if (dfa){
                 f[i] = Math.sqrt(f[i]/(buffer.length*tau));

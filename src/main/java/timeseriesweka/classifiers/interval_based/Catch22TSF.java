@@ -33,6 +33,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static utilities.ClusteringUtilities.zNormalise;
+
 /** 
   <!-- globalinfo-start -->
 * Implementation of Time Series Forest
@@ -102,6 +104,12 @@ import java.util.function.Function;
 public class Catch22TSF extends EnhancedAbstractClassifier
         implements TechnicalInformationHandler, Tuneable{
 //Static defaults
+
+
+    public int experimentalOptions = 0;
+    public int intSelection = 0;
+    public boolean norm = false;
+
 
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
 
@@ -332,7 +340,27 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
-        numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+
+        //bagging
+        //reduction of num intervals
+        //random tree k change
+        //random catch22 attribute subsample
+
+        if (experimentalOptions == 1){
+            numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+            //numIntervals =  (int)(Math.sqrt(data.numAttributes()-1)/2);
+            //numIntervals =  (int)Math.round(Math.pow(Math.sqrt(data.numAttributes()-1), 0.85));
+            intSelection = 1;
+            minIntervalLength = 12;
+
+            if (minIntervalLength > (data.numAttributes()-1)/numIntervals){
+                minIntervalLength = (data.numAttributes()-1)/numIntervals;
+            }
+        }
+        else{
+            numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+        }
+
 //Set up instances size and format. 
         trees=new AbstractClassifier[numClassifiers];        
         ArrayList<Attribute> atts=new ArrayList<>();
@@ -379,16 +407,62 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         intervals =new int[numClassifiers][][];
         for(int i=0;i<numClassifiers;i++){
         //1. Select random intervals for tree i
-            intervals[i]=new int[numIntervals][2];  //Start and end
-            if(data.numAttributes()-1<minIntervalLength)
-                 minIntervalLength=data.numAttributes()-1;
-            for(int j=0;j<numIntervals;j++){
-               intervals[i][j][0]=rand.nextInt(data.numAttributes()-1-minIntervalLength);       //Start point
-               int length=rand.nextInt(data.numAttributes()-1-intervals[i][j][0]);//Min length 3
-               if(length<minIntervalLength)
-                   length=minIntervalLength;
-               intervals[i][j][1]=intervals[i][j][0]+length;
+
+            if (intSelection == 1) {
+                intervals[i] = new int[numIntervals][2];  //Start and end
+                if (data.numAttributes() - 1 < minIntervalLength)
+                    minIntervalLength = data.numAttributes() - 1;
+
+                for (int j = 0; j < numIntervals; j++) {
+                    while (true) {
+                        intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+
+                        //biased towards min value? (larger effect on small series)
+
+                        //int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0] - minIntervalLength) + minIntervalLength;//Min length 12
+                        int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
+                        if (length < minIntervalLength)
+                            length = minIntervalLength;
+
+                        intervals[i][j][1] = intervals[i][j][0] + length;
+
+                        if (j == 0){
+                            break;
+                        }
+
+                        int closestIdx = -1;
+                        int closestDist = Integer.MAX_VALUE;
+                        for (int n = 0; n < j; n++){
+                            int dist = Math.abs(intervals[i][n][0] - intervals[i][j][0]);
+                            if (dist < closestDist){
+                                closestIdx = n;
+                                closestDist = dist;
+                            }
+                        }
+
+                        int overlap = Math.min(intervals[i][j][1], intervals[i][closestIdx][1]) - Math.max(intervals[i][j][0], intervals[i][closestIdx][0]);
+                        int closestLength = intervals[i][closestIdx][1] - intervals[i][closestIdx][0];
+                        int nonOverlap = closestLength + length - overlap*2;
+
+                        if (nonOverlap >= Math.max(length, closestLength)/2) {
+                            break;
+                        }
+                    }
+                }
             }
+            else {
+                intervals[i] = new int[numIntervals][2];  //Start and end
+                if (data.numAttributes() - 1 < minIntervalLength)
+                    minIntervalLength = data.numAttributes() - 1;
+                for (int j = 0; j < numIntervals; j++) {
+                    intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+                    int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
+                    if (length < minIntervalLength)
+                        length = minIntervalLength;
+                    intervals[i][j][1] = intervals[i][j][0] + length;
+                }
+            }
+
         //2. Generate and store attributes            
             for(int j=0;j<numIntervals;j++){
                 //For each instance
@@ -403,6 +477,9 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //                    result.instance(k).setValue(j*3+2, f.slope);
 
                     double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1]+1);
+                    if (norm){
+                        zNormalise(interval);
+                    }
                     double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
                     for (int g = 0; g < 22; g++) {
@@ -549,6 +626,9 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //                testHolder.instance(0).setValue(j*3+2, f.slope);
 
                 double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1]+1);
+                if (norm){
+                    zNormalise(interval);
+                }
                 double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
                 for (int g = 0; g < 22; g++) {
@@ -728,6 +808,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         Catch22TSF tsf = new Catch22TSF();
         tsf.setSeed(0);
+        tsf.experimentalOptions = 1;
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
@@ -736,7 +817,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         System.out.println("Test Accuracy ="+a);
         String[] options=new String[4];
         options[0]="-T";
-        options[1]="10";
+        options[1]="100";
         options[2]="-I";
         options[3]="1";
         tsf.setOptions(options);

@@ -87,6 +87,33 @@ public class ClusteringUtilities {
         }
     }
 
+    public static void zNormalise(double[] inst){
+        double meanSum = 0;
+
+        for (int i = 0; i < inst.length; i++){
+            meanSum += inst[i];
+        }
+
+        double mean = meanSum / inst.length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < inst.length; i++){
+            double temp = inst[i] - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(inst.length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < inst.length; i++){
+            inst[i] = (inst[i] - mean) / stdev;
+        }
+    }
+
     public static void zNormaliseWithClass(Instances data) {
         for (Instance inst: data){
             zNormaliseWithClass(inst);

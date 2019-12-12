@@ -951,7 +951,7 @@ public class SimulationExperiments {
     }
     public static void main(String[] args) throws Exception{
   //      collateSimulatorResults();
-        dictionarySimulatorChangingSeriesLength();
+        catch22SimulatorChangingSeriesLength();
  //       dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
@@ -1156,6 +1156,86 @@ public class SimulationExperiments {
             }
         }
 
+    }
+
+    public static void catch22SimulatorChangingSeriesLength() throws Exception {
+        Model.setDefaultSigma(1);
+        boolean overwrite=true;
+        int experiments=30;
+        String writePath="D:/UEAMachineLearning/Projects/Catch22/SimulationExperiments/";
+        for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
+            File path = new File(writePath + "Catch22SeriesLength" + seriesLength);
+            path.mkdirs();
+            if(!overwrite) {
+                File f1 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/testAcc" + seriesLength + ".csv");
+                File f2 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/trainTime" + seriesLength + ".csv");
+                File f3 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv");
+                File f4 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/mem" + seriesLength + ".csv");
+                if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
+                    System.out.println("SKIPPING series length = "+seriesLength+" as all already present");
+                    continue;
+                }
+
+            }
+            OutFile accFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/testAcc" + seriesLength + ".csv");
+            OutFile trainTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength +"/trainTime" + seriesLength + ".csv");
+            OutFile testTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/testTime" + seriesLength + ".csv");
+            OutFile memFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/mem" + seriesLength + ".csv");
+            System.out.println(" Generating simulated data ....");
+            int[] casesPerClass = new int[2];
+            casesPerClass[0] = casesPerClass[1] = 100;
+            long t1;
+            String[] classifierNames = {"TSF-SS","Catch22","TSF"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
+            for (int i = 0; i < experiments; i++) {
+                Instances data = SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
+                System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                for (int j = 0; j < classifierNames.length; j++) {
+                    System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
+                    long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                    Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
+                    t1 = System.nanoTime();
+                    c.buildClassifier(split[0]);
+                    trainTime[j] = System.nanoTime() - t1;
+                    t1 = System.nanoTime();
+                    acc[j] = ClassifierTools.accuracy(split[1], c);
+                    testTime[j] = System.nanoTime() - t1;
+                    System.gc();
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
+                    System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
+                }
+                accFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    accFile.writeString("," + acc[j]);
+                accFile.writeString("\n");
+                trainTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    trainTimeFile.writeString("," + trainTime[j]);
+                trainTimeFile.writeString("\n");
+                testTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    testTimeFile.writeString("," + testTime[j]);
+                testTimeFile.writeString("\n");
+                memFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
+                }
+                memFile.writeString("\n");
+            }
+        }
     }
 
 
