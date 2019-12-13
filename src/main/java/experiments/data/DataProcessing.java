@@ -1542,16 +1542,16 @@ testSimpleClassifier();
 
     
     }
- 
-    
+
+
     public static void generateAllResamplesInARFF(){
- //       String path = "C:\\Users\\ajb\\Dropbox\\Working docs\\Data Resample Debug\\Data\\";
+        //       String path = "C:\\Users\\ajb\\Dropbox\\Working docs\\Data Resample Debug\\Data\\";
         String path = "Z:\\ArchiveData\\";
         String[] datasets=DatasetLists.tscProblems2018;
 //        datasets=new String[]{"Chinatown"};
         for(String problem:datasets){
             System.out.println("Generating folds for "+problem);
-            Instances[] data;
+            Instances[] data = { null, null };
             File trainFile = new File(path + problem + "/" + problem + "_TRAIN.arff");
             File testFile = new File(path + problem + "/" + problem + "_TEST.arff");
             boolean predefinedFold0Exists = (trainFile.exists() && testFile.exists());
@@ -1559,25 +1559,32 @@ testSimpleClassifier();
                 Instances train = DatasetLoading.loadDataNullable(trainFile);
                 Instances test = DatasetLoading.loadDataNullable(testFile);
                 for(int fold =0;fold<=29;fold++){
+                    data[0] = new Instances(train);  //making absolutely sure no funny business happening
+                    data[1] = new Instances(test);
+
                     if (train.checkForAttributeType(Attribute.RELATIONAL))
-                        data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(train, test, fold);
+                        data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
                     else
-                        data = InstanceTools.resampleTrainAndTestInstances(train, test, fold);
+                        data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                     System.out.println(" instance 0 in fold "+fold+" train "+data[0].instance(0).toString());
 
-                    //Save folds.
-                    OutFile trainF=new OutFile(path + problem + "/" + problem + fold+"_TRAIN.arff");
-                    trainF.writeLine(data[0].toString());
-                    OutFile testF=new OutFile(path + problem + "/" + problem + fold+"_TEST.arff");
-                    testF.writeLine(data[1].toString());
-                    
+                    //toString produces 'printing-friendly' 6 sig figures for doubles, using proper arffsaver now instead
+                    DatasetLoading.saveDataset(data[0], path + problem + "/" + problem + fold+"_TRAIN.arff");
+                    DatasetLoading.saveDataset(data[1], path + problem + "/" + problem + fold+"_TEST.arff");
+
+//                    //Save folds.
+//                    OutFile trainF=new OutFile(path + problem + "/" + problem + fold+"_TRAIN.arff");
+//                    trainF.writeLine(data[0].toString());
+//                    OutFile testF=new OutFile(path + problem + "/" + problem + fold+"_TEST.arff");
+//                    testF.writeLine(data[1].toString());
+
                 }
             }else{
                 System.out.println("File does not exist on "+path);
             }
-            
+
         }
-        
+
     }
     
     
