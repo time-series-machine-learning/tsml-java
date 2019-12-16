@@ -23,7 +23,7 @@ import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.elastic_distance_measures.WeightedDTW;
+import tsml.classifiers.distance_based.distances.old.WeightedDTW;
 
 import java.util.ArrayList;
 import java.util.Collections;

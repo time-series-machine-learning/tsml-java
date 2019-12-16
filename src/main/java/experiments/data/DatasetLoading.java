@@ -108,6 +108,10 @@ public class DatasetLoading {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
 
+    public static Instances[] sampleGunPoint(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "GunPoint", seed);
+    }
+
     /**
      * Helper function for loading the baked-in Beef dataset, one of the
      * UCR datasets for TSC

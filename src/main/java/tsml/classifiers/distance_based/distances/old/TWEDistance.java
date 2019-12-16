@@ -36,7 +36,7 @@ Matching},
 */
 
 
-package tsml.elastic_distance_measures;
+package tsml.classifiers.distance_based.distances.old;
 
 import weka.core.EuclideanDistance;
 import weka.core.Instance;

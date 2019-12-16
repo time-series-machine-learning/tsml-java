@@ -1,7 +1,7 @@
 /* 
  * Piecewise DTW distance metric 
  */
-package tsml.elastic_distance_measures;
+package tsml.classifiers.distance_based.distances.old;
 
 /**
  *

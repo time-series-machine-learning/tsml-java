@@ -14,9 +14,12 @@
  */
 package utilities;
 
+import utilities.collections.IntListView;
 import weka.core.Instance;
+import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -188,5 +191,184 @@ public class Utilities {
             return indices[0];
         }
         return indices[random.nextInt(indices.length)];
+    }
+
+    public static int[] fromPermutation(int permutataion, int... binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutataion > maxCombination || binSizes.length == 0 || permutataion < 0) {
+            throw new IllegalArgumentException();
+        }
+        int[] result = new int[binSizes.length];
+        for(int index = 0; index < binSizes.length; index++) {
+            int binSize = binSizes[index];
+            if(binSize > 1) {
+                result[index] = permutataion % binSize;
+                permutataion /= binSize;
+            } else {
+                result[index] = 0;
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static List<Integer> fromPermutation(int permutation, List<Integer> binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(permutation > maxCombination || binSizes.size() == 0 || permutation < 0) {
+            throw new IndexOutOfBoundsException();
+        }
+        List<Integer> result = new ArrayList<>();
+        for(int binSize : binSizes) {
+            if(binSize > 1) {
+                result.add(permutation % binSize);
+                permutation /= binSize;
+            } else {
+                if(binSize < 0) {
+                    throw new IllegalArgumentException();
+                }
+                result.add(binSize - 1);
+            }
+        }
+        return result;
+    }
+
+    public static int toPermutation(int[] values, int[] binSizes) {
+        return toPermutation(new IntListView(values), new IntListView(binSizes));
+    }
+
+    public static int toPermutation(List<Integer> values, List<Integer> binSizes) {
+        if(values.size() != binSizes.size()) {
+            throw new IllegalArgumentException("incorrect number of args");
+        }
+        int permutation = 0;
+        for(int i = binSizes.size() - 1; i >= 0; i--) {
+            int binSize = binSizes.get(i);
+            if(binSize > 1) {
+                int value = values.get(i);
+                permutation *= binSize;
+                permutation += value;
+            } else if(binSize < 0){
+                throw new IllegalArgumentException();
+            }
+        }
+        return permutation;
+    }
+
+    public static int numPermutations(List<Integer> binSizes) {
+        if(binSizes.isEmpty()) {
+            return 0;
+        }
+        List<Integer> maxValues = new ArrayList<>();
+        for(Integer binSize : binSizes) {
+            int size = binSize - 1;
+            if(size < 0) {
+                size = 0;
+            }
+            maxValues.add(size);
+        }
+        return toPermutation(maxValues, binSizes) + 1;
+    }
+
+    public static int numPermutations(int[] binSizes) {
+        return numPermutations(new IntListView(binSizes));
+    }
+
+
+    public static <A> List<A> asList(A[] array) {
+        return Arrays.asList(array);
+    }
+
+    public static List<Integer> asList(int[] array) {
+        return new IntListView(array);
+    }
+
+    public static List<Double> asList(double[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Float> asList(float[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Long> asList(long[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Short> asList(short[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Byte> asList(byte[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Boolean> asList(boolean[] array) {
+        return Arrays.asList(box(array));
+    }
+    public static List<Character> asList(char[] array) {
+        return Arrays.asList(box(array));
+    }
+
+
+    // todo get rid of box uses and replace with listviews
+    public static Integer[] box(int[] array) {
+        Integer[] boxed = new Integer[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Long[] box(long[] array) {
+        Long[] boxed = new Long[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Double[] box(double[] array) {
+        Double[] boxed = new Double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Float[] box(float[] array) {
+        Float[] boxed = new Float[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Short[] box(short[] array) {
+        Short[] boxed = new Short[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Boolean[] box(boolean[] array) {
+        Boolean[] boxed = new Boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Byte[] box(byte[] array) {
+        Byte[] boxed = new Byte[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+    public static Character[] box(char[] array) {
+        Character[] boxed = new Character[array.length];
+        for(int i = 0; i < array.length; i++) {
+            boxed[i] = array[i];
+        }
+        return boxed;
+    }
+
+
+    public static Instances toInstances(Instance... instances) {
+        Instances result = new Instances(instances[0].dataset(), 0);
+        result.addAll(Utilities.asList(instances));
+        return result;
     }
 }

@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package tsml.elastic_distance_measures;
+package tsml.classifiers.distance_based.distances.old;
 
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import weka.core.EuclideanDistance;

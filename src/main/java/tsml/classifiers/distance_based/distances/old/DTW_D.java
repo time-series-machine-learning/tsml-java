@@ -12,12 +12,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.elastic_distance_measures.multivariate;
+package tsml.classifiers.distance_based.distances.old;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.elastic_distance_measures.DTW_DistanceBasic;
 import weka.core.neighboursearch.PerformanceStats;
 
 

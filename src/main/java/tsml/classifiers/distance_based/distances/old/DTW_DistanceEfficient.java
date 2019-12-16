@@ -1,4 +1,4 @@
-package tsml.elastic_distance_measures;
+package tsml.classifiers.distance_based.distances.old;
 /**
 
 Basic DTW implementation for Weka. /Each instance is assumed to be a time series.   

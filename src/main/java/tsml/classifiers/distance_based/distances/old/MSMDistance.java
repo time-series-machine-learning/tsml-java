@@ -1,4 +1,4 @@
-package tsml.elastic_distance_measures;
+package tsml.classifiers.distance_based.distances.old;
 
 /*
  * Move Split Merge distance measure from
