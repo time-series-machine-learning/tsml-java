@@ -27,9 +27,14 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.DebugPrinting;
-import utilities.GenericTools;
-import utilities.InstanceTools;
+
+import net.sourceforge.sizeof.SizeOf;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import utilities.*;
+import weka.classifiers.Classifier;
+import weka.core.Instances;
+import weka.core.OptionHandler;
+import weka.core.Randomizable;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
@@ -133,6 +138,43 @@ import utilities.InstanceTools;
  * @date 19/02/19
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
+
+    private String os = "unknown";
+    private String cpuInfo = "unknown";
+
+    public String getOs() {
+        return os;
+    }
+
+    public void setOs(final String os) {
+        this.os = os;
+    }
+
+    public String getCpuInfo() {
+        return cpuInfo;
+    }
+
+    public void setCpuInfo(final String cpuInfo) {
+        this.cpuInfo = cpuInfo;
+    }
+
+    public void setDetails(final Classifier classifier, final Instances data) {
+        setDatasetName(data.relationName());
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
+            setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
+        } else {
+            setClassifierName(classifier.getClass().getSimpleName());
+        }
+        if(classifier instanceof Randomizable) {
+            setFoldID(((Randomizable) classifier).getSeed());
+        }
+        if(classifier instanceof OptionHandler) {
+            setParas(StringUtilities.join(",", ((OptionHandler) classifier).getOptions()));
+        }
+        setOs(SysUtils.getOsName());
+        setCpuInfo(SysUtils.findCpuInfo());
+    }
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -1610,6 +1652,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             errorEstimateTime = Long.parseLong(parts[7]);
         if (parts.length > 8)
             buildPlusEstimateTime = Long.parseLong(parts[8]);
+        if(parts.length > 9) {
+            os = parts[9];
+        }
+        if(parts.length > 10) {
+            cpuInfo = parts[10];
+        }
         return acc;
     }
     private String generateThirdLine() {
@@ -1621,7 +1669,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + numClasses()
             + "," + errorEstimateMethod
             + "," + errorEstimateTime
-            + "," + buildPlusEstimateTime;
+            + "," + buildPlusEstimateTime
+            + "," + os
+            + "," + cpuInfo;
 
         return res;
     }

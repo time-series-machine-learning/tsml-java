@@ -14,12 +14,16 @@
  */
 package tsml.classifiers;
 
+import net.sourceforge.sizeof.SizeOf;
+import utilities.Debugable;
+import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
+import weka.core.OptionHandler;
 import weka.core.Randomizable;
 
 /**
@@ -73,21 +77,36 @@ ClassifierResults trainResults can also store other information about the traini
  * 
  * @author Tony Bagnall and James Large
  */
-abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo, Randomizable {
+abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
+                                                                                       Randomizable, Rebuildable,
+                                                                                       Debugable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
-    protected ClassifierResults trainResults =new ClassifierResults();
-/**Can seed for reproducibility*/
-    protected Random rand=new Random();
-    protected boolean seedClassifier=false;
+    protected ClassifierResults trainResults;
     protected int seed = 0;
-    
+    /**Can seed for reproducibility*/
+    protected Random rand=new Random(seed);
+    protected boolean seedClassifier=false;
+    protected boolean rebuild = false;
+
+    @Override public boolean isRebuild() {
+        return rebuild;
+    }
+
+    @Override public void setRebuild(final boolean rebuild) {
+        this.rebuild = rebuild;
+    }
+
+    protected void setAbleToEstimateOwnPerformance(boolean state) {
+        ableToEstimateOwnPerformance = state;
+    }
+
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally 
      * be used to describe this classifier. By default, this will simply be the 
      * simple-class-name of the classifier
      */
-    protected String classifierName = null;
+    protected String classifierName = getClass().getSimpleName();
     
     /**
      * This flags whether classifiers are able to estimate their own performance 
@@ -124,7 +143,17 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
-    
+
+    @Override public void buildClassifier(final Instances data) throws
+                                                                Exception {
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+    }
+
+    public EnhancedAbstractClassifier() {
+        this(false);
+    }
+
     public EnhancedAbstractClassifier(boolean ableToEstimateOwnPerformance) {
         this.ableToEstimateOwnPerformance = ableToEstimateOwnPerformance;
     }
@@ -296,6 +325,20 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean debug=false;
     public void setDebug(boolean b){
         debug=b;
+    }
+
+    @Override public boolean isDebug() {
+        return debug;
+    }
+
+    protected void setDetails(final Instances data) {
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setFoldID(getSeed());
+        trainResults.setDetails(this, data);
+    }
+
+    public String toString() {
+        return getClassifierName();
     }
 
 }

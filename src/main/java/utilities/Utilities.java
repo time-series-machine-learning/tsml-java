@@ -18,10 +18,7 @@ import utilities.collections.IntListView;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -370,5 +367,41 @@ public class Utilities {
         Instances result = new Instances(instances[0].dataset(), 0);
         result.addAll(Utilities.asList(instances));
         return result;
+    }
+
+    public static Map<Double, Integer> classDistribution(Instances data) {
+        Map<Double, Integer> distribution = new HashMap<>();
+        for(Instance instance : data) {
+            double classValue = instance.classValue();
+            distribution.compute(classValue, (k, v) -> {
+                if(v == null) {
+                    return 1;
+                } else {
+                    return v + 1;
+                }
+            });
+        }
+        return distribution;
+    }
+
+    public static int sum(Iterator<Integer> iterator) {
+        int sum = 0;
+        while(iterator.hasNext()) {
+            sum += iterator.next();
+        }
+        return sum;
+    }
+
+    public static int sum(Iterable<Integer> iterable) {
+        return sum(iterable.iterator());
+    }
+
+    public static <A> Map<A, Double> normalise(Map<A, Integer> map) {
+        Map<A, Double> distribution = new HashMap<>();
+        int sum = sum(map.values());
+        for(Map.Entry<A, Integer> entry : map.entrySet()) {
+            distribution.put(entry.getKey(), ((double) entry.getValue()) / sum);
+        }
+        return distribution;
     }
 }

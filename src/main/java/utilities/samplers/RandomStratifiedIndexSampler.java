@@ -44,7 +44,7 @@ public class RandomStratifiedIndexSampler implements Sampler{
         List<Integer> homogeneousInstances = instancesByClass.get(sampleClass); // instances of the class value
         int sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));
         classSamplingProbabilities[sampleClass]--;
-        ArrayUtilities.add(classSamplingProbabilities, classDistribution);
+        ArrayUtilities.addInPlace(classSamplingProbabilities, classDistribution);
         return sampledInstance;
     }
 }

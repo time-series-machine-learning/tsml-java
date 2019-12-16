@@ -14,6 +14,9 @@
  */
 package tsml.classifiers;
 
+import com.sun.istack.internal.NotNull;
+import utilities.Copy;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface that allows the user to allow a classifier to checkpoint, i.e. 
@@ -36,7 +40,7 @@ number
 
  * @author Tony Bagnall 2018
  */
-public interface Checkpointable extends Serializable{
+public interface Checkpointable extends Serializable, Copy {
 
     //Set the path where checkpointed versions will be stored
     default boolean setSavePath(String path){
@@ -46,11 +50,18 @@ public interface Checkpointable extends Serializable{
             success=f.mkdirs();
         return success;
     }
+
+    // save path for checkpoints. If this returns null then checkpointing is disabled
+    default String getSavePath() {
+        return null;
+    }
     //Define how to copy from a loaded object to this object
-    public void copyFromSerObject(Object obj) throws Exception;
+    default void copyFromSerObject(Object obj) throws Exception {
+        shallowCopyFrom(obj);
+    }
 
     //Override both if not using Java serialisation    
-    public default void saveToFile(String filename) throws IOException{
+    default void saveToFile(String filename) throws IOException{
         FileOutputStream fos =
         new FileOutputStream(filename);
         try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
@@ -59,13 +70,47 @@ public interface Checkpointable extends Serializable{
             fos.close();
         }
     }
-    public default void loadFromFile(String filename) throws Exception{
+    default void loadFromFile(String filename) throws Exception{
         FileInputStream fis = new FileInputStream(filename);
         try (ObjectInputStream in = new ObjectInputStream(fis)) {
             Object obj=in.readObject();
             copyFromSerObject(obj);
         }
     }
-    
+
+
+    default void checkpoint(boolean force) throws
+                                           Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default void checkpoint() throws
+                              Exception {
+        checkpoint(false);
+    }
+
+    default boolean isCheckpointing() {
+        return getSavePath() != null;
+    }
+
+    default long getMinCheckpointIntervalNanos() {
+        return TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    }
+
+    default void setMinCheckpointIntervalNanos(final long minCheckpointInterval) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setMinCheckpointInterval(long amount, @NotNull TimeUnit unit) {
+        setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(amount, unit));
+    }
+
+    default boolean isIgnorePreviousCheckpoints() {
+        return false;
+    }
+
+    default void setIgnorePreviousCheckpoints(boolean state) {
+        throw new UnsupportedOperationException();
+    }
     
 }

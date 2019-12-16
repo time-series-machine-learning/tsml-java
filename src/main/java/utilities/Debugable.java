@@ -9,4 +9,8 @@ public interface Debugable {
     default void disableDebug() {
         setDebug(false);
     }
+
+    default boolean getDebug() {
+        return isDebug();
+    }
 }
