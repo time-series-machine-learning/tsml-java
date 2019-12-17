@@ -13,19 +13,19 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package machine_learning.classifiers.ensembles;
-import timeseriesweka.filters.PowerSpectrum;
-import timeseriesweka.filters.ACF;
+import tsml.filters.PowerSpectrum;
+import tsml.filters.ACF;
 import java.util.ArrayList;
 import java.util.Random;
 import weka.attributeSelection.PrincipalComponents;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
-import timeseriesweka.classifiers.distance_based.DTWCV;
+import tsml.classifiers.distance_based.DTWCV;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeAttribute;
+import tsml.filters.NormalizeAttribute;
 import weka.filters.SimpleBatchFilter;
 
 public class TransformEnsembles extends AbstractClassifier{

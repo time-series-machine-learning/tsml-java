@@ -16,7 +16,7 @@ package machine_learning.classifiers.ensembles;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.filters.NormalizeCase;
 import weka.filters.SimpleBatchFilter;
 
 public class SingleTransformEnsembles extends AbstractClassifier{

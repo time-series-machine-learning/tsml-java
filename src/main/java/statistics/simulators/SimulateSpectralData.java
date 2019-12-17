@@ -4,12 +4,12 @@
 
 
 package statistics.simulators;
-import timeseriesweka.classifiers.distance_based.DTWCV;
-import timeseriesweka.filters.NormalizeCase;
-import timeseriesweka.filters.FFT;
-import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.PACF;
-import timeseriesweka.filters.ACF;
+import tsml.classifiers.distance_based.DTWCV;
+import tsml.filters.NormalizeCase;
+import tsml.filters.FFT;
+import tsml.filters.ARMA;
+import tsml.filters.PACF;
+import tsml.filters.ACF;
 import java.util.*;
 import java.text.*;
 //import utilities.OutFile;

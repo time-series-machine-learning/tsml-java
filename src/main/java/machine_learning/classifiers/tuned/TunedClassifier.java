@@ -18,7 +18,7 @@ import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
-import timeseriesweka.classifiers.ParameterSplittable;
+import tsml.classifiers.ParameterSplittable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
@@ -27,11 +27,11 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 import machine_learning.classifiers.SaveEachParameter;
-import timeseriesweka.classifiers.Tuneable;
+import tsml.classifiers.Tuneable;
 
 /**
  * Given 

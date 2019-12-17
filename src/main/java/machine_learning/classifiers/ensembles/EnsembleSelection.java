@@ -29,7 +29,7 @@ import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
