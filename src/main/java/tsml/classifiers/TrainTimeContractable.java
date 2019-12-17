@@ -14,7 +14,7 @@
  */
 package tsml.classifiers;
 
-import utilities.ParamHandler;
+import utilities.params.ParamHandler;
 import utilities.StringUtilities;
 
 import java.util.ArrayList;

@@ -11,6 +11,8 @@ import utilities.StopWatch;
 import utilities.StringUtilities;
 import utilities.collections.PrunedTreeMultiMap;
 import utilities.collections.TreeMultiMap;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -26,7 +28,8 @@ public class KNN extends EnhancedAbstractClassifier
     ProgressiveBuildClassifier,
     Rebuildable,
     Checkpointable,
-    Copy {
+    Copy,
+    ParamHandler {
     public static final String K_FLAG = "k";
     public static final String EARLY_ABANDON_FLAG = "e";
     public static final String RANDOM_TIE_BREAK_FLAG = "r";
@@ -87,6 +90,10 @@ public class KNN extends EnhancedAbstractClassifier
 
     public void setEarlyAbandon(final boolean earlyAbandon) {
         this.earlyAbandon = earlyAbandon;
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
     }
 
     @Override

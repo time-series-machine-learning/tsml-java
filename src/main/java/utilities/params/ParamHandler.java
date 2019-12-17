@@ -1,13 +1,9 @@
-package utilities;
+package utilities.params;
 
-import evaluation.tuning.ParameterSet;
 import weka.core.OptionHandler;
-import weka.core.UnsupportedAttributeTypeException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 
 public interface ParamHandler
     extends OptionHandler {
@@ -46,5 +42,16 @@ public interface ParamHandler
     default ParamSet getParams() {
         // todo
         throw new UnsupportedOperationException();
+    }
+
+    static <A> void setParam(ParamSet params, String name, Consumer<A> setter, Class<? extends A> clazz) {
+        List<ParamSet> paramSets = params.get(name);
+        for(ParamSet paramSet : paramSets) {
+            Object value = paramSet.getValue();
+            if(value instanceof ParamHandler) {
+                ((ParamHandler) value).setParams(paramSet);
+            }
+            setter.accept((clazz.cast(value)));
+        }
     }
 }

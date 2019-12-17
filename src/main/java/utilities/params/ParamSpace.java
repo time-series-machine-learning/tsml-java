@@ -12,8 +12,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package utilities;
+package utilities.params;
 
+import utilities.StringUtilities;
 import utilities.Utilities;
 
 import java.util.*;

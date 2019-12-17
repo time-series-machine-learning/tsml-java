@@ -1,13 +1,16 @@
 package tsml.classifiers.distance_based.distances;
 
 
-import utilities.ParamSet;
 import utilities.StringUtilities;
+import utilities.params.ParamDescriptor;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class Dtw extends AbstractDistanceMeasure {
 
@@ -189,6 +192,9 @@ public class Dtw extends AbstractDistanceMeasure {
     }
 
     protected int warpingWindow;
+    protected final ParamDescriptor<Integer> warpingWindowParam = new ParamDescriptor<>("w", this::getWarpingWindow,
+                                                                                        this::setWarpingWindow,
+                                                                                        Integer::parseInt);
 
     @Override
     public void setOptions(final String[] options) throws
@@ -207,5 +213,13 @@ public class Dtw extends AbstractDistanceMeasure {
 
     public static final String WARPING_WINDOW_FLAG = "w";
 
+    @Override public ParamSet getParams() {
+        ParamSet paramSet = new ParamSet();
+        paramSet.add(WARPING_WINDOW_FLAG, warpingWindow);
+        return paramSet;
+    }
 
+    @Override public void setParams(final ParamSet params) {
+        ParamHandler.setParam(params, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer.class);
+    }
 }

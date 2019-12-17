@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package utilities;
+package utilities.params;
 
 import utilities.StringUtilities;
 import weka.core.Utils;
@@ -23,6 +23,36 @@ public class ParamSet
     implements ParamHandler {
     private Object value;
     private Map<String, List<ParamSet>> map = new LinkedHashMap<>();
+
+//    @Override public Iterator<Param> iterator() {
+//        return new Iterator<Param>() {
+//
+//            private Iterator<Map.Entry<String, List<ParamSet>>> iterator = map.entrySet().iterator();
+//            private Iterator<ParamSet> subIterator = null;
+//            private String name;
+//
+//            @Override public boolean hasNext() {
+//                while(iterator.hasNext()) {
+//                    if(subIterator == null || !subIterator.hasNext()) {
+//                        Map.Entry<String, List<ParamSet>> entry = iterator.next();
+//                        name = entry.getKey();
+//                        subIterator = entry.getValue().iterator();
+//                    } else {
+//                        return true;
+//                    }
+//                }
+//                return false;
+//            }
+//
+//            @Override public Param next() {
+//                return new Param(name, subIterator.next());
+//            }
+//        };
+//    }
+//
+//    public static class Param {
+//
+//    }
 
     public ParamSet() {}
 
@@ -55,6 +85,10 @@ public class ParamSet
 
     public void add(String name) {
         add(name, null);
+    }
+
+    public List<ParamSet> get(String name) {
+        return map.get(name);
     }
 
     public void clear() {

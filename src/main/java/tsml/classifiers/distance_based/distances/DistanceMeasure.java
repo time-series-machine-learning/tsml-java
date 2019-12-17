@@ -1,14 +1,12 @@
 package tsml.classifiers.distance_based.distances;
 
 import utilities.Debugable;
-import utilities.ParamHandler;
+import utilities.params.ParamHandler;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
-import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
 import java.io.Serializable;
-import java.util.Enumeration;
 
 public interface DistanceMeasure
     extends Serializable,
