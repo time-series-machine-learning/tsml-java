@@ -102,6 +102,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
       */
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
     private long transformBuildTime;
+    private double singleShapeletTime=0;    //Estimate of the time to evaluate a single shapelet
     private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
     private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
     private long totalTimeLimit = 0; //Time limit for transform + classifier, fixed by user
@@ -157,6 +158,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
     public ShapeletTransformClassifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        CAWPE base= new CAWPE();
+        base.setupOriginalHESCASettings();
+        base.setEstimateOwnPerformance(false);//Defaults to false anyway
+        classifier=base;
+
     }
 
     public void setClassifier(Classifier c){
@@ -207,7 +213,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
         //transform config
         str+=",SearchType,"+searchType+",DistType,"+distType+",QualityMeasure,"+qualityMeasure+",RescaleType,"+rescaleType;
-        str+=",UseRoundRobin,"+useRoundRobin+",UseCandidatePruning,"+useCandidatePruning+",UseClassBalancing,"+useClassBalancing+",useBinaryClassValue,"+useBinaryClassValue;
+        str+=",UseRoundRobin,"+useRoundRobin+",UseCandidatePruning,"+useCandidatePruning+",UseClassBalancing,"+useClassBalancing;
         str+=",useBinaryClassValue,"+useBinaryClassValue+",minShapeletLength,"+minShapeletLength+",maxShapeletLength,"+maxShapeletlength+",ConfigSetup,"+sConfig;
         str+=","+paras;
         return str;
@@ -266,32 +272,22 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
         transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
-//        Set up the transform and classifier.
+//        Set up the transform. This should NOT be done here. However, it needs the data to configure
+//        So to do it via constructor and helper methods we would need a lambda. Lets leave it for now.
         switch(sConfig){
             case ORIGINAL:
     //Full enumeration, early abandon, CAWPE basic config, 10n shapelets in transform, capped at n*m
                 configureBakeoffShapeletTransform(data);
-                CAWPE base= new CAWPE();
-                base.setupOriginalHESCASettings();
-                base.setEstimateOwnPerformance(false);//Defaults to false anyway
-                classifier=base;
                 break;
             case BALANCED:
     //As with bakeoff, but with binary shapelets and class balancing when #classes > 2, 10n shapelets in transform, uncapped!
                 configureDawakShapeletTransform(data);
-                base= new CAWPE();
-                base.setupOriginalHESCASettings();
-                base.setEstimateOwnPerformance(false);//Defaults to false anyway
-                classifier=base;
                 break;
             case CONTRACT://Default config. This is now Dawak like, but with a capped #shapelets a rotation forest classifier
                 configureShapeletTransformTimeDefault(data);
-                base= new CAWPE();
-                base.setupOriginalHESCASettings();
-                base.setEstimateOwnPerformance(false);//Defaults to false anyway
-                classifier=base;
- //               ((RotationForest)classifier).setNumIterations(200);
         }
+//Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
+//This is done by estimating the time to evaluate a single shapelet then extrapolating
         if(transformTimeLimit>0) {
             configureTrainTimeContract(data, transformTimeLimit);
         }
@@ -305,7 +301,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         shapeletData = transform.process(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
-        debug=true;
         if(debug) {
             System.out.println("DEBUG in STC. Total transform time = "+transformBuildTime/1000000000L);
             System.out.println("DATASET: num cases "+data.numInstances()+" series length "+(data.numAttributes()-1));
@@ -326,6 +321,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
+//HERE: If the base classifier can estimate its own performance, then lets do it here
+
     }
 
     @Override
@@ -554,7 +551,8 @@ public void configureDawakShapeletTransform(Instances train){
                 System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
 
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
-            proportionToEvaluate=estimatePropOfFullSearch(n,m,time);
+//This is aarons way of doing it based on hard coded estimate of the time for a single operation
+            proportionToEvaluate= estimatePropOfFullSearchAaron(n,m,time);
             if(proportionToEvaluate==1.0) {
                 searchType = SearchType.FULL;
                 numShapeletsToEvaluate=numShapeletsInProblem;
@@ -574,7 +572,24 @@ public void configureDawakShapeletTransform(Instances train){
 
     }
 
-    private double estimatePropOfFullSearch(int n, int m, long time){
+    // Tony's way of doing it based on a timing model for predicting for a single shapelet
+//Point estimate to set prop, could use a hard coded
+//This is a bit unintuitive, should move full towards a time per shapelet model
+    private double estimatePropOfFullSearchTony(int n, int m, int totalNumShapelets, long time){
+        double nPower=1.2;
+        double mPower=1.3;
+        double scaleFactor=Math.pow(2,26);
+        singleShapeletTime=Math.pow(n,nPower)*Math.pow(m,mPower)/scaleFactor;
+        long timeRequired=(long)(singleShapeletTime*totalNumShapelets);
+        double p=1;
+        if(timeRequired>time)
+            p=timeRequired/(double)time;
+        return p;
+    }
+
+
+// Aarons way of doing it based on time for a single operation
+    private double estimatePropOfFullSearchAaron(int n, int m, long time){
 //nanoToOp is currently a hard coded to 10 nanosecs in ShapeletTransformTimingUtilities. This is a bit crap
 //HERE we can estimate it for this run
         long nanoTimeForOp=ShapeletTransformTimingUtilities.nanoToOp;

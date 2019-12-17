@@ -107,10 +107,10 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
     protected boolean useBalancedClasses;
 
     protected Comparator<Shapelet> shapeletComparator;
+//Made public for now to keep the filters
+    public SubSeqDistance subseqDistance;
 
-    protected SubSeqDistance subseqDistance;
-
-    protected NormalClassValue classValue;
+    public NormalClassValue classValue;
 
     protected ShapeletSearch searchFunction;
     protected String serialName;
