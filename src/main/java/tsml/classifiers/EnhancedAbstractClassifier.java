@@ -98,9 +98,10 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * to turn this behaviour on, setEstimateOwnPerformance(true) should be called. 
      * By default, the estimation behaviour is off regardless of ability
      * 
-     * This way, if for whatever reason a nested estimation process is explicitly wanted 
-     * (e.g. for completely bias-free estimates), that can also be achieved
-     * 
+     * This way, unnecessary work is avoided and if for whatever reason a nested
+     * estimation process is explicitly wanted (e.g. for completely bias-free estimates),
+     * that can also be achieved.
+     *
      * This variable is private and only settable via the abstract constructor, 
      * such that all subclasses must set it at initialisation.
      * 

@@ -950,9 +950,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-  //      collateSimulatorResults();
+        collateSimulatorResults();
    //     dictionarySimulatorChangingSeriesLength();
-      dictionarySimulatorChangingTrainSize();
+  //    dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
         smoothingTests();
@@ -1165,10 +1165,10 @@ public class SimulationExperiments {
 
     public static void collateSimulatorResults(){
         String type="Dictionary";
-        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments2\\";
+        String path="Z:\\Results Working Area\\"+type+"Based\\\\SimulationExperimentsMemMonitor\\";
         File f= new File(path+type+"Summary");
         f.mkdirs();
-        String[] files={"mem","testAcc","testTime","trainTime"};
+        String[] files={"testAcc","testTime","trainTime","mem"};
         int numClassifiers=4;
         OutFile[] out=new OutFile[files.length];
         OutFile[] outDiffs=new OutFile[files.length];
@@ -1183,7 +1183,7 @@ public class SimulationExperiments {
         for(int i=0;i<files.length;i++){
             String s=files[i];
             ArrayList<double[]> medians=new ArrayList<>();
-            for(int trainSize=20;trainSize<=400;trainSize+=20) {
+            for(int trainSize=50;trainSize<=1000;trainSize+=50) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "TrainSize" + trainSize + "\\" + s + trainSize + ".csv";
@@ -1191,20 +1191,36 @@ public class SimulationExperiments {
                 if (!f.exists()) {
                     System.out.println("File " + s + trainSize + " does not exist on" + fPath+"  skipping " + trainSize);
                     continue;
+
                 }
+
                 //How many have we got?
                 InFile inf = new InFile(fPath);
                 int l = inf.countLines();
+                System.out.println(" File = "+fPath);
                 System.out.println(trainSize + " has " + l + " lines");
                 inf = new InFile(fPath);
                 double[][] vals = new double[l][numClassifiers];
                 double[][] diffs = new double[l][numClassifiers-1];
-                for (int j = 0; j < l; j++) {
-                    String[] line = inf.readLine().split(",");
-                    vals[j][0] = Double.parseDouble(line[1]);
-                    for (int k = 1; k < numClassifiers; k++) {
-                        vals[j][k] = Double.parseDouble(line[k + 1]);
-                        diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                if(files[i].equals("mem"))
+                {
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[6]);
+                        for (int k = 1; k <numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 6]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                else{
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[1]);
+                        for (int k = 1; k < numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 1]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
                     }
                 }
                 //Find means
@@ -1277,7 +1293,7 @@ public class SimulationExperiments {
                 outDiffs[i].writeString("\n");
             }
 
-            for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
+            for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
@@ -1293,12 +1309,25 @@ public class SimulationExperiments {
                 inf = new InFile(fPath);
                 double[][] vals = new double[l][numClassifiers];
                 double[][] diffs = new double[l][numClassifiers-1];
-                for (int j = 0; j < l; j++) {
-                    String[] line = inf.readLine().split(",");
-                    vals[j][0] = Double.parseDouble(line[1]);
-                    for (int k = 1; k < numClassifiers; k++) {
-                        vals[j][k] = Double.parseDouble(line[k + 1]);
-                        diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                if(files[i].equals("mem"))
+                {
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[6]);
+                        for (int k = 1; k <numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 6]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                else{
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[1]);
+                        for (int k = 1; k < numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 1]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
                     }
                 }
                 //Find means
