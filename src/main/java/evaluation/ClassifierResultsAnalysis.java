@@ -477,7 +477,7 @@ public class ClassifierResultsAnalysis {
         dsetVals = util_order(dsetVals, ordering);
         stddevsFoldVals = util_order(stddevsFoldVals, ordering);
 
-        if (evalSet.equalsIgnoreCase("TEST") || metric.equals(PerformanceMetric.buildTime)) {
+        if (evalSet.equalsIgnoreCase("TEST") || metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.buildTimeBenchmarked)) {
             //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
             String cdFolder = expRootDirectory + cdDiaFolderName;
             (new File(cdFolder)).mkdirs();
@@ -953,7 +953,10 @@ public class ClassifierResultsAnalysis {
 
             String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? timingDiaFolderName_benchmark : timingDiaFolderName_raw) + "/";
 
-            String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ? testLabel : trainLabel;
+            String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ||
+                            metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(benchmarkedTestTimeMetric)
+                    ? testLabel
+                    : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
             proxy.eval("timingsLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "');");
         }

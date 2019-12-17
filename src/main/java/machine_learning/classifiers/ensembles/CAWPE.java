@@ -444,7 +444,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod17/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod18/";
         
         //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
@@ -528,9 +528,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(true).
-            setBuildMatlabDiagrams(true).
+//            setBuildMatlabDiagrams(true).
             setUseAccuracyOnly().
-//            setBuildMatlabDiagrams(false).
+            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
@@ -594,6 +594,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
+//                        exp.performTimingBenchmark = true;
                         Experiments.runExperiment(exp,data[0],data[1],c,predictions);
                     }
                 }
