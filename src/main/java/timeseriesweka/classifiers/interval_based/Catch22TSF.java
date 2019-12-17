@@ -35,72 +35,72 @@ import java.util.function.Function;
 
 import static utilities.ClusteringUtilities.zNormalise;
 
-/** 
-  <!-- globalinfo-start -->
-* Implementation of Time Series Forest
+/**
+ <!-- globalinfo-start -->
+ * Implementation of Time Series Forest
  Time Series Forest (TimeSeriesForest) Deng 2013: 
-* buildClassifier
+ * buildClassifier
  * Overview: Input n series length m
  * for each tree
  *      sample sqrt(m) intervals
  *      find three features on each interval: mean, standard deviation and slope
  *      concatenate to new feature set
  *      build tree on new feature set
-* classifyInstance
-*   ensemble the trees with majority vote
- 
-* This implementation may deviate from the original, as it is using the same
-* structure as the weka random forest. In the paper the splitting criteria has a 
-* tiny refinement. Ties in entropy gain are split with a further stat called margin 
-* that measures the distance of the split point to the closest data. 
-* So if the split value for feature 
-* f=f_1,...f_n is v the margin is defined as
-*   margin= min{ |f_i-v| } 
-* for simplicity of implementation, and for the fact when we did try it and it made 
-* no difference, we have not used this. Note also, the original R implementation 
-* may do some sampling of cases
- 
-* Update 1:
-* * A few changes made to enable testing refinements. 
-*1. general baseClassifier rather than a hard coded RandomTree. We tested a few 
-*  alternatives, the summary results NEED WRITING UP
-*  Summary:
-*  Base Classifier: 
-*       a) C.45 (J48) significantly worse than random tree.  
-*       b) CAWPE tbc
-*       c) CART tbc
-* 2. Added setOptions to allow parameter tuning. Tuning on parameters
-*       #trees, #features 
+ * classifyInstance
+ *   ensemble the trees with majority vote
+
+ * This implementation may deviate from the original, as it is using the same
+ * structure as the weka random forest. In the paper the splitting criteria has a
+ * tiny refinement. Ties in entropy gain are split with a further stat called margin
+ * that measures the distance of the split point to the closest data.
+ * So if the split value for feature
+ * f=f_1,...f_n is v the margin is defined as
+ *   margin= min{ |f_i-v| }
+ * for simplicity of implementation, and for the fact when we did try it and it made
+ * no difference, we have not used this. Note also, the original R implementation
+ * may do some sampling of cases
+
+ * Update 1:
+ * * A few changes made to enable testing refinements.
+ *1. general baseClassifier rather than a hard coded RandomTree. We tested a few
+ *  alternatives, the summary results NEED WRITING UP
+ *  Summary:
+ *  Base Classifier:
+ *       a) C.45 (J48) significantly worse than random tree.
+ *       b) CAWPE tbc
+ *       c) CART tbc
+ * 2. Added setOptions to allow parameter tuning. Tuning on parameters
+ *       #trees, #features
  <!-- globalinfo-end -->
  <!-- technical-bibtex-start -->
-* Bibtex
-* <pre>
-* article{deng13forest,
-* author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
-* title = {A time series forest for classification and feature extraction},
-* journal = {Information Sciences},
-* volume = {239},
-* year = {2013}
-*}
-</pre>
-<!-- technical-bibtex-end -->
+ * Bibtex
+ * <pre>
+ * article{deng13forest,
+ * author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
+ * title = {A time series forest for classification and feature extraction},
+ * journal = {Information Sciences},
+ * volume = {239},
+ * year = {2013}
+ *}
+ </pre>
+ <!-- technical-bibtex-end -->
  <!-- options-start -->
  * Valid options are: <p/>
- * 
+ *
  * <pre> -T
  *  set number of trees in the ensemble.</pre>
- * 
+ *
  * <pre> -I
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
- 
-* author ajb
-* date 7/10/15
-* update1 14/2/19
-* update2 13/9/19: Adjust to allow three methods for estimating test accuracy
 
-**/
- 
+ * author ajb
+ * date 7/10/15
+ * update1 14/2/19
+ * update2 13/9/19: Adjust to allow three methods for estimating test accuracy
+
+ **/
+
 public class Catch22TSF extends EnhancedAbstractClassifier
         implements TechnicalInformationHandler, Tuneable{
 //Static defaults
@@ -109,6 +109,17 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     public int experimentalOptions = 0;
     public int intSelection = 0;
     public boolean norm = false;
+    public boolean attSubsample = false;
+    public int attSubsampleNum = 16;
+
+    public int numAttributes = 22;
+    public ArrayList<Integer>[] subsampleAtts;
+
+    public int gsNumIntervals;
+    public int gsNumTrees;
+    public int gsRandomTreeK;
+    public int gsAttSubsamplePerTree;
+    public int gsBagging;
 
 
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -135,23 +146,23 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     private Instances testHolder;
 
 
-/** voteEnsemble determines whether to aggregate classifications or
+    /** voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting */
     private boolean voteEnsemble=true;
 
- /** Flags and data required if Bagging **/
+    /** Flags and data required if Bagging **/
     private boolean bagging=false; //Use if we want an OOB estimate
     private boolean[][] inBag;
     private int[] oobCounts;
     private double[][] trainDistributions;
 
-   /** If trainAccuracy is required, there are three mechanisms to obtain it:
-    * 1. bagging == true: use the OOB accuracy from the final model
-    * 2. bagging == false,estimator=CV: do a 10x CV on the train set with a clone
-    * of this classifier
-    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB
-    * accuracy estimate
-    */
+    /** If trainAccuracy is required, there are three mechanisms to obtain it:
+     * 1. bagging == true: use the OOB accuracy from the final model
+     * 2. bagging == false,estimator=CV: do a 10x CV on the train set with a clone
+     * of this classifier
+     * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB
+     * accuracy estimate
+     */
 //    boolean findTrainPredictions=false;
     enum EstimatorMethod{CV,OOB}
     private EstimatorMethod estimator= EstimatorMethod.CV;
@@ -169,96 +180,96 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setSeed(s);
     }
-/**
- * 
- * @param c a base classifier constructed elsewhere and cloned into ensemble
- */   
+    /**
+     *
+     * @param c a base classifier constructed elsewhere and cloned into ensemble
+     */
     public void setBaseClassifier(Classifier c){
         base=c;
     }
     public void setBagging(boolean b){
         bagging=b;
     }
- 
-/**
- * ok,  two methods are a bit pointless, experimenting with ensemble method
- * @param b boolean to set vote ensemble
- */   
+
+    /**
+     * ok,  two methods are a bit pointless, experimenting with ensemble method
+     * @param b boolean to set vote ensemble
+     */
     public void setVoteEnsemble(boolean b){
         voteEnsemble=b;
     }
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble=!b;
     }
-     
-/**
- * Perhaps make this coherent with setOptions(String[] ar)?
- * @return String written to results files
- */
+
+    /**
+     * Perhaps make this coherent with setOptions(String[] ar)?
+     * @return String written to results files
+     */
     @Override
     public String getParameters() {
         String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
         if(base instanceof RandomTree)
-           temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
+            temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
         return temp;
- 
+
     }
     public void setNumTrees(int t){
         numClassifiers=t;
     }
-     
-     
-//<editor-fold defaultstate="collapsed" desc="results reported in Info Sciences paper">        
+
+
+    //<editor-fold defaultstate="collapsed" desc="results reported in Info Sciences paper">
     static double[] reportedResults={
-        0.2659,
-        0.2302,
-        0.2333,
-        0.0256,
-        0.2537,
-        0.0391,
-        0.0357,
-        0.2897,
-        0.2,
-        0.2436,
-        0.049,
-        0.08,
-        0.0557,
-        0.2325,
-        0.0227,
-        0.101,
-        0.1543,
-        0.0467,
-        0.552,
-        0.6818,
-        0.0301,
-        0.1803,
-        0.2603,
-        0.0448,
-        0.2237,
-        0.119,
-        0.0987,
-        0.0865,
-        0.0667,
-        0.4339,
-        0.233,
-        0.1868,
-        0.0357,
-        0.1056,
-        0.1116,
-        0.0267,
-        0.02,
-        0.1177,
-        0.0543,
-        0.2102,
-        0.2876,
-        0.2624,
-        0.0054,
-        0.3793,
-        0.1513
+            0.2659,
+            0.2302,
+            0.2333,
+            0.0256,
+            0.2537,
+            0.0391,
+            0.0357,
+            0.2897,
+            0.2,
+            0.2436,
+            0.049,
+            0.08,
+            0.0557,
+            0.2325,
+            0.0227,
+            0.101,
+            0.1543,
+            0.0467,
+            0.552,
+            0.6818,
+            0.0301,
+            0.1803,
+            0.2603,
+            0.0448,
+            0.2237,
+            0.119,
+            0.0987,
+            0.0865,
+            0.0667,
+            0.4339,
+            0.233,
+            0.1868,
+            0.0357,
+            0.1056,
+            0.1116,
+            0.0267,
+            0.02,
+            0.1177,
+            0.0543,
+            0.2102,
+            0.2876,
+            0.2624,
+            0.0054,
+            0.3793,
+            0.1513
     };
-      //</editor-fold>  
-     
-//<editor-fold defaultstate="collapsed" desc="problems used in Info Sciences paper">   
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="problems used in Info Sciences paper">
     static String[] problems={
             "FiftyWords",
             "Adiac",
@@ -305,13 +316,13 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             "Wafer",
             "WordsSynonyms",
             "Yoga"
-        };
-      //</editor-fold>  
-  
- /**
-  * paper defining TSF
-  * @return TechnicalInformation
-  */  
+    };
+    //</editor-fold>
+
+    /**
+     * paper defining TSF
+     * @return TechnicalInformation
+     */
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
@@ -322,22 +333,22 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         result.setValue(TechnicalInformation.Field.JOURNAL, "Information Sciences");
         result.setValue(TechnicalInformation.Field.VOLUME, "239");
         result.setValue(TechnicalInformation.Field.PAGES, "142-153");
- 
+
         return result;
-  }
+    }
 
 
-/**
- * main buildClassifier
- * @param data
- * @throws Exception 
- */     
+    /**
+     * main buildClassifier
+     * @param data
+     * @throws Exception
+     */
     @Override
     public void buildClassifier(Instances data) throws Exception {
 /** Build Stage: 
  *  Builds the final classifier with or without bagging.  
- */       
-    // can classifier handle the data?
+ */
+        // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
 
@@ -345,27 +356,109 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         //reduction of num intervals
         //random tree k change
         //random catch22 attribute subsample
+        //normalisation of intervals
+        //c4.5
 
-        if (experimentalOptions == 1){
-            numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
-            //numIntervals =  (int)(Math.sqrt(data.numAttributes()-1)/2);
-            //numIntervals =  (int)Math.round(Math.pow(Math.sqrt(data.numAttributes()-1), 0.85));
-            intSelection = 1;
-            minIntervalLength = 12;
+        switch (experimentalOptions){
+            case 1:
+                numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+                //numIntervals =  (int)(Math.sqrt(data.numAttributes()-1)/2);
+                //numIntervals =  (int)Math.round(Math.pow(Math.sqrt(data.numAttributes()-1), 0.85));
+                intSelection = 1;
+                minIntervalLength = 12;
 
-            if (minIntervalLength > (data.numAttributes()-1)/numIntervals){
-                minIntervalLength = (data.numAttributes()-1)/numIntervals;
-            }
+                if (minIntervalLength > (data.numAttributes()-1)/numIntervals){
+                    minIntervalLength = (data.numAttributes()-1)/numIntervals;
+                }
+                break;
+            case 2:
+                //+basic stats
+                numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+                numAttributes = 25;
+                break;
+            case 99:
+                if (gsNumIntervals == 0){
+                    numIntervals = numIntervalsFinder.apply(data.numAttributes()-1);
+                }
+                else if (gsNumIntervals == 1){
+                    numIntervals = (int)Math.round(Math.pow(Math.sqrt(data.numAttributes()-1), 0.85));
+                }
+                else if (gsNumIntervals == 2){
+                    numIntervals = (int)(Math.sqrt(data.numAttributes()-1)/2);
+                }
+
+                if (gsNumTrees == 0){
+                    numClassifiers = 500;
+                }
+                else if (gsNumTrees == 1){
+                    numClassifiers = 250;
+                }
+                else if (gsNumTrees == 2){
+                    numClassifiers = 100;
+                }
+
+                if (gsAttSubsamplePerTree == 0){
+                    attSubsample = false;
+                }
+                else if (gsAttSubsamplePerTree == 1){
+                    attSubsample = true;
+                    attSubsampleNum = 16;
+                }
+                else if (gsAttSubsamplePerTree == 2){
+                    attSubsample = true;
+                    attSubsampleNum = 10;
+                }
+
+                if (gsBagging == 0){
+                    bagging = false;
+                }
+                else if (gsBagging == 1){
+                    bagging = true;
+                }
+                break;
+            case 101:
+            case 102:
+            case 103:
+            case 104:
+            case 105:
+            case 106:
+            case 107:
+            case 108:
+            case 109:
+            case 110:
+            case 111:
+            case 112:
+            case 113:
+            case 114:
+            case 115:
+            case 116:
+            case 118:
+            case 119:
+            case 120:
+            case 121:
+            case 122:
+                //leave one feature out
+                numAttributes = 21;
+                numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+                break;
+            default:
+                numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+                break;
         }
-        else{
-            numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+
+        if (attSubsample){
+            subsampleAtts = new ArrayList[numClassifiers];
+
+            if (attSubsampleNum < numAttributes){
+                numAttributes = attSubsampleNum;
+            }
         }
 
 //Set up instances size and format. 
-        trees=new AbstractClassifier[numClassifiers];        
+        trees=new AbstractClassifier[numClassifiers];
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
-        for(int j=0;j<numIntervals*22;j++){
+        for(int j=0;j<numIntervals*numAttributes;j++){
             name = "F"+j;
             atts.add(new Attribute(name));
         }
@@ -383,22 +476,34 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             in.setValue(result.numAttributes()-1,data.instance(i).classValue());
             result.add(in);
         }
-         
-        testHolder =new Instances(result,0);       
+
+        testHolder =new Instances(result,0);
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
         if(base instanceof RandomTree){
-            ((RandomTree) base).setKValue(result.numAttributes()-1);
+
+            if (experimentalOptions == 99){
+                if (gsRandomTreeK == 0){
+                    ((RandomTree) base).setKValue(result.numAttributes() - 1);
+                }
+                else if (gsRandomTreeK == 1){
+                    ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
+                }
+            }
+            else {
+                ((RandomTree) base).setKValue(result.numAttributes() - 1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-        }        
+            }
+
+        }
         /** Set up for Bagging if required **/
         if(bagging){
-           inBag=new boolean[numClassifiers][];
-           trainDistributions= new double[data.numInstances()][data.numClasses()];
-           oobCounts=new int[data.numInstances()];
+            inBag=new boolean[numClassifiers][];
+            trainDistributions= new double[data.numInstances()][data.numClasses()];
+            oobCounts=new int[data.numInstances()];
         }
-         
+
         /** For each base classifier 
          *      generate random intervals
          *      do the transfrorms
@@ -406,7 +511,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
          * */
         intervals =new int[numClassifiers][][];
         for(int i=0;i<numClassifiers;i++){
-        //1. Select random intervals for tree i
+            //1. Select random intervals for tree i
 
             if (intSelection == 1) {
                 intervals[i] = new int[numIntervals][2];  //Start and end
@@ -463,12 +568,66 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 }
             }
 
-        //2. Generate and store attributes            
-            for(int j=0;j<numIntervals;j++){
+            int[] instInclusions = new int[data.numInstances()];
+            if (bagging){
+                for (int n = 0; n < data.numInstances(); n++){
+                    instInclusions[rand.nextInt(data.numInstances())]++;
+                }
+            }
+            else{
+                for (int n = 0; n < data.numInstances(); n++){
+                    instInclusions[n]++;
+                }
+            }
+
+            if (attSubsample){
+                subsampleAtts[i] = new ArrayList();
+
+                for (int n = 0; n < numAttributes; n++){
+                    subsampleAtts[i].add(n);
+                }
+
+                while (subsampleAtts[i].size() > attSubsampleNum){
+                    subsampleAtts[i].remove(rand.nextInt(subsampleAtts[i].size()));
+                }
+            }
+
+            int instIdx = 0;
+            int lastIdx = -1;
+            //2. Generate and store attributes
+            for(int k=0;k<data.numInstances();k++){
                 //For each instance
-                for(int k=0;k<data.numInstances();k++){
+                double[] series;
+                boolean sameInst = false;
+                while (true){
+                    if (instInclusions[instIdx] == 0){
+                        instIdx++;
+                    }
+                    else{
+                        series = data.instance(instIdx).toDoubleArray();
+                        instInclusions[instIdx]--;
+
+                        if (instIdx == lastIdx){
+                            result.set(k, result.instance(k-1));
+                            sameInst = true;
+                        }
+                        else{
+                            lastIdx = instIdx;
+                        }
+
+                        break;
+                    }
+                }
+
+                if (sameInst) continue;
+
+                if (bagging){
+                    result.instance(k).setValue(result.numAttributes()-1,data.instance(instIdx).classValue());
+                }
+
+                for(int j=0;j<numIntervals;j++){
                     //extract the interval
-                    double[] series=data.instance(k).toDoubleArray();
+
 //                    FeatureSet f= new FeatureSet();
 //                    f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
 //
@@ -476,54 +635,88 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //                    result.instance(k).setValue(j*3+1, f.stDev);
 //                    result.instance(k).setValue(j*3+2, f.slope);
 
-                    double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1]+1);
-                    if (norm){
+                    double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1] + 1);
+                    if (norm) {
                         zNormalise(interval);
                     }
-                    double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
-                    for (int g = 0; g < 22; g++) {
-                        result.instance(k).setValue(j*22+g, catch22[g]);
+                    if (experimentalOptions > 100) {
+                        int offset = 0;
+                        Catch22Classifier c22 = new Catch22Classifier();
+
+                        for (int g = 0; g < 22; g++) {
+                            if (experimentalOptions - 101 == g){
+                                offset = 1;
+                                continue;
+                            }
+
+                            result.instance(k).setValue(j * numAttributes + g - offset, c22.getSummaryStatByIndex(g, k, interval));
+                        }
+                    }
+                    else if (attSubsample){
+                        Catch22Classifier c22 = new Catch22Classifier();
+
+                        for (int g = 0; g < subsampleAtts[i].size(); g++){
+                            result.instance(k).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts[i].get(g), k, interval));
+                        }
+                    }
+                    else{
+                        double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+
+                        for (int g = 0; g < 22; g++) {
+                            result.instance(k).setValue(j * numAttributes + g, catch22[g]);
+                        }
+
+                        if (experimentalOptions == 2) {
+                            TSF.FeatureSet f = new TSF.FeatureSet();
+                            f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
+                            result.instance(k).setValue(j * numAttributes + 22, f.mean);
+                            result.instance(k).setValue(j * numAttributes + 23, f.stDev);
+                            result.instance(k).setValue(j * numAttributes + 24, f.slope);
+                        }
                     }
                 }
             }
-        //3. Create and build tree using all the features. Feature selection
-            trees[i]=AbstractClassifier.makeCopy(base); 
+
+            if (bagging){
+                result.randomize(rand);
+            }
+
+            //3. Create and build tree using all the features. Feature selection
+            trees[i]=AbstractClassifier.makeCopy(base);
             if(seedClassifier && trees[i] instanceof Randomizable)
                 ((Randomizable)trees[i]).setSeed(seed*(i+1));
-            if(bagging){
-                inBag[i] = new boolean[result.numInstances()];
-                Instances bagData = result.resampleWithWeights(rand, inBag[i]);
-                trees[i].buildClassifier(bagData);
-                if(getEstimateOwnPerformance()){
-                    for(int j=0;j<result.numInstances();j++){
-                        if(inBag[i][j])
-                            continue;
-                        double[] newProbs = trees[i].distributionForInstance(result.instance(j));
-                        oobCounts[j]++;
-                        for(int k=0;k<newProbs.length;k++)
-                            trainDistributions[j][k]+=newProbs[k];
-                         
-                    }
-                }
+
+            trees[i].buildClassifier(result);
+
+            if(bagging && getEstimateOwnPerformance()){
+//                for(int j=0;j<result.numInstances();j++){
+//                    if(inBag[i][j])
+//                        continue;
+//                    double[] newProbs = trees[i].distributionForInstance(result.instance(j));
+//                    oobCounts[j]++;
+//                    for(int k=0;k<newProbs.length;k++)
+//                        trainDistributions[j][k]+=newProbs[k];
+//
+//                }
+
+                throw new Exception("not yet supported");
             }
-            else
-                trees[i].buildClassifier(result);
         }
         long t2=System.nanoTime();
 /** Estimate accuracy stage: Three scenarios
  * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
-*  If we built on all data (bagging ==false) we estimate either 
-*  2. with a 10xCV or (if 
-*  3. Build a bagged model simply to get the estimate. 
- */       
+ *  If we built on all data (bagging ==false) we estimate either
+ *  2. with a 10xCV or (if
+ *  3. Build a bagged model simply to get the estimate.
+ */
         if(getEstimateOwnPerformance()){
-             if(bagging){
-            // Use bag data. Normalise probs
+            if(bagging){
+                // Use bag data. Normalise probs
                 long est1=System.nanoTime();
                 double[] preds=new double[data.numInstances()];
                 double[] actuals=new double[data.numInstances()];
-                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
+                long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
                 for(int j=0;j<data.numInstances();j++){
                     long predTime = System.nanoTime();
                     for(int k=0;k<trainDistributions[j].length;k++)
@@ -552,23 +745,23 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 int numFolds=setNumberOfFolds(data);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 if (seedClassifier)
-                  cv.setSeed(seed*5);
+                    cv.setSeed(seed*5);
                 cv.setNumFolds(numFolds);
                 Catch22TSF tsf=new Catch22TSF();
                 tsf.copyParameters(this);
                 if (seedClassifier)
-                   tsf.setSeed(seed*100);
+                    tsf.setSeed(seed*100);
                 tsf.setEstimateOwnPerformance(false);
                 trainResults=cv.evaluate(tsf,data);
                 long est2=System.nanoTime();
                 trainResults.setErrorEstimateTime(est2-est1);
                 trainResults.setClassifierName("TSFCV");
                 trainResults.setParas(getParameters());
-                 
+
             }
             else if(estimator== EstimatorMethod.OOB){
-               /** Build a single new TSF using Bagging, and extract the estimate from this
-                */
+                /** Build a single new TSF using Bagging, and extract the estimate from this
+                 */
                 long est1=System.nanoTime();
                 Catch22TSF tsf=new Catch22TSF();
                 tsf.copyParameters(this);
@@ -582,7 +775,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 trainResults.setClassifierName("TSFOOB");
                 trainResults.setParas(getParameters());
             }
-              
+
             System.out.println("Build time ="+trainResults.getBuildTime());
             if(trainFoldPath!=""){
                 trainResults.writeFullResultsToFile(trainFoldPath);
@@ -590,12 +783,12 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         }
         trainResults.setBuildTime(t2-t1);
     }
-     
+
     private void copyParameters(Catch22TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
-         
-         
+
+
     }
     public void setEstimatorMethod(String str){
         String s=str.toUpperCase();
@@ -606,11 +799,11 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         else
             throw new UnsupportedOperationException("Unknown estimator methof in TSF = "+str);
     }
-/**
- * @param ins to classifier
- * @return array of doubles: probability of each class 
- * @throws Exception 
- */   
+    /**
+     * @param ins to classifier
+     * @return array of doubles: probability of each class
+     * @throws Exception
+     */
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] d=new double[ins.numClasses()];
@@ -629,12 +822,42 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 if (norm){
                     zNormalise(interval);
                 }
-                double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
-                for (int g = 0; g < 22; g++) {
-                    testHolder.instance(0).setValue(j*22+g, catch22[g]);
+                if (experimentalOptions > 100) {
+                    int offset = 0;
+                    Catch22Classifier c22 = new Catch22Classifier();
+
+                    for (int g = 0; g < 22; g++) {
+                        if (experimentalOptions - 101 == g){
+                            offset = 1;
+                            continue;
+                        }
+
+                        testHolder.instance(0).setValue(j * numAttributes + g - offset, c22.getSummaryStatByIndex(g, 0, interval));
+                    }
                 }
+                else if (attSubsample){
+                    Catch22Classifier c22 = new Catch22Classifier();
 
+                    for (int g = 0; g < subsampleAtts[i].size(); g++){
+                        testHolder.instance(0).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts[i].get(g), 0, interval));
+                    }
+                }
+                else {
+                    double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+
+                    for (int g = 0; g < 22; g++) {
+                        testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
+                    }
+
+                    if (experimentalOptions == 2) {
+                        TSF.FeatureSet f = new TSF.FeatureSet();
+                        f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
+                        testHolder.instance(0).setValue(j * numAttributes + 22, f.mean);
+                        testHolder.instance(0).setValue(j * numAttributes + 23, f.stDev);
+                        testHolder.instance(0).setValue(j * numAttributes + 24, f.slope);
+                    }
+                }
             }
             if(voteEnsemble){
                 int c=(int)trees[i].classifyInstance(testHolder.instance(0));
@@ -652,11 +875,11 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             d[i]=d[i]/sum;
         return d;
     }
-/**
- * @param ins
- * @return
- * @throws Exception 
- */
+    /**
+     * @param ins
+     * @return
+     * @throws Exception
+     */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
         double[] d=distributionForInstance(ins);
@@ -666,22 +889,22 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 max=i;
         return (double)max;
     }
-  /**
-   * Parses a given list of options to set the parameters of the classifier.
-   * We use this for the tuning mechanism, setting parameters through setOptions 
-   <!-- options-start -->
-   * Valid options are: <p/>
-   * <pre> -T
-   * Number of trees.</pre>
-   * 
-   * <pre> -I
-   * Number of intervals to fit.</pre>
-   * 
-   <!-- options-end -->
-   *
-   * @param options the list of options as an array of strings
-   * @throws Exception if an option is not supported
-   */
+    /**
+     * Parses a given list of options to set the parameters of the classifier.
+     * We use this for the tuning mechanism, setting parameters through setOptions
+     <!-- options-start -->
+     * Valid options are: <p/>
+     * <pre> -T
+     * Number of trees.</pre>
+     *
+     * <pre> -I
+     * Number of intervals to fit.</pre>
+     *
+     <!-- options-end -->
+     *
+     * @param options the list of options as an array of strings
+     * @throws Exception if an option is not supported
+     */
     @Override
     public void setOptions(String[] options) throws Exception{
 //        System.out.print("TSF para sets ");
@@ -693,7 +916,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             numClassifiers = Integer.parseInt(numTreesString);
         else
             numClassifiers = DEFAULT_NUM_CLASSIFIERS;
-         
+
         String numFeaturesString=Utils.getOption('I', options);
 //Options here are a double between 0 and 1 (proportion of features), a text 
 //string sqrt or log, or an integer number 
@@ -704,16 +927,16 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 else if(numFeaturesString.equals("log"))
                     numIntervalsFinder = (numAtts) -> (int) Utils.log2(numAtts) + 1;
                 else{
-                        double d=Double.parseDouble(numFeaturesString);
-                        if(d<=0)
-                            throw new Exception("proportion of features of of range 0 to 1");
-                        if(d<=1)
-                            numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
-                        else
-                            numIntervalsFinder = (numAtts) -> (int)(d);
- 
+                    double d=Double.parseDouble(numFeaturesString);
+                    if(d<=0)
+                        throw new Exception("proportion of features of of range 0 to 1");
+                    if(d<=1)
+                        numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
+                    else
+                        numIntervalsFinder = (numAtts) -> (int)(d);
+
 //                        System.out.println("Proportion/number of intervals = "+d);
-                 }
+                }
             }catch(Exception e){
                 System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
                 System.err.print("Value"+numIntervalsFinder+" Permissable values: sqrt, log, or a double range 0...1");
@@ -723,8 +946,8 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         else
             System.out.println("Unable to read number of intervals, not set");
     }
- 
- 
+
+
 ////Nested class to store three simple summary features used to construct train data
 //    public static class FeatureSet{
 //        public static boolean findSkew=false;
@@ -791,12 +1014,12 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //            return "mean="+mean+" stdev = "+stDev+" slope ="+slope;
 //        }
 //    }
-     
+
     public static void main(String[] arg) throws Exception{
-        
+
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
-        
+
 // Basic correctness tests, including setting paras through 
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
 //        String resultsLocation="C:\\temp\\";
@@ -808,7 +1031,8 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         Catch22TSF tsf = new Catch22TSF();
         tsf.setSeed(0);
-        tsf.experimentalOptions = 1;
+        tsf.attSubsample = true;
+        tsf.experimentalOptions = 0;
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
@@ -825,25 +1049,25 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
-         
-         
+
+
     }
-     
+
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
-   //TUNED TSC Classifiers
-  /* Valid options are: <p/>
-   * <pre> -T Number of trees.</pre>
-   * <pre> -I Number of intervals to fit.</pre>
-   */
+        //TUNED TSC Classifiers
+        /* Valid options are: <p/>
+         * <pre> -T Number of trees.</pre>
+         * <pre> -I Number of intervals to fit.</pre>
+         */
         ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
         ps.addParameter("-T", numTrees);
-        String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"}; 
+        String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
         ps.addParameter("-I", numInterv);
         return ps;
     }
-     
-     
+
+
 }
   

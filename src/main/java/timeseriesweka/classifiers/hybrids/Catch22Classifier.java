@@ -44,6 +44,15 @@ public class Catch22Classifier extends AbstractClassifier {
 
     private Instances header;
 
+    //for summary stat by index
+    private int currentSeriesIndex = -1;
+    private double idxMin;
+    private double idxMax;
+    private double idxMean;
+    private FFT.Complex[] idxFFT;
+    private double[] idxAC;
+
+
     public Catch22Classifier(){}
 
     public void setClassifier(Classifier cls){
@@ -122,6 +131,7 @@ public class Catch22Classifier extends AbstractClassifier {
     public static double[] singleTransform(double[] arr, double classVal){
         double[] featureSet = new double[23];
 
+        //can reduce amount of computation by pre-computing stats and transforms
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
         for(int i = 0; i < arr.length; i++) {
@@ -185,6 +195,145 @@ public class Catch22Classifier extends AbstractClassifier {
         }
 
         return featureSet;
+    }
+
+    public double getSummaryStatByIndex(int summaryStatIndex, int seriesIndex, double[] series) throws Exception {
+        if (seriesIndex != currentSeriesIndex){
+            currentSeriesIndex = seriesIndex;
+            idxMin = Double.MAX_VALUE;
+            idxMax = Double.MIN_VALUE;
+            idxMean = Double.MIN_VALUE;
+            idxFFT = null;
+            idxAC = null;
+        }
+
+        switch(summaryStatIndex){
+            case 0:
+            case 1:
+            case 11:
+                if (idxMin == Double.MAX_VALUE) {
+                    for (int i = 0; i < series.length; i++) {
+                        if (series[i] < idxMin) {
+                            idxMin = series[i];
+                        }
+                        if (series[i] > idxMax) {
+                            idxMax = series[i];
+                        }
+                    }
+                }
+                break;
+            case 2:
+                if (idxMean == Double.MIN_VALUE){
+                    idxMean = mean(series);
+                }
+                break;
+            case 7:
+            case 8:
+                if (idxFFT == null){
+                    if (idxMean == Double.MIN_VALUE){
+                        idxMean = mean(series);
+                    }
+
+                    int length = (int)FFT.MathsPower2.roundPow2((float)series.length);
+                    if (length < series.length) length *= 2;
+                    idxFFT = new FFT.Complex[length];
+                    for (int i = 0; i < series.length; i++){
+                        idxFFT[i] = new FFT.Complex(series.length-idxMean, 0);
+                    }
+                    for (int i = series.length; i < length; i++){
+                        idxFFT[i] = new FFT.Complex(0,0);
+                    }
+                    FFT t = new FFT();
+                    t.fft(idxFFT, length);
+                }
+                break;
+            case 5:
+            case 6:
+            case 12:
+            case 16:
+            case 17:
+            case 20:
+                if (idxAC == null) {
+                    if (idxFFT == null){
+                        if (idxMean == Double.MIN_VALUE){
+                            idxMean = mean(series);
+                        }
+
+                        int length = (int)FFT.MathsPower2.roundPow2((float)series.length);
+                        if (length < series.length) length *= 2;
+                        idxFFT = new FFT.Complex[length];
+                        for (int i = 0; i < series.length; i++){
+                            idxFFT[i] = new FFT.Complex(series.length-idxMean, 0);
+                        }
+                        for (int i = series.length; i < length; i++){
+                            idxFFT[i] = new FFT.Complex(0,0);
+                        }
+                        FFT t = new FFT();
+                        t.fft(idxFFT, length);
+                    }
+
+                    FFT.Complex[] fftClone = new FFT.Complex[idxFFT.length];
+                    for (int i = 0; i < idxFFT.length; i++) {
+                        fftClone[i] = (FFT.Complex) idxFFT[i].clone();
+                    }
+                    idxAC = autoCorr(series, fftClone);
+                }
+                break;
+        }
+
+        switch(summaryStatIndex){
+            case 0: return histMode5DN(series, idxMin, idxMax);
+            case 1: return histMode10DN(series, idxMin, idxMax);
+            case 2: return binaryStatsMeanLongstretch1SB(series, idxMean);
+            case 3: return outlierIncludeP001mdrmdDN(series);
+            case 4: return outlierIncludeN001mdrmdDN(series);
+            case 5: return f1ecacCO(idxAC);
+            case 6: return firstMinacCO(idxAC);
+            case 7: return summariesWelchRectArea51SP(series, idxFFT);
+            case 8: return summariesWelchRectCentroidSP(series, idxFFT);
+            case 9: return localSimpleMean3StderrFC(series);
+            case 10: return trev1NumCO(series);
+            case 11: return histogramAMIeven25CO(series, idxMin, idxMax);
+            case 12: return autoMutualInfoStats40GaussianFmmiIN(idxAC);
+            case 13: return hrvClassicPnn40MD(series);
+            case 14: return binaryStatsDiffLongstretch0SB(series);
+            case 15: return motifThreeQuantileHhSB(series);
+            case 16: return localSimpleMean1TauresratFC(series, idxAC);
+            case 17: return embed2DistTauDExpfitMeandiffCO(series, idxAC);
+            case 18: return fluctAnal2Dfa5012LogiPropR1SC(series);
+            case 19: return fluctAnal2Rsrangefit501LogiPropR1SC(series);
+            case 20: return transitionMatrix3acSumdiagcovSB(series, idxAC);
+            case 21: return periodicityWangTh001PD(series);
+            default: throw new Exception("Invalid Catch22 summary stat index.");
+        }
+    }
+
+    public static String getSummaryStatNameByIndex(int summaryStatIndex) throws Exception {
+        switch(summaryStatIndex){
+            case 0: return "histMode5DN";
+            case 1: return "histMode10DN";
+            case 2: return "binaryStatsMeanLongstretch1SB";
+            case 3: return "outlierIncludeP001mdrmdDN";
+            case 4: return "outlierIncludeN001mdrmdDN";
+            case 5: return "f1ecacCO";
+            case 6: return "firstMinacCO";
+            case 7: return "summariesWelchRectArea51SP";
+            case 8: return "summariesWelchRectCentroidSP";
+            case 9: return "localSimpleMean3StderrFC";
+            case 10: return "trev1NumCO";
+            case 11: return "histogramAMIeven25CO";
+            case 12: return "autoMutualInfoStats40GaussianFmmiIN";
+            case 13: return "hrvClassicPnn40MD";
+            case 14: return "binaryStatsDiffLongstretch0SB";
+            case 15: return "motifThreeQuantileHhSB";
+            case 16: return "localSimpleMean1TauresratFC";
+            case 17: return "embed2DistTauDExpfitMeandiffCO";
+            case 18: return "fluctAnal2Dfa5012LogiPropR1SC";
+            case 19: return "fluctAnal2Rsrangefit501LogiPropR1SC";
+            case 20: return "transitionMatrix3acSumdiagcovSB";
+            case 21: return "periodicityWangTh001PD";
+            default: throw new Exception("Invalid Catch22 summary stat index.");
+        }
     }
 
     //Mode of z-scored distribution (5-bin histogram)

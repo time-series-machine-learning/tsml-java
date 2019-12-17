@@ -466,7 +466,6 @@ public class Experiments  {
 
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         String targetFileNameTrain = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
-
         testFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileName);
         trainFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileNameTrain);
 
@@ -645,7 +644,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
 
         /*
         if estimateacc { //want full predictions

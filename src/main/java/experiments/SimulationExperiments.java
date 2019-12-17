@@ -950,8 +950,8 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-  //      collateSimulatorResults();
-        catch22SimulatorChangingSeriesLength();
+       collateSimulatorResults();
+        //catch22SimulatorChangingSeriesLength();
  //       dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
@@ -1240,19 +1240,19 @@ public class SimulationExperiments {
 
 
     public static void collateSimulatorResults(){
-        String type="Dictionary";
-        String path="Z:\\Results Working Area\\"+type+"Based\\SimulationExperiments2\\";
+        String type="Catch22";
+        String path="D:\\UEAMachineLearning\\Projects\\"+type+"\\SimulationExperiments\\";
         File f= new File(path+type+"Summary");
         f.mkdirs();
         String[] files={"mem","testAcc","testTime","trainTime"};
-        int numClassifiers=4;
+        int numClassifiers=3;
         OutFile[] out=new OutFile[files.length];
         OutFile[] outDiffs=new OutFile[files.length];
         for(int i=0;i<files.length;i++){
             out[i]=new OutFile(path+type+"Summary\\"+files[i]+"Mean.csv");
-            out[i].writeLine("Means,BOSS,cBOSS,S-BOSS,WEASEL,StDevs,BOSS,cBOSS,S-BOSS,WEASEL");
+            out[i].writeLine("Means,TSF-SS,Catch22,TSF,StDevs,TSF-SS,Catch22,TSF");
             outDiffs[i]=new OutFile(path+type+"Summary\\"+files[i]+"MeanDiffs.csv");
-            outDiffs[i].writeLine("MeanDiffsToBOSS,cBOSS,S-BOSS,WEASEL,StDevs,cBOSS,S-BOSS,WEASEL");
+            outDiffs[i].writeLine("MeanDiffsToTSF-SS,Catch22,TSF,StDevs,TSF-SS,Catch22,TSF");
         }
 
 
@@ -1353,7 +1353,7 @@ public class SimulationExperiments {
                 outDiffs[i].writeString("\n");
             }
 
-            for(int seriesLength=300;seriesLength<=2000;seriesLength+=100) {
+            for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
