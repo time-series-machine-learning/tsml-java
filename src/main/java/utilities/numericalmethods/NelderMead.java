@@ -24,11 +24,7 @@ public class NelderMead {
 
     NumericalFunction func;
 
-    
-    
     double best_score;
-    
-    
     
 
     public static void main(String args[]) {
