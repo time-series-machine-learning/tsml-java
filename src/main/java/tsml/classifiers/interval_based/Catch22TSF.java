@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static utilities.ClusteringUtilities.zNormalise;
+import static utilities.ClusteringUtilities.zNormaliseWithClass;
 
 /**
  <!-- globalinfo-start -->
@@ -109,6 +110,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     public int experimentalOptions = 0;
     public int intSelection = 0;
     public boolean norm = false;
+    public boolean preNorm = false;
     public boolean attSubsample = false;
     public int attSubsampleNum = 16;
 
@@ -351,6 +353,11 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
+
+        if (preNorm){
+            data = new Instances(data);
+            zNormaliseWithClass(data);
+        }
 
         //bagging
         //reduction of num intervals
