@@ -346,17 +346,21 @@ public class Catch22TSF extends EnhancedAbstractClassifier
      * @throws Exception
      */
     @Override
-    public void buildClassifier(Instances data) throws Exception {
+    public void buildClassifier(Instances orgData) throws Exception {
 /** Build Stage: 
  *  Builds the final classifier with or without bagging.  
  */
         // can classifier handle the data?
-        getCapabilities().testWithFail(data);
+        getCapabilities().testWithFail(orgData);
         long t1=System.nanoTime();
 
+        Instances data;
         if (preNorm){
-            data = new Instances(data);
+            data = new Instances(orgData);
             zNormaliseWithClass(data);
+        }
+        else{
+            data = orgData;
         }
 
         //bagging
@@ -506,7 +510,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         }
         /** Set up for Bagging if required **/
         if(bagging){
-            inBag=new boolean[numClassifiers][];
+            inBag=new boolean[numClassifiers][data.numInstances()];
             trainDistributions= new double[data.numInstances()][data.numClasses()];
             oobCounts=new int[data.numInstances()];
         }
@@ -579,6 +583,12 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             if (bagging){
                 for (int n = 0; n < data.numInstances(); n++){
                     instInclusions[rand.nextInt(data.numInstances())]++;
+                }
+
+                for (int n = 0; n < data.numInstances(); n++){
+                    if (instInclusions[n] > 0){
+                        inBag[i][n] = true;
+                    }
                 }
             }
             else{
@@ -698,17 +708,25 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             trees[i].buildClassifier(result);
 
             if(bagging && getEstimateOwnPerformance()){
-//                for(int j=0;j<result.numInstances();j++){
-//                    if(inBag[i][j])
-//                        continue;
-//                    double[] newProbs = trees[i].distributionForInstance(result.instance(j));
-//                    oobCounts[j]++;
-//                    for(int k=0;k<newProbs.length;k++)
-//                        trainDistributions[j][k]+=newProbs[k];
-//
-//                }
+                for(int n=0;n<data.numInstances();n++){
+                    if(inBag[i][n])
+                        continue;
 
-                throw new Exception("not yet supported");
+                    double[] series = data.instance(n).toDoubleArray();
+                    for(int j=0;j<numIntervals;j++) {
+                        double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1] + 1);
+                        double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+
+                        for (int g = 0; g < 22; g++) {
+                            testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
+                        }
+                    }
+
+                    double[] newProbs = trees[i].distributionForInstance(testHolder.instance(0));
+                    oobCounts[n]++;
+                    for(int k=0;k<newProbs.length;k++)
+                        trainDistributions[n][k]+=newProbs[k];
+                }
             }
         }
         long t2=System.nanoTime();
