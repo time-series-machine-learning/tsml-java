@@ -26,6 +26,9 @@ import static utilities.StatisticalUtilities.standardDeviation;
 import static utilities.Utilities.extractTimeSeries;
 
 /**
+ *
+ * *** EXPERIMENTAL ***
+ *
  * Classifier built using Catch22 features.
  *
  * C.H. Lubba, S.S. Sethi, P. Knaute, S.R. Schultz, B.D. Fulcher, N.S. Jones.

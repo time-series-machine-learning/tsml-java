@@ -33,7 +33,14 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static utilities.ClusteringUtilities.zNormaliseWithClass;
+
 /**
+ *
+ * *** EXPERIMENTAL ***
+ * TSF with Catch22 features. original tsf comment stuff below :)
+ * changes by Matthew Middlehurst
+ *
  <!-- globalinfo-start -->
  * Implementation of Time Series Forest
  Time Series Forest (TimeSeriesForest) Deng 2013: 
@@ -329,18 +336,24 @@ public class Catch22TSF extends EnhancedAbstractClassifier
      * @throws Exception
      */
     @Override
-    public void buildClassifier(Instances data) throws Exception {
+    public void buildClassifier(Instances orgData) throws Exception {
 /** Build Stage: 
  *  Builds the final classifier with or without bagging.  
  */
         // can classifier handle the data?
-        getCapabilities().testWithFail(data);
+        getCapabilities().testWithFail(orgData);
         long t1=System.nanoTime();
 
+        Instances data;
         if (preNorm){
-            data = new Instances(data);
+            data = new Instances(orgData);
             zNormaliseWithClass(data);
         }
+        else{
+            data = orgData;
+        }
+
+        numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
 
 //Set up instances size and format. 
         trees=new AbstractClassifier[numClassifiers];
@@ -375,7 +388,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         }
         /** Set up for Bagging if required **/
         if(bagging){
-            inBag=new boolean[numClassifiers][];
+            inBag=new boolean[numClassifiers][data.numInstances()];
             trainDistributions= new double[data.numInstances()][data.numClasses()];
             oobCounts=new int[data.numInstances()];
         }
@@ -389,21 +402,27 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         for(int i=0;i<numClassifiers;i++){
             //1. Select random intervals for tree i
 
-                intervals[i] = new int[numIntervals][2];  //Start and end
-                if (data.numAttributes() - 1 < minIntervalLength)
-                    minIntervalLength = data.numAttributes() - 1;
-                for (int j = 0; j < numIntervals; j++) {
-                    intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
-                    int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
-                    if (length < minIntervalLength)
-                        length = minIntervalLength;
-                    intervals[i][j][1] = intervals[i][j][0] + length;
-                }
+            intervals[i] = new int[numIntervals][2];  //Start and end
+            if (data.numAttributes() - 1 < minIntervalLength)
+                minIntervalLength = data.numAttributes() - 1;
+            for (int j = 0; j < numIntervals; j++) {
+                intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+                int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
+                if (length < minIntervalLength)
+                    length = minIntervalLength;
+                intervals[i][j][1] = intervals[i][j][0] + length;
+            }
 
             int[] instInclusions = new int[data.numInstances()];
             if (bagging){
                 for (int n = 0; n < data.numInstances(); n++){
                     instInclusions[rand.nextInt(data.numInstances())]++;
+                }
+
+                for (int n = 0; n < data.numInstances(); n++){
+                    if (instInclusions[n] > 0){
+                        inBag[i][n] = true;
+                    }
                 }
             }
             else{
@@ -457,11 +476,11 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
                     double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1] + 1);
 
-                        double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+                    double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
-                        for (int g = 0; g < 22; g++) {
-                            result.instance(k).setValue(j * numAttributes + g, catch22[g]);
-                        }
+                    for (int g = 0; g < 22; g++) {
+                        result.instance(k).setValue(j * numAttributes + g, catch22[g]);
+                    }
                 }
             }
 
@@ -477,17 +496,25 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             trees[i].buildClassifier(result);
 
             if(bagging && getEstimateOwnPerformance()){
-                for(int j=0;j<result.numInstances();j++){
-                    if(inBag[i][j])
+                for(int n=0;n<data.numInstances();n++){
+                    if(inBag[i][n])
                         continue;
-                    double[] newProbs = trees[i].distributionForInstance(result.instance(j));
-                    oobCounts[j]++;
+
+                    double[] series = data.instance(n).toDoubleArray();
+                    for(int j=0;j<numIntervals;j++) {
+                        double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1] + 1);
+                        double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+
+                        for (int g = 0; g < 22; g++) {
+                            testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
+                        }
+                    }
+
+                    double[] newProbs = trees[i].distributionForInstance(testHolder.instance(0));
+                    oobCounts[n]++;
                     for(int k=0;k<newProbs.length;k++)
-                        trainDistributions[j][k]+=newProbs[k];
-
+                        trainDistributions[n][k]+=newProbs[k];
                 }
-
-                throw new Exception("not yet supported");
             }
         }
         long t2=System.nanoTime();
@@ -607,11 +634,11 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
                 double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1]+1);
 
-                    double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
+                double[] catch22 = Catch22Classifier.singleTransform(interval, -1);
 
-                    for (int g = 0; g < 22; g++) {
-                        testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
-                    }
+                for (int g = 0; g < 22; g++) {
+                    testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
+                }
             }
             if(voteEnsemble){
                 int c=(int)trees[i].classifyInstance(testHolder.instance(0));
@@ -785,12 +812,20 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         Catch22TSF tsf = new Catch22TSF();
         tsf.setSeed(0);
+        tsf.bagging = true;
+        tsf.setEstimateOwnPerformance(true);
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
+        System.out.println(tsf.trainResults.getAcc());
         System.out.println("Test Accuracy ="+a);
+
+        tsf = new Catch22TSF();
+        tsf.setSeed(0);
+        tsf.bagging = true;
+        tsf.setEstimateOwnPerformance(true);
         String[] options=new String[4];
         options[0]="-T";
         options[1]="100";
