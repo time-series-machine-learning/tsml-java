@@ -385,7 +385,16 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.errorEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime - cr.buildTime, cr.timeUnit);};
+
     public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
+
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_buildTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_totalTestTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_avgTestPredTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_additionalTimeForEstimateDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+
 
     private static double toDoubleMillis(long time, TimeUnit unit) {
         if (time < 0)
@@ -413,6 +422,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
 
+    private static double benchmarkMillis(double millisTime, double benchmarkTime) {
+        return millisTime / benchmarkTime;
+    }
 
 
     /*********************************

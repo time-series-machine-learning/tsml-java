@@ -17,7 +17,7 @@ package tsml.filters;
 //import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import tsml.filters.shapelet_transforms.OrderLineObj;
+import tsml.transformers.shapelet_tools.OrderLineObj;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

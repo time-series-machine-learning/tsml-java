@@ -21,9 +21,9 @@ end
 %title(name);
 %print(accsFile(1:(length(accsFile)-length('.csv'))), '-dpng');
 
-orient(f,'landscape')
+orient(f,'landscape');
 set(f,'Units','Inches');
-set(f,'PaperUnits','normalized') 
+set(f,'PaperUnits','normalized');
 set(f,'PaperPosition', [0.05 0 0.9 1]);
 %pos = get(f,'Position');
 %set('PaperSize',[pos(3)*1.3, pos(4)])
