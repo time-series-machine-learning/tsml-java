@@ -153,6 +153,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
     }
 
+    public void setQualityMeasure(ShapeletQuality.ShapeletQualityChoice qual){
+        qualityMeasure=qual;
+    }
 /** Redundant features in the shapelet space are removed **/
     int[] redundantFeatures;
 
@@ -505,7 +508,6 @@ public void configureDawakShapeletTransform(Instances train){
         int n = train.numInstances();
         int m = train.numAttributes() - 1;
         distType = SubSeqDistance.DistanceType.IMPROVED_ONLINE;
-        qualityMeasure = ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
         searchType = SearchType.FULL;
         rescaleType = SubSeqDistance.RescalerType.NORMALISATION;
         useRoundRobin = true;
