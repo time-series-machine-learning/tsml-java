@@ -636,6 +636,15 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //                    result.instance(k).setValue(j*3+2, f.slope);
 
                     double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1] + 1);
+
+                    if (experimentalOptions == 2) {
+                        TSF.FeatureSet f = new TSF.FeatureSet();
+                        f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
+                        result.instance(k).setValue(j * numAttributes + 22, f.mean);
+                        result.instance(k).setValue(j * numAttributes + 23, f.stDev);
+                        result.instance(k).setValue(j * numAttributes + 24, f.slope);
+                    }
+
                     if (norm) {
                         zNormalise(interval);
                     }
@@ -665,14 +674,6 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
                         for (int g = 0; g < 22; g++) {
                             result.instance(k).setValue(j * numAttributes + g, catch22[g]);
-                        }
-
-                        if (experimentalOptions == 2) {
-                            TSF.FeatureSet f = new TSF.FeatureSet();
-                            f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
-                            result.instance(k).setValue(j * numAttributes + 22, f.mean);
-                            result.instance(k).setValue(j * numAttributes + 23, f.stDev);
-                            result.instance(k).setValue(j * numAttributes + 24, f.slope);
                         }
                     }
                 }
@@ -819,6 +820,15 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //                testHolder.instance(0).setValue(j*3+2, f.slope);
 
                 double[] interval = Arrays.copyOfRange(series, intervals[i][j][0], intervals[i][j][1]+1);
+
+                if (experimentalOptions == 2) {
+                    TSF.FeatureSet f = new TSF.FeatureSet();
+                    f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
+                    testHolder.instance(0).setValue(j * numAttributes + 22, f.mean);
+                    testHolder.instance(0).setValue(j * numAttributes + 23, f.stDev);
+                    testHolder.instance(0).setValue(j * numAttributes + 24, f.slope);
+                }
+
                 if (norm){
                     zNormalise(interval);
                 }
@@ -848,14 +858,6 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
                     for (int g = 0; g < 22; g++) {
                         testHolder.instance(0).setValue(j * numAttributes + g, catch22[g]);
-                    }
-
-                    if (experimentalOptions == 2) {
-                        TSF.FeatureSet f = new TSF.FeatureSet();
-                        f.setFeatures(series, intervals[i][j][0], intervals[i][j][1]);
-                        testHolder.instance(0).setValue(j * numAttributes + 22, f.mean);
-                        testHolder.instance(0).setValue(j * numAttributes + 23, f.stDev);
-                        testHolder.instance(0).setValue(j * numAttributes + 24, f.slope);
                     }
                 }
             }

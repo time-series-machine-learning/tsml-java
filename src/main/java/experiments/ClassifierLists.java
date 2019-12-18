@@ -210,7 +210,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF", "Catch22NormTSF", "Catch22TSF", "Catch22TSF100", "Catch22TSFexp1", "Catch22TSFexp2", "TSF100"};
+    public static String[] interval= {"LPS","TSF","cTSF", "Catch22NormTSF", "Catch22TSF", "Catch22TSF100", "Catch22TSFexp1", "Catch22TSFexp2", "Catch22TSFexp2Norm", "TSF100"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -246,6 +246,11 @@ public class ClassifierLists {
             case "Catch22TSFexp2":
                 c=new Catch22TSF();
                 ((Catch22TSF)c).experimentalOptions = 2;
+                break;
+            case "Catch22TSFexp2Norm":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 2;
+                ((Catch22TSF)c).norm = true;
                 break;
             case "TSF100":
                 c=new TSF();
