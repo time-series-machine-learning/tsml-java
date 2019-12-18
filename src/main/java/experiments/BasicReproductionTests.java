@@ -58,8 +58,8 @@ public class BasicReproductionTests {
         new File(reproductionDirectory).mkdirs();
     }
     
-    private static final String tsClassifiers = "timeseriesweka.classifiers.";
-    private static final String extraClassifiers = "weka_extras.classifiers.";
+    private static final String tsClassifiers = "tsml.classifiers.";
+    private static final String extraClassifiers = "machine_learning.classifiers.";
     
     public static final String[] classifierPaths = {
         
@@ -411,7 +411,7 @@ public class BasicReproductionTests {
         StringBuilder sb = new StringBuilder();
         while (scan.hasNext()) {
             String t = scan.nextLine();
-            if (t.contains("AvgPredTimes:"))
+            if (t.contains("AvgPredTimesBenchmarked:"))
                 break;
             sb.append(t).append("\n");
         }
@@ -531,7 +531,7 @@ public class BasicReproductionTests {
         if (!classifiersComplete) {
             System.out.println("Classifiers simple eval recreation failed!");
         }
-        
+
         if (!analysisReproduced) {
             System.out.println("CAWPE analysis recreation failed!");
         }

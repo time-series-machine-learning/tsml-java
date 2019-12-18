@@ -481,7 +481,16 @@ public class InstanceTools {
         return del;
         
     }
-    
+
+    /**
+     * Removes attributes deemed redundant. These are either
+     * 1. All one value (i.e. constant)
+     * 2. Some odd test to count the number different to the one before.
+     * I think this is meant to count the number of different values?
+     * It would be good to delete attributes that are identical to other attributes.
+     * @param train instances from which to remove redundant attributes
+     * @return array of indexes of attributes remove
+     */
      //Returns the *shifted* indexes, so just deleting them should work
 //Removes all constant attributes or attributes with just a single value
     public static int[] removeRedundantTrainAttributes(Instances train){
@@ -500,7 +509,9 @@ public class InstanceTools {
             if(j==train.numInstances())
                 remove=true;
             else{
-//Test if just a single value to remove
+//Test pairwise similarity?
+//I think this is meant to test how many different values there are. If so, it should be
+//done with a HashSet of doubles. This counts how many values are identical to their predecessor
                 count =0;
                 for(j=1;j<train.numInstances();j++){
                     if(train.instance(j-1).value(i)==train.instance(j).value(i))
@@ -509,16 +520,14 @@ public class InstanceTools {
                 if(train.numInstances()-count<minNumDifferent+1)
                     remove=true;
             }
-            if(remove)
-            {
-    // Remove from train
+            if(remove){
+    // Remove from data
                 train.deleteAttributeAt(i);
                 list.add(i);
-    // Remove from test            
             }else{
                 i++;
             }
-            count++;
+  //          count++;
         }
         int[] del=new int[list.size()];
         count=0;

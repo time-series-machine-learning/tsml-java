@@ -17,33 +17,33 @@ package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.classifiers.dictionary_based.*;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BOSSC45;
-import timeseriesweka.classifiers.dictionary_based.SpatialBOSS;
-import timeseriesweka.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
-import timeseriesweka.classifiers.distance_based.*;
-import timeseriesweka.classifiers.frequency_based.cRISE;
-import timeseriesweka.classifiers.hybrids.*;
-import timeseriesweka.classifiers.interval_based.Catch22TSF;
-import timeseriesweka.classifiers.interval_based.cTSF;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.shapelet_based.FastShapelets;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
-import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.interval_based.LPS;
-import timeseriesweka.classifiers.frequency_based.RISE;
-import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
-import multivariate_timeseriesweka.classifiers.NN_DTW_A;
-import multivariate_timeseriesweka.classifiers.NN_DTW_D;
-import multivariate_timeseriesweka.classifiers.NN_DTW_I;
-import multivariate_timeseriesweka.classifiers.NN_ED_I;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.ED1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.MSM1NN;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTreeClassifier;
-import timeseriesweka.filters.FeatureSetTSF;
-import timeseriesweka.filters.SummaryStats;
+import tsml.classifiers.dictionary_based.*;
+import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
+import tsml.classifiers.dictionary_based.SpatialBOSS;
+import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
+import tsml.classifiers.distance_based.*;
+import tsml.classifiers.frequency_based.cRISE;
+import tsml.classifiers.hybrids.*;
+import tsml.classifiers.interval_based.Catch22TSF;
+import tsml.classifiers.interval_based.cTSF;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.shapelet_based.FastShapelets;
+import tsml.classifiers.shapelet_based.LearnShapelets;
+import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.interval_based.LPS;
+import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
+import tsml.classifiers.multivariate.NN_DTW_A;
+import tsml.classifiers.multivariate.NN_DTW_D;
+import tsml.classifiers.multivariate.NN_DTW_I;
+import tsml.classifiers.multivariate.NN_ED_I;
+import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
+import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import tsml.classifiers.shapelet_based.ShapeletTreeClassifier;
+import tsml.filters.FeatureSetTSF;
+import tsml.filters.SummaryStats;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -330,7 +330,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22","Catch22Old","Catch22Norm","Catch22RotF","SSRF","TSF-SS"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22","Catch22Norm","Catch22RotF","SSRF","TSF-SS"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -356,13 +356,6 @@ public class ClassifierLists {
                 rf.setNumTrees(100);
                 rf.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rf);
-                break;
-            case "Catch22Old":
-                c=new Catch22ClassifierOld();
-                RandomForest rf4 = new RandomForest();
-                rf4.setNumTrees(100);
-                rf4.setSeed(fold);
-                ((Catch22ClassifierOld)c).setClassifier(rf4);
                 break;
             case "Catch22Norm":
                 c=new Catch22Classifier();

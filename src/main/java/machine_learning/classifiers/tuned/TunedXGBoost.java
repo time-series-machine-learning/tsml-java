@@ -24,7 +24,7 @@ import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import timeseriesweka.classifiers.ParameterSplittable;
+import tsml.classifiers.ParameterSplittable;
 import utilities.DebugPrinting;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -35,8 +35,8 @@ import experiments.Experiments;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.SaveParameterInfo;
 import machine_learning.classifiers.SaveEachParameter;
 
 

@@ -47,12 +47,12 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.storage.ClassifierResults;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 
 
 public class cRotationForest extends EnhancedAbstractClassifier

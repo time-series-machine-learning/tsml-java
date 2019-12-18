@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import timeseriesweka.classifiers.EnhancedAbstractClassifier;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.MultiThreadable;
-import timeseriesweka.classifiers.TestTimeContractable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.MultiThreadable;
+import tsml.classifiers.TestTimeContractable;
+import tsml.classifiers.TrainTimeContractable;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
@@ -908,7 +908,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         //HACK FOR CAWPE_EXTENSION PAPER: 
         //since experiments expects us to make a train results object 
         //and for us to record our build time, going to record it here instead of 
-        //editting experiments to record the buildtime at that level
+        //editing experiments to record the buildTime at that level
         
         //buildTime does not include the ensemble's trainEstimator in any case, only the work required to be ready for testing
         //time unit has been set in estimateEnsemblePerformance(data);
