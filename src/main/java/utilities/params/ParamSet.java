@@ -1,184 +1,99 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package utilities.params;
 
-import utilities.StringUtilities;
-import weka.core.Utils;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.Dtw;
 
 import java.util.*;
 
-public class ParamSet
-    implements ParamHandler {
-    private Object value;
-    private Map<String, List<ParamSet>> map = new LinkedHashMap<>();
+public class Param {
+    public static class ParamValue {
+        private Object value;
+        private List<Param> paramList = new ArrayList<>();
 
-//    @Override public Iterator<Param> iterator() {
-//        return new Iterator<Param>() {
-//
-//            private Iterator<Map.Entry<String, List<ParamSet>>> iterator = map.entrySet().iterator();
-//            private Iterator<ParamSet> subIterator = null;
-//            private String name;
-//
-//            @Override public boolean hasNext() {
-//                while(iterator.hasNext()) {
-//                    if(subIterator == null || !subIterator.hasNext()) {
-//                        Map.Entry<String, List<ParamSet>> entry = iterator.next();
-//                        name = entry.getKey();
-//                        subIterator = entry.getValue().iterator();
-//                    } else {
-//                        return true;
-//                    }
-//                }
-//                return false;
-//            }
-//
-//            @Override public Param next() {
-//                return new Param(name, subIterator.next());
-//            }
-//        };
-//    }
-//
-//    public static class Param {
-//
-//    }
+        public ParamValue() {}
 
-    public ParamSet() {}
-
-    public ParamSet(String[] options) throws Exception {
-        setOptions(options);
-    }
-
-    public ParamSet(String str) throws
-                                    Exception {
-        this(Utils.splitOptions(str));
-    }
-
-    public Object getValue() {
-        return value;
-    }
-
-    public void setValue(Object value) {
-        this.value = value;
-    }
-
-    public void add(String name, ParamSet sub) {
-        map.computeIfAbsent(name, k -> new ArrayList<>()).add(sub);
-    }
-
-    public void add(String name, Object value) {
-        ParamSet paramSet = new ParamSet();
-        paramSet.setValue(value);
-        add(name, paramSet);
-    }
-
-    public void add(String name) {
-        add(name, null);
-    }
-
-    public List<ParamSet> get(String name) {
-        return map.get(name);
-    }
-
-    public void clear() {
-        map.clear();
-        value = null;
-    }
-
-    @Override
-    public Enumeration listOptions() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setOptionsList(List<String> options) throws Exception {
-        int i = 0;
-        if(!StringUtilities.isFlag(options.get(i))) {
-            i++;
-            setValue(options.get(0));
+        public ParamValue(Object value, List<Param> paramList) {
+            setParamList(paramList);
+            setValue(value);
         }
-        for(; i < options.size(); i++) {
-            if(StringUtilities.isFlag(options.get(i))) {
-                if(i + 1 >= options.size() || StringUtilities.isFlag(options.get(i + 1))) {
-                    add(options.get(i));
-                } else {
-                    ParamSet permutation = new ParamSet();
-                    permutation.setOptions(Utils.splitOptions(options.get(i + 1)));
-                    add(options.get(i), permutation);
-                    i++;
-                }
+
+        public ParamValue(Object value, Param param) {
+            this(value, new ArrayList<>(Arrays.asList(param)));
+        }
+
+        public ParamValue(Object value) {
+            this(value, new ArrayList<>()); // no sub param
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(final Object value) {
+            this.value = value;
+        }
+
+        public List<Param> getParamList() {
+            return paramList;
+        }
+
+        public void setParamList(List<Param> paramList) {
+            if(paramList == null) {
+                paramList = new ArrayList<>();
             }
+            this.paramList = paramList;
+        }
+
+        public void addParam(final Param param) {
+            paramList.add(param);
+        }
+
+        @Override public String toString() {
+            return "ParamValue{" +
+                "value=" + value +
+                ", paramList=" + paramList +
+                '}';
         }
     }
 
-    @Override
-    public List<String> getOptionsList() {
-        List<String> options = new ArrayList<>();
-        if(value != null) {
-            String valueStr = StringUtilities.toOptionValue(value);
-            options.add(valueStr);
-        }
-        for(Map.Entry<String, List<ParamSet>> entry : map.entrySet()) {
-            String name = entry.getKey();
-            List<ParamSet> subs = entry.getValue();
-            for(ParamSet sub : subs) {
-                if(sub != null) StringUtilities.addOption(name, options, sub.toString());
-            }
-        }
-        return options;
+    private Map<String, List<ParamValue>> paramMap = new HashMap<>();
+
+    public List<ParamValue> get(String name) {
+        return paramMap.get(name);
     }
 
-    @Override
-    public String toString() {
-        String[] options = getOptions();
-        if(options.length > 1) {
-            return Utils.joinOptions(options);
-        } else {
-            return options[0];
-        }
+    public Param add(String name, Object value) {
+        return add(name, new ParamValue(value));
     }
 
-    public static void main(String[] args) throws
-                                           Exception {
-        ParamSet parameterSet = new ParamSet();
-        ParamSet parameterSet1 = new ParamSet("-a \"d -b c\"");
-        System.out.println(parameterSet1);
-        parameterSet.add("-K", parameterSet1);
-        ParamSet par = new ParamSet();
-        par.add("-M", parameterSet);
-        System.out.println(parameterSet);
-        System.out.println(par);
-//        ParamSet p = new ParamSet();
-//        p.setOptions(Utils.splitOptions("-x \"y -e f -g h\" -z b -c d "));
-//
-//        System.out.println(p);
-//
-//        ParamSet parent = new ParamSet();
-//        parent.add("-z", "b");
-//        parent.add("-a");
-//        parent.add("-c", "d");
-//        ParamSet child = new ParamSet("y");
-//        child.add("-e", "f");
-//        child.add("-g", "h");
-//        parent.add("-x", child);
-//        String[] options = parent.getOptions();
-//        String optionsStr = Utils.joinOptions(options);
-//        System.out.println(optionsStr);
-//        parent.clear();
-//        parent.setOptions(Utils.splitOptions(optionsStr));
-//        options = parent.getOptions();
-//        optionsStr = Utils.joinOptions(options);
-//        System.out.println(optionsStr);
+    public Param add(String name, Object value, List<Param> params) {
+        return add(name, new ParamValue(value, params));
+    }
+
+    public Param add(String name, Object value, Param param) {
+        return add(name, new ParamValue(value, param));
+    }
+
+    public Param add(String name, ParamValue value) {
+        paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+        return this;
+    }
+
+    @Override public String toString() {
+        return "Param" +
+//            "{" +
+//            "paramMap=" +
+            paramMap
+//            +
+//            '}'
+            ;
+    }
+
+    public static void main(String[] args) {
+//        Param param = new Param();
+//        Param wParam = new Param();
+//        wParam.add(Dtw.WARPING_WINDOW_FLAG, new ParamValue(4));
+//        param.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValue(new Dtw(), wParam));
+
     }
 }
