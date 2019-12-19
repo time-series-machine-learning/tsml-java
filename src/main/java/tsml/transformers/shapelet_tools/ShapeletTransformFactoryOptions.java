@@ -18,10 +18,10 @@ import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.Shapele
 import static tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.NORMAL;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.RescalerType;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.RescalerType.NORMALISATION;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.NORMAL;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.RescalerType;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.RescalerType.NORMALISATION;
 
 /**
  *
@@ -44,10 +44,8 @@ public class ShapeletTransformFactoryOptions {
     private final ShapeletQualityChoice qualityChoice;
     private final ShapeletSearchOptions searchOptions;
     private final RescalerType rescalerType;
-    public enum TransformType{ORIGINAL,BALANCED,CONTRACT}
-    private TransformType transformType;
 
-    private ShapeletTransformFactoryOptions(Builder options){
+    private ShapeletTransformFactoryOptions(ShapeletTransformOptions options){
         minLength = options.minLength;
         maxLength = options.maxLength;
         kShapelets = options.kShapelets;
@@ -59,14 +57,12 @@ public class ShapeletTransformFactoryOptions {
         roundRobin = options.roundRobin;
         candidatePruning = options.candidatePruning;
         rescalerType = options.rescalerType;
-        transformType =options.transformType;
     }
 
     public RescalerType  getRescalerType(){
         return rescalerType;
     }
 
-    public TransformType getTransformType(){ return transformType;}
     public boolean isBalanceClasses() {
         return balanceClasses;
     }
@@ -109,7 +105,7 @@ public class ShapeletTransformFactoryOptions {
     /** Funny inner class that serves no purpose but to confuse ... and why does everything return this?!?
      *
       */
-    public static class Builder {
+    public static class ShapeletTransformOptions {
         
         private int minLength;
         private int maxLength; 
@@ -122,66 +118,83 @@ public class ShapeletTransformFactoryOptions {
         private ShapeletQualityChoice qualityChoice;
         private ShapeletSearchOptions searchOptions;
         private RescalerType rescalerType;
-        private TransformType transformType;
 
-        
-        public Builder useRoundRobin(){
+
+        public ShapeletTransformOptions useRoundRobin(){
             roundRobin = true;
             return this;
         }
-        
-        
-        public Builder useCandidatePruning(){
+        public ShapeletTransformOptions useCandidatePruning(){
             candidatePruning = true;
             return this;
         }
+
+        public ShapeletTransformOptions setRoundRobin(boolean b){
+            roundRobin = b;
+            return this;
+        }
+
+
+        public ShapeletTransformOptions setCandidatePruning(boolean b){
+            candidatePruning = b;
+            return this;
+        }
         
-        
-        public Builder setSearchOptions(ShapeletSearchOptions sOp){
+        public ShapeletTransformOptions setSearchOptions(ShapeletSearchOptions sOp){
             searchOptions = sOp;
             return this;
         }
         
-        public Builder setQualityMeasure(ShapeletQualityChoice qm){
+        public ShapeletTransformOptions setQualityMeasure(ShapeletQualityChoice qm){
             qualityChoice = qm;
             return this;
         }
         
-        public Builder setMinLength(int min){
+        public ShapeletTransformOptions setMinLength(int min){
             minLength = min;
             return this;
         }
-        public Builder setTransformType(TransformType t){
-            transformType =t;
-            return this;
-        }
-        public Builder setMaxLength(int max){
+        public ShapeletTransformOptions setMaxLength(int max){
             maxLength = max;
             return this;
         }
-        
-        public Builder setKShapelets(int k){
+        public int getMaxLength() {
+            return maxLength;
+        }
+        public int getMinLength() {
+            return minLength;
+        }
+        public ShapeletTransformOptions setKShapelets(int k){
             kShapelets = k;
             return this;
         }
-        
-        public Builder useClassBalancing(){
+        public ShapeletTransformOptions setClassBalancing(boolean b){
+            balanceClasses = b;
+            return this;
+        }
+
+        public ShapeletTransformOptions setBinaryClassValue(boolean b){
+            binaryClassValue = b;
+            return this;
+        }
+
+        public ShapeletTransformOptions useClassBalancing(){
             balanceClasses = true;
             return this;
         }
         
-        public Builder useBinaryClassValue(){
+        public ShapeletTransformOptions useBinaryClassValue(){
             binaryClassValue = true;
             return this;
         }
         
-        public Builder setDistanceType(DistanceType dis){
+        public ShapeletTransformOptions setDistanceType(DistanceType dis){
             dist = dis;
             return this;
         }
         
                 
-        public Builder setRescalerType(RescalerType type){
+        public ShapeletTransformOptions setRescalerType(RescalerType type){
             rescalerType = type;
             return this;
         }
@@ -190,7 +203,6 @@ public class ShapeletTransformFactoryOptions {
             setDefaults();
             return new ShapeletTransformFactoryOptions(this);
         }
-
         
         private void setDefaults(){            
             //if there is no search options. use default params;
@@ -213,6 +225,12 @@ public class ShapeletTransformFactoryOptions {
             if(dist == null){
                 dist =  NORMAL;
             }
+        }
+        public String toString(){
+            String str="DistType,"+dist+",QualityMeasure,"+qualityChoice+",RescaleType,"+rescalerType;
+            str+=",UseRoundRobin,"+roundRobin+",useCandidatePruning,"+candidatePruning+",UseClassBalancing,"+balanceClasses;
+            str+=",useBinaryClassValue,"+binaryClassValue+",minShapeletLength,"+minLength+",maxShapeletLength,"+maxLength;
+            return str;
         }
     }
 

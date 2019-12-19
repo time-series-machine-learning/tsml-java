@@ -22,7 +22,7 @@ import weka.core.Instance;
  *
  * @author raj09hxu
  */
-public class DimensionDistance extends ImprovedOnlineSubSeqDistance implements Serializable{
+public class DimensionDistance extends ImprovedOnlineShapeletDistance implements Serializable{
     
     @Override
     public double calculate(Instance timeSeries, int timeSeriesId){

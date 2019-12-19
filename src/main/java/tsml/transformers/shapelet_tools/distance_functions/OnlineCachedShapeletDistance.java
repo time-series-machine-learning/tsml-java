@@ -14,6 +14,12 @@
  */
 package tsml.transformers.shapelet_tools.distance_functions;
 
+    /*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+*/
+
 import weka.core.Instances;
 import tsml.transformers.shapelet_tools.Shapelet;
 
@@ -21,7 +27,8 @@ import tsml.transformers.shapelet_tools.Shapelet;
  *
  * @author raj09hxu
  */
-public class CachedSubSeqDistance extends SubSeqDistance{
+public class OnlineCachedShapeletDistance extends ShapeletDistance {
+
 
     protected Stats stats;
     protected double[][] data;
@@ -66,14 +73,15 @@ public class CachedSubSeqDistance extends SubSeqDistance{
             return super.calculate(timeSeries,timeSeriesId);
                 
         //the series we're comparing too.
-        stats.setCurrentY(timeSeriesId);
+        stats.setCurrentY(timeSeriesId, data);
         
         double minSum = Double.MAX_VALUE;
         int subLength = length;
+        
 
         double xMean = stats.getMeanX(startPos, subLength);
         double xStdDev = stats.getStdDevX(startPos, subLength);
-
+        
         double yMean;
         double yStdDev;
         double crossProd;
@@ -111,65 +119,44 @@ public class CachedSubSeqDistance extends SubSeqDistance{
     public static class Stats
     {
 
-        private double[][] cummSums;
-        private double[][] cummSqSums;
-        private double[][][] crossProds;
+        private double[] cummSumsX;
+        private double[] cummSqSumsX;
+        
+        private double[]cummSumsY;
+        private double[]cummSqSumsY;
+        
+        private double[][] crossProdsY;
         private int xIndex;
-        private int yIndex;
 
         /**
          * Default constructor
          */
         public Stats()
         {
-            cummSums = null;
-            cummSqSums = null;
-            crossProds = null;
+            cummSumsX = null;
+            cummSqSumsX = null;
+            cummSumsY = null;
+            cummSqSumsY = null;
+            crossProdsY = null;
             xIndex = -1;
-            yIndex = -1;
         }
 
-        /**
-         * A method to retrieve cumulative sums for all time series processed so
-         * far
-         *
-         * @return cumulative sums
-         */
-        public double[][] getCummSums()
-        {
-            return cummSums;
-        }
-
-        /**
-         * A method to retrieve cumulative square sums for all time series
-         * processed so far
-         *
-         * @return cumulative square sums
-         */
-        public double[][] getCummSqSums()
-        {
-            return cummSqSums;
-        }
-
-        /**
-         * A method to retrieve cross products for candidate series. The cross
-         * products are computed between candidate and all time series.
-         *
-         * @return cross products
-         */
-        public double[][][] getCrossProds()
-        {
-            return crossProds;
-        }
 
         /**
          * A method to set current time series that is being examined.
          *
          * @param yIndex time series index
          */
-        public void setCurrentY(int yIndex)
+        public void setCurrentY(int yIndex, double[][] data)
         {
-            this.yIndex = yIndex;
+            //calculate the cumulative sums for the new series.
+            double[][] sums = computeCummSums(data[yIndex]);
+            cummSumsY = sums[0];
+            cummSqSumsY = sums[1];
+
+            //Compute cross products between candidate series and current series
+            crossProdsY = computeCrossProd(data[xIndex], data[yIndex]);
+            
         }
 
         /**
@@ -181,7 +168,7 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public double getMeanX(int startPos, int subLength)
         {
-            double diff = cummSums[xIndex][startPos + subLength] - cummSums[xIndex][startPos];
+            double diff = cummSumsX[startPos + subLength] - cummSumsY[startPos];
             return diff / (double) subLength;
         }
 
@@ -195,7 +182,7 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public double getMeanY(int startPos, int subLength)
         {
-            double diff = cummSums[yIndex][startPos + subLength] - cummSums[yIndex][startPos];
+            double diff = cummSumsY[startPos + subLength] - cummSumsY[startPos];
             return diff / (double) subLength;
         }
 
@@ -209,7 +196,7 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public double getStdDevX(int startPos, int subLength)
         {
-            double diff = cummSqSums[xIndex][startPos + subLength] - cummSqSums[xIndex][startPos];
+            double diff = cummSqSumsX[startPos + subLength] - cummSqSumsX[startPos];
             double meanSqrd = getMeanX(startPos, subLength) * getMeanX(startPos, subLength);
             double temp = diff / (double) subLength;
             double temp1 = temp - meanSqrd;
@@ -227,7 +214,7 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public double getStdDevY(int startPos, int subLength)
         {
-            double diff = cummSqSums[yIndex][startPos + subLength] - cummSqSums[yIndex][startPos];
+            double diff = cummSqSumsY[startPos + subLength] - cummSqSumsY[startPos];
             double meanSqrd = getMeanX(startPos, subLength) * getMeanX(startPos, subLength);
             double temp = diff / (double) subLength;
             double temp1 = temp - meanSqrd;
@@ -246,7 +233,7 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public double getSumOfProds(int startX, int startY, int length)
         {
-            return crossProds[yIndex][startX + length][startY + length] - crossProds[yIndex][startX][startY];
+            return crossProdsY[startX + length][startY + length] - crossProdsY[startX][startY];
         }
 
         private double[][] computeCummSums(double[] currentSeries)
@@ -305,34 +292,13 @@ public class CachedSubSeqDistance extends SubSeqDistance{
          */
         public void computeStats(int candidateInstIndex, double[][] data)
         {
-
             xIndex = candidateInstIndex;
 
-            //Initialise stats caching arrays
-            if (cummSums == null || cummSqSums == null)
-            {
-                cummSums = new double[data.length][];
-                cummSqSums = new double[data.length][];
-            }
-
-            crossProds = new double[data.length][][];
-
-            //Process all instances
-            for (int i = 0; i < data.length; i++)
-            {
-
-                //Check if cummulative sums are already stored for corresponding instance
-                if (cummSums[i] == null || cummSqSums[i] == null)
-                {
-                    double[][] sums = computeCummSums(data[i]);
-                    cummSums[i] = sums[0];
-                    cummSqSums[i] = sums[1];
-                }
-
-                //Compute cross products between candidate series and current series
-                crossProds[i] = computeCrossProd(data[candidateInstIndex], data[i]);
-            }
+            double[][] sums = computeCummSums(data[xIndex]);
+            cummSumsX = sums[0];
+            cummSqSumsX = sums[1];
         }
     }
+    
     
 }

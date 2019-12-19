@@ -21,11 +21,11 @@ import java.util.Arrays;
 
 import tsml.transformers.shapelet_tools.Shapelet;
 import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.distance_functions.OnlineShapeletDistance;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice;
-import tsml.transformers.shapelet_tools.distance_functions.OnlineSubSeqDistance;
 
 /**
  *      * copyright: Anthony Bagnall
@@ -95,7 +95,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
     public ClusteredShapeletTransform(int k, int minShapeletLength, 
             int maxShapeletLength, ShapeletQualityChoice qualityChoice) {
         st=new ShapeletFilter(k, minShapeletLength, maxShapeletLength, qualityChoice);
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=DEFAULT_NUMCLUSTERS;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }
@@ -112,7 +112,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
     public ClusteredShapeletTransform(int k, int minShapeletLength, 
             int maxShapeletLength) {
         st=new ShapeletFilter(k, minShapeletLength, maxShapeletLength);
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=DEFAULT_NUMCLUSTERS;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }
@@ -129,7 +129,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
     public ClusteredShapeletTransform(int k, int minShapeletLength, 
             int maxShapeletLength, int noClust) {
         st=new ShapeletFilter(k, minShapeletLength, maxShapeletLength);
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=noClust;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }
@@ -143,7 +143,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
      */
     public ClusteredShapeletTransform(int k) {
         st=new ShapeletFilter(k);
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=DEFAULT_NUMCLUSTERS;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }
@@ -158,7 +158,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
      */
     public ClusteredShapeletTransform(int k, boolean cluster, int noClust) {
         st=new ShapeletFilter(k);
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=noClust;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }
@@ -171,7 +171,7 @@ public class ClusteredShapeletTransform extends SimpleBatchFilter{
     public ClusteredShapeletTransform()
     {
         st=new ShapeletFilter();
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         this.noClust=DEFAULT_NUMCLUSTERS;
         this.clusteredShapelets = new ArrayList<Shapelet>();
     }

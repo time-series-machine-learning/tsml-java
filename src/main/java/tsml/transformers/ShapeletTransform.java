@@ -18,7 +18,7 @@ import tsml.transformers.shapelet_tools.OrderLineObj;
 import tsml.transformers.shapelet_tools.Shapelet;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
 import tsml.transformers.shapelet_tools.class_value.NormalClassValue;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
@@ -60,9 +60,12 @@ import java.util.logging.Logger;
  */
 public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer{
 //Global defaults. Max should be a lambda set to series length
-    public final static int DEFAULT_NUMSHAPELETS = 500;
+    public final static int MAXTRANSFORMSIZE = 1000;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
+
+    //Im not sure this is used anywhere, should be in Options for condensing data?
+    public static final int minimumRepresentation = 25; //If condensing the search set, this is the minimum number of instances per class to search
 
     //Variables for experiments
     protected static long subseqDistOpCount;
@@ -79,53 +82,31 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     protected ArrayList<Shapelet> shapelets;
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
     protected boolean recordShapelets; // default action is to write an output file
-    protected boolean roundRobin;
     protected long numShapeletsEvaluated=0;//This counts the total number of shapelets returned by searchForShapeletsInSeries. It does not include early abandoned shapelets
     protected long numEarlyAbandons=0;//This counts number of shapelets early abandoned
+
+//All of these can be in an ShapeletTransformOptions
+//    ShapeletTransformFactoryOptions.ShapeletTransformOptions options;
+    protected boolean roundRobin;
     protected transient ShapeletQuality quality;
-    
-    /*protected transient QualityMeasures.ShapeletQualityMeasure qualityMeasure;
-    protected transient QualityMeasures.ShapeletQualityChoice qualityChoice;
-    protected transient QualityBound.ShapeletQualityBound qualityBound;*/
-    
     protected boolean useCandidatePruning;
     protected boolean useRoundRobin;
     protected boolean useBalancedClasses;
-    protected Comparator<Shapelet> shapeletComparator;
-
-    protected SubSeqDistance subseqDistance;
-
-    protected NormalClassValue classValue;
-
+    protected ShapeletDistance shapeletDistance;
     protected ShapeletSearch searchFunction;
+
+    
+    protected Comparator<Shapelet> shapeletComparator;
+    protected NormalClassValue classValue;
     protected String serialName;
     protected Shapelet worstShapelet;
-    
     protected Instances inputData;
-    
     protected ArrayList<Shapelet> kShapelets;
-    
-    protected long count;
-//Automatically set to false after the search, the user can force a new search by calling forceFindShapelets
-    protected boolean findShapelets=true;
-
-    /**
-     * Call this to force a new search of shapelets even if one has been already done
-     */
-    public void forceFindShapelets(){findShapelets=true;}
-
-    public void setSubSeqDistance(SubSeqDistance ssd) {
-        subseqDistance = ssd;
-    }
-    
-    public long getCount() {
-        return count;
-    }
-
-
-
     protected int candidatePruningStartPercentage;
-
+    protected long count;
+    private int numSeriesToUse=0;
+    private long contractTime=0; //nano seconds time. If set to zero everything reverts to BalancedClassShapeletTransform
+    protected Map<Double, ArrayList<Shapelet>> kShapeletsMap;
     protected static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;
     protected int[] dataSourceIDs;
 
@@ -133,7 +114,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * Default constructor; Quality measure defaults to information gain.
      */
     public ShapeletTransform() {
-        this(DEFAULT_NUMSHAPELETS, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
+        this(MAXTRANSFORMSIZE, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
     }
     
     /**
@@ -146,19 +127,8 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         this();
         this.shapelets = shapes;
         this.numShapelets = shapelets.size();
-        findShapelets=false;
     }
-
-    /**
-     * Single param constructor: Quality measure defaults to information gain.
-     *
-     * @param k the number of shapelets to be generated
-     */
-    public ShapeletTransform(int k) {
-        this(k, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
-    }
-
-    /**
+   /**
      * Full constructor to create a usable filter. Quality measure defaults to
      * information gain.
      *
@@ -193,180 +163,17 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         this.kShapelets = new ArrayList<>();
 
         setQualityMeasure(qualityChoice);
-        this.subseqDistance = new SubSeqDistance();
+        this.shapeletDistance = new ShapeletDistance();
         this.classValue = new NormalClassValue();
         
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
         this.searchFunction = new ShapeletSearchFactory(sOp).getShapeletSearch();
     }
-    public long getNumShapeletsPerSeries(){ return searchFunction.getNumShapeletsPerSeries();}
-    /**
-     * Returns the set of shapelets for this transform as an ArrayList.
-     *
-     * @return An ArrayList of Shapelets representing the shapelets found for
-     * this Shapelet Transform.
-     */
-    public ArrayList<Shapelet> getShapelets() {
-        return this.shapelets;
-    }
-
-    /**
-     * Shouldnt really hav this method, but it is a convenience to allow refactoring
-     * ClusteredShapeletTransform
-     * @param s
-     */
-    public void setShapelets(ArrayList<Shapelet> s) {
-        this.shapelets=s;
-    }
 
 
-    /**
-     * Set the transform to round robin the data or not. This transform defaults
-     * round robin to false to keep the instances in the same order as the
-     * original data. If round robin is set to true, the transformed data will
-     * be reordered which can make it more difficult to use the ensemble.
-     *
-     * @param val
-     */
-    public void setRoundRobin(boolean val) {
-        this.roundRobin = val;
-    }
-    public void setUseBalancedClasses(boolean val) {
-        this.useBalancedClasses = val;
-    }
-
-    /**
-     * Supresses filter output to the console; useful when running timing
-     * experiments.
-     */
-    public void supressOutput() {
-        this.supressOutput = true;
-    }
-
-
-    public void setSuppressOutput(boolean b) {
-        this.supressOutput = !b;
-    }
-    public boolean getSuppressOutput() {
-        return this.supressOutput;
-    }
-
-
-    /**
-     * Use candidate pruning technique when checking candidate quality. This
-     * speeds up the transform processing time.
-     */
-    public void useCandidatePruning() {
-        this.useCandidatePruning = true;
-        this.candidatePruningStartPercentage = 10;
-    }
-
-    /**
-     * Use candidate pruning technique when checking candidate quality. This
-     * speeds up the transform processing time.
-     *
-     * @param percentage the percentage of data to be precocessed before pruning
-     * is initiated. In most cases the higher the percentage the less effective
-     * pruning becomes
-     */
-    public void useCandidatePruning(int percentage) {
-        this.useCandidatePruning = true;
-        this.candidatePruningStartPercentage = percentage;
-    }
-
-    /**
-     * Mutator method to set the number of shapelets to be stored by the filter.
-     *
-     * @param k the number of shapelets to be generated
-     */
-    public void setNumberOfShapelets(int k) {
-        this.numShapelets = k;
-    }
-
-    /**
-     * set the number of shapelets in the transform
-     * @return
-     */
-    public int getNumberOfShapelets() {
-        return numShapelets;
-    }
-
-    /**
-     * Turns off log saving; useful for timing experiments where speed is
-     * essential.
-     */
-    public void turnOffLog() {
-        this.recordShapelets = false;
-    }
-
-    /**
-     * Set file path for the filter log. Filter log includes shapelet quality,
-     * seriesId, startPosition, and content for each shapelet.
-     *
-     * @param fileName the updated file path of the filter log
-     */
-    public void setLogOutputFile(String fileName) {
-        this.recordShapelets = true;
-        this.ouputFileLocation = fileName;
-    }
-
-    /**
-     * Mutator method to set the minimum and maximum shapelet lengths for the
-     * filter.
-     *
-     * @param min minimum length of shapelets
-     * @param max maximum length of shapelets
-     */
-    public void setShapeletMinAndMax(int min, int max) {
-        searchFunction.setMinAndMax(min, max);
-    }
-
-    /**
-     * Mutator method to set the quality measure used by the filter. As with
-     * constructors, default selection is information gain unless another valid
-     * selection is specified.
-     *
-     * @return
-     */
-    public ShapeletQualityChoice getQualityMeasure() {
-        return quality.getChoice();
-    }
-
-    /**
-     *
-     * @param qualityChoice
-     */
-    public void setQualityMeasure(ShapeletQualityChoice qualityChoice) {
-        quality = new ShapeletQuality(qualityChoice);
-    }
-    
-    
-     /**
-     *
-     * @param rescaler
-     */
-    public void setRescaler(SeriesRescaler rescaler){
-        if(subseqDistance != null)
-            this.subseqDistance.seriesRescaler = rescaler;
-    }
-    
-        /**
-     *
-     * @param classDist
-     * @return
-     */
     protected void initQualityBound(ClassCounts classDist) {
         if (!useCandidatePruning) return;
         quality.initQualityBound(classDist, candidatePruningStartPercentage);
-    }
-
-    /**
-     *
-     * @param f
-     */
-    public void setCandidatePruning(boolean f) {
-        this.useCandidatePruning = f;
-        this.candidatePruningStartPercentage = f ? 10 : 100;
     }
 
     /**
@@ -378,13 +185,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      */
     @Override
     public Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
-
         if (this.numShapelets < 1) {
-            
             System.out.println(this.numShapelets);
             throw new IllegalArgumentException("ShapeletTransform not initialised correctly - please specify a value of k (this.numShapelets) that is greater than or equal to 1. It is currently set tp "+this.numShapelets);
         }
-
         //Set up instances size and format.
         //int length = this.numShapelets;
         int length = this.shapelets.size();
@@ -394,7 +198,6 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             name = "Shapelet_" + i;
             atts.add(new Attribute(name));
         }
-
         if (inputFormat.classIndex() >= 0) {
             //Classification set, set class
             //Get the class values as a fast vector
@@ -413,34 +216,20 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         return result;
     }
 
-    protected void inputCheck(Instances dataInst) throws IllegalArgumentException {
-        if (numShapelets < 1) {
-            throw new IllegalArgumentException("Number of shapelets initialised incorrectly to "+numShapelets+" - please select value of k (Usage: setNumberOfShapelets");
-        }
 
-        int maxPossibleLength;
-        maxPossibleLength = dataInst.instance(0).numAttributes();
-
-        if (dataInst.classIndex() >= 0) {
-            maxPossibleLength -= 1;
-        }
-    }
     @Override
     public void fit(Instances data){
         inputData = data;
         //check the input data is correct and assess whether the filter has been setup correctly.
-        inputCheck(data);
-        if(findShapelets) {
-            trainShapelets(data);
-            searchComplete = true;
-            //we log the count from the subsequence distance before we reset it in the transform.
-            //we only care about the count from the train. What is it counting?
-            count = subseqDistance.getCount();
-        }
+        trainShapelets(data);
+        searchComplete = true;
+        //we log the count from the subsequence distance before we reset it in the transform.
+        //we only care about the count from the train. What is it counting?
+        count = shapeletDistance.getCount();
     }
     @Override
     public Instance transform(Instance data){
-        throw new UnsupportedOperationException("NOT IMPLEMENTED YET (ShapeletTransform.transfor");
+        throw new UnsupportedOperationException("NOT IMPLEMENTED YET. Cannot transform a single instance yet, is trivial though (ShapeletTransform.transform");
 //        return buildTansformedDataset(data);
     }
 
@@ -451,23 +240,32 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     }
 
     protected void trainShapelets(Instances data) {
-        //we might round robin the data in here. So we need to override the input data with the new ordering.
-        inputData = initDataSource(data);
+        //we might round robin the data in here.
+        // So we need to override the input data with the new ordering.
+        inputData = orderDataSet(data);
+        //Initialise search function for ShapeletSearch object
         searchFunction.setComparator(shapeletComparator);
         searchFunction.init(inputData);
-                //setup subseqDistance
-        subseqDistance.init(inputData);
+        //setup shapelet distance function (sDist). Just initialises the count to 0
+        shapeletDistance.init(inputData);
         //setup classValue
         classValue.init(inputData);
         outputPrint("num shapelets before search "+numShapelets);
-
-        shapelets = findBestKShapeletsCache(inputData); // get k shapelets
+        shapelets = findBestKShapelets(inputData); // get k shapelets
         outputPrint(shapelets.size() + " Shapelets have been generated num shapelets now "+numShapelets);
         
         //we don't need to undo the roundRobin because we clone the data into a different order.
     }
-    
-    private Instances initDataSource(Instances data) {
+
+    /**
+     * This method determines the order in which the series will be searched for shapelets
+     * There are currently just two options: the original order or round robin (take one of each
+     * class in turn). Round robin clones the data, which could be an issue for resources but makes sense
+     *
+      * @param data
+     * @return
+     */
+    private Instances orderDataSet(Instances data) {
 
         int dataSize = data.numInstances();
         // shapelets discovery has not yet been carried out, so this must be training data
@@ -492,7 +290,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         Instances output = determineOutputFormat(data);
 
         //init out data for transforming.
-        subseqDistance.init(inputData);
+        shapeletDistance.init(inputData);
         //setup classsValue
         classValue.init(inputData);
 
@@ -509,10 +307,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         double dist;
         for (int i = 0; i < size; i++) {
             s = shapelets.get(i);
-            subseqDistance.setShapelet(s);
+            shapeletDistance.setShapelet(s);
 
             for (int j = 0; j < dataSize; j++) {
-                dist = subseqDistance.calculate(data.instance(j), j);
+                dist = shapeletDistance.calculate(data.instance(j), j);
                 output.instance(j).setValue(i, dist);
             }
         }
@@ -540,21 +338,145 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @return an ArrayList of FullShapeletTransform objects in order of their
      * fitness (by infoGain, seperationGap then shortest length)
      */
-    public ArrayList<Shapelet> findBestKShapeletsCache(Instances data) {
-        ArrayList<Shapelet> seriesShapelets;                                    // temp store of all shapelets for each time series
-        // temp store of all shapelets for each time series
-        //for all time series
-        outputPrint("Processing data: ");
+    public ArrayList<Shapelet> findBestKShapelets(Instances data) {
+        if (useBalancedClasses)
+            return findBestKShapeletsBalanced(data);
+        else
+            return findBestKShapeletsOriginal(data);
+    }
 
+
+    /**
+     *
+     * @param data
+     * @return
+     */
+    private ArrayList<Shapelet> findBestKShapeletsBalanced(Instances data) {
+        boolean contracted=true;
+        boolean keepGoing=true;
+        if(contractTime==0) {
+            contracted=false;
+        }
+        long startTime=System.nanoTime();
+        long usedTime=0;
+        //This can be used to reduce the number of series searched. Better done with Aaron's Condenser
+        int numSeriesToUse = data.numInstances();
+        // temp store of shapelets for each time series
+        ArrayList<Shapelet> seriesShapelets;
+        //construct a map for our K-shapelets lists, on for each classVal.
+        if(kShapeletsMap == null){
+            kShapeletsMap = new TreeMap();
+            for (int i=0; i < data.numClasses(); i++){
+                kShapeletsMap.put((double)i, new ArrayList<>());
+            }
+        }
+        //found out how many shapelets we want from each class, split evenly.
+        int proportion = numShapelets/kShapeletsMap.keySet().size();
+
+        outputPrint("Processing data for numShapelets "+numShapelets+ " with proportion per class = "+proportion);
+        outputPrint("in contract balanced: Contract (secs)"+contractTime/1000000000.0);
+
+        //continue processing series until we run out of time (if contracted)
+        while(casesSoFar < numSeriesToUse && keepGoing) {
+            System.out.println("BALANCED: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0);
+            //get the Shapelets list based on the classValue of our current time series.
+            kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
+            //we only want to pass in the worstKShapelet if we've found K shapelets. but we only care about
+            // this class values worst one. This is due to the way we represent each classes shapelets in the map.
+            worstShapelet = kShapelets.size() == proportion ? kShapelets.get(kShapelets.size()-1) : null;
+
+            //set the series we're working with.
+            shapeletDistance.setSeries(casesSoFar);
+            //set the class value of the series we're working with.
+            classValue.setShapeletValue(data.get(casesSoFar));
+            seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
+
+//Here we can tweak the the number of shapelets to do per series, although it would be much easier with time.
+            numShapeletsEvaluated+=seriesShapelets.size();
+//            outputPrint("BalancedClassST: data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons);
+            if(seriesShapelets != null){
+                Collections.sort(seriesShapelets, shapeletComparator);
+                if(isRemoveSelfSimilar())
+                    seriesShapelets = removeSelfSimilar(seriesShapelets);
+
+                kShapelets = combine(proportion, kShapelets, seriesShapelets);
+            }
+
+            //re-update the list because it's changed now.
+            kShapeletsMap.put(data.get(casesSoFar).classValue(), kShapelets);
+            casesSoFar++;
+            createSerialFile();
+            usedTime=System.nanoTime()-startTime;
+            //Logic is we have underestimated the contract so can run back through. If we over estimate it we will just stop.
+            if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) ///HORRIBLE!
+                casesSoFar=0;
+            if(contracted){
+                if(usedTime>contractTime)
+                    keepGoing=false;
+            }
+        }
+
+        kShapelets = buildKShapeletsFromMap(kShapeletsMap);
+
+        this.numShapelets = kShapelets.size();
+
+
+        if (recordShapelets)
+            recordShapelets(kShapelets, this.ouputFileLocation);
+        if (!supressOutput)
+            writeShapelets(kShapelets, new OutputStreamWriter(System.out));
+
+        return kShapelets;
+    }
+
+    protected ArrayList<Shapelet> buildKShapeletsFromMap(Map<Double, ArrayList<Shapelet>> kShapeletsMap)
+    {
+        ArrayList<Shapelet> kShapelets = new ArrayList<>();
+
+        int numberOfClassVals = kShapeletsMap.keySet().size();
+        int proportion = numShapelets/numberOfClassVals;
+
+
+        Iterator<Shapelet> it;
+
+        //all lists should be sorted.
+        //go through the map and get the sub portion of best shapelets for the final list.
+        for(ArrayList<Shapelet> list : kShapeletsMap.values())
+        {
+            int i=0;
+            it = list.iterator();
+
+            while(it.hasNext() && i++ <= proportion)
+            {
+                kShapelets.add(it.next());
+            }
+        }
+        return kShapelets;
+    }
+
+    /* This just goes case by case with no class balancing. With two class problems, we found this better
+     */
+    public ArrayList<Shapelet> findBestKShapeletsOriginal(Instances data) {
+        boolean contracted=true;
+        boolean keepGoing=true;
+        if(contractTime==0) {
+            contracted=false;
+        }
+        long startTime=System.nanoTime();
+        long usedTime=0;
+        int numSeriesToUse = data.numInstances(); //This can be used to reduce the number of series in favour of more
+
+        ArrayList<Shapelet> seriesShapelets;                                    // temp store of all shapelets for each time series
         int dataSize = data.numInstances();
         //for all possible time series.
-        for(; casesSoFar < dataSize; casesSoFar++) {
 
+        while(casesSoFar < numSeriesToUse && keepGoing) {
+            System.out.println("ORIGINAL: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0);
             //set the worst Shapelet so far, as long as the shapelet set is full.
             worstShapelet = kShapelets.size() == numShapelets ? kShapelets.get(numShapelets - 1) : null;
 
             //set the series we're working with.
-            subseqDistance.setSeries(casesSoFar);
+            shapeletDistance.setSeries(casesSoFar);
             //set the class value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
 
@@ -563,25 +485,33 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             outputPrint("data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons+" worst so far ="+worstShapelet);
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
-                
+
                 if(isRemoveSelfSimilar())
                     seriesShapelets = removeSelfSimilar(seriesShapelets);
                 kShapelets = combine(numShapelets, kShapelets, seriesShapelets);
             }
-            
+            casesSoFar++;
             createSerialFile();
-        }
+            usedTime=System.nanoTime()-startTime;
+            //Logic is we have underestimated the contract so can run back through. If we over estimate it we will just stop.
+            if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) ///HORRIBLE!
+                casesSoFar=0;
+            if(contracted){
+                if(usedTime>contractTime)
+                    keepGoing=false;
+            }
 
+        }
         this.numShapelets = kShapelets.size();
 
-        if (recordShapelets) 
+        if (recordShapelets)
             recordShapelets(kShapelets, this.ouputFileLocation);
         if (!supressOutput)
             writeShapelets(kShapelets, new OutputStreamWriter(System.out));
 
         return kShapelets;
     }
-    
+
     public void createSerialFile()
     {
         if(serialName == null) return;
@@ -615,14 +545,14 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @return an ArrayList of FullShapeletTransform objects in order of their
      * fitness (by infoGain, seperationGap then shortest length)
      */
-    public ArrayList<Shapelet> findBestKShapeletsCache(int numShapelets, Instances data, int minShapeletLength, int maxShapeletLength) {
+    public ArrayList<Shapelet> findBestKShapelets(int numShapelets, Instances data, int minShapeletLength, int maxShapeletLength) {
         this.numShapelets = numShapelets;
         //setup classsValue
         classValue.init(data);
         //setup subseqDistance
-        subseqDistance.init(data);
-        Instances newData=initDataSource(data);
-        return findBestKShapeletsCache(newData);
+        shapeletDistance.init(data);
+        Instances newData=orderDataSet(data);
+        return findBestKShapelets(newData);
     }
 
 
@@ -713,7 +643,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
 
     private boolean containsMatchingShapelet(Shapelet shapelet, ArrayList<Shapelet> newBestSoFar){
         //we're going to be comparing all the shapelets we have to shapelet.
-        this.subseqDistance.setShapelet(shapelet);
+        this.shapeletDistance.setShapelet(shapelet);
 
         //go backwards from where we're at until we stop matching. List is sorted.
         for(int index=newBestSoFar.size()-1;index>=0; index--){
@@ -726,7 +656,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             
 
             //if we're here then evaluate the shapelet distance. if they're equal in the comparator it means same length, same IG.
-            double dist = this.subseqDistance.distanceToShapelet(shape);
+            double dist = this.shapeletDistance.distanceToShapelet(shape);
             //if we hit a shapelet we nearly match with 1e-6 match with stop checking.  
             if(isNearlyEqual(dist, 0.0)){
                 return true; //this means we should not add the shapelet.
@@ -784,7 +714,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         }
         
         //set the candidate. This is the instance, start and length.
-        subseqDistance.setCandidate(series, start, length, dimension);
+        shapeletDistance.setCandidate(series, start, length, dimension);
 
         // create orderline by looping through data set and calculating the subsequence
         // distance from candidate to all data, inserting in order.
@@ -803,7 +733,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             double distance = 0.0;
             //don't compare the shapelet to the the time series it came from because we know it's 0.
             if (i != casesSoFar) {
-                distance = subseqDistance.calculate(inputData.instance(i), i);
+                distance = shapeletDistance.calculate(inputData.instance(i), i);
             }
 
             //this could be binarised or normal. 
@@ -816,7 +746,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             quality.updateOrderLine(orderline.get(orderline.size() - 1));
         }
 
-        Shapelet shapelet = new Shapelet(subseqDistance.getCandidate(), dataSourceIDs[casesSoFar], start, quality.getQualityMeasure());
+        Shapelet shapelet = new Shapelet(shapeletDistance.getCandidate(), dataSourceIDs[casesSoFar], start, quality.getQualityMeasure());
         
         //this class distribution could be binarised or normal.
         shapelet.calculateQuality(orderline, classValue.getClassDistributions());
@@ -896,7 +826,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public double timingForSingleShapelet(Instances data, int minShapeletLength, int maxShapeletLength) {
         data = roundRobinData(data, null);
         long startTime = System.nanoTime();
-        findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
+        findBestKShapelets(1, data, minShapeletLength, maxShapeletLength);
         long finishTime = System.nanoTime();
         return (double) (finishTime - startTime) / 1000000000.0;
     }
@@ -949,7 +879,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public ArrayList<Integer> getShapeletLengths() {
         ArrayList<Integer> shapeletLengths = new ArrayList<>();
 
-        if (findShapelets) {
+        if (shapelets!=null) {
             for (Shapelet s : this.shapelets) {
                 shapeletLengths.add(s.getLength());
             }
@@ -1020,7 +950,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
                 contentArray[i] = content.get(i);
             }
 
-            contentArray = sf.subseqDistance.seriesRescaler.rescaleSeries(contentArray, false);
+            contentArray = sf.shapeletDistance.seriesRescaler.rescaleSeries(contentArray, false);
             
             ShapeletCandidate cand = new ShapeletCandidate();
             cand.setShapeletContent(contentArray);
@@ -1032,7 +962,6 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         }
         sf.shapelets = shapelets;
         sf.searchComplete = true;
-        sf.findShapelets=false;
         sf.numShapelets = shapelets.size();
         sf.setShapeletMinAndMax(1, 1);
 
@@ -1183,7 +1112,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
                 +",numShapeletsEvaluated,"+numShapeletsEvaluated+",numEarlyAbandons,"+numEarlyAbandons
                 + ",searchFunction,"+this.searchFunction.getSearchType()
                 + ",qualityMeasure,"+this.quality.getQualityMeasure().getClass().getSimpleName()
-                +",subseqDistance,"+this.subseqDistance.getClass().getSimpleName()
+                +",subseqDistance,"+this.shapeletDistance.getClass().getSimpleName()
                 +",roundrobin,"+roundRobin+",earlyAbandon,"+useCandidatePruning+",TransformClass,"+this.getClass().getSimpleName();
         return str;
     }
@@ -1198,7 +1127,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public long opCountForSingleShapelet(Instances data, int minShapeletLength, int maxShapeletLength) throws Exception {
         data = roundRobinData(data, null);
         subseqDistOpCount = 0;
-        findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
+        findBestKShapelets(1, data, minShapeletLength, maxShapeletLength);
         return subseqDistOpCount;
     }
     public static void main(String[] args){
@@ -1254,8 +1183,8 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public void setUseRoundRobin(boolean b) {
         useRoundRobin = b;
     }
-    public SubSeqDistance getSubSequenceDistance(){
-        return subseqDistance;
+    public ShapeletDistance getSubSequenceDistance(){
+        return shapeletDistance;
     }
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
@@ -1268,6 +1197,119 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         result.setValue(TechnicalInformation.Field.PAGES, "pages");
 
         return result;
+    }
+    public void turnOffLog() {
+        this.recordShapelets = false;
+    }
+    public void supressOutput() {
+        this.supressOutput = true;
+    }
+    /**
+     * Use candidate pruning technique when checking candidate quality. This
+     * speeds up the transform processing time.
+     */
+    public void useCandidatePruning() {
+        this.useCandidatePruning = true;
+        this.candidatePruningStartPercentage = 10;
+    }
+    /**
+     * Use candidate pruning technique when checking candidate quality. This
+     * speeds up the transform processing time.
+     *
+     * @param percentage the percentage of data to be preprocessed before pruning
+     * is initiated. In most cases the higher the percentage the less effective
+     * pruning becomes
+     */
+    public void useCandidatePruning(int percentage) {
+        this.useCandidatePruning = true;
+        this.candidatePruningStartPercentage = percentage;
+    }
+
+    /********************** SETTERS ************************************/
+
+    /**
+     * Shouldnt really have this method, but it is a convenience to allow refactoring
+     * ClusteredShapeletTransform
+     * @param s
+     */
+    public void setShapelets(ArrayList<Shapelet> s) {
+        this.shapelets=s;
+    }
+
+
+    /**
+     * Set the transform to round robin the data or not. This transform defaults
+     * round robin to false to keep the instances in the same order as the
+     * original data. If round robin is set to true, the transformed data will
+     * be reordered which can make it more difficult to use the ensemble.
+     *
+     * @param val
+     */
+    public void setRoundRobin(boolean val) {
+        this.roundRobin = val;
+    }
+    public void setUseBalancedClasses(boolean val) {
+        this.useBalancedClasses = val;
+    }
+    public void setSuppressOutput(boolean b) {
+        this.supressOutput = !b;
+    }
+    public void setNumberOfShapelets(int k) {
+        this.numShapelets = k;
+    }
+
+    /**
+     * Set file path for the filter log. Filter log includes shapelet quality,
+     * seriesId, startPosition, and content for each shapelet.
+     *
+     * @param fileName the updated file path of the filter log
+     */
+    public void setLogOutputFile(String fileName) {
+        this.recordShapelets = true;
+        this.ouputFileLocation = fileName;
+    }
+
+    /**
+     * Mutator method to set the minimum and maximum shapelet lengths for the
+     * filter.
+     *
+     * @param min minimum length of shapelets
+     * @param max maximum length of shapelets
+     */
+    public void setShapeletMinAndMax(int min, int max) {
+        searchFunction.setMinAndMax(min, max);
+    }
+    public void setQualityMeasure(ShapeletQualityChoice qualityChoice) {
+        quality = new ShapeletQuality(qualityChoice);
+    }
+    public void setRescaler(SeriesRescaler rescaler){
+        if(shapeletDistance != null)
+            this.shapeletDistance.seriesRescaler = rescaler;
+    }
+    public void setCandidatePruning(boolean f) {
+        this.useCandidatePruning = f;
+        this.candidatePruningStartPercentage = f ? 10 : 100;
+    }
+    public void setContractTime(long c){ contractTime=c; }
+    public void setSubSeqDistance(ShapeletDistance ssd) {
+        shapeletDistance = ssd;
+    }
+    /*************** GETTERS *************/
+    public long getCount() {
+        return count;
+    }
+    public ShapeletQualityChoice getQualityMeasure() {
+        return quality.getChoice();
+    }
+    public int getNumberOfShapelets() {
+        return numShapelets;
+    }
+    public long getNumShapeletsPerSeries(){ return searchFunction.getNumShapeletsPerSeries();}
+    public ArrayList<Shapelet> getShapelets() {
+        return this.shapelets;
+    }
+    public boolean getSuppressOutput() {
+        return this.supressOutput;
     }
 
 }

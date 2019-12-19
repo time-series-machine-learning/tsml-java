@@ -31,10 +31,9 @@ package tsml.examples;
  */
 import tsml.filters.shapelet_filters.old_code.ClusteredShapeletTransform;
 import tsml.filters.shapelet_filters.ShapeletFilter;
-import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.CachedSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.OnlineSubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.*;
+import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineShapeletDistance;
+import tsml.transformers.shapelet_tools.distance_functions.CachedShapeletDistance;
 import tsml.filters.shapelet_filters.old_code.ApproximateShapeletFilter;
 import java.io.FileReader;
 import java.io.IOException;
@@ -79,7 +78,7 @@ public class ShapeletExamples {
   * transformed set of instances  
   */
         st =new ShapeletFilter();
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
 /*The number of shapelets defaults to 100. we recommend setting it to a large
 value, since there will be many duplicates and there is little overhead in 
 * keeping a lot (although the shapelet early abandon becomes less efficient).
@@ -166,7 +165,7 @@ value, since there will be many duplicates and there is little overhead in
     public static void distanceOptimizations(Instances train){
         Instances shapeletT=null;
 
-        SubSeqDistance[] ssq = {new SubSeqDistance(), new OnlineSubSeqDistance(), new CachedSubSeqDistance(), new ImprovedOnlineSubSeqDistance()};
+        ShapeletDistance[] ssq = {new ShapeletDistance(), new OnlineShapeletDistance(), new CachedShapeletDistance(), new ImprovedOnlineShapeletDistance()};
         ShapeletFilter[] st = new ShapeletFilter[ssq.length];
         for(int i=0; i< st.length; i++){
             st[i] = new ShapeletFilter();

@@ -42,7 +42,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
-import tsml.classifiers.shapelet_based.ShapeletTreeClassifier;
+import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -281,7 +281,7 @@ public class ClassifierLists {
                 c=new ShapeletTransformClassifier();
                 break;
             case "ShapeletTreeClassifier":
-                c=new ShapeletTreeClassifier();
+                c=new ShapeletTree();
                 break;
            default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");

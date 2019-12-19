@@ -8,7 +8,7 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.transformers.shapelet_tools.OrderLineObj;
 import tsml.transformers.shapelet_tools.class_value.NormalClassValue;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.quality_measures.InformationGain;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
 import utilities.ClassifierTools;
@@ -18,7 +18,7 @@ import weka.core.*;
 import tsml.transformers.shapelet_tools.Shapelet;
 
 
-public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
+public class ShapeletTree extends EnhancedAbstractClassifier implements TechnicalInformationHandler{
 
 
     @Override
@@ -41,11 +41,11 @@ public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implement
         this.quality = new ShapeletQuality(qualityChoice);
     }
 
-    public SubSeqDistance getSubseqDistance() {
+    public ShapeletDistance getSubseqDistance() {
         return subseqDistance;
     }
 
-    public void setSubseqDistance(SubSeqDistance subseqDistance) {
+    public void setSubseqDistance(ShapeletDistance subseqDistance) {
         this.subseqDistance = subseqDistance;
     }
 
@@ -62,7 +62,7 @@ public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implement
 
     //qualiyu/ distance and class value.
     protected ShapeletQuality quality;
-    protected SubSeqDistance subseqDistance;
+    protected ShapeletDistance subseqDistance;
     protected NormalClassValue classValue;
 
     private ShapeletNode root;
@@ -70,11 +70,11 @@ public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implement
     private int minLength, maxLength;
 
 
-    public ShapeletTreeClassifier(){
+    public ShapeletTree(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.root = new ShapeletNode();
         setQuality(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
-        subseqDistance = new SubSeqDistance();
+        subseqDistance = new ShapeletDistance();
         classValue = new NormalClassValue();
     }
 
@@ -461,7 +461,7 @@ public class ShapeletTreeClassifier extends EnhancedAbstractClassifier implement
         test = DatasetLoading.loadDataNullable(filePath + "_TEST");
         train = DatasetLoading.loadDataNullable(filePath + "_TRAIN");
 
-        ShapeletTreeClassifier stc = new ShapeletTreeClassifier();
+        ShapeletTree stc = new ShapeletTree();
         stc.setShapeletMinMaxLength(3, train.numAttributes()-1);
         stc.buildClassifier(train);
 

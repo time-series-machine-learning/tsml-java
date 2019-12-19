@@ -21,7 +21,7 @@ import java.util.Arrays;
  *
  * @author raj09hxu
  */
-public class ImprovedOnlineSubSeqDistance extends OnlineSubSeqDistance{
+public class ImprovedOnlineShapeletDistance extends OnlineShapeletDistance {
 
     @Override
     public double calculate(double[] timeSeries, int timeSeriesId)
@@ -106,7 +106,7 @@ public class ImprovedOnlineSubSeqDistance extends OnlineSubSeqDistance{
                 
         double[] subseq = Arrays.copyOfRange(series1, startPos, startPos+length);
 
-        ImprovedOnlineSubSeqDistance iosd = new ImprovedOnlineSubSeqDistance();
+        ImprovedOnlineShapeletDistance iosd = new ImprovedOnlineShapeletDistance();
 
         //iosd.setCandidate(subseq, series.length-subseq.length);
         double leftToRight = iosd.calculate(series, 1);
@@ -122,7 +122,7 @@ public class ImprovedOnlineSubSeqDistance extends OnlineSubSeqDistance{
         System.out.println(rightToLeft);
         //System.out.println(middleOut);
         
-        OnlineSubSeqDistance osd = new OnlineSubSeqDistance();
+        OnlineShapeletDistance osd = new OnlineShapeletDistance();
         //osd.setCandidate(subseq, 0);
         
         double original = osd.calculate(series, 1);

@@ -364,7 +364,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
                 break;
         }
         
-        transform = new ShapeletTransformFactory(options).getTransform();
+        transform = new ShapeletTransformFactory(options).getFilter();
         if(shapeletOutputPath != null)
             transform.setLogOutputFile(shapeletOutputPath);
         

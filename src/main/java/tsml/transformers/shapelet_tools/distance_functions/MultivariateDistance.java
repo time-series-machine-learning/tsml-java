@@ -25,7 +25,7 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class MultivariateDistance extends SubSeqDistance implements Serializable{
+public class MultivariateDistance extends ShapeletDistance implements Serializable{
     protected int numChannels;
     protected int seriesLength;
     

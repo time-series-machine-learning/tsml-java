@@ -29,7 +29,7 @@ import weka.core.Instance;
  *
  * this implements the basic functionality of sDist in various ways
  */
-public class SubSeqDistance implements Serializable{
+public class ShapeletDistance implements Serializable{
 
 //Each enum represents a class in this package
     public enum DistanceType{

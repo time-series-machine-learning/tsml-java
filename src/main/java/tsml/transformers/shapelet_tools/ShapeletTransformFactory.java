@@ -20,35 +20,29 @@ import java.util.function.Supplier;
 
 import tsml.filters.shapelet_filters.BalancedClassShapeletFilter;
 import tsml.filters.shapelet_filters.ShapeletFilter;
-import tsml.filters.shapelet_filters.cShapeletFilter;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.ShapeletTransform;
+import tsml.transformers.shapelet_tools.distance_functions.*;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.class_value.BinaryClassValue;
 import tsml.transformers.shapelet_tools.class_value.NormalClassValue;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import tsml.transformers.shapelet_tools.distance_functions.CachedSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.DimensionDistance;
-import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.MultivariateDependentDistance;
-import tsml.transformers.shapelet_tools.distance_functions.MultivariateIndependentDistance;
-import tsml.transformers.shapelet_tools.distance_functions.OnlineCachedSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.OnlineSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType;
 import utilities.rescalers.NoRescaling;
 import utilities.rescalers.SeriesRescaler;
 import utilities.rescalers.ZNormalisation;
 import utilities.rescalers.ZStandardisation;
 
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.CACHED;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.DEPENDENT;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.DIMENSION;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.IMPROVED_ONLINE;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.INDEPENDENT;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.NORMAL;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.ONLINE;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.DistanceType.ONLINE_CACHED;
-import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance.RescalerType.*;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.CACHED;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.DEPENDENT;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.DIMENSION;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.IMPROVED_ONLINE;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.INDEPENDENT;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.NORMAL;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.ONLINE;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.DistanceType.ONLINE_CACHED;
+import static tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance.RescalerType.*;
 
 /**
  *
@@ -56,25 +50,25 @@ import static tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance
  */
 public class ShapeletTransformFactory {
      
-    private static final Map<DistanceType, Supplier<SubSeqDistance>> distanceFunctions = createDistanceTable();
-    private static Map<DistanceType, Supplier<SubSeqDistance>> createDistanceTable(){
+    private static final Map<DistanceType, Supplier<ShapeletDistance>> distanceFunctions = createDistanceTable();
+    private static Map<DistanceType, Supplier<ShapeletDistance>> createDistanceTable(){
         //DistanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT};
-        Map<DistanceType, Supplier<SubSeqDistance>> dCons = new HashMap<DistanceType, Supplier<SubSeqDistance>>();
-        dCons.put(NORMAL, SubSeqDistance::new);
-        dCons.put(ONLINE, OnlineSubSeqDistance::new);
-        dCons.put(IMPROVED_ONLINE, ImprovedOnlineSubSeqDistance::new);
-        dCons.put(CACHED, CachedSubSeqDistance::new);
-        dCons.put(ONLINE_CACHED, OnlineCachedSubSeqDistance::new);
+        Map<DistanceType, Supplier<ShapeletDistance>> dCons = new HashMap<DistanceType, Supplier<ShapeletDistance>>();
+        dCons.put(NORMAL, ShapeletDistance::new);
+        dCons.put(ONLINE, OnlineShapeletDistance::new);
+        dCons.put(IMPROVED_ONLINE, ImprovedOnlineShapeletDistance::new);
+        dCons.put(CACHED, CachedShapeletDistance::new);
+        dCons.put(ONLINE_CACHED, OnlineCachedShapeletDistance::new);
         dCons.put(DEPENDENT, MultivariateDependentDistance::new);
         dCons.put(INDEPENDENT, MultivariateIndependentDistance::new);
         dCons.put(DIMENSION, DimensionDistance::new);
         return dCons;
     }
 
-    private static final Map<SubSeqDistance.RescalerType, Supplier<SeriesRescaler>> rescalingFunctions = createRescalerTable();
-    private static Map<SubSeqDistance.RescalerType, Supplier<SeriesRescaler>> createRescalerTable(){
+    private static final Map<ShapeletDistance.RescalerType, Supplier<SeriesRescaler>> rescalingFunctions = createRescalerTable();
+    private static Map<ShapeletDistance.RescalerType, Supplier<SeriesRescaler>> createRescalerTable(){
         //RescalerType{NONE, NORMALISATION, STANDARDISATION};
-        Map<SubSeqDistance.RescalerType, Supplier<SeriesRescaler>> dCons = new HashMap<SubSeqDistance.RescalerType, Supplier<SeriesRescaler>>();
+        Map<ShapeletDistance.RescalerType, Supplier<SeriesRescaler>> dCons = new HashMap<ShapeletDistance.RescalerType, Supplier<SeriesRescaler>>();
         dCons.put(NONE, NoRescaling::new);
         dCons.put(NORMALISATION, ZNormalisation::new);
         dCons.put(STANDARDISATION, ZStandardisation::new);
@@ -88,10 +82,29 @@ public class ShapeletTransformFactory {
         options = op;
     }
     
-    public ShapeletFilter getTransform(){
+    public ShapeletFilter getFilter(){
         //build shapelet transform based on options.
-        ShapeletFilter st = createTransform(options.getTransformType(),options.isBalanceClasses());
+        ShapeletFilter st = createFilter(options.isBalanceClasses());
 //        ShapeletTransform st = createTransform(options.isBalanceClasses());
+        st.setUseBalancedClasses(options.isBalanceClasses());
+        st.setClassValue(createClassValue(options.isBinaryClassValue()));
+        st.setShapeletMinAndMax(options.getMinLength(), options.getMaxLength());
+        st.setNumberOfShapelets(options.getkShapelets());
+        st.setSubSeqDistance(createDistance(options.getDistance()));
+        st.setRescaler(createRescaler(options.getRescalerType()));
+        st.setSearchFunction(createSearch(options.getSearchOptions()));
+        st.setQualityMeasure(options.getQualityChoice());
+        st.setRoundRobin(options.useRoundRobin());
+        st.setCandidatePruning(options.useCandidatePruning());
+        st.setNumberOfShapelets(options.getkShapelets());
+        st.setShapeletMinAndMax(options.getMinLength(),options.getMaxLength());
+        //st.supressOutput();
+        return st;
+    }
+
+    public ShapeletTransform getTransform(){
+        //build shapelet transform based on options.
+        ShapeletTransform st = new ShapeletTransform();//Removed the balance type
         st.setUseBalancedClasses(options.isBalanceClasses());
         st.setClassValue(createClassValue(options.isBinaryClassValue()));
         st.setShapeletMinAndMax(options.getMinLength(), options.getMaxLength());
@@ -120,7 +133,7 @@ public class ShapeletTransformFactory {
                                         .setSeed(seed)
                                         .build();
                 
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .useClassBalancing()
                                             .useBinaryClassValue()
                                             .useCandidatePruning()
@@ -130,7 +143,7 @@ public class ShapeletTransformFactory {
                                             .setRescalerType(NORMALISATION)
                                             .build();
         
-        return new ShapeletTransformFactory(options).getTransform();
+        return new ShapeletTransformFactory(options).getFilter();
     }
     
     private ShapeletSearch createSearch(ShapeletSearchOptions sOp){
@@ -140,31 +153,22 @@ public class ShapeletTransformFactory {
     private NormalClassValue createClassValue(boolean classValue){
         return classValue ?  new BinaryClassValue() : new NormalClassValue();
     }
-    
-    private ShapeletFilter createTransform(boolean balance){
+
+    private ShapeletFilter createFilter(boolean balance){
         return balance ?  new BalancedClassShapeletFilter() : new ShapeletFilter();
     }
-    private ShapeletFilter createTransform(ShapeletTransformFactoryOptions.TransformType t, boolean balance){
-//This horrible hack will be removed when its all tested to work, see comments at the top of cShapeletTransform
-        ShapeletFilter st;
-        if(t==ShapeletTransformFactoryOptions.TransformType.CONTRACT)
-            st = new cShapeletFilter();
-        else
-            st = balance ?  new BalancedClassShapeletFilter() : new ShapeletFilter();
-        return st;
-    }
 
-    private SubSeqDistance createDistance(DistanceType dist){
+    private ShapeletDistance createDistance(DistanceType dist){
             return distanceFunctions.get(dist).get();
     }
 
-    private SeriesRescaler createRescaler(SubSeqDistance.RescalerType rescalerType) {
+    private SeriesRescaler createRescaler(ShapeletDistance.RescalerType rescalerType) {
             return rescalingFunctions.get(rescalerType).get();
     }
     
     
     public static void main(String[] args) {
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                 .useClassBalancing()
                 .setKShapelets(1000)
                 .setDistanceType(NORMAL)
@@ -174,6 +178,6 @@ public class ShapeletTransformFactory {
                 .build();
         
         ShapeletTransformFactory factory = new ShapeletTransformFactory(options);
-        ShapeletFilter st = factory.getTransform();
+        ShapeletFilter st = factory.getFilter();
     }
 }
