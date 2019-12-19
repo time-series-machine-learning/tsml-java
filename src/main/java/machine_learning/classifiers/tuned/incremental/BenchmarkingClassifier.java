@@ -1,4 +1,4 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;

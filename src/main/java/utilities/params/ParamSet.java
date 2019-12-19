@@ -12,86 +12,86 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 public class ParamSet implements ParamHandler {
-    public static class ParamValue {
-        private Object value;
-        private List<ParamSet> paramList = new ArrayList<>();
+//    public static class ParamValue {
+//        private Object value;
+//        private List<ParamSet> paramList = new ArrayList<>();
+//
+//        public ParamValue() {}
+//
+//        public ParamValue(Object value, List<ParamSet> paramList) {
+//            setParamList(paramList);
+//            setValue(value);
+//        }
+//
+//        public ParamValue(Object value, ParamSet param) {
+//            this(value, new ArrayList<>(Arrays.asList(param)));
+//        }
+//
+//        public ParamValue(Object value) {
+//            this(value, new ArrayList<>()); // no sub param
+//        }
+//
+//        public Object getValue() {
+//            return value;
+//        }
+//
+//        public void setValue(final Object value) {
+//            this.value = value;
+//        }
+//
+//        public List<ParamSet> getParamList() {
+//            return paramList;
+//        }
+//
+//        public void setParamList(List<ParamSet> paramList) {
+//            if(paramList == null) {
+//                paramList = new ArrayList<>();
+//            }
+//            this.paramList = paramList;
+//        }
+//
+//        public void addParam(final ParamSet param) {
+//            paramList.add(param);
+//        }
+//
+//        @Override public String toString() {
+//            return "ParamValue{" +
+//                "value=" + value +
+//                ", paramList=" + paramList +
+//                '}';
+//        }
+//
+//        private List<String> getOptionsList() {
+//            List<String> list = new ArrayList<>();
+//            list.add(StrUtils.toOptionValue(value));
+//            for(ParamSet paramSet : paramList) {
+//                list.addAll(paramSet.getOptionsList());
+//            }
+//            return list;
+//        }
+//    }
 
-        public ParamValue() {}
+    private Map<String, List<Object>> paramMap = new HashMap<>();
 
-        public ParamValue(Object value, List<ParamSet> paramList) {
-            setParamList(paramList);
-            setValue(value);
-        }
-
-        public ParamValue(Object value, ParamSet param) {
-            this(value, new ArrayList<>(Arrays.asList(param)));
-        }
-
-        public ParamValue(Object value) {
-            this(value, new ArrayList<>()); // no sub param
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public void setValue(final Object value) {
-            this.value = value;
-        }
-
-        public List<ParamSet> getParamList() {
-            return paramList;
-        }
-
-        public void setParamList(List<ParamSet> paramList) {
-            if(paramList == null) {
-                paramList = new ArrayList<>();
-            }
-            this.paramList = paramList;
-        }
-
-        public void addParam(final ParamSet param) {
-            paramList.add(param);
-        }
-
-        @Override public String toString() {
-            return "ParamValue{" +
-                "value=" + value +
-                ", paramList=" + paramList +
-                '}';
-        }
-
-        private List<String> getOptionsList() {
-            List<String> list = new ArrayList<>();
-            list.add(StrUtils.toOptionValue(value));
-            for(ParamSet paramSet : paramList) {
-                list.addAll(paramSet.getOptionsList());
-            }
-            return list;
-        }
-    }
-
-    private Map<String, List<ParamValue>> paramMap = new HashMap<>();
-
-    public List<ParamValue> get(String name) {
+    public List<Object> get(String name) {
         return paramMap.get(name);
     }
 
     public ParamSet add(String name, Object value) {
-        return add(name, new ParamValue(value));
-    }
-
-    public ParamSet add(String name, Object value, List<ParamSet> params) {
-        return add(name, new ParamValue(value, params));
-    }
-
-    public ParamSet add(String name, Object value, ParamSet param) {
-        return add(name, new ParamValue(value, param));
-    }
-
-    public ParamSet add(String name, ParamValue value) {
         paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
         return this;
+    }
+
+    public ParamSet add(String name, ParamHandler value, List<ParamSet> params) {
+        for(ParamSet paramSet : params) {
+            add(name, value, paramSet);
+        }
+        return this;
+    }
+
+    public ParamSet add(String name, ParamHandler value, ParamSet param) {
+        value.setParams(param);
+        return add(name, value);
     }
 
     public ParamSet addAll(ParamSet paramSet) {
@@ -109,9 +109,7 @@ public class ParamSet implements ParamHandler {
         paramMap.forEach((name, paramValues) -> {
             paramValues.forEach(paramValue -> {
                 list.add(StrUtils.flagify(name));
-                List<String> optionsList = paramValue.getOptionsList();
-                String options = StrUtils.joinOptions(optionsList);
-                list.add(options);
+                list.add(StrUtils.toOptionValue(paramValue));
             });
         });
         return list;
@@ -129,9 +127,13 @@ public class ParamSet implements ParamHandler {
                 String optionValue = subOptions[0];
                 subOptions[0] = "";
                 Object value = StrUtils.fromOptionValue(optionValue);
-                ParamSet paramSet = new ParamSet();
-                paramSet.setOptions(subOptions);
-                add(flag, new ParamValue(value, paramSet));
+                if(value instanceof ParamHandler) {
+                    ParamSet paramSet = new ParamSet();
+                    paramSet.setOptions(subOptions);
+                    add(flag, (ParamHandler) value, paramSet);
+                } else {
+                    add(flag, value);
+                }
                 options.set(i, "");
                 i++;
             } else {

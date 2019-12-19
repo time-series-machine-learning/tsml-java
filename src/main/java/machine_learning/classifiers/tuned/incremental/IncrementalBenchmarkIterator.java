@@ -1,6 +1,5 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
-import java.util.List;
 import java.util.Set;
 
 public class IncrementalBenchmarkIterator implements BenchmarkIterator {

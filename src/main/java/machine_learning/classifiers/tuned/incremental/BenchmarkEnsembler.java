@@ -1,7 +1,4 @@
-package machine_learning.classifiers.tuned.progressive;
-
-import utilities.DefaultRandomizable;
-import weka.core.Randomizable;
+package machine_learning.classifiers.tuned.incremental;
 
 import java.util.ArrayList;
 import java.util.List;

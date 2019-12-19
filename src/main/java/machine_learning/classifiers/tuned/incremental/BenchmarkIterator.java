@@ -1,10 +1,7 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
-import machine_learning.classifiers.tuned.progressive.Benchmark;
-import utilities.DefaultRandomizable;
 import utilities.collections.DefaultIterator;
 
-import java.util.List;
 import java.util.Set;
 
 public interface BenchmarkIterator extends DefaultIterator<Set<Benchmark>> {

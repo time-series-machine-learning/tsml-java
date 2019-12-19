@@ -1,4 +1,4 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
 import evaluation.storage.ClassifierResults;
 import weka.classifiers.Classifier;

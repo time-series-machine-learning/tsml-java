@@ -1,12 +1,10 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;
 import utilities.ArrayUtilities;
-import utilities.params.ParamHandler;
 import weka.core.Instance;
-import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;

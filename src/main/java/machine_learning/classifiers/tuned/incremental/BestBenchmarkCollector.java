@@ -1,9 +1,8 @@
-package machine_learning.classifiers.tuned.progressive;
+package machine_learning.classifiers.tuned.incremental;
 
 import utilities.ArrayUtilities;
 import utilities.collections.PrunedTreeMultiMap;
 import utilities.collections.TreeMultiMap;
-import weka.core.Randomizable;
 
 import java.util.*;
 import java.util.function.Function;

@@ -45,18 +45,11 @@ public interface ParamHandler
 
     // todo some kind of check against listparams to ensure it's settable
     static <A> void setParam(ParamSet params, String name, Consumer<A> setter, Class<? extends A> clazz) {
-        List<ParamSet.ParamValue> paramSets = params.get(name);
+        List<Object> paramSets = params.get(name);
         if(paramSets == null) {
             return;
         }
-        for(ParamSet.ParamValue paramSet : paramSets) {
-            Object value = paramSet.getValue();
-            if(value instanceof ParamHandler) {
-                ParamHandler paramHandler = (ParamHandler) value;
-                for(ParamSet subParam : paramSet.getParamList()) {
-                    paramHandler.setParams(subParam);
-                }
-            }
+        for(Object value : paramSets) {
             setter.accept((clazz.cast(value)));
         }
     }
