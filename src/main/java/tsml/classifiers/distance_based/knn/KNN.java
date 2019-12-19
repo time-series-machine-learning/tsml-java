@@ -3,12 +3,11 @@ package tsml.classifiers.distance_based.knn;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;
-import tsml.classifiers.Rebuildable;
+import tsml.classifiers.RebuildableClassifier;
 import tsml.classifiers.distance_based.distances.Dtw;
 import utilities.ArrayUtilities;
 import utilities.Copy;
 import utilities.StopWatch;
-import utilities.StringUtilities;
 import utilities.collections.PrunedTreeMultiMap;
 import utilities.collections.TreeMultiMap;
 import utilities.params.ParamHandler;
@@ -26,7 +25,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 public class KNN extends EnhancedAbstractClassifier
     implements
     ProgressiveBuildClassifier,
-    Rebuildable,
+    RebuildableClassifier,
     Checkpointable,
     Copy,
     ParamHandler {
@@ -92,29 +91,15 @@ public class KNN extends EnhancedAbstractClassifier
         this.earlyAbandon = earlyAbandon;
     }
 
+    @Override public ParamSet getParams() {
+        return ParamHandler.super.getParams().add(EARLY_ABANDON_FLAG, earlyAbandon).add(RANDOM_TIE_BREAK_FLAG, randomTieBreak).add(K_FLAG, k).add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+    }
+
     @Override public void setParams(final ParamSet params) {
         ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
-    }
-
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StringUtilities.setOption(options, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean::parseBoolean);
-        StringUtilities.setOption(options, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean::parseBoolean);
-        StringUtilities.setOption(options, K_FLAG, this::setK, Integer::parseInt);
-        StringUtilities.setOption(options, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
-    }
-
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(EARLY_ABANDON_FLAG, options, earlyAbandon);
-        StringUtilities.addOption(RANDOM_TIE_BREAK_FLAG, options, randomTieBreak);
-        StringUtilities.addOption(K_FLAG, options, k);
-        StringUtilities.addOption(DISTANCE_FUNCTION_FLAG, options, distanceFunction);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
+        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
+        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
+        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
     }
 
     protected transient Instances trainData;

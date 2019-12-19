@@ -3,7 +3,7 @@ package tsml.classifiers;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
-public interface Rebuildable extends Classifier {
+public interface RebuildableClassifier extends Classifier {
 
     boolean isRebuild();
 
@@ -19,9 +19,7 @@ public interface Rebuildable extends Classifier {
 
     default void rebuildClassifier(Instances data) throws
                                                    Exception {
-        if(isRebuild()) {
-            buildClassifier(data);
-            disableRebuild();
-        }
+        setRebuild(true);
+        buildClassifier(data);
     }
 }

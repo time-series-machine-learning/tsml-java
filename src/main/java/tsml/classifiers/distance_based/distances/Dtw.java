@@ -1,16 +1,13 @@
 package tsml.classifiers.distance_based.distances;
 
 
-import utilities.StringUtilities;
-import utilities.params.ParamDescriptor;
-import utilities.params.ParamHandler;
+import utilities.StrUtils;
 import utilities.params.ParamSet;
+import utilities.params.ParamHandler;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Dtw extends AbstractDistanceMeasure {
 
@@ -192,34 +189,14 @@ public class Dtw extends AbstractDistanceMeasure {
     }
 
     protected int warpingWindow;
-    protected final ParamDescriptor<Integer> warpingWindowParam = new ParamDescriptor<>("w", this::getWarpingWindow,
-                                                                                        this::setWarpingWindow,
-                                                                                        Integer::parseInt);
-
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StringUtilities.setOption(options, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer::parseInt);
-    }
-
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(WARPING_WINDOW_FLAG, options, warpingWindow);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
-    }
 
     public static final String WARPING_WINDOW_FLAG = "w";
 
     @Override public ParamSet getParams() {
-        ParamSet paramSet = new ParamSet();
-        paramSet.add(WARPING_WINDOW_FLAG, warpingWindow);
-        return paramSet;
+        return super.getParams().add(WARPING_WINDOW_FLAG, warpingWindow);
     }
 
-    @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer.class);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer.class);
     }
 }

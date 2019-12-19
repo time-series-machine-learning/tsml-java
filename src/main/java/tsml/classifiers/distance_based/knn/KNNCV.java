@@ -10,6 +10,8 @@ import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
 import utilities.cache.SymmetricCache;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -18,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
 public class KNNCV
     extends KNN implements TrainTimeContractable,
@@ -42,7 +46,7 @@ public class KNNCV
         if(path == null) {
             return false;
         }
-        checkpointDirPath = StringUtilities.asDirPath(path);
+        checkpointDirPath = StrUtils.asDirPath(path);
         return true;
     }
 
@@ -174,20 +178,32 @@ public class KNNCV
     public void setOptions(String[] options) throws Exception {
         super.setOptions(options);
         TrainTimeContractable.super.setOptions(options);
-        StringUtilities.setOption(options, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer::parseInt);
-        StringUtilities.setOption(options, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy, NeighbourIterationStrategy.class);
+        StrUtils.setOption(options, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer::parseInt);
+        StrUtils.setOption(options, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy, NeighbourIterationStrategy.class);
 //        StringUtilities.setOption(options, CACHE_FLAG, this::setCache, Cache.class);
     }
 
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(NEIGHBOUR_LIMIT_FLAG, options, neighbourLimit);
-        StringUtilities.addOption(NEIGHBOUR_ITERATION_STRATEGY_FLAG, options, neighbourIterationStrategy);
+        StrUtils.addOption(NEIGHBOUR_LIMIT_FLAG, options, neighbourLimit);
+        StrUtils.addOption(NEIGHBOUR_ITERATION_STRATEGY_FLAG, options, neighbourIterationStrategy);
 //        StringUtilities.addOption(CACHE_FLAG, options, cache);
         Collections.addAll(options, super.getOptions());
         Collections.addAll(options, TrainTimeContractable.super.getOptions());
         return options.toArray(new String[0]);
+    }
+
+    @Override public ParamSet getParams() {
+        return super.getParams().add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIterationStrategy).add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit).addAll(TrainTimeContractable.super.getParams());
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        super.setParams(params);
+        ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
+        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy,
+                              NeighbourIterationStrategy.class);
+        TrainTimeContractable.super.setParams(params);
     }
 
     protected void loadFromCheckpoint() {
