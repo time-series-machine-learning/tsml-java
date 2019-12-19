@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -88,7 +88,7 @@ public class Msm
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(COST_FLAG, options, cost);
+        StrUtils.addOption(COST_FLAG, options, cost);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }
@@ -97,7 +97,7 @@ public class Msm
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, COST_FLAG, this::setCost, Double::parseDouble);
+        StrUtils.setOption(options, COST_FLAG, this::setCost, Double::parseDouble);
     }
 
 }

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
 import experiments.data.DatasetLoading;
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
@@ -109,8 +109,8 @@ public class Lcss extends AbstractDistanceMeasure {
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(DELTA_FLAG, options, delta);
-        StringUtilities.addOption(EPSILON_FLAG, options, epsilon);
+        StrUtils.addOption(DELTA_FLAG, options, delta);
+        StrUtils.addOption(EPSILON_FLAG, options, epsilon);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }
@@ -119,8 +119,8 @@ public class Lcss extends AbstractDistanceMeasure {
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, EPSILON_FLAG, this::setEpsilon, Double::parseDouble);
-        StringUtilities.setOption(options, DELTA_FLAG, this::setDelta, Integer::parseInt);
+        StrUtils.setOption(options, EPSILON_FLAG, this::setEpsilon, Double::parseDouble);
+        StrUtils.setOption(options, DELTA_FLAG, this::setDelta, Integer::parseInt);
     }
 
     public int getDelta() {

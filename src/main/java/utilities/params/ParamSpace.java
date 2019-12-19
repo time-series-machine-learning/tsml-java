@@ -9,7 +9,7 @@ import java.util.*;
  * holds a mapping of parameter names to their corresponding values, where the values are stored as a ParamValues
  * object to allow for sub parameter spaces.
  */
-public class Params {
+public class ParamSpace {
 
     /**
      * holds a set of values (e.g. DTW and DDTW) and a set of corresponding params for those values (e.g. a set of
@@ -17,12 +17,12 @@ public class Params {
      */
     public static class ParamValues {
         private List<?> values = new ArrayList<>();
-        private List<Params> paramsList = new ArrayList<>();
+        private List<ParamSpace> paramSpaceList = new ArrayList<>();
 
         public int[] getBins() {
-            int[] bins = new int[paramsList.size() + 1];
-            for(int i = 0; i < paramsList.size(); i++) {
-                bins[i] = paramsList.get(i).size();
+            int[] bins = new int[paramSpaceList.size() + 1];
+            for(int i = 0; i < paramSpaceList.size(); i++) {
+                bins[i] = paramSpaceList.get(i).size();
             }
             bins[bins.length - 1] = values.size();
             return bins;
@@ -32,12 +32,12 @@ public class Params {
             return ArrayUtilities.numPermutations(getBins());
         }
 
-        public Param.ParamValue get(final int index) {
+        public ParamSet.ParamValue get(final int index) {
             int[] indices = ArrayUtilities.fromPermutation(index, getBins());
-            Param.ParamValue paramValue = new Param.ParamValue();
-            for(int i = 0; i < paramsList.size(); i++) {
-                Param param = paramsList.get(i).get(indices[i]);
-                paramValue.addParam(param);
+            ParamSet.ParamValue paramValue = new ParamSet.ParamValue();
+            for(int i = 0; i < paramSpaceList.size(); i++) {
+                ParamSet paramSet = paramSpaceList.get(i).get(indices[i]);
+                paramValue.addParam(paramSet);
             }
             Object value = values.get(indices[indices.length - 1]);
             paramValue.setValue(value);
@@ -46,9 +46,9 @@ public class Params {
 
         public ParamValues() {}
 
-        public ParamValues(List<?> values, List<Params> params) {
+        public ParamValues(List<?> values, List<ParamSpace> params) {
             setValues(values);
-            setParamsList(params);
+            setParamSpaceList(params);
         }
 
         public ParamValues(List<?> values) {
@@ -59,8 +59,8 @@ public class Params {
 //            this.values.addAll(Arrays.asList(values));
 //        }
 
-        public void addParams(Params... params) {
-            this.paramsList.addAll(Arrays.asList(params));
+        public void addParams(ParamSpace... params) {
+            this.paramSpaceList.addAll(Arrays.asList(params));
         }
 
         public List<?> getValues() {
@@ -74,21 +74,21 @@ public class Params {
             this.values = values;
         }
 
-        public List<Params> getParamsList() {
-            return paramsList;
+        public List<ParamSpace> getParamSpaceList() {
+            return paramSpaceList;
         }
 
-        public void setParamsList(List<Params> paramsList) {
-            if(paramsList == null) {
-                paramsList = new ArrayList<>();
+        public void setParamSpaceList(List<ParamSpace> paramSpaceList) {
+            if(paramSpaceList == null) {
+                paramSpaceList = new ArrayList<>();
             }
-            this.paramsList = paramsList;
+            this.paramSpaceList = paramSpaceList;
         }
 
         @Override public String toString() {
             return "ParamValues{" +
                 "values=" + values +
-                ", params=" + paramsList +
+                ", params=" + paramSpaceList +
                 '}';
         }
     }
@@ -107,10 +107,10 @@ public class Params {
         return bins;
     }
 
-    public Param get(int index) {
+    public ParamSet get(int index) {
         int[] indices = ArrayUtilities.fromPermutation(index, getBins());
         int i = 0;
-        Param param = new Param();
+        ParamSet paramSet = new ParamSet();
         for(Map.Entry<String, List<ParamValues>> entry : paramsMap.entrySet()) {
             index = indices[i];
             List<ParamValues> paramValuesList = entry.getValue();
@@ -119,14 +119,14 @@ public class Params {
                 index -= size;
                 if(index < 0) {
                     index += size;
-                    Param.ParamValue paramValue = paramValues.get(index);
-                    param.add(entry.getKey(), paramValue);
+                    ParamSet.ParamValue paramValue = paramValues.get(index);
+                    paramSet.add(entry.getKey(), paramValue);
                     break;
                 }
             }
             i++;
         }
-        return param;
+        return paramSet;
     }
 
     public int size() {
@@ -135,23 +135,23 @@ public class Params {
 
     private Map<String, List<ParamValues>> paramsMap = new LinkedHashMap<>(); // 1-many mapping of parameter names
 
-    public Params add(String name, ParamValues param) {
+    public ParamSpace add(String name, ParamValues param) {
         paramsMap.computeIfAbsent(name, k -> new ArrayList<>()).add(param);
         return this;
     }
 
-    public Params add(String name, List<?> values) {
+    public ParamSpace add(String name, List<?> values) {
         add(name, new ParamValues(values));
         return this;
     }
 
-    public Params add(String name, List<?> values, List<Params> params) {
+    public ParamSpace add(String name, List<?> values, List<ParamSpace> params) {
         add(name, new ParamValues(values, params));
         return this;
     }
 
-    public Params add(String name, List<?> values, Params params) {
-        add(name, values, new ArrayList<>(Collections.singletonList(params)));
+    public ParamSpace add(String name, List<?> values, ParamSpace paramSpace) {
+        add(name, values, new ArrayList<>(Collections.singletonList(paramSpace)));
         return this;
     }
 
@@ -166,24 +166,24 @@ public class Params {
     }
 
     public static void main(String[] args) {
-        Params params = new Params();
-        Params wParams = new Params();
-        wParams.add(Dtw.WARPING_WINDOW_FLAG, new ParamValues(Arrays.asList(1,2,3,4,5)));
-        params.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Dtw(), new Ddtw()),
-                                                                           Arrays.asList(wParams)));
-        Params lParams = new Params();
-        lParams.add(Wdtw.G_FLAG, new ParamValues(Arrays.asList(1, 2, 3)));
-        lParams.add(Lcss.EPSILON_FLAG, new ParamValues(Arrays.asList(1, 2, 3, 4)));
-        params.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Wdtw(), new Wddtw()),
-                                                                           Arrays.asList(lParams)));
+        ParamSpace paramSpace = new ParamSpace();
+        ParamSpace wParamSpace = new ParamSpace();
+        wParamSpace.add(Dtw.WARPING_WINDOW_FLAG, new ParamValues(Arrays.asList(1,2,3,4,5)));
+        paramSpace.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Dtw(), new Ddtw()),
+                                                                           Arrays.asList(wParamSpace)));
+        ParamSpace lParamSpace = new ParamSpace();
+        lParamSpace.add(Wdtw.G_FLAG, new ParamValues(Arrays.asList(1, 2, 3)));
+        lParamSpace.add(Lcss.EPSILON_FLAG, new ParamValues(Arrays.asList(1, 2, 3, 4)));
+        paramSpace.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Wdtw(), new Wddtw()),
+                                                                           Arrays.asList(lParamSpace)));
         int size;
-        size = wParams.size();
-        size = lParams.size();
-        size = params.size();
+        size = wParamSpace.size();
+        size = lParamSpace.size();
+        size = paramSpace.size();
         for(int i = 0; i < size; i++) {
 //            System.out.println(i);
-            Param param = params.get(i);
-            System.out.println(param);
+            ParamSet paramSet = paramSpace.get(i);
+            System.out.println(paramSet);
         }
 
 

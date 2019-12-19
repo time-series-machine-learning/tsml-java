@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -164,8 +164,8 @@ public class Twed
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(NU_FLAG, options, nu);
-        StringUtilities.addOption(LAMBDA_FLAG, options, lambda);
+        StrUtils.addOption(NU_FLAG, options, nu);
+        StrUtils.addOption(LAMBDA_FLAG, options, lambda);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }
@@ -174,8 +174,8 @@ public class Twed
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, NU_FLAG, this::setNu, Double::parseDouble);
-        StringUtilities.setOption(options, LAMBDA_FLAG, this::setLambda, Double::parseDouble);
+        StrUtils.setOption(options, NU_FLAG, this::setNu, Double::parseDouble);
+        StrUtils.setOption(options, LAMBDA_FLAG, this::setLambda, Double::parseDouble);
     }
 
 

@@ -3,12 +3,12 @@ package tsml.classifiers.distance_based.knn;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;
-import tsml.classifiers.Rebuildable;
+import tsml.classifiers.RebuildableClassifier;
 import tsml.classifiers.distance_based.distances.Dtw;
 import utilities.ArrayUtilities;
 import utilities.Copy;
 import utilities.StopWatch;
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import utilities.collections.PrunedTreeMultiMap;
 import utilities.collections.TreeMultiMap;
 import utilities.params.ParamHandler;
@@ -26,7 +26,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 public class KNN extends EnhancedAbstractClassifier
     implements
     ProgressiveBuildClassifier,
-    Rebuildable,
+        RebuildableClassifier,
     Checkpointable,
     Copy,
     ParamHandler {
@@ -100,19 +100,19 @@ public class KNN extends EnhancedAbstractClassifier
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean::parseBoolean);
-        StringUtilities.setOption(options, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean::parseBoolean);
-        StringUtilities.setOption(options, K_FLAG, this::setK, Integer::parseInt);
-        StringUtilities.setOption(options, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        StrUtils.setOption(options, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean::parseBoolean);
+        StrUtils.setOption(options, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean::parseBoolean);
+        StrUtils.setOption(options, K_FLAG, this::setK, Integer::parseInt);
+        StrUtils.setOption(options, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
     }
 
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(EARLY_ABANDON_FLAG, options, earlyAbandon);
-        StringUtilities.addOption(RANDOM_TIE_BREAK_FLAG, options, randomTieBreak);
-        StringUtilities.addOption(K_FLAG, options, k);
-        StringUtilities.addOption(DISTANCE_FUNCTION_FLAG, options, distanceFunction);
+        StrUtils.addOption(EARLY_ABANDON_FLAG, options, earlyAbandon);
+        StrUtils.addOption(RANDOM_TIE_BREAK_FLAG, options, randomTieBreak);
+        StrUtils.addOption(K_FLAG, options, k);
+        StrUtils.addOption(DISTANCE_FUNCTION_FLAG, options, distanceFunction);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }

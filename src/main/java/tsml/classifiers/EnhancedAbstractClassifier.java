@@ -14,16 +14,13 @@
  */
 package tsml.classifiers;
 
-import net.sourceforge.sizeof.SizeOf;
 import utilities.Debugable;
-import utilities.StringUtilities;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
-import weka.core.OptionHandler;
 import weka.core.Randomizable;
 
 /**
@@ -78,7 +75,7 @@ ClassifierResults trainResults can also store other information about the traini
  * @author Tony Bagnall and James Large
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       Randomizable, Rebuildable,
+                                                                                       Randomizable, RebuildableClassifier,
                                                                                        Debugable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
@@ -143,11 +140,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
+    protected int numClasses = -1;
 
     @Override public void buildClassifier(final Instances data) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
+        numClasses = data.numClasses();
     }
 
     public EnhancedAbstractClassifier() {

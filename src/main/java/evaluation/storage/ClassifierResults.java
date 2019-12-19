@@ -18,7 +18,6 @@ import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +27,6 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.*;
 import weka.classifiers.Classifier;
@@ -170,7 +168,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             setFoldID(((Randomizable) classifier).getSeed());
         }
         if(classifier instanceof OptionHandler) {
-            setParas(StringUtilities.join(",", ((OptionHandler) classifier).getOptions()));
+            setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
         }
         setOs(SysUtils.getOsName());
         setCpuInfo(SysUtils.findCpuInfo());

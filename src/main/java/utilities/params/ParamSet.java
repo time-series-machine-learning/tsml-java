@@ -1,24 +1,21 @@
 package utilities.params;
 
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.Dtw;
-
 import java.util.*;
 
-public class Param {
+public class ParamSet {
     public static class ParamValue {
         private Object value;
-        private List<Param> paramList = new ArrayList<>();
+        private List<ParamSet> paramSetList = new ArrayList<>();
 
         public ParamValue() {}
 
-        public ParamValue(Object value, List<Param> paramList) {
-            setParamList(paramList);
+        public ParamValue(Object value, List<ParamSet> paramSetList) {
+            setParamSetList(paramSetList);
             setValue(value);
         }
 
-        public ParamValue(Object value, Param param) {
-            this(value, new ArrayList<>(Arrays.asList(param)));
+        public ParamValue(Object value, ParamSet paramSet) {
+            this(value, new ArrayList<>(Collections.singletonList(paramSet)));
         }
 
         public ParamValue(Object value) {
@@ -33,25 +30,25 @@ public class Param {
             this.value = value;
         }
 
-        public List<Param> getParamList() {
-            return paramList;
+        public List<ParamSet> getParamSetList() {
+            return paramSetList;
         }
 
-        public void setParamList(List<Param> paramList) {
-            if(paramList == null) {
-                paramList = new ArrayList<>();
+        public void setParamSetList(List<ParamSet> paramSetList) {
+            if(paramSetList == null) {
+                paramSetList = new ArrayList<>();
             }
-            this.paramList = paramList;
+            this.paramSetList = paramSetList;
         }
 
-        public void addParam(final Param param) {
-            paramList.add(param);
+        public void addParam(final ParamSet paramSet) {
+            paramSetList.add(paramSet);
         }
 
         @Override public String toString() {
             return "ParamValue{" +
                 "value=" + value +
-                ", paramList=" + paramList +
+                ", paramList=" + paramSetList +
                 '}';
         }
     }
@@ -62,19 +59,19 @@ public class Param {
         return paramMap.get(name);
     }
 
-    public Param add(String name, Object value) {
+    public ParamSet add(String name, Object value) {
         return add(name, new ParamValue(value));
     }
 
-    public Param add(String name, Object value, List<Param> params) {
-        return add(name, new ParamValue(value, params));
+    public ParamSet add(String name, Object value, List<ParamSet> paramSets) {
+        return add(name, new ParamValue(value, paramSets));
     }
 
-    public Param add(String name, Object value, Param param) {
-        return add(name, new ParamValue(value, param));
+    public ParamSet add(String name, Object value, ParamSet paramSet) {
+        return add(name, new ParamValue(value, paramSet));
     }
 
-    public Param add(String name, ParamValue value) {
+    public ParamSet add(String name, ParamValue value) {
         paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
         return this;
     }

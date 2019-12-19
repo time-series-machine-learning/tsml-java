@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -106,13 +106,13 @@ public class Wdtw
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, G_FLAG, this::setG, Double::parseDouble);
+        StrUtils.setOption(options, G_FLAG, this::setG, Double::parseDouble);
     }
 
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(G_FLAG, options, g);
+        StrUtils.addOption(G_FLAG, options, g);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }

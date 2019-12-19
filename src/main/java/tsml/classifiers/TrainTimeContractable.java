@@ -15,7 +15,7 @@
 package tsml.classifiers;
 
 import utilities.params.ParamHandler;
-import utilities.StringUtilities;
+import utilities.StrUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,12 +95,12 @@ public interface TrainTimeContractable
     @Override
     default String[] getOptions() {
         List<String> options = new ArrayList<>();
-        StringUtilities.addOption(TRAIN_TIME_LIMIT_NANOS_FLAG, options, getTrainTimeLimitNanos());
+        StrUtils.addOption(TRAIN_TIME_LIMIT_NANOS_FLAG, options, getTrainTimeLimitNanos());
         return options.toArray(new String[0]);
     }
 
     @Override
     default void setOptions(String[] options) throws Exception {
-        StringUtilities.setOption(options, TRAIN_TIME_LIMIT_NANOS_FLAG, this::setTrainTimeLimitNanos, Long::parseLong);
+        StrUtils.setOption(options, TRAIN_TIME_LIMIT_NANOS_FLAG, this::setTrainTimeLimitNanos, Long::parseLong);
     }
 }

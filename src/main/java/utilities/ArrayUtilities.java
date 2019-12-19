@@ -87,9 +87,9 @@ public class ArrayUtilities {
     }
 
     public static <A> List<A> flatten(Collection<List<A>> collection) {
-        List list = new ArrayList();
+        List<A> list = new ArrayList<>();
         for(List<A> subList : collection) {
-            list.add(subList);
+            list.addAll(subList);
         }
         return list;
     }

@@ -1,6 +1,6 @@
 package utilities.iteration;
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.OptionHandler;
 import weka.core.Randomizable;
 
@@ -108,7 +108,7 @@ public class RandomIterator<A>
     @Override
     public void setOptions(final String[] options) throws
                                                    Exception {
-        StringUtilities.setOption(options, SEED_FLAG, this::setSeed, Integer::parseInt);
+        StrUtils.setOption(options, SEED_FLAG, this::setSeed, Integer::parseInt);
     }
 
     @Override

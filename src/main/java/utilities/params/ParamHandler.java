@@ -45,11 +45,13 @@ public interface ParamHandler
     }
 
     static <A> void setParam(ParamSet params, String name, Consumer<A> setter, Class<? extends A> clazz) {
-        List<ParamSet> paramSets = params.get(name);
-        for(ParamSet paramSet : paramSets) {
+        List<ParamSet.ParamValue> paramSets = params.get(name);
+        for(ParamSet.ParamValue paramSet : paramSets) {
             Object value = paramSet.getValue();
             if(value instanceof ParamHandler) {
-                ((ParamHandler) value).setParams(paramSet);
+                for(ParamSet subParamSet : paramSet.getParamSetList()) {
+                    ((ParamHandler) value).setParams(subParamSet);
+                }
             }
             setter.accept((clazz.cast(value)));
         }

@@ -3,7 +3,6 @@ package utilities;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -17,7 +16,7 @@ public class SysUtils {
         if(process.exitValue() == 0) {
             result = IOUtils.readLines(process.getInputStream(), StandardCharsets.UTF_8);
         } else {
-            throw new IllegalStateException(StringUtilities.join("\n", IOUtils.readLines(process.getErrorStream(),
+            throw new IllegalStateException(StrUtils.join("\n", IOUtils.readLines(process.getErrorStream(),
                                                                                          StandardCharsets.UTF_8)));
         }
         process.destroyForcibly();

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import utilities.params.ParamDescriptor;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
@@ -10,7 +10,6 @@ import weka.core.neighboursearch.PerformanceStats;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class Dtw extends AbstractDistanceMeasure {
 
@@ -200,13 +199,13 @@ public class Dtw extends AbstractDistanceMeasure {
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer::parseInt);
+        StrUtils.setOption(options, WARPING_WINDOW_FLAG, this::setWarpingWindow, Integer::parseInt);
     }
 
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(WARPING_WINDOW_FLAG, options, warpingWindow);
+        StrUtils.addOption(WARPING_WINDOW_FLAG, options, warpingWindow);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }

@@ -42,7 +42,7 @@ public class KNNCV
         if(path == null) {
             return false;
         }
-        checkpointDirPath = StringUtilities.asDirPath(path);
+        checkpointDirPath = StrUtils.asDirPath(path);
         return true;
     }
 
@@ -174,16 +174,16 @@ public class KNNCV
     public void setOptions(String[] options) throws Exception {
         super.setOptions(options);
         TrainTimeContractable.super.setOptions(options);
-        StringUtilities.setOption(options, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer::parseInt);
-        StringUtilities.setOption(options, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy, NeighbourIterationStrategy.class);
+        StrUtils.setOption(options, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer::parseInt);
+        StrUtils.setOption(options, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy, NeighbourIterationStrategy.class);
 //        StringUtilities.setOption(options, CACHE_FLAG, this::setCache, Cache.class);
     }
 
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(NEIGHBOUR_LIMIT_FLAG, options, neighbourLimit);
-        StringUtilities.addOption(NEIGHBOUR_ITERATION_STRATEGY_FLAG, options, neighbourIterationStrategy);
+        StrUtils.addOption(NEIGHBOUR_LIMIT_FLAG, options, neighbourLimit);
+        StrUtils.addOption(NEIGHBOUR_ITERATION_STRATEGY_FLAG, options, neighbourIterationStrategy);
 //        StringUtilities.addOption(CACHE_FLAG, options, cache);
         Collections.addAll(options, super.getOptions());
         Collections.addAll(options, TrainTimeContractable.super.getOptions());

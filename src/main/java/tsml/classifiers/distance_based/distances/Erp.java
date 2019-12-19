@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StringUtilities;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -128,8 +128,8 @@ public class Erp extends AbstractDistanceMeasure {
     @Override
     public String[] getOptions() {
         ArrayList<String> options = new ArrayList<>();
-        StringUtilities.addOption(PENALTY_FLAG, options, penalty);
-        StringUtilities.addOption(BAND_SIZE_FLAG, options, bandSize);
+        StrUtils.addOption(PENALTY_FLAG, options, penalty);
+        StrUtils.addOption(BAND_SIZE_FLAG, options, bandSize);
         Collections.addAll(options, super.getOptions());
         return options.toArray(new String[0]);
     }
@@ -138,8 +138,8 @@ public class Erp extends AbstractDistanceMeasure {
     public void setOptions(final String[] options) throws
                                                    Exception {
         super.setOptions(options);
-        StringUtilities.setOption(options, PENALTY_FLAG, this::setPenalty, Double::parseDouble);
-        StringUtilities.setOption(options, BAND_SIZE_FLAG, this::setBandSize, Integer::parseInt);
+        StrUtils.setOption(options, PENALTY_FLAG, this::setPenalty, Double::parseDouble);
+        StrUtils.setOption(options, BAND_SIZE_FLAG, this::setBandSize, Integer::parseInt);
     }
 
 
