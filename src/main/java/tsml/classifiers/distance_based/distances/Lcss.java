@@ -2,12 +2,13 @@ package tsml.classifiers.distance_based.distances;
 
 import experiments.data.DatasetLoading;
 import utilities.StrUtils;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class Lcss extends AbstractDistanceMeasure {
 
@@ -106,21 +107,14 @@ public class Lcss extends AbstractDistanceMeasure {
     public static final String EPSILON_FLAG = "e";
     public static final String DELTA_FLAG = "d";
 
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StrUtils.addOption(DELTA_FLAG, options, delta);
-        StrUtils.addOption(EPSILON_FLAG, options, epsilon);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
+
+    @Override public ParamSet getParams() {
+        return super.getParams().add(EPSILON_FLAG, epsilon).add(DELTA_FLAG, delta);
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StrUtils.setOption(options, EPSILON_FLAG, this::setEpsilon, Double::parseDouble);
-        StrUtils.setOption(options, DELTA_FLAG, this::setDelta, Integer::parseInt);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
+        ParamHandler.setParam(param, DELTA_FLAG, this::setDelta, Integer.class);
     }
 
     public int getDelta() {

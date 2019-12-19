@@ -19,9 +19,7 @@ public interface RebuildableClassifier extends Classifier {
 
     default void rebuildClassifier(Instances data) throws
                                                    Exception {
-        if(isRebuild()) {
-            buildClassifier(data);
-            disableRebuild();
-        }
+        setRebuild(true);
+        buildClassifier(data);
     }
 }

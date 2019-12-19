@@ -1,11 +1,12 @@
 package tsml.classifiers.distance_based.distances;
 
 import utilities.StrUtils;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class Twed
     extends AbstractDistanceMeasure {
@@ -161,22 +162,12 @@ public class Twed
     public static final String NU_FLAG = "n";
     public static final String LAMBDA_FLAG = "l";
 
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StrUtils.addOption(NU_FLAG, options, nu);
-        StrUtils.addOption(LAMBDA_FLAG, options, lambda);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
+    @Override public ParamSet getParams() {
+        return super.getParams().add(NU_FLAG, nu).add(LAMBDA_FLAG, lambda);
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StrUtils.setOption(options, NU_FLAG, this::setNu, Double::parseDouble);
-        StrUtils.setOption(options, LAMBDA_FLAG, this::setLambda, Double::parseDouble);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, NU_FLAG, this::setNu, Double.class);
     }
-
 
 }

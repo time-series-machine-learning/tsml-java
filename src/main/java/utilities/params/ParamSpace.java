@@ -17,7 +17,7 @@ public class ParamSpace {
      */
     public static class ParamValues {
         private List<?> values = new ArrayList<>();
-        private List<ParamSpace> paramSpaceList = new ArrayList<>();
+        private List<ParamSpace> paramsList = new ArrayList<>();
 
         public int[] getBins() {
             int[] bins = new int[paramSpaceList.size() + 1];
@@ -35,9 +35,9 @@ public class ParamSpace {
         public ParamSet.ParamValue get(final int index) {
             int[] indices = ArrayUtilities.fromPermutation(index, getBins());
             ParamSet.ParamValue paramValue = new ParamSet.ParamValue();
-            for(int i = 0; i < paramSpaceList.size(); i++) {
-                ParamSet paramSet = paramSpaceList.get(i).get(indices[i]);
-                paramValue.addParam(paramSet);
+            for(int i = 0; i < paramsList.size(); i++) {
+                ParamSet param = paramsList.get(i).get(indices[i]);
+                paramValue.addParam(param);
             }
             Object value = values.get(indices[indices.length - 1]);
             paramValue.setValue(value);
@@ -60,7 +60,7 @@ public class ParamSpace {
 //        }
 
         public void addParams(ParamSpace... params) {
-            this.paramSpaceList.addAll(Arrays.asList(params));
+            this.paramsList.addAll(Arrays.asList(params));
         }
 
         public List<?> getValues() {
@@ -74,13 +74,13 @@ public class ParamSpace {
             this.values = values;
         }
 
-        public List<ParamSpace> getParamSpaceList() {
-            return paramSpaceList;
+        public List<ParamSpace> getParamsList() {
+            return paramsList;
         }
 
-        public void setParamSpaceList(List<ParamSpace> paramSpaceList) {
-            if(paramSpaceList == null) {
-                paramSpaceList = new ArrayList<>();
+        public void setParamsList(List<ParamSpace> paramsList) {
+            if(paramsList == null) {
+                paramsList = new ArrayList<>();
             }
             this.paramSpaceList = paramSpaceList;
         }
@@ -110,7 +110,7 @@ public class ParamSpace {
     public ParamSet get(int index) {
         int[] indices = ArrayUtilities.fromPermutation(index, getBins());
         int i = 0;
-        ParamSet paramSet = new ParamSet();
+        ParamSet param = new ParamSet();
         for(Map.Entry<String, List<ParamValues>> entry : paramsMap.entrySet()) {
             index = indices[i];
             List<ParamValues> paramValuesList = entry.getValue();
@@ -120,7 +120,7 @@ public class ParamSpace {
                 if(index < 0) {
                     index += size;
                     ParamSet.ParamValue paramValue = paramValues.get(index);
-                    paramSet.add(entry.getKey(), paramValue);
+                    param.add(entry.getKey(), paramValue);
                     break;
                 }
             }
@@ -150,8 +150,13 @@ public class ParamSpace {
         return this;
     }
 
-    public ParamSpace add(String name, List<?> values, ParamSpace paramSpace) {
-        add(name, values, new ArrayList<>(Collections.singletonList(paramSpace)));
+    public ParamSpace add(String name, List<?> values, ParamSpace params) {
+        add(name, values, new ArrayList<>(Collections.singletonList(params)));
+        return this;
+    }
+
+    public ParamSpace clear() {
+        paramsMap.clear();
         return this;
     }
 
@@ -166,24 +171,24 @@ public class ParamSpace {
     }
 
     public static void main(String[] args) {
-        ParamSpace paramSpace = new ParamSpace();
-        ParamSpace wParamSpace = new ParamSpace();
-        wParamSpace.add(Dtw.WARPING_WINDOW_FLAG, new ParamValues(Arrays.asList(1,2,3,4,5)));
-        paramSpace.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Dtw(), new Ddtw()),
-                                                                           Arrays.asList(wParamSpace)));
-        ParamSpace lParamSpace = new ParamSpace();
-        lParamSpace.add(Wdtw.G_FLAG, new ParamValues(Arrays.asList(1, 2, 3)));
-        lParamSpace.add(Lcss.EPSILON_FLAG, new ParamValues(Arrays.asList(1, 2, 3, 4)));
-        paramSpace.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Wdtw(), new Wddtw()),
-                                                                           Arrays.asList(lParamSpace)));
+        ParamSpace params = new ParamSpace();
+        ParamSpace wParams = new ParamSpace();
+        wParams.add(Dtw.WARPING_WINDOW_FLAG, new ParamValues(Arrays.asList(1,2,3,4,5)));
+        params.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Dtw(), new Ddtw()),
+                                                                           Arrays.asList(wParams)));
+        ParamSpace lParams = new ParamSpace();
+        lParams.add(Wdtw.G_FLAG, new ParamValues(Arrays.asList(1, 2, 3)));
+        lParams.add(Lcss.EPSILON_FLAG, new ParamValues(Arrays.asList(1, 2, 3, 4)));
+        params.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Wdtw(), new Wddtw()),
+                                                                           Arrays.asList(lParams)));
         int size;
         size = wParamSpace.size();
         size = lParamSpace.size();
         size = paramSpace.size();
         for(int i = 0; i < size; i++) {
 //            System.out.println(i);
-            ParamSet paramSet = paramSpace.get(i);
-            System.out.println(paramSet);
+            ParamSet param = params.get(i);
+            System.out.println(param);
         }
 
 

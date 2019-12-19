@@ -1,11 +1,15 @@
 package tsml.classifiers.distance_based.distances;
 
 import utilities.StrUtils;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Wdtw
     extends AbstractDistanceMeasure {
@@ -96,25 +100,11 @@ public class Wdtw
 
     public static final String G_FLAG = "g";
 
-    public void setOption(final String key, final String value) {
-        if (key.equals(G_FLAG)) {
-            setG(Double.parseDouble(value));
-        }
+    @Override public ParamSet getParams() {
+        return super.getParams().add(G_FLAG, g);
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StrUtils.setOption(options, G_FLAG, this::setG, Double::parseDouble);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, G_FLAG, this::setG, Double.class);
     }
-
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StrUtils.addOption(G_FLAG, options, g);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
-    }
-
 }

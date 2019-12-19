@@ -17,7 +17,7 @@ public class SysUtils {
             result = IOUtils.readLines(process.getInputStream(), StandardCharsets.UTF_8);
         } else {
             throw new IllegalStateException(StrUtils.join("\n", IOUtils.readLines(process.getErrorStream(),
-                                                                                         StandardCharsets.UTF_8)));
+                                                                                  StandardCharsets.UTF_8)));
         }
         process.destroyForcibly();
         return result;

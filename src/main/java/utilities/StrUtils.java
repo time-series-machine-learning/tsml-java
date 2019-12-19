@@ -17,7 +17,10 @@ import java.util.function.Function;
 
 public class StrUtils {
 
-
+    public static String joinOptions(List<String> options) {
+        // todo use view
+        return Utils.joinOptions(options.toArray(new String[0]));
+    }
 
     public static String join(String separator, String... parts) {
         return join(separator, Arrays.asList(parts));
@@ -90,6 +93,11 @@ public class StrUtils {
 //        System.out.println(join(",", opts));
 //        Pipeline q = new Pipeline();
 //        q.setOptions(opts);
+    }
+
+    public static boolean isOption(String flag, List<String> options) {
+        // todo use view instead
+        return isOption(flag, options.toArray(new String[0]));
     }
 
     public static boolean isOption(String flag, String[] options) {
@@ -220,6 +228,11 @@ public class StrUtils {
         }
     }
 
+    public static Object fromOptionValue(String option) throws
+                                                        Exception {
+        return fromOptionValue(option, Object.class);
+    }
+
     public static <A> A fromOptionValue(String option, Class<? super A> baseClass) throws
                                                                                       Exception {
         if(option.equals("null")) {
@@ -281,11 +294,11 @@ public class StrUtils {
     }
 
     public static String toOptionValue(Object value) {
-        if(value == null) {
-            return "null";
-        }
         String str;
-        if(value instanceof Integer ||
+        if(value == null) {
+            str = "null";
+        }
+        else if(value instanceof Integer ||
            value instanceof Double ||
            value instanceof Float ||
            value instanceof Byte ||
@@ -296,9 +309,9 @@ public class StrUtils {
            value instanceof String) {
             str = String.valueOf(value);
         } else {
-            Class classValue;
-            if(value instanceof Class) {
-                classValue = (Class) value;
+            Class<?> classValue;
+            if(value instanceof Class<?>) {
+                classValue = (Class<?>) value;
             } else {
                 classValue = value.getClass();
             }
@@ -307,7 +320,7 @@ public class StrUtils {
                 str += " " + Utils.joinOptions(((OptionHandler) value).getOptions());
             }
         }
-        return str;
+        return "\"" + str + "\"";
     }
 
     public static void addOption(final String flag, final Collection<String> options, final Object value) {

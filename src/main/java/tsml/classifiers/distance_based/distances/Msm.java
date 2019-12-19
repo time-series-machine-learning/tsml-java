@@ -1,11 +1,12 @@
 package tsml.classifiers.distance_based.distances;
 
 import utilities.StrUtils;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class Msm
     extends AbstractDistanceMeasure {
@@ -85,19 +86,12 @@ public class Msm
 
     public static final String COST_FLAG = "c";
 
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StrUtils.addOption(COST_FLAG, options, cost);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
+    @Override public ParamSet getParams() {
+        return super.getParams().add(COST_FLAG, cost);
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StrUtils.setOption(options, COST_FLAG, this::setCost, Double::parseDouble);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, COST_FLAG, this::setCost, Double.class);
     }
 
 }

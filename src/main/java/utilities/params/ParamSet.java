@@ -1,21 +1,30 @@
 package utilities.params;
 
-import java.util.*;
+import scala.annotation.meta.param;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.Dtw;
+import tsml.classifiers.distance_based.distances.Lcss;
+import utilities.StrUtils;
+import weka.core.OptionHandler;
+import weka.core.Utils;
 
-public class ParamSet {
+import java.util.*;
+import java.util.function.BiConsumer;
+
+public class ParamSet implements ParamHandler {
     public static class ParamValue {
         private Object value;
-        private List<ParamSet> paramSetList = new ArrayList<>();
+        private List<ParamSet> paramList = new ArrayList<>();
 
         public ParamValue() {}
 
-        public ParamValue(Object value, List<ParamSet> paramSetList) {
-            setParamSetList(paramSetList);
+        public ParamValue(Object value, List<ParamSet> paramList) {
+            setParamList(paramList);
             setValue(value);
         }
 
-        public ParamValue(Object value, ParamSet paramSet) {
-            this(value, new ArrayList<>(Collections.singletonList(paramSet)));
+        public ParamValue(Object value, ParamSet param) {
+            this(value, new ArrayList<>(Arrays.asList(param)));
         }
 
         public ParamValue(Object value) {
@@ -30,19 +39,19 @@ public class ParamSet {
             this.value = value;
         }
 
-        public List<ParamSet> getParamSetList() {
-            return paramSetList;
+        public List<ParamSet> getParamList() {
+            return paramList;
         }
 
-        public void setParamSetList(List<ParamSet> paramSetList) {
-            if(paramSetList == null) {
-                paramSetList = new ArrayList<>();
+        public void setParamList(List<ParamSet> paramList) {
+            if(paramList == null) {
+                paramList = new ArrayList<>();
             }
             this.paramSetList = paramSetList;
         }
 
-        public void addParam(final ParamSet paramSet) {
-            paramSetList.add(paramSet);
+        public void addParam(final ParamSet param) {
+            paramList.add(param);
         }
 
         @Override public String toString() {
@@ -50,6 +59,15 @@ public class ParamSet {
                 "value=" + value +
                 ", paramList=" + paramSetList +
                 '}';
+        }
+
+        private List<String> getOptionsList() {
+            List<String> list = new ArrayList<>();
+            list.add(StrUtils.toOptionValue(value));
+            for(ParamSet paramSet : paramList) {
+                list.addAll(paramSet.getOptionsList());
+            }
+            return list;
         }
     }
 
@@ -63,17 +81,72 @@ public class ParamSet {
         return add(name, new ParamValue(value));
     }
 
-    public ParamSet add(String name, Object value, List<ParamSet> paramSets) {
-        return add(name, new ParamValue(value, paramSets));
+    public ParamSet add(String name, Object value, List<ParamSet> params) {
+        return add(name, new ParamValue(value, params));
     }
 
-    public ParamSet add(String name, Object value, ParamSet paramSet) {
-        return add(name, new ParamValue(value, paramSet));
+    public ParamSet add(String name, Object value, ParamSet param) {
+        return add(name, new ParamValue(value, param));
     }
 
     public ParamSet add(String name, ParamValue value) {
         paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
         return this;
+    }
+
+    public ParamSet addAll(ParamSet paramSet) {
+        paramSet.paramMap.forEach(this::add);
+        return this;
+    }
+
+    public ParamSet clear() {
+        paramMap.clear();
+        return this;
+    }
+
+    @Override public List<String> getOptionsList() {
+        List<String> list = new ArrayList<>();
+        paramMap.forEach((name, paramValues) -> {
+            paramValues.forEach(paramValue -> {
+                list.add(StrUtils.flagify(name));
+                List<String> optionsList = paramValue.getOptionsList();
+                String options = StrUtils.joinOptions(optionsList);
+                list.add(options);
+            });
+        });
+        return list;
+    }
+
+    // todo make paramSet / paramSpace compatible with flags (urgh flags are naff)
+
+    @Override public void setOptionsList(final List<String> options) throws
+                                                                     Exception {
+        for(int i = 0; i < options.size(); i++) {
+            String option = options.get(i);
+            String flag = StrUtils.unflagify(option);
+            if(StrUtils.isOption(option, options)) {
+                String[] subOptions = Utils.splitOptions(option);
+                String optionValue = subOptions[0];
+                subOptions[0] = "";
+                Object value = StrUtils.fromOptionValue(optionValue);
+                ParamSet paramSet = new ParamSet();
+                paramSet.setOptions(subOptions);
+                add(flag, new ParamValue(value, paramSet));
+                options.set(i, "");
+                i++;
+            } else {
+                add(flag, true);
+            }
+            options.set(i, "");
+        }
+    }
+
+    @Override public ParamSet getParams() {
+        return this;
+    }
+
+    @Override public void setParams(final ParamSet param) {
+        param.paramMap.forEach(this::add);
     }
 
     @Override public String toString() {
@@ -87,10 +160,16 @@ public class ParamSet {
     }
 
     public static void main(String[] args) {
-//        Param param = new Param();
-//        Param wParam = new Param();
-//        wParam.add(Dtw.WARPING_WINDOW_FLAG, new ParamValue(4));
-//        param.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValue(new Dtw(), wParam));
-
+        ParamSet oParamSet = new ParamSet();
+        oParamSet.add(Dtw.WARPING_WINDOW_FLAG, 3);
+        ParamSet paramSet = new ParamSet();
+        paramSet.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new Dtw(), oParamSet);
+        String[] options;
+        options = oParamSet.getOptions();
+        System.out.println(Utils.joinOptions(options));
+        options = paramSet.getOptions();
+        System.out.println(Utils.joinOptions(options));
     }
+
+    // todo handle lists as the value of param value --> i.e. split list into separate param values
 }

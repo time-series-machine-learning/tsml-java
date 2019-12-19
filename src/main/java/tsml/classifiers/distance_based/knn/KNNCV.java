@@ -10,6 +10,8 @@ import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
 import utilities.cache.SymmetricCache;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -18,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
 public class KNNCV
     extends KNN implements TrainTimeContractable,
@@ -188,6 +192,18 @@ public class KNNCV
         Collections.addAll(options, super.getOptions());
         Collections.addAll(options, TrainTimeContractable.super.getOptions());
         return options.toArray(new String[0]);
+    }
+
+    @Override public ParamSet getParams() {
+        return super.getParams().add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIterationStrategy).add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit).addAll(TrainTimeContractable.super.getParams());
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        super.setParams(params);
+        ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
+        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy,
+                              NeighbourIterationStrategy.class);
+        TrainTimeContractable.super.setParams(params);
     }
 
     protected void loadFromCheckpoint() {

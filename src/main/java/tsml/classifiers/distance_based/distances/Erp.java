@@ -1,11 +1,12 @@
 package tsml.classifiers.distance_based.distances;
 
 import utilities.StrUtils;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class Erp extends AbstractDistanceMeasure {
 
@@ -125,23 +126,14 @@ public class Erp extends AbstractDistanceMeasure {
 
     private int bandSize = 0;
 
-    @Override
-    public String[] getOptions() {
-        ArrayList<String> options = new ArrayList<>();
-        StrUtils.addOption(PENALTY_FLAG, options, penalty);
-        StrUtils.addOption(BAND_SIZE_FLAG, options, bandSize);
-        Collections.addAll(options, super.getOptions());
-        return options.toArray(new String[0]);
+    @Override public ParamSet getParams() {
+        return super.getParams().add(PENALTY_FLAG, penalty).add(BAND_SIZE_FLAG, bandSize);
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-        super.setOptions(options);
-        StrUtils.setOption(options, PENALTY_FLAG, this::setPenalty, Double::parseDouble);
-        StrUtils.setOption(options, BAND_SIZE_FLAG, this::setBandSize, Integer::parseInt);
+    @Override public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, PENALTY_FLAG, this::setPenalty, Double.class);
+        ParamHandler.setParam(param, BAND_SIZE_FLAG, this::setBandSize, Integer.class);
     }
-
 
     public int getBandSize() {
         return bandSize;
