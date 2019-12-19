@@ -20,9 +20,9 @@ public class ParamSpace {
         private List<ParamSpace> paramsList = new ArrayList<>();
 
         public int[] getBins() {
-            int[] bins = new int[paramSpaceList.size() + 1];
-            for(int i = 0; i < paramSpaceList.size(); i++) {
-                bins[i] = paramSpaceList.get(i).size();
+            int[] bins = new int[paramsList.size() + 1];
+            for(int i = 0; i < paramsList.size(); i++) {
+                bins[i] = paramsList.get(i).size();
             }
             bins[bins.length - 1] = values.size();
             return bins;
@@ -48,7 +48,7 @@ public class ParamSpace {
 
         public ParamValues(List<?> values, List<ParamSpace> params) {
             setValues(values);
-            setParamSpaceList(params);
+            setParamsList(params);
         }
 
         public ParamValues(List<?> values) {
@@ -82,13 +82,13 @@ public class ParamSpace {
             if(paramsList == null) {
                 paramsList = new ArrayList<>();
             }
-            this.paramSpaceList = paramSpaceList;
+            this.paramsList = paramsList;
         }
 
         @Override public String toString() {
             return "ParamValues{" +
                 "values=" + values +
-                ", params=" + paramSpaceList +
+                ", params=" + paramsList +
                 '}';
         }
     }
@@ -126,7 +126,7 @@ public class ParamSpace {
             }
             i++;
         }
-        return paramSet;
+        return param;
     }
 
     public int size() {
@@ -182,9 +182,9 @@ public class ParamSpace {
         params.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new ParamValues(Arrays.asList(new Wdtw(), new Wddtw()),
                                                                            Arrays.asList(lParams)));
         int size;
-        size = wParamSpace.size();
-        size = lParamSpace.size();
-        size = paramSpace.size();
+        size = wParams.size();
+        size = lParams.size();
+        size = params.size();
         for(int i = 0; i < size; i++) {
 //            System.out.println(i);
             ParamSet param = params.get(i);

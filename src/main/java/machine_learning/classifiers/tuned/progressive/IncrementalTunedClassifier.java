@@ -1,11 +1,14 @@
 package machine_learning.classifiers.tuned.progressive;
 
+import com.google.common.primitives.Doubles;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;
 import utilities.ArrayUtilities;
+import utilities.params.ParamHandler;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -17,10 +20,10 @@ public class IncrementalTunedClassifier extends EnhancedAbstractClassifier imple
             return false;
         }
     };
-    private List<Benchmark> collectedBenchmarks;
+    private List<Benchmark> collectedBenchmarks = new ArrayList<>();
     private BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     private BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
-    private List<Double> ensembleWeights;
+    private List<Double> ensembleWeights = new ArrayList<>();
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
@@ -43,17 +46,36 @@ public class IncrementalTunedClassifier extends EnhancedAbstractClassifier imple
         ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
     }
 
-    @Override
-    public void startBuild(Instances data) throws Exception {
-
-    }
-
     public BenchmarkIterator getBenchmarkIterator() {
         return benchmarkIterator;
     }
 
     public void setBenchmarkIterator(BenchmarkIterator benchmarkIterator) {
         this.benchmarkIterator = benchmarkIterator;
+    }
+
+    public List<Benchmark> getCollectedBenchmarks() {
+        return collectedBenchmarks;
+    }
+
+    public BenchmarkCollector getBenchmarkCollector() {
+        return benchmarkCollector;
+    }
+
+    public void setBenchmarkCollector(BenchmarkCollector benchmarkCollector) {
+        this.benchmarkCollector = benchmarkCollector;
+    }
+
+    public BenchmarkEnsembler getBenchmarkEnsembler() {
+        return benchmarkEnsembler;
+    }
+
+    public void setBenchmarkEnsembler(BenchmarkEnsembler benchmarkEnsembler) {
+        this.benchmarkEnsembler = benchmarkEnsembler;
+    }
+
+    public List<Double> getEnsembleWeights() {
+        return ensembleWeights;
     }
 
     @Override
@@ -74,4 +96,6 @@ public class IncrementalTunedClassifier extends EnhancedAbstractClassifier imple
     public double classifyInstance(Instance testCase) throws Exception {
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
+
+    // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions
 }

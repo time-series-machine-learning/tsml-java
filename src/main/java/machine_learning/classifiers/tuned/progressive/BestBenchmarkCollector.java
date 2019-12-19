@@ -8,7 +8,7 @@ import weka.core.Randomizable;
 import java.util.*;
 import java.util.function.Function;
 
-public class BestBenchmarkCollector implements Randomizable, BenchmarkCollector {
+public class BestBenchmarkCollector implements BenchmarkCollector {
     private final PrunedTreeMultiMap<Double, Benchmark> map;
     private int seed = 0;
     private Random rand = new Random(seed);
@@ -16,7 +16,7 @@ public class BestBenchmarkCollector implements Randomizable, BenchmarkCollector 
     private Benchmark best = null;
 
     public BestBenchmarkCollector(Function<Benchmark, Double> scorer) {
-        this.map = new PrunedTreeMultiMap<>(new TreeMultiMap<>(Comparator.naturalOrder()));
+        this.map = new PrunedTreeMultiMap<Double, Benchmark>(TreeMultiMap.newNaturalAsc());
         map.setLimit(1);
         this.scorer = scorer;
     }

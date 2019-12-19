@@ -47,7 +47,7 @@ public class ParamSet implements ParamHandler {
             if(paramList == null) {
                 paramList = new ArrayList<>();
             }
-            this.paramSetList = paramSetList;
+            this.paramList = paramList;
         }
 
         public void addParam(final ParamSet param) {
@@ -57,7 +57,7 @@ public class ParamSet implements ParamHandler {
         @Override public String toString() {
             return "ParamValue{" +
                 "value=" + value +
-                ", paramList=" + paramSetList +
+                ", paramList=" + paramList +
                 '}';
         }
 

@@ -1,6 +1,7 @@
 package machine_learning.classifiers.tuned.progressive;
 
 import machine_learning.classifiers.tuned.progressive.Benchmark;
+import utilities.DefaultRandomizable;
 import utilities.collections.DefaultIterator;
 
 import java.util.List;
