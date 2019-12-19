@@ -5,12 +5,14 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ProgressiveBuildClassifier;
 import utilities.ArrayUtilities;
 import weka.core.Instance;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
-public class IncrementalTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier {
+public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier {
 
     private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
         @Override
@@ -22,6 +24,13 @@ public class IncrementalTunedClassifier extends EnhancedAbstractClassifier imple
     private BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     private BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     private List<Double> ensembleWeights = new ArrayList<>();
+    private Consumer<Instances> onDataFunction = instances -> {
+
+    };
+
+    @Override public void startBuild(final Instances data) throws Exception {
+        onDataFunction.accept(data);
+    }
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
@@ -93,6 +102,14 @@ public class IncrementalTunedClassifier extends EnhancedAbstractClassifier imple
     @Override
     public double classifyInstance(Instance testCase) throws Exception {
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
+    }
+
+    public Consumer<Instances> getOnDataFunction() {
+        return onDataFunction;
+    }
+
+    public void setOnDataFunction(final Consumer<Instances> onDataFunction) {
+        this.onDataFunction = onDataFunction;
     }
 
     // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions

@@ -2,6 +2,7 @@ package utilities.params;
 
 import tsml.classifiers.distance_based.distances.*;
 import utilities.ArrayUtilities;
+import utilities.collections.DefaultList;
 
 import java.util.*;
 
@@ -9,7 +10,7 @@ import java.util.*;
  * holds a mapping of parameter names to their corresponding values, where the values are stored as a ParamValues
  * object to allow for sub parameter spaces.
  */
-public class ParamSpace {
+public class ParamSpace implements DefaultList<ParamSet> {
 
     /**
      * holds a set of values (e.g. DTW and DDTW) and a set of corresponding params for those values (e.g. a set of
@@ -32,9 +33,9 @@ public class ParamSpace {
             return ArrayUtilities.numPermutations(getBins());
         }
 
-        public ParamSet.ParamValue get(final int index) {
+        public Object get(final int index) {
             int[] indices = ArrayUtilities.fromPermutation(index, getBins());
-            ParamSet.ParamValue paramValue = new ParamSet.ParamValue();
+            Object paramValue = new ParamSet.ParamValue();
             for(int i = 0; i < paramsList.size(); i++) {
                 ParamSet param = paramsList.get(i).get(indices[i]);
                 paramValue.addParam(param);
@@ -155,9 +156,8 @@ public class ParamSpace {
         return this;
     }
 
-    public ParamSpace clear() {
+    public void clear() {
         paramsMap.clear();
-        return this;
     }
 
     @Override public String toString() {

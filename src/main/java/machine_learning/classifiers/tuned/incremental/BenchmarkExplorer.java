@@ -2,7 +2,7 @@ package machine_learning.classifiers.tuned.incremental;
 
 import java.util.Set;
 
-public class IncrementalBenchmarkIterator implements BenchmarkIterator {
+public class BenchmarkExplorer implements BenchmarkIterator {
     private BenchmarkIterator benchmarkImprover = new BenchmarkIterator() {};
     private BenchmarkIterator benchmarkSource = new BenchmarkIterator() {};
     private Guide guide = () -> false; // default to fully evaluate each benchmark before sourcing further benchmarks

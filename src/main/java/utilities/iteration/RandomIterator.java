@@ -23,7 +23,7 @@ public class RandomIterator<A>
 
     private Random random = null;
     private Integer seed = null;
-    private List<A> list = new ArrayList<>(); // todo tree list?
+    private List<A> list = new ArrayList<>();
     private int index;
     public final static String SEED_FLAG = "-s";
     private boolean nextIndexSetup = false;
@@ -61,6 +61,10 @@ public class RandomIterator<A>
 
     public RandomIterator(List<A> list) {
         this(-1, list);
+    }
+
+    public RandomIterator(List<A> list, int seed) {
+        this(seed, list);
     }
 
     public int getSeed() {
