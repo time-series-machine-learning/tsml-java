@@ -35,8 +35,7 @@ public class ShapeletSearch implements Serializable{
                             RANDOM,
 //ALL of the below are things Aaron tried in his thesis (package aaron_search)
 //It is not commented and somewhat untested.
-        GENETIC, FS, //Fast shapeletes
-    //All of these are now in aaron_search and are largely untested. Recommend not using them.
+        GENETIC, FS, //Fast shapelets
         LOCAL, MAGNIFY, TIMED_RANDOM, SKIPPING, TABU, REFINED_RANDOM, IMPROVED_RANDOM, SUBSAMPLE_RANDOM, SKEWED, BO_SEARCH};
     
     

@@ -23,7 +23,7 @@ import weka.core.Instance;
  *
  * @author raj09hxu
  */
-public class OnlineSubSeqDistance extends SubSeqDistance {
+public class OnlineShapeletDistance extends ShapeletDistance {
 
     protected double[][] sortedIndices;
 

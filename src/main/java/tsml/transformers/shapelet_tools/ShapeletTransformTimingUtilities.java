@@ -23,16 +23,17 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+
 import tsml.filters.shapelet_filters.BalancedClassShapeletFilter;
 import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.ShapeletTransform;
 import utilities.InstanceTools;
 import utilities.generic_storage.Pair;
 import weka.core.Instances;
 import tsml.transformers.shapelet_tools.class_value.BinaryClassValue;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import tsml.transformers.shapelet_tools.distance_functions.CachedSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.OnlineSubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.CachedShapeletDistance;
+import tsml.transformers.shapelet_tools.distance_functions.OnlineShapeletDistance;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 
 /**
@@ -145,14 +146,14 @@ public class ShapeletTransformTimingUtilities
     public static ShapeletFilter createCachedTransform()
     {
         ShapeletFilter st = new ShapeletFilter();
-        st.setSubSeqDistance(new CachedSubSeqDistance());
+        st.setSubSeqDistance(new CachedShapeletDistance());
         return st;
     }
     
     public static ShapeletFilter createOnlineTransform()
     {
         ShapeletFilter st = new ShapeletFilter();
-        st.setSubSeqDistance(new OnlineSubSeqDistance());
+        st.setSubSeqDistance(new OnlineShapeletDistance());
         return st;
     }
     
@@ -177,7 +178,7 @@ public class ShapeletTransformTimingUtilities
             transform.setClassValue(new BinaryClassValue());
         }
         
-        //transform.setSubSeqDistance(new ImprovedOnlineSubSeqDistance());
+        //transform.setSubSeqDistance(new ImprovedOnlineShapeletDistance());
         transform.setShapeletMinAndMax(3, numAttributes);
         transform.setNumberOfShapelets(numInstances);
         transform.useCandidatePruning();
@@ -429,7 +430,7 @@ public class ShapeletTransformTimingUtilities
         return createTransformWithTimeLimit(train, hours, 0);
     }
     public static ShapeletFilter createTransformWithTimeLimit(Instances train, double hours, int seed){
-        int minimumRepresentation = ShapeletTransformClassifier.minimumRepresentation;
+        int minimumRepresentation = ShapeletTransform.minimumRepresentation;
         long nanoPerHour = 3600000000000l;
         long time = (long)(nanoPerHour*hours);
         
@@ -523,7 +524,7 @@ public class ShapeletTransformTimingUtilities
             
             FullShapeletTransform transform = new FullShapeletTransform();
             transform.setSearchFunction(new ShapeletSearch(min,max,len, pos));
-            transform.setSubSeqDistance(new SubSeqDistance());
+            transform.setSubSeqDistance(new ShapeletDistance());
             transform.supressOutput();
             transform.process(train);
             long ops3 = transform.getCount();

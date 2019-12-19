@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tsml.transformers.shapelet_tools.*;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import utilities.ClassifierTools;
 import utilities.class_counts.ClassCounts;
 import weka.classifiers.meta.RotationForest;
@@ -44,8 +45,7 @@ import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.ShapeletQualityChoice;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineSubSeqDistance;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.ImprovedOnlineShapeletDistance;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import utilities.rescalers.SeriesRescaler;
 
@@ -108,7 +108,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
 
     protected Comparator<Shapelet> shapeletComparator;
 //Made public for now to keep the filters
-    public SubSeqDistance subseqDistance;
+    public ShapeletDistance subseqDistance;
 
     public NormalClassValue classValue;
 
@@ -123,7 +123,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
     protected long count;
 
 
-    public void setSubSeqDistance(SubSeqDistance ssd) {
+    public void setSubSeqDistance(ShapeletDistance ssd) {
         subseqDistance = ssd;
     }
     
@@ -203,7 +203,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
         this.kShapelets = new ArrayList<>();
 
         setQualityMeasure(qualityChoice);
-        this.subseqDistance = new SubSeqDistance();
+        this.subseqDistance = new ShapeletDistance();
         this.classValue = new NormalClassValue();
         
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
@@ -1252,8 +1252,8 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
                                             .build();
 
 
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
-                                            .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
+                                            .setDistanceType(ShapeletDistance.DistanceType.IMPROVED_ONLINE)
                                             .setKShapelets(train.numInstances()*10)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
@@ -1262,7 +1262,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
                                             .setSearchOptions(searchOptions)
                                             .build();
 
-        ShapeletFilter transform = new ShapeletTransformFactory(options).getTransform();
+        ShapeletFilter transform = new ShapeletTransformFactory(options).getFilter();
         transform.setLogOutputFile(saveLocation+"fordAOutput.csv");
 
         long startTime1 = System.nanoTime();
@@ -1304,7 +1304,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
             transform.setRoundRobin(true);
             //construct shapelet classifiers.
             transform.setClassValue(new BinaryClassValue());
-            transform.setSubSeqDistance(new ImprovedOnlineSubSeqDistance());
+            transform.setSubSeqDistance(new ImprovedOnlineShapeletDistance());
             transform.setShapeletMinAndMax(3, train.numAttributes() - 1);
             transform.useCandidatePruning();
             transform.setNumberOfShapelets(train.numInstances() * 10);
@@ -1333,8 +1333,8 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
                                                 .build();
                                                 
             
-            ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
-                                                .setDistanceType(SubSeqDistance.DistanceType.IMPROVED_ONLINE)
+            ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
+                                                .setDistanceType(ShapeletDistance.DistanceType.IMPROVED_ONLINE)
                                                 .setKShapelets(train.numInstances()*10)
                                                 .useBinaryClassValue()
                                                 .useClassBalancing()
@@ -1343,7 +1343,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
                                                 .setSearchOptions(searchOptions)
                                                 .build();
             
-            ShapeletFilter transform1 = new ShapeletTransformFactory(options).getTransform();
+            ShapeletFilter transform1 = new ShapeletTransformFactory(options).getFilter();
             transform1.supressOutput();
             
             long startTime1 = System.nanoTime();
@@ -1412,7 +1412,7 @@ public class ShapeletFilter extends SimpleBatchFilter implements Serializable,Te
     public void setUseRoundRobin(boolean b) {
         useRoundRobin = b;
     }
-    public SubSeqDistance getSubSequenceDistance(){
+    public ShapeletDistance getSubSequenceDistance(){
         return subseqDistance;
     }
     public TechnicalInformation getTechnicalInformation() {

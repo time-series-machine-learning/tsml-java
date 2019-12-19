@@ -24,7 +24,7 @@ import java.util.function.Function;
 import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.nanoToOp;
 
 import tsml.filters.shapelet_filters.ShapeletFilter;
-import tsml.transformers.shapelet_tools.distance_functions.SubSeqDistance;
+import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.FULL;
 import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.IMPROVED_RANDOM;
@@ -115,10 +115,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.DIMENSION)
+                                            .setDistanceType(ShapeletDistance.DistanceType.DIMENSION)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -163,10 +163,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.INDEPENDENT)
+                                            .setDistanceType(ShapeletDistance.DistanceType.INDEPENDENT)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -211,10 +211,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.DEPENDENT)
+                                            .setDistanceType(ShapeletDistance.DistanceType.DEPENDENT)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -252,10 +252,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.CACHED)
+                                            .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -300,10 +300,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.CACHED)
+                                            .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -347,10 +347,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.CACHED)
+                                            .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -394,10 +394,10 @@ public class DefaultShapeletOptions {
         }
 
         
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
-                                            .setDistanceType(SubSeqDistance.DistanceType.CACHED)
+                                            .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
                                             .useClassBalancing()
                                             .useCandidatePruning()
@@ -413,9 +413,9 @@ public class DefaultShapeletOptions {
                                     .setNumDimensions(utilities.multivariate_tools.MultivariateInstanceTools.numChannels(train))
                                     .build();
 
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setSearchOptions(sOps)
-                                            .setDistanceType(SubSeqDistance.DistanceType.DIMENSION)
+                                            .setDistanceType(ShapeletDistance.DistanceType.DIMENSION)
                                             .setKShapelets(Math.min(2000,train.numInstances()))
                                             .useBinaryClassValue()
                                             .useClassBalancing()
@@ -425,10 +425,10 @@ public class DefaultShapeletOptions {
     }
         
     public static ShapeletTransformFactoryOptions createSHAPELET_I(Instances train){
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setMinLength(3)
                                             .setMaxLength(utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train))
-                                            .setDistanceType(SubSeqDistance.DistanceType.INDEPENDENT)
+                                            .setDistanceType(ShapeletDistance.DistanceType.INDEPENDENT)
                                             .setKShapelets(Math.min(2000,train.numInstances()))
                                             .useBinaryClassValue()
                                             .useClassBalancing()
@@ -438,10 +438,10 @@ public class DefaultShapeletOptions {
     }
     
     public static ShapeletTransformFactoryOptions createSHAPELET_D(Instances train){
-        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.Builder()
+        ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setMinLength(3)
                                             .setMaxLength(utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train))
-                                            .setDistanceType(SubSeqDistance.DistanceType.DEPENDENT)
+                                            .setDistanceType(ShapeletDistance.DistanceType.DEPENDENT)
                                             .setKShapelets(Math.min(2000,train.numInstances()))
                                             .useBinaryClassValue()
                                             .useClassBalancing()
@@ -458,7 +458,7 @@ public class DefaultShapeletOptions {
 
 
         ShapeletTransformFactoryOptions options = TIMED_FACTORY_OPTIONS.get("RANDOM").apply(train, 100000l, 0l);
-        ShapeletFilter st = new ShapeletTransformFactory(options).getTransform();
+        ShapeletFilter st = new ShapeletTransformFactory(options).getFilter();
 
     }
 }
