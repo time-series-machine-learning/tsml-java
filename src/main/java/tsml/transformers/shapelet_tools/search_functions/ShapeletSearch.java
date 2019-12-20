@@ -30,6 +30,8 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.channelLeng
  */
 public class ShapeletSearch implements Serializable{
 
+    protected long numShapeletsPerSeries;    //Number of shapelets to sample per series, used by the randomised versions
+
 //Defines the search technique defined in this package.
     public enum SearchType {FULL, //Evaluate all shapelets using
                             RANDOM,
@@ -110,7 +112,11 @@ public class ShapeletSearch implements Serializable{
     
     transient protected ShapeletSearchOptions options;
 
-    public long getNumShapeletsPerSeries(){ return options.getNumShapeletsToEvaluate();}
+    public long getNumShapeletsPerSeries(){ return numShapeletsPerSeries;}
+    public void setNumShapeletsPerSeries(long t){
+        numShapeletsPerSeries =t;
+    }
+
     protected ShapeletSearch(ShapeletSearchOptions ops){
         options = ops;
         
@@ -175,8 +181,7 @@ public class ShapeletSearch implements Serializable{
         seriesCount++;
         return seriesShapelets;
     }
-    
-    
+
     protected Instance getTimeSeries(Instance timeSeries, int dim){
         if(numDimensions > 1)
             return utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(timeSeries)[dim];

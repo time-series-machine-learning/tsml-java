@@ -32,7 +32,7 @@ public class TabuSearch extends ImprovedRandomSearch {
     
     int maxTabuSize = 50;
 
-    int numShapeletsPerSeries;
+    int initialNumShapeletsPerSeries;
     
     Shapelet bsf_shapelet;  
     
@@ -51,18 +51,18 @@ public class TabuSearch extends ImprovedRandomSearch {
         super.init(input);
         
         float subsampleSize = (float) inputData.numInstances() * proportion;
-        numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
+        initialNumShapeletsPerSeries = (int) ((float) numShapeletsPerSeries / subsampleSize);
         seriesToConsider = new BitSet(inputData.numInstances());
         
         
-        System.out.println(numShapeletsPerSeries);
+        System.out.println(initialNumShapeletsPerSeries);
         
         //if we're looking at less than root(m) shapelets per series. sample to root n.
-        if(numShapeletsPerSeries < Math.sqrt(inputData.numAttributes()-1)){
+        if(initialNumShapeletsPerSeries < Math.sqrt(inputData.numAttributes()-1)){
             //recalc prop and subsample size.
             proportion =  ((float) Math.sqrt(inputData.numInstances()) / (float)inputData.numInstances());
             subsampleSize = (float) inputData.numInstances() * proportion;
-            numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
+            initialNumShapeletsPerSeries = (int) ((float) numShapeletsPerSeries / subsampleSize);
             System.out.println("subsampleSize " + (int)subsampleSize);
         }
                     
@@ -77,10 +77,10 @@ public class TabuSearch extends ImprovedRandomSearch {
             System.out.println(seriesToConsider);
         }
         
-        System.out.println(numShapeletsPerSeries);
+        System.out.println(initialNumShapeletsPerSeries);
         
         // we might need to reduce the number of series. could do 10% subsampling.
-        if(numShapeletsPerSeries < 1)
+        if(initialNumShapeletsPerSeries < 1)
             System.err.println("Too Few Starting shapelets");
     }
     
@@ -99,7 +99,7 @@ public class TabuSearch extends ImprovedRandomSearch {
         int numShapeletsEvaluated = 0;
 
         //Only consider a fixed amount of shapelets.
-        while(numShapeletsPerSeries > numShapeletsEvaluated){
+        while(initialNumShapeletsPerSeries > numShapeletsEvaluated){
             
             //create the random shapelet.
             //if it's the first iteration and we've got a previous best shapelet.

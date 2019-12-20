@@ -41,7 +41,7 @@ public class SkewedRandomSearch extends ImprovedRandomSearch {
 
         cumulativeDistribution = findCumulativeCounts(lengthDistribution);
         //generate the random shapelets we're going to visit.
-        for(int i = 0; i< numPerSeries; i++){
+        for(int i = 0; i< numShapeletsPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(input.numInstances());
             

@@ -135,15 +135,26 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
 //This is done by estimating the time to evaluate a single shapelet then extrapolating
         if(transformTimeLimit>0) {
+            System.out.println(" Contract time limit = "+transformTimeLimit);
             configureTrainTimeContract(data, transformTimeLimit);
         }
         //This is hacked to build a cShapeletTransform
         transform= constructShapeletTransform(data);
         transform.setSuppressOutput(debug);
+
 //The cConfig CONTRACT option is currently hacked into buildTransfom. here for now
 //        if(transform instanceof cShapeletFilter)
 //            ((cShapeletFilter)transform).setContractTime(transformTimeLimit);
-
+        if(transformTimeLimit>0) {
+//            long numberOfShapeletsPerSeries=numShapeletsInProblem/data.numInstances();
+            double timePerShapelet=transformTimeLimit/numShapeletsToEvaluate;
+            System.out.println("Total shapelets per series "+numShapeletsInProblem/data.numInstances()+" num to eval = "+numShapeletsToEvaluate/data.numInstances());
+            transform.setContractTime(transformTimeLimit);
+            transform.setAdaptiveTiming(true);
+            transform.setTimePerShapelet(timePerShapelet);
+            System.out.println(" Time per shapelet = "+timePerShapelet);
+//            transform.setProportionToEvaluate(proportionToEvaluate);
+        }
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         if(debug) {
