@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.function.Function;
 
 public interface BenchmarkEnsembler {
-    List<Double> weightVotes(List<Benchmark> benchmarks);
+    List<Double> weightVotes(Iterable<Benchmark> benchmarks);
 
     static BenchmarkEnsembler byScore(Function<Benchmark, Double> scorer) {
         return (benchmarks) -> {
-            List<Double> weights = new ArrayList<>(benchmarks.size());
+            List<Double> weights = new ArrayList<>();
             for(Benchmark benchmark : benchmarks) {
                 weights.add(scorer.apply(benchmark));
             }

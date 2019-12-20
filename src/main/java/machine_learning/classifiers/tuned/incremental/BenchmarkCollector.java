@@ -1,8 +1,11 @@
 package machine_learning.classifiers.tuned.incremental;
 
-import java.util.List;
+import weka.core.Randomizable;
 
-public interface BenchmarkCollector {
+import java.util.List;
+import java.util.Set;
+
+public interface BenchmarkCollector extends Randomizable {
     void add(Benchmark benchmark);
-    List<Benchmark> getCollectedBenchmarks();
+    Set<Benchmark> getCollectedBenchmarks();
 }

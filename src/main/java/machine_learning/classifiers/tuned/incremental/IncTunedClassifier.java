@@ -7,10 +7,10 @@ import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
+
+import static utilities.collections.Utils.replace;
 
 public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier {
 
@@ -20,10 +20,10 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
             return false;
         }
     };
-    private List<Benchmark> collectedBenchmarks = new ArrayList<>();
+    private Set<Benchmark> collectedBenchmarks = new HashSet<>();
     private BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     private BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
-    private List<Double> ensembleWeights = new ArrayList<>();
+    private List<Double> ensembleWeights = null;
     private Consumer<Instances> onDataFunction = instances -> {
 
     };
@@ -40,8 +40,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     @Override
     public void nextBuildTick() throws Exception {
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
-        collectedBenchmarks.removeAll(nextBenchmarks);
-        collectedBenchmarks.addAll(nextBenchmarks);
+        replace(collectedBenchmarks, nextBenchmarks);
     }
 
     @Override
@@ -49,8 +48,11 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
         collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks();
         if(collectedBenchmarks.isEmpty()) {
             throw new IllegalStateException("no benchmarks");
+        } else if(collectedBenchmarks.size() == 1) {
+            ensembleWeights = null;
+        } else {
+            ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
         }
-        ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
     }
 
     public BenchmarkIterator getBenchmarkIterator() {
@@ -61,7 +63,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
         this.benchmarkIterator = benchmarkIterator;
     }
 
-    public List<Benchmark> getCollectedBenchmarks() {
+    public Set<Benchmark> getCollectedBenchmarks() {
         return collectedBenchmarks;
     }
 
@@ -87,11 +89,17 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
 
     @Override
     public double[] distributionForInstance(Instance testCase) throws Exception {
+        Iterator<Benchmark> benchmarkIterator = collectedBenchmarks.iterator();
+        if(collectedBenchmarks.size() == 1) {
+            return benchmarkIterator.next().getClassifier().distributionForInstance(testCase);
+        }
         double[] distribution = new double[numClasses];
         for(int i = 0; i < collectedBenchmarks.size(); i++) {
-            Benchmark benchmark = collectedBenchmarks.get(i);
+            if(!benchmarkIterator.hasNext()) {
+                throw new IllegalStateException("iterator incorrect");
+            }
+            Benchmark benchmark = benchmarkIterator.next();
             double[] constituentDistribution = benchmark.getClassifier().distributionForInstance(testCase);
-            ArrayUtilities.normaliseInPlace(constituentDistribution);
             ArrayUtilities.multiplyInPlace(constituentDistribution, ensembleWeights.get(i));
             ArrayUtilities.addInPlace(distribution, constituentDistribution);
         }

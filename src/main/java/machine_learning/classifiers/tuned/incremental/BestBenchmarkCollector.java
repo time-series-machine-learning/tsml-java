@@ -9,8 +9,8 @@ import java.util.function.Function;
 
 public class BestBenchmarkCollector implements BenchmarkCollector {
     private final PrunedTreeMultiMap<Double, Benchmark> map;
-    private int seed = 0;
-    private Random rand = new Random(seed);
+    private int seed;
+    private final Random rand = new Random();
     private Function<Benchmark, Double> scorer;
     private Benchmark best = null;
 
@@ -18,11 +18,18 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
         this.map = new PrunedTreeMultiMap<Double, Benchmark>(TreeMultiMap.newNaturalAsc());
         map.setLimit(1);
         this.scorer = scorer;
+        setSeed(0);
+    }
+
+    public BestBenchmarkCollector(int seed, Function<Benchmark, Double> scorer) {
+        this(scorer);
+        setSeed(seed);
     }
 
     @Override
     public void setSeed(int seed) {
         this.seed = seed;
+        map.setSeed(seed);
         rand.setSeed(seed);
     }
 
@@ -38,11 +45,11 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
     }
 
     @Override
-    public List<Benchmark> getCollectedBenchmarks() {
+    public Set<Benchmark> getCollectedBenchmarks() {
         if(best == null) {
             List<Benchmark> benchmarks = ArrayUtilities.flatten(map.values()); // todo as view
             best = benchmarks.get(rand.nextInt(benchmarks.size()));
         }
-        return new ArrayList<>(Collections.singletonList(best));
+        return new HashSet<>(Collections.singletonList(best));
     }
 }

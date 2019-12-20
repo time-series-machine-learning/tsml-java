@@ -2,6 +2,7 @@ package utilities.collections;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 
 public class Utils {
     private Utils() {}
@@ -20,7 +21,32 @@ public class Utils {
         return result;
     }
 
+
+    public static <A> void replace(Set<A> set, A item) {
+        set.remove(item);
+        set.add(item);
+    }
+
+    public static <A> void replace(Set<A> set, Collection<A> collection) {
+        for(A item  : collection) {
+            replace(set, item);
+        }
+    }
+
     public static <A> A get(Iterable<A> iterable, int index) {
         return get(iterable.iterator(), index);
+    }
+
+    public static <A> int size(Iterator<A> iterator) {
+        int count = 0;
+        while (iterator.hasNext()) {
+            count++;
+            iterator.next();
+        }
+        return count;
+    }
+
+    public static <A> int size(Iterable<A> iterable) {
+        return size(iterable.iterator());
     }
 }

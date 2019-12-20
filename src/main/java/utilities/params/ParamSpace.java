@@ -35,14 +35,16 @@ public class ParamSpace implements DefaultList<ParamSet> {
 
         public Object get(final int index) {
             int[] indices = ArrayUtilities.fromPermutation(index, getBins());
-            Object paramValue = new ParamSet.ParamValue();
-            for(int i = 0; i < paramsList.size(); i++) {
-                ParamSet param = paramsList.get(i).get(indices[i]);
-                paramValue.addParam(param);
-            }
             Object value = values.get(indices[indices.length - 1]);
-            paramValue.setValue(value);
-            return paramValue;
+            if(!(value instanceof ParamHandler) && !paramsList.isEmpty()) {
+                throw new IllegalStateException("value not param settable");
+            }
+            for(int i = 0; i < paramsList.size(); i++) {
+                ParamHandler paramHandler = (ParamHandler) value;
+                ParamSet param = paramsList.get(i).get(indices[i]);
+                paramHandler.setParams(param);
+            }
+            return value;
         }
 
         public ParamValues() {}
@@ -119,11 +121,13 @@ public class ParamSpace implements DefaultList<ParamSet> {
                 int size = paramValues.size();
                 index -= size;
                 if(index < 0) {
-                    index += size;
-                    ParamSet.ParamValue paramValue = paramValues.get(index);
+                    Object paramValue = paramValues.get(index + size);
                     param.add(entry.getKey(), paramValue);
                     break;
                 }
+            }
+            if(index >= 0) {
+                throw new IndexOutOfBoundsException();
             }
             i++;
         }

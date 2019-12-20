@@ -1,12 +1,29 @@
 package machine_learning.classifiers.tuned.incremental;
 
+import java.util.Iterator;
 import java.util.Set;
 
 public class BenchmarkExplorer implements BenchmarkIterator {
-    private BenchmarkIterator benchmarkImprover = new BenchmarkIterator() {};
-    private BenchmarkIterator benchmarkSource = new BenchmarkIterator() {};
+    private BenchmarkImprover benchmarkImprover = new BenchmarkImprover() {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+    };
+    private Iterator<Set<Benchmark>> benchmarkSource = new BenchmarkIterator() { // todo bespoke class
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Set<Benchmark> next() {
+            throw new UnsupportedOperationException();
+        }
+    };
     private Guide guide = () -> false; // default to fully evaluate each benchmark before sourcing further benchmarks
     private boolean shouldSource = true;
+//    private Set<Benchmark> improveableBenchmarks = new HashSet<>();
 
     public interface Guide {
         boolean shouldSource();
@@ -34,26 +51,36 @@ public class BenchmarkExplorer implements BenchmarkIterator {
 
     @Override
     public Set<Benchmark> next() {
+        Set<Benchmark> result;
         if(shouldSource) {
-            return benchmarkSource.next();
+            result = benchmarkSource.next();
         } else {
-            return benchmarkImprover.next();
+            result = benchmarkImprover.next();
         }
+        return result;
     }
 
-    public BenchmarkIterator getBenchmarkImprover() {
+    public BenchmarkImprover getBenchmarkImprover() {
         return benchmarkImprover;
     }
 
-    public void setBenchmarkImprover(BenchmarkIterator benchmarkImprover) {
+    public void setBenchmarkImprover(BenchmarkImprover benchmarkImprover) {
         this.benchmarkImprover = benchmarkImprover;
     }
 
-    public BenchmarkIterator getBenchmarkSource() {
+    public Iterator<Set<Benchmark>> getBenchmarkSource() {
         return benchmarkSource;
     }
 
-    public void setBenchmarkSource(BenchmarkIterator benchmarkSource) {
+    public void setBenchmarkSource(Iterator<Set<Benchmark>> benchmarkSource) {
         this.benchmarkSource = benchmarkSource;
+    }
+
+    public Guide getGuide() {
+        return guide;
+    }
+
+    public void setGuide(Guide guide) {
+        this.guide = guide;
     }
 }
