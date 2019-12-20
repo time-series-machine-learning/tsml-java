@@ -58,4 +58,18 @@ public interface ParamHandler
         // todo use getParams to populate this
         throw new UnsupportedOperationException("param list not specified");
     }
+
+    static void setParams(Object object, ParamSet paramSet) {
+        try {
+            if(object instanceof ParamHandler) {
+                ((ParamHandler) object).setParams(paramSet);
+            } else if(object instanceof OptionHandler) {
+                ((OptionHandler) object).setOptions(paramSet.getOptions());
+            } else {
+                throw new IllegalArgumentException("params not settable");
+            }
+        } catch(Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 }

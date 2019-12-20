@@ -1,15 +1,34 @@
-package utilities.iteration;
+package utilities.iteration.limited;
 
+import utilities.iteration.DefaultListIterator;
 import weka.core.OptionHandler;
 
 import java.util.Enumeration;
-import java.util.ListIterator;
+import java.util.Iterator;
 
-public class LimitedIterator<A>
-    implements DefaultListIterator<A>,
-               OptionHandler {
+public class LimitedListIterator<A> implements DefaultListIterator<A>, OptionHandler { // todo abst limit to abst
+    // class for iterator and listiterator version
 
-    private int limit = -1;
+    public LimitedListIterator() {}
+
+    public LimitedListIterator(Iterator<A> iterator) {
+        setIterator(iterator);
+    }
+
+    public LimitedListIterator(Iterator<A> iterator, int limit) {
+        setIterator(iterator);
+        setLimit(limit);
+    }
+
+    public LimitedListIterator(int limit, Iterator<A> iterator) {
+        this(iterator, limit);
+    }
+
+    public LimitedListIterator(int limit) {
+        setLimit(limit);
+    }
+
+    protected int limit = -1;
 
     public int getLimit() {
         return limit;
@@ -19,14 +38,14 @@ public class LimitedIterator<A>
         this.limit = limit;
     }
 
-    private int count = 0;
-    private ListIterator<A> iterator;
+    protected int count = 0;
+    protected Iterator<A> iterator;
 
-    public ListIterator<A> getIterator() {
+    public Iterator<A> getIterator() {
         return iterator;
     }
 
-    public void setIterator(final ListIterator<A> iterator) {
+    public void setIterator(final Iterator<A> iterator) {
         this.iterator = iterator;
     }
 
@@ -43,11 +62,6 @@ public class LimitedIterator<A>
 
     public void resetCount() {
         count = 0;
-    }
-
-    @Override
-    public void add(final A a) {
-        iterator.add(a);
     }
 
     @Override
@@ -75,4 +89,5 @@ public class LimitedIterator<A>
     }
 
     // todo pass through other iterator funcs
+
 }

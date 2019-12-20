@@ -24,12 +24,12 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     private BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     private BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     private List<Double> ensembleWeights = null;
-    private Consumer<Instances> onDataFunction = instances -> {
+    private Consumer<Instances> onTrainDataAvailable = instances -> {
 
     };
 
     @Override public void startBuild(final Instances data) throws Exception {
-        onDataFunction.accept(data);
+        onTrainDataAvailable.accept(data);
     }
 
     @Override
@@ -112,12 +112,12 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
 
-    public Consumer<Instances> getOnDataFunction() {
-        return onDataFunction;
+    public Consumer<Instances> getOnTrainDataAvailable() {
+        return onTrainDataAvailable;
     }
 
-    public void setOnDataFunction(final Consumer<Instances> onDataFunction) {
-        this.onDataFunction = onDataFunction;
+    public void setOnTrainDataAvailable(final Consumer<Instances> onTrainDataAvailable) {
+        this.onTrainDataAvailable = onTrainDataAvailable;
     }
 
     // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions

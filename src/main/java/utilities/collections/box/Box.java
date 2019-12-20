@@ -1,0 +1,24 @@
+package utilities.collections.box;
+
+public class Box<E> extends ImmutableBox<E> {
+
+    public Box() {
+        super(null);
+    }
+
+    public Box(final E contents) {
+        super(contents);
+    }
+
+    @Override public void set(final E contents) {
+        super.set(contents);
+    }
+
+
+    @Override public String toString() {
+        return "Box{" +
+//            "contents=" +
+            contents +
+            '}';
+    }
+}

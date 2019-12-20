@@ -21,13 +21,8 @@ public class BenchmarkExplorer implements BenchmarkIterator {
             throw new UnsupportedOperationException();
         }
     };
-    private Guide guide = () -> false; // default to fully evaluate each benchmark before sourcing further benchmarks
+    private Optimiser optimiser = () -> false; // default to fully evaluate each benchmark before sourcing further benchmarks
     private boolean shouldSource = true;
-//    private Set<Benchmark> improveableBenchmarks = new HashSet<>();
-
-    public interface Guide {
-        boolean shouldSource();
-    }
 
     @Override
     public boolean hasNext() {
@@ -35,7 +30,7 @@ public class BenchmarkExplorer implements BenchmarkIterator {
         boolean remainingSource = benchmarkSource.hasNext();
         if(remainingImprovement && remainingSource) {
             // allow the guide to decide whether to improve or source
-            shouldSource = guide.shouldSource();
+            shouldSource = optimiser.shouldSource();
         } else if(remainingImprovement) {
             // no remaining source so must improve
             shouldSource = false;
@@ -54,6 +49,7 @@ public class BenchmarkExplorer implements BenchmarkIterator {
         Set<Benchmark> result;
         if(shouldSource) {
             result = benchmarkSource.next();
+            benchmarkImprover.addAll(result);
         } else {
             result = benchmarkImprover.next();
         }
@@ -76,11 +72,11 @@ public class BenchmarkExplorer implements BenchmarkIterator {
         this.benchmarkSource = benchmarkSource;
     }
 
-    public Guide getGuide() {
-        return guide;
+    public Optimiser getOptimiser() {
+        return optimiser;
     }
 
-    public void setGuide(Guide guide) {
-        this.guide = guide;
+    public void setOptimiser(Optimiser optimiser) {
+        this.optimiser = optimiser;
     }
 }
