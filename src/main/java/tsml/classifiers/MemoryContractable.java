@@ -14,6 +14,8 @@
  */
 package tsml.classifiers;
 
+import utilities.MemoryWatcher;
+
 /**
  * Interface that allows the user to impose a memory contract of a classifier that
     implements this interface
@@ -21,7 +23,7 @@ package tsml.classifiers;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface MemoryContractable {
+public interface MemoryContractable extends MemoryWatchable {
     enum DataUnit {BYTES, MEGABYTE, GIGABYTE}
 
     default void setSixGigabyteLimit(){ setMemoryLimit(DataUnit.GIGABYTE, 6); }

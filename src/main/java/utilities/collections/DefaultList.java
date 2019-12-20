@@ -15,8 +15,8 @@ public interface DefaultList<A>
     }
 
     @Override default boolean isEmpty() {
-
-        throw new UnsupportedOperationException("default method not implemented");
+        int size = size();
+        return size == 0;
     }
 
     @Override default boolean contains(final Object o) {

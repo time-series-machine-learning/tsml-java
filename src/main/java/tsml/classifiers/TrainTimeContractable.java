@@ -30,7 +30,7 @@ known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (part
  * @author raj09hxu
  */
 public interface TrainTimeContractable
-    extends ParamHandler {
+    extends ParamHandler, TrainTimeable {
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }
@@ -47,9 +47,10 @@ public interface TrainTimeContractable
     default void setTrainTimeLimit(long time) { setTrainTimeLimit(TimeUnit.NANOSECONDS, time); }
 
     //pass in an value from the TimeUnit enum and the amount of said values.
-    void setTrainTimeLimit(TimeUnit time, long amount);
+    default void setTrainTimeLimit(TimeUnit time, long amount) {
+        setTrainTimeLimitNanos(TimeUnit.NANOSECONDS.convert(amount, time));
+    }
 
-    // passive agressive version of the above just flipped around (the *correct* way)
     default void setTrainTimeLimit(long amount, TimeUnit time) {
         setTrainTimeLimit(time, amount);
     }

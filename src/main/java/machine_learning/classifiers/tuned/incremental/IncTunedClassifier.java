@@ -2,17 +2,23 @@ package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.ProgressiveBuildClassifier;
+import tsml.classifiers.TrainTimeContractable;
 import utilities.ArrayUtilities;
+import utilities.MemoryWatcher;
+import utilities.StopWatch;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static utilities.collections.Utils.replace;
 
-public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier {
+public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
+                                                                              TrainTimeContractable, MemoryWatchable {
 
     private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
         @Override
@@ -20,16 +26,26 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
             return false;
         }
     };
-    private Set<Benchmark> collectedBenchmarks = new HashSet<>();
-    private BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
-    private BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
-    private List<Double> ensembleWeights = null;
-    private Consumer<Instances> onTrainDataAvailable = instances -> {
+    protected Set<Benchmark> collectedBenchmarks = new HashSet<>();
+    protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
+    protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
+    protected List<Double> ensembleWeights = null;
+    protected Consumer<Instances> onTrainDataAvailable = instances -> {
 
     };
+    protected MemoryWatcher memoryWatcher = new MemoryWatcher();
+    protected Instances trainData;
+
+    @Override public void buildClassifier(final Instances data) throws Exception {
+        super.buildClassifier(data);
+        ProgressiveBuildClassifier.super.buildClassifier(data);
+    }
 
     @Override public void startBuild(final Instances data) throws Exception {
-        onTrainDataAvailable.accept(data);
+        memoryWatcher.resume();
+        trainData = data;
+        onTrainDataAvailable.accept(data); // todo perhaps this should be obtained via a get? Not necessarily always
+        // required
     }
 
     @Override
@@ -50,9 +66,17 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
             throw new IllegalStateException("no benchmarks");
         } else if(collectedBenchmarks.size() == 1) {
             ensembleWeights = null;
+            trainResults = collectedBenchmarks.iterator().next().getResults();
         } else {
             ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
         }
+        memoryWatcher.pause();
+        trainResults.setMemory(getMaxMemoryUsageInBytes()); // todo other fields
+        trainResults.setBuildTime(getTrainTimeNanos()); // todo break down to estimate time also
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setFoldID(seed); // todo set other details
+        trainResults.setDetails(this, trainData);
+        trainData = null;
     }
 
     public BenchmarkIterator getBenchmarkIterator() {
@@ -118,6 +142,45 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
 
     public void setOnTrainDataAvailable(final Consumer<Instances> onTrainDataAvailable) {
         this.onTrainDataAvailable = onTrainDataAvailable;
+    }
+
+    protected long trainTimeLimitNanos = -1;
+    protected StopWatch trainTimer = new StopWatch();
+
+    @Override public void setTrainTimeLimitNanos(final long nanos) {
+        trainTimeLimitNanos = nanos;
+    }
+
+    @Override public long predictNextTrainTimeNanos() {
+        return -1;
+    }
+
+    @Override public boolean isDone() {
+        return benchmarkIterator.hasNext();
+    }
+
+    @Override public long getTrainTimeNanos() {
+        return trainTimer.getTimeNanos();
+    }
+
+    @Override public long getMaxMemoryUsageInBytes() {
+        return memoryWatcher.getMaxMemoryUsageInBytes();
+    }
+
+    @Override public long getMeanMemoryUsageInBytes() {
+        return memoryWatcher.getMeanMemoryUsageInBytes();
+    }
+
+    @Override public long getVarianceMemoryUsageInBytes() {
+        return memoryWatcher.getVarianceMemoryUsageInBytes();
+    }
+
+    @Override public long getGarbageCollectionTimeInMillis() {
+        return memoryWatcher.getGarbageCollectionTimeInMillis();
+    }
+
+    @Override public long getTrainTimeLimitNanos() {
+        return trainTimeLimitNanos;
     }
 
     // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions

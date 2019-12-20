@@ -147,6 +147,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
     }
 
     public EnhancedAbstractClassifier() {
@@ -248,8 +250,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * and parameter information
      */
     public ClassifierResults getTrainResults() {
-        trainResults.setClassifierName(getClassifierName());
-        trainResults.setParas(getParameters());
         return trainResults;
     }
     

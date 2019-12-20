@@ -8,6 +8,10 @@ public class Benchmark {
     private Classifier classifier;
     private final int id;
 
+    public Benchmark(Benchmark benchmark) {
+        this(benchmark.classifier, benchmark.results, benchmark.id);
+    }
+
     public Benchmark(int id) {
         this.id = id;
     }

@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.TrainTimeable;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -169,6 +171,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
         if(classifier instanceof OptionHandler) {
             setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
+        }
+        if(classifier instanceof MemoryWatchable) {
+        // todo
         }
         setOs(SysUtils.getOsName());
         setCpuInfo(SysUtils.findCpuInfo());
