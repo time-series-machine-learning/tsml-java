@@ -32,7 +32,7 @@ import tsml.transformers.shapelet_tools.Shapelet;
 public class GeneticSearch extends ImprovedRandomSearch {
 
     int initialPopulationSize = 50;
-    private int numShapeletsPerSeries;
+    private int initialNumShapeletsPerSeries;
     private int evaluated;
     
     public GeneticSearch(ShapeletSearchOptions sop){
@@ -43,7 +43,7 @@ public class GeneticSearch extends ImprovedRandomSearch {
     public void init(Instances input){
         super.init(input);
        
-        numShapeletsPerSeries = (int) (numPerSeries / inputData.numInstances());
+        initialNumShapeletsPerSeries = (int) (numShapeletsPerSeries / inputData.numInstances());
     }
 
     @Override
@@ -66,7 +66,7 @@ public class GeneticSearch extends ImprovedRandomSearch {
         }   
         
         // so we evaluate the initial population
-        while(evaluated < numShapeletsPerSeries){
+        while(evaluated < initialNumShapeletsPerSeries){
             population = evolvePopulation(timeSeries, population, checkCandidate);
         }
         

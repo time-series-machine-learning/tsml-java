@@ -109,7 +109,7 @@ public class ShapeletTransformFactory {
         st.setClassValue(createClassValue(options.isBinaryClassValue()));
         st.setShapeletMinAndMax(options.getMinLength(), options.getMaxLength());
         st.setNumberOfShapelets(options.getkShapelets());
-        st.setSubSeqDistance(createDistance(options.getDistance()));
+        st.setShapeletDistance(createDistance(options.getDistance()));
         st.setRescaler(createRescaler(options.getRescalerType()));
         st.setSearchFunction(createSearch(options.getSearchOptions()));
         st.setQualityMeasure(options.getQualityChoice());

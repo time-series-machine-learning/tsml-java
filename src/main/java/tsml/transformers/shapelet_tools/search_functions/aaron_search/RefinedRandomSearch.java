@@ -43,7 +43,7 @@ public class RefinedRandomSearch extends ImprovedRandomSearch {
          float currentRatio;
          do{
             long totalShapelets = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(--numInstances, numAttributes, minShapeletLength, maxShapeletLength);
-            currentRatio = (float) numPerSeries / (float) totalShapelets;
+            currentRatio = (float) numShapeletsPerSeries / (float) totalShapelets;
             
             if(numInstances == 25) break; // any less than 25 and we've sampled too far (Subject to change and discussion).
             
@@ -55,7 +55,7 @@ public class RefinedRandomSearch extends ImprovedRandomSearch {
         
         
         //generate the random shapelets we're going to visit.
-        for(int i = 0; i< numPerSeries; i++){
+        for(int i = 0; i< numShapeletsPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(numInstances);
             int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.

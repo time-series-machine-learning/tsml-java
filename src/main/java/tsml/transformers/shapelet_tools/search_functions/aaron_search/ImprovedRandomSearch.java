@@ -52,7 +52,7 @@ public class ImprovedRandomSearch extends RandomSearch {
         int numLengths = maxShapeletLength - minShapeletLength; //want max value to be inclusive.
         
         //generate the random shapelets we're going to visit.
-        for(int i = 0; i< numPerSeries; i++){
+        for(int i = 0; i< numShapeletsPerSeries; i++){
             //randomly generate values.
             int series = random.nextInt(input.numInstances());
             int length = random.nextInt(numLengths) + minShapeletLength; //offset the index by the min value.

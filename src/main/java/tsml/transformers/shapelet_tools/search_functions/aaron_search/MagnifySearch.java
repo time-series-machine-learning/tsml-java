@@ -28,7 +28,7 @@ import tsml.transformers.shapelet_tools.Shapelet;
  */
 public class MagnifySearch extends ImprovedRandomSearch {
 
-    int numShapeletsPerSeries;
+    int initialNumShapeletsPerSeries;
     
     
     //how many times do we want to make our search area smaller.
@@ -54,19 +54,19 @@ public class MagnifySearch extends ImprovedRandomSearch {
 
         
         float subsampleSize = (float) inputData.numInstances() * proportion;
-        numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
+        initialNumShapeletsPerSeries = (int) ((float) numShapeletsPerSeries / subsampleSize);
         seriesToConsider = new BitSet(inputData.numInstances());
         
         //if we're looking at less than root(m) shapelets per series. sample to root n.
-        if(numShapeletsPerSeries < Math.sqrt(inputData.numAttributes()-1)){
+        if(initialNumShapeletsPerSeries < Math.sqrt(inputData.numAttributes()-1)){
             //recalc prop and subsample size.
             proportion =  ((float) Math.sqrt(inputData.numInstances()) / (float)inputData.numInstances());
             subsampleSize = (float) inputData.numInstances() * proportion;
-            numShapeletsPerSeries = (int) ((float) numPerSeries / subsampleSize);
+            initialNumShapeletsPerSeries = (int) ((float) numShapeletsPerSeries / subsampleSize);
             System.out.println("sampling");
         }
         
-        numShapeletsPerSeries /= (float) maxDepth;
+        initialNumShapeletsPerSeries /= (float) maxDepth;
         
         //if proportion is 1.0 enable all series.
         if(proportion >= 1.0){
@@ -79,7 +79,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
             System.out.println(seriesToConsider);
         }
         
-        if(numShapeletsPerSeries < 1)
+        if(initialNumShapeletsPerSeries < 1)
             System.err.println("Too Few Starting shapelets");
     }
     
@@ -103,7 +103,7 @@ public class MagnifySearch extends ImprovedRandomSearch {
             Shapelet bsf = null;
 
             //we divide the numShapeletsPerSeries by maxDepth.
-            for(int i=0; i<numShapeletsPerSeries; i++){
+            for(int i = 0; i< initialNumShapeletsPerSeries; i++){
                 CandidateSearchData sh = createRandomShapelet(seriesLength-1, minLength, maxLength, minPos, maxPos);
                 Shapelet shape = checkCandidate.process(timeSeries, sh.getStartPosition(), sh.getLength());
                 

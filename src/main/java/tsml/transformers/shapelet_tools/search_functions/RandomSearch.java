@@ -28,12 +28,11 @@ import tsml.transformers.shapelet_tools.Shapelet;
 public class RandomSearch extends ShapeletSearch{
         
     protected Random random;
-    protected long numPerSeries;    //Number of shapelets to sample per series
     protected boolean[][] visited;  //boolean array, row is length of shapelet, column is location in series.
     
     protected RandomSearch(ShapeletSearchOptions ops) {
         super(ops);    
-        numPerSeries = ops.getNumShapeletsToEvaluate();
+        numShapeletsPerSeries = ops.getNumShapeletsToEvaluate();
         random = new Random(ops.getSeed());
     }
     
@@ -47,7 +46,7 @@ public class RandomSearch extends ShapeletSearch{
         visited = new boolean[numLengths][];
         
         //Only consider a fixed number of shapelets per series.
-        for(int i = 0; i< numPerSeries; i++ ){
+        for(int i = 0; i< numShapeletsPerSeries; i++ ){
             int lengthIndex = random.nextInt(numLengths);
             int length = lengthIndex + minShapeletLength; //offset the index by the min value.
             
@@ -90,7 +89,7 @@ public class RandomSearch extends ShapeletSearch{
         return length - minShapeletLength;
     }
       
-    public long getNumPerSeries(){ return numPerSeries;}
+    public long getNumPerSeries(){ return numShapeletsPerSeries;}
     protected Shapelet visitCandidate(Instance series, int start, int length, ProcessCandidate checkCandidate){
         initVisitedMemory(series.numAttributes(), length);
         int lengthIndex = getLengthIndex(length);
