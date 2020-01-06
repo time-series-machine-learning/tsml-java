@@ -1,7 +1,8 @@
-package machine_learning.classifiers.tuned.incremental;
+package machine_learning.classifiers.tuned.incremental.configs;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import machine_learning.classifiers.tuned.incremental.*;
 import org.apache.commons.collections4.Transformer;
 import org.apache.commons.collections4.iterators.AbstractIteratorDecorator;
 import org.apache.commons.collections4.iterators.TransformIterator;
@@ -236,14 +237,11 @@ public class Configs {
             });
             // set corresponding iterators in the incremental tuned classifier
             incTunedClassifier.setBenchmarkIterator(benchmarkExplorer);
-            incTunedClassifier.setBenchmarkEnsembler(new BenchmarkEnsembler() {
-                @Override
-                public List<Double> weightVotes(Iterable<Benchmark> benchmarks) {
-                    if(Utils.size(benchmarks) != 1) {
-                        throw new IllegalArgumentException("was only expecting 1 benchmark");
-                    }
-                    return new ArrayList<>(Collections.singletonList(1.0));
+            incTunedClassifier.setBenchmarkEnsembler(benchmarks -> {
+                if(Utils.size(benchmarks) != 1) {
+                    throw new IllegalArgumentException("was only expecting 1 benchmark");
                 }
+                return new ArrayList<>(Collections.singletonList(1.0));
             });
             incTunedClassifier.setBenchmarkCollector(
                 new BestBenchmarkCollector(seed, benchmark -> benchmark.getResults().getAcc()));
