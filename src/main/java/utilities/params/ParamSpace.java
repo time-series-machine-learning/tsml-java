@@ -23,8 +23,8 @@ public class ParamSpace implements DefaultList<ParamSet> {
 
         public List<Integer> getBins() {
             List<Integer> bins = new ArrayList<>();
-            for(int i = 0; i < paramsList.size(); i++) {
-                bins.add(paramsList.get(i).size());
+            for (ParamSpace paramSets : paramsList) {
+                bins.add(paramSets.size());
             }
             bins.add(values.size());
             return bins;
@@ -58,10 +58,6 @@ public class ParamSpace implements DefaultList<ParamSet> {
         public ParamValues(List<?> values) {
             this(values, null); // no sub param space
         }
-
-//        public void addValues(Object... values) {
-//            this.values.addAll(Arrays.asList(values));
-//        }
 
         public void addParams(ParamSpace... params) {
             this.paramsList.addAll(Arrays.asList(params));
@@ -204,19 +200,6 @@ public class ParamSpace implements DefaultList<ParamSet> {
             System.out.println(param);
         }
 
-
-//        if(!paramsList.isEmpty()) {
-//            for(Object value : values) {
-//                if(!(value instanceof ParamHandler)) throw new IllegalArgumentException("params cannot be applied" +
-//                                                                                            " to non param " +
-//                                                                                            "handling value");
-//                else {
-//                    for(Params params : paramsList) {
-//                        if(((ParamHandler) value).listParams().contains())
-//                    }
-//                }
-//            }
-//        }
     }
 
 
