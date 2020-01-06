@@ -31,11 +31,18 @@ public class SysUtils {
                 case MAC:
                 case LINUX:
                 case SOLARIS:
-                    cpuInfo = exec("cat /proc/cpuinfo | grep 'model name'").get(0);
+                    List<String> output = exec("cat /proc/cpuinfo");
+                    cpuInfo = "linux";
+                    for(String line : output) {
+                        if(line.contains("model name")) {
+                            cpuInfo = line.split(":")[1].trim();
+                            break;
+                        }
+                    }
                     break;
                 case WINDOWS:
                 default:
-                    cpuInfo = "unknown";
+                    cpuInfo = "windows"; // todo windows version
                     break;
             }
             return cpuInfo;
@@ -69,5 +76,9 @@ public class SysUtils {
             }
         }
         return os;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findCpuInfo());
     }
 }
