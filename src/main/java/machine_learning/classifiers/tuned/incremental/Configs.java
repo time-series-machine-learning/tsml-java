@@ -62,21 +62,12 @@ public class Configs {
             final int maxNeighbourCount = trainData.size(); // max number of neighbours
             Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
             Box<Integer> paramCount = new Box<>(0); // current number of params
-            Best<Long> maxParamTimeNanos = new Best<>(-1L); // track maximum time taken for a param to run
-            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(-1L); // track max time taken for an addition of
+            Best<Long> maxParamTimeNanos = new Best<>(0L); // track maximum time taken for a param to run
+            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L); // track max time taken for an addition of
             // neighbours
             // transform classifiers into benchmarks
-            Iterator<Set<Benchmark>> benchmarkSourceIterator =
-                new TransformIterator<>(new AbstractIteratorDecorator<ParamSet>(paramSetIterator) {
-                    @Override public boolean hasNext() {
-                        boolean result = super.hasNext();
-                        if(result) {
-                            result = (!incTunedClassifier.hasTrainTimeLimit() ||
-                                incTunedClassifier.getRemainingTrainTimeNanos() > maxParamTimeNanos.get());
-                        }
-                        return result;
-                    }
-                },
+            Iterator<Set<Benchmark>> paramSourceIterator =
+                new TransformIterator<>(paramSetIterator,
                 new Transformer<ParamSet, Set<Benchmark>>() {
                     private int id = 0;
 
@@ -104,12 +95,30 @@ public class Configs {
                             throw new IllegalStateException(e);
                         }
                     }
-                });
+                }
+            );
+            BenchmarkIterator benchmarkSourceIterator = new BenchmarkIterator() {
+                @Override public long predictNextTimeNanos() {
+                    return maxParamTimeNanos.get();
+                }
+
+                @Override public Set<Benchmark> next() {
+                    return paramSourceIterator.next();
+                }
+
+                @Override public boolean hasNext() {
+                    return paramSourceIterator.hasNext();
+                }
+            };
             // setup an iterator to improve benchmarks
             BenchmarkImprover benchmarkImprover = new BenchmarkImprover() {
 
                 private final Set<Benchmark> improveableBenchmarks = new HashSet<>();
                 private final Set<Benchmark> unimprovableBenchmarks = new HashSet<>();
+
+                @Override public long predictNextTimeNanos() {
+                    return maxNeighbourBatchTimeNanos.get();
+                }
 
                 @Override
                 public Set<Benchmark> getImproveableBenchmarks() {
@@ -188,8 +197,7 @@ public class Configs {
 
                 @Override
                 public boolean hasNext() {
-                    return !improveableBenchmarks.isEmpty() && (!incTunedClassifier.hasTrainTimeLimit() ||
-                        incTunedClassifier.getRemainingTrainTimeNanos() > maxNeighbourBatchTimeNanos.get());
+                    return !improveableBenchmarks.isEmpty();
                 }
             };
             benchmarkExplorer.setBenchmarkImprover(benchmarkImprover);

@@ -20,7 +20,7 @@ public class BenchmarkExplorer implements BenchmarkIterator {
             throw new UnsupportedOperationException();
         }
     };
-    private Iterator<Set<Benchmark>> benchmarkSource = new BenchmarkIterator() {
+    private BenchmarkIterator benchmarkSource = new BenchmarkIterator() {
         // todo bespoke class
         @Override
         public boolean hasNext() {
@@ -75,11 +75,11 @@ public class BenchmarkExplorer implements BenchmarkIterator {
         this.benchmarkImprover = benchmarkImprover;
     }
 
-    public Iterator<Set<Benchmark>> getBenchmarkSource() {
+    public BenchmarkIterator getBenchmarkSource() {
         return benchmarkSource;
     }
 
-    public void setBenchmarkSource(Iterator<Set<Benchmark>> benchmarkSource) {
+    public void setBenchmarkSource(BenchmarkIterator benchmarkSource) {
         this.benchmarkSource = benchmarkSource;
     }
 
@@ -91,4 +91,7 @@ public class BenchmarkExplorer implements BenchmarkIterator {
         this.optimiser = optimiser;
     }
 
+    @Override public long predictNextTimeNanos() {
+        return Math.min(benchmarkSource.predictNextTimeNanos(), benchmarkImprover.predictNextTimeNanos());
+    }
 }

@@ -63,7 +63,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     @Override
     public boolean hasNextBuildTick() throws Exception {
         trainTimer.lap();
-        boolean result = benchmarkIterator.hasNext();
+        boolean result = benchmarkIterator.hasNext() && hasRemainingTrainTime();
         return result;
     }
 
@@ -169,7 +169,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     }
 
     @Override public long predictNextTrainTimeNanos() {
-        return -1;
+        return benchmarkIterator.predictNextTimeNanos();
     }
 
     @Override public boolean isDone() {
