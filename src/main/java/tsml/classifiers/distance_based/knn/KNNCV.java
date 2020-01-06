@@ -221,6 +221,7 @@ public class KNNCV
                     }
                 }
                 iterator = neighbourIterationStrategy.build(this);
+                trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
             }
         }
     }

@@ -1,16 +1,27 @@
 package machine_learning.classifiers.tuned.incremental;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class BenchmarkExplorer implements BenchmarkIterator {
     private BenchmarkImprover benchmarkImprover = new BenchmarkImprover() {
+        @Override public Set<Benchmark> getImproveableBenchmarks() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Set<Benchmark> getUnimprovableBenchmarks() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
         public boolean hasNext() {
-            return false;
+            throw new UnsupportedOperationException();
         }
     };
-    private Iterator<Set<Benchmark>> benchmarkSource = new BenchmarkIterator() { // todo bespoke class
+    private Iterator<Set<Benchmark>> benchmarkSource = new BenchmarkIterator() {
+        // todo bespoke class
         @Override
         public boolean hasNext() {
             return false;
@@ -79,4 +90,5 @@ public class BenchmarkExplorer implements BenchmarkIterator {
     public void setOptimiser(Optimiser optimiser) {
         this.optimiser = optimiser;
     }
+
 }

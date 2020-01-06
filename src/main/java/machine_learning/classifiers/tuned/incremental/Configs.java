@@ -28,7 +28,7 @@ public class Configs {
 
     public static void main(String[] args) throws Exception {
         int seed = 0;
-        Instances[] instances = DatasetLoading.sampleItalyPowerDemand(seed);
+        Instances[] instances = DatasetLoading.sampleGunPoint(seed);
         Instances train = instances[0];
         Instances test = instances[1];
         IncTunedClassifier incTunedClassifier = buildTunedDtw1nnV1();
@@ -83,6 +83,7 @@ public class Configs {
                             KNNCV knn = build1nnV1();
                             knn.setNeighbourLimit(neighbourCount.get());
                             knn.setParams(paramSet);
+                            knn.setEstimateOwnPerformance(true);
                             knn.buildClassifier(trainData);
                             Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
                             HashSet<Benchmark> benchmarks = new HashSet<>(Collections.singletonList(benchmark));
@@ -109,10 +110,19 @@ public class Configs {
                     return unimprovableBenchmarks;
                 }
 
+                public Set<Benchmark> getAllBenchmarks() {
+                    HashSet<Benchmark> benchmarks = new HashSet<>();
+                    benchmarks.addAll(unimprovableBenchmarks);
+                    benchmarks.addAll(improveableBenchmarks);
+                    return benchmarks;
+                }
+
                 @Override
                 public void add(Benchmark benchmark) {
                     if(isImproveable(benchmark)) {
                         improveableBenchmarks.add(benchmark);
+                    } else {
+                        unimprovableBenchmarks.add(benchmark);
                     }
                 }
 

@@ -7,11 +7,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public interface BenchmarkImprover extends DefaultIterator<Set<Benchmark>> {
-    default void add(Benchmark benchmark) {}
-    default Set<Benchmark> getImproveableBenchmarks() {
-        return new HashSet<>();
+public interface BenchmarkImprover extends BenchmarkIterator {
+    default void add(Benchmark benchmark) {
+        throw new UnsupportedOperationException();
     }
+    Set<Benchmark> getImproveableBenchmarks();
 
     default void addAll(Collection<Benchmark> benchmarkCollection) {
         for(Benchmark benchmark : benchmarkCollection) {
@@ -19,7 +19,6 @@ public interface BenchmarkImprover extends DefaultIterator<Set<Benchmark>> {
         }
     }
 
-    default Set<Benchmark> getUnimprovableBenchmarks() {
-        return new HashSet<>();
-    }
+    Set<Benchmark> getUnimprovableBenchmarks();
+
 }

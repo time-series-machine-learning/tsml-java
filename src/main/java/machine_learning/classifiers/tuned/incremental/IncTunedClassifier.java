@@ -24,7 +24,11 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
         @Override
         public boolean hasNext() {
-            return false;
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Set<Benchmark> next() {
+            throw new UnsupportedOperationException();
         }
     };
     protected Set<Benchmark> collectedBenchmarks = new HashSet<>();
@@ -57,12 +61,13 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     @Override
     public void nextBuildTick() throws Exception {
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
-        benchmarkCollector.addAll(nextBenchmarks);
+        replace(collectedBenchmarks, nextBenchmarks);
     }
 
     @Override
     public void finishBuild() throws Exception {
-        collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks();
+        benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
+        collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
         if(collectedBenchmarks.isEmpty()) {
             if(debug) {
                 System.out.println("no benchmarks produced");
