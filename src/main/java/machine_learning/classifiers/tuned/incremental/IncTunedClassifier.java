@@ -1,6 +1,7 @@
 package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
+import evaluation.storage.ClassifierResults;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.ProgressiveBuildClassifier;
@@ -29,7 +30,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     protected Set<Benchmark> collectedBenchmarks = new HashSet<>();
     protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
-    protected List<Double> ensembleWeights = null;
+    protected List<Double> ensembleWeights = new ArrayList<>();
     protected Consumer<Instances> onTrainDataAvailable = instances -> {
 
     };
@@ -56,16 +57,20 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     @Override
     public void nextBuildTick() throws Exception {
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
-        replace(collectedBenchmarks, nextBenchmarks);
+        benchmarkCollector.addAll(nextBenchmarks);
     }
 
     @Override
     public void finishBuild() throws Exception {
         collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks();
         if(collectedBenchmarks.isEmpty()) {
-            throw new IllegalStateException("no benchmarks");
+            if(debug) {
+                System.out.println("no benchmarks produced");
+            }
+            ensembleWeights = new ArrayList<>();
+            trainResults = new ClassifierResults(); // todo random guess
         } else if(collectedBenchmarks.size() == 1) {
-            ensembleWeights = null;
+            ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
             trainResults = collectedBenchmarks.iterator().next().getResults();
         } else {
             ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);

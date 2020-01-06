@@ -1,5 +1,6 @@
 package utilities.iteration;
 
+import utilities.ArrayUtilities;
 import utilities.StrUtils;
 import weka.core.OptionHandler;
 import weka.core.Randomizable;
@@ -19,11 +20,13 @@ public class RandomIterator<A>
 
     public void setList(final List<A> list) {
         this.list = list;
+        indices = ArrayUtilities.sequence(list.size()); // todo remove dependency on indices list
     }
 
     private Random random = null;
     private Integer seed = null;
     private List<A> list = new ArrayList<>();
+    private List<Integer> indices;
     private int index;
     public final static String SEED_FLAG = "-s";
     private boolean nextIndexSetup = false;
@@ -37,10 +40,12 @@ public class RandomIterator<A>
                 random = new Random(seed);
             }
             seed = random.nextInt();
-            if(list.isEmpty()) {
+            if(indices.isEmpty()) {
+//            if(list.isEmpty()) {
                 index = 0;
             } else {
-                index = random.nextInt(list.size());
+                index = random.nextInt(indices.size());
+//                index = random.nextInt(list.size());
             }
             random.setSeed(seed);
             nextIndexSetup = true;
@@ -83,25 +88,27 @@ public class RandomIterator<A>
 
     @Override
     public A next() {
-        A element = list.get(nextIndex());
+//        A element = list.remove(nextIndex());
+        A element = list.get(indices.remove(nextIndex()));
         nextIndexSetup = false;
         return element;
     }
 
     @Override
     public boolean hasNext() {
-        return !list.isEmpty();
+        return !indices.isEmpty();
+//        return !list.isEmpty();
     }
 
     @Override
     public void add(final A item) {
         list.add(item);
+        indices.add(list.size() - 1);
     }
 
     @Override
     public void remove() {
-        list.remove(index);
-        nextIndexSetup = false;
+        indices.remove(index);
     }
 
     @Override

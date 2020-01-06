@@ -55,13 +55,13 @@ public class Configs {
             // setup the param space to source classifiers
             Iterator<ParamSet> paramSetIterator = new RandomIterator<>(paramSpace, seed);
             // setup building classifier from param set
-            final int maxParamCount = paramSpace.size();
-            final int maxNeighbourCount = trainData.size();
-            Box<Integer> neighbourCount = new Box<>(0);
-            Box<Integer> paramCount = new Box<>(0);
-            Box<Integer> neighbourLimit = new Box<>(0);
-            Best<Long> maxParamTimeNanos = new Best<>(0L);
-            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L);
+            final int maxParamCount = paramSpace.size(); // max number of params
+            final int maxNeighbourCount = trainData.size(); // max number of neighbours
+            Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
+            Box<Integer> paramCount = new Box<>(0); // current number of params
+            Best<Long> maxParamTimeNanos = new Best<>(0L); // track maximum time taken for a param to run
+            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L); // track max time taken for an addition of
+            // neighbours
             // transform classifiers into benchmarks
             Iterator<Set<Benchmark>> benchmarkSourceIterator =
                 new TransformIterator<>(new AbstractIteratorDecorator<ParamSet>(paramSetIterator) {
@@ -81,13 +81,14 @@ public class Configs {
                             long startTime = System.nanoTime();
                             paramCount.set(paramCount.get() + 1);
                             KNNCV knn = build1nnV1();
-                            knn.setNeighbourLimit(neighbourLimit.get());
+                            knn.setNeighbourLimit(neighbourCount.get());
                             knn.setParams(paramSet);
                             knn.buildClassifier(trainData);
                             Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
+                            HashSet<Benchmark> benchmarks = new HashSet<>(Collections.singletonList(benchmark));
                             long timeTaken = System.nanoTime() - startTime;
                             maxParamTimeNanos.add(timeTaken);
-                            return new HashSet<>(Collections.singletonList(benchmark));
+                            return benchmarks;
                         } catch(Exception e) {
                             throw new IllegalStateException(e);
                         }
@@ -118,7 +119,7 @@ public class Configs {
                 private boolean isImproveable(Benchmark benchmark) {
                     try {
                         KNNCV knn = (KNNCV) benchmark.getClassifier();
-                        return knn.getNeighbourLimit() + 1 < maxNeighbourCount;
+                        return knn.getNeighbourLimit() + 1 <= maxNeighbourCount;
                     } catch(Exception e) {
                         throw new IllegalStateException(e);
                     }
@@ -127,24 +128,26 @@ public class Configs {
                 @Override
                 public Set<Benchmark> next() {
                     long startTime = System.nanoTime();
-                    neighbourCount.set(neighbourCount.get() + 1);
+                    int nextNeighbourCount = neighbourCount.get() + 1;
+                    neighbourCount.set(nextNeighbourCount);
                     Set<Benchmark> improvedBenchmarks = new HashSet<>();
                     try {
-                        for(Benchmark benchmark : improveableBenchmarks) {
+                        Iterator<Benchmark> benchmarkIterator = improveableBenchmarks.iterator();
+                        while(benchmarkIterator.hasNext()) {
+                            Benchmark benchmark = benchmarkIterator.next();
                             Classifier classifier = benchmark.getClassifier();
                             KNNCV knn = (KNNCV) classifier;
-                            int nextNeighbourLimit = neighbourLimit.get();
                             if(incTunedClassifier.isDebug()) {
                                 int currentNeighbourLimit = knn.getNeighbourLimit() + 1;
-                                if(nextNeighbourLimit <= currentNeighbourLimit) {
+                                if(nextNeighbourCount <= currentNeighbourLimit) {
                                     throw new IllegalStateException("no improvement to the number of neighbours");
                                 }
                             }
-                            knn.setNeighbourLimit(nextNeighbourLimit);
+                            knn.setNeighbourLimit(nextNeighbourCount);
                             knn.buildClassifier(trainData);
                             benchmark.setResults(knn.getTrainResults());
                             if(!isImproveable(benchmark)) {
-                                improveableBenchmarks.remove(benchmark);
+                                benchmarkIterator.remove();
                                 unimprovableBenchmarks.add(benchmark);
                             }
                             improvedBenchmarks.add(benchmark);
@@ -171,25 +174,28 @@ public class Configs {
                     // only called when *both* improvements and source remain
                     int neighbours = neighbourCount.get();
                     int params = paramCount.get();
-                    if(params < maxParamCount / 10) {
+                    if(params < maxParamCount / 10 + 1) {
                         // 10% params, 0% neighbours
                         return true;
-                    } else if(neighbours < maxNeighbourCount / 10) {
+                    } else if(neighbours < maxNeighbourCount / 10 + 1) {
                         // 10% params, 10% neighbours
                         return false;
-                    } else if(params < maxParamCount / 2) {
+                    } else if(params < maxParamCount / 2 + 1) {
                         // 50% params, 10% neighbours
                         return true;
-                    } else if(neighbours < maxNeighbourCount / 2) {
+                    } else if(neighbours < maxNeighbourCount / 2 + 1) {
                         // 50% params, 50% neighbours
                         return false;
                     } else if(params < maxParamCount) {
                         // 100% params, 50% neighbours
                         return true;
-                    } else {
-                        // by this point all params should have been hit. Therefore only improvements remain, so
-                        // this question of whether to source a new benchmark or improve a current should evaluate to
-                        // improvement as no source remains.
+                    }
+//                    else if(neighbours < maxNeighbourCount) {
+//                        return false;
+//                    }
+                    else {
+                        // by this point all params have been hit. Therefore, shouldSource should not be called at
+                        // all as only improvements will remain, if any.
                         throw new IllegalStateException("invalid source / improvement state");
                     }
                 }

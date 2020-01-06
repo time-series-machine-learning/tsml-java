@@ -17,9 +17,6 @@ public class ImmutableBox<E> {
     }
 
     @Override public String toString() {
-        return "ImmutableBox{" +
-//            "contents=" +
-            contents +
-            '}';
+        return contents.toString();
     }
 }

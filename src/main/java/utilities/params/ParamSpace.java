@@ -20,12 +20,12 @@ public class ParamSpace implements DefaultList<ParamSet> {
         private List<?> values = new ArrayList<>();
         private List<ParamSpace> paramsList = new ArrayList<>();
 
-        public int[] getBins() {
-            int[] bins = new int[paramsList.size() + 1];
+        public List<Integer> getBins() {
+            List<Integer> bins = new ArrayList<>();
             for(int i = 0; i < paramsList.size(); i++) {
-                bins[i] = paramsList.get(i).size();
+                bins.add(paramsList.get(i).size());
             }
-            bins[bins.length - 1] = values.size();
+            bins.add(values.size());
             return bins;
         }
 
@@ -34,14 +34,14 @@ public class ParamSpace implements DefaultList<ParamSet> {
         }
 
         public Object get(final int index) {
-            int[] indices = ArrayUtilities.fromPermutation(index, getBins());
-            Object value = values.get(indices[indices.length - 1]);
+            List<Integer> indices = ArrayUtilities.fromPermutation(index, getBins());
+            Object value = values.get(indices.get(indices.size() - 1));
             if(!(value instanceof ParamHandler) && !paramsList.isEmpty()) {
                 throw new IllegalStateException("value not param settable");
             }
             for(int i = 0; i < paramsList.size(); i++) {
                 ParamHandler paramHandler = (ParamHandler) value;
-                ParamSet param = paramsList.get(i).get(indices[i]);
+                ParamSet param = paramsList.get(i).get(indices.get(i));
                 paramHandler.setParams(param);
             }
             return value;
@@ -96,26 +96,28 @@ public class ParamSpace implements DefaultList<ParamSet> {
         }
     }
 
-    public int[] getBins() {
-        int[] bins = new int[paramsMap.size()];
+    public List<Integer> getBins() {
+        List<Integer> bins = new ArrayList<>();
         Iterator<Map.Entry<String, List<ParamValues>>> iterator = paramsMap.entrySet().iterator();
-        for(int i = 0; i < bins.length; i++) {
+        for(int i = 0; i < paramsMap.size(); i++) {
             Map.Entry<String, List<ParamValues>> entry = iterator.next();
             int size = 0;
             for(ParamValues paramValues : entry.getValue()) {
                 size += paramValues.size();
             }
-            bins[i] = size;
+            bins.add(size);
         }
         return bins;
     }
 
+    // todo remove
+
     public ParamSet get(int index) {
-        int[] indices = ArrayUtilities.fromPermutation(index, getBins());
+        List<Integer> indices = ArrayUtilities.fromPermutation(index, getBins());
         int i = 0;
         ParamSet param = new ParamSet();
         for(Map.Entry<String, List<ParamValues>> entry : paramsMap.entrySet()) {
-            index = indices[i];
+            index = indices.get(i);
             List<ParamValues> paramValuesList = entry.getValue();
             for(ParamValues paramValues : paramValuesList) {
                 int size = paramValues.size();

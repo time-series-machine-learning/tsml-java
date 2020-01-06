@@ -13,12 +13,4 @@ public class Box<E> extends ImmutableBox<E> {
     @Override public void set(final E contents) {
         super.set(contents);
     }
-
-
-    @Override public String toString() {
-        return "Box{" +
-//            "contents=" +
-            contents +
-            '}';
-    }
 }
