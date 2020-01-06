@@ -39,15 +39,22 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
 
     };
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
+    protected StopWatch trainTimer = new StopWatch();
     protected Instances trainData;
+    protected long trainTimeLimitNanos = -1;
+
+    public StopWatch getTrainTimer() {
+        return trainTimer;
+    }
 
     @Override public void buildClassifier(final Instances data) throws Exception {
+        trainTimer.resume();
+        memoryWatcher.resume();
         super.buildClassifier(data);
         ProgressiveBuildClassifier.super.buildClassifier(data);
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
-        memoryWatcher.resume();
         trainData = data;
         onTrainDataAvailable.accept(data); // todo perhaps this should be obtained via a get? Not necessarily always
         // required
@@ -55,7 +62,9 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
-        return benchmarkIterator.hasNext();
+        trainTimer.lap();
+        boolean result = benchmarkIterator.hasNext();
+        return result;
     }
 
     @Override
@@ -81,6 +90,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
             ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
         }
         memoryWatcher.pause();
+        trainTimer.pause();
         trainResults.setMemory(getMaxMemoryUsageInBytes()); // todo other fields
         trainResults.setBuildTime(getTrainTimeNanos()); // todo break down to estimate time also
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
@@ -153,9 +163,6 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     public void setOnTrainDataAvailable(final Consumer<Instances> onTrainDataAvailable) {
         this.onTrainDataAvailable = onTrainDataAvailable;
     }
-
-    protected long trainTimeLimitNanos = -1;
-    protected StopWatch trainTimer = new StopWatch();
 
     @Override public void setTrainTimeLimitNanos(final long nanos) {
         trainTimeLimitNanos = nanos;

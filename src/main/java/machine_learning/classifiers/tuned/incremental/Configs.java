@@ -33,8 +33,9 @@ public class Configs {
         Instances train = instances[0];
         Instances test = instances[1];
         IncTunedClassifier incTunedClassifier = buildTunedDtw1nnV1();
-        incTunedClassifier.setTrainTimeLimit(5, TimeUnit.MINUTES);
+        incTunedClassifier.setTrainTimeLimit(10, TimeUnit.SECONDS);//TimeUnit.MINUTES);
         incTunedClassifier.buildClassifier(train);
+        ClassifierResults trainResults = incTunedClassifier.getTrainResults();
         ClassifierResults results = new ClassifierResults();
         results.setDetails(incTunedClassifier, train);
         for(Instance testCase : test) {
@@ -45,6 +46,7 @@ public class Configs {
             results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
         }
         System.out.println(results.getAcc());
+        System.out.println(trainResults.getBuildTime());
     }
 
     public static IncTunedClassifier buildTunedDtw1nnV1() {
@@ -60,8 +62,8 @@ public class Configs {
             final int maxNeighbourCount = trainData.size(); // max number of neighbours
             Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
             Box<Integer> paramCount = new Box<>(0); // current number of params
-            Best<Long> maxParamTimeNanos = new Best<>(0L); // track maximum time taken for a param to run
-            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L); // track max time taken for an addition of
+            Best<Long> maxParamTimeNanos = new Best<>(-1L); // track maximum time taken for a param to run
+            Best<Long> maxNeighbourBatchTimeNanos = new Best<>(-1L); // track max time taken for an addition of
             // neighbours
             // transform classifiers into benchmarks
             Iterator<Set<Benchmark>> benchmarkSourceIterator =
@@ -69,7 +71,8 @@ public class Configs {
                     @Override public boolean hasNext() {
                         boolean result = super.hasNext();
                         if(result) {
-                            result = incTunedClassifier.getRemainingTrainTimeNanos() > maxParamTimeNanos.get();
+                            result = (!incTunedClassifier.hasTrainTimeLimit() ||
+                                incTunedClassifier.getRemainingTrainTimeNanos() > maxParamTimeNanos.get());
                         }
                         return result;
                     }
@@ -80,16 +83,21 @@ public class Configs {
                     @Override public Set<Benchmark> transform(final ParamSet paramSet) {
                         try {
                             long startTime = System.nanoTime();
+                            long timeTaken = 0;
                             paramCount.set(paramCount.get() + 1);
                             KNNCV knn = build1nnV1();
                             knn.setNeighbourLimit(neighbourCount.get());
                             knn.setParams(paramSet);
-                            System.out.println(StringUtils.join(paramSet.getOptions(), ", "));
+//                            System.out.println(StringUtils.join(paramSet.getOptions(), ", "));
                             knn.setEstimateOwnPerformance(true);
+                            timeTaken += System.nanoTime() - startTime;
                             knn.buildClassifier(trainData);
+                            startTime = System.nanoTime();
+                            timeTaken += knn.getTrainTimeNanos();
                             Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
                             HashSet<Benchmark> benchmarks = new HashSet<>(Collections.singletonList(benchmark));
-                            long timeTaken = System.nanoTime() - startTime;
+                            timeTaken += System.nanoTime() - startTime;
+//                            System.out.println("param time: " + timeTaken + " vs " + maxParamTimeNanos.get());
                             maxParamTimeNanos.add(timeTaken);
                             return benchmarks;
                         } catch(Exception e) {
@@ -140,6 +148,7 @@ public class Configs {
                 @Override
                 public Set<Benchmark> next() {
                     long startTime = System.nanoTime();
+                    long timeTaken = 0;
                     int nextNeighbourCount = neighbourCount.get() + 1;
                     neighbourCount.set(nextNeighbourCount);
                     Set<Benchmark> improvedBenchmarks = new HashSet<>();
@@ -156,7 +165,11 @@ public class Configs {
                                 }
                             }
                             knn.setNeighbourLimit(nextNeighbourCount);
+                            timeTaken += System.nanoTime() - startTime;
+                            long knnPrevTrainTime = knn.getTrainTimeNanos();
                             knn.buildClassifier(trainData);
+                            timeTaken += knn.getTrainTimeNanos() - knnPrevTrainTime;
+                            startTime = System.nanoTime();
                             benchmark.setResults(knn.getTrainResults());
                             if(!isImproveable(benchmark)) {
                                 benchmarkIterator.remove();
@@ -167,15 +180,16 @@ public class Configs {
                     } catch(Exception e) {
                         throw new IllegalStateException(e);
                     }
-                    long timeTaken = System.nanoTime() - startTime;
+                    timeTaken += System.nanoTime() - startTime;
+//                    System.out.println("neighbour time: " + timeTaken + " vs " + maxNeighbourBatchTimeNanos.get());
                     maxNeighbourBatchTimeNanos.add(timeTaken);
                     return improvedBenchmarks;
                 }
 
                 @Override
                 public boolean hasNext() {
-                    return !improveableBenchmarks.isEmpty() &&
-                        incTunedClassifier.getRemainingTrainTimeNanos() > maxNeighbourBatchTimeNanos.get();
+                    return !improveableBenchmarks.isEmpty() && (!incTunedClassifier.hasTrainTimeLimit() ||
+                        incTunedClassifier.getRemainingTrainTimeNanos() > maxNeighbourBatchTimeNanos.get());
                 }
             };
             benchmarkExplorer.setBenchmarkImprover(benchmarkImprover);
