@@ -1,10 +1,12 @@
 package utilities.params;
 
+import scala.Serializable;
 import scala.annotation.meta.param;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.Dtw;
 import tsml.classifiers.distance_based.distances.Lcss;
 import utilities.StrUtils;
+import utilities.Utilities;
 import weka.core.OptionHandler;
 import weka.core.Utils;
 
@@ -152,7 +154,7 @@ public class ParamSet implements ParamHandler {
     }
 
     @Override public String toString() {
-        return "Param" +
+        return "ParamSet" +
 //            "{" +
 //            "paramMap=" +
             paramMap

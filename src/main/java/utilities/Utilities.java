@@ -17,7 +17,9 @@ package utilities;
 import utilities.collections.IntListView;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.SerializedObject;
 
+import java.io.Serializable;
 import java.util.*;
 
 public class Utilities {
@@ -362,7 +364,6 @@ public class Utilities {
         return boxed;
     }
 
-
     public static Instances toInstances(Instance... instances) {
         Instances result = new Instances(instances[0].dataset(), 0);
         result.addAll(Utilities.asList(instances));
@@ -403,5 +404,16 @@ public class Utilities {
             distribution.put(entry.getKey(), ((double) entry.getValue()) / sum);
         }
         return distribution;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <A> A deepCopy(A value) throws Exception {
+        if(value instanceof Serializable) {
+            return (A) new SerializedObject(value).getObject();
+        } else {
+            String str = StrUtils.toOptionValue(value);
+            Object object = StrUtils.fromOptionValue(str);
+            return (A) object;
+        }
     }
 }

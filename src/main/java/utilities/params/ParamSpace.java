@@ -2,6 +2,7 @@ package utilities.params;
 
 import tsml.classifiers.distance_based.distances.*;
 import utilities.ArrayUtilities;
+import utilities.Utilities;
 import utilities.collections.DefaultList;
 
 import java.util.*;
@@ -124,6 +125,12 @@ public class ParamSpace implements DefaultList<ParamSet> {
                 index -= size;
                 if(index < 0) {
                     Object paramValue = paramValues.get(index + size);
+                    try {
+                        paramValue = Utilities.deepCopy(paramValue); // must copy objects otherwise every paramset
+                        // uses the same object reference!
+                    } catch(Exception e) {
+                        throw new IllegalStateException("cannot copy value");
+                    }
                     param.add(entry.getKey(), paramValue);
                     break;
                 }

@@ -15,7 +15,7 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
     private Benchmark best = null;
 
     public BestBenchmarkCollector(Function<Benchmark, Double> scorer) {
-        this.map = new PrunedTreeMultiMap<Double, Benchmark>(TreeMultiMap.newNaturalAsc());
+        this.map = new PrunedTreeMultiMap<Double, Benchmark>(TreeMultiMap.newNaturalDesc());
         map.setLimit(1);
         this.scorer = scorer;
         setSeed(0);
@@ -40,7 +40,9 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
 
     @Override
     public void add(Benchmark benchmark) {
-        map.add(scorer.apply(benchmark), benchmark);
+        Double score = scorer.apply(benchmark);
+        System.out.println(score);
+        map.add(score, benchmark);
         best = null;
     }
 

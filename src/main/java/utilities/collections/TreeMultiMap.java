@@ -46,8 +46,7 @@ public class TreeMultiMap<B, A> implements Serializable { // todo implement map 
     }
 
     public int size() {
-        int size = values().size();
-        assert size >= 0; // todo replace with debug
+        int size = ArrayUtilities.deepSize(values());
         return size;
     }
 

@@ -33,6 +33,11 @@ public class PrunedTreeMultiMap<B, A> extends TreeMultiMap<B, A> implements Seri
         setLimit(limit);
     }
 
+    public PrunedTreeMultiMap(TreeMultiMap<B, A> map, int limit, boolean hardLimit) {
+        this(map, limit);
+        setHardLimit(hardLimit);
+    }
+
     public int getLimit() {
         return limit;
     }

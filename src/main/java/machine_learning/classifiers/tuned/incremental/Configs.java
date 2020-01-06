@@ -5,6 +5,7 @@ import experiments.data.DatasetLoading;
 import org.apache.commons.collections4.Transformer;
 import org.apache.commons.collections4.iterators.AbstractIteratorDecorator;
 import org.apache.commons.collections4.iterators.TransformIterator;
+import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.distance_based.knn.KNNCV;
 import utilities.ClassifierTools;
 import utilities.Utilities;
@@ -83,6 +84,7 @@ public class Configs {
                             KNNCV knn = build1nnV1();
                             knn.setNeighbourLimit(neighbourCount.get());
                             knn.setParams(paramSet);
+                            System.out.println(StringUtils.join(paramSet.getOptions(), ", "));
                             knn.setEstimateOwnPerformance(true);
                             knn.buildClassifier(trainData);
                             Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);

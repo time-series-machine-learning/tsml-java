@@ -1,12 +1,8 @@
 package utilities;
 
-import scala.Char;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.lang.reflect.Array;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 
 public class ArrayUtilities {
@@ -552,5 +548,18 @@ public class ArrayUtilities {
         }
         builder.append(System.lineSeparator());
         return builder.toString();
+    }
+
+
+    public static int deepSize(Collection<?> collection) {
+        int size = 0;
+        for(Object object : collection) {
+            if(object instanceof Collection) {
+                size += deepSize((Collection<?>) object);
+            } else {
+                size++;
+            }
+        }
+        return size;
     }
 }

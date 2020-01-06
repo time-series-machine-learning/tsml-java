@@ -23,15 +23,15 @@ public class RandomIterator<A>
         indices = ArrayUtilities.sequence(list.size()); // todo remove dependency on indices list
     }
 
-    private Random random = null;
-    private Integer seed = null;
-    private List<A> list = new ArrayList<>();
-    private List<Integer> indices;
-    private int index;
+    protected Random random = null;
+    protected Integer seed = null;
+    protected List<A> list = new ArrayList<>();
+    protected List<Integer> indices;
+    protected int index;
     public final static String SEED_FLAG = "-s";
-    private boolean nextIndexSetup = false;
+    protected boolean nextIndexSetup = false;
 
-    private void setRandomIndex() {
+    protected void setRandomIndex() {
         if(!nextIndexSetup) {
             if(random == null) {
                 if(seed == null) {
