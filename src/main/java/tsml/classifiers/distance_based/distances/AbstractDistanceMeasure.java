@@ -85,16 +85,6 @@ public abstract class AbstractDistanceMeasure
         return getClass().getSimpleName();
     }
 
-    @Override
-    public void setOptions(final String[] options) throws
-                                                   Exception {
-    }
-
-    @Override
-    public String[] getOptions() {
-        return new String[0];
-    }
-
     public boolean isSymmetric() {
         return true;
     }
