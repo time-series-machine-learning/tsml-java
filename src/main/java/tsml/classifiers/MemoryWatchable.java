@@ -1,8 +1,11 @@
 package tsml.classifiers;
 
+import utilities.MemoryWatcher;
+
 public interface MemoryWatchable {
-    default long getMaxMemoryUsageInBytes() { return -1; };
-    default long getMeanMemoryUsageInBytes() { return -1; };
-    default long getVarianceMemoryUsageInBytes() { return -1; };
-    default long getGarbageCollectionTimeInMillis() { return -1; };
+    default MemoryWatcher getMemoryWatcher() { throw new UnsupportedOperationException(); }
+    default long getMaxMemoryUsageInBytes() { return getMemoryWatcher().getMaxMemoryUsageInBytes(); };
+    default long getMeanMemoryUsageInBytes() { return getMemoryWatcher().getMeanMemoryUsageInBytes(); };
+    default long getVarianceMemoryUsageInBytes() { return getMemoryWatcher().getVarianceMemoryUsageInBytes(); };
+    default long getGarbageCollectionTimeInMillis() { return getMemoryWatcher().getGarbageCollectionTimeInMillis(); };
 }

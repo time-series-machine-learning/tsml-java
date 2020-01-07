@@ -4,6 +4,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.function.BinaryOperator;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
@@ -41,6 +44,35 @@ public class ArrayUtilities {
             array[i] /= sum;
         }
         return array;
+    }
+
+    public static <A> List<A> drain(Iterable<A> iterable) {
+        return drain(iterable.iterator());
+    }
+
+    public static <A> List<A> drain(Iterator<A> iterator) {
+        List<A> list = new ArrayList<>();
+        while(iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return list;
+    }
+
+    public static double sum(List<Double> list) {
+        return list.stream().reduce(0d, Double::sum);
+    }
+
+    public static List<Double> normaliseInPlace(List<Double> list) {
+        double sum = sum(list);
+        if(sum == 0) {
+            throw new IllegalArgumentException("sum zero");
+        }
+        return list.stream().map(element -> element / sum).collect(Collectors.toList());
+    }
+
+    public static List<Double> normalise(Iterable<Double> iterable) {
+        List<Double> list = drain(iterable);
+        return normaliseInPlace(list);
     }
 
     public static double[] primitiveIntToDouble(int[] array) {

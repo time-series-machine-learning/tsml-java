@@ -1,5 +1,6 @@
 package machine_learning.classifiers.tuned.incremental;
 
+import utilities.ArrayUtilities;
 import utilities.collections.Utils;
 
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.function.Function;
 
 public interface BenchmarkEnsembler {
-    List<Double> weightVotes(List<Benchmark> benchmarks);
+    List<Double> weightVotes(Iterable<Benchmark> benchmarks);
 
     static BenchmarkEnsembler byScore(Function<Benchmark, Double> scorer) {
         return (benchmarks) -> {
@@ -16,6 +17,7 @@ public interface BenchmarkEnsembler {
             for(Benchmark benchmark : benchmarks) {
                 weights.add(scorer.apply(benchmark));
             }
+            ArrayUtilities.normaliseInPlace(weights);
             return weights;
         };
     }

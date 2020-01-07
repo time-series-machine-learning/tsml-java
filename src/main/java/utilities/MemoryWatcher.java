@@ -13,6 +13,9 @@ import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
 
@@ -26,52 +29,65 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
     private long usageSum = 0;
     private long usageSumSq = 0;
     private long garbageCollectionTimeInMillis = 0;
-    private boolean resumed = false;
+    private enum State {
+        DISABLED,
+        ENABLED,
+        RESUMED,
+        PAUSED,
+    }
+    private State state = State.DISABLED;
     private transient List<NotificationEmitter> emitters;
 
     private final NotificationListener listener = (notification, handback) -> {
-        if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
-            GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
-            long duration = info.getGcInfo().getDuration();
-            garbageCollectionTimeInMillis += duration;
+        synchronized(MemoryWatcher.this) {
+            if(state.equals(State.RESUMED)) {
+                if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+                    GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
+                    long duration = info.getGcInfo().getDuration();
+                    garbageCollectionTimeInMillis += duration;
 //            String action = info.getGcAction();
 //            GcInfo gcInfo = info.getGcInfo();
 //            long id = gcInfo.getId();
-            Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
-            for (Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
+                    Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
+                    for (Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
 //                String name = entry.getKey();
-                MemoryUsage memoryUsageSnapshot = entry.getValue();
+                        MemoryUsage memoryUsageSnapshot = entry.getValue();
 //                long initMemory = memoryUsage.getInit();
 //                long committedMemory = memoryUsage.getCommitted();
 //                long maxMemory = memoryUsage.getMax();
-                long memoryUsage = memoryUsageSnapshot.getUsed();
-                addMemoryUsageReadingBytes(memoryUsage);
+                        long memoryUsage = memoryUsageSnapshot.getUsed();
+                        addMemoryUsageReadingBytes(memoryUsage);
+                    }
+                }
             }
         }
     };
 
     public MemoryWatcher() {
-
+        enable();
     }
 
     public MemoryWatcher(boolean start) {
+        this();
         if(start) {
             resume();
         }
     }
 
-    private synchronized void addMemoryUsageReadingBytes(long usage) {
-        if(usage > maxMemoryUsageBytes) {
-            maxMemoryUsageBytes = usage;
+    private void addMemoryUsageReadingBytes(long usage) {
+        if(state.equals(State.RESUMED)) {
+            if(usage > maxMemoryUsageBytes) {
+                maxMemoryUsageBytes = usage;
+            }
+            // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+            if(size == 0) {
+                firstMemoryUsageReading = usage;
+            }
+            size++;
+            long diff = usage - firstMemoryUsageReading;
+            usageSum += diff;
+            usageSumSq += Math.pow(diff, 2);
         }
-        // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-        if(size == 0) {
-            firstMemoryUsageReading = usage;
-        }
-        size++;
-        long diff = usage - firstMemoryUsageReading;
-        usageSum += diff;
-        usageSumSq += Math.pow(diff, 2);
     }
 
     public synchronized long getMeanMemoryUsageInBytes() {
@@ -82,9 +98,8 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
         return (usageSumSq - (usageSum * usageSum) / size) / (size - 1);
     }
 
-    public synchronized void resume() {
-        if(!resumed) {
-            resumed = true;
+    public synchronized void enable() {
+        if(state.ordinal() < State.ENABLED.ordinal()) {
             emitters = new ArrayList<>();
             // garbage collector for old and young gen
             List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
@@ -95,20 +110,33 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
                 emitters.add(emitter);
                 emitter.addNotificationListener(listener, null, null);
             }
+            state = State.ENABLED;
         }
     }
 
-    public synchronized void pause() {
-        resumed = false;
-        if(emitters != null) {
-            for(NotificationEmitter emitter : emitters) {
-                try {
-                    emitter.removeNotificationListener(listener);
-                } catch (ListenerNotFoundException e) {
-                    throw new IllegalStateException("already removed somehow...");
+    public synchronized void disable() {
+        if(state.ordinal() > State.DISABLED.ordinal()) {
+            pause();
+            if(emitters != null) {
+                for(NotificationEmitter emitter : emitters) {
+                    try {
+                        emitter.removeNotificationListener(listener);
+                    } catch (ListenerNotFoundException e) {
+                        throw new IllegalStateException("already removed somehow...");
+                    }
                 }
             }
+            state = State.DISABLED;
         }
+    }
+
+    public void resume() {
+        enable();
+        state = State.RESUMED;
+    }
+
+    public void pause() {
+        state = State.PAUSED;
     }
 
     @Override

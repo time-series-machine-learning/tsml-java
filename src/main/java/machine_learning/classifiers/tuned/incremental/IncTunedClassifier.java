@@ -48,13 +48,13 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     }
 
     @Override public void buildClassifier(final Instances data) throws Exception {
-        trainTimer.resume();
-        memoryWatcher.resume();
-        super.buildClassifier(data);
         ProgressiveBuildClassifier.super.buildClassifier(data);
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
+        trainTimer.resume();
+        memoryWatcher.resume();
+        super.buildClassifier(data);
         trainData = data;
         onTrainDataAvailable.accept(data); // todo perhaps this should be obtained via a get? Not necessarily always
         // required

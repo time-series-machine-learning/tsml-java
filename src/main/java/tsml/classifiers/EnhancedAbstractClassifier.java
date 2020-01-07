@@ -142,11 +142,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
     protected int numClasses = -1;
 
-    @Override public void buildClassifier(final Instances data) throws
+    @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
-        numClasses = data.numClasses();
+        numClasses = trainData.numClasses();
         trainResults.setClassifierName(getClassifierName());
         trainResults.setParas(getParameters());
     }
