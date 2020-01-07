@@ -12,43 +12,54 @@ import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-import static tsml.classifiers.distance_based.distances.Configs.buildDtwSpaceV1;
 import static tsml.classifiers.distance_based.knn.Configs.build1nnV1;
 
-public class Tmp implements Consumer<Instances> {
+public class Inc1nnTuningSetup implements Consumer<Instances> {
 
-    private final IncTunedClassifier incTunedClassifier;
-    private final int seed;
+    private IncTunedClassifier incTunedClassifier;
     private ParamSpace paramSpace;
     private BenchmarkExplorer benchmarkExplorer = new BenchmarkExplorer();
     // setup the param space to source classifiers
     private Iterator<ParamSet> paramSetIterator;
     // setup building classifier from param set
-    private final int maxParamCount; // max number of params
+    private int maxParamCount; // max number of params
     private int maxNeighbourCount; // max number of neighbours
     private Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
     private Box<Integer> paramCount = new Box<>(0); // current number of params
     private Best<Long> maxParamTimeNanos = new Best<>(0L); // track maximum time taken for a param to run
     private Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L); // track max time taken for an addition of
     // neighbours
+    private Function<Instances, ParamSpace> paramSpaceFunction;
+    private Iterator<Set<Benchmark>> paramSourceIterator;
+    private BenchmarkIterator benchmarkSourceIterator;
+    private BenchmarkImprover benchmarkImprover;
+    private Optimiser optimiser;
 
-
-    public Tmp(IncTunedClassifier incTunedClassifier, int seed) {
+    public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier,
+                             final Function<Instances, ParamSpace> paramSpaceFunction) {
         this.incTunedClassifier = incTunedClassifier;
-        this.seed = seed;
-        paramSetIterator = new RandomIterator<>(paramSpace, seed);
-        maxParamCount = paramSpace.size();
+        this.paramSpaceFunction = paramSpaceFunction;
+    }
+
+    public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier, ParamSpace paramSpace) {
+        this(incTunedClassifier, (instances) -> paramSpace);
     }
 
     @Override
     public void accept(Instances trainData) {
+        final int seed = incTunedClassifier.getSeed();
+        paramSpace = paramSpaceFunction.apply(trainData);
+        paramSetIterator = new RandomIterator<>(this.paramSpace, seed);
+        maxParamCount = this.paramSpace.size();
         maxNeighbourCount = trainData.size();
         // transform classifiers into benchmarks
-        Iterator<Set<Benchmark>> paramSourceIterator =
+        paramSourceIterator =
                 new TransformIterator<>(paramSetIterator,
                         new Transformer<ParamSet, Set<Benchmark>>() {
                             private int id = 0;
@@ -61,7 +72,6 @@ public class Tmp implements Consumer<Instances> {
                                     KNNCV knn = build1nnV1();
                                     knn.setNeighbourLimit(neighbourCount.get());
                                     knn.setParams(paramSet);
-//                            System.out.println(StringUtils.join(paramSet.getOptions(), ", "));
                                     knn.setEstimateOwnPerformance(true);
                                     timeTaken += System.nanoTime() - startTime;
                                     knn.buildClassifier(trainData);
@@ -70,7 +80,6 @@ public class Tmp implements Consumer<Instances> {
                                     Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
                                     HashSet<Benchmark> benchmarks = new HashSet<>(Collections.singletonList(benchmark));
                                     timeTaken += System.nanoTime() - startTime;
-//                            System.out.println("param time: " + timeTaken + " vs " + maxParamTimeNanos.get());
                                     maxParamTimeNanos.add(timeTaken);
                                     return benchmarks;
                                 } catch(Exception e) {
@@ -79,7 +88,7 @@ public class Tmp implements Consumer<Instances> {
                             }
                         }
                 );
-        BenchmarkIterator benchmarkSourceIterator = new BenchmarkIterator() {
+        benchmarkSourceIterator = new BenchmarkIterator() {
             @Override public long predictNextTimeNanos() {
                 return maxParamTimeNanos.get();
             }
@@ -93,7 +102,7 @@ public class Tmp implements Consumer<Instances> {
             }
         };
         // setup an iterator to improve benchmarks
-        BenchmarkImprover benchmarkImprover = new BenchmarkImprover() {
+        benchmarkImprover = new BenchmarkImprover() {
 
             private final Set<Benchmark> improveableBenchmarks = new HashSet<>();
             private final Set<Benchmark> unimprovableBenchmarks = new HashSet<>();
@@ -184,48 +193,160 @@ public class Tmp implements Consumer<Instances> {
         };
         benchmarkExplorer.setBenchmarkImprover(benchmarkImprover);
         benchmarkExplorer.setBenchmarkSource(benchmarkSourceIterator);
-        benchmarkExplorer.setOptimiser(new Optimiser() {
-            @Override
-            public boolean shouldSource() {
-                // only called when *both* improvements and source remain
-                int neighbours = neighbourCount.get();
-                int params = paramCount.get();
-                if(params < maxParamCount / 10 + 1) {
-                    // 10% params, 0% neighbours
-                    return true;
-                } else if(neighbours < maxNeighbourCount / 10 + 1) {
-                    // 10% params, 10% neighbours
-                    return false;
-                } else if(params < maxParamCount / 2 + 1) {
-                    // 50% params, 10% neighbours
-                    return true;
-                } else if(neighbours < maxNeighbourCount / 2 + 1) {
-                    // 50% params, 50% neighbours
-                    return false;
-                } else if(params < maxParamCount) {
-                    // 100% params, 50% neighbours
-                    return true;
-                }
-//                    else if(neighbours < maxNeighbourCount) {
-//                        return false;
-//                    }
-                else {
-                    // by this point all params have been hit. Therefore, shouldSource should not be called at
-                    // all as only improvements will remain, if any.
-                    throw new IllegalStateException("invalid source / improvement state");
-                }
+        optimiser = () -> {
+            // only called when *both* improvements and source remain
+            int neighbours = neighbourCount.get();
+            int params = paramCount.get();
+            if(params < maxParamCount / 10 + 1) {
+                // 10% params, 0% neighbours
+                return true;
+            } else if(neighbours < maxNeighbourCount / 10 + 1) {
+                // 10% params, 10% neighbours
+                return false;
+            } else if(params < maxParamCount / 2 + 1) {
+                // 50% params, 10% neighbours
+                return true;
+            } else if(neighbours < maxNeighbourCount / 2 + 1) {
+                // 50% params, 50% neighbours
+                return false;
+            } else if(params < maxParamCount) {
+                // 100% params, 50% neighbours
+                return true;
             }
-        });
+            else {
+                // by this point all params have been hit. Therefore, shouldSource should not be called at
+                // all as only improvements will remain, if any.
+                throw new IllegalStateException("invalid source / improvement state");
+            }
+        };
+        benchmarkExplorer.setOptimiser(optimiser);
         // set corresponding iterators in the incremental tuned classifier
         incTunedClassifier.setBenchmarkIterator(benchmarkExplorer);
-        incTunedClassifier.setBenchmarkEnsembler(benchmarks -> {
-            if(Utils.size(benchmarks) != 1) {
-                throw new IllegalArgumentException("was only expecting 1 benchmark");
-            }
-            return new ArrayList<>(Collections.singletonList(1.0));
-        });
+        incTunedClassifier.setBenchmarkEnsembler(BenchmarkEnsembler.single());
         incTunedClassifier.setBenchmarkCollector(
                 new BestBenchmarkCollector(seed, benchmark -> benchmark.getResults().getAcc()));
     }
+
+    public IncTunedClassifier getIncTunedClassifier() {
+        return incTunedClassifier;
+    }
+
+    public ParamSpace getParamSpace() {
+        return paramSpace;
+    }
+
+    public BenchmarkExplorer getBenchmarkExplorer() {
+        return benchmarkExplorer;
+    }
+
+    public Iterator<ParamSet> getParamSetIterator() {
+        return paramSetIterator;
+    }
+
+    public int getMaxParamCount() {
+        return maxParamCount;
+    }
+
+    public int getMaxNeighbourCount() {
+        return maxNeighbourCount;
+    }
+
+    public Box<Integer> getNeighbourCount() {
+        return neighbourCount;
+    }
+
+    public Box<Integer> getParamCount() {
+        return paramCount;
+    }
+
+    public Best<Long> getMaxParamTimeNanos() {
+        return maxParamTimeNanos;
+    }
+
+    public Best<Long> getMaxNeighbourBatchTimeNanos() {
+        return maxNeighbourBatchTimeNanos;
+    }
+
+    public Function<Instances, ParamSpace> getParamSpaceFunction() {
+        return paramSpaceFunction;
+    }
+
+    public Iterator<Set<Benchmark>> getParamSourceIterator() {
+        return paramSourceIterator;
+    }
+
+    public BenchmarkIterator getBenchmarkSourceIterator() {
+        return benchmarkSourceIterator;
+    }
+
+    public BenchmarkImprover getBenchmarkImprover() {
+        return benchmarkImprover;
+    }
+
+    public Optimiser getOptimiser() {
+        return optimiser;
+    }
+
+    public void setIncTunedClassifier(final IncTunedClassifier incTunedClassifier) {
+        this.incTunedClassifier = incTunedClassifier;
+    }
+
+    public void setParamSpace(final ParamSpace paramSpace) {
+        this.paramSpace = paramSpace;
+    }
+
+    public void setBenchmarkExplorer(final BenchmarkExplorer benchmarkExplorer) {
+        this.benchmarkExplorer = benchmarkExplorer;
+    }
+
+    public void setParamSetIterator(final Iterator<ParamSet> paramSetIterator) {
+        this.paramSetIterator = paramSetIterator;
+    }
+
+    public void setMaxParamCount(final int maxParamCount) {
+        this.maxParamCount = maxParamCount;
+    }
+
+    public void setMaxNeighbourCount(final int maxNeighbourCount) {
+        this.maxNeighbourCount = maxNeighbourCount;
+    }
+
+    public void setNeighbourCount(final Box<Integer> neighbourCount) {
+        this.neighbourCount = neighbourCount;
+    }
+
+    public void setParamCount(final Box<Integer> paramCount) {
+        this.paramCount = paramCount;
+    }
+
+    public void setMaxParamTimeNanos(final Best<Long> maxParamTimeNanos) {
+        this.maxParamTimeNanos = maxParamTimeNanos;
+    }
+
+    public void setMaxNeighbourBatchTimeNanos(final Best<Long> maxNeighbourBatchTimeNanos) {
+        this.maxNeighbourBatchTimeNanos = maxNeighbourBatchTimeNanos;
+    }
+
+    public void setParamSpaceFunction(
+        final Function<Instances, ParamSpace> paramSpaceFunction) {
+        this.paramSpaceFunction = paramSpaceFunction;
+    }
+
+    public void setParamSourceIterator(
+        final Iterator<Set<Benchmark>> paramSourceIterator) {
+        this.paramSourceIterator = paramSourceIterator;
+    }
+
+    public void setBenchmarkSourceIterator(
+        final BenchmarkIterator benchmarkSourceIterator) {
+        this.benchmarkSourceIterator = benchmarkSourceIterator;
+    }
+
+    public void setBenchmarkImprover(final BenchmarkImprover benchmarkImprover) {
+        this.benchmarkImprover = benchmarkImprover;
+    }
+
+    public void setOptimiser(final Optimiser optimiser) {
+        this.optimiser = optimiser;
     }
 }
