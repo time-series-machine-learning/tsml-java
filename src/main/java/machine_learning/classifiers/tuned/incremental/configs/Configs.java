@@ -49,10 +49,51 @@ public class Configs {
     }
 
     public static IncTunedClassifier buildTunedDtw1nnV1() {
-        IncTunedClassifier incTunedClassifier = new IncTunedClassifier();
-        incTunedClassifier.setOnTrainDataAvailable(new Inc1nnTuningSetup(incTunedClassifier,
-                                                                         tsml.classifiers.distance_based.distances.Configs::buildDtwSpaceV1));
-        return incTunedClassifier;
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildDtwSpaceV1);
+    }
+
+    public static IncTunedClassifier buildTunedDdtw1nnV1() {
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildDdtwSpaceV1);
+    }
+
+    public static IncTunedClassifier buildTunedWdtw1nnV1() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildWdtwSpaceV1());
+    }
+
+    public static IncTunedClassifier buildTunedWddtw1nnV1() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildWddtwSpaceV1());
+    }
+
+    public static IncTunedClassifier buildTunedDtw1nnV2() {
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildDtwSpaceV2);
+    }
+
+    public static IncTunedClassifier buildTunedDdtw1nnV2() {
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildDdtwSpaceV2);
+    }
+
+    public static IncTunedClassifier buildTunedWdtw1nnV2() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildWdtwSpaceV2());
+    }
+
+    public static IncTunedClassifier buildTunedWddtw1nnV2() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildWddtwSpaceV2());
+    }
+
+    public static IncTunedClassifier buildTunedMsm1nn() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildMsmSpace());
+    }
+
+    public static IncTunedClassifier buildTunedTwed1nn() {
+        return buildTuned1nn(i -> tsml.classifiers.distance_based.distances.Configs.buildTwedSpace());
+    }
+
+    public static IncTunedClassifier buildTunedErp1nn() {
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildErpSpace);
+    }
+
+    public static IncTunedClassifier buildTunedLcss1nn() {
+        return buildTuned1nn(tsml.classifiers.distance_based.distances.Configs::buildLcssSpace);
     }
 
     public static IncTunedClassifier buildTuned1nn(Function<Instances, ParamSpace> paramSpaceFunction) {
