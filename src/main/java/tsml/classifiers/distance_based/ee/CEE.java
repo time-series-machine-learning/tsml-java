@@ -39,10 +39,12 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         buildTunedWddtw1nnV1(),
         buildTunedTwed1nnV1()
                                                                                                  );
-    protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(DEFAULT_CONSTITUENTS); // todo populate
-    protected TreeSet<EnhancedAbstractClassifier> partialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST); // constituents which
+    protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(DEFAULT_CONSTITUENTS);
+    protected List<EnhancedAbstractClassifier> partialConstituentsBatch =
+        new ArrayList<>(); //
+    // constituents which
     // still have work remaining
-    protected TreeSet<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST); //
+    protected List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
     // constituents which still have work remaining - tentative version
     protected List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
     protected long trainTimeLimitNanos = -1;
@@ -53,7 +55,6 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     protected ModuleWeightingScheme weightingScheme = new TrainAcc();
     protected AbstractEnsemble.EnsembleModule[] modules;
     protected boolean hasNext = false;
-    protected transient Instances data;
     protected long remainingTrainTimeNanosPerConstituent;
     protected boolean firstBatchDone;
     private String checkpointDirPath;
@@ -63,19 +64,12 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     private static final String tempCheckpointFileName = checkpointFileName + ".tmp";
     private boolean ignorePreviousCheckpoints = false;
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
-    private Instances trainData;
-    private final static Comparator<EnhancedAbstractClassifier> LEAST_TRAINED_FIRST = Comparator.comparing(eac -> {
-        if(eac instanceof TrainTimeContractable) {
-            return ((TrainTimeContractable) eac).predictNextTrainTimeNanos() + ((TrainTimeContractable) eac).getTrainTimeNanos();
-        } else {
-            return -1L;
-        }
-    });
+    private transient Instances trainData;
 
     @Override public long predictNextTrainTimeNanos() {
         long result = -1;
         if(!nextPartialConstituentsBatch.isEmpty()) {
-            EnhancedAbstractClassifier classifier = nextPartialConstituentsBatch.first();
+            EnhancedAbstractClassifier classifier = nextPartialConstituentsBatch.get(0);
             if(classifier instanceof TrainTimeContractable) {
                 result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
             }
@@ -87,29 +81,27 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         ProgressiveBuildClassifier.super.buildClassifier(data);
     }
 
-    @Override public void startBuild(final Instances data) throws Exception {
+    @Override public void startBuild(final Instances trainData) throws Exception {
         trainTimer.resume();
         memoryWatcher.resume();
-        super.buildClassifier(data);
-        this.data = data;
+        super.buildClassifier(trainData);
+        this.trainData = trainData;
         if(rebuild) {
             rebuild = false;
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
             }
             firstBatchDone = false;
-            partialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST);
+            partialConstituentsBatch = new ArrayList<>(constituents);
             trainedConstituents = new ArrayList<>();
-            partialConstituentsBatch.addAll(constituents);
             for(EnhancedAbstractClassifier constituent : constituents) {
                 constituent.setDebug(debug);
                 constituent.setSeed(seed);
                 constituent.setEstimateOwnPerformance(true);
             }
-            nextPartialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST);
+            nextPartialConstituentsBatch = new ArrayList<>();
             trainTimer.lap();
-            long remainingTrainTimeNanos = getRemainingTrainTimeNanos();
-            if(remainingTrainTimeNanos < 0) {
+            if(!hasTrainTimeLimit()) {
                 remainingTrainTimeNanosPerConstituent = -1;
             } else {
                 remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / partialConstituentsBatch.size();
@@ -132,34 +124,43 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
      * @throws Exception
      */
     private void improveNextConstituent() throws Exception {
-        EnhancedAbstractClassifier constituent = partialConstituentsBatch.pollFirst();
+        EnhancedAbstractClassifier constituent = partialConstituentsBatch.remove(0);
         if(constituent == null) {
             throw new IllegalStateException("something has gone wrong, constituent should not be null");
         }
         if(constituent instanceof TrainTimeContractable) {
             ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
+        if(debug) {
+            System.out.println("Running constituent {id: " + (constituents.size() - partialConstituentsBatch.size()) + ", " + StrUtils.toOptionValue(constituent) + " }");
+        }
         trainTimer.pause();
         memoryWatcher.pause();
-        constituent.buildClassifier(data);
+        constituent.buildClassifier(trainData);
         memoryWatcher.resume();
         trainTimer.resume();
-        if(constituent instanceof TrainTimeContractable && !((TrainTimeContractable) constituent).isDone()) {
+        if(constituent instanceof TrainTimeContractable && ((TrainTimeContractable) constituent).hasRemainingTraining()) {
             nextPartialConstituentsBatch.add(constituent);
         }
         if(partialConstituentsBatch.isEmpty()) {
             firstBatchDone = true;
-            partialConstituentsBatch.addAll(nextPartialConstituentsBatch);
-            nextPartialConstituentsBatch.clear();
-            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / partialConstituentsBatch.size();
+            if(!nextPartialConstituentsBatch.isEmpty()) {
+                partialConstituentsBatch.addAll(nextPartialConstituentsBatch);
+                nextPartialConstituentsBatch.clear();
+                remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / partialConstituentsBatch.size();
+            }
         }
+    }
+
+    @Override public boolean isDone() {
+         return partialConstituentsBatch.isEmpty();
     }
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
         trainTimer.resume();
         memoryWatcher.resume();
-        boolean hasNext = !firstBatchDone || (hasRemainingTrainTime() && !partialConstituentsBatch.isEmpty());
+        hasNext = !firstBatchDone || hasRemainingTraining();
         memoryWatcher.pause();
         trainTimer.pause();
         return hasNext;
@@ -193,19 +194,18 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
                 modules[i].trainResults = constituent.getTrainResults();
                 i++;
             }
-            weightingScheme.defineWeightings(modules, data.numClasses());
-            votingScheme.trainVotingScheme(modules, data.numClasses());
+            weightingScheme.defineWeightings(modules, trainData.numClasses());
+            votingScheme.trainVotingScheme(modules, trainData.numClasses());
             trainResults = new ClassifierResults();
-            for(i = 0; i < data.size(); i++) {
+            for(i = 0; i < trainData.size(); i++) {
                 StopWatch predictionTimer = new StopWatch(true);
                 double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
                 int prediction = ArrayUtilities.argMax(distribution);
                 predictionTimer.pause();
-                double trueClassValue = data.get(i).classValue();
+                double trueClassValue = trainData.get(i).classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTimeNanos(), null);
             }
         }
-        checkpoint(true);
         memoryWatcher.pause();
         trainTimer.pause();
         trainResults.setSplit("train");
@@ -216,6 +216,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainResults.setDetails(this, trainData);
         // todo combine memory watcher + train times + test times
         trainData = null;
+        checkpoint(true);
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
@@ -309,4 +310,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return trainTimer.getTimeNanos();
     }
 
+    @Override public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
+    }
 }

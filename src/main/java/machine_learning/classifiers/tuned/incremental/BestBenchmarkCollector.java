@@ -40,8 +40,7 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
 
     @Override
     public void add(Benchmark benchmark) {
-        Double score = scorer.apply(benchmark);
-        System.out.println(score);
+        Double score = scorer.apply(benchmark); // todo add debug to all the interfaces / abst classes
         map.add(score, benchmark);
         best = null;
     }

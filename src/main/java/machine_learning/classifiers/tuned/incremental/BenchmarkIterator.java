@@ -7,6 +7,6 @@ import java.util.Set;
 
 public interface BenchmarkIterator extends DefaultIterator<Set<Benchmark>> {
     default long predictNextTimeNanos() {
-        return 0;
+        return -1;
     }
 }

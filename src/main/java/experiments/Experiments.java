@@ -33,6 +33,8 @@ import java.util.logging.Logger;
 import tsml.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import utilities.Debugable;
+import utilities.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -50,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -297,7 +300,8 @@ public class Experiments  {
             else if (contractPredTimeSeconds > 0)
                 contractPredTimeMillis = contractPredTimeSeconds * 1000;
 
-            //supporting file path generated in setupAndRunExperiment(...), if not explicitly passed
+            resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
+            dataReadLocation = StrUtils.asDirPath(dataReadLocation);
         }
 
         public String toShortString() {
@@ -454,6 +458,13 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
+
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(expSettings.foldId);
+        }
+        if(classifier instanceof Debugable) {
+            ((Debugable) classifier).setDebug(expSettings.debug);
+        }
 
         //Build/make the directory to write the train and/or testFold files to
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";

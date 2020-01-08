@@ -1,6 +1,7 @@
 package machine_learning.classifiers.tuned.incremental;
 
 import evaluation.storage.ClassifierResults;
+import utilities.StrUtils;
 import weka.classifiers.Classifier;
 
 public class Benchmark {
@@ -52,5 +53,13 @@ public class Benchmark {
             return false;
         }
         return o.hashCode() == hashCode();
+    }
+
+    @Override public String toString() {
+        return "Benchmark{" +
+            "id=" + id +
+            ", results=" + results.getAcc() +
+            ", classifier=" + StrUtils.toOptionValue(classifier) +
+            '}';
     }
 }

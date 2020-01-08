@@ -199,9 +199,12 @@ public class KNNCV
         }
     }
 
-    public void startBuild(Instances data) throws Exception {
-        if(isRebuild()) {
+    public void startBuild(Instances data) throws Exception { // todo watch mem
+        buildTimer.resume();
+        if(rebuild) {
             super.buildClassifier(data);
+            buildTimer.resume();
+            rebuild = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
                     IndexFilter.hashifyInstances(data);
@@ -224,6 +227,7 @@ public class KNNCV
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
             }
         }
+        buildTimer.pause();
     }
 
     public void finishBuild() throws Exception {

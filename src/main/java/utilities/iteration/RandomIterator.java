@@ -27,7 +27,7 @@ public class RandomIterator<A>
     protected Integer seed = null;
     protected List<A> list = new ArrayList<>();
     protected List<Integer> indices;
-    protected int index;
+    protected int index = -1;
     public final static String SEED_FLAG = "-s";
     protected boolean nextIndexSetup = false;
 
@@ -42,7 +42,7 @@ public class RandomIterator<A>
             seed = random.nextInt();
             if(indices.isEmpty()) {
 //            if(list.isEmpty()) {
-                index = 0;
+                index = -1;
             } else {
                 index = random.nextInt(indices.size());
 //                index = random.nextInt(list.size());

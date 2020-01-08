@@ -113,9 +113,9 @@ public class KNN extends EnhancedAbstractClassifier
             rebuild = false;
             distanceFunction.setInstances(trainData);
             this.trainData = trainData;
-            buildTimer.pause();
             checkpoint(true);
         }
+        buildTimer.pause();
     }
 
     @Override

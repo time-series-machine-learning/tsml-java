@@ -21,6 +21,10 @@ import static utilities.collections.Utils.replace;
 public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
                                                                               TrainTimeContractable, MemoryWatchable {
 
+    public IncTunedClassifier() {
+        super(true);
+    }
+
     private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
         @Override
         public boolean hasNext() {
@@ -54,27 +58,47 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     @Override public void startBuild(final Instances data) throws Exception {
         trainTimer.resume();
         memoryWatcher.resume();
-        super.buildClassifier(data);
+        if(rebuild) {
+            super.buildClassifier(data);
+            onTrainDataAvailable.accept(data);
+            rebuild = false;
+        }
         trainData = data;
-        onTrainDataAvailable.accept(data); // todo perhaps this should be obtained via a get? Not necessarily always
-        // required
+        memoryWatcher.pause();
+        trainTimer.pause();
     }
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.lap();
-        boolean result = benchmarkIterator.hasNext() && hasRemainingTrainTime();
+        trainTimer.resume();
+        memoryWatcher.resume();
+        boolean result = hasRemainingTraining();
+        trainTimer.pause();
+        memoryWatcher.pause();
         return result;
     }
 
     @Override
     public void nextBuildTick() throws Exception {
+        trainTimer.resume();
+        memoryWatcher.resume();
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
+        if(debug) {
+            System.out.println("Benchmarks produced:");
+            for(Benchmark benchmark : nextBenchmarks) {
+                System.out.println(benchmark);
+            }
+            System.out.println("----");
+        }
         replace(collectedBenchmarks, nextBenchmarks);
+        trainTimer.pause();
+        memoryWatcher.pause();
     }
 
     @Override
     public void finishBuild() throws Exception {
+        trainTimer.resume();
+        memoryWatcher.resume();
         benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
         collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
         if(collectedBenchmarks.isEmpty()) {
@@ -173,27 +197,15 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
     }
 
     @Override public boolean isDone() {
-        return benchmarkIterator.hasNext();
+        return !benchmarkIterator.hasNext();
     }
 
     @Override public long getTrainTimeNanos() {
         return trainTimer.getTimeNanos();
     }
 
-    @Override public long getMaxMemoryUsageInBytes() {
-        return memoryWatcher.getMaxMemoryUsageInBytes();
-    }
-
-    @Override public long getMeanMemoryUsageInBytes() {
-        return memoryWatcher.getMeanMemoryUsageInBytes();
-    }
-
-    @Override public long getVarianceMemoryUsageInBytes() {
-        return memoryWatcher.getVarianceMemoryUsageInBytes();
-    }
-
-    @Override public long getGarbageCollectionTimeInMillis() {
-        return memoryWatcher.getGarbageCollectionTimeInMillis();
+    @Override public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
     }
 
     @Override public long getTrainTimeLimitNanos() {

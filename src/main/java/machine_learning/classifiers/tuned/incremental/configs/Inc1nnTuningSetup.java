@@ -39,7 +39,7 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
     private BenchmarkIterator benchmarkSourceIterator;
     private BenchmarkImprover benchmarkImprover;
     private Optimiser optimiser;
-    private final Supplier<KNNCV> knnSupplier;
+    private Supplier<KNNCV> knnSupplier;
 
     public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier,
                              final Function<Instances, ParamSpace> paramSpaceFunction,
@@ -162,7 +162,7 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
                         Classifier classifier = benchmark.getClassifier();
                         KNNCV knn = (KNNCV) classifier;
                         if(incTunedClassifier.isDebug()) {
-                            int currentNeighbourLimit = knn.getNeighbourLimit() + 1;
+                            int currentNeighbourLimit = knn.getNeighbourLimit();
                             if(nextNeighbourCount <= currentNeighbourLimit) {
                                 throw new IllegalStateException("no improvement to the number of neighbours");
                             }
@@ -184,7 +184,6 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
                     throw new IllegalStateException(e);
                 }
                 timeTaken += System.nanoTime() - startTime;
-//                    System.out.println("neighbour time: " + timeTaken + " vs " + maxNeighbourBatchTimeNanos.get());
                 maxNeighbourBatchTimeNanos.add(timeTaken);
                 return improvedBenchmarks;
             }
@@ -351,5 +350,13 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
 
     public void setOptimiser(final Optimiser optimiser) {
         this.optimiser = optimiser;
+    }
+
+    public Supplier<KNNCV> getKnnSupplier() {
+        return knnSupplier;
+    }
+
+    public void setKnnSupplier(final Supplier<KNNCV> knnSupplier) {
+        this.knnSupplier = knnSupplier;
     }
 }

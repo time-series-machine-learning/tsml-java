@@ -362,7 +362,8 @@ public class StrUtils {
 
     public static String asDirPath(String path) {
         int len = File.separator.length();
-        if(path.substring(path.length() - 1 - len).equals(File.separator)) {
+        String subStr = path.substring(path.length() - len);
+        if(!subStr.equals(File.separator)) {
             return path + File.separator;
         }
         return path;

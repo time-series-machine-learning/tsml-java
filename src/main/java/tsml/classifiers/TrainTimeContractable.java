@@ -14,6 +14,7 @@
  */
 package tsml.classifiers;
 
+import scala.annotation.meta.param;
 import utilities.params.ParamHandler;
 import utilities.StrUtils;
 import utilities.params.ParamSet;
@@ -76,16 +77,23 @@ public interface TrainTimeContractable
     }
 
     default boolean hasRemainingTrainTime() {
+        if(!hasTrainTimeLimit()) {
+            return true; // if there's no train time limit then there's always remaining train time
+        }
         long prediction = predictNextTrainTimeNanos();
-        return !(prediction < 0) && getRemainingTrainTimeNanos() > prediction;
+        return getRemainingTrainTimeNanos() > prediction;
     }
 
     default long predictNextTrainTimeNanos() {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     default boolean isDone() {
-        return predictNextTrainTimeNanos() < 0;
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean hasRemainingTraining() {
+        return !isDone() && hasRemainingTrainTime();
     }
 
     String TRAIN_TIME_LIMIT_NANOS_FLAG = "trtl";

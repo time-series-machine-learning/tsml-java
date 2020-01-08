@@ -84,7 +84,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
-    protected boolean rebuild = false;
+    protected boolean rebuild = true;
 
     @Override public boolean isRebuild() {
         return rebuild;
