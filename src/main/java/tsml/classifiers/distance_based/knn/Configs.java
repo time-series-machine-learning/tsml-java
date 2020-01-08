@@ -33,7 +33,6 @@ public class Configs {
         return classifier;
     }
 
-
     public static KNNCV buildEd1nnV1() {
         KNNCV knn = build1nnV1();
         knn.setDistanceFunction(new Dtw(0));

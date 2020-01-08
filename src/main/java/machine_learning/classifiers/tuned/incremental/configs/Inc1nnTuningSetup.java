@@ -5,18 +5,17 @@ import org.apache.commons.collections4.Transformer;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import tsml.classifiers.distance_based.knn.KNNCV;
 import utilities.collections.Best;
-import utilities.collections.Utils;
 import utilities.collections.box.Box;
 import utilities.iteration.RandomIterator;
 import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import weka.core.Randomizable;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static tsml.classifiers.distance_based.knn.Configs.build1nnV1;
 
@@ -40,15 +39,19 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
     private BenchmarkIterator benchmarkSourceIterator;
     private BenchmarkImprover benchmarkImprover;
     private Optimiser optimiser;
+    private final Supplier<KNNCV> knnSupplier;
 
     public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier,
-                             final Function<Instances, ParamSpace> paramSpaceFunction) {
+                             final Function<Instances, ParamSpace> paramSpaceFunction,
+                             final Supplier<KNNCV> knnSupplier) {
         this.incTunedClassifier = incTunedClassifier;
         this.paramSpaceFunction = paramSpaceFunction;
+        this.knnSupplier = knnSupplier;
     }
 
-    public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier, ParamSpace paramSpace) {
-        this(incTunedClassifier, (instances) -> paramSpace);
+    public Inc1nnTuningSetup(IncTunedClassifier incTunedClassifier, ParamSpace paramSpace,
+                             final Supplier<KNNCV> knnSupplier) {
+        this(incTunedClassifier, (instances) -> paramSpace, knnSupplier);
     }
 
     @Override
@@ -69,7 +72,7 @@ public class Inc1nnTuningSetup implements Consumer<Instances> {
                                     long startTime = System.nanoTime();
                                     long timeTaken = 0;
                                     paramCount.set(paramCount.get() + 1);
-                                    KNNCV knn = build1nnV1();
+                                    KNNCV knn = knnSupplier.get();
                                     knn.setNeighbourLimit(neighbourCount.get());
                                     knn.setParams(paramSet);
                                     knn.setEstimateOwnPerformance(true);

@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.ee;
 
+import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static machine_learning.classifiers.tuned.incremental.configs.Configs.*;
 import static utilities.collections.Utils.replace;
 
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
@@ -27,7 +29,17 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         super(true);
     }
 
-    protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(); // todo populate
+    private static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ImmutableList.of(
+        buildTunedDtw1nnV1(),
+        buildTunedDdtw1nnV1(),
+        buildTunedErp1nnV1(),
+        buildTunedLcss1nnV1(),
+        buildTunedMsm1nnV1(),
+        buildTunedWdtw1nnV1(),
+        buildTunedWddtw1nnV1(),
+        buildTunedTwed1nnV1()
+                                                                                                 );
+    protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(DEFAULT_CONSTITUENTS); // todo populate
     protected TreeSet<EnhancedAbstractClassifier> partialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST); // constituents which
     // still have work remaining
     protected TreeSet<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new TreeSet<>(LEAST_TRAINED_FIRST); //
