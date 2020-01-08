@@ -76,7 +76,8 @@ public interface TrainTimeContractable
     }
 
     default boolean hasRemainingTrainTime() {
-        return !isDone() && getRemainingTrainTimeNanos() > predictNextTrainTimeNanos();
+        long prediction = predictNextTrainTimeNanos();
+        return !(prediction < 0) && getRemainingTrainTimeNanos() > prediction;
     }
 
     default long predictNextTrainTimeNanos() {
