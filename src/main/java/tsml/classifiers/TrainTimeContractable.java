@@ -44,7 +44,7 @@ public interface TrainTimeContractable
     default void setMinuteLimit(int t){ setTrainTimeLimit(TimeUnit.MINUTES, t); }
 
     //set any value in nanoseconds you like.
-    default void setTrainTimeLimit(long time) { setTrainTimeLimit(TimeUnit.NANOSECONDS, time); }
+    default void setTrainTimeLimit(long time) { throw new UnsupportedOperationException(); }
 
     //pass in an value from the TimeUnit enum and the amount of said values.
     default void setTrainTimeLimit(TimeUnit time, long amount) {

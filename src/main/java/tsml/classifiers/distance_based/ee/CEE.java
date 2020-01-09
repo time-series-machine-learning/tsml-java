@@ -23,7 +23,7 @@ import static machine_learning.classifiers.tuned.incremental.configs.Configs.*;
 import static utilities.collections.Utils.replace;
 
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
-                                                               ProgressiveBuildClassifier, MemoryWatchable {
+        IncClassifier, MemoryWatchable {
 
     public static CEE buildV1() {
         CEE cee = new CEE();
@@ -113,6 +113,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     protected List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
     protected long trainTimeLimitNanos = -1;
     protected StopWatch trainTimer = new StopWatch();
+    protected StopWatch estimateTrainTimer = new StopWatch();
     protected boolean rebuild = true;
     protected boolean regenerateTrainEstimate = true;
     protected ModuleVotingScheme votingScheme = new MajorityVote();
@@ -142,8 +143,8 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public void buildClassifier(final Instances data) throws Exception {
-        ProgressiveBuildClassifier.super.buildClassifier(data);
+    @Override public void buildClassifier(final Instances trainData) throws Exception {
+        IncClassifier.super.buildClassifier(trainData);
     }
 
     @Override public void startBuild(final Instances trainData) throws Exception {
@@ -153,6 +154,8 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         this.trainData = trainData;
         if(rebuild) {
             logger.log("rebuilding");
+            trainTimer.resetAndResume();
+            estimateTrainTimer.resetAndResume();
             rebuild = false;
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
@@ -265,6 +268,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
             for(EnhancedAbstractClassifier constituent : constituents) {
+                estimateTrainTimer.add(constituent.getTrainResults().getBuildPlusEstimateTime());
                 modules[i] = new AbstractEnsemble.EnsembleModule();
                 modules[i].setClassifier(constituent);
                 modules[i].trainResults = constituent.getTrainResults();

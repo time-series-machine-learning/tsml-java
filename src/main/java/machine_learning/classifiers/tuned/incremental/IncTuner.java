@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 import static utilities.collections.Utils.replace;
 
-public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
+public class IncTuner extends EnhancedAbstractClassifier implements IncClassifier,
                                                                     TrainTimeContractable, MemoryWatchable,
                                                                     Checkpointable {
 
@@ -45,6 +45,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected Instances trainData;
+    protected StopWatch trainEstimateTimer = new StopWatch();
     protected long trainTimeLimitNanos = -1;
     private static final String checkpointFileName = "checkpoint.ser";
     private static final String tempCheckpointFileName = checkpointFileName + ".tmp";
@@ -92,7 +93,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
 
     @Override public void buildClassifier(final Instances data) throws Exception {
 
-        ProgressiveBuildClassifier.super.buildClassifier(data);
+        IncClassifier.super.buildClassifier(data);
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
@@ -102,6 +103,8 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
             super.buildClassifier(data);
             onTrainDataAvailable.accept(data);
             rebuild = false;
+            trainTimer.resetAndResume();
+            trainEstimateTimer.resetAndResume();
         }
         trainData = data;
         memoryWatcher.pause();
@@ -136,6 +139,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
     public void finishBuild() throws Exception {
         trainTimer.resume();
         memoryWatcher.resume();
+        for(Benchmark collectedBenchmark : collectedBenchmarks) {
+            trainEstimateTimer.add(collectedBenchmark.getResults().getBuildPlusEstimateTime());
+        }
         benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
         collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
         if(collectedBenchmarks.isEmpty()) {
@@ -152,10 +158,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
         }
         memoryWatcher.pause();
         trainTimer.pause();
-        trainResults.setMemory(getMaxMemoryUsageInBytes()); // todo other fields
-        trainResults.setBuildTime(getTrainTimeNanos()); // todo break down to estimate time also
+        trainResults.setMemory(getMaxMemoryUsageInBytes());
+        trainResults.setBuildTime(trainTimer.getTimeNanos());
+        trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setFoldID(seed); // todo set other details
+        trainResults.setFoldID(seed);
         trainResults.setDetails(this, trainData);
         trainData = null;
     }
@@ -238,7 +245,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
     }
 
     @Override public long getTrainTimeNanos() {
-        return trainTimer.getTimeNanos();
+        return trainTimer.getTimeNanos() + trainEstimateTimer.getTimeNanos();
     }
 
     @Override public MemoryWatcher getMemoryWatcher() {

@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.ProgressiveBuildClassifier;
+import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIterationStrategy;
@@ -16,83 +16,17 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class KnnLoocv
     extends Knn implements TrainTimeContractable,
                            Checkpointable,
-                           ProgressiveBuildClassifier {
-    public KnnLoocv() {
-        setAbleToEstimateOwnPerformance(true);
-    }
-
-    public KnnLoocv(DistanceFunction df) {
-        super(df);
-        setAbleToEstimateOwnPerformance(true);
-    }
-
-    @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        trainTimeLimitNanos = TimeUnit.NANOSECONDS.convert(amount, time);
-    }
-
-    @Override
-    public boolean setSavePath(String path) {
-        if(path == null) {
-            return false;
-        }
-        checkpointDirPath = StrUtils.asDirPath(path);
-        return true;
-    }
-
-    public void checkpoint(boolean force) {
-        trainEstimateTimer.pause();
-        if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            try {
-                saveToFile(checkpointDirPath + tempCheckpointFileName);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointFileName));
-            if(!success) {
-                throw new IllegalStateException("could not rename checkpoint file");
-            }
-            lastCheckpointTimeStamp = System.nanoTime();
-        }
-        trainEstimateTimer.resume();
-    }
-
-    public void checkpoint() {
-        checkpoint(false);
-    }
-
-    public boolean isCheckpointing() {
-        return checkpointDirPath != null;
-    }
-
-    public long getMinCheckpointIntervalNanos() {
-        return minCheckpointIntervalNanos;
-    }
-
-    public void setMinCheckpointIntervalNanos(final long minCheckpointInterval) {
-        this.minCheckpointIntervalNanos = minCheckpointInterval;
-    }
-
-    public List<NeighbourSearcher> getSearchers() {
-        return searchers;
-    }
+        IncClassifier {
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-//    public static final String CACHE_FLAG = "c";
-    public static final String checkpointFileName = "checkpoint.ser";
-    public static final String tempCheckpointFileName = checkpointFileName + ".tmp";
-    protected long lastCheckpointTimeStamp = 0;
-    protected long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
-    protected String checkpointDirPath;
+    //    public static final String CACHE_FLAG = "c";
     protected long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
     protected long previousNeighbourBatchTimeNanos = 0;
@@ -104,9 +38,22 @@ public class KnnLoocv
     protected NeighbourIterationStrategy neighbourIterationStrategy = new LinearNeighbourIterationStrategy();
     protected boolean trainEstimateChange = false;
 
+    public KnnLoocv() {
+        setAbleToEstimateOwnPerformance(true);
+    }
+
+    public KnnLoocv(DistanceFunction df) {
+        super(df);
+        setAbleToEstimateOwnPerformance(true);
+    }
+
     @Override
-    public String getSavePath() {
-        return checkpointDirPath;
+    public void setTrainTimeLimit(long nanos) {
+        trainTimeLimitNanos = nanos;
+    }
+
+    public List<NeighbourSearcher> getSearchers() {
+        return searchers;
     }
 
     public boolean hasNextTrainTimeLimit() {
@@ -126,7 +73,12 @@ public class KnnLoocv
     }
 
     public boolean hasNextBuildTick() {
-        return hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
+        trainEstimateTimer.resume();
+        memoryWatcher.resume();
+        boolean result = estimateOwnPerformance && hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
+        trainEstimateTimer.pause();
+        memoryWatcher.pause();
+        return result;
     }
 
     public long predictNextTrainTimeNanos() {
@@ -135,6 +87,7 @@ public class KnnLoocv
 
     public void nextBuildTick() {
         trainEstimateTimer.resume();
+        memoryWatcher.resume();
         trainEstimateChange = true;
         long timeStamp = System.nanoTime();
         NeighbourSearcher current = iterator.next();
@@ -158,6 +111,7 @@ public class KnnLoocv
         previousNeighbourBatchTimeNanos = System.nanoTime() - timeStamp;
         checkpoint();
         trainEstimateTimer.pause();
+        memoryWatcher.pause();
     }
 
     public NeighbourIterationStrategy getNeighbourIterationStrategy() {
@@ -185,23 +139,20 @@ public class KnnLoocv
     }
 
     protected void loadFromCheckpoint() {
-        if(isCheckpointing() && isRebuild()) {
-            trainEstimateTimer.pause();
-            try {
-                loadFromFile(checkpointDirPath + checkpointFileName);
-                setRebuild(false);
-            } catch (Exception e) {
-
-            }
-            trainEstimateTimer.resume();
-        }
+        trainEstimateTimer.pause();
+        super.loadFromCheckpoint();
+        trainEstimateTimer.resume();
     }
 
     public void startBuild(Instances data) throws Exception { // todo watch mem
-        buildTimer.resume();
+        trainTimer.resume();
+        memoryWatcher.resume();
         if(rebuild) {
+            loadFromCheckpoint();
             super.buildClassifier(data);
-            buildTimer.resume();
+            memoryWatcher.resumeAnyway();
+            trainTimer.pauseAnyway();
+            trainEstimateTimer.resetAndResume();
             rebuild = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
@@ -225,11 +176,15 @@ public class KnnLoocv
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
             }
         }
-        buildTimer.pause();
+        trainTimer.pauseAnyway();
+        trainEstimateTimer.pauseAnyway();
     }
 
     public void finishBuild() throws Exception {
         if(trainEstimateChange) {
+            // todo make sure train timer is paused here + other timings checks
+            trainEstimateTimer.resume();
+            memoryWatcher.resume();
             trainEstimateChange = false;
             if(neighbourLimit >= 0 && neighbourCount < neighbourLimit || neighbourLimit < 0 && neighbourCount < trainData.size()) {
                 throw new IllegalStateException("this should not happen");
@@ -244,32 +199,16 @@ public class KnnLoocv
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
             trainEstimateTimer.pause();
+            memoryWatcher.pause();
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
-            trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + buildTimer.getTimeNanos());
+            trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
-    }
-
-    @Override
-    public void buildClassifier(Instances data) throws Exception {
-        trainEstimateTimer.resume();
-        loadFromCheckpoint();
-        startBuild(data);
-        // if we're generating an estimate of the train data performance
-        if(getEstimateOwnPerformance()) { // todo make this generic in progressive build classifier
-            // while we've got time / neighbours remaining, add neighbours to the searchers
-            while(hasNextBuildTick()) {
-                nextBuildTick();
-            }
-            finishBuild();
-        }
-        checkpoint(true);
-        trainEstimateTimer.pause();
     }
 
     public long getTrainTimeNanos() {
-        return trainEstimateTimer.getTimeNanos();
+        return trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos();
     }
 
     public long getTrainTimeLimitNanos() {

@@ -15,9 +15,6 @@ import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
 
@@ -91,8 +88,16 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
         setState(orig);
     }
 
-    public void setState(State state) {
+    public MemoryWatcher setStateAnyway(State state) {
         state.set(this);
+        return this;
+    }
+
+    public MemoryWatcher setState(State state) {
+        if(state.equals(this.state)) {
+            throw new IllegalArgumentException("already set to state: " + state);
+        }
+        return setStateAnyway(state);
     }
 
     private final NotificationListener listener = (notification, handback) -> {
@@ -155,20 +160,36 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
         return (usageSumSq - (usageSum * usageSum) / size) / (size - 1);
     }
 
-    public synchronized void enable() {
-        State.ENABLED.set(this);
+    public synchronized MemoryWatcher enable() {
+        return setState(State.ENABLED);
     }
 
-    public synchronized void disable() {
-        State.DISABLED.set(this);
+    public synchronized MemoryWatcher enableAnyway() {
+        return setStateAnyway(State.ENABLED);
     }
 
-    public void resume() {
-        State.RESUMED.set(this);
+    public synchronized MemoryWatcher disable() {
+        return setState(State.DISABLED);
     }
 
-    public void pause() {
-        State.PAUSED.set(this);
+    public synchronized MemoryWatcher disableAnyway() {
+        return setStateAnyway(State.DISABLED);
+    }
+
+    public MemoryWatcher resume() {
+        return setState(State.RESUMED);
+    }
+
+    public MemoryWatcher resumeAnyway() {
+        return setStateAnyway(State.RESUMED);
+    }
+
+    public MemoryWatcher pause() {
+        return setState(State.PAUSED);
+    }
+
+    public MemoryWatcher pauseAnyway() {
+        return setStateAnyway(State.PAUSED);
     }
 
     @Override

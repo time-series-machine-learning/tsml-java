@@ -2,11 +2,9 @@ package tsml.classifiers;
 
 import utilities.NotNull;
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
-import weka.core.Instance;
 import weka.core.Instances;
 
-public interface ProgressiveBuildClassifier
+public interface IncClassifier
     extends Classifier {
 
     // make sure to start / stop timers / watchers at the beginning / end of each of these methods as they can be
@@ -25,19 +23,23 @@ public interface ProgressiveBuildClassifier
 
     }
 
-    default void startBuild(@NotNull Instances data) throws
+    default void startBuild(@NotNull Instances trainData) throws
                                                      Exception {}
+
+     default void incBuildClassifier(Instances trainData) throws Exception {
+         startBuild(trainData);
+         if (hasNextBuildTick()) {
+             do {
+                 nextBuildTick();
+             }
+             while (hasNextBuildTick());
+             finishBuild();
+         }
+     }
 
     @Override
     default void buildClassifier(@NotNull Instances trainData) throws Exception {
-        startBuild(trainData);
-        if (hasNextBuildTick()) {
-            do {
-                nextBuildTick();
-            }
-            while (hasNextBuildTick());
-            finishBuild();
-        }
+        incBuildClassifier(trainData);
     }
 
 }

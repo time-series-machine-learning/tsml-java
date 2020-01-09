@@ -8,7 +8,7 @@ public class StopWatch implements Serializable {
     private boolean paused = true;
 
     public StopWatch() {
-        reset();
+        resetAndResume();
     }
 
     public StopWatch(boolean start) {
@@ -19,30 +19,55 @@ public class StopWatch implements Serializable {
     }
 
     public long lap() {
-        long nextTimeStamp = System.nanoTime();
-        long diff = nextTimeStamp - this.timeStamp;
-        time += diff;
-        this.timeStamp = nextTimeStamp;
+        if(!paused) {
+            long nextTimeStamp = System.nanoTime();
+            long diff = nextTimeStamp - this.timeStamp;
+            time += diff;
+            this.timeStamp = nextTimeStamp;
+        }
         return time;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public boolean isResumed() {
+        return !paused;
     }
 
     public long getTimeNanos() {
         return time;
     }
 
-    public void resume() {
+    public StopWatch resume() {
         if(paused) {
-            paused = false;
-            resetClock();
+            resumeAnyway();
+            return this;
+        } else {
+            throw new IllegalStateException("already resumed");
         }
     }
 
-    public long pause() {
+    public StopWatch resumeAnyway() {
+        paused = false;
+        resetClock();
+        return this;
+    }
+
+    public StopWatch pause() {
         if(!paused) {
-            paused = true;
-            lap();
+            pauseAnyway();
+            return this;
+        } else {
+            throw new IllegalStateException("already paused");
         }
-        return getTimeNanos();
+    }
+
+    public StopWatch pauseAnyway() { // doesn't matter if already paused
+        paused = true;
+        lap();
+        return this;
     }
 
     public void resetClock() {
@@ -53,13 +78,23 @@ public class StopWatch implements Serializable {
         time = 0;
     }
 
-    public void reset() {
-        pause();
-        resume();
+    public void resetAndResume() {
+        lap();
         resetTime();
+        resetClock();
+    }
+
+    public void resetAndPause() {
+        pauseAnyway();
+        resetTime();
+        resetClock();
     }
 
     public void add(long nanos) {
         time += nanos;
+    }
+
+    public void add(StopWatch stopWatch) {
+        add(stopWatch.time);
     }
 }
