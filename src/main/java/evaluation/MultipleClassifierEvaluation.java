@@ -14,7 +14,6 @@
  */
 package evaluation;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import evaluation.storage.ClassifierResultsCollection;
