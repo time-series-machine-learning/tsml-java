@@ -1,6 +1,6 @@
 package utilities.collections;
 
-import com.sun.istack.internal.NotNull;
+import utilities.NotNull;
 
 public class IntListView implements DefaultList<Integer> {
 
