@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.Random;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
-import tsml.filters.shapelet_transforms.ShapeletTransform;
-import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
@@ -102,10 +102,10 @@ public class FlatCote extends EnhancedAbstractClassifier implements TechnicalInf
         stc.setClassifier(new CAWPE());
 //Redo for STC
         //ShapeletTransform shapeletTransform = ShapeletTransformFactory.createTransform(train);
-        ShapeletTransform shapeletTransform = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); // now defaults to max of 24 hours
-        shapeletTransform.supressOutput();
+        ShapeletFilter shapeletFilter = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); // now defaults to max of 24 hours
+        shapeletFilter.supressOutput();
         st = new CAWPE();
-        st.setTransform(shapeletTransform);
+        st.setTransform(shapeletFilter);
         st.setupOriginalHESCASettings();
         acf = new CAWPE();
         acf.setupOriginalHESCASettings();

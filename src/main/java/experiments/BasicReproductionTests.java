@@ -411,7 +411,7 @@ public class BasicReproductionTests {
         StringBuilder sb = new StringBuilder();
         while (scan.hasNext()) {
             String t = scan.nextLine();
-            if (t.contains("AvgPredTimes:"))
+            if (t.contains("AvgPredTimesBenchmarked:"))
                 break;
             sb.append(t).append("\n");
         }
@@ -531,7 +531,7 @@ public class BasicReproductionTests {
         if (!classifiersComplete) {
             System.out.println("Classifiers simple eval recreation failed!");
         }
-        
+
         if (!analysisReproduced) {
             System.out.println("CAWPE analysis recreation failed!");
         }

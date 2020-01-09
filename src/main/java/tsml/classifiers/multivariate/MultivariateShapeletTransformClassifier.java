@@ -15,10 +15,10 @@
 package tsml.classifiers.multivariate;
 
 import tsml.classifiers.*;
-import tsml.filters.shapelet_transforms.ShapeletTransformFactory;
-import tsml.filters.shapelet_transforms.ShapeletTransform;
-import tsml.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
-import tsml.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
+import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
+import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import java.io.File;
 import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
@@ -27,11 +27,11 @@ import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import tsml.filters.shapelet_transforms.search_functions.ShapeletSearch.SearchType;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import tsml.filters.shapelet_transforms.DefaultShapeletOptions;
+import tsml.transformers.shapelet_tools.DefaultShapeletOptions;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.classifiers.Classifier;
@@ -61,14 +61,14 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     private boolean preferShortShapelets = false;
     private String shapeletOutputPath;
     private CAWPE ensemble;
-    private ShapeletTransform transform;
+    private ShapeletFilter transform;
     private Instances format;
     int[] redundantFeatures;
     private boolean doTransform=true;
     private long transformBuildTime;
     protected ClassifierResults res =new ClassifierResults();
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
-    private SearchType searchType = SearchType.IMP_RANDOM;
+    private SearchType searchType = SearchType.IMPROVED_RANDOM;
     private long numShapelets = 0;
     private long timeLimit = Long.MAX_VALUE;
     private String checkpointFullPath; //location to check point 
@@ -364,7 +364,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
                 break;
         }
         
-        transform = new ShapeletTransformFactory(options).getTransform();
+        transform = new ShapeletTransformFactory(options).getFilter();
         if(shapeletOutputPath != null)
             transform.setLogOutputFile(shapeletOutputPath);
         
