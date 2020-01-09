@@ -47,6 +47,8 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
     private double maxParamSpaceSizePercentage = -1;
     private int fullParamSpaceSize = -1;
     private int fullNeighbourhoodSize = -1;
+    private Set<Benchmark> improveableBenchmarks;
+    private Set<Benchmark> unimprovableBenchmarks;
 
     public IncTuner build() {
         incTunedClassifier.setOnTrainDataAvailable(this);
@@ -70,6 +72,22 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
         return result;
     }
 
+    private boolean hasLimitedParamSpaceSize() {
+        return maxParamSpaceSize < 0 || !NumUtils.isPercentage(maxParamSpaceSizePercentage);
+    }
+
+    private boolean hasLimitedNeighbourhoodSize() {
+        return maxNeighbourhoodSize < 0 || !NumUtils.isPercentage(maxNeighbourhoodSize);
+    }
+
+    private boolean withinParamSpaceSizeLimit() {
+        return paramCount.get() < maxParamSpaceSize;
+    }
+
+    private boolean withinNeighbourhoodSizeLimit() {
+        return neighbourCount.get() < maxNeighbourhoodSize;
+    }
+
     public double getMaxParamSpaceSizePercentage() {
         return maxParamSpaceSizePercentage;
     }
@@ -81,6 +99,8 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
 
     @Override
     public void accept(Instances trainData) {
+        improveableBenchmarks = new HashSet<>();
+        unimprovableBenchmarks = new HashSet<>();
         final int seed = incTunedClassifier.getSeed();
         paramSpace = paramSpaceFunction.apply(trainData);
         paramSetIterator = new RandomIterator<>(this.paramSpace, seed);
@@ -129,14 +149,11 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
             }
 
             @Override public boolean hasNext() {
-                return paramSourceIterator.hasNext();
+                return paramSourceIterator.hasNext() && withinParamSpaceSizeLimit();
             }
         };
         // setup an iterator to improve benchmarks
         benchmarkImprover = new BenchmarkImprover() {
-
-            private final Set<Benchmark> improveableBenchmarks = new HashSet<>();
-            private final Set<Benchmark> unimprovableBenchmarks = new HashSet<>();
 
             @Override public long predictNextTimeNanos() {
                 return maxNeighbourBatchTimeNanos.get();

@@ -97,13 +97,16 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW", "CEE"};
+            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW", "CEE", "LEE"};
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
+            case "LEE":
+                c = CEE.buildLEE();
+                break;
             case "CEE":
                 c = new CEE();
                 break;

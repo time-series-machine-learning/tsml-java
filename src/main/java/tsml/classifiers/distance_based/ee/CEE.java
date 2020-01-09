@@ -30,16 +30,6 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     public static CEE buildV1() {
         CEE cee = new CEE();
-        cee.setConstituents(ImmutableList.of(
-            buildTunedDtw1nnV1(),
-            buildTunedDdtw1nnV1(),
-            buildTunedErp1nnV1(),
-            buildTunedLcss1nnV1(),
-            buildTunedMsm1nnV1(),
-            buildTunedWdtw1nnV1(),
-            buildTunedWddtw1nnV1(),
-            buildTunedTwed1nnV1()
-                                            ));
         return cee;
     }
 
@@ -107,10 +97,18 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         super(true);
     }
 
-    private static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ;
-    protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(DEFAULT_CONSTITUENTS);
-    protected List<EnhancedAbstractClassifier> partialConstituentsBatch =
-        new ArrayList<>(); //
+    protected static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ImmutableList.of(
+        buildTunedDtw1nnV1(),
+        buildTunedDdtw1nnV1(),
+        buildTunedErp1nnV1(),
+        buildTunedLcss1nnV1(),
+        buildTunedMsm1nnV1(),
+        buildTunedWdtw1nnV1(),
+        buildTunedWddtw1nnV1(),
+        buildTunedTwed1nnV1()
+                                                                                                            );
+    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
+    protected List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
     // constituents which
     // still have work remaining
     protected List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
@@ -293,7 +291,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return votingScheme.distributionForInstance(modules, instance);
     }
 
-    public List<EnhancedAbstractClassifier> getConstituents() {
+    public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
         return constituents;
     }
 

@@ -107,9 +107,7 @@ public class Configs {
     public static IncTuner buildTunedKnn(Function<Instances, ParamSpace> paramSpaceFunction,
                                          Supplier<KnnLoocv> supplier) {
         IncTuner incTunedClassifier = new IncTuner();
-        incTunedClassifier.setOnTrainDataAvailable(new Inc1nnTuningSetup(incTunedClassifier,
-                                                                         paramSpaceFunction,
-                                                                         supplier));
+        incTunedClassifier.setOnTrainDataAvailable(new IncKnnTunerBuilder().setIncTunedClassifier(incTunedClassifier).setParamSpace(paramSpaceFunction).setKnnSupplier(supplier));
         return incTunedClassifier;
     }
 

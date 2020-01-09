@@ -1,7 +1,9 @@
 package tsml.classifiers;
 
-import com.sun.istack.internal.NotNull;
+import utilities.NotNull;
 import weka.classifiers.Classifier;
+import weka.core.Capabilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public interface ProgressiveBuildClassifier
@@ -37,4 +39,5 @@ public interface ProgressiveBuildClassifier
             finishBuild();
         }
     }
+
 }

@@ -14,7 +14,6 @@
  */
 package tsml.classifiers;
 
-import com.sun.istack.internal.NotNull;
 import utilities.Copy;
 
 import java.io.File;
@@ -101,7 +100,7 @@ public interface Checkpointable extends Serializable, Copy {
         throw new UnsupportedOperationException();
     }
 
-    default void setMinCheckpointInterval(long amount, @NotNull TimeUnit unit) {
+    default void setMinCheckpointInterval(long amount, TimeUnit unit) {
         setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(amount, unit));
     }
 
