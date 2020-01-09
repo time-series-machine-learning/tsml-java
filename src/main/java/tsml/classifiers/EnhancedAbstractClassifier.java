@@ -79,7 +79,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
                                                                                        Debugable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
-    protected ClassifierResults trainResults;
+    protected ClassifierResults trainResults = new ClassifierResults();
     protected int seed = 0;
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
