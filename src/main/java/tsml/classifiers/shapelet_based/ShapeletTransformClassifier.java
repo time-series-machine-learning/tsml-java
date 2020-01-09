@@ -87,13 +87,20 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private long totalTimeLimit = 0; //Time limit for transform + classifier, fixed by user
     private long transformTimeLimit = 0;//Time limit assigned to transform, based on totalTimeLimit, but fixed in buildClassifier in an adhoc way
 
-/************* CHECKPOINTING and SAVING ************/
+/************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
 //Check pointing is not fully debugged
     private String checkpointFullPath=""; //location to check point
     private boolean checkpoint=false;
 //If these are set, the shapelet meta information is saved to <path>/Workspace/ and the transforms saved to <path>/Transforms
     private String shapeletOutputPath;
     private boolean saveShapelets=false;
+    private boolean pruneMatchingShapelets=false;
+    /**
+     * @param pruneMatchingShapelets the pruneMatchingShapelets to set
+     */
+    public void setPruneMatchingShapelets(boolean pruneMatchingShapelets) {
+        this.pruneMatchingShapelets = pruneMatchingShapelets;
+    }
 
     //This is set up to allow the user to easily employ a default configuration. Needs a bit of work
     enum ShapeletConfig{BAKEOFF,BALANCED,DEFAULT}
@@ -117,9 +124,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
         transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
 //       Full set up of configs to match published. Note these will reset
-//        transformOptions.setMinLength(3);
-//        transformOptions.setMaxLength(data.numAttributes()-1);
-//      to the default, so user set parameters will be overwritten,
+//      to the default, so user set parameters prior to this point will be overwritten,
         switch(sConfig){
             case BAKEOFF:
     //Full enumeration, early abandon, CAWPE basic config, 10n shapelets in transform, capped at n*m
@@ -133,7 +138,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
                 configureDataDependentShapeletTransform(data);
         }
 //Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
-//This is done by estimating the time to evaluate a single shapelet then extrapolating
+//This is done by estimating the time to evaluate a single shapelet then extrapolating (not in aarons way)
         if(transformTimeLimit>0) {
             System.out.println(" Contract time limit = "+transformTimeLimit);
             configureTrainTimeContract(data, transformTimeLimit);
@@ -155,6 +160,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             System.out.println(" Time per shapelet = "+timePerShapelet);
 //            transform.setProportionToEvaluate(proportionToEvaluate);
         }
+//Put this in the options rather than here
+        transform.setPruneMatchingShapelets(pruneMatchingShapelets);
+
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         if(debug) {

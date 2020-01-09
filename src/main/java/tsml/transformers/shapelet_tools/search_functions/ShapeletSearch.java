@@ -112,12 +112,13 @@ public class ShapeletSearch implements Serializable{
     
     transient protected ShapeletSearchOptions options;
 
+    public ShapeletSearchOptions getOptions(){ return options;}
     public long getNumShapeletsPerSeries(){ return numShapeletsPerSeries;}
     public void setNumShapeletsPerSeries(long t){
         numShapeletsPerSeries =t;
     }
 
-    protected ShapeletSearch(ShapeletSearchOptions ops){
+    public ShapeletSearch(ShapeletSearchOptions ops){
         options = ops;
         
         minShapeletLength = ops.getMin();
@@ -181,7 +182,12 @@ public class ShapeletSearch implements Serializable{
         seriesCount++;
         return seriesShapelets;
     }
-
+    public int getMinShapeletLength(){
+        return minShapeletLength;
+    }
+    public int getMaxShapeletLength(){
+        return maxShapeletLength;
+    }
     protected Instance getTimeSeries(Instance timeSeries, int dim){
         if(numDimensions > 1)
             return utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(timeSeries)[dim];

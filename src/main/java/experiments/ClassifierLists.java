@@ -470,7 +470,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF","HC-Latest"};
+            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF","HC-Latest","HC-Catch22TSF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -699,6 +699,20 @@ public class ClassifierLists {
                     ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
                     ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
                     ((CAWPE)c).setClassifiersNamesForFileRead(clsNames2);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-Catch22TSF":
+                if(canLoadFromFile){
+                    String[] cls3={"Catch22TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    c=new CAWPE();
+                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((CAWPE)c).setSeed(fold);
+                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((CAWPE)c).setClassifiersNamesForFileRead(cls3);
                 }
                 else
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "

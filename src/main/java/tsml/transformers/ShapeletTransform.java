@@ -17,6 +17,7 @@ package tsml.transformers;
 import tsml.transformers.shapelet_tools.OrderLineObj;
 import tsml.transformers.shapelet_tools.Shapelet;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import tsml.transformers.shapelet_tools.class_value.NormalClassValue;
 import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
@@ -112,6 +113,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      */
     protected boolean adaptiveTiming=false;
     private double timePerShapelet=0;
+    private long totalShapeletsPerSeries=0; //Found once
     private long shapeletsSearchedPerSeries=0;//This is taken from the search function
     private int numSeriesToUse=0;
     private long contractTime=0; //nano seconds time. If set to zero everything reverts to BalancedClassShapeletTransform
@@ -226,6 +228,9 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     @Override
     public void fit(Instances data){
         inputData = data;
+
+        totalShapeletsPerSeries= ShapeletTransformTimingUtilities.calculateNumberOfShapelets(1, data.numAttributes()-1, searchFunction.getMinShapeletLength(), searchFunction.getMaxShapeletLength());
+
         //check the input data is correct and assess whether the filter has been setup correctly.
         trainShapelets(data);
         searchComplete = true;
@@ -360,7 +365,9 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
      * @return
      */
     private ArrayList<Shapelet> findBestKShapeletsBalanced(Instances data) {
-
+//If the number of shapelets we can calculate exceeds the total number in the series, we will revert to full search
+        ShapeletSearch full=new ShapeletSearch(searchFunction.getOptions());
+        ShapeletSearch current=searchFunction;
         boolean contracted=true;
         boolean keepGoing=true;
         if(contractTime==0) {
@@ -385,6 +392,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         outputPrint("Processing data for numShapelets "+numShapelets+ " with proportion per class = "+proportion);
         outputPrint("in contract balanced: Contract (secs)"+contractTime/1000000000.0);
         long prevEarlyAbandons=0;
+        int passes=0;
 
         //continue processing series until we run out of time (if contracted)
         while(casesSoFar < numSeriesToUse && keepGoing) {
@@ -400,14 +408,19 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             //set the class value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
             long t1=System.nanoTime();
-            seriesShapelets = searchFunction.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
+            seriesShapelets = current.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
             long t2=System.nanoTime();
             numShapeletsEvaluated+=seriesShapelets.size();
 
-            if(adaptiveTiming && contracted){
+            if(adaptiveTiming && contracted && passes==0){
                 long tempEA=numEarlyAbandons-prevEarlyAbandons;
                 prevEarlyAbandons=numEarlyAbandons;
                 double newTimePerShapelet=(double)(t2-t1)/(seriesShapelets.size()+tempEA);
+                if(totalShapeletsPerSeries<(seriesShapelets.size()+tempEA))//Switch to full enum for next iteration
+                    current=full;
+                else
+                    current=searchFunction;
+
                 System.out.println(" time for case "+casesSoFar+" evaluate  "+seriesShapelets.size()+" but what about early ones?");
                 System.out.println(" Est time per shapelet  "+timePerShapelet/1000000000+" actual "+newTimePerShapelet/1000000000);
                 shapeletsSearchedPerSeries=adjustNumberPerSeries(contractTime-usedTime,numSeriesToUse-casesSoFar,newTimePerShapelet);
@@ -430,8 +443,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             usedTime=System.nanoTime()-startTime;
             //Logic is we have underestimated the contract so can run back through. If we over estimate it we will just stop.
             if(contracted){
-                if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) ///HORRIBLE!
-                    casesSoFar=0;
+                if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) { ///HORRIBLE!
+                    casesSoFar = 0;
+                    passes++;
+                }
                 if(usedTime>contractTime)
                     keepGoing=false;
             }
@@ -478,6 +493,9 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     /* This just goes case by case with no class balancing. With two class problems, we found this better
      */
     public ArrayList<Shapelet> findBestKShapeletsOriginal(Instances data) {
+
+        ShapeletSearch full=new ShapeletSearch(searchFunction.getOptions());
+
         boolean contracted=true;
         boolean keepGoing=true;
         if(contractTime==0) {
@@ -491,6 +509,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         int dataSize = data.numInstances();
         //for all possible time series.
         long prevEarlyAbandons=0;
+        int passes=0;
         while(casesSoFar < numSeriesToUse && keepGoing) {
             System.out.println("ORIGINAL: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" search type = "+searchFunction.getSearchType());
             //set the worst Shapelet so far, as long as the shapelet set is full.
@@ -506,7 +525,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             long t2=System.nanoTime();
             numShapeletsEvaluated+=seriesShapelets.size();
 
-            if(adaptiveTiming && contracted){
+            if(adaptiveTiming && contracted && passes==0){
                 long tempEA=numEarlyAbandons-prevEarlyAbandons;
                 prevEarlyAbandons=numEarlyAbandons;
                 double newTimePerShapelet=(double)(t2-t1)/(seriesShapelets.size()+tempEA);
@@ -528,8 +547,10 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             createSerialFile();
             usedTime=System.nanoTime()-startTime;
             //Logic is we have underestimated the contract so can run back through. If we over estimate it we will just stop.
-            if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) ///HORRIBLE!
-                casesSoFar=0;
+            if(casesSoFar==numSeriesToUse-1 && !searchFunction.getSearchType().equals("FULL")) { ///HORRIBLE!
+                casesSoFar = 0;
+                passes++;
+            }
             if(contracted){
                 if(usedTime>contractTime)
                     keepGoing=false;
