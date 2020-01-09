@@ -199,13 +199,13 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         trainTimer.pause();
         memoryWatcher.pause();
-        logger.log("Running constituent {id: ",
+        logger.log("running constituent {id: ",
                    (constituents.size() - partialConstituentsBatch.size()),
                    ", ",
                    constituent.getClassifierName(),
                    " }");
         constituent.buildClassifier(trainData); // todo add train time onto train estimate + mem
-        logger.log("Ran constituent {id: ",
+        logger.log("ran constituent {id: ",
                    (constituents.size() - partialConstituentsBatch.size()),
                    ", acc: ",
                    constituent.getTrainResults().getAcc(),

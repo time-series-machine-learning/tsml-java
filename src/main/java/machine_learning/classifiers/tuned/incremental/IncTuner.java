@@ -2,16 +2,15 @@ package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.MemoryWatchable;
-import tsml.classifiers.ProgressiveBuildClassifier;
-import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.*;
 import utilities.ArrayUtilities;
 import utilities.MemoryWatcher;
 import utilities.StopWatch;
+import utilities.StrUtils;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -19,7 +18,8 @@ import java.util.function.Consumer;
 import static utilities.collections.Utils.replace;
 
 public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
-                                                                    TrainTimeContractable, MemoryWatchable {
+                                                                    TrainTimeContractable, MemoryWatchable,
+                                                                    Checkpointable {
 
     public IncTuner() {
         super(true);
@@ -35,7 +35,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
             throw new UnsupportedOperationException();
         }
     };
-    protected Set<Benchmark> collectedBenchmarks = new HashSet<>();
+    protected transient Set<Benchmark> collectedBenchmarks = new HashSet<>();
     protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
@@ -46,12 +46,52 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
     protected StopWatch trainTimer = new StopWatch();
     protected Instances trainData;
     protected long trainTimeLimitNanos = -1;
+    private static final String checkpointFileName = "checkpoint.ser";
+    private static final String tempCheckpointFileName = checkpointFileName + ".tmp";
+    private String checkpointDirPath;
+    private String resultsDirPath; // for if you want to store the benchmarks in the results dir because they're also
+    // legitimate classifiers in their own right (e.g. EE would do this to store DTWCV benchmarks as DTW_1, DTW_2,
+    // DTW_3, etc. Then we can look at the results using current tools rather than creating something to handle the
+    // output from tuning.
+    private long lastCheckpointTimeStamp = 0;
+    private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    private static String DEFAULT_RESULTS_DIR = "benchmarks";
+
+    @Override
+    public boolean setSavePath(final String path) {
+        checkpointDirPath = StrUtils.asDirPath(path);
+        return true;
+    }
+
+    @Override
+    public String getSavePath() {
+        return checkpointDirPath;
+    }
+
+    public void checkpoint(boolean force) throws
+                                          Exception {
+        trainTimer.pause();
+        memoryWatcher.pause();
+        if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
+            logger.log("checkpointing");
+            saveToFile(checkpointDirPath + tempCheckpointFileName);
+            boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
+            if(!success) {
+                throw new IllegalStateException("could not rename checkpoint file");
+            }
+            
+            lastCheckpointTimeStamp = System.nanoTime();
+        }
+        memoryWatcher.resume();
+        trainTimer.resume();
+    }
 
     public StopWatch getTrainTimer() {
         return trainTimer;
     }
 
     @Override public void buildClassifier(final Instances data) throws Exception {
+
         ProgressiveBuildClassifier.super.buildClassifier(data);
     }
 
@@ -83,15 +123,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
         trainTimer.resume();
         memoryWatcher.resume();
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
-        if(debug) {
-            System.out.println("Benchmarks produced:");
-            for(Benchmark benchmark : nextBenchmarks) {
-                System.out.println(benchmark);
-            }
-            System.out.println("----");
+        logger.log("benchmark batch produced:");
+        for(Benchmark benchmark : nextBenchmarks) {
+            logger.log(benchmark);
         }
         replace(collectedBenchmarks, nextBenchmarks);
-
         trainTimer.pause();
         memoryWatcher.pause();
     }
@@ -211,6 +247,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveB
 
     @Override public long getTrainTimeLimitNanos() {
         return trainTimeLimitNanos;
+    }
+
+    public String getResultsDirPath() {
+        return resultsDirPath;
+    }
+
+    public void setResultsDirPath(final String resultsDirPath) {
+        this.resultsDirPath = resultsDirPath;
     }
 
     // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions

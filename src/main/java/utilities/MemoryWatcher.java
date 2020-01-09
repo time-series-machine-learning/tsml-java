@@ -7,6 +7,8 @@ import javax.management.ListenerNotFoundException;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
@@ -29,14 +31,69 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
     private long usageSum = 0;
     private long usageSumSq = 0;
     private long garbageCollectionTimeInMillis = 0;
-    private enum State {
-        DISABLED,
-        ENABLED,
-        RESUMED,
-        PAUSED,
+    public enum State {
+        DISABLED {
+            @Override public void set(MemoryWatcher memoryWatcher) {
+                if(memoryWatcher.state.ordinal() > State.DISABLED.ordinal()) {
+                    memoryWatcher.pause();
+                    if(memoryWatcher.emitters != null) {
+                        for(NotificationEmitter emitter : memoryWatcher.emitters) {
+                            try {
+                                emitter.removeNotificationListener(memoryWatcher.listener);
+                            } catch (ListenerNotFoundException e) {
+                                throw new IllegalStateException("already removed somehow...");
+                            }
+                        }
+                    }
+                    memoryWatcher.state = State.DISABLED;
+                }
+            }
+        },
+        ENABLED {
+            @Override public void set(final MemoryWatcher memoryWatcher) {
+                if(memoryWatcher.state.ordinal() < State.ENABLED.ordinal()) {
+                    memoryWatcher.emitters = new ArrayList<>();
+                    // garbage collector for old and young gen
+                    List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
+                    for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
+                        if(memoryWatcher.debug) System.out.println("Setting up listener for gc: " + garbageCollectorBean);
+                        // listen to notification from the emitter
+                        NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
+                        memoryWatcher.emitters.add(emitter);
+                        emitter.addNotificationListener(memoryWatcher.listener, null, null);
+                    }
+                    memoryWatcher.state = State.ENABLED;
+                }
+            }
+        },
+        RESUMED {
+            @Override public void set(final MemoryWatcher memoryWatcher) {
+                memoryWatcher.enable();
+                memoryWatcher.state = State.RESUMED;
+            }
+        },
+        PAUSED {
+            @Override public void set(final MemoryWatcher memoryWatcher) {
+                memoryWatcher.state = State.PAUSED;
+            }
+        };
+
+        public abstract void set(MemoryWatcher memoryWatcher);
     }
     private State state = State.DISABLED;
     private transient List<NotificationEmitter> emitters;
+
+    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
+    {
+        in.defaultReadObject();
+        State orig = state;
+        setState(State.DISABLED);
+        setState(orig);
+    }
+
+    public void setState(State state) {
+        state.set(this);
+    }
 
     private final NotificationListener listener = (notification, handback) -> {
         synchronized(MemoryWatcher.this) {
@@ -99,44 +156,19 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
     }
 
     public synchronized void enable() {
-        if(state.ordinal() < State.ENABLED.ordinal()) {
-            emitters = new ArrayList<>();
-            // garbage collector for old and young gen
-            List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
-            for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-                if(debug) System.out.println("Setting up listener for gc: " + garbageCollectorBean);
-                // listen to notification from the emitter
-                NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
-                emitters.add(emitter);
-                emitter.addNotificationListener(listener, null, null);
-            }
-            state = State.ENABLED;
-        }
+        State.ENABLED.set(this);
     }
 
     public synchronized void disable() {
-        if(state.ordinal() > State.DISABLED.ordinal()) {
-            pause();
-            if(emitters != null) {
-                for(NotificationEmitter emitter : emitters) {
-                    try {
-                        emitter.removeNotificationListener(listener);
-                    } catch (ListenerNotFoundException e) {
-                        throw new IllegalStateException("already removed somehow...");
-                    }
-                }
-            }
-            state = State.DISABLED;
-        }
+        State.DISABLED.set(this);
     }
 
     public void resume() {
-        enable();
-        state = State.RESUMED;
+        State.RESUMED.set(this);
     }
 
     public void pause() {
-        state = State.PAUSED;
+        State.PAUSED.set(this);
     }
 
     @Override
