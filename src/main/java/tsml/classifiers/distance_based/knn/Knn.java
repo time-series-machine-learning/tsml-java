@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
-public class KNN extends EnhancedAbstractClassifier
+public class Knn extends EnhancedAbstractClassifier
     implements
     ProgressiveBuildClassifier,
     RebuildableClassifier,
@@ -74,11 +74,11 @@ public class KNN extends EnhancedAbstractClassifier
         this.randomTieBreak = randomTieBreak;
     }
 
-    public KNN() {
+    public Knn() {
         super(false);
     }
 
-    public KNN(DistanceFunction df) {
+    public Knn(DistanceFunction df) {
         this();
         setDistanceFunction(df);
     }

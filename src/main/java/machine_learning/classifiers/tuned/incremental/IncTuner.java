@@ -18,10 +18,10 @@ import java.util.function.Consumer;
 
 import static utilities.collections.Utils.replace;
 
-public class IncTunedClassifier extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
-                                                                              TrainTimeContractable, MemoryWatchable {
+public class IncTuner extends EnhancedAbstractClassifier implements ProgressiveBuildClassifier,
+                                                                    TrainTimeContractable, MemoryWatchable {
 
-    public IncTunedClassifier() {
+    public IncTuner() {
         super(true);
     }
 
@@ -91,6 +91,7 @@ public class IncTunedClassifier extends EnhancedAbstractClassifier implements Pr
             System.out.println("----");
         }
         replace(collectedBenchmarks, nextBenchmarks);
+
         trainTimer.pause();
         memoryWatcher.pause();
     }

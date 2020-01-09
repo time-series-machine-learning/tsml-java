@@ -7,7 +7,10 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.tuned.incremental.configs.IncKnnTunerBuilder;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.knn.KnnConfigs;
 import utilities.ArrayUtilities;
 import utilities.MemoryWatcher;
 import utilities.StopWatch;
@@ -25,20 +28,86 @@ import static utilities.collections.Utils.replace;
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
                                                                ProgressiveBuildClassifier, MemoryWatchable {
 
+    public static CEE buildV1() {
+        CEE cee = new CEE();
+        cee.setConstituents(ImmutableList.of(
+            buildTunedDtw1nnV1(),
+            buildTunedDdtw1nnV1(),
+            buildTunedErp1nnV1(),
+            buildTunedLcss1nnV1(),
+            buildTunedMsm1nnV1(),
+            buildTunedWdtw1nnV1(),
+            buildTunedWddtw1nnV1(),
+            buildTunedTwed1nnV1()
+                                            ));
+        return cee;
+    }
+
+    public static CEE buildV2() {
+        CEE cee = new CEE();
+        cee.setConstituents(ImmutableList.of(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildDtwSpaceV2).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildDdtwSpaceV2).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildErpSpace).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildLcssSpace).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildMsmSpace).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildTwedSpace).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildWdtwSpaceV2).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildWddtwSpaceV2).build()
+                                            ));
+        return cee;
+    }
+
+    public static CEE buildLEE() {
+        CEE cee = new CEE();
+        cee.setConstituents(ImmutableList.of(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildDtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildDdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildErpSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildLcssSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildMsmSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildTwedSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildWdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+                DistanceMeasureConfigs::buildWddtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build()
+                                            ));
+        return cee;
+    }
+
+    public static CEE buildLimitedEE() {
+        CEE cee = new CEE();
+        cee.setConstituents(ImmutableList.of(
+            buildTunedDdtw1nnV1(),
+            buildTunedErp1nnV1(),
+            buildTunedLcss1nnV1(),
+            buildTunedMsm1nnV1(),
+            buildTunedWdtw1nnV1(),
+            buildTunedWddtw1nnV1(),
+            buildTunedTwed1nnV1()
+                                            ));
+        return cee;
+    }
+
     public CEE() {
         super(true);
     }
 
-    private static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ImmutableList.of(
-        buildTunedDtw1nnV1(),
-        buildTunedDdtw1nnV1(),
-        buildTunedErp1nnV1(),
-        buildTunedLcss1nnV1(),
-        buildTunedMsm1nnV1(),
-        buildTunedWdtw1nnV1(),
-        buildTunedWddtw1nnV1(),
-        buildTunedTwed1nnV1()
-                                                                                                 );
+    private static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ;
     protected List<EnhancedAbstractClassifier> constituents = new ArrayList<>(DEFAULT_CONSTITUENTS);
     protected List<EnhancedAbstractClassifier> partialConstituentsBatch =
         new ArrayList<>(); //
@@ -65,6 +134,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     private boolean ignorePreviousCheckpoints = false;
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private transient Instances trainData;
+    private boolean debugConstituents = false;
 
     @Override public long predictNextTrainTimeNanos() {
         long result = -1;
@@ -95,8 +165,8 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
             partialConstituentsBatch = new ArrayList<>(constituents);
             trainedConstituents = new ArrayList<>();
             for(EnhancedAbstractClassifier constituent : constituents) {
-                constituent.setDebug(debug);
-                constituent.setSeed(seed);
+                constituent.setDebug(debugConstituents);
+                constituent.setSeed(rand.nextInt());
                 constituent.setEstimateOwnPerformance(true);
             }
             nextPartialConstituentsBatch = new ArrayList<>();
@@ -228,7 +298,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     public void setConstituents(final List<EnhancedAbstractClassifier> constituents) {
-        this.constituents = constituents;
+        this.constituents = ImmutableList.copyOf(constituents);
     }
 
     @Override
@@ -312,5 +382,13 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override public MemoryWatcher getMemoryWatcher() {
         return memoryWatcher;
+    }
+
+    public boolean isDebugConstituents() {
+        return debugConstituents;
+    }
+
+    public void setDebugConstituents(final boolean debugConstituents) {
+        this.debugConstituents = debugConstituents;
     }
 }

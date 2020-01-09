@@ -11,9 +11,9 @@ import java.util.List;
 import static utilities.ArrayUtilities.box;
 import static utilities.ArrayUtilities.incrementalRange;
 
-public class Configs {
+public class DistanceMeasureConfigs {
     
-    private Configs() {}
+    private DistanceMeasureConfigs() {}
     
     public static ParamSpace buildDtwParamsV1(Instances instances) {
         ParamSpace params = new ParamSpace();

@@ -4,17 +4,14 @@ import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.Dtw;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIterationStrategy;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIterationStrategy;
-import utilities.ArrayUtilities;
-import utilities.params.ParamSpace;
-import weka.core.Instances;
 
 import static utilities.ArrayUtilities.incrementalRange;
 
-public class Configs {
-    private Configs() {}
+public class KnnConfigs {
+    private KnnConfigs() {}
 
-    public static KNNCV build1nnV1() {
-        KNNCV classifier = new KNNCV();
+    public static KnnLoocv build1nnV1() {
+        KnnLoocv classifier = new KnnLoocv();
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
@@ -23,8 +20,8 @@ public class Configs {
         return classifier;
     }
 
-    public static KNNCV build1nnV2() {
-        KNNCV classifier = new KNNCV();
+    public static KnnLoocv build1nnV2() {
+        KnnLoocv classifier = new KnnLoocv();
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
@@ -33,38 +30,38 @@ public class Configs {
         return classifier;
     }
 
-    public static KNNCV buildEd1nnV1() {
-        KNNCV knn = build1nnV1();
+    public static KnnLoocv buildEd1nnV1() {
+        KnnLoocv knn = build1nnV1();
         knn.setDistanceFunction(new Dtw(0));
         return knn;
     }
 
-    public static KNNCV buildDtw1nnV1() {
-        KNNCV knn = build1nnV1();
+    public static KnnLoocv buildDtw1nnV1() {
+        KnnLoocv knn = build1nnV1();
         knn.setDistanceFunction(new Dtw(-1));
         return knn;
     }
 
-    public static KNNCV buildDdtw1nnV1() {
-        KNNCV knn = build1nnV1();
+    public static KnnLoocv buildDdtw1nnV1() {
+        KnnLoocv knn = build1nnV1();
         knn.setDistanceFunction(new Ddtw(-1));
         return knn;
     }
 
-    public static KNNCV buildEd1nnV2() {
-        KNNCV knn = build1nnV2();
+    public static KnnLoocv buildEd1nnV2() {
+        KnnLoocv knn = build1nnV2();
         knn.setDistanceFunction(new Dtw(0));
         return knn;
     }
 
-    public static KNNCV buildDtw1nnV2() {
-        KNNCV knn = build1nnV2();
+    public static KnnLoocv buildDtw1nnV2() {
+        KnnLoocv knn = build1nnV2();
         knn.setDistanceFunction(new Dtw(-1));
         return knn;
     }
 
-    public static KNNCV buildDdtw1nnV2() {
-        KNNCV knn = build1nnV2();
+    public static KnnLoocv buildDdtw1nnV2() {
+        KnnLoocv knn = build1nnV2();
         knn.setDistanceFunction(new Ddtw(-1));
         return knn;
     }

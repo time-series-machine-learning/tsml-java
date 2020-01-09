@@ -21,17 +21,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
-
-public class KNNCV
-    extends KNN implements TrainTimeContractable,
+public class KnnLoocv
+    extends Knn implements TrainTimeContractable,
                            Checkpointable,
                            ProgressiveBuildClassifier {
-    public KNNCV() {
+    public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
     }
 
-    public KNNCV(DistanceFunction df) {
+    public KnnLoocv(DistanceFunction df) {
         super(df);
         setAbleToEstimateOwnPerformance(true);
     }
@@ -171,7 +169,7 @@ public class KNNCV
     }
 
     public interface NeighbourIterationStrategy {
-        Iterator<NeighbourSearcher> build(KNNCV knn);
+        Iterator<NeighbourSearcher> build(KnnLoocv knn);
     }
 
     @Override public ParamSet getParams() {
