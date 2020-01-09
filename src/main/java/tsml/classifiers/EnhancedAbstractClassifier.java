@@ -15,6 +15,7 @@
 package tsml.classifiers;
 
 import utilities.Debugable;
+import utilities.Logger;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
@@ -76,7 +77,7 @@ ClassifierResults trainResults can also store other information about the traini
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Randomizable, RebuildableClassifier,
-                                                                                       Debugable {
+                                                                                       Debugable, Loggable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -85,6 +86,57 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
+    protected boolean debug=false;
+    protected final Logger logger = new Logger(this).setEnabled(debug);
+
+    /**
+     * A printing-friendly and/or context/parameter-aware name that can optionally
+     * be used to describe this classifier. By default, this will simply be the
+     * simple-class-name of the classifier
+     */
+    protected String classifierName = getClass().getSimpleName();
+
+    /**
+     * This flags whether classifiers are able to estimate their own performance
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid an external fully nested-cross validation process.
+     *
+     * This flag being true indicates the ABILITY to estimate train performance,
+     * to turn this behaviour on, setEstimateOwnPerformance(true) should be called.
+     * By default, the estimation behaviour is off regardless of ability
+     *
+     * This way, unnecessary work is avoided and if for whatever reason a nested
+     * estimation process is explicitly wanted (e.g. for completely bias-free estimates),
+     * that can also be achieved.
+     *
+     * This variable is private and only settable via the abstract constructor,
+     * such that all subclasses must set it at initialisation.
+     *
+     * This variable and the related gets/sets replace the TrainAccuracyEstimator interface
+     */
+    protected boolean ableToEstimateOwnPerformance = false;
+
+    /**
+     * This flags whether the classifier shall estimate their own performance
+     * (possibly with some bias) on the train data in some way as part of their buildClassifier
+     * fit, and avoid a full nested-cross validation process.
+     *
+     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned
+     * classifier returning the train estimate of the best parameter set, acting as the train
+     * estimate of the full classifier: note the bias), or may be done as an
+     * additional step beyond the normal build process but far more efficiently than a
+     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)
+     */
+    protected boolean estimateOwnPerformance = false;
+
+    //utilities for readability in setting the above bools via super constructor in subclasses
+    public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
+    public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
+    protected int numClasses = -1;
+
+    @Override public Logger getLogger() {
+        return logger;
+    }
 
     @Override public boolean isRebuild() {
         return rebuild;
@@ -97,51 +149,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected void setAbleToEstimateOwnPerformance(boolean state) {
         ableToEstimateOwnPerformance = state;
     }
-
-    /**
-     * A printing-friendly and/or context/parameter-aware name that can optionally 
-     * be used to describe this classifier. By default, this will simply be the 
-     * simple-class-name of the classifier
-     */
-    protected String classifierName = getClass().getSimpleName();
-    
-    /**
-     * This flags whether classifiers are able to estimate their own performance 
-     * (possibly with some bias) on the train data in some way as part of their buildClassifier
-     * fit, and avoid an external fully nested-cross validation process.
-     * 
-     * This flag being true indicates the ABILITY to estimate train performance, 
-     * to turn this behaviour on, setEstimateOwnPerformance(true) should be called. 
-     * By default, the estimation behaviour is off regardless of ability
-     * 
-     * This way, unnecessary work is avoided and if for whatever reason a nested
-     * estimation process is explicitly wanted (e.g. for completely bias-free estimates),
-     * that can also be achieved.
-     *
-     * This variable is private and only settable via the abstract constructor, 
-     * such that all subclasses must set it at initialisation.
-     * 
-     * This variable and the related gets/sets replace the TrainAccuracyEstimator interface
-     */
-    boolean ableToEstimateOwnPerformance = false;
-    
-    /**
-     * This flags whether the classifier shall estimate their own performance 
-     * (possibly with some bias) on the train data in some way as part of their buildClassifier
-     * fit, and avoid a full nested-cross validation process.
-     * 
-     * The estimation process may be entirely encapsulated in the build process (e.g. a tuned 
-     * classifier returning the train estimate of the best parameter set, acting as the train 
-     * estimate of the full classifier: note the bias), or may be done as an
-     * additional step beyond the normal build process but far more efficiently than a
-     * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)  
-     */
-    boolean estimateOwnPerformance = false;
-    
-    //utilities for readability in setting the above bools via super constructor in subclasses
-    public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
-    public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
-    protected int numClasses = -1;
 
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
@@ -322,19 +329,14 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
     }
-    protected boolean debug=false;
+
     public void setDebug(boolean b){
+        logger.setEnabled(b);
         debug=b;
     }
 
     @Override public boolean isDebug() {
         return debug;
-    }
-
-    protected void setDetails(final Instances data) {
-        trainResults.setClassifierName(getClassifierName());
-        trainResults.setFoldID(getSeed());
-        trainResults.setDetails(this, data);
     }
 
     public String toString() {

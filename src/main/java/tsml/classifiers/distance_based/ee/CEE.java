@@ -11,10 +11,7 @@ import machine_learning.classifiers.tuned.incremental.configs.IncKnnTunerBuilder
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.knn.KnnConfigs;
-import utilities.ArrayUtilities;
-import utilities.MemoryWatcher;
-import utilities.StopWatch;
-import utilities.StrUtils;
+import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -155,6 +152,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         super.buildClassifier(trainData);
         this.trainData = trainData;
         if(rebuild) {
+            logger.log("rebuilding");
             rebuild = false;
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
@@ -199,12 +197,21 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         if(constituent instanceof TrainTimeContractable) {
             ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
-        if(debug) {
-            System.out.println("Running constituent {id: " + (constituents.size() - partialConstituentsBatch.size()) + ", " + StrUtils.toOptionValue(constituent) + " }");
-        }
         trainTimer.pause();
         memoryWatcher.pause();
-        constituent.buildClassifier(trainData);
+        logger.log("Running constituent {id: ",
+                   (constituents.size() - partialConstituentsBatch.size()),
+                   ", ",
+                   constituent.getClassifierName(),
+                   " }");
+        constituent.buildClassifier(trainData); // todo add train time onto train estimate + mem
+        logger.log("Ran constituent {id: ",
+                   (constituents.size() - partialConstituentsBatch.size()),
+                   ", acc: ",
+                   constituent.getTrainResults().getAcc(),
+                   ", ",
+                   constituent.getClassifierName(),
+                   " }");
         memoryWatcher.resume();
         trainTimer.resume();
         if(constituent instanceof TrainTimeContractable && ((TrainTimeContractable) constituent).hasRemainingTraining()) {
@@ -253,6 +260,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainTimer.resume();
         memoryWatcher.resume();
         if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
+            logger.log("generating train estimate");
             regenerateTrainEstimate = false;
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
@@ -262,6 +270,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
                 modules[i].trainResults = constituent.getTrainResults();
                 i++;
             }
+            logger.log("weighting constituents");
             weightingScheme.defineWeightings(modules, trainData.numClasses());
             votingScheme.trainVotingScheme(modules, trainData.numClasses());
             trainResults = new ClassifierResults();
@@ -285,6 +294,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         // todo combine memory watcher + train times + test times
         trainData = null;
         checkpoint(true);
+        logger.log("build finished");
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
@@ -315,6 +325,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainTimer.pause();
         memoryWatcher.pause();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
+            logger.log("checkpointing");
             saveToFile(checkpointDirPath + tempCheckpointFileName);
             boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
             if(!success) {
