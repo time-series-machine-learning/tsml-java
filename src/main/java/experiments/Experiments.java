@@ -367,14 +367,14 @@ public class Experiments  {
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
 //                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\";//Where to write results
+                settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-PF-SB"; //Classifier name
+                settings[3]="-cn=HC-Catch22TSF"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 folds=30;
-                String classifier="HC-PF-SB";
+                String classifier="HC-Catch22TSF";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
                 String[] probFiles= DatasetLists.tscProblems112;
