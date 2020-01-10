@@ -58,6 +58,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     private static String DEFAULT_RESULTS_DIR = "benchmarks";
 
     public void checkpoint(boolean force) throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.pause();
         memoryWatcher.pause();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
@@ -79,14 +80,15 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     }
 
     protected void loadFromCheckpoint() throws Exception {
-        trainTimer.pause();
+        trainTimer.checkPaused();
+        trainEstimateTimer.pause();
         memoryWatcher.pause();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
             logger.log("loading from checkpoint: " + path);
             loadFromFile(path);
         }
-        trainTimer.resume();
+        trainEstimateTimer.resume();
         memoryWatcher.resume();
     }
 
@@ -99,13 +101,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
-        trainTimer.resumeAnyway();
-        memoryWatcher.resumeAnyway();
+        trainEstimateTimer.checkPaused();
+        trainTimer.resume();
+        memoryWatcher.resume();
         if(rebuild) {
+            trainTimer.pause();
+            memoryWatcher.pause();
             super.buildClassifier(data);
+            trainTimer.resume();
+            memoryWatcher.resume();
             onTrainDataAvailable.accept(data);
             rebuild = false;
-            trainTimer.resumeAnyway();
             trainEstimateTimer.resetAndPause();
         }
         trainData = data;
@@ -115,6 +121,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.resume();
         memoryWatcher.resume();
         boolean result = hasRemainingTraining();
@@ -125,6 +132,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
 
     @Override
     public void nextBuildTick() throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.resume();
         memoryWatcher.resume();
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
@@ -139,6 +147,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
 
     @Override
     public void finishBuild() throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.resume();
         memoryWatcher.resume();
         for(Benchmark collectedBenchmark : collectedBenchmarks) {

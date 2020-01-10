@@ -173,7 +173,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
         }
         if(classifier instanceof MemoryWatchable) {
-        // todo
+            // todo
         }
         setOs(SysUtils.getOsName());
         setCpuInfo(SysUtils.findCpuInfo());
