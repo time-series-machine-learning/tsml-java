@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Logger {
+public class Logger implements Serializable {
 
     private final Map<OutputStream, Writer> writers = new HashMap<>();
     private final String tag;
