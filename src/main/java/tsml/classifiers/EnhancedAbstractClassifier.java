@@ -87,7 +87,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
     protected boolean debug=false;
-    protected final Logger logger = new Logger(this).setEnabled(debug);
+    protected transient final Logger logger = new Logger(this).setEnabled(debug);
 
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
