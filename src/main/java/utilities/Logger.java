@@ -4,15 +4,17 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
-public class Logger {
+public class Logger implements Serializable {
 
-    private Writer writer;
+    private Map<OutputStream, Writer> writers;
     private final String tag;
     private boolean enabled = true;
 
     public Logger(final OutputStream destination, final String tag) {
-        setDestination(destination);
+        addDestination(destination);
         this.tag = tag;
     }
 
@@ -32,26 +34,35 @@ public class Logger {
         if(enabled) {
             String log = LocalDateTime.now() + " | " + tag + " | " + StringUtils.join(object, " ");
             try {
-                writer.write(log);
-                writer.write(System.lineSeparator());
-                writer.flush();
+                for(Writer writer : writers.values()) {
+                    writer.write(log);
+                    writer.write(System.lineSeparator());
+                }
+                for(Writer writer : writers.values()) {
+                    writer.flush();
+                }
             } catch(IOException e) {
                 throw new IllegalStateException(e);
             }
         }
     }
 
-    public Writer getWriter() {
-        return writer;
-    }
-
     public String getTag() {
         return tag;
     }
 
-    public Logger setDestination(OutputStream destination) {
-        writer = new BufferedWriter(new OutputStreamWriter(destination));
-        return this;
+    public boolean addDestination(OutputStream destination) {
+        Writer writer = writers.get(destination);
+        if(writer != null) {
+            return false;
+        } else {
+            writers.put(destination, new BufferedWriter(new OutputStreamWriter(destination)));
+            return true;
+        }
+    }
+
+    public boolean removeDestination(OutputStream destination) {
+        return writers.remove(destination) != null;
     }
 
     public boolean isEnabled() {
