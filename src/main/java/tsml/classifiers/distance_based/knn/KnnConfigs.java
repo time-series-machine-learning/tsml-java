@@ -2,8 +2,8 @@ package tsml.classifiers.distance_based.knn;
 
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIterationStrategy;
-import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIterationStrategy;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 
 import static utilities.ArrayUtilities.incrementalRange;
 
@@ -15,7 +15,7 @@ public class KnnConfigs {
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
-        classifier.setNeighbourIterationStrategy(new LinearNeighbourIterationStrategy());
+        classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(knn));
         classifier.setRandomTieBreak(false);
         return classifier;
     }
@@ -25,7 +25,7 @@ public class KnnConfigs {
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
-        classifier.setNeighbourIterationStrategy(new RandomNeighbourIterationStrategy());
+        classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(knn));
         classifier.setRandomTieBreak(true);
         return classifier;
     }

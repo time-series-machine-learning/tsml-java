@@ -5,7 +5,7 @@ import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
-import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIterationStrategy;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
@@ -35,7 +35,7 @@ public class KnnLoocv
     protected StopWatch trainEstimateTimer = new StopWatch();
     protected Cache<Instance, Instance, Double> cache;
     protected Iterator<NeighbourSearcher> iterator;
-    protected NeighbourIterationStrategy neighbourIterationStrategy = new LinearNeighbourIterationStrategy();
+    protected NeighbourIteratorBuilder neighbourIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
     protected boolean trainEstimateChange = false;
 
     public KnnLoocv() {
@@ -114,27 +114,27 @@ public class KnnLoocv
         memoryWatcher.pause();
     }
 
-    public NeighbourIterationStrategy getNeighbourIterationStrategy() {
-        return neighbourIterationStrategy;
+    public NeighbourIteratorBuilder getNeighbourIteratorBuilder() {
+        return neighbourIteratorBuilder;
     }
 
-    public void setNeighbourIterationStrategy(NeighbourIterationStrategy neighbourIterationStrategy) {
-        this.neighbourIterationStrategy = neighbourIterationStrategy;
+    public void setNeighbourIteratorBuilder(NeighbourIteratorBuilder neighbourIteratorBuilder) {
+        this.neighbourIteratorBuilder = neighbourIteratorBuilder;
     }
 
-    public interface NeighbourIterationStrategy {
-        Iterator<NeighbourSearcher> build(KnnLoocv knn);
+    public interface NeighbourIteratorBuilder {
+        Iterator<NeighbourSearcher> build();
     }
 
     @Override public ParamSet getParams() {
-        return super.getParams().add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIterationStrategy).add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit).addAll(TrainTimeContractable.super.getParams());
+        return super.getParams().add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder).add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit).addAll(TrainTimeContractable.super.getParams());
     }
 
     @Override public void setParams(final ParamSet params) {
         super.setParams(params);
         ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
-        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIterationStrategy,
-                              NeighbourIterationStrategy.class);
+        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
+                              NeighbourIteratorBuilder.class);
         TrainTimeContractable.super.setParams(params);
     }
 
@@ -172,7 +172,7 @@ public class KnnLoocv
                         cache = new Cache<>();
                     }
                 }
-                iterator = neighbourIterationStrategy.build(this);
+                iterator = neighbourIteratorBuilder.build();
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
             }
         }
