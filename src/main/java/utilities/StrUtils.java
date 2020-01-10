@@ -2,6 +2,7 @@ package utilities;
 
 import experiments.ClassifierLists;
 import experiments.Experiments;
+import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.filters.Derivative;
 import weka.classifiers.AbstractClassifier;
@@ -367,6 +368,13 @@ public class StrUtils {
             return path + File.separator;
         }
         return path;
+    }
+
+    public static String asDirPath(String... path) {
+        for(int i = 0; i < path.length - 1; i++) {
+            path[i] = asDirPath(path[i]);
+        }
+        return StringUtils.join(path, "");
     }
 
     public static String join(final String separator, final List<String> parts) {
