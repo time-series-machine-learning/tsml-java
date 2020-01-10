@@ -45,6 +45,7 @@ import tsml.classifiers.shapelet_based.ShapeletTreeClassifier;
 import tsml.filters.FeatureSetTSF;
 import tsml.filters.SummaryStats;
 import weka.classifiers.meta.FilteredClassifier;
+import weka.classifiers.trees.FT;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -66,6 +67,7 @@ import weka.classifiers.trees.RandomForest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -210,7 +212,9 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF", "Catch22NormTSF", "Catch22PreNormTSF", "Catch22TSF", "Catch22TSF100", "Catch22TSFexp1", "Catch22TSFexp2", "Catch22TSFexp2Norm", "TSF100"};
+    public static String[] interval= {"LPS","TSF","cTSF", "C22IF","Catch22NormTSF", "Catch22PreNormTSF","Catch22OutlierNormTSF", "Catch22TSF", "Catch22TSF100", "Catch22TSFexp1", "Catch22TSFexp2", "Catch22TSFexp2Norm", "TSF100","Catch22TSFgs1","Catch22TSFgs2","Catch22TSFgs3","Catch22TSFgs4","Catch22TSFgs5","Catch22TSFgs6","Catch22TSFgs7","Catch22TSFgs8","Catch22TSFgs9","Catch22TSFbagging",
+            "Catch22TSFcontract5","Catch22TSFcontract10","Catch22TSFcontract15","Catch22TSFcontract20","Catch22TSFcontract25","Catch22TSFcontract30","Catch22TSFcontract35","Catch22TSFcontract40","Catch22TSFcontract45","Catch22TSFcontract50","Catch22TSFcontract55","Catch22TSFcontract60","Catch22TSFminil12","Catch22TSFminil24","Catch22TSFminilM","Catch22TSFcJ48","Catch22TSFcFT","Catch22TSFexp3",
+            "Catch22TSFattSubsample","Catch22TSFattSubsampleInterval"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -228,6 +232,76 @@ public class ClassifierLists {
                 break;
 
 
+            case "C22IF":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+
+            case "Catch22TSFminil12":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).minIntervalLength = 12;
+                break;
+            case "Catch22TSFminil24":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).minIntervalLength = 24;
+                break;
+            case "Catch22TSFminilM":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).minIntervalLength = -1;
+                break;
+
+            case "Catch22TSFcJ48":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).base = new J48();
+                break;
+            case "Catch22TSFcFT":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).base = new FT();
+                break;
+            case "Catch22TSFexp3":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 3;
+                break;
+
+            case "Catch22TSFattSubsample":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                //((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).attSubsample = true;
+                ((Catch22TSF)c).attSubsampleNum = 16;
+                break;
+            case "Catch22TSFattSubsampleInterval":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                //((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).attSubsampleInterval = true;
+                ((Catch22TSF)c).attSubsampleNum = 16;
+                break;
+
             case "Catch22TSF":
                 c=new Catch22TSF();
                 break;
@@ -238,6 +312,10 @@ public class ClassifierLists {
             case "Catch22PreNormTSF":
                 c=new Catch22TSF();
                 ((Catch22TSF)c).preNorm = true;
+                break;
+            case "Catch22OutlierNormTSF":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
                 break;
             case "Catch22TSF100":
                 c=new Catch22TSF();
@@ -261,6 +339,167 @@ public class ClassifierLists {
                 ((TSF)c).setNumTrees(100);
                 break;
 
+            case "Catch22TSFgs1":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 0;
+                ((Catch22TSF)c).gsNumTrees= 2;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs2":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs3":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 2;
+                ((Catch22TSF)c).gsNumTrees= 2;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs4":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 0;
+                ((Catch22TSF)c).gsRandomTreeK = 1;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs5":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).gsRandomTreeK = 1;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs6":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 0;
+                ((Catch22TSF)c).gsNumTrees= 1;
+                ((Catch22TSF)c).gsRandomTreeK = 1;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs7":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 2;
+                ((Catch22TSF)c).gsNumTrees= 2;
+                ((Catch22TSF)c).gsRandomTreeK = 1;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 1;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs8":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 1;
+                ((Catch22TSF)c).gsNumTrees= 2;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFgs9":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 0;
+                ((Catch22TSF)c).gsNumTrees= 0;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 1;
+                ((Catch22TSF)c).gsBagging = 0;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+            case "Catch22TSFbagging":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).experimentalOptions = 99;
+                ((Catch22TSF)c).gsNumIntervals = 0;
+                ((Catch22TSF)c).gsNumTrees= 0;
+                ((Catch22TSF)c).gsRandomTreeK = 0;
+                ((Catch22TSF)c).gsAttSubsamplePerTree = 0;
+                ((Catch22TSF)c).gsBagging = 1;
+                ((Catch22TSF)c).outlierNorm = true;
+                break;
+
+            case "Catch22TSFcontract5":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 5);
+                break;
+            case "Catch22TSFcontract10":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 10);
+                break;
+            case "Catch22TSFcontract15":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 15);
+                break;
+            case "Catch22TSFcontract20":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 20);
+                break;
+            case "Catch22TSFcontract25":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 25);
+                break;
+            case "Catch22TSFcontract30":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 30);
+                break;
+            case "Catch22TSFcontract35":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 35);
+                break;
+            case "Catch22TSFcontract40":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 40);
+                break;
+            case "Catch22TSFcontract45":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 45);
+                break;
+            case "Catch22TSFcontract50":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 50);
+                break;
+            case "Catch22TSFcontract55":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 55);
+                break;
+            case "Catch22TSFcontract60":
+                c=new Catch22TSF();
+                ((Catch22TSF)c).outlierNorm = true;
+                ((Catch22TSF)c).setTrainTimeLimit(TimeUnit.MINUTES, 60);
+                break;
 
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
@@ -317,6 +556,7 @@ public class ClassifierLists {
                 break;
             case "ShapeletTransformClassifier":
                 c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setTrainTimeLimit(TimeUnit.HOURS, 24);
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTreeClassifier();
@@ -357,14 +597,14 @@ public class ClassifierLists {
             case "Catch22":
                 c=new Catch22Classifier();
                 RandomForest rf = new RandomForest();
-                rf.setNumTrees(100);
+                rf.setNumTrees(500);
                 rf.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rf);
                 break;
             case "Catch22Norm":
                 c=new Catch22Classifier();
                 RandomForest rf3 = new RandomForest();
-                rf3.setNumTrees(100);
+                rf3.setNumTrees(500);
                 rf3.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rf3);
                 ((Catch22Classifier) c).setNormalise(false);
@@ -372,14 +612,14 @@ public class ClassifierLists {
             case "Catch22RotF":
                 c=new Catch22Classifier();
                 RotationForest rtf = new RotationForest();
-                rtf.setNumIterations(100);
+                rtf.setNumIterations(500);
                 rtf.setSeed(fold);
                 ((Catch22Classifier)c).setClassifier(rtf);
                 break;
             case "SSRF":
                 c=new FilteredClassifier();
                 RandomForest rf2 = new RandomForest();
-                rf2.setNumTrees(100);
+                rf2.setNumTrees(500);
                 rf2.setSeed(fold);
                 ((FilteredClassifier)c).setClassifier(rf2);
                 ((FilteredClassifier)c).setFilter(new SummaryStats());
@@ -387,7 +627,7 @@ public class ClassifierLists {
             case "TSF-SS":
                 c=new FilteredClassifier();
                 RandomForest rf5 = new RandomForest();
-                rf5.setNumTrees(100);
+                rf5.setNumTrees(500);
                 rf5.setSeed(fold);
                 ((FilteredClassifier)c).setClassifier(rf5);
                 ((FilteredClassifier)c).setFilter(new FeatureSetTSF());
