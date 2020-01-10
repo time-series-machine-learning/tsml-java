@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class Configs {
+public class IncConfigs {
 
     public static void main(String[] args) throws Exception {
         int seed = 0;

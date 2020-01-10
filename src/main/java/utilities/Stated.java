@@ -29,7 +29,7 @@ public class Stated {
     public Stated unsuspend() {
         state = suspendedState;
         suspendedState = null;
-        setState(state);
+        setStateAnyway(state);
         return this;
     }
 

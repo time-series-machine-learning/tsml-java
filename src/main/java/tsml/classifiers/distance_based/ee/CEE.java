@@ -19,7 +19,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static machine_learning.classifiers.tuned.incremental.configs.Configs.*;
+import static machine_learning.classifiers.tuned.incremental.configs.IncConfigs.*;
 import static utilities.collections.Utils.replace;
 
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,

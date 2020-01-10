@@ -17,12 +17,14 @@ package experiments;
 
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.tuned.incremental.configs.IncConfigs;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.distance_based.ee.CEE;
+import tsml.classifiers.distance_based.knn.KnnConfigs;
 import tsml.classifiers.frequency_based.cRISE;
 import tsml.classifiers.hybrids.FlatCote;
 import tsml.classifiers.hybrids.HiveCote;
@@ -97,13 +99,19 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW", "CEE", "LEE"};
+            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW", "CEE", "LEE", "DTWV1", "DTWCVV1"};
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
+            case "DTWCVV1":
+                c = IncConfigs.buildTunedDtw1nnV1();
+                break;
+            case "DTWV1":
+                c = KnnConfigs.buildDtw1nnV1();
+                break;
             case "LEE":
                 c = CEE.buildLEE();
                 break;
