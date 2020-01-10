@@ -72,7 +72,8 @@ public class KnnLoocv
         return hasNextNeighbour() && hasNextNeighbourLimit();
     }
 
-    public boolean hasNextBuildTick() {
+    public boolean hasNextBuildTick() throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.resume();
         memoryWatcher.resume();
         boolean result = estimateOwnPerformance && hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
@@ -85,7 +86,8 @@ public class KnnLoocv
         return previousNeighbourBatchTimeNanos;
     }
 
-    public void nextBuildTick() {
+    public void nextBuildTick() throws Exception {
+        trainTimer.checkPaused();
         trainEstimateTimer.resume();
         memoryWatcher.resume();
         trainEstimateChange = true;
@@ -138,7 +140,7 @@ public class KnnLoocv
         TrainTimeContractable.super.setParams(params);
     }
 
-    protected void loadFromCheckpoint() {
+    protected void loadFromCheckpoint() throws Exception {
         trainEstimateTimer.pause();
         super.loadFromCheckpoint();
         trainEstimateTimer.resume();
@@ -149,6 +151,8 @@ public class KnnLoocv
         memoryWatcher.resume();
         if(rebuild) {
             loadFromCheckpoint();
+            trainTimer.pause();
+            memoryWatcher.pause();
             super.buildClassifier(data);
             memoryWatcher.resumeAnyway();
             trainTimer.pauseAnyway();
@@ -178,9 +182,11 @@ public class KnnLoocv
         }
         trainTimer.pauseAnyway();
         trainEstimateTimer.pauseAnyway();
+        memoryWatcher.pause();
     }
 
     public void finishBuild() throws Exception {
+        trainTimer.checkPaused();
         if(trainEstimateChange) {
             // todo make sure train timer is paused here + other timings checks
             trainEstimateTimer.resume();

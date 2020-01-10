@@ -11,6 +11,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -39,9 +40,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected Consumer<Instances> onTrainDataAvailable = instances -> {
-
-    };
+    protected Consumer<Instances> onTrainDataAvailable = instances -> {};
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected Instances trainData;
@@ -58,53 +57,56 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private static String DEFAULT_RESULTS_DIR = "benchmarks";
 
-    @Override
-    public boolean setSavePath(final String path) {
-        checkpointDirPath = StrUtils.asDirPath(path);
-        return true;
-    }
-
-    @Override
-    public String getSavePath() {
-        return checkpointDirPath;
-    }
-
-    public void checkpoint(boolean force) throws
-                                          Exception {
-        trainTimer.pause();
+    public void checkpoint(boolean force) throws Exception {
+        trainEstimateTimer.pause();
         memoryWatcher.pause();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            logger.log("checkpointing");
-            saveToFile(checkpointDirPath + tempCheckpointFileName);
-            boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
+            String path = checkpointDirPath + tempCheckpointFileName;
+            logger.log("saving checkpoint to: " + path);
+            saveToFile(path);
+            boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
             if(!success) {
                 throw new IllegalStateException("could not rename checkpoint file");
             }
-            
             lastCheckpointTimeStamp = System.nanoTime();
         }
+        trainEstimateTimer.resume();
         memoryWatcher.resume();
+    }
+
+    public void checkpoint() throws Exception {
+        checkpoint(false);
+    }
+
+    protected void loadFromCheckpoint() throws Exception {
+        trainTimer.pause();
+        memoryWatcher.pause();
+        if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
+            String path = checkpointDirPath + checkpointFileName;
+            logger.log("loading from checkpoint: " + path);
+            loadFromFile(path);
+        }
         trainTimer.resume();
+        memoryWatcher.resume();
     }
 
     public StopWatch getTrainTimer() {
         return trainTimer;
     }
 
-    @Override public void buildClassifier(final Instances data) throws Exception {
-
-        IncClassifier.super.buildClassifier(data);
+    @Override public void buildClassifier(final Instances trainData) throws Exception {
+        IncClassifier.super.buildClassifier(trainData);
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.resumeAnyway();
+        memoryWatcher.resumeAnyway();
         if(rebuild) {
             super.buildClassifier(data);
             onTrainDataAvailable.accept(data);
             rebuild = false;
-            trainTimer.resetAndResume();
-            trainEstimateTimer.resetAndResume();
+            trainTimer.resumeAnyway();
+            trainEstimateTimer.resetAndPause();
         }
         trainData = data;
         memoryWatcher.pause();
@@ -113,17 +115,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.resume();
+        trainEstimateTimer.resume();
         memoryWatcher.resume();
         boolean result = hasRemainingTraining();
-        trainTimer.pause();
+        trainEstimateTimer.pause();
         memoryWatcher.pause();
         return result;
     }
 
     @Override
     public void nextBuildTick() throws Exception {
-        trainTimer.resume();
+        trainEstimateTimer.resume();
         memoryWatcher.resume();
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
         logger.log("benchmark batch produced:");
@@ -131,16 +133,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             logger.log(benchmark);
         }
         replace(collectedBenchmarks, nextBenchmarks);
-        trainTimer.pause();
+        trainEstimateTimer.pause();
         memoryWatcher.pause();
     }
 
     @Override
     public void finishBuild() throws Exception {
-        trainTimer.resume();
+        trainEstimateTimer.resume();
         memoryWatcher.resume();
         for(Benchmark collectedBenchmark : collectedBenchmarks) {
             trainEstimateTimer.add(collectedBenchmark.getResults().getBuildPlusEstimateTime());
+            trainTimer.add(collectedBenchmark.getResults().getBuildTimeInNanos());
         }
         benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
         collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
@@ -157,7 +160,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
         }
         memoryWatcher.pause();
-        trainTimer.pause();
+        trainEstimateTimer.pause();
         trainResults.setMemory(getMaxMemoryUsageInBytes());
         trainResults.setBuildTime(trainTimer.getTimeNanos());
         trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());

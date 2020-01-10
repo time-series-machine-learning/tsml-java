@@ -62,16 +62,14 @@ public class Knn extends EnhancedAbstractClassifier
         return checkpointDirPath;
     }
 
-    public void checkpoint(boolean force) {
+    public void checkpoint(boolean force) throws Exception {
         trainTimer.pause();
         memoryWatcher.pause();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            try {
-                saveToFile(checkpointDirPath + tempCheckpointFileName);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointFileName));
+            String path = checkpointDirPath + tempCheckpointFileName;
+            logger.log("saving checkpoint to: " + path);
+            saveToFile(path);
+            boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
             if(!success) {
                 throw new IllegalStateException("could not rename checkpoint file");
             }
@@ -81,20 +79,17 @@ public class Knn extends EnhancedAbstractClassifier
         memoryWatcher.resume();
     }
 
-    public void checkpoint() {
+    public void checkpoint() throws Exception {
         checkpoint(false);
     }
 
-    protected void loadFromCheckpoint() {
+    protected void loadFromCheckpoint() throws Exception {
         trainTimer.pause();
         memoryWatcher.pause();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
-            try {
-                loadFromFile(checkpointDirPath + checkpointFileName);
-                setRebuild(false);
-            } catch (Exception e) {
-                // todo log
-            }
+            String path = checkpointDirPath + checkpointFileName;
+            logger.log("loading from checkpoint: " + path);
+            loadFromFile(path);
         }
         trainTimer.resume();
         memoryWatcher.resume();
@@ -174,13 +169,17 @@ public class Knn extends EnhancedAbstractClassifier
         memoryWatcher.pause();
     }
 
-    public boolean hasNextBuildTick() {
+    public boolean hasNextBuildTick() throws Exception {
         return false;
     }
 
     @Override
     public void finishBuild() throws Exception {
         checkpoint(true);
+    }
+
+    @Override public void buildClassifier(final Instances trainData) throws Exception {
+        IncClassifier.super.buildClassifier(trainData);
     }
 
     // todo fail capabilities

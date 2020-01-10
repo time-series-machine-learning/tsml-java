@@ -100,6 +100,13 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
         return setStateAnyway(state);
     }
 
+    public MemoryWatcher checkState(State state) {
+        if(!state.equals(this.state)) {
+            throw new IllegalStateException("current in " + this.state + " state instead of " + state);
+        }
+        return this;
+    }
+
     private final NotificationListener listener = (notification, handback) -> {
         synchronized(MemoryWatcher.this) {
             if(state.equals(State.RESUMED)) {
@@ -191,6 +198,23 @@ public class MemoryWatcher implements Debugable, Serializable, MemoryWatchable {
     public MemoryWatcher pauseAnyway() {
         return setStateAnyway(State.PAUSED);
     }
+
+    public MemoryWatcher checkPaused() {
+        return checkState(State.PAUSED);
+    }
+
+    public MemoryWatcher checkResumed() {
+        return checkState(State.RESUMED);
+    }
+
+    public MemoryWatcher checkEnabled() {
+        return checkState(State.ENABLED);
+    }
+
+    public MemoryWatcher checkDisabled() {
+        return checkState(State.DISABLED);
+    }
+
 
     @Override
     public synchronized boolean isDebug() {

@@ -50,8 +50,10 @@ public class StopWatch implements Serializable {
     }
 
     public StopWatch resumeAnyway() {
-        paused = false;
-        resetClock();
+        if(paused) {
+            paused = false;
+            resetClock();
+        }
         return this;
     }
 
@@ -65,8 +67,24 @@ public class StopWatch implements Serializable {
     }
 
     public StopWatch pauseAnyway() { // doesn't matter if already paused
-        paused = true;
-        lap();
+        if(!paused) {
+            paused = true;
+            lap();
+        }
+        return this;
+    }
+
+    public StopWatch checkPaused() {
+        if(!paused) {
+            throw new IllegalStateException("not paused");
+        }
+        return this;
+    }
+
+    public StopWatch checkResumed() {
+        if(paused) {
+            throw new IllegalStateException("not resumed");
+        }
         return this;
     }
 
