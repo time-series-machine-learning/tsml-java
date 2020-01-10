@@ -15,7 +15,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -63,8 +62,8 @@ public class Knn extends EnhancedAbstractClassifier
     }
 
     public void checkpoint(boolean force) throws Exception {
-        trainTimer.pause();
-        memoryWatcher.pause();
+        trainTimer.suspend();
+        memoryWatcher.suspend();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
             String path = checkpointDirPath + tempCheckpointFileName;
             logger.log("saving checkpoint to: " + path);
@@ -75,8 +74,8 @@ public class Knn extends EnhancedAbstractClassifier
             }
             lastCheckpointTimeStamp = System.nanoTime();
         }
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.unsuspend();
+        memoryWatcher.unsuspend();
     }
 
     public void checkpoint() throws Exception {
@@ -84,15 +83,15 @@ public class Knn extends EnhancedAbstractClassifier
     }
 
     protected void loadFromCheckpoint() throws Exception {
-        trainTimer.pause();
-        memoryWatcher.pause();
+        trainTimer.suspend();
+        memoryWatcher.suspend();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
             logger.log("loading from checkpoint: " + path);
             loadFromFile(path);
         }
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.unsuspend();
+        memoryWatcher.unsuspend();
     }
 
     @Override public boolean isIgnorePreviousCheckpoints() {
@@ -157,16 +156,16 @@ public class Knn extends EnhancedAbstractClassifier
 
     @Override
     public void startBuild(Instances trainData) throws Exception {
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.enable();
+        memoryWatcher.enable();
         if(rebuild) {
             super.buildClassifier(trainData);
             rebuild = false;
             distanceFunction.setInstances(trainData);
             this.trainData = trainData;
         }
-        trainTimer.pause();
-        memoryWatcher.pause();
+        trainTimer.disable();
+        memoryWatcher.disable();
     }
 
     public boolean hasNextBuildTick() throws Exception {
@@ -175,6 +174,8 @@ public class Knn extends EnhancedAbstractClassifier
 
     @Override
     public void finishBuild() throws Exception {
+        trainTimer.disableAnyway();
+        memoryWatcher.disableAnyway();
         checkpoint(true);
     }
 
@@ -209,17 +210,17 @@ public class Knn extends EnhancedAbstractClassifier
         }
 
         public void add(Instance neighbour, double distance, long distanceMeasurementTime) {
-            comparisonTimer.resume();
+            comparisonTimer.enable();
             prunedMap.add(distance, neighbour);
             if(earlyAbandon) {
                 limit = prunedMap.getMap().lastEntry().getKey();
             }
             comparisonTimer.add(distanceMeasurementTime);
-            comparisonTimer.pause();
+            comparisonTimer.disable();
         }
 
         public double[] predict() {
-            predictTimer.resetAndResume();
+            predictTimer.resetAndEnable();
             TreeMultiMap<Double, Instance> nearestNeighbourMap = prunedMap.getMap();
             double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
@@ -238,7 +239,7 @@ public class Knn extends EnhancedAbstractClassifier
                 }
                 ArrayUtilities.normaliseInPlace(distribution);
             }
-            predictTimer.pause();
+            predictTimer.disable();
             return distribution;
         }
 

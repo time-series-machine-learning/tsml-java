@@ -2,90 +2,51 @@ package utilities;
 
 import java.io.Serializable;
 
-public class StopWatch implements Serializable {
+public class StopWatch extends Stated implements Serializable {
     private long timeStamp;
     private long time;
-    private boolean paused = true;
 
     public StopWatch() {
-        resetAndResume();
+        super();
     }
 
-    public StopWatch(boolean start) {
-        this();
-        if(start) {
-            resume();
-        }
+    public StopWatch(State state) {
+        super(state);
     }
 
     public long lap() {
-        if(!paused) {
-            long nextTimeStamp = System.nanoTime();
-            long diff = nextTimeStamp - this.timeStamp;
-            time += diff;
-            this.timeStamp = nextTimeStamp;
+        if(isEnabled()) {
+            uncheckedLap();
         }
         return time;
     }
 
-    public boolean isPaused() {
-        return paused;
-    }
-
-    public boolean isResumed() {
-        return !paused;
+    private long uncheckedLap() {
+        long nextTimeStamp = System.nanoTime();
+        long diff = nextTimeStamp - this.timeStamp;
+        time += diff;
+        this.timeStamp = nextTimeStamp;
+        return time;
     }
 
     public long getTimeNanos() {
         return time;
     }
 
-    public StopWatch resume() {
-        if(paused) {
-            resumeAnyway();
-            return this;
-        } else {
-            throw new IllegalStateException("already resumed");
-        }
-    }
-
-    public StopWatch resumeAnyway() {
-        if(paused) {
-            paused = false;
+    @Override public boolean enableAnyway() {
+        boolean change = super.enableAnyway();
+        if(change) {
             resetClock();
         }
-        return this;
+        return change;
     }
 
-    public StopWatch pause() {
-        if(!paused) {
-            pauseAnyway();
-            return this;
-        } else {
-            throw new IllegalStateException("already paused");
+    @Override public boolean disableAnyway() {
+        boolean change = super.disableAnyway();
+        if(change) {
+            uncheckedLap();
         }
-    }
-
-    public StopWatch pauseAnyway() { // doesn't matter if already paused
-        if(!paused) {
-            paused = true;
-            lap();
-        }
-        return this;
-    }
-
-    public StopWatch checkPaused() {
-        if(!paused) {
-            throw new IllegalStateException("not paused");
-        }
-        return this;
-    }
-
-    public StopWatch checkResumed() {
-        if(paused) {
-            throw new IllegalStateException("not resumed");
-        }
-        return this;
+        return change;
     }
 
     public void resetClock() {
@@ -96,14 +57,14 @@ public class StopWatch implements Serializable {
         time = 0;
     }
 
-    public void resetAndResume() {
-        lap();
+    public void resetAndEnable() {
+        disableAnyway();
         resetTime();
-        resetClock();
+        enable();
     }
 
-    public void resetAndPause() {
-        pauseAnyway();
+    public void resetAndDisable() {
+        disableAnyway();
         resetTime();
         resetClock();
     }
@@ -114,5 +75,13 @@ public class StopWatch implements Serializable {
 
     public void add(StopWatch stopWatch) {
         add(stopWatch.time);
+    }
+
+    @Override public String toString() {
+        return "StopWatch{" +
+            "time=" + time +
+            ", " + super.toString() +
+            ", timeStamp=" + timeStamp +
+            '}';
     }
 }

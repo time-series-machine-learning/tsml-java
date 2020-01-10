@@ -73,12 +73,12 @@ public class KnnLoocv
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.checkDisabled();
+        trainEstimateTimer.enable();
+        memoryWatcher.enable();
         boolean result = estimateOwnPerformance && hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainEstimateTimer.disable();
+        memoryWatcher.disable();
         return result;
     }
 
@@ -87,9 +87,9 @@ public class KnnLoocv
     }
 
     public void nextBuildTick() throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.checkDisabled();
+        trainEstimateTimer.enable();
+        memoryWatcher.enable();
         trainEstimateChange = true;
         long timeStamp = System.nanoTime();
         NeighbourSearcher current = iterator.next();
@@ -112,8 +112,8 @@ public class KnnLoocv
         }
         previousNeighbourBatchTimeNanos = System.nanoTime() - timeStamp;
         checkpoint();
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainEstimateTimer.disable();
+        memoryWatcher.disable();
     }
 
     public NeighbourIteratorBuilder getNeighbourIteratorBuilder() {
@@ -141,22 +141,23 @@ public class KnnLoocv
     }
 
     protected void loadFromCheckpoint() throws Exception {
-        trainEstimateTimer.pause();
+        trainEstimateTimer.suspend();
         super.loadFromCheckpoint();
-        trainEstimateTimer.resume();
+        trainEstimateTimer.unsuspend();
     }
 
     public void startBuild(Instances data) throws Exception { // todo watch mem
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainEstimateTimer.checkDisabled();
+        trainTimer.enable();
+        memoryWatcher.enable();
         if(rebuild) {
             loadFromCheckpoint();
-            trainTimer.pause();
-            memoryWatcher.pause();
-            super.buildClassifier(data);
-            memoryWatcher.resumeAnyway();
-            trainTimer.pauseAnyway();
-            trainEstimateTimer.resetAndResume();
+            trainTimer.disableAnyway();
+            memoryWatcher.disableAnyway();
+            super.startBuild(data);
+            memoryWatcher.enableAnyway();
+            trainTimer.disableAnyway();
+            trainEstimateTimer.resetAndEnable();
             rebuild = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
@@ -180,17 +181,19 @@ public class KnnLoocv
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
             }
         }
-        trainTimer.pauseAnyway();
-        trainEstimateTimer.pauseAnyway();
-        memoryWatcher.pause();
+        trainTimer.disableAnyway();
+        trainEstimateTimer.disableAnyway();
+        memoryWatcher.disable();
     }
 
     public void finishBuild() throws Exception {
-        trainTimer.checkPaused();
+        trainTimer.checkDisabled();
+        memoryWatcher.checkDisabled();
+        trainEstimateTimer.checkDisabled();
         if(trainEstimateChange) {
             // todo make sure train timer is paused here + other timings checks
-            trainEstimateTimer.resume();
-            memoryWatcher.resume();
+            trainEstimateTimer.enable();
+            memoryWatcher.enable();
             trainEstimateChange = false;
             if(neighbourLimit >= 0 && neighbourCount < neighbourLimit || neighbourLimit < 0 && neighbourCount < trainData.size()) {
                 throw new IllegalStateException("this should not happen");
@@ -204,8 +207,8 @@ public class KnnLoocv
                 double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
-            trainEstimateTimer.pause();
-            memoryWatcher.pause();
+            trainEstimateTimer.disable();
+            memoryWatcher.disable();
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());

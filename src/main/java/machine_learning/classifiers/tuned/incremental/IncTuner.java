@@ -54,7 +54,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     private boolean independentBenchmarks = false;
     private long lastCheckpointTimeStamp = 0;
     private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
-    private static String DEFAULT_RESULTS_DIR = "benchmarks";
+    private final static String DEFAULT_RESULTS_DIR = "benchmarks";
     private boolean ignorePreviousCheckpoints = false;
     private boolean checkpointAfterEveryIteration = false;
 
@@ -107,9 +107,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     }
 
     public void checkpoint(boolean force) throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainTimer.suspend();
+        trainEstimateTimer.suspend();
+        memoryWatcher.suspend();
         if(isCheckpointing() && (force || withinCheckpointInterval() || isCheckpointAfterEveryIteration())) {
             String path = checkpointDirPath + tempCheckpointFileName;
             FileUtils.FileLocker locker = FileUtils.FileLocker.lock(path);
@@ -159,8 +159,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             benchmarksToCheckpoint.clear();
             lastCheckpointTimeStamp = System.nanoTime();
         }
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
+        trainEstimateTimer.unsuspend();
     }
 
     public void checkpoint() throws Exception {
@@ -168,16 +169,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     }
 
     protected void loadFromCheckpoint() throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainTimer.suspend();
+        trainEstimateTimer.suspend();
+        memoryWatcher.suspend();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
             logger.log("loading from checkpoint: " + path);
             loadFromFile(path);
         }
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
+        trainEstimateTimer.unsuspend();
     }
 
     public StopWatch getTrainTimer() {
@@ -189,48 +191,48 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     }
 
     @Override public void startBuild(final Instances data) throws Exception {
-        trainEstimateTimer.checkPaused();
-        trainTimer.resume();
-        memoryWatcher.resume();
+        trainEstimateTimer.checkDisabled();
+        trainTimer.enable();
+        memoryWatcher.enable();
         if(rebuild) {
-            trainTimer.pause();
-            memoryWatcher.pause();
+            trainTimer.disable();
+            memoryWatcher.disable();
             super.buildClassifier(data);
-            trainTimer.resume();
-            memoryWatcher.resume();
+            trainTimer.enable();
+            memoryWatcher.enable();
             onTrainDataAvailable.accept(data);
             rebuild = false;
-            trainEstimateTimer.resetAndPause();
+            trainEstimateTimer.resetAndDisable();
         }
         trainData = data;
-        memoryWatcher.pause();
-        trainTimer.pause();
+        memoryWatcher.disable();
+        trainTimer.disable();
     }
 
     @Override
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.checkDisabled();
+        trainEstimateTimer.enable();
+        memoryWatcher.enable();
         boolean result = hasRemainingTraining();
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainEstimateTimer.disable();
+        memoryWatcher.disable();
         return result;
     }
 
     @Override
     public void nextBuildTick() throws Exception {
-        trainTimer.checkPaused();
-        trainEstimateTimer.resume();
-        memoryWatcher.resume();
+        trainTimer.checkDisabled();
+        trainEstimateTimer.enable();
+        memoryWatcher.enable();
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
         logger.log("benchmark batch produced:");
         for(Benchmark benchmark : nextBenchmarks) {
             logger.log(benchmark);
         }
         replace(collectedBenchmarks, nextBenchmarks);
-        trainEstimateTimer.pause();
-        memoryWatcher.pause();
+        trainEstimateTimer.disable();
+        memoryWatcher.disable();
         if(isCheckpointing()) {
             replace(benchmarksToCheckpoint, nextBenchmarks);
         }
@@ -239,11 +241,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     @Override
     public void finishBuild() throws Exception {
         if(!independentBenchmarks) {
-            trainTimer.checkPaused();
-            trainEstimateTimer.resume();
-            memoryWatcher.resume();
+            trainTimer.checkDisabled();
+            trainEstimateTimer.enable();
+            memoryWatcher.enable();
             for(Benchmark collectedBenchmark : collectedBenchmarks) {
                 trainEstimateTimer.add(collectedBenchmark.getResults().getBuildPlusEstimateTime());
+                // todo add mem
                 trainTimer.add(collectedBenchmark.getResults().getBuildTimeInNanos());
             }
             benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
@@ -260,8 +263,8 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             } else {
                 ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
             }
-            memoryWatcher.pause();
-            trainEstimateTimer.pause();
+            memoryWatcher.disable();
+            trainEstimateTimer.disable();
             trainResults.setMemory(getMaxMemoryUsageInBytes());
             trainResults.setBuildTime(trainTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());

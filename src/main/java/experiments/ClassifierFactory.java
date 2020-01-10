@@ -1,6 +1,7 @@
 package experiments;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import weka.classifiers.Classifier;
 
 import java.util.*;
@@ -62,8 +63,21 @@ public class ClassifierFactory {
         return classifierBuilder;
     }
 
-    public Set<ClassifierBuilder<?>> getClassifiersByTags(List<String> tags) {
+    public Set<ClassifierBuilder<?>> getClassifierByTag(String tag) {
+        Set<ClassifierBuilder<?>> classifierBuilders = classifierByTag.get(tag);
+        if(classifierBuilders != null) {
+            return ImmutableSet.copyOf(classifierBuilders);
+        } else {
+            return ImmutableSet.of();
+        }
+    }
 
+    public Set<ClassifierBuilder<?>> getClassifiersByTags(List<String> tags) {
+        Set<ClassifierBuilder<?>> set = new HashSet<>();
+        for(String tag : tags) {
+            set.addAll(getClassifierByTag(tag));
+        }
+        return ImmutableSet.copyOf(set);
     }
 
     public Set<ClassifierBuilder<?>> getClassifiersByTags(String... tags) {

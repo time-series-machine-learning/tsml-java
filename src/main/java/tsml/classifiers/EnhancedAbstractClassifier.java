@@ -152,11 +152,14 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
-        trainResults = new ClassifierResults();
-        rand.setSeed(seed);
-        numClasses = trainData.numClasses();
-        trainResults.setClassifierName(getClassifierName());
-        trainResults.setParas(getParameters());
+        if(rebuild) {
+            logger.log("rebuilding");
+            trainResults = new ClassifierResults();
+            rand.setSeed(seed);
+            numClasses = trainData.numClasses();
+            trainResults.setClassifierName(getClassifierName());
+            trainResults.setParas(getParameters());
+        }
     }
 
     public EnhancedAbstractClassifier() {
