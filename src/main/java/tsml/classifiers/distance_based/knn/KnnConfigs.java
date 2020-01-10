@@ -15,7 +15,7 @@ public class KnnConfigs {
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
-        classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(knn));
+        classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
         classifier.setRandomTieBreak(false);
         return classifier;
     }
@@ -25,7 +25,7 @@ public class KnnConfigs {
         classifier.setEarlyAbandon(true);
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
-        classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(knn));
+        classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
         classifier.setRandomTieBreak(true);
         return classifier;
     }
