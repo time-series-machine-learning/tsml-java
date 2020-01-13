@@ -12,9 +12,12 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class MemoryWatcher extends Stated implements Debugable, Serializable, MemoryWatchable {
 
@@ -24,17 +27,17 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
 
     private long maxMemoryUsageBytes = -1;
     private long size = 0;
-    private long firstMemoryUsageReading;
-    private long usageSum = 0;
-    private long usageSumSq = 0;
+    private BigInteger firstMemoryUsageReading;
+    private BigInteger usageSum = BigInteger.ZERO;
+    private BigInteger usageSumSq = BigInteger.ZERO;
     private long garbageCollectionTimeInMillis = 0;
 
     @Override public boolean enableAnyway() {
-        boolean change = super.enableAnyway();
-        if(change && !isEmittersSetup()) {
+        if(super.enableAnyway() && !isEmittersSetup()) {
             setupEmitters();
+            return true;
         }
-        return change;
+        return false;
     }
 
     private void setupEmitters() {
@@ -93,7 +96,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
 //                long committedMemory = memoryUsage.getCommitted();
 //                long maxMemory = memoryUsage.getMax();
                         long memoryUsage = memoryUsageSnapshot.getUsed();
-                        addMemoryUsageReadingBytes(memoryUsage);
+                        addMemoryUsageReadingInBytes(memoryUsage);
                     }
                 }
             }
@@ -109,28 +112,34 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         super(state);
     }
 
-    private void addMemoryUsageReadingBytes(long usage) {
+    private void addMemoryUsageReadingInBytesUnchecked(long usage) {
+        if(usage > maxMemoryUsageBytes) {
+            maxMemoryUsageBytes = usage;
+        }
+        // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+        if(size == 0) {
+            firstMemoryUsageReading = BigInteger.valueOf(usage);
+        }
+        size++;
+        BigInteger diff = BigInteger.valueOf(usage).subtract(firstMemoryUsageReading);
+        usageSum = usageSum.add(diff);
+        usageSumSq = usageSumSq.add(diff.multiply(diff));
+    }
+
+    private void addMemoryUsageReadingInBytes(long usage) {
         if(isEnabled()) {
-            if(usage > maxMemoryUsageBytes) {
-                maxMemoryUsageBytes = usage;
-            }
-            // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-            if(size == 0) {
-                firstMemoryUsageReading = usage;
-            }
-            size++;
-            long diff = usage - firstMemoryUsageReading;
-            usageSum += diff;
-            usageSumSq += Math.pow(diff, 2);
+            addMemoryUsageReadingInBytesUnchecked(usage);
         }
     }
 
     public synchronized long getMeanMemoryUsageInBytes() {
-        return firstMemoryUsageReading + usageSum / size;
+        return firstMemoryUsageReading.add(usageSum.divide(BigInteger.valueOf(size))).longValueExact();
     }
 
     public synchronized long getVarianceMemoryUsageInBytes() {
-        return (usageSumSq - (usageSum * usageSum) / size) / (size - 1);
+        return usageSumSq.subtract(
+            usageSum.multiply(usageSum).divide(BigInteger.valueOf(size))
+                                   ).longValueExact() / (size - 1);
     }
 
     @Override
@@ -154,5 +163,26 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
             super.toString() +
             ", maxMemoryUsageBytes=" + maxMemoryUsageBytes +
             '}';
+    }
+
+    public static void main(String[] args) {
+        StopWatch stopWatch = new StopWatch();
+        MemoryWatcher realMemWatcher = new MemoryWatcher();
+        realMemWatcher.enable();
+        MemoryWatcher memoryWatcher = new MemoryWatcher();
+        stopWatch.enable();
+        Random rand = new Random(0);
+        for(int i = 0; i < 100000000; i++) {
+            memoryWatcher.addMemoryUsageReadingInBytesUnchecked(Math.abs(rand.nextLong()));
+        }
+        stopWatch.disable();
+        realMemWatcher.disable();
+        System.out.println(realMemWatcher.getMaxMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getMeanMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getVarianceMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getGarbageCollectionTimeInMillis());
+        System.out.println("----");
+        System.out.println(stopWatch.getTimeNanos());
+        System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
     }
 }
