@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import de.bwaldvogel.liblinear.Train;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -33,6 +34,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import tsml.classifiers.TrainTimeContractable;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -365,14 +367,14 @@ public class Experiments  {
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
 //                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\";//Where to write results
+                settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-PF-SB"; //Classifier name
+                settings[3]="-cn=HC-Catch22TSF"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 folds=30;
-                String classifier="HC-PF-SB";
+                String classifier="HC-Catch22TSF";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
                 String[] probFiles= DatasetLists.tscProblems112;
@@ -440,13 +442,12 @@ public class Experiments  {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
-
         //2019_06_03: cases in the classifier can now change the classifier name to reflect
-        //paritcular parameters wanting to be represented as different classifiers
-        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the
+        //particular parameters wanting to be represented as different classifiers
+        //e.g. a case ShapeletsContracted might take a contract time (e.g. 1 day) from the args and set up the
         //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
         //such that if the experimenter is looping over contract times, they need only create one case
-        //in the setclassifier switch and pass one classifier name, but loop over contract time directly
+        //in the setClassifier switch and pass one classifier name, but loop over contract time directly
         //
         //so, the setClassifier has been moved to up here, previously only done after the check for
         //whether we abort due to the results file already existing. the instantiation of a classifier
@@ -454,6 +455,9 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        if(classifier instanceof TrainTimeContractable && expSettings.contractTrainTimeSeconds>0){
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(TimeUnit.SECONDS,expSettings.contractTrainTimeSeconds);
+        }
 
         //Build/make the directory to write the train and/or testFold files to
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
