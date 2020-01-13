@@ -173,7 +173,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
         }
         if(classifier instanceof MemoryWatchable) {
-            // todo
+            setMemory(((MemoryWatchable) classifier).getMaxMemoryUsageInBytes());
+            setMeanMemoryUsageInBytes(((MemoryWatchable) classifier).getMeanMemoryUsageInBytes());
+            setGarbageCollectionTimeInMillis(((MemoryWatchable) classifier).getGarbageCollectionTimeInMillis());
+            setVarianceMemoryUsageInBytes(((MemoryWatchable) classifier).getVarianceMemoryUsageInBytes());
         }
         setOs(SysUtils.getOsName());
         setCpuInfo(SysUtils.findCpuInfo());
@@ -193,6 +196,33 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
+    private long meanMemoryUsageInBytes = -1;
+    private long varianceMemoryUsageInBytes = -1;
+    private long garbageCollectionTimeInMillis = -1;
+
+    public long getMeanMemoryUsageInBytes() {
+        return meanMemoryUsageInBytes;
+    }
+
+    public void setMeanMemoryUsageInBytes(final long meanMemoryUsageInBytes) {
+        this.meanMemoryUsageInBytes = meanMemoryUsageInBytes;
+    }
+
+    public long getVarianceMemoryUsageInBytes() {
+        return varianceMemoryUsageInBytes;
+    }
+
+    public void setVarianceMemoryUsageInBytes(final long varianceMemoryUsageInBytes) {
+        this.varianceMemoryUsageInBytes = varianceMemoryUsageInBytes;
+    }
+
+    public long getGarbageCollectionTimeInMillis() {
+        return garbageCollectionTimeInMillis;
+    }
+
+    public void setGarbageCollectionTimeInMillis(final long garbageCollectionTimeInMillis) {
+        this.garbageCollectionTimeInMillis = garbageCollectionTimeInMillis;
+    }
 
 
     private enum FileType {
@@ -1673,6 +1703,15 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         if(parts.length > 10) {
             cpuInfo = parts[10];
         }
+        if(parts.length > 11) {
+            meanMemoryUsageInBytes = Long.parseLong(parts[11]);
+        }
+        if(parts.length > 12) {
+            varianceMemoryUsageInBytes = Long.parseLong(parts[12]);
+        }
+        if(parts.length > 13) {
+            garbageCollectionTimeInMillis = Long.parseLong(parts[13]);
+        }
         return acc;
     }
     private String generateThirdLine() {
@@ -1686,7 +1725,11 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + errorEstimateTime
             + "," + buildPlusEstimateTime
             + "," + os
-            + "," + cpuInfo;
+            + "," + cpuInfo
+            + "," + meanMemoryUsageInBytes
+            + "," + varianceMemoryUsageInBytes
+            + "," + garbageCollectionTimeInMillis
+            ;
 
         return res;
     }
