@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.*;
 
+import static java.math.BigDecimal.ROUND_HALF_UP;
+
 /**
  * A class offering statistical utility functions like the average and the
  * standard deviations
@@ -266,5 +268,22 @@ public class StatisticalUtilities {
     
     public static double averageFinalDimension(double[] results) { 
         return StatisticalUtilities.mean(results, false);
+    }
+
+    public static BigDecimal sqrt(BigDecimal decimal) {
+        int scale = MathContext.DECIMAL128.getPrecision();
+        BigDecimal x0 = new BigDecimal("0");
+        BigDecimal x1 = BigDecimal.valueOf(Math.sqrt(decimal.doubleValue()));
+        while (!x0.equals(x1)) {
+            x0 = x1;
+            x1 = decimal.divide(x0, scale, ROUND_HALF_UP);
+            x1 = x1.add(x0);
+            x1 = x1.divide(TWO, scale, ROUND_HALF_UP);
+        }
+        return x1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sqrt(BigDecimal.valueOf(12345)));
     }
 }

@@ -29,7 +29,6 @@ import java.util.function.Function;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MemoryWatchable;
-import tsml.classifiers.TrainTimeable;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -196,23 +195,23 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
-    private long meanMemoryUsageInBytes = -1;
-    private long varianceMemoryUsageInBytes = -1;
+    private double meanMemoryUsageInBytes = -1;
+    private double varianceMemoryUsageInBytes = -1;
     private long garbageCollectionTimeInMillis = -1;
 
-    public long getMeanMemoryUsageInBytes() {
+    public double getMeanMemoryUsageInBytes() {
         return meanMemoryUsageInBytes;
     }
 
-    public void setMeanMemoryUsageInBytes(final long meanMemoryUsageInBytes) {
+    public void setMeanMemoryUsageInBytes(final double meanMemoryUsageInBytes) {
         this.meanMemoryUsageInBytes = meanMemoryUsageInBytes;
     }
 
-    public long getVarianceMemoryUsageInBytes() {
+    public double getVarianceMemoryUsageInBytes() {
         return varianceMemoryUsageInBytes;
     }
 
-    public void setVarianceMemoryUsageInBytes(final long varianceMemoryUsageInBytes) {
+    public void setVarianceMemoryUsageInBytes(final double varianceMemoryUsageInBytes) {
         this.varianceMemoryUsageInBytes = varianceMemoryUsageInBytes;
     }
 

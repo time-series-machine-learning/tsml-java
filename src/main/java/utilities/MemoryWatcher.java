@@ -12,7 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
-import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +26,13 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
     }
 
     private long maxMemoryUsageBytes = -1;
-    private long size = 0;
-    private BigInteger firstMemoryUsageReading;
-    private BigInteger usageSum = BigInteger.ZERO;
-    private BigInteger usageSumSq = BigInteger.ZERO;
+    private long count = 0;
+    private double sqDiffFromMean = 0;
+    private BigDecimal bigSqDiffFromMean = null;
+    private double mean = 0;
     private long garbageCollectionTimeInMillis = 0;
+    private boolean overflowed = false; // to handle overflow of the sq sum of diff from mean (can get reallllyyy
+    // big)
 
     @Override public boolean enableAnyway() {
         if(super.enableAnyway() && !isEmittersSetup()) {
@@ -105,25 +107,45 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
 
     public MemoryWatcher() {
         super();
+        reset();
         setupEmitters();
     }
 
     public MemoryWatcher(State state) {
         super(state);
+        reset();
+    }
+
+    private void handleDeltaNonOverflow(double delta) {
+        double prev = sqDiffFromMean;
+        sqDiffFromMean += Math.pow(delta, 2);
+        if(sqDiffFromMean < prev) {
+            overflow(delta);
+        }
+    }
+
+    private void overflow(double delta) {
+        overflowed = true;
+        bigSqDiffFromMean = BigDecimal.valueOf(sqDiffFromMean);
+        handleDeltaOverflow(delta);
+    }
+
+    private void handleDeltaOverflow(double delta) {
+        BigDecimal bigDelta = BigDecimal.valueOf(delta);
+        bigSqDiffFromMean = bigSqDiffFromMean.add(bigDelta.multiply(bigDelta));
     }
 
     private void addMemoryUsageReadingInBytesUnchecked(long usage) {
-        if(usage > maxMemoryUsageBytes) {
-            maxMemoryUsageBytes = usage;
+        maxMemoryUsageBytes = Math.max(maxMemoryUsageBytes, usage);
+        // Welford's online algo for mean and variance
+        count++;
+        double delta = (double) usage - mean;
+        mean += delta / count;
+        if(overflowed) {
+            handleDeltaOverflow(delta);
+        } else {
+            handleDeltaNonOverflow(delta);
         }
-        // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-        if(size == 0) {
-            firstMemoryUsageReading = BigInteger.valueOf(usage);
-        }
-        size++;
-        BigInteger diff = BigInteger.valueOf(usage).subtract(firstMemoryUsageReading);
-        usageSum = usageSum.add(diff);
-        usageSumSq = usageSumSq.add(diff.multiply(diff));
     }
 
     private void addMemoryUsageReadingInBytes(long usage) {
@@ -132,14 +154,36 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         }
     }
 
-    public synchronized long getMeanMemoryUsageInBytes() {
-        return firstMemoryUsageReading.add(usageSum.divide(BigInteger.valueOf(size))).longValueExact();
+    public synchronized double getMeanMemoryUsageInBytes() {
+        if(count == 0) {
+            return -1;
+        }
+        return mean;
     }
 
-    public synchronized long getVarianceMemoryUsageInBytes() {
-        return usageSumSq.subtract(
-            usageSum.multiply(usageSum).divide(BigInteger.valueOf(size))
-                                   ).longValueExact() / (size - 1);
+    public synchronized BigDecimal getBigVarianceMemoryUsageInBytes() {
+        return bigSqDiffFromMean.divide(BigDecimal.valueOf(count), BigDecimal.ROUND_UP);
+    }
+
+    public synchronized double getVarianceMemoryUsageInBytes() {
+        if(count == 0) {
+            return -1;
+        } else if(overflowed) {
+            return getBigVarianceMemoryUsageInBytes().doubleValue();
+        } else {
+            return sqDiffFromMean / count; // population variance as we see all the readings of memory usage;
+        }
+    }
+
+    public long getMemoryReadingCount() {
+        return count;
+    }
+
+    public double getStdDevMemoryUsageInBytes() {
+        if(overflowed) {
+            return StatisticalUtilities.sqrt(getBigVarianceMemoryUsageInBytes()).doubleValue();
+        }
+        return Math.sqrt(getVarianceMemoryUsageInBytes());
     }
 
     @Override
@@ -165,6 +209,16 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
             '}';
     }
 
+    public void reset() {
+        count = 0;
+        mean = 0;
+        sqDiffFromMean = 0;
+        garbageCollectionTimeInMillis = 0;
+        maxMemoryUsageBytes = -1;
+        bigSqDiffFromMean = null;
+        overflowed = false;
+    }
+
     public static void main(String[] args) {
         StopWatch stopWatch = new StopWatch();
         MemoryWatcher realMemWatcher = new MemoryWatcher();
@@ -172,14 +226,19 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         MemoryWatcher memoryWatcher = new MemoryWatcher();
         stopWatch.enable();
         Random rand = new Random(0);
-        for(int i = 0; i < 100000000; i++) {
-            memoryWatcher.addMemoryUsageReadingInBytesUnchecked(Math.abs(rand.nextLong()));
+        memoryWatcher.overflow(0);
+        int max = 1_000_000;
+        for(int i = 0; i < max; i++) {
+            memoryWatcher.addMemoryUsageReadingInBytesUnchecked(Math.abs(rand.nextInt(100)));
+            if(rand.nextInt(max) < 10_000) {
+                System.gc();
+            }
         }
         stopWatch.disable();
         realMemWatcher.disable();
         System.out.println(realMemWatcher.getMaxMemoryUsageInBytes());
         System.out.println(realMemWatcher.getMeanMemoryUsageInBytes());
-        System.out.println(realMemWatcher.getVarianceMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getStdDevMemoryUsageInBytes());
         System.out.println(realMemWatcher.getGarbageCollectionTimeInMillis());
         System.out.println("----");
         System.out.println(stopWatch.getTimeNanos());
