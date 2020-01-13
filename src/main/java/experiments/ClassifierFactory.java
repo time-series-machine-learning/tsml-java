@@ -44,6 +44,7 @@ public class ClassifierFactory {
 
     public void add(ClassifierBuilder<?> classifierBuilder) {
         String name = classifierBuilder.getName();
+        name = name.toLowerCase();
         ClassifierBuilder<?> current = classifiersByName.get(name);
         if(current != null) {
             throw new IllegalArgumentException("oops, a classifier already exists under the name: " + name);
@@ -56,6 +57,7 @@ public class ClassifierFactory {
     }
 
     public ClassifierBuilder<?> getClassifierByName(String name) {
+        name = name.toLowerCase();
         ClassifierBuilder<?> classifierBuilder = classifiersByName.get(name);
         if(classifierBuilder == null) {
             throw new IllegalArgumentException("oops, there's no classifier by the name: " + name);
@@ -64,6 +66,7 @@ public class ClassifierFactory {
     }
 
     public Set<ClassifierBuilder<?>> getClassifierByTag(String tag) {
+        tag = tag.toLowerCase();
         Set<ClassifierBuilder<?>> classifierBuilders = classifierByTag.get(tag);
         if(classifierBuilders != null) {
             return ImmutableSet.copyOf(classifierBuilders);
