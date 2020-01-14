@@ -10,12 +10,15 @@ import java.util.Iterator;
 public class RandomNeighbourIteratorBuilder
  extends LinearNeighbourIteratorBuilder {
 
+    public RandomNeighbourIteratorBuilder() {}
+
     public RandomNeighbourIteratorBuilder(KnnLoocv knn) {
         super(knn);
     }
 
     @Override
     public Iterator<Knn.NeighbourSearcher> build() {
+        if(knn == null) throw new IllegalStateException("knn not set");
         return new RandomIterator<>(knn.getSeed(), knn.getSearchers());
     }
 

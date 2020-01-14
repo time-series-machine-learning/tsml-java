@@ -5,7 +5,7 @@ import org.apache.commons.collections4.Transformer;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import utilities.NumUtils;
-import utilities.collections.Best;
+import utilities.collections.BestN;
 import utilities.collections.box.Box;
 import utilities.iteration.RandomIterator;
 import utilities.params.ParamSet;
@@ -34,8 +34,8 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
     private int maxNeighbourhoodSize = -1; // max number of neighbours
     private Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
     private Box<Integer> paramCount = new Box<>(0); // current number of params
-    private Best<Long> maxParamTimeNanos = new Best<>(0L); // track maximum time taken for a param to run
-    private Best<Long> maxNeighbourBatchTimeNanos = new Best<>(0L); // track max time taken for an addition of
+    private BestN<Long> maxParamTimeNanos = new BestN<>(0L); // track maximum time taken for a param to run
+    private BestN<Long> maxNeighbourBatchTimeNanos = new BestN<>(0L); // track max time taken for an addition of
     // neighbours
     private Function<Instances, ParamSpace> paramSpaceFunction;
     private Iterator<Set<Benchmark>> paramSourceIterator;
@@ -131,7 +131,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
                                                 HashSet<Benchmark> benchmarks = new HashSet<>(
                                                     Collections.singletonList(benchmark));
                                                 timeTaken += System.nanoTime() - startTime;
-                                                maxParamTimeNanos.add(timeTaken);
+                                                maxParamTimeNanos.put(timeTaken);
                                                 return benchmarks;
                                             } catch(Exception e) {
                                                 throw new IllegalStateException(e);
@@ -141,7 +141,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
             );
         benchmarkSourceIterator = new BenchmarkIterator() {
             @Override public long predictNextTimeNanos() {
-                return maxParamTimeNanos.get();
+                return maxParamTimeNanos.toList().get(0);
             }
 
             @Override public Set<Benchmark> next() {
@@ -156,7 +156,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
         benchmarkImprover = new BenchmarkImprover() {
 
             @Override public long predictNextTimeNanos() {
-                return maxNeighbourBatchTimeNanos.get();
+                return maxNeighbourBatchTimeNanos.toList().get(0);
             }
 
             @Override
@@ -229,7 +229,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
                     throw new IllegalStateException(e);
                 }
                 timeTaken += System.nanoTime() - startTime;
-                maxNeighbourBatchTimeNanos.add(timeTaken);
+                maxNeighbourBatchTimeNanos.put(timeTaken);
                 return improvedBenchmarks;
             }
 
@@ -346,20 +346,20 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
         return this;
     }
 
-    public Best<Long> getMaxParamTimeNanos() {
+    public BestN<Long> getMaxParamTimeNanos() {
         return maxParamTimeNanos;
     }
 
-    public IncKnnTunerBuilder setMaxParamTimeNanos(final Best<Long> maxParamTimeNanos) {
+    public IncKnnTunerBuilder setMaxParamTimeNanos(final BestN<Long> maxParamTimeNanos) {
         this.maxParamTimeNanos = maxParamTimeNanos;
         return this;
     }
 
-    public Best<Long> getMaxNeighbourBatchTimeNanos() {
+    public BestN<Long> getMaxNeighbourBatchTimeNanos() {
         return maxNeighbourBatchTimeNanos;
     }
 
-    public IncKnnTunerBuilder setMaxNeighbourBatchTimeNanos(final Best<Long> maxNeighbourBatchTimeNanos) {
+    public IncKnnTunerBuilder setMaxNeighbourBatchTimeNanos(final BestN<Long> maxNeighbourBatchTimeNanos) {
         this.maxNeighbourBatchTimeNanos = maxNeighbourBatchTimeNanos;
         return this;
     }

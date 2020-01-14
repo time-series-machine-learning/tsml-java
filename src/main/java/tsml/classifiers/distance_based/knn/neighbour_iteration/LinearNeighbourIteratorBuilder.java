@@ -16,6 +16,10 @@ public class LinearNeighbourIteratorBuilder
         this.knn = knn;
     }
 
+    public LinearNeighbourIteratorBuilder() {
+
+    }
+
     public KnnLoocv getKnn() {
         return knn;
     }
@@ -26,6 +30,7 @@ public class LinearNeighbourIteratorBuilder
 
     @Override
     public Iterator<Knn.NeighbourSearcher> build() {
+        if(knn == null) throw new IllegalStateException("knn not set");
         return new LinearListIterator<>(new ArrayList<>(knn.getSearchers()));
     }
 

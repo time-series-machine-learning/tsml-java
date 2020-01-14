@@ -31,8 +31,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
     private BigDecimal bigSqDiffFromMean = null;
     private double mean = 0;
     private long garbageCollectionTimeInMillis = 0;
-    private boolean overflowed = false; // to handle overflow of the sq sum of diff from mean (can get reallllyyy
-    // big)
+    private boolean overflowed = false; // to handle overflow of the sq sum of diff from mean (can get reallllyyy big)
 
     @Override public boolean enableAnyway() {
         if(super.enableAnyway() && !isEmittersSetup()) {

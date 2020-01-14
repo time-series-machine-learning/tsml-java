@@ -1,7 +1,6 @@
 package utilities.collections;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.*;
 import utilities.Utilities;
 import weka.core.Randomizable;
 
@@ -16,12 +15,24 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private Random rand = new Random(seed);
     private final TreeMap<K, Collection<V>> backingMap;
 
-    public PrunedMultimap(Comparator<K> comparator, Supplier<Collection<V>> supplier) {
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<Collection<V>> supplier) {
+        return new PrunedMultimap<K, V>(Comparator.naturalOrder(), supplier);
+    }
+
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc(Supplier<Collection<V>> supplier) {
+        return new PrunedMultimap<K, V>(Comparator.reverseOrder(), supplier);
+    }
+
+    public K lastKey() {
+        return backingMap.lastKey();
+    }
+
+    public PrunedMultimap(Comparator<? super K> comparator, Supplier<Collection<V>> supplier) {
         backingMap = new TreeMap<>(comparator);
         setMap(Multimaps.newMultimap(backingMap, supplier::get));
     }
 
-    public PrunedMultimap(Comparator<K> comparator) {
+    public PrunedMultimap(Comparator<? super K> comparator) {
         this(comparator, ArrayList::new);
     }
 
@@ -159,4 +170,13 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         map.put(2, "e");
         map.put(2, "f");
     }
+
+    public void hardPruneToSoftLimit() {
+        if(hasSoftLimit()) {
+            int origHardLimit = getHardLimit();
+            setHardLimit(getSoftLimit());
+            setHardLimit(origHardLimit);
+        }
+    }
+
 }

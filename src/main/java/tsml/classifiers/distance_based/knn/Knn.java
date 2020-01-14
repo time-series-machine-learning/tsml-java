@@ -1,13 +1,14 @@
 package tsml.classifiers.distance_based.knn;
 
+import com.google.common.collect.TreeMultimap;
+import evaluation.storage.ClassifierResults;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.IncClassifier;
 import tsml.classifiers.RebuildableClassifier;
 import tsml.classifiers.distance_based.distances.Dtw;
 import utilities.*;
-import utilities.collections.PrunedTreeMultiMap;
-import utilities.collections.TreeMultiMap;
+import utilities.collections.PrunedMultimap;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.DistanceFunction;
@@ -19,6 +20,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
 public class Knn extends EnhancedAbstractClassifier
@@ -171,7 +173,7 @@ public class Knn extends EnhancedAbstractClassifier
     // todo fail capabilities
 
     public class NeighbourSearcher implements Serializable {
-        private final PrunedTreeMultiMap<Double, Instance> prunedMap;
+        private final PrunedMultimap<Double, Instance> prunedMap;
         private final Instance instance;
         private double limit = Double.POSITIVE_INFINITY;
         private StopWatch comparisonTimer = new StopWatch();
@@ -182,8 +184,9 @@ public class Knn extends EnhancedAbstractClassifier
         }
 
         public NeighbourSearcher(Instance instance) {
-            this.prunedMap = new PrunedTreeMultiMap<>(new TreeMultiMap<>((Comparator<Double> & Serializable) Double::compare));
-            prunedMap.setLimit(k);
+            this.prunedMap =
+                new PrunedMultimap<>(((Comparator<Double> & Serializable) Double::compare));
+            prunedMap.setSoftLimit(k);
             this.instance = instance;
         }
 
@@ -196,9 +199,9 @@ public class Knn extends EnhancedAbstractClassifier
 
         public void add(Instance neighbour, double distance, long distanceMeasurementTime) {
             comparisonTimer.enable();
-            prunedMap.add(distance, neighbour);
+            prunedMap.put(distance, neighbour);
             if(earlyAbandon) {
-                limit = prunedMap.getMap().lastEntry().getKey();
+                limit = prunedMap.lastKey();
             }
             comparisonTimer.add(distanceMeasurementTime);
             comparisonTimer.disable();
@@ -206,15 +209,15 @@ public class Knn extends EnhancedAbstractClassifier
 
         public double[] predict() {
             predictTimer.resetAndEnable();
-            TreeMultiMap<Double, Instance> nearestNeighbourMap = prunedMap.getMap();
+            PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
             double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
                 distribution[rand.nextInt(distribution.length)]++;
             } else {
-                for(Map.Entry<Double, List<Instance>> entry : nearestNeighbourMap.entrySet()) {
-                    for(Instance nearestNeighbour : entry.getValue()) {
-                        distribution[(int) nearestNeighbour.classValue()]++;
-                        if(!randomTieBreak) { // todo sort this mess out
+                for(Double key : nearestNeighbourMap.keys()) {
+                    for(Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
+                        distribution[(int) nearestNeighbour.classValue()]++; // todo weight by distance
+                        if(!randomTieBreak) {
                             break;
                         }
                     }
@@ -261,6 +264,24 @@ public class Knn extends EnhancedAbstractClassifier
 
     public void setDistanceFunction(final DistanceFunction distanceFunction) {
         this.distanceFunction = distanceFunction;
+    }
+
+    public static void main(String[] args) throws Exception {
+        int seed = 0;
+        Instances[] data = sampleGunPoint(seed);
+        Instances trainData = data[0];
+        Instances testData = data[1];
+        Knn knn = new Knn(new Dtw(trainData.numAttributes() - 1));
+        knn.buildClassifier(trainData);
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testCase : testData) {
+            long timestamp = System.nanoTime();
+            double[] distribution = knn.distributionForInstance(testCase);
+            long timeTaken = System.nanoTime() - timestamp;
+            int prediction = ArrayUtilities.argMax(distribution);
+            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
+        }
+        System.out.println(results.getAcc());
     }
 
 }
