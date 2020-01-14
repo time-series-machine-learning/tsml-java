@@ -6,6 +6,7 @@ import machine_learning.classifiers.tuned.incremental.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.KnnConfigs;
+import utilities.ClassifierTools;
 import utilities.Utilities;
 import utilities.params.ParamSpace;
 import weka.core.Instance;
@@ -20,24 +21,16 @@ public class IncConfigs {
 
     public static void main(String[] args) throws Exception {
         int seed = 0;
-        Instances[] instances = DatasetLoading.sampleGunPoint(seed);
-        Instances train = instances[0];
-        Instances test = instances[1];
-        IncTuner incTunedClassifier = buildTunedDtw1nnV1();
-        incTunedClassifier.setTrainTimeLimit(10, TimeUnit.SECONDS);//TimeUnit.MINUTES);
-        incTunedClassifier.buildClassifier(train);
-        ClassifierResults trainResults = incTunedClassifier.getTrainResults();
-        ClassifierResults results = new ClassifierResults();
-        results.setDetails(incTunedClassifier, train);
-        for(Instance testCase : test) {
-            long startTime = System.nanoTime();
-            double[] distribution = incTunedClassifier.distributionForInstance(testCase);
-            long timeTaken = System.nanoTime() - startTime;
-            int prediction = Utilities.argMax(distribution, new Random(seed));
-            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
-        }
-        System.out.println(results.getAcc());
-        System.out.println(trainResults.getBuildTime());
+        Instances[] data = DatasetLoading.sampleGunPoint(seed);
+        IncTuner classifier = buildTunedDtw1nnV1();
+        classifier.setSeed(seed); // set seed
+        classifier.setEstimateOwnPerformance(true);
+        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        results.setDetails(classifier, data[1]);
+        ClassifierResults trainResults = classifier.getTrainResults();
+        trainResults.setDetails(classifier, data[0]);
+        System.out.println(trainResults.writeSummaryResultsToString());
+        System.out.println(results.writeSummaryResultsToString());
     }
 
     public static IncTuner buildTunedDtw1nnV1() {

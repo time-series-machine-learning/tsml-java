@@ -2,10 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import com.google.common.collect.TreeMultimap;
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.IncClassifier;
-import tsml.classifiers.RebuildableClassifier;
+import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.Dtw;
 import utilities.*;
 import utilities.collections.PrunedMultimap;
@@ -25,7 +22,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 
 public class Knn extends EnhancedAbstractClassifier
     implements
-    Checkpointable, ParamHandler {
+    Checkpointable, ParamHandler, MemoryWatchable, TrainTimeable {
 
     protected transient Instances trainData;
     public static final String K_FLAG = "k";
@@ -33,7 +30,7 @@ public class Knn extends EnhancedAbstractClassifier
     public static final String RANDOM_TIE_BREAK_FLAG = "r";
     protected int k = 1;
     protected boolean earlyAbandon = true;
-    protected DistanceFunction distanceFunction = new Dtw();
+    protected DistanceFunction distanceFunction = new Dtw(0);
     protected StopWatch trainTimer = new StopWatch();
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
@@ -114,6 +111,10 @@ public class Knn extends EnhancedAbstractClassifier
 
     public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
+    }
+
+    @Override public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
     }
 
     public boolean isRandomTieBreak() {

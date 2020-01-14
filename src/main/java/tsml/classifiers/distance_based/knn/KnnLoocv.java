@@ -252,26 +252,26 @@ public class KnnLoocv
     }
 
     public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        KnnLoocv classifier = new KnnLoocv(new Dtw(-1));//data[0].numAttributes()));
-        classifier.setSeed(0);
-        classifier.setEstimateOwnPerformance(true);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        System.out.println(classifier.getTrainResults().writeSummaryResultsToString());
-        System.out.println(results.writeSummaryResultsToString());
-
-
 //        int seed = 0;
 //        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-//        KnnLoocv classifier = new KnnLoocv();
-//        classifier.setSeed(seed); // set seed
+//        KnnLoocv classifier = new KnnLoocv(new Dtw(-1));//data[0].numAttributes()));
+//        classifier.setSeed(0);
 //        classifier.setEstimateOwnPerformance(true);
 //        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//        results.setDetails(classifier, data[1]);
-//        ClassifierResults trainResults = classifier.getTrainResults();
-//        trainResults.setDetails(classifier, data[0]);
-//        System.out.println(trainResults.writeSummaryResultsToString());
+//        System.out.println(classifier.getTrainResults().writeSummaryResultsToString());
 //        System.out.println(results.writeSummaryResultsToString());
+
+
+        int seed = 0;
+        Instances[] data = DatasetLoading.sampleGunPoint(seed);
+        KnnLoocv classifier = new KnnLoocv();
+        classifier.setSeed(seed); // set seed
+        classifier.setEstimateOwnPerformance(true);
+        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        results.setDetails(classifier, data[1]);
+        ClassifierResults trainResults = classifier.getTrainResults();
+        trainResults.setDetails(classifier, data[0]);
+        System.out.println(trainResults.writeSummaryResultsToString());
+        System.out.println(results.writeSummaryResultsToString());
     }
 }

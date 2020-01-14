@@ -175,7 +175,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             setMemory(((MemoryWatchable) classifier).getMaxMemoryUsageInBytes());
             setMeanMemoryUsageInBytes(((MemoryWatchable) classifier).getMeanMemoryUsageInBytes());
             setGarbageCollectionTimeInMillis(((MemoryWatchable) classifier).getGarbageCollectionTimeInMillis());
-            setVarianceMemoryUsageInBytes(((MemoryWatchable) classifier).getVarianceMemoryUsageInBytes());
+            setStdDevMemoryUsageInBytes(((MemoryWatchable) classifier).getStdDevMemoryUsageInBytes());
         }
         setOs(SysUtils.getOsName());
         setCpuInfo(SysUtils.findCpuInfo());
@@ -196,7 +196,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private int foldID = -1;
     private String split = ""; //e.g train or test
     private double meanMemoryUsageInBytes = -1;
-    private double varianceMemoryUsageInBytes = -1;
+    private double stdDevMemoryUsageInBytes = -1;
     private long garbageCollectionTimeInMillis = -1;
 
     public double getMeanMemoryUsageInBytes() {
@@ -207,12 +207,12 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         this.meanMemoryUsageInBytes = meanMemoryUsageInBytes;
     }
 
-    public double getVarianceMemoryUsageInBytes() {
-        return varianceMemoryUsageInBytes;
+    public double getStdDevMemoryUsageInBytes() {
+        return stdDevMemoryUsageInBytes;
     }
 
-    public void setVarianceMemoryUsageInBytes(final double varianceMemoryUsageInBytes) {
-        this.varianceMemoryUsageInBytes = varianceMemoryUsageInBytes;
+    public void setStdDevMemoryUsageInBytes(final double stdDevMemoryUsageInBytes) {
+        this.stdDevMemoryUsageInBytes = stdDevMemoryUsageInBytes;
     }
 
     public long getGarbageCollectionTimeInMillis() {
@@ -1706,7 +1706,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             meanMemoryUsageInBytes = Long.parseLong(parts[11]);
         }
         if(parts.length > 12) {
-            varianceMemoryUsageInBytes = Long.parseLong(parts[12]);
+            stdDevMemoryUsageInBytes = Long.parseLong(parts[12]);
         }
         if(parts.length > 13) {
             garbageCollectionTimeInMillis = Long.parseLong(parts[13]);
@@ -1726,7 +1726,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + os
             + "," + cpuInfo
             + "," + meanMemoryUsageInBytes
-            + "," + varianceMemoryUsageInBytes
+            + "," + stdDevMemoryUsageInBytes
             + "," + garbageCollectionTimeInMillis
             ;
 
