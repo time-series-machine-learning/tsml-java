@@ -774,4 +774,12 @@ public class InstanceTools {
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
     }
+
+    public static Map<Double, Instances> byClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(), k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
+    }
 }

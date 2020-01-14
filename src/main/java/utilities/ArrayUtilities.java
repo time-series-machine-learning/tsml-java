@@ -46,6 +46,12 @@ public class ArrayUtilities {
         return array;
     }
 
+    public static double[] normalise(double[] array) {
+        double[] copy = new double[array.length];
+        System.arraycopy(array, 0, copy, 0, array.length);
+        return normaliseInPlace(copy);
+    }
+
     public static <A> List<A> drain(Iterable<A> iterable) {
         return drain(iterable.iterator());
     }

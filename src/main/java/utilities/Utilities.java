@@ -416,4 +416,24 @@ public class Utilities {
             return (A) object;
         }
     }
+
+    public static <A> List<A> randPickN(Collection<A> collection, int num, Random rand) {
+        if(num > collection.size()) {
+            throw new IllegalArgumentException("too many");
+        }
+        if(num < 0) {
+            throw new IllegalArgumentException("num is neg");
+        }
+        List<A> list = new ArrayList<>(collection);
+        if(num == collection.size()) {
+            return list;
+        }
+        List<A> removed = new ArrayList<>();
+        for(int i = 0; i < num; i++) {
+            int index = rand.nextInt(list.size());
+            A removedItem = list.remove(index);
+            removed.add(removedItem);
+        }
+        return removed;
+    }
 }
