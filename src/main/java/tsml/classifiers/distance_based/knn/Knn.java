@@ -270,18 +270,10 @@ public class Knn extends EnhancedAbstractClassifier
         int seed = 0;
         Instances[] data = sampleGunPoint(seed);
         Instances trainData = data[0];
-        Instances testData = data[1];
-        Knn knn = new Knn(new Dtw(trainData.numAttributes() - 1));
-        knn.buildClassifier(trainData);
-        ClassifierResults results = new ClassifierResults();
-        for(Instance testCase : testData) {
-            long timestamp = System.nanoTime();
-            double[] distribution = knn.distributionForInstance(testCase);
-            long timeTaken = System.nanoTime() - timestamp;
-            int prediction = ArrayUtilities.argMax(distribution);
-            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
-        }
-        System.out.println(results.getAcc());
+        Knn classifier = new Knn(new Dtw(trainData.numAttributes() - 1));
+        classifier.setSeed(0);
+        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        System.out.println(results.writeSummaryResultsToString());
     }
 
 }

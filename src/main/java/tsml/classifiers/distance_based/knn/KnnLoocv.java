@@ -1,10 +1,12 @@
 package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
+import tsml.classifiers.distance_based.distances.Dtw;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
@@ -146,6 +148,10 @@ public class KnnLoocv
         trainEstimateTimer.unsuspend();
     }
 
+    @Override public void buildClassifier(final Instances trainData) throws Exception {
+        IncClassifier.super.buildClassifier(trainData);
+    }
+
     public void startBuild(Instances data) throws Exception { // todo watch mem
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -245,4 +251,27 @@ public class KnnLoocv
         this.cache = cache;
     }
 
+    public static void main(String[] args) throws Exception {
+        int seed = 0;
+        Instances[] data = DatasetLoading.sampleGunPoint(seed);
+        KnnLoocv classifier = new KnnLoocv(new Dtw(-1));//data[0].numAttributes()));
+        classifier.setSeed(0);
+        classifier.setEstimateOwnPerformance(true);
+        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        System.out.println(classifier.getTrainResults().writeSummaryResultsToString());
+        System.out.println(results.writeSummaryResultsToString());
+
+
+//        int seed = 0;
+//        Instances[] data = DatasetLoading.sampleGunPoint(seed);
+//        KnnLoocv classifier = new KnnLoocv();
+//        classifier.setSeed(seed); // set seed
+//        classifier.setEstimateOwnPerformance(true);
+//        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+//        results.setDetails(classifier, data[1]);
+//        ClassifierResults trainResults = classifier.getTrainResults();
+//        trainResults.setDetails(classifier, data[0]);
+//        System.out.println(trainResults.writeSummaryResultsToString());
+//        System.out.println(results.writeSummaryResultsToString());
+    }
 }

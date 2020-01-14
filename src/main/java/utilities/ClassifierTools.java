@@ -24,6 +24,9 @@ import experiments.data.DatasetLoading;
 
 import java.util.ArrayList;
 import java.util.Random;
+
+import tsml.classifiers.distance_based.distances.Dtw;
+import tsml.classifiers.distance_based.knn.Knn;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -726,5 +729,29 @@ public class ClassifierTools {
         System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
         return res.getAcc() == expectedTestAccuracy;
     }
-    
+
+
+    public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
+        throws Exception {
+        Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances[] data, Classifier classifier) throws Exception {
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances trainData, Instances testData, Classifier classifier)
+        throws Exception {
+        classifier.buildClassifier(trainData);
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testCase : testData) {
+            long timestamp = System.nanoTime();
+            double[] distribution = classifier.distributionForInstance(testCase);
+            long timeTaken = System.nanoTime() - timestamp;
+            int prediction = ArrayUtilities.argMax(distribution);
+            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
+        }
+        return results;
+    }
 }
