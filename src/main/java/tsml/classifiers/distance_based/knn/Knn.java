@@ -23,11 +23,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 
 public class Knn extends EnhancedAbstractClassifier
     implements
-        IncClassifier,
-    RebuildableClassifier,
-    Checkpointable,
-    Copy,
-    ParamHandler {
+    Checkpointable, ParamHandler {
 
     protected transient Instances trainData;
     public static final String K_FLAG = "k";
@@ -144,7 +140,11 @@ public class Knn extends EnhancedAbstractClassifier
     }
 
     @Override public ParamSet getParams() {
-        return ParamHandler.super.getParams().add(EARLY_ABANDON_FLAG, earlyAbandon).add(RANDOM_TIE_BREAK_FLAG, randomTieBreak).add(K_FLAG, k).add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+        return ParamHandler.super.getParams()
+                                 .add(EARLY_ABANDON_FLAG, earlyAbandon)
+                                 .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
+                                 .add(K_FLAG, k)
+                                 .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
@@ -154,33 +154,18 @@ public class Knn extends EnhancedAbstractClassifier
         ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
     }
 
-    @Override
-    public void startBuild(Instances trainData) throws Exception {
-        trainTimer.enable();
-        memoryWatcher.enable();
+    @Override public void buildClassifier(final Instances trainData) throws Exception {
         if(rebuild) {
+            trainTimer.enable();
+            memoryWatcher.enable();
             super.buildClassifier(trainData);
             rebuild = false;
             distanceFunction.setInstances(trainData);
             this.trainData = trainData;
+            checkpoint();
+            trainTimer.disable();
+            memoryWatcher.disable();
         }
-        trainTimer.disable();
-        memoryWatcher.disable();
-    }
-
-    public boolean hasNextBuildTick() throws Exception {
-        return false;
-    }
-
-    @Override
-    public void finishBuild() throws Exception {
-        trainTimer.disableAnyway();
-        memoryWatcher.disableAnyway();
-        checkpoint(true);
-    }
-
-    @Override public void buildClassifier(final Instances trainData) throws Exception {
-        IncClassifier.super.buildClassifier(trainData);
     }
 
     // todo fail capabilities

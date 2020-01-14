@@ -14,8 +14,10 @@
  */
 package tsml.classifiers;
 
+import utilities.Copy;
 import utilities.Debugable;
 import utilities.Logger;
+import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
@@ -77,7 +79,8 @@ ClassifierResults trainResults can also store other information about the traini
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Randomizable, RebuildableClassifier,
-                                                                                       Debugable, Loggable {
+                                                                                       Debugable, Loggable, Copy,
+                                                                                       ParamHandler {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
