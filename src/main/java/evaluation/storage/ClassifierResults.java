@@ -1703,10 +1703,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             cpuInfo = parts[10];
         }
         if(parts.length > 11) {
-            meanMemoryUsageInBytes = Long.parseLong(parts[11]);
+            meanMemoryUsageInBytes = Double.parseDouble(parts[11]);
         }
         if(parts.length > 12) {
-            stdDevMemoryUsageInBytes = Long.parseLong(parts[12]);
+            stdDevMemoryUsageInBytes = Double.parseDouble(parts[12]);
         }
         if(parts.length > 13) {
             garbageCollectionTimeInMillis = Long.parseLong(parts[13]);
