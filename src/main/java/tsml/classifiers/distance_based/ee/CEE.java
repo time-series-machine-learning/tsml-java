@@ -77,20 +77,6 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return cee;
     }
 
-    public static CEE buildLimitedEE() {
-        CEE cee = new CEE();
-        cee.setConstituents(ImmutableList.of(
-            buildTunedDdtw1nnV1(),
-            buildTunedErp1nnV1(),
-            buildTunedLcss1nnV1(),
-            buildTunedMsm1nnV1(),
-            buildTunedWdtw1nnV1(),
-            buildTunedWddtw1nnV1(),
-            buildTunedTwed1nnV1()
-                                            ));
-        return cee;
-    }
-
     public CEE() {
         super(true);
     }
