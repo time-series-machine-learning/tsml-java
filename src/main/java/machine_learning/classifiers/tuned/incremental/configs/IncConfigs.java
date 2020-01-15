@@ -7,13 +7,9 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.KnnConfigs;
 import utilities.ClassifierTools;
-import utilities.Utilities;
 import utilities.params.ParamSpace;
-import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -100,7 +96,7 @@ public class IncConfigs {
     public static IncTuner buildTunedKnn(Function<Instances, ParamSpace> paramSpaceFunction,
                                          Supplier<KnnLoocv> supplier) {
         IncTuner incTunedClassifier = new IncTuner();
-        incTunedClassifier.setOnTrainDataAvailable(new IncKnnTunerBuilder().setIncTunedClassifier(incTunedClassifier).setParamSpace(paramSpaceFunction).setKnnSupplier(supplier));
+        incTunedClassifier.setInitFunction(new IncKnnTunerBuilder().setIncTunedClassifier(incTunedClassifier).setParamSpace(paramSpaceFunction).setKnnSupplier(supplier));
         return incTunedClassifier;
     }
 

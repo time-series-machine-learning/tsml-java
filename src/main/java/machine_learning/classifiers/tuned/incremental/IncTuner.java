@@ -4,11 +4,14 @@ import com.google.common.primitives.Doubles;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import utilities.*;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -21,6 +24,10 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
 
     public IncTuner() {
         super(true);
+    }
+
+    public interface InitFunction extends Serializable, ParamHandler {
+        void init(Instances trainData);
     }
 
     private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
@@ -38,7 +45,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected Consumer<Instances> onTrainDataAvailable = instances -> {};
+    protected InitFunction initFunction = instances -> {};
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected Instances trainData;
@@ -57,6 +64,23 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     private final static String DEFAULT_RESULTS_DIR = "benchmarks";
     private boolean ignorePreviousCheckpoints = false;
     private boolean checkpointAfterEveryIteration = false;
+    public static final String BENCHMARK_ITERATOR_FLAG = "b";
+    public static final String BENCHMARK_COLLECTOR_FLAG = "c";
+    public static final String INIT_FUNCTION_FLAG = "i";
+
+    @Override public ParamSet getParams() {
+        return TrainTimeContractable.super.getParams()
+                                    .add(BENCHMARK_COLLECTOR_FLAG, benchmarkCollector)
+                                    .add(BENCHMARK_ITERATOR_FLAG, benchmarkIterator)
+                                    .add(INIT_FUNCTION_FLAG, initFunction);
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        TrainTimeContractable.super.setParams(params);
+        ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setBenchmarkIterator, BenchmarkIterator.class);
+        ParamHandler.setParam(params, BENCHMARK_COLLECTOR_FLAG, this::setBenchmarkCollector, BenchmarkCollector.class);
+        ParamHandler.setParam(params, BENCHMARK_COLLECTOR_FLAG, this::setInitFunction, InitFunction.class);
+    }
 
     @Override public boolean isIgnorePreviousCheckpoints() {
         return ignorePreviousCheckpoints;
@@ -200,7 +224,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             super.buildClassifier(data);
             trainTimer.enable();
             memoryWatcher.enable();
-            onTrainDataAvailable.accept(data);
+            initFunction.init(data);
             rebuild = false;
             trainEstimateTimer.resetAndDisable();
         }
@@ -332,12 +356,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
 
-    public Consumer<Instances> getOnTrainDataAvailable() {
-        return onTrainDataAvailable;
+    public InitFunction getInitFunction() {
+        return initFunction;
     }
 
-    public void setOnTrainDataAvailable(final Consumer<Instances> onTrainDataAvailable) {
-        this.onTrainDataAvailable = onTrainDataAvailable;
+    public void setInitFunction(final InitFunction initFunction) {
+        this.initFunction = initFunction;
     }
 
     @Override public void setTrainTimeLimitNanos(final long nanos) {
@@ -388,5 +412,4 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         this.checkpointAfterEveryIteration = checkpointAfterEveryIteration;
     }
 
-    // todo param handler + put lambdas / anon classes in full class for str representation in get/setoptions
 }

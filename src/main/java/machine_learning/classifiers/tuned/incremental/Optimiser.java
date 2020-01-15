@@ -1,5 +1,7 @@
 package machine_learning.classifiers.tuned.incremental;
 
-public interface Optimiser {
+import java.io.Serializable;
+
+public interface Optimiser extends Serializable {
     boolean shouldSource();
 }

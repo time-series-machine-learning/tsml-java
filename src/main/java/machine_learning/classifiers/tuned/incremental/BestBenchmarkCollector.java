@@ -8,8 +8,6 @@ import java.util.function.Function;
 
 public class BestBenchmarkCollector implements BenchmarkCollector {
     private final PrunedMultimap<Double, Benchmark> map;
-    private int seed;
-    private final Random rand = new Random();
     private Function<Benchmark, Double> scorer;
     private Benchmark best = null;
 
@@ -27,14 +25,12 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
 
     @Override
     public void setSeed(int seed) {
-        this.seed = seed;
         map.setSeed(seed);
-        rand.setSeed(seed);
     }
 
     @Override
     public int getSeed() {
-        return seed;
+        return map.getSeed();
     }
 
     @Override
@@ -49,7 +45,7 @@ public class BestBenchmarkCollector implements BenchmarkCollector {
         if(best == null) {
             Collection<Benchmark> values = map.values();
             List<Benchmark> benchmarks = new ArrayList<>(values);
-            best = benchmarks.get(rand.nextInt(benchmarks.size()));
+            best = benchmarks.get(map.getRand().nextInt(benchmarks.size()));
         }
         return new HashSet<>(Collections.singletonList(best));
     }

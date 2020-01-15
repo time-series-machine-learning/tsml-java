@@ -131,7 +131,10 @@ public class KnnLoocv
     }
 
     @Override public ParamSet getParams() {
-        return super.getParams().add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder).add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit).addAll(TrainTimeContractable.super.getParams());
+        return super.getParams()
+                    .add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder)
+                    .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit)
+                    .addAll(TrainTimeContractable.super.getParams());
     }
 
     @Override public void setParams(final ParamSet params) {

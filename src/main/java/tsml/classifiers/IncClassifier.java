@@ -1,11 +1,16 @@
 package tsml.classifiers;
 
+import utilities.Copy;
+import utilities.Debugable;
 import utilities.NotNull;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 public interface IncClassifier
-    extends Classifier {
+    extends Classifier, Copy, Loggable, Debugable, Randomizable, RebuildableClassifier, ParamHandler {
 
     // make sure to start / stop timers / watchers at the beginning / end of each of these methods as they can be
     // called from anywhere! I.e. someone might call hasNextBuildTick(), wait 1 min, then call nextBuildTick(). You
@@ -24,22 +29,24 @@ public interface IncClassifier
     }
 
     default void startBuild(@NotNull Instances trainData) throws
-                                                     Exception {}
+                                                          Exception {}
 
-     default void incBuildClassifier(Instances trainData) throws Exception {
-         startBuild(trainData);
-         if (hasNextBuildTick()) {
-             do {
-                 nextBuildTick();
-             }
-             while (hasNextBuildTick());
-             finishBuild();
-         }
-     }
+    default void incBuildClassifier(Instances trainData) throws Exception {
+        if(isRebuild()) {
+            setRebuild(false);
+            startBuild(trainData);
+            if (hasNextBuildTick()) {
+                do {
+                    nextBuildTick();
+                }
+                while (hasNextBuildTick());
+                finishBuild();
+            }
+        }
+    }
 
     @Override
     default void buildClassifier(@NotNull Instances trainData) throws Exception {
         incBuildClassifier(trainData);
     }
-
 }

@@ -3,12 +3,13 @@ package machine_learning.classifiers.tuned.incremental;
 import utilities.ArrayUtilities;
 import utilities.collections.Utils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public interface BenchmarkEnsembler {
+public interface BenchmarkEnsembler extends Serializable {
     List<Double> weightVotes(Iterable<Benchmark> benchmarks);
 
     static BenchmarkEnsembler byScore(Function<Benchmark, Double> scorer) {

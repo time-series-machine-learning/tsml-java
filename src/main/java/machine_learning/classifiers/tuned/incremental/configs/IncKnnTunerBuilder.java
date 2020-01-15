@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class IncKnnTunerBuilder implements Consumer<Instances> {
+public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
 
     private IncTuner incTunedClassifier = new IncTuner();
@@ -50,8 +50,10 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
     private Set<Benchmark> improveableBenchmarks;
     private Set<Benchmark> unimprovableBenchmarks;
 
+    // todo param handling
+
     public IncTuner build() {
-        incTunedClassifier.setOnTrainDataAvailable(this);
+        incTunedClassifier.setInitFunction(this);
         return incTunedClassifier;
     }
 
@@ -98,7 +100,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
     }
 
     @Override
-    public void accept(Instances trainData) {
+    public void init(Instances trainData) {
         improveableBenchmarks = new HashSet<>();
         unimprovableBenchmarks = new HashSet<>();
         final int seed = incTunedClassifier.getSeed();
@@ -416,7 +418,7 @@ public class IncKnnTunerBuilder implements Consumer<Instances> {
         return knnSupplier;
     }
 
-    public IncKnnTunerBuilder setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
+    public IncTuner.InitFunction setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
         this.knnSupplier = knnSupplier;
         return this;
     }

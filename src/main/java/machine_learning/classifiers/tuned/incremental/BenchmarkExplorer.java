@@ -34,6 +34,7 @@ public class BenchmarkExplorer implements BenchmarkIterator {
     };
     private Optimiser optimiser = () -> false; // default to fully evaluate each benchmark before sourcing further benchmarks
     private boolean shouldSource = true;
+    private int seed = -1;
 
     @Override
     public boolean hasNext() {
@@ -94,4 +95,5 @@ public class BenchmarkExplorer implements BenchmarkIterator {
     @Override public long predictNextTimeNanos() {
         return Math.min(benchmarkSource.predictNextTimeNanos(), benchmarkImprover.predictNextTimeNanos());
     }
+
 }

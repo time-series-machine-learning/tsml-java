@@ -4,7 +4,9 @@ import evaluation.storage.ClassifierResults;
 import utilities.StrUtils;
 import weka.classifiers.Classifier;
 
-public class Benchmark {
+import java.io.Serializable;
+
+public class Benchmark implements Serializable {
     private ClassifierResults results;
     private Classifier classifier;
     private final int id;

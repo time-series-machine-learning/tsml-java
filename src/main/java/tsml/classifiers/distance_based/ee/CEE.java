@@ -7,6 +7,7 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.tuned.incremental.IncTuner;
 import machine_learning.classifiers.tuned.incremental.configs.IncKnnTunerBuilder;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
@@ -104,7 +105,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         buildTunedWddtw1nnV1(),
         buildTunedTwed1nnV1()
                                                                                                             );
-    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
+    protected ImmutableList<IncTuner> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
     protected List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
     // constituents which
     // still have work remaining
@@ -312,11 +313,11 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return votingScheme.distributionForInstance(modules, instance);
     }
 
-    public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
+    public ImmutableList<IncTuner> getConstituents() {
         return constituents;
     }
 
-    public void setConstituents(final List<EnhancedAbstractClassifier> constituents) {
+    public void setConstituents(final List<IncTuner> constituents) {
         this.constituents = ImmutableList.copyOf(constituents);
     }
 

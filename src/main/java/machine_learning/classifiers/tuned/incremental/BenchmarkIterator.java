@@ -1,6 +1,7 @@
 package machine_learning.classifiers.tuned.incremental;
 
 import utilities.collections.DefaultIterator;
+import weka.core.Randomizable;
 
 import java.util.Iterator;
 import java.util.Set;
