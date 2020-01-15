@@ -418,7 +418,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return knnSupplier;
     }
 
-    public IncTuner.InitFunction setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
+    public IncKnnTunerBuilder setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
         this.knnSupplier = knnSupplier;
         return this;
     }

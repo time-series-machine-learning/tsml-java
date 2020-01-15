@@ -105,7 +105,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         buildTunedWddtw1nnV1(),
         buildTunedTwed1nnV1()
                                                                                                             );
-    protected ImmutableList<IncTuner> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
+    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
     protected List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
     // constituents which
     // still have work remaining
@@ -313,7 +313,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return votingScheme.distributionForInstance(modules, instance);
     }
 
-    public ImmutableList<IncTuner> getConstituents() {
+    public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
         return constituents;
     }
 
