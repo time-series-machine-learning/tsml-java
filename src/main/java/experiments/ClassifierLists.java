@@ -22,8 +22,6 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.distance_based.ee.CEE;
-import tsml.classifiers.distance_based.knn.configs.KnnConfigs;
 import tsml.classifiers.frequency_based.cRISE;
 import tsml.classifiers.hybrids.FlatCote;
 import tsml.classifiers.hybrids.HiveCote;
@@ -761,7 +759,10 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        Classifier c;
+        Classifier c = ClassifierBuilderFactory.getClassifierBuilderByNameGlobal(classifier).build();
+        if(c != null) {
+            return c;
+        }
         if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
