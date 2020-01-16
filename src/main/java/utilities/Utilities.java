@@ -21,6 +21,7 @@ import weka.core.SerializedObject;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Function;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -435,5 +436,19 @@ public class Utilities {
             removed.add(removedItem);
         }
         return removed;
+    }
+
+    public static <A, B> List<B> convert(Iterable<A> iterable, Function<A, B> func) {
+        return convert(iterable.iterator(), func);
+    }
+
+    public static <A, B> List<B> convert(Iterator<A> iterator, Function<A, B> func) {
+        List<B> list = new ArrayList<>();
+        while(iterator.hasNext()) {
+            A item = iterator.next();
+            B convertedItem = func.apply(item);
+            list.add(convertedItem);
+        }
+        return list;
     }
 }

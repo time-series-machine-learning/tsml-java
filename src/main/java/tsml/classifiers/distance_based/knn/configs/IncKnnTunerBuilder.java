@@ -1,4 +1,4 @@
-package machine_learning.classifiers.tuned.incremental.configs;
+package tsml.classifiers.distance_based.knn.configs;
 
 import machine_learning.classifiers.tuned.incremental.*;
 import org.apache.commons.collections4.Transformer;
@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

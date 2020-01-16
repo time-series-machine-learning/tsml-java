@@ -1,11 +1,14 @@
-package machine_learning.classifiers.tuned.incremental.configs;
+package tsml.classifiers.distance_based.knn.configs;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.tuned.incremental.*;
+import machine_learning.classifiers.tuned.incremental.IncTuner;
+import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.distances.Dtw;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
-import tsml.classifiers.distance_based.knn.KnnConfigs;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import utilities.ClassifierTools;
 import utilities.params.ParamSpace;
 import weka.core.Instances;
@@ -13,7 +16,67 @@ import weka.core.Instances;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class IncConfigs {
+import static utilities.ArrayUtilities.incrementalRange;
+
+public class KnnConfigs {
+    private KnnConfigs() {}
+
+    public static KnnLoocv build1nnV1() {
+        KnnLoocv classifier = new KnnLoocv();
+        classifier.setEarlyAbandon(true);
+        classifier.setK(1);
+        classifier.setNeighbourLimit(-1);
+        classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
+        classifier.setRandomTieBreak(false);
+        return classifier;
+    }
+
+    public static KnnLoocv build1nnV2() {
+        KnnLoocv classifier = new KnnLoocv();
+        classifier.setEarlyAbandon(true);
+        classifier.setK(1);
+        classifier.setNeighbourLimit(-1);
+        classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+        classifier.setRandomTieBreak(true);
+        return classifier;
+    }
+
+    public static KnnLoocv buildEd1nnV1() {
+        KnnLoocv knn = build1nnV1();
+        knn.setDistanceFunction(new Dtw(0));
+        return knn;
+    }
+
+    public static KnnLoocv buildDtw1nnV1() {
+        KnnLoocv knn = build1nnV1();
+        knn.setDistanceFunction(new Dtw(-1));
+        return knn;
+    }
+
+    public static KnnLoocv buildDdtw1nnV1() {
+        KnnLoocv knn = build1nnV1();
+        knn.setDistanceFunction(new Ddtw(-1));
+        return knn;
+    }
+
+    public static KnnLoocv buildEd1nnV2() {
+        KnnLoocv knn = build1nnV2();
+        knn.setDistanceFunction(new Dtw(0));
+        return knn;
+    }
+
+    public static KnnLoocv buildDtw1nnV2() {
+        KnnLoocv knn = build1nnV2();
+        knn.setDistanceFunction(new Dtw(-1));
+        return knn;
+    }
+
+    public static KnnLoocv buildDdtw1nnV2() {
+        KnnLoocv knn = build1nnV2();
+        knn.setDistanceFunction(new Ddtw(-1));
+        return knn;
+    }
+
 
     public static void main(String[] args) throws Exception {
         int seed = 0;
@@ -103,11 +166,11 @@ public class IncConfigs {
     public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
         return buildTunedKnn(paramSpaceFunction, KnnConfigs::build1nnV1);
     }
-    
+
     public static IncTuner buildTuned1nnV1(ParamSpace paramSpace) {
         return buildTunedKnn(i -> paramSpace, KnnConfigs::build1nnV1);
     }
-    
+
     public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
         return buildTunedKnn(paramSpaceFunction, KnnConfigs::build1nnV2);
     }
@@ -115,5 +178,4 @@ public class IncConfigs {
     public static IncTuner buildTuned1nnV2(ParamSpace paramSpace) {
         return buildTunedKnn(i -> paramSpace, KnnConfigs::build1nnV2);
     }
-
 }

@@ -2,8 +2,11 @@ package experiments;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.knn.KnnConfigs;
+import tsml.classifiers.distance_based.ee.CEE;
+import tsml.classifiers.distance_based.knn.configs.KnnConfigs;
+import utilities.Utilities;
 import weka.classifiers.Classifier;
 
 import java.util.*;
@@ -24,7 +27,8 @@ public class ClassifierBuilderFactory {
 
         public ClassifierBuilder(final String name, final Supplier<A> supplier, final Iterable<String> tags) {
             this.name = name;
-            this.tags = ImmutableList.copyOf(tags);
+            List<String> lowerCaseTags = Utilities.convert(tags, String::toLowerCase);
+            this.tags = ImmutableList.copyOf(lowerCaseTags);
             this.supplier = supplier;
         }
 
@@ -48,13 +52,32 @@ public class ClassifierBuilderFactory {
             // todo we could also set tags then the classifier knows it's capabilities...
             return classifier;
         }
+
+        @Override public String toString() {
+            return name;
+        }
     }
 
     private static ClassifierBuilderFactory INSTANCE = new ClassifierBuilderFactory();
-    private final Map<String, ClassifierBuilder<?>> classifiersByName = new HashMap<>();
-    private final Map<String, Set<ClassifierBuilder<?>>> classifierByTag = new HashMap<>();
+    private final Map<String, ClassifierBuilder<?>> classifierBuildersByName = new TreeMap<>();
+    private final Map<String, Set<ClassifierBuilder<?>>> classifierBuildersByTag = new TreeMap<>();
+    private final Map<Supplier<?>, ClassifierBuilder<?>> classifierBuildersBySupplier = new HashMap<>();
 
     public ClassifierBuilderFactory() {}
+
+    @Override public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(getClass().getSimpleName()).append("{").append(System.lineSeparator());
+        for(Map.Entry<String, ClassifierBuilder<?>> entry : classifierBuildersByName.entrySet()) {
+            stringBuilder.append("\t");
+            stringBuilder.append(entry.getKey());
+            stringBuilder.append(": ");
+            stringBuilder.append(entry.getValue().getTags().toString());
+            stringBuilder.append(System.lineSeparator());
+        }
+        stringBuilder.append("}");
+        return stringBuilder.toString();
+    }
 
     public static ClassifierBuilderFactory getInstance() {
         return INSTANCE;
@@ -63,14 +86,17 @@ public class ClassifierBuilderFactory {
     public void add(ClassifierBuilder<?> classifierBuilder) {
         String name = classifierBuilder.getName();
         name = name.toLowerCase();
-        ClassifierBuilder<?> current = classifiersByName.get(name);
-        if(current != null) {
+        Supplier<?> supplier = classifierBuilder.getSupplier();
+        if(classifierBuildersByName.containsKey(name)) {
             throw new IllegalArgumentException("oops, a classifier already exists under the name: " + name);
+        } else if(classifierBuildersBySupplier.containsKey(supplier)) {
+            throw new IllegalArgumentException("oops, a classifier already exists under that supplier.");
         } else {
-            classifiersByName.put(name, classifierBuilder);
+            classifierBuildersBySupplier.put(supplier, classifierBuilder);
+            classifierBuildersByName.put(name, classifierBuilder);
         }
         for(String tag : classifierBuilder.getTags()) {
-            classifierByTag.computeIfAbsent(tag, k -> new HashSet<>()).add(classifierBuilder);
+            classifierBuildersByTag.computeIfAbsent(tag, k -> new HashSet<>()).add(classifierBuilder);
         }
     }
 
@@ -80,7 +106,7 @@ public class ClassifierBuilderFactory {
 
     public ClassifierBuilder<?> getClassifierBuilderByName(String name) {
         name = name.toLowerCase();
-        ClassifierBuilder<?> classifierBuilder = classifiersByName.get(name);
+        ClassifierBuilder<?> classifierBuilder = classifierBuildersByName.get(name);
         if(classifierBuilder == null) {
             throw new IllegalArgumentException("oops, there's no classifier by the name: " + name);
         }
@@ -113,7 +139,7 @@ public class ClassifierBuilderFactory {
 
     public Set<ClassifierBuilder<?>> getClassifierBuildersByTag(String tag) {
         tag = tag.toLowerCase();
-        Set<ClassifierBuilder<?>> classifierBuilders = classifierByTag.get(tag);
+        Set<ClassifierBuilder<?>> classifierBuilders = classifierBuildersByTag.get(tag);
         if(classifierBuilders != null) {
             return ImmutableSet.copyOf(classifierBuilders);
         } else {
@@ -146,6 +172,74 @@ public class ClassifierBuilderFactory {
     }
 
     static {
-//        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("DTWCV", KnnConfigs::buildDtw1nnV1, "similarity"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ed-1nn-v1", KnnConfigs::buildEd1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ed-1nn-v2", KnnConfigs::buildEd1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("dtw-1nn-v1", KnnConfigs::buildDtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("dtw-1nn-v2", KnnConfigs::buildDtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ddtw-1nn-v1", KnnConfigs::buildDdtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ddtw-1nn-v2", KnnConfigs::buildDdtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-dtw-1nn-v1", KnnConfigs::buildTunedDtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-dtw-1nn-v2", KnnConfigs::buildTunedDtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-ddtw-1nn-v1",
+                                                                    KnnConfigs::buildTunedDdtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-ddtw-1nn-v2",
+                                                                    KnnConfigs::buildTunedDdtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wdtw-1nn-v1",
+                                                                    KnnConfigs::buildTunedWdtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wdtw-1nn-v2",
+                                                                    KnnConfigs::buildTunedWdtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wddtw-1nn-v1",
+                                                                    KnnConfigs::buildTunedWddtw1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wddtw-1nn-v2",
+                                                                    KnnConfigs::buildTunedWddtw1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-msm-1nn-v1", KnnConfigs::buildTunedMsm1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-msm-1nn-v2", KnnConfigs::buildTunedMsm1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-lcss-1nn-v1",
+                                                                    KnnConfigs::buildTunedLcss1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-lcss-1nn-v2",
+                                                                    KnnConfigs::buildTunedLcss1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-erp-1nn-v1",
+                                                                    KnnConfigs::buildTunedErp1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-erp-1nn-v2",
+                                                                    KnnConfigs::buildTunedErp1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-twed-1nn-v1",
+                                                                    KnnConfigs::buildTunedTwed1nnV1,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-twed-1nn-v2",
+                                                                    KnnConfigs::buildTunedTwed1nnV2,
+                                                                    "similarity", "distance", "univariate"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("cee-v1",
+                                                                    CEE::buildV1,
+                                                                    "similarity", "distance", "univariate", "ensemble"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("cee-v2",
+                                                                    CEE::buildV2,
+                                                                    "similarity", "distance", "univariate", "ensemble"));
+        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("lee",
+                                                                    CEE::buildLee,
+                                                                    "similarity", "distance", "univariate", "ensemble"));
+    }
+
+    public static void main(String[] args) {
+        System.out.println(getInstance().toString());
     }
 }

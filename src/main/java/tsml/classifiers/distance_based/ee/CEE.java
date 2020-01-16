@@ -8,10 +8,10 @@ import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
-import machine_learning.classifiers.tuned.incremental.configs.IncKnnTunerBuilder;
+import tsml.classifiers.distance_based.knn.configs.IncKnnTunerBuilder;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.knn.KnnConfigs;
+import tsml.classifiers.distance_based.knn.configs.KnnConfigs;
 import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -20,11 +20,10 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static machine_learning.classifiers.tuned.incremental.configs.IncConfigs.*;
-import static utilities.collections.Utils.replace;
+import static tsml.classifiers.distance_based.knn.configs.KnnConfigs.*;
 
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
-        IncClassifier, MemoryWatchable {
+        IncClassifier, MemoryWatchable { // AKA contracted elastic ensemble
 
     public static CEE buildV1() {
         CEE cee = new CEE();
@@ -54,7 +53,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         return cee;
     }
 
-    public static CEE buildLEE() {
+    public static CEE buildLee() { // AKA limited EE
         CEE cee = new CEE();
         cee.setConstituents(ImmutableList.of(
             new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
