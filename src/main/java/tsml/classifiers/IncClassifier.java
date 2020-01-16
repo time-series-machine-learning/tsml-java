@@ -33,8 +33,8 @@ public interface IncClassifier
 
     default void incBuildClassifier(Instances trainData) throws Exception {
         if(isRebuild()) {
-            setRebuild(false);
             startBuild(trainData);
+            setRebuild(false);
             if (hasNextBuildTick()) {
                 do {
                     nextBuildTick();

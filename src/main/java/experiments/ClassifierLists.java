@@ -105,18 +105,6 @@ public class ClassifierLists {
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
-//            case "DTWCVV1":
-//                c = KnnConfigs.buildTunedDtw1nnV1();
-//                break;
-//            case "DTWV1":
-//                c = KnnConfigs.buildDtw1nnV1();
-//                break;
-//            case "LEE":
-//                c = CEE.buildLEE();
-//                break;
-//            case "CEE":
-//                c = new CEE();
-//                break;
             case "DTW":
                 c=new DTW1NN();
                 ((DTW1NN )c).setWindow(1);
