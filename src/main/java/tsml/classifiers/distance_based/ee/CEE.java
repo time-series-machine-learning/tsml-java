@@ -11,7 +11,7 @@ import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.knn.configs.IncKnnTunerBuilder;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.knn.configs.KnnConfigs;
+import tsml.classifiers.distance_based.knn.configs.KnnConfig;
 import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -20,34 +20,42 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static tsml.classifiers.distance_based.knn.configs.KnnConfigs.*;
+import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 
 public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
         IncClassifier, MemoryWatchable { // AKA contracted elastic ensemble
 
     public static CEE buildV1() {
         CEE cee = new CEE();
+        cee.setConstituents(ImmutableList.of(buildTunedDtw1nnV1(),
+                                             buildTunedDdtw1nnV1(),
+                                             buildTunedErp1nnV1(),
+                                             buildTunedLcss1nnV1(),
+                                             buildTunedMsm1nnV1(),
+                                             buildTunedWdtw1nnV1(),
+                                             buildTunedWddtw1nnV1(),
+                                             buildTunedTwed1nnV1()));
         return cee;
     }
 
     public static CEE buildV2() {
         CEE cee = new CEE();
         cee.setConstituents(ImmutableList.of(
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildDtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildDdtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildErpSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildLcssSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildMsmSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildTwedSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildWdtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildWddtwSpaceV2).build()
                                             ));
         return cee;
@@ -56,21 +64,21 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
     public static CEE buildLee() { // AKA limited EE
         CEE cee = new CEE();
         cee.setConstituents(ImmutableList.of(
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildDtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildDdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildErpSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildLcssSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildMsmSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildTwedSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildWdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfigs::build1nnV2).setParamSpace(
+            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
                 DistanceMeasureConfigs::buildWddtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build()
                                             ));
         return cee;

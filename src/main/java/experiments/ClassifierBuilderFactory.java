@@ -2,10 +2,10 @@ package experiments;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.ee.CEE;
-import tsml.classifiers.distance_based.knn.configs.KnnConfigs;
+import tsml.classifiers.distance_based.knn.configs.KnnConfig;
+import tsml.classifiers.distance_based.knn.configs.KnnTag;
 import utilities.Utilities;
 import weka.classifiers.Classifier;
 
@@ -23,6 +23,24 @@ public class ClassifierBuilderFactory {
                                  final Supplier<A> supplier,
                                  final String... tags) {
             this(name, supplier, Arrays.asList(tags));
+        }
+
+        public ClassifierBuilder(final String name, final Supplier<A> supplier,
+                                 final List<Supplier<String>> tagSuppliers) { // todo i'd like this to be an
+            // Iterable<Supplier<String>> rather than list but somehow it conflicts with the other constructor!! Odd.
+            this.name = name;
+            this.supplier = supplier;
+            List<String> tags = new ArrayList<>();
+            for(Supplier<String> str : tagSuppliers) {
+                tags.add(str.get().toLowerCase());
+            }
+            this.tags = ImmutableList.copyOf(tags);
+        }
+
+        public ClassifierBuilder(final String name,
+                                 final Supplier<A> supplier,
+                                 final Supplier<String>... tagSuppliers) {
+            this(name, supplier, Arrays.asList(tagSuppliers));
         }
 
         public ClassifierBuilder(final String name, final Supplier<A> supplier, final Iterable<String> tags) {
@@ -83,6 +101,10 @@ public class ClassifierBuilderFactory {
         return INSTANCE;
     }
 
+    public void add(Supplier<ClassifierBuilder<?>> supplier) {
+        add(supplier.get());
+    }
+
     public void add(ClassifierBuilder<?> classifierBuilder) {
         String name = classifierBuilder.getName();
         name = name.toLowerCase();
@@ -98,6 +120,10 @@ public class ClassifierBuilderFactory {
         for(String tag : classifierBuilder.getTags()) {
             classifierBuildersByTag.computeIfAbsent(tag, k -> new HashSet<>()).add(classifierBuilder);
         }
+    }
+
+    public static void addGlobal(Supplier<ClassifierBuilder<?>> supplier) {
+        getInstance().add(supplier);
     }
 
     public static void addGlobal(ClassifierBuilder<?> classifierBuilder) {
@@ -172,71 +198,27 @@ public class ClassifierBuilderFactory {
     }
 
     static {
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ed-1nn-v1", KnnConfigs::buildEd1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ed-1nn-v2", KnnConfigs::buildEd1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("dtw-1nn-v1", KnnConfigs::buildDtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("dtw-1nn-v2", KnnConfigs::buildDtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ddtw-1nn-v1", KnnConfigs::buildDdtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("ddtw-1nn-v2", KnnConfigs::buildDdtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-dtw-1nn-v1", KnnConfigs::buildTunedDtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-dtw-1nn-v2", KnnConfigs::buildTunedDtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-ddtw-1nn-v1",
-                                                                    KnnConfigs::buildTunedDdtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-ddtw-1nn-v2",
-                                                                    KnnConfigs::buildTunedDdtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wdtw-1nn-v1",
-                                                                    KnnConfigs::buildTunedWdtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wdtw-1nn-v2",
-                                                                    KnnConfigs::buildTunedWdtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wddtw-1nn-v1",
-                                                                    KnnConfigs::buildTunedWddtw1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-wddtw-1nn-v2",
-                                                                    KnnConfigs::buildTunedWddtw1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-msm-1nn-v1", KnnConfigs::buildTunedMsm1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-msm-1nn-v2", KnnConfigs::buildTunedMsm1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-lcss-1nn-v1",
-                                                                    KnnConfigs::buildTunedLcss1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-lcss-1nn-v2",
-                                                                    KnnConfigs::buildTunedLcss1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-erp-1nn-v1",
-                                                                    KnnConfigs::buildTunedErp1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-erp-1nn-v2",
-                                                                    KnnConfigs::buildTunedErp1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-twed-1nn-v1",
-                                                                    KnnConfigs::buildTunedTwed1nnV1,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("tuned-twed-1nn-v2",
-                                                                    KnnConfigs::buildTunedTwed1nnV2,
-                                                                    "similarity", "distance", "univariate"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("cee-v1",
-                                                                    CEE::buildV1,
-                                                                    "similarity", "distance", "univariate", "ensemble"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("cee-v2",
-                                                                    CEE::buildV2,
-                                                                    "similarity", "distance", "univariate", "ensemble"));
-        addGlobal(new ClassifierBuilder<EnhancedAbstractClassifier>("lee",
-                                                                    CEE::buildLee,
-                                                                    "similarity", "distance", "univariate", "ensemble"));
+        addGlobal(KnnConfig.ED_1NN_V1);
+        addGlobal(KnnConfig.ED_1NN_V2);
+        addGlobal(KnnConfig.DTW_1NN_V1);
+        addGlobal(KnnConfig.DTW_1NN_V2);
+        addGlobal(KnnConfig.DDTW_1NN_V1);
+        addGlobal(KnnConfig.DDTW_1NN_V2);
+        addGlobal(KnnConfig.TUNED_WDTW_1NN_V1);
+        addGlobal(KnnConfig.TUNED_WDTW_1NN_V2);
+        addGlobal(KnnConfig.TUNED_WDDTW_1NN_V1);
+        addGlobal(KnnConfig.TUNED_WDDTW_1NN_V2);
+        addGlobal(KnnConfig.TUNED_LCSS_1NN_V1);
+        addGlobal(KnnConfig.TUNED_LCSS_1NN_V2);
+        addGlobal(KnnConfig.TUNED_MSM_1NN_V1);
+        addGlobal(KnnConfig.TUNED_MSM_1NN_V2);
+        addGlobal(KnnConfig.TUNED_ERP_1NN_V1);
+        addGlobal(KnnConfig.TUNED_ERP_1NN_V2);
+        addGlobal(KnnConfig.TUNED_TWED_1NN_V1);
+        addGlobal(KnnConfig.TUNED_TWED_1NN_V2);
+        addGlobal(KnnConfig.CEE_V1);
+        addGlobal(KnnConfig.CEE_V2);
+        addGlobal(KnnConfig.LEE);
     }
 
     public static void main(String[] args) {
