@@ -750,8 +750,7 @@ public class ClassifierLists {
         Classifier c = ClassifierBuilderFactory.getClassifierBuilderByNameGlobal(classifier).build();
         if(c != null) {
             return c;
-        }
-        if(distanceBased.contains(classifier))
+        } else if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
             c=setDictionaryBased(exp);

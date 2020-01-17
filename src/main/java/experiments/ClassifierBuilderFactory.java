@@ -3,9 +3,7 @@ package experiments;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.ee.CEE;
 import tsml.classifiers.distance_based.knn.configs.KnnConfig;
-import tsml.classifiers.distance_based.knn.configs.KnnTag;
 import utilities.Utilities;
 import weka.classifiers.Classifier;
 
@@ -97,7 +95,7 @@ public class ClassifierBuilderFactory {
         return stringBuilder.toString();
     }
 
-    public static ClassifierBuilderFactory getInstance() {
+    public static ClassifierBuilderFactory getGlobalInstance() {
         return INSTANCE;
     }
 
@@ -122,20 +120,9 @@ public class ClassifierBuilderFactory {
         }
     }
 
-    public static void addGlobal(Supplier<ClassifierBuilder<?>> supplier) {
-        getInstance().add(supplier);
-    }
-
-    public static void addGlobal(ClassifierBuilder<?> classifierBuilder) {
-        getInstance().add(classifierBuilder);
-    }
-
     public ClassifierBuilder<?> getClassifierBuilderByName(String name) {
         name = name.toLowerCase();
         ClassifierBuilder<?> classifierBuilder = classifierBuildersByName.get(name);
-        if(classifierBuilder == null) {
-            throw new IllegalArgumentException("oops, there's no classifier by the name: " + name);
-        }
         return classifierBuilder;
     }
 
@@ -152,15 +139,7 @@ public class ClassifierBuilderFactory {
     }
 
     public static ClassifierBuilder<?> getClassifierBuilderByNameGlobal(String name) {
-        return getInstance().getClassifierBuilderByName(name);
-    }
-
-    public static Set<ClassifierBuilder<?>> getClassifierBuildersByNamesGlobal(String... names) {
-        return getInstance().getClassifierBuildersByNames(names);
-    }
-
-    public static Set<ClassifierBuilder<?>> getClassifierBuildersByNamesGlobal(Iterable<String> names) {
-        return getInstance().getClassifierBuildersByNames(names);
+        return getGlobalInstance().getClassifierBuilderByName(name);
     }
 
     public Set<ClassifierBuilder<?>> getClassifierBuildersByTag(String tag) {
@@ -185,43 +164,31 @@ public class ClassifierBuilderFactory {
         return getClassifierBuildersByTags(Arrays.asList(tags));
     }
 
-    public static Set<ClassifierBuilder<?>> getClassifierBuildersByTagGlobal(String tag) {
-        return getInstance().getClassifierBuildersByTag(tag);
-    }
-
-    public static Set<ClassifierBuilder<?>> getClassifierBuildersByTagsGlobal(Iterable<String> tags) {
-        return getInstance().getClassifierBuildersByTags(tags);
-    }
-
-    public static Set<ClassifierBuilder<?>> getClassifierBuildersByTagsGlobal(String... tags) {
-        return getInstance().getClassifierBuildersByTags(tags);
-    }
-
     static {
-        addGlobal(KnnConfig.ED_1NN_V1);
-        addGlobal(KnnConfig.ED_1NN_V2);
-        addGlobal(KnnConfig.DTW_1NN_V1);
-        addGlobal(KnnConfig.DTW_1NN_V2);
-        addGlobal(KnnConfig.DDTW_1NN_V1);
-        addGlobal(KnnConfig.DDTW_1NN_V2);
-        addGlobal(KnnConfig.TUNED_WDTW_1NN_V1);
-        addGlobal(KnnConfig.TUNED_WDTW_1NN_V2);
-        addGlobal(KnnConfig.TUNED_WDDTW_1NN_V1);
-        addGlobal(KnnConfig.TUNED_WDDTW_1NN_V2);
-        addGlobal(KnnConfig.TUNED_LCSS_1NN_V1);
-        addGlobal(KnnConfig.TUNED_LCSS_1NN_V2);
-        addGlobal(KnnConfig.TUNED_MSM_1NN_V1);
-        addGlobal(KnnConfig.TUNED_MSM_1NN_V2);
-        addGlobal(KnnConfig.TUNED_ERP_1NN_V1);
-        addGlobal(KnnConfig.TUNED_ERP_1NN_V2);
-        addGlobal(KnnConfig.TUNED_TWED_1NN_V1);
-        addGlobal(KnnConfig.TUNED_TWED_1NN_V2);
-        addGlobal(KnnConfig.CEE_V1);
-        addGlobal(KnnConfig.CEE_V2);
-        addGlobal(KnnConfig.LEE);
+        getGlobalInstance().add(KnnConfig.ED_1NN_V1);
+        getGlobalInstance().add(KnnConfig.ED_1NN_V2);
+        getGlobalInstance().add(KnnConfig.DTW_1NN_V1);
+        getGlobalInstance().add(KnnConfig.DTW_1NN_V2);
+        getGlobalInstance().add(KnnConfig.DDTW_1NN_V1);
+        getGlobalInstance().add(KnnConfig.DDTW_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_WDTW_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_WDTW_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_WDDTW_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_WDDTW_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_LCSS_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_LCSS_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_MSM_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_MSM_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_ERP_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_ERP_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_TWED_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_TWED_1NN_V2);
+        getGlobalInstance().add(KnnConfig.CEE_V1);
+        getGlobalInstance().add(KnnConfig.CEE_V2);
+        getGlobalInstance().add(KnnConfig.LEE);
     }
 
     public static void main(String[] args) {
-        System.out.println(getInstance().toString());
+        System.out.println(getGlobalInstance().toString());
     }
 }
