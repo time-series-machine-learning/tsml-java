@@ -749,7 +749,7 @@ public class ClassifierLists {
         String classifier=exp.classifierName;
         ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder =
             ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
-        Classifier c;
+        Classifier c = null;
         if(classifierBuilder != null) {
             return classifierBuilder.build();
         } else if(distanceBased.contains(classifier))
