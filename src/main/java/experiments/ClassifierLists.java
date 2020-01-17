@@ -747,11 +747,12 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        Classifier c = ClassifierBuilderFactory.getClassifierBuilderByNameGlobal(classifier).build();
-        if(c != null) {
-            return c;
-        }
-        if(distanceBased.contains(classifier))
+        ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder =
+            ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
+        Classifier c;
+        if(classifierBuilder != null) {
+            return classifierBuilder.build();
+        } else if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
             c=setDictionaryBased(exp);
