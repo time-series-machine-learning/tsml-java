@@ -21,9 +21,18 @@ import weka.core.SerializedObject;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class Utilities {
+
+    public static long toNanos(String amountStr, String unitStr) {
+        long amount = Long.parseLong(amountStr);
+        TimeUnit unit = TimeUnit.valueOf(unitStr);
+        long timeInNanos = TimeUnit.NANOSECONDS.convert(amount, unit);
+        return timeInNanos;
+    }
+
     public static final int size(double[][] matrix) {
         int population = 0;
         for(int i = 0; i < matrix.length; i++) {

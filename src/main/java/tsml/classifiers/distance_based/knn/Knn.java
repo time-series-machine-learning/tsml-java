@@ -22,7 +22,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 
 public class Knn extends EnhancedAbstractClassifier
     implements
-    Checkpointable, ParamHandler, MemoryWatchable, TrainTimeable {
+    Checkpointable, MemoryWatchable, TrainTimeable {
 
     protected transient Instances trainData;
     public static final String K_FLAG = "k";
@@ -143,7 +143,7 @@ public class Knn extends EnhancedAbstractClassifier
     }
 
     @Override public ParamSet getParams() {
-        return ParamHandler.super.getParams()
+        return super.getParams()
                                  .add(EARLY_ABANDON_FLAG, earlyAbandon)
                                  .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
                                  .add(K_FLAG, k)

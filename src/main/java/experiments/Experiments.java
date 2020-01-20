@@ -197,6 +197,16 @@ public class Experiments  {
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
         public String trainEstimateMethod = "cv_10";
 
+        @Parameter(names={"--conTrain"}, arity = 2, description = "todo")
+        private List<String> trainContracts = new ArrayList<>();
+
+        @Parameter(names={"--contractInName"}, arity = 1, description = "todo")
+        private boolean appendTrainContractToClassifierName = true;
+
+        public boolean hasTrainContracts() {
+            return trainContracts.size() > 0;
+        }
+
         public ExperimentalArguments() {
 
         }
@@ -304,6 +314,10 @@ public class Experiments  {
 
             resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
             dataReadLocation = StrUtils.asDirPath(dataReadLocation);
+
+            if(trainContracts.size() % 2 != 0) {
+                throw new IllegalStateException("illegal number of args for time");
+            }
         }
 
         public String toShortString() {
@@ -459,8 +473,15 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        boolean trainContractSetup = false;
         if(classifier instanceof TrainTimeContractable && expSettings.contractTrainTimeSeconds>0){
             ((TrainTimeContractable) classifier).setTrainTimeLimit(TimeUnit.SECONDS,expSettings.contractTrainTimeSeconds);
+        }
+        if(trainContractSetup && classifier instanceof TrainTimeContractable && expSettings.hasTrainContracts()) {
+            LOGGER.log(Level.INFO, "contracting");
+        }
+        if(!trainContractSetup && expSettings.hasTrainContracts() && !(classifier instanceof TrainTimeContractable)) {
+            throw new IllegalArgumentException("cannot contract an uncontractable classifier!");
         }
 
         if(classifier instanceof Randomizable) {
@@ -470,28 +491,55 @@ public class Experiments  {
             ((Debugable) classifier).setDebug(expSettings.debug);
         }
 
-        //Build/make the directory to write the train and/or testFold files to
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
-        File f = new File(fullWriteLocation);
-        if (!f.exists())
-            f.mkdirs();
-
-        String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
-
-        //Check whether fold already exists, if so, dont do it, just quit
-        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-            return null;
+        if(!expSettings.hasTrainContracts()) {
+            expSettings.trainContracts.add("-1");
+            expSettings.trainContracts.add("nanoseconds");
         }
-        else {
-            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
-            //If needed, build/make the directory to write the train and/or testFold files to
-            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation;
+        List<ClassifierResults> results = new ArrayList<>();
 
-            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
-            // default builds a foldx/ dir in normal write dir
+        for(int i = 0; i < expSettings.trainContracts.size(); i += 2) {
+
+            long trainContractAmount = Long.parseLong(expSettings.trainContracts.get(i));
+            TimeUnit trainContractUnit = TimeUnit.valueOf(expSettings.trainContracts.get(i + 1).toUpperCase());
+
+            if(classifier instanceof TrainTimeContractable) {
+                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainContractAmount, trainContractUnit);
+            } else {
+                // don't worry as the classifier should have been checked before this, i.e. we should not have a
+                // classifier which is not train time contractable IF there is a train contract set. Otherwise, we do
+                // have a classifier which cannot be train time contracted AND there is no train time contract set
+                // (so the train time contract is -1 nanoseconds)
+            }
+
+            String trainContractInClassifierNameStr = "";
+            if(expSettings.appendTrainContractToClassifierName) {
+                trainContractInClassifierNameStr = "_" + trainContractAmount + trainContractUnit;
+            }
+
+            //Build/make the directory to write the train and/or testFold files to
+            String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName +
+                    trainContractInClassifierNameStr + "/Predictions/" + expSettings.datasetName + "/";
+            File f = new File(fullWriteLocation);
+            if (!f.exists())
+                f.mkdirs();
+
+            String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+
+            //Check whether fold already exists, if so, dont do it, just quit
+            if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
+                return null;
+            }
+            else {
+                Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+
+                //If needed, build/make the directory to write the train and/or testFold files to
+                if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+                    expSettings.supportingFilePath = fullWriteLocation;
+
+                ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
+                // default builds a foldx/ dir in normal write dir
 //            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
 //                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
 //            if (classifier instanceof FileProducer) {
@@ -500,22 +548,24 @@ public class Experiments  {
 //                    f.mkdirs();
 //            }
 
-            //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
-            if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
-                expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
+                //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
+                if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
+                    expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
 
-                targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                    LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                    return null;
+                    targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
+                    if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                        LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
+                        return null;
+                    }
                 }
+
+                ClassifierResults[] runResults = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+                LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + runResults[1].getAcc());
+
+                results.addAll(Arrays.asList(runResults));
             }
-
-            ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
-
-            return results;
         }
+        return results.toArray(new ClassifierResults[0]);
     }
 
     /**
@@ -622,13 +672,13 @@ public class Experiments  {
                 return new ClassifierResults[] { trainResults, testResults };
             }
             else {
-                return new ClassifierResults[] { trainResults, null }; //not error, but we dont have a test acc. just returning 0 for now
+                return new ClassifierResults[] { trainResults, new ClassifierResults() }; //not error, but we dont have a test acc. just returning 0 for now
             }
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            return null; //error state
+            return new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()}; //error state
         }
     }
 
