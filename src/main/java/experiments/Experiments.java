@@ -315,6 +315,14 @@ public class Experiments  {
             resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
             dataReadLocation = StrUtils.asDirPath(dataReadLocation);
 
+            if(contractTrainTimeHours > 0) {
+                trainContracts.add(String.valueOf(contractTrainTimeHours));
+                trainContracts.add(TimeUnit.HOURS.toString());
+            } else if(contractTrainTimeSeconds > 0) {
+                trainContracts.add(String.valueOf(contractTrainTimeSeconds));
+                trainContracts.add(TimeUnit.SECONDS.toString());
+            }
+
             if(trainContracts.size() % 2 != 0) {
                 throw new IllegalStateException("illegal number of args for time");
             }
@@ -473,15 +481,16 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
-        boolean trainContractSetup = false;
-        if(classifier instanceof TrainTimeContractable && expSettings.contractTrainTimeSeconds>0){
-            ((TrainTimeContractable) classifier).setTrainTimeLimit(TimeUnit.SECONDS,expSettings.contractTrainTimeSeconds);
-        }
-        if(trainContractSetup && classifier instanceof TrainTimeContractable && expSettings.hasTrainContracts()) {
-            LOGGER.log(Level.INFO, "contracting");
-        }
-        if(!trainContractSetup && expSettings.hasTrainContracts() && !(classifier instanceof TrainTimeContractable)) {
+        boolean contractable = classifier instanceof TrainTimeContractable;
+        boolean hasContracts = expSettings.hasTrainContracts();
+        if(contractable && hasContracts) {
+            // all good in the hood
+        } else if(contractable && !hasContracts) {
+            // also fine, we'll just set unlimited contract
+        } else if(!contractable && hasContracts) {
             throw new IllegalArgumentException("cannot contract an uncontractable classifier!");
+        } else {
+            // not contractable and not contracting so all good
         }
 
         if(classifier instanceof Randomizable) {
@@ -492,29 +501,30 @@ public class Experiments  {
         }
 
         if(!expSettings.hasTrainContracts()) {
-            expSettings.trainContracts.add("-1");
-            expSettings.trainContracts.add("nanoseconds");
+            expSettings.trainContracts.add(null);
+            expSettings.trainContracts.add(null);
         }
 
         List<ClassifierResults> results = new ArrayList<>();
 
         for(int i = 0; i < expSettings.trainContracts.size(); i += 2) {
-
-            long trainContractAmount = Long.parseLong(expSettings.trainContracts.get(i));
-            TimeUnit trainContractUnit = TimeUnit.valueOf(expSettings.trainContracts.get(i + 1).toUpperCase());
-
-            if(classifier instanceof TrainTimeContractable) {
-                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainContractAmount, trainContractUnit);
-            } else {
-                // don't worry as the classifier should have been checked before this, i.e. we should not have a
-                // classifier which is not train time contractable IF there is a train contract set. Otherwise, we do
-                // have a classifier which cannot be train time contracted AND there is no train time contract set
-                // (so the train time contract is -1 nanoseconds)
-            }
-
             String trainContractInClassifierNameStr = "";
-            if(expSettings.appendTrainContractToClassifierName) {
-                trainContractInClassifierNameStr = "_" + trainContractAmount + trainContractUnit;
+            String trainContractStr = expSettings.trainContracts.get(i);
+            String trainContractUnitStr = expSettings.trainContracts.get(i + 1);
+            if(trainContractStr != null && trainContractUnitStr != null) {
+                long trainContractAmount = Long.parseLong(trainContractStr);
+                TimeUnit trainContractUnit = TimeUnit.valueOf(trainContractUnitStr);
+                if(classifier instanceof TrainTimeContractable) {
+                    ((TrainTimeContractable) classifier).setTrainTimeLimit(trainContractAmount, trainContractUnit);
+                } else {
+                    // don't worry as the classifier should have been checked before this, i.e. we should not have a
+                    // classifier which is not train time contractable IF there is a train contract set. Otherwise, we do
+                    // have a classifier which cannot be train time contracted AND there is no train time contract set
+                    // (so the train time contract is -1 nanoseconds)
+                }
+                if(expSettings.appendTrainContractToClassifierName) {
+                    trainContractInClassifierNameStr = "_" + trainContractAmount + trainContractUnit;
+                }
             }
 
             //Build/make the directory to write the train and/or testFold files to
@@ -625,6 +635,7 @@ public class Experiments  {
 
 
             //Build on the full train data here
+            System.gc(); System.gc(); // do it twice due to young/old generation mem pool and finalization
             long buildTime = System.nanoTime();
             classifier.buildClassifier(trainSet);
             buildTime = System.nanoTime() - buildTime;
