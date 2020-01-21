@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import tsml.classifiers.Loggable;
 import tsml.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
@@ -512,12 +514,14 @@ public class Experiments  {
             throw new IllegalArgumentException("cannot contract an uncontractable classifier!");
         }
 
-
-        if(classifier instanceof Randomizable) {
-            ((Randomizable) classifier).setSeed(expSettings.foldId);
-        }
         if(classifier instanceof Debugable) {
             ((Debugable) classifier).setDebug(expSettings.debug);
+        }
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(LOGGER.getLevel());
+        }
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(expSettings.foldId);
         }
 
         if(!expSettings.hasTrainContracts()) {
