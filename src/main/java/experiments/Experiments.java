@@ -598,9 +598,21 @@ public class Experiments  {
                     }
                 }
 
-                ClassifierResults[] runResults = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
+                // copy both train and test in case the classifier does anything funky to either of them. E.g. in the
+                // testing, we set class value to missing as a sanity check to make sure nothing is a drift. Next
+                // time around the class value is already missing, so how can we calculate stats from the true class
+                // value? Ans: we can't. So we'll take a copy before we run experiments, preserving the original data
+                // for further experiments / iterations.
+                Instances train = new Instances(data[0]);
+                Instances test = new Instances(data[1]);
+                ClassifierResults[] runResults = runExperiment(expSettings, train, test, classifier,
+                                                               fullWriteLocation);
                 LOGGER.log(Level.INFO,
-                           "Experiment finished " + expSettings.toShortString() + trainContractInClassifierNameStr + ", Test Acc: " + runResults[1].getAcc() + ", Train Acc: " + runResults[0].getAcc());
+                           "Experiment finished " + expSettings.toShortString() + trainContractInClassifierNameStr );
+                LOGGER.log(Level.INFO,
+                           "Train results: " + System.lineSeparator() + runResults[0].writeSummaryResultsToString());
+                LOGGER.log(Level.INFO,
+                           "Test results: " + System.lineSeparator() + runResults[1].writeSummaryResultsToString());
                 results.addAll(Arrays.asList(runResults));
             }
         }
