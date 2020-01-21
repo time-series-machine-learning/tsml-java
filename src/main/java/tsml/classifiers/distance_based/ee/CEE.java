@@ -196,18 +196,18 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         trainTimer.disable();
         memoryWatcher.disable();
-        logger.log("running constituent {id: ",
-                   (constituents.size() - partialConstituentsBatch.size()),
-                   ", ",
-                   constituent.getClassifierName(),
+        logger.fine(() -> "running constituent {id: "+
+                   (constituents.size() - partialConstituentsBatch.size())+
+                   "+  "+
+                   constituent.getClassifierName()+
                    " }");
         constituent.buildClassifier(trainData); // todo add train time onto train estimate + mem
-        logger.log("ran constituent {id: ",
-                   (constituents.size() - partialConstituentsBatch.size()),
-                   ", acc: ",
-                   constituent.getTrainResults().getAcc(),
-                   ", ",
-                   constituent.getClassifierName(),
+        logger.fine(() -> "ran constituent {id: "+
+                   (constituents.size() - partialConstituentsBatch.size())+
+                   "+  acc: "+
+                   constituent.getTrainResults().getAcc()+
+                   "+  "+
+                   constituent.getClassifierName()+
                    " }");
         memoryWatcher.enable();
         trainTimer.enable();
@@ -264,7 +264,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         memoryWatcher.enable();
         trainEstimateTimer.enable();
         if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
-            logger.log("generating train estimate");
+            logger.fine("generating train estimate");
             regenerateTrainEstimate = false;
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
@@ -275,7 +275,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
                 modules[i].trainResults = constituent.getTrainResults();
                 i++;
             }
-            logger.log("weighting constituents");
+            logger.fine("weighting constituents");
             weightingScheme.defineWeightings(modules, trainData.numClasses());
             votingScheme.trainVotingScheme(modules, trainData.numClasses());
             trainResults = new ClassifierResults();
@@ -299,7 +299,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         // todo combine memory watcher + train times + test times
         trainData = null;
         checkpoint(true);
-        logger.log("build finished");
+        logger.fine("build finished");
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
@@ -331,7 +331,7 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            logger.log("checkpointing");
+            logger.fine("checkpointing");
             saveToFile(checkpointDirPath + tempCheckpointFileName);
             boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
             if(!success) {

@@ -148,10 +148,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             FileUtils.FileLocker locker = new FileUtils.FileLocker(new File(path));
             if(locker.isUnlocked()) {
                 String msg = "failed to lock file: " + path;
-                logger.log(msg);
+                logger.fine(msg);
                 throw new IllegalStateException(msg);
             }
-            logger.log("saving checkpoint to: " + path);
+            final String finalPath1 = path;
+            logger.fine(() -> "saving checkpoint to: " + finalPath1);
             saveToFile(path);
             boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
             if(!success) {
@@ -169,19 +170,21 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
                 }
                 name += "_" + id;
                 path = getBenchmarksPath(name) + ".csv";
+                final String finalPath = path;
                 locker = new FileUtils.FileLocker(new File(path));
                 if(locker.isUnlocked()) {
                     if(independentBenchmarks) {
-                        logger.log("failed to lock file: " + path + " but that's ok as we're running independently");
+                        logger.fine(() -> "failed to lock file: " + finalPath + " but that's ok as we're running " +
+                                        "independently");
                         continue;
                     } else {
                         String msg = "failed to lock file: " + path + " another task must be using this file";
-                        logger.log(msg);
+                        logger.fine(msg);
                         throw new IllegalStateException(msg);
                     }
                 }
                 String tmpPath = path + ".tmp";
-                logger.log("saving benchmark checkpoint to: " + path);
+                logger.fine(() -> "saving benchmark checkpoint to: " + finalPath);
                 benchmark.getResults().writeFullResultsToFile(tmpPath);
                 success = new File(tmpPath).renameTo(new File(path));
                 if(!success) {
@@ -207,7 +210,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         memoryWatcher.suspend();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
-            logger.log("loading from checkpoint: " + path);
+            logger.fine(() -> "loading from checkpoint: " + path);
             loadFromFile(path);
         }
         memoryWatcher.unsuspend();
@@ -265,9 +268,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         }
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next(); // todo setting to allow timer to be handled by
         // either this or the benchmark iterator - should be the latter in most cases
-        logger.log("benchmark batch produced:");
+        logger.fine(() -> "benchmark batch produced:");
         for(Benchmark benchmark : nextBenchmarks) {
-            logger.log(benchmark);
+            logger.fine(benchmark::toString);
         }
         memoryWatcher.enableAnyway();
         trainEstimateTimer.enableAnyway();

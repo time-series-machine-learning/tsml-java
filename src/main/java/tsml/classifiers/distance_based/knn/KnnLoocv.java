@@ -1,13 +1,12 @@
 package tsml.classifiers.distance_based.knn;
 
-import com.esotericsoftware.kryo.util.Util;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
-import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
@@ -20,6 +19,8 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KnnLoocv
     extends Knn implements TrainTimeContractable,
@@ -39,10 +40,11 @@ public class KnnLoocv
     protected NeighbourSearcher leftOutSearcher = null;
     protected Iterator<NeighbourSearcher> leftOutSearcherIterator;
     protected Iterator<NeighbourSearcher> cvSearcherIterator;
-    protected NeighbourIteratorBuilder neighbourIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
-    protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
+    protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
+    protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected boolean trainEstimateChange = false;
     protected boolean customCache = false;
+    protected Logger logger = LogUtils.getLogger(this);
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -112,9 +114,7 @@ public class KnnLoocv
             }
             if(seen) {
                 // we've already seen this instance
-                if(debug) {
-                    System.out.println(comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
-                }
+                logger.info(() -> comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
             } else {
                 long distanceMeasurementTimeStamp = System.nanoTime();
                 Double distance = customCache ? cache.get(instance, leftOutInstance) : null;
@@ -126,18 +126,19 @@ public class KnnLoocv
                 }
                 leftOutSearcher.add(instance, distance, 0); // we get this for free!
                 cache.put(instance, leftOutInstance, distance);
-                if(debug) {
-                    System.out.println(comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() + ": " + distance);
-                }
+                final Double finalDistance = distance;
+                logger.info(() -> comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() +
+                                 ": " + finalDistance);
             }
-        } else if(debug) {
-            System.out.println(comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() + ": left out");
+        } else {
+            logger.info(() -> comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() +
+                            ": left out");
         }
         if(!cvSearcherIterator.hasNext()) {
             if(leftOutSearcherIterator.hasNext()) {
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
-                if(debug) {
-                    System.out.println("---- end of batch ----");
+                if(LogUtils.isAboveLevel(logger, Level.WARNING)) {
+                    logger.info("---- end of batch ----");
                     if(!cvSearcherIterator.hasNext()) {
                         throw new IllegalStateException("this shouldn't happen!");
                     }
@@ -226,7 +227,7 @@ public class KnnLoocv
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
-                if(debug) {
+                if(LogUtils.isAboveLevel(logger, Level.WARNING)) {
                     if(!leftOutSearcherIterator.hasNext()) {
                         throw new IllegalStateException("hasNext false");
                     }
@@ -258,8 +259,11 @@ public class KnnLoocv
             trainEstimateTimer.enable();
             memoryWatcher.enable();
             trainEstimateChange = false;
-            if(!hasTrainTimeLimit() && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) || (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
-                throw new IllegalStateException("this should not happen");
+            if(LogUtils.isAboveLevel(logger, Level.WARNING)
+                && !hasTrainTimeLimit()
+                && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
+                        (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
+                throw new IllegalStateException("not fully built");
             }
             // populate train results
             trainResults = new ClassifierResults();
@@ -322,16 +326,6 @@ public class KnnLoocv
     }
 
     public static void main(String[] args) throws Exception {
-//        int seed = 0;
-//        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-//        KnnLoocv classifier = new KnnLoocv(new Dtw(-1));//data[0].numAttributes()));
-//        classifier.setSeed(0);
-//        classifier.setEstimateOwnPerformance(true);
-//        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//        System.out.println(classifier.getTrainResults().writeSummaryResultsToString());
-//        System.out.println(results.writeSummaryResultsToString());
-
-
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
         KnnLoocv classifier = new KnnLoocv();
@@ -345,3 +339,4 @@ public class KnnLoocv
         System.out.println(results.writeSummaryResultsToString());
     }
 }
+

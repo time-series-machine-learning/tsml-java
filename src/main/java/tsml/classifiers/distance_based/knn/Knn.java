@@ -61,7 +61,7 @@ public class Knn extends EnhancedAbstractClassifier
         memoryWatcher.suspend();
         if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
             String path = checkpointDirPath + tempCheckpointFileName;
-            logger.log("saving checkpoint to: " + path);
+            logger.fine(() -> "saving checkpoint to: " + path);
             saveToFile(path);
             boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
             if(!success) {
@@ -82,7 +82,7 @@ public class Knn extends EnhancedAbstractClassifier
         memoryWatcher.suspend();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
-            logger.log("loading from checkpoint: " + path);
+            logger.fine(() -> "loading from checkpoint: " + path);
             loadFromFile(path);
         }
         trainTimer.unsuspend();
