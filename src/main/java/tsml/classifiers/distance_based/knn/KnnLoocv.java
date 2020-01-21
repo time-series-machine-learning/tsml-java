@@ -193,12 +193,12 @@ public class KnnLoocv
         IncClassifier.super.buildClassifier(trainData);
     }
 
-    public void startBuild(Instances data) throws Exception { // todo watch mem
+    public void startBuild(Instances data) throws Exception {
+        loadFromCheckpoint();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
         memoryWatcher.enable();
         if(rebuild) {
-            loadFromCheckpoint(); // todo hash data if checkpointing
             trainTimer.disableAnyway();
             memoryWatcher.disableAnyway();
             super.buildClassifier(data);
@@ -217,7 +217,7 @@ public class KnnLoocv
                     NeighbourSearcher searcher = new NeighbourSearcher(data.get(i));
                     searchers.add(i, searcher);
                 }
-                if(distanceFunction instanceof AbstractDistanceMeasure) { // todo cached version of dist meas
+                if(distanceFunction instanceof AbstractDistanceMeasure) {
                     if(((AbstractDistanceMeasure) distanceFunction).isSymmetric()) {
                         cache = new SymmetricCache<>();
                     } else {
@@ -256,7 +256,6 @@ public class KnnLoocv
         memoryWatcher.checkDisabled();
         trainEstimateTimer.checkDisabled();
         if(trainEstimateChange) {
-            // todo make sure train timer is paused here + other timings checks
             trainEstimateTimer.enable();
             memoryWatcher.enable();
             trainEstimateChange = false;

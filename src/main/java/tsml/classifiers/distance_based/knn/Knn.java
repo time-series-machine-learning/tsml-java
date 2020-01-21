@@ -158,6 +158,7 @@ public class Knn extends EnhancedAbstractClassifier
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        loadFromCheckpoint();
         if(rebuild) {
             trainTimer.enable();
             memoryWatcher.enable();
