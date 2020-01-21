@@ -31,7 +31,7 @@ public class LinearNeighbourIteratorBuilder
     @Override
     public Iterator<Knn.NeighbourSearcher> build() {
         if(knn == null) throw new IllegalStateException("knn not set");
-        return new LinearListIterator<>(new ArrayList<>(knn.getTrainSearchers()));
+        return new LinearListIterator<>(new ArrayList<>(knn.getSearchers()));
     }
 
 }

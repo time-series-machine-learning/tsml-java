@@ -12,14 +12,16 @@ public class SymmetricCache<A, B> extends Cache<A, A, B> {
     }
 
     @Override
-    public void put(final A firstKey, final A secondkey, final B value) {
-        super.remove(secondkey, firstKey);
-        super.put(firstKey, secondkey, value);
+    public void put(final A firstKey, final A secondKey, final B value) {
+        super.put(firstKey, secondKey, value);
     }
 
     @Override
-    public void remove(final A firstKey, final A secondKey) {
-        super.remove(firstKey, secondKey);
-        super.remove(secondKey, firstKey);
+    public boolean remove(final A firstKey, final A secondKey) {
+        boolean removed = super.remove(firstKey, secondKey);
+        if(!removed) {
+            removed = super.remove(secondKey, firstKey);
+        }
+        return removed;
     }
 }

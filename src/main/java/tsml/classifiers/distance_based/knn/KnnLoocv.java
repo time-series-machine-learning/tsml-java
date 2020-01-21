@@ -1,12 +1,12 @@
 package tsml.classifiers.distance_based.knn;
 
+import com.esotericsoftware.kryo.util.Util;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
-import tsml.classifiers.distance_based.distances.Dtw;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
@@ -31,14 +31,19 @@ public class KnnLoocv
     //    public static final String CACHE_FLAG = "c";
     protected long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
-    protected long previousNeighbourBatchTimeNanos = 0;
+    protected long maxNeighbourEvalTimeInNanos;
     protected int neighbourLimit = -1;
-    protected int neighbourCount = 0;
+    protected int neighbourCount;
+    protected int comparisonCount;
     protected StopWatch trainEstimateTimer = new StopWatch();
     protected Cache<Instance, Instance, Double> cache;
-    protected Iterator<NeighbourSearcher> iterator;
+    protected NeighbourSearcher leftOutSearcher = null;
+    protected Iterator<NeighbourSearcher> leftOutSearcherIterator;
+    protected Iterator<NeighbourSearcher> cvSearcherIterator;
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
+    protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
     protected boolean trainEstimateChange = false;
+    protected boolean customCache = false;
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -58,34 +63,30 @@ public class KnnLoocv
         return searchers;
     }
 
-    public boolean hasNextTrainTimeLimit() {
-        return (trainTimeLimitNanos < 0 || trainEstimateTimer.getTimeNanos() + previousNeighbourBatchTimeNanos < trainTimeLimitNanos);
-    }
-
-    public boolean hasNextNeighbour() {
-        return iterator.hasNext();
+    public boolean hasNextNeighbourSearch() {
+        return leftOutSearcherIterator.hasNext() || cvSearcherIterator.hasNext();
     }
 
     public boolean hasNextNeighbourLimit() {
         return (neighbourCount < neighbourLimit || neighbourLimit < 0);
     }
 
-    public boolean hasNextUnlimitedTrainTime() {
-        return hasNextNeighbour() && hasNextNeighbourLimit();
+    public boolean hasNextNeighbour() {
+        return hasNextNeighbourSearch() && hasNextNeighbourLimit();
     }
 
     public boolean hasNextBuildTick() throws Exception {
         trainTimer.checkDisabled();
         trainEstimateTimer.enable();
         memoryWatcher.enable();
-        boolean result = estimateOwnPerformance && hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
+        boolean result = estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
         trainEstimateTimer.disable();
         memoryWatcher.disable();
         return result;
     }
 
     public long predictNextTrainTimeNanos() {
-        return previousNeighbourBatchTimeNanos;
+        return maxNeighbourEvalTimeInNanos;
     }
 
     public void nextBuildTick() throws Exception {
@@ -94,25 +95,62 @@ public class KnnLoocv
         memoryWatcher.enable();
         trainEstimateChange = true;
         long timeStamp = System.nanoTime();
-        NeighbourSearcher current = iterator.next();
-        iterator.remove();
-        neighbourCount++;
-        for(int i = 0; i < searchers.size(); i++) {
-            NeighbourSearcher searcher = searchers.get(i);
-            if(!current.getInstance().equals(searcher.getInstance())) {
-                // todo loocv issue with cache GO
+        if(leftOutSearcher == null) {
+            leftOutSearcher = leftOutSearcherIterator.next();
+            leftOutSearcherIterator.remove();
+        }
+        comparisonCount++;
+        NeighbourSearcher searcher = cvSearcherIterator.next();
+        cvSearcherIterator.remove();
+        Instance instance = searcher.getInstance();
+        Instance leftOutInstance = leftOutSearcher.getInstance();
+        if(!leftOutInstance.equals(instance)) {
+            boolean seen = false;
+            if(customCache) {
+                seen = cache.contains(leftOutInstance, instance);
+            } else {
+                seen = cache.remove(leftOutInstance, instance);
+            }
+            if(seen) {
+                // we've already seen this instance
+                if(debug) {
+                    System.out.println(comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
+                }
+            } else {
                 long distanceMeasurementTimeStamp = System.nanoTime();
-                Double cachedDistance = cache.get(searcher.getInstance(), current.getInstance());
-                if(cachedDistance == null) {
-                    double distance = searcher.add(current.getInstance());
-                    cache.put(searcher.getInstance(), current.getInstance(), distance);
+                Double distance = customCache ? cache.get(instance, leftOutInstance) : null;
+                long timeTakenInNanos = System.nanoTime() - distanceMeasurementTimeStamp;
+                if(distance == null) {
+                    distance = searcher.add(leftOutInstance);
                 } else {
-                    cache.remove(searcher.getInstance(), current.getInstance());
-                    searcher.add(current.getInstance(), cachedDistance, System.nanoTime() - distanceMeasurementTimeStamp);
+                    searcher.add(leftOutInstance, distance, timeTakenInNanos);
+                }
+                leftOutSearcher.add(instance, distance, 0); // we get this for free!
+                cache.put(instance, leftOutInstance, distance);
+                if(debug) {
+                    System.out.println(comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() + ": " + distance);
                 }
             }
+        } else if(debug) {
+            System.out.println(comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() + ": left out");
         }
-        previousNeighbourBatchTimeNanos = System.nanoTime() - timeStamp;
+        if(!cvSearcherIterator.hasNext()) {
+            if(leftOutSearcherIterator.hasNext()) {
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                if(debug) {
+                    System.out.println("---- end of batch ----");
+                    if(!cvSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
+                    if(!leftOutSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
+                }
+            }
+            leftOutSearcher = null;
+            neighbourCount++;
+        }
+        maxNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
         checkpoint();
         trainEstimateTimer.disable();
         memoryWatcher.disable();
@@ -160,7 +198,7 @@ public class KnnLoocv
         trainTimer.enable();
         memoryWatcher.enable();
         if(rebuild) {
-            loadFromCheckpoint();
+            loadFromCheckpoint(); // todo hash data if checkpointing
             trainTimer.disableAnyway();
             memoryWatcher.disableAnyway();
             super.buildClassifier(data);
@@ -186,13 +224,31 @@ public class KnnLoocv
                         cache = new Cache<>();
                     }
                 }
-                iterator = neighbourIteratorBuilder.build();
+                leftOutSearcherIterator = neighbourIteratorBuilder.build();
                 trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                if(debug) {
+                    if(!leftOutSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("hasNext false");
+                    }
+                    if(!cvSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
+                }
+                maxNeighbourEvalTimeInNanos = -1;
+                leftOutSearcher = null;
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                neighbourCount = 0;
+                comparisonCount = 0;
             }
         }
         trainTimer.disableAnyway();
         trainEstimateTimer.disableAnyway();
         memoryWatcher.disable();
+    }
+
+    public boolean hasNeighbourLimit() {
+        return neighbourLimit >= 0;
     }
 
     public void finishBuild() throws Exception {
@@ -204,14 +260,14 @@ public class KnnLoocv
             trainEstimateTimer.enable();
             memoryWatcher.enable();
             trainEstimateChange = false;
-            if(neighbourLimit >= 0 && neighbourCount < neighbourLimit || neighbourLimit < 0 && neighbourCount < trainData.size()) {
+            if(!hasTrainTimeLimit() && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) || (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
                 throw new IllegalStateException("this should not happen");
             }
             // populate train results
             trainResults = new ClassifierResults();
             for(NeighbourSearcher searcher : searchers) {
                 double[] distribution = searcher.predict();
-                int prediction = ArrayUtilities.argMax(distribution);
+                int prediction = Utilities.argMax(distribution, rand);
                 long time = searcher.getTimeNanos();
                 double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
@@ -252,6 +308,19 @@ public class KnnLoocv
 
     public void setCache(Cache<Instance, Instance, Double> cache) {
         this.cache = cache;
+        customCache = cache != null;
+    }
+
+    public void setDefaultCache() {
+        setCache(null);
+    }
+
+    public NeighbourIteratorBuilder getCvSearcherIteratorBuilder() {
+        return cvSearcherIteratorBuilder;
+    }
+
+    public void setCvSearcherIteratorBuilder(NeighbourIteratorBuilder cvSearcherIteratorBuilder) {
+        this.cvSearcherIteratorBuilder = cvSearcherIteratorBuilder;
     }
 
     public static void main(String[] args) throws Exception {

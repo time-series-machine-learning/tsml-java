@@ -87,6 +87,7 @@ public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBui
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
         classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+        classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
         classifier.setRandomTieBreak(true);
         return classifier;
     }

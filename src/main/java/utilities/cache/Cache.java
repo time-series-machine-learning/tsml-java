@@ -32,18 +32,24 @@ public class Cache<A, B, C> implements Serializable {
         subCache.put(secondkey, value);
     }
 
+    public boolean contains(A firstKey, B secondKey) {
+        return get(firstKey, secondKey) != null;
+    }
+
     public void clear() {
         cache.clear();
     }
 
-    public void remove(A firstKey, B secondKey) {
+    public boolean remove(A firstKey, B secondKey) {
         HashMap<B, C> subCache = cache.get(firstKey);
         if(subCache != null) {
-            subCache.remove(secondKey);
+            C removed = subCache.remove(secondKey);
             if(subCache.isEmpty()) {
                 cache.remove(firstKey);
             }
+            return removed != null;
         }
+        return false;
     }
 
     public C computeIfAbsent(A firstKey, B secondKey, BiFunction<A, B, C> function) {
