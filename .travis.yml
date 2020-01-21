@@ -14,4 +14,4 @@ cache:
     - $HOME/.gradle/wrapper/
 script:
   - ./gradlew build --info --build-cache --parallel
-  - ./gradlew test --info --build-cache --parallel
+  - ./gradlew clean test --info --build-cache --parallel
