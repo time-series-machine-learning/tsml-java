@@ -7,12 +7,9 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import machine_learning.classifiers.tuned.incremental.IncTuner;
-import tsml.classifiers.distance_based.knn.configs.IncKnnTunerBuilder;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.knn.configs.KnnConfig;
 import utilities.*;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -22,86 +19,74 @@ import java.util.concurrent.TimeUnit;
 
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 
-public class CEE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
+public class EE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
         IncClassifier, MemoryWatchable { // AKA contracted elastic ensemble
 
-    public static CEE buildV1() {
-        CEE cee = new CEE();
-        cee.setConstituents(ImmutableList.of(buildTunedDtw1nnV1(),
-                                             buildTunedDdtw1nnV1(),
-                                             buildTunedErp1nnV1(),
-                                             buildTunedLcss1nnV1(),
-                                             buildTunedMsm1nnV1(),
-                                             buildTunedWdtw1nnV1(),
-                                             buildTunedWddtw1nnV1(),
-                                             buildTunedTwed1nnV1()));
-        return cee;
+    public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
+        return constituents;
     }
 
-    public static CEE buildV2() {
-        CEE cee = new CEE();
-        cee.setConstituents(ImmutableList.of(
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildDtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildDdtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildErpSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildLcssSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildMsmSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildTwedSpace).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildWdtwSpaceV2).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildWddtwSpaceV2).build()
-                                            ));
-        return cee;
+    public void setConstituents(final List<? extends Classifier> constituents) {
+        List<EnhancedAbstractClassifier> list = new ArrayList<>();
+        for(Classifier constituent : constituents) {
+            if(constituent instanceof EnhancedAbstractClassifier) {
+                list.add((EnhancedAbstractClassifier) constituent);
+            } else {
+                throw new IllegalArgumentException("constituents have to be EAC");
+            }
+        }
+        this.constituents = ImmutableList.copyOf(list);
     }
 
-    public static CEE buildLee() { // AKA limited EE
-        CEE cee = new CEE();
-        cee.setConstituents(ImmutableList.of(
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildDtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildDdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildErpSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildLcssSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildMsmSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildTwedSpace).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildWdtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build(),
-            new IncKnnTunerBuilder().setKnnSupplier(KnnConfig::build1nnV2).setParamSpace(
-                DistanceMeasureConfigs::buildWddtwSpaceV1).setMaxNeighbourhoodSizePercentage(0.1).setMaxParamSpaceSizePercentage(0.5).build()
-                                            ));
-        return cee;
+    public static ImmutableList<Classifier> getV1Constituents() {
+        return ImmutableList.of(
+                ED_1NN_V1.getClassifierBuilder().build(),
+                DTW_1NN_V1.getClassifierBuilder().build(),
+                DDTW_1NN_V1.getClassifierBuilder().build(),
+                TUNED_DTW_1NN_V1.getClassifierBuilder().build(),
+                TUNED_DDTW_1NN_V1.getClassifierBuilder().build(),
+                TUNED_WDTW_1NN_V1.getClassifierBuilder().build(),
+                TUNED_WDDTW_1NN_V1.getClassifierBuilder().build(),
+                TUNED_ERP_1NN_V1.getClassifierBuilder().build(),
+                TUNED_MSM_1NN_V1.getClassifierBuilder().build(),
+                TUNED_LCSS_1NN_V1.getClassifierBuilder().build(),
+                TUNED_TWED_1NN_V1.getClassifierBuilder().build()
+        );
     }
 
-    public CEE() {
+    public static ImmutableList<Classifier> getV2Constituents() {
+        return ImmutableList.of(
+                ED_1NN_V2.getClassifierBuilder().build(),
+                DTW_1NN_V2.getClassifierBuilder().build(),
+                DDTW_1NN_V2.getClassifierBuilder().build(),
+                TUNED_DTW_1NN_V2.getClassifierBuilder().build(),
+                TUNED_DDTW_1NN_V2.getClassifierBuilder().build(),
+                TUNED_WDTW_1NN_V2.getClassifierBuilder().build(),
+                TUNED_WDDTW_1NN_V2.getClassifierBuilder().build(),
+                TUNED_ERP_1NN_V2.getClassifierBuilder().build(),
+                TUNED_MSM_1NN_V2.getClassifierBuilder().build(),
+                TUNED_LCSS_1NN_V2.getClassifierBuilder().build(),
+                TUNED_TWED_1NN_V2.getClassifierBuilder().build()
+        );
+    }
+
+    public EE() {
         super(true);
+        setConstituents(getV1Constituents());
     }
 
-    protected static final ImmutableList<EnhancedAbstractClassifier> DEFAULT_CONSTITUENTS = ImmutableList.of(
-        buildTunedDtw1nnV1(),
-        buildTunedDdtw1nnV1(),
-        buildTunedErp1nnV1(),
-        buildTunedLcss1nnV1(),
-        buildTunedMsm1nnV1(),
-        buildTunedWdtw1nnV1(),
-        buildTunedWddtw1nnV1(),
-        buildTunedTwed1nnV1()
-                                                                                                            );
-    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.copyOf(DEFAULT_CONSTITUENTS);
+    protected boolean isLimitedVersion() {
+        return limitedVersion;
+    }
+
+    protected void setLimitedVersion(boolean state) {
+        limitedVersion = state;
+    }
+
+    protected boolean limitedVersion = false;
+    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.of();
     protected List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
-    // constituents which
-    // still have work remaining
+    // constituents which still have work remaining
     protected List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
     // constituents which still have work remaining - tentative version
     protected List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
@@ -153,6 +138,9 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
             rebuild = false;
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
+            }
+            if(isLimitedVersion() && hasTrainTimeLimit()) {
+                throw new IllegalStateException("cannot run limited version under a train contract");
             }
             firstBatchDone = false;
             partialConstituentsBatch = new ArrayList<>(constituents);
@@ -265,6 +253,11 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainEstimateTimer.enable();
         if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
             logger.fine("generating train estimate");
+            if(isLimitedVersion()) {
+                for(EnhancedAbstractClassifier constituent : constituents) {
+
+                }
+            }
             regenerateTrainEstimate = false;
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
@@ -304,14 +297,6 @@ public class CEE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
         return votingScheme.distributionForInstance(modules, instance);
-    }
-
-    public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
-        return constituents;
-    }
-
-    public void setConstituents(final List<IncTuner> constituents) {
-        this.constituents = ImmutableList.copyOf(constituents);
     }
 
     @Override
