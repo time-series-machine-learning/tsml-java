@@ -162,6 +162,10 @@ public class EE extends EnhancedAbstractClassifier implements TrainTimeContracta
         trainTimer.disable();
     }
 
+    private boolean timeRemainingPerConstituent() {
+        return remainingTrainTimeNanosPerConstituent >= 0;
+    }
+
     /**
      * further iterations training a singular constituent by the remaining train time per constituent. Updates the
      * constituent records afterwards reflecting whether the constituent is done or has training remaining. If this
@@ -179,7 +183,7 @@ public class EE extends EnhancedAbstractClassifier implements TrainTimeContracta
         if(constituent == null) {
             throw new IllegalStateException("something has gone wrong, constituent should not be null");
         }
-        if(constituent instanceof TrainTimeContractable) {
+        if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent()) {
             ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
         trainTimer.disable();
@@ -199,7 +203,7 @@ public class EE extends EnhancedAbstractClassifier implements TrainTimeContracta
                    " }");
         memoryWatcher.enable();
         trainTimer.enable();
-        if(constituent instanceof TrainTimeContractable && ((TrainTimeContractable) constituent).hasRemainingTraining()) {
+        if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent() && ((TrainTimeContractable) constituent).hasRemainingTraining()) {
             nextPartialConstituentsBatch.add(constituent);
         }
         if(partialConstituentsBatch.isEmpty()) {
