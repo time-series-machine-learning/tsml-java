@@ -36,6 +36,7 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.TrainTimeContractable;
 import utilities.Debugable;
+import utilities.FileUtils;
 import utilities.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
@@ -203,6 +204,11 @@ public class Experiments  {
         @Parameter(names={"--contractInName"}, arity = 1, description = "todo")
         private boolean appendTrainContractToClassifierName = true;
 
+        @Parameter(names={"-l", "--logLevel"}, description = "log level")
+        private String logLevelStr = null;
+
+        private Level logLevel = null;
+
         public boolean hasTrainContracts() {
             return trainContracts.size() > 0;
         }
@@ -220,7 +226,7 @@ public class Experiments  {
             try {
                 setupAndRunExperiment(this);
             } catch (Exception ex) {
-                System.out.println("Threaded Experiment Failed: " + ex);
+                ex.printStackTrace();
             }
         }
 
@@ -323,8 +329,26 @@ public class Experiments  {
                 trainContracts.add(TimeUnit.SECONDS.toString());
             }
 
+            // check the contracts are in ascending order // todo sort them
+            for(int i = 1; i < trainContracts.size(); i += 2) {
+                trainContracts.set(i, trainContracts.get(i).toUpperCase());
+            }
+            long prev = -1;
+            for(int i = 0; i < trainContracts.size(); i += 2) {
+                long nanos = TimeUnit.NANOSECONDS.convert(Long.parseLong(trainContracts.get(i)),
+                                                          TimeUnit.valueOf(trainContracts.get(i + 1)));
+                if(prev > nanos) {
+                    throw new IllegalArgumentException("contracts not in asc order");
+                }
+                prev = nanos;
+            }
+
             if(trainContracts.size() % 2 != 0) {
                 throw new IllegalStateException("illegal number of args for time");
+            }
+
+            if(logLevelStr != null) {
+                logLevel = Level.parse(logLevelStr);
             }
         }
 
@@ -459,12 +483,13 @@ public class Experiments  {
             LOGGER.setLevel(Level.SEVERE);
         }
         else {
-            if (debug)
-                LOGGER.setLevel(Level.FINEST);
-            else
-                LOGGER.setLevel(Level.INFO);
+            if (debug) {LOGGER.setLevel(Level.FINEST);}
+            else {LOGGER.setLevel(Level.INFO);}
 
             DatasetLoading.setDebug(debug); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+        }
+        if(expSettings.logLevel != null) {
+            LOGGER.setLevel(expSettings.logLevel);
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
@@ -483,15 +508,10 @@ public class Experiments  {
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
         boolean contractable = classifier instanceof TrainTimeContractable;
         boolean hasContracts = expSettings.hasTrainContracts();
-        if(contractable && hasContracts) {
-            // all good in the hood
-        } else if(contractable && !hasContracts) {
-            // also fine, we'll just set unlimited contract
-        } else if(!contractable && hasContracts) {
+        if(!contractable && hasContracts) {
             throw new IllegalArgumentException("cannot contract an uncontractable classifier!");
-        } else {
-            // not contractable and not contracting so all good
         }
+
 
         if(classifier instanceof Randomizable) {
             ((Randomizable) classifier).setSeed(expSettings.foldId);
@@ -506,6 +526,10 @@ public class Experiments  {
         }
 
         List<ClassifierResults> results = new ArrayList<>();
+
+        Instances[] data = null;
+
+        System.gc(); System.gc(); // do it twice due to young/old generation mem pool and finalization
 
         for(int i = 0; i < expSettings.trainContracts.size(); i += 2) {
             String trainContractInClassifierNameStr = "";
@@ -538,11 +562,12 @@ public class Experiments  {
 
             //Check whether fold already exists, if so, dont do it, just quit
             if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-                return null;
+                LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName);
             }
             else {
-                Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+                if(data == null) {
+                    data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+                }
 
                 //If needed, build/make the directory to write the train and/or testFold files to
                 if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
@@ -570,8 +595,8 @@ public class Experiments  {
                 }
 
                 ClassifierResults[] runResults = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-                LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + runResults[1].getAcc());
-
+                LOGGER.log(Level.INFO,
+                           "Experiment finished " + expSettings.toShortString() + trainContractInClassifierNameStr + ", Test Acc: " + runResults[1].getAcc() + ", Train Acc: " + runResults[0].getAcc());
                 results.addAll(Arrays.asList(runResults));
             }
         }
@@ -611,6 +636,8 @@ public class Experiments  {
             //otherwise, defined by this as default
             trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
         String testFoldFilename = "testFold" + expSettings.foldId + ".csv";
+        String testPath = StrUtils.asDirPath(resultsPath) + testFoldFilename;
+        String trainPath = StrUtils.asDirPath(resultsPath) + trainFoldFilename;
 
         //these train results shall now be initialised regardless of whether
         //we're going to write them out, to store at minimum the build times
@@ -621,76 +648,97 @@ public class Experiments  {
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
+        FileUtils.FileLocker trainLock = new FileUtils.FileLocker(new File(trainPath), false);
+        FileUtils.FileLocker testLock = new FileUtils.FileLocker(new File(testPath), false);
+
+        ClassifierResults[] experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()};
+
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet) {
-                //Tell the classifier to generate train results if it can do it internally,
-                //otherwise perform the evaluation externally here (e.g. cross validation on the
-                //train data
-                if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
-                    ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
-                else
-                    trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
+            trainLock.lock();
+            if(trainLock.isLocked()) {
+                testLock.lock();
             }
-            LOGGER.log(Level.FINE, "Train estimate ready.");
+            if(trainLock.isLocked() && testLock.isLocked()) {
+                if (expSettings.generateErrorEstimateOnTrainSet) {
+                    //Tell the classifier to generate train results if it can do it internally,
+                    //otherwise perform the evaluation externally here (e.g. cross validation on the
+                    //train data
+                    if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
+                        ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
+                    else
+                        trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
+                }
+                LOGGER.log(Level.FINE, "Train estimate ready.");
 
 
-            //Build on the full train data here
-            System.gc(); System.gc(); // do it twice due to young/old generation mem pool and finalization
-            long buildTime = System.nanoTime();
-            classifier.buildClassifier(trainSet);
-            buildTime = System.nanoTime() - buildTime;
-            LOGGER.log(Level.FINE, "Training complete");
+                //Build on the full train data here
+                long buildTime = System.nanoTime();
+                classifier.buildClassifier(trainSet);
+                buildTime = System.nanoTime() - buildTime;
+                LOGGER.log(Level.FINE, "Training complete");
 
-            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
-            //At this stage, regardless of whether the classifier is able to estimate it's
-            //own accuracy or not, train results should contain either
-            //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
-            //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
+                trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
+                //At this stage, regardless of whether the classifier is able to estimate it's
+                //own accuracy or not, train results should contain either
+                //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
+                //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet)
-                writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
-            LOGGER.log(Level.FINE, "Train estimate written");
+                if (expSettings.generateErrorEstimateOnTrainSet)
+                    writeResults(expSettings, trainResults, trainPath, "train");
+                LOGGER.log(Level.FINE, "Train estimate written");
 
-            if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
-                serialiseClassifier(expSettings, classifier);
+                if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
+                    serialiseClassifier(expSettings, classifier);
 
-            //And now evaluate on the test set, if this wasn't a single parameter fold
-            if (expSettings.singleParameterID == null) {
-                //This is checked before the buildClassifier also, but
-                //a) another process may have been doing the same experiment
-                //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
-                //no reason not to check again
-                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    testResults = evaluateClassifier(expSettings, classifier, testSet);
-                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+                //And now evaluate on the test set, if this wasn't a single parameter fold
+                if (expSettings.singleParameterID == null) {
+                    //This is checked before the buildClassifier also, but
+                    //a) another process may have been doing the same experiment
+                    //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
+                    //no reason not to check again
+                    if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(testPath)) {
+                        testResults = evaluateClassifier(expSettings, classifier, testSet);
+                        assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
 
-                    testResults.setParas(trainResults.getParas());
+                        testResults.setParas(trainResults.getParas());
 
-                    testResults.turnOffZeroTimingsErrors();
-                    testResults.setBenchmarkTime(benchmark);
-                    testResults.setBuildTime(trainResults.getBuildTime());
-                    testResults.turnOnZeroTimingsErrors();
+                        testResults.turnOffZeroTimingsErrors();
+                        testResults.setBenchmarkTime(benchmark);
+                        testResults.setBuildTime(trainResults.getBuildTime());
+                        testResults.turnOnZeroTimingsErrors();
 
-                    LOGGER.log(Level.FINE, "Testing complete");
+                        LOGGER.log(Level.FINE, "Testing complete");
 
-                    writeResults(expSettings, testResults, resultsPath + testFoldFilename, "test");
-                    LOGGER.log(Level.FINE, "Testing written");
+                        writeResults(expSettings, testResults, testPath, "test");
+                        LOGGER.log(Level.FINE, "Testing written");
+                    }
+                    else {
+                        LOGGER.log(Level.INFO, "Test file already found, written by another process.");
+                        testResults = new ClassifierResults(testPath);
+                    }
+                    experimentResults = new ClassifierResults[] { trainResults, testResults };
                 }
                 else {
-                    LOGGER.log(Level.INFO, "Test file already found, written by another process.");
-                    testResults = new ClassifierResults(resultsPath + testFoldFilename);
+                    experimentResults = new ClassifierResults[] { trainResults, new ClassifierResults() }; //not
+                    // error, but we dont
+                    // have a test acc. just returning 0 for now
                 }
-                return new ClassifierResults[] { trainResults, testResults };
-            }
-            else {
-                return new ClassifierResults[] { trainResults, new ClassifierResults() }; //not error, but we dont have a test acc. just returning 0 for now
             }
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            return new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()}; //error state
+            experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()}; //error
+            // state
+        } finally {
+            if(trainLock != null) {
+                trainLock.unlock();
+            }
+            if(testLock != null) {
+                testLock.unlock();
+            }
         }
+        return experimentResults;
     }
 
     /**

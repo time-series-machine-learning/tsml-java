@@ -19,7 +19,7 @@ public class RandomNeighbourIteratorBuilder
     @Override
     public Iterator<Knn.NeighbourSearcher> build() {
         if(knn == null) throw new IllegalStateException("knn not set");
-        return new RandomIterator<>(knn.getSeed(), knn.getSearchers());
+        return new RandomIterator<>(knn.getSeed(), knn.getTrainSearchers());
     }
 
 

@@ -31,10 +31,10 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     // setup building classifier from param set
     private int maxParamSpaceSize = -1; // max number of params
     private int maxNeighbourhoodSize = -1; // max number of neighbours
-    private Box<Integer> neighbourCount = new Box<>(0); // current number of neighbours
-    private Box<Integer> paramCount = new Box<>(0); // current number of params
-    private BestN<Long> maxParamTimeNanos = new BestN<>(0L); // track maximum time taken for a param to run
-    private BestN<Long> maxNeighbourBatchTimeNanos = new BestN<>(0L); // track max time taken for an addition of
+    private Box<Integer> neighbourCount; // current number of neighbours
+    private Box<Integer> paramCount; // current number of params
+    private BestN<Long> maxParamTimeNanos; // track maximum time taken for a param to run
+    private BestN<Long> maxNeighbourBatchTimeNanos; // track max time taken for an addition of
     // neighbours
     private Function<Instances, ParamSpace> paramSpaceFunction;
     private Iterator<Set<Benchmark>> paramSourceIterator;
@@ -100,6 +100,10 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
     @Override
     public void init(Instances trainData) {
+        neighbourCount = new Box<>(1); // must start at 1 otherwise the loocv produces no train estimate
+        paramCount = new Box<>(0);
+        maxParamTimeNanos = new BestN<>(0L);
+        maxNeighbourBatchTimeNanos = new BestN<>(0L);
         improveableBenchmarks = new HashSet<>();
         unimprovableBenchmarks = new HashSet<>();
         final int seed = incTunedClassifier.getSeed();

@@ -26,6 +26,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         super(true);
     }
 
+    public boolean isDelegateMonitoring() {
+        return delegateMonitoring;
+    }
+
+    public void setDelegateMonitoring(final boolean delegateMonitoring) {
+        this.delegateMonitoring = delegateMonitoring;
+    }
+
     public interface InitFunction extends Serializable, ParamHandler {
         void init(Instances trainData);
     }
@@ -67,6 +75,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     public static final String BENCHMARK_ITERATOR_FLAG = "b";
     public static final String BENCHMARK_COLLECTOR_FLAG = "c";
     public static final String INIT_FUNCTION_FLAG = "i";
+    private boolean delegateMonitoring = true;
 
     @Override public ParamSet getParams() {
         return TrainTimeContractable.super.getParams()
@@ -136,7 +145,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         memoryWatcher.suspend();
         if(isCheckpointing() && (force || withinCheckpointInterval() || isCheckpointAfterEveryIteration())) {
             String path = checkpointDirPath + tempCheckpointFileName;
-            FileUtils.FileLocker locker = FileUtils.FileLocker.lock(path);
+            FileUtils.FileLocker locker = new FileUtils.FileLocker(new File(path));
             if(locker.isUnlocked()) {
                 String msg = "failed to lock file: " + path;
                 logger.log(msg);
@@ -160,7 +169,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
                 }
                 name += "_" + id;
                 path = getBenchmarksPath(name) + ".csv";
-                locker = FileUtils.FileLocker.lock(path);
+                locker = new FileUtils.FileLocker(new File(path));
                 if(locker.isUnlocked()) {
                     if(independentBenchmarks) {
                         logger.log("failed to lock file: " + path + " but that's ok as we're running independently");
@@ -247,13 +256,21 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     @Override
     public void nextBuildTick() throws Exception {
         trainTimer.checkDisabled();
-        trainEstimateTimer.enable();
-        memoryWatcher.enable();
-        Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
+        trainEstimateTimer.checkDisabled();
+        memoryWatcher.checkDisabled();
+        if(!delegateMonitoring) {
+            // we're going to monitor here as the benchmark iterator doesn't (for whatever reason)
+            memoryWatcher.enable();
+            trainEstimateTimer.enable();
+        }
+        Set<Benchmark> nextBenchmarks = benchmarkIterator.next(); // todo setting to allow timer to be handled by
+        // either this or the benchmark iterator - should be the latter in most cases
         logger.log("benchmark batch produced:");
         for(Benchmark benchmark : nextBenchmarks) {
             logger.log(benchmark);
         }
+        memoryWatcher.enableAnyway();
+        trainEstimateTimer.enableAnyway();
         replace(collectedBenchmarks, nextBenchmarks);
         trainEstimateTimer.disable();
         memoryWatcher.disable();

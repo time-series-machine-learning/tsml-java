@@ -51,7 +51,8 @@ public class FileUtils {
 
     public static class FileLocker {
         private Thread thread;
-        private final File file;
+        private File file;
+        private File lockFile;
         private static final long interval = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
         private static final long expiredInterval = interval + TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
         private final AtomicBoolean unlocked = new AtomicBoolean(false);
@@ -60,42 +61,61 @@ public class FileUtils {
             return file;
         }
 
-        public static FileLocker lock(String path) throws
-                                                   IOException {
-            return lock(new File(path));
+        public FileLocker setFile(File file) {
+            if(!unlock().isUnlocked()) {
+                throw new IllegalStateException("couldn't unlock file");
+            }
+            this.file = file;
+            this.lockFile = new File(file.getPath() + ".lock");
+            return this;
         }
 
-        public static FileLocker lock(File file) throws
-                                                 IOException {
-            file = new File(file.getPath() + ".lock");
-            makeParentDir(file);
-            boolean stop = false;
-            while(!stop) {
-                boolean created = file.createNewFile();
-                if(created) {
-//                    System.out.println(file.getPath() + " created");
-                    file.deleteOnExit();
-                    return new FileLocker(file);
-                } else {
-                    long lastModified = file.lastModified();
-                    if(lastModified <= 0) {
-//                        System.out.println(file.getPath() + " lm < 0");
+        public FileLocker(File file, boolean lock) {
+            setFile(file);
+            if(lock) {
+                lock();
+            }
+        }
+
+        public FileLocker(File file) {
+            // assume we want to lock the file asap
+            this(file, true);
+        }
+
+        public FileLocker lock() {
+            if(isUnlocked()) {
+                makeParentDir(lockFile);
+                boolean stop = false;
+                while(!stop) {
+                    boolean created = false;
+                    try {
+                        created = lockFile.createNewFile();
+                    } catch(IOException e) {
+                        created = false;
+                    }
+                    if(created) {
+                        lockFile.deleteOnExit();
+                        unlocked.set(false);
+                        thread = new Thread(this::watch);
+                        thread.setDaemon(true);
+                        thread.start();
                         stop = true;
-                    } else if(lastModified + expiredInterval < System.currentTimeMillis()) {
-//                        System.out.println(file.getPath() + " lm > interval" + lastModified);
-                        stop = !file.delete();
                     } else {
-//                        System.out.println(file.getPath() + " lm < interval " + lastModified + " " + file.exists());
-                        stop = true;
+                        long lastModified = lockFile.lastModified();
+                        if(lastModified <= 0 || lastModified + expiredInterval < System.currentTimeMillis()) {
+                            stop = !lockFile.delete();
+                        } else {
+                            stop = true;
+                        }
                     }
                 }
             }
-            return null;
+            return this;
         }
 
         private void watch() {
             do {
-                boolean setLastModified = file.setLastModified(System.currentTimeMillis());
+                boolean setLastModified = lockFile.setLastModified(System.currentTimeMillis());
                 if(!setLastModified) {
                     unlocked.set(true);
                 }
@@ -107,33 +127,21 @@ public class FileUtils {
                     }
                 }
             } while (!unlocked.get());
-            file.delete();
+            lockFile.delete();
         }
 
-        private FileLocker(final File file, boolean failed) {
-            this.file = file;
-            if(failed) {
-                // the failed to lock version, i.e. the locker is already unlocked.
-                unlocked.set(true);
-            } else {
-                setup();
-            }
-
-        }
-
-        private FileLocker(final File file) {
-            this(file, false);
-        }
-
-        private void setup() {
-            thread = new Thread(this::watch);
-            thread.setDaemon(true);
-            thread.start();
-        }
-
-        public void unlock() {
+        public FileLocker unlock() {
             unlocked.set(true);
-            if(thread != null) thread.interrupt();
+            if(thread != null) {
+                thread.interrupt();
+                try {
+                    thread.join();
+                } catch(InterruptedException e) {
+                    throw new IllegalStateException("interrupted");
+                }
+                thread = null;
+            }
+            return this;
         }
 
         public boolean isUnlocked() {

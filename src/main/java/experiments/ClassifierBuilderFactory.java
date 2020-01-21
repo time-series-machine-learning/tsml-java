@@ -167,6 +167,8 @@ public class ClassifierBuilderFactory {
         getGlobalInstance().add(KnnConfig.DTW_1NN_V2);
         getGlobalInstance().add(KnnConfig.DDTW_1NN_V1);
         getGlobalInstance().add(KnnConfig.DDTW_1NN_V2);
+        getGlobalInstance().add(KnnConfig.TUNED_DTW_1NN_V1);
+        getGlobalInstance().add(KnnConfig.TUNED_DTW_1NN_V2);
         getGlobalInstance().add(KnnConfig.TUNED_WDTW_1NN_V1);
         getGlobalInstance().add(KnnConfig.TUNED_WDTW_1NN_V2);
         getGlobalInstance().add(KnnConfig.TUNED_WDDTW_1NN_V1);
