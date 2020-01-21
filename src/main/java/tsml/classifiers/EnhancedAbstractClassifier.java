@@ -357,4 +357,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return getClassifierName();
     }
 
+    @Override public String[] getOptions() {
+        return ParamHandler.super.getOptions();
+    }
+
+    @Override public void setOptions(final String[] options) throws Exception {
+        ParamHandler.super.setOptions(options);
+    }
 }
