@@ -28,7 +28,6 @@ public class KnnLoocv
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-    //    public static final String CACHE_FLAG = "c";
     protected long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
     protected long maxNeighbourEvalTimeInNanos;

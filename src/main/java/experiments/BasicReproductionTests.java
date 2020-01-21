@@ -30,6 +30,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.junit.Test;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
@@ -520,7 +522,12 @@ public class BasicReproductionTests {
         
         return res;
     }
-    
+
+    @Test
+    public void test() throws Exception {
+        main(new String[0]);
+    }
+
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();
