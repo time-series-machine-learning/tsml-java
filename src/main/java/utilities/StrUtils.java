@@ -83,19 +83,6 @@ public class StrUtils {
         setter.accept(Utils.getFlag(flag, options));
     }
 
-    public static void main(String[] args) throws
-                                           Exception {
-//        setOption(new String[] {"-d", "timeseriesweka.classifiers.distance_based.distance_measures.Dtw -w 0"}, "d", null, DistanceMeasure.class);
-//        Pipeline p = new Pipeline();
-//        p.setClassifier(new KNN());
-//        p.getFilters().add(new Derivative());
-//        p.getFilters().add(new Derivative());
-//        String[] opts = p.getOptions();
-//        System.out.println(join(",", opts));
-//        Pipeline q = new Pipeline();
-//        q.setOptions(opts);
-    }
-
     public static boolean isOption(String flag, List<String> options) {
         // todo use view instead
         return isOption(flag, options.toArray(new String[0]));
