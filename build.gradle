@@ -6,6 +6,7 @@ plugins {
 version '0.1.0'
 
 sourceCompatibility = 1.8
+targetCompatibility = sourceCompatibility
 
 repositories {
     mavenCentral()
@@ -61,20 +62,35 @@ jar {
     }
 }
 
-task buildFatJar(type: Jar) {
-    zip64 true
-    baseName = project.name
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
+task copyDepsToBuild(type: Copy) {
+    into "build/libs/lib"
+    from configurations.runtime
+    from 'lib'
 }
 
-task buildSlimJar(type: Jar) {
+task fatJar(type: Jar) {
     zip64 true
-    baseName = project.name
-    with jar
+    manifest = jar.manifest
+    baseName = project.name + "-all"
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
 }
 
-task buildJar(type: Jar) {
-    from buildSlimJar
-    from buildFatJar
-}
+//task buildJarFat(type: Jar) {
+//    zip64 true
+//    manifest = jar.manifest
+//    baseName = project.name + "-all"
+//    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+//}
+
+//task buildJar(type: Jar) {
+//    from copyToLib
+//    manifest = jar.manifest
+//    baseName = project.name
+//}
+
+jar.finalizedBy(fatJar)
+jar.finalizedBy(copyDepsToBuild)
