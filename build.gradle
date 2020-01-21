@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 version '0.1.0'
@@ -21,4 +22,12 @@ sourceSets {
         java.srcDir 'src/main/java'
         resources.srcDir 'src/main/resources'
     }
+}
+
+tasks.withType(Test) {
+    maxParallelForks = Runtime.runtime.availableProcessors()
+}
+
+application {
+    mainClassName = 'experiments.Experiments'
 }
