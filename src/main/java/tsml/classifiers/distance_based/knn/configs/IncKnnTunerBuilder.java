@@ -100,6 +100,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
     @Override
     public void init(Instances trainData) {
+        incTunedClassifier.setDelegateMonitoring(true);
         neighbourCount = new Box<>(1); // must start at 1 otherwise the loocv produces no train estimate
         paramCount = new Box<>(0);
         maxParamTimeNanos = new BestN<>(0L);

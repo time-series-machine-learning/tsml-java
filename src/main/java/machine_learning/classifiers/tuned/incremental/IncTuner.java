@@ -261,12 +261,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         trainTimer.checkDisabled();
         trainEstimateTimer.checkDisabled();
         memoryWatcher.checkDisabled();
-        if(!delegateMonitoring) {
+        if(!isDelegateMonitoring()) {
             // we're going to monitor here as the benchmark iterator doesn't (for whatever reason)
             memoryWatcher.enable();
             trainEstimateTimer.enable();
         }
-        Set<Benchmark> nextBenchmarks = benchmarkIterator.next(); // todo setting to allow timer to be handled by
+        Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
         // either this or the benchmark iterator - should be the latter in most cases
         logger.fine(() -> "benchmark batch produced:");
         for(Benchmark benchmark : nextBenchmarks) {
