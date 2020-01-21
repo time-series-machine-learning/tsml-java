@@ -10,7 +10,6 @@ targetCompatibility = sourceCompatibility
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
