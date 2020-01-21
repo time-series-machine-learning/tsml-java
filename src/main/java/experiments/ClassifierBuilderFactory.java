@@ -3,6 +3,7 @@ package experiments;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.ee.EeConfig;
 import tsml.classifiers.distance_based.knn.configs.KnnConfig;
 import utilities.Utilities;
 import weka.classifiers.Classifier;
@@ -181,9 +182,11 @@ public class ClassifierBuilderFactory {
         getGlobalInstance().add(KnnConfig.TUNED_ERP_1NN_V2);
         getGlobalInstance().add(KnnConfig.TUNED_TWED_1NN_V1);
         getGlobalInstance().add(KnnConfig.TUNED_TWED_1NN_V2);
-        getGlobalInstance().add(KnnConfig.CEE_V1);
-        getGlobalInstance().add(KnnConfig.CEE_V2);
-        getGlobalInstance().add(KnnConfig.LEE);
+        getGlobalInstance().add(EeConfig.EE_V1);
+        getGlobalInstance().add(EeConfig.EE_V2);
+        getGlobalInstance().add(EeConfig.CEE_V1);
+        getGlobalInstance().add(EeConfig.CEE_V2);
+        getGlobalInstance().add(EeConfig.LEE);
     }
 
     public static void main(String[] args) {
