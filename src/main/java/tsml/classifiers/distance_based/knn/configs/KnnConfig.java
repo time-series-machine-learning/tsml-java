@@ -4,10 +4,11 @@ import evaluation.storage.ClassifierResults;
 import experiments.ClassifierBuilderFactory;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.ee.CEE;
+import tsml.classifiers.distance_based.ee.EE;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
@@ -45,16 +46,9 @@ public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBui
     TUNED_LCSS_1NN_V2(KnnConfig::buildTunedLcss1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
     TUNED_TWED_1NN_V1(KnnConfig::buildTunedTwed1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
     TUNED_TWED_1NN_V2(KnnConfig::buildTunedTwed1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    CEE_V1(CEE::buildV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    CEE_V2(CEE::buildV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    LEE(CEE::buildLee, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
     ;
 
     private final ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder;
-
-    KnnConfig(final Supplier<? extends Classifier> supplier, final String... tags) {
-        classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);
-    }
 
     KnnConfig(final Supplier<? extends Classifier> supplier, final Supplier<String>... tags) {
         classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);

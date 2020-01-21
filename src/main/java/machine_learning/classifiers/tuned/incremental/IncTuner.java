@@ -77,6 +77,10 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
     public static final String INIT_FUNCTION_FLAG = "i";
     private boolean delegateMonitoring = true;
 
+    public StopWatch getTrainEstimateTimer() {
+        return trainEstimateTimer;
+    }
+
     @Override public ParamSet getParams() {
         return TrainTimeContractable.super.getParams()
                                     .add(BENCHMARK_COLLECTOR_FLAG, benchmarkCollector)
@@ -300,12 +304,13 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
                     System.out.println("no benchmarks produced");
                 }
                 ensembleWeights = new ArrayList<>();
-                trainResults = new ClassifierResults(); // todo random guess
+                throw new UnsupportedOperationException("todo implement random guess here?");
             } else if(collectedBenchmarks.size() == 1) {
                 ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
                 trainResults = collectedBenchmarks.iterator().next().getResults();
             } else {
                 ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
+                throw new UnsupportedOperationException("todo apply ensemble weights to train results");
             }
             memoryWatcher.disable();
             trainEstimateTimer.disable();

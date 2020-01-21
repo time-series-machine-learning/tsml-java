@@ -4,7 +4,9 @@ import machine_learning.classifiers.tuned.incremental.*;
 import org.apache.commons.collections4.Transformer;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
+import utilities.MemoryWatcher;
 import utilities.NumUtils;
+import utilities.StopWatch;
 import utilities.collections.BestN;
 import utilities.collections.box.Box;
 import utilities.iteration.RandomIterator;
@@ -73,12 +75,16 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return result;
     }
 
+    private boolean hasLimits() {
+        return hasLimitedNeighbourhoodSize() || hasLimitedParamSpaceSize();
+    }
+
     private boolean hasLimitedParamSpaceSize() {
         return maxParamSpaceSize < 0 || !NumUtils.isPercentage(maxParamSpaceSizePercentage);
     }
 
     private boolean hasLimitedNeighbourhoodSize() {
-        return maxNeighbourhoodSize < 0 || !NumUtils.isPercentage(maxNeighbourhoodSize);
+        return maxNeighbourhoodSize < 0 || !NumUtils.isPercentage(maxNeighbourhoodSizePercentage);
     }
 
     private boolean withinParamSpaceSizeLimit() {
@@ -114,6 +120,9 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         fullNeighbourhoodSize = trainData.size();
         maxNeighbourhoodSize = findLimit(fullNeighbourhoodSize, maxNeighbourhoodSize, maxNeighbourhoodSizePercentage);
         maxParamSpaceSize = findLimit(fullParamSpaceSize, maxParamSpaceSize, maxParamSpaceSizePercentage);
+        if(incTunedClassifier.hasTrainTimeLimit() && hasLimits()) {
+            throw new IllegalStateException("cannot train under a contract with limits set");
+        }
         // transform classifiers into benchmarks
         paramSourceIterator =
             new TransformIterator<>(paramSetIterator,
@@ -276,8 +285,45 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         // set corresponding iterators in the incremental tuned classifier
         incTunedClassifier.setBenchmarkIterator(benchmarkExplorer);
         incTunedClassifier.setBenchmarkEnsembler(BenchmarkEnsembler.single());
-        incTunedClassifier.setBenchmarkCollector(
-            new BestBenchmarkCollector(seed, benchmark -> benchmark.getResults().getAcc()));
+        incTunedClassifier.setBenchmarkCollector( // todo make sure the seeds are set for everything
+            new BestBenchmarkCollector(seed, benchmark -> benchmark.getResults().getAcc()) {
+
+                @Override
+                public Set<Benchmark> getCollectedBenchmarks() {
+                    incTunedClassifier.getTrainTimer().checkDisabled();
+                    StopWatch trainEstimateTimer = incTunedClassifier.getTrainEstimateTimer();
+                    MemoryWatcher memoryWatcher = incTunedClassifier.getMemoryWatcher();
+                    memoryWatcher.enable();
+                    trainEstimateTimer.enable();
+                    // train the selected classifier fully, i.e. all neighbours
+                    Set<Benchmark> collectedBenchmarks = super.getCollectedBenchmarks();
+                    if(collectedBenchmarks.size() > 1) {
+                        throw new IllegalStateException("there shouldn't be more than 1");
+                    }
+                    for(Benchmark benchmark : collectedBenchmarks) {
+                        Classifier classifier = benchmark.getClassifier();
+                        if(classifier instanceof KnnLoocv) {
+                            KnnLoocv knn = (KnnLoocv) classifier;
+                            knn.setNeighbourLimit(-1);
+                            try {
+                                trainEstimateTimer.disable();
+                                memoryWatcher.disable();
+                                knn.buildClassifier(trainData);
+                                trainEstimateTimer.enable();
+                                memoryWatcher.enable();
+                            } catch (Exception e) {
+                                throw new IllegalStateException(e);
+                            }
+                            benchmark.setResults(knn.getTrainResults());
+                        } else {
+                            throw new IllegalArgumentException("expected knn");
+                        }
+                    }
+                    trainEstimateTimer.disable();
+                    memoryWatcher.disable();
+                    return collectedBenchmarks;
+                }
+            });
     }
 
     public IncTuner getIncTunedClassifier() {
