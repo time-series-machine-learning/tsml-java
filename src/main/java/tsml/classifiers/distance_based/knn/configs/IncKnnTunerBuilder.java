@@ -143,6 +143,8 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                                                 startTime = System.nanoTime();
                                                 timeTaken += knn.getTrainTimeNanos();
                                                 Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
+                                                benchmark.getResults().getAcc();
+                                                benchmark.getResults().cleanPredictionInfo(); // todo make this generic
                                                 HashSet<Benchmark> benchmarks = new HashSet<>(
                                                     Collections.singletonList(benchmark));
                                                 timeTaken += System.nanoTime() - startTime;
@@ -234,6 +236,8 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                         timeTaken += knn.getTrainTimeNanos() - knnPrevTrainTime;
                         startTime = System.nanoTime();
                         benchmark.setResults(knn.getTrainResults());
+                        benchmark.getResults().getAcc();
+                        benchmark.getResults().cleanPredictionInfo();
                         if(!isImproveable(benchmark)) {
                             benchmarkIterator.remove();
                             unimprovableBenchmarks.add(benchmark);
@@ -293,10 +297,6 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                     incTunedClassifier.getTrainTimer().checkDisabled();
                     StopWatch trainEstimateTimer = incTunedClassifier.getTrainEstimateTimer();
                     MemoryWatcher memoryWatcher = incTunedClassifier.getMemoryWatcher();
-                    boolean memoryWatcherEnabled = memoryWatcher.isEnabled();
-                    boolean trainEstimateTimerEnabled = trainEstimateTimer.isEnabled();
-                    memoryWatcher.enableAnyway();
-                    trainEstimateTimer.enableAnyway();
                     // train the selected classifier fully, i.e. all neighbours
                     Set<Benchmark> collectedBenchmarks = super.getCollectedBenchmarks();
                     if(collectedBenchmarks.size() > 1) {
@@ -310,19 +310,21 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                             try {
                                 trainEstimateTimer.disable();
                                 memoryWatcher.disable();
+                                knn.getMemoryWatcher().addListener(memoryWatcher);
                                 knn.buildClassifier(trainData);
+                                knn.getMemoryWatcher().removeListener(memoryWatcher);
                                 trainEstimateTimer.enable();
                                 memoryWatcher.enable();
                             } catch (Exception e) {
                                 throw new IllegalStateException(e);
                             }
                             benchmark.setResults(knn.getTrainResults());
+                            benchmark.getResults().getAcc();
+                            benchmark.getResults().cleanPredictionInfo();
                         } else {
                             throw new IllegalArgumentException("expected knn");
                         }
                     }
-                    if(!memoryWatcherEnabled) memoryWatcher.disable();
-                    if(!trainEstimateTimerEnabled) trainEstimateTimer.disable();
                     return collectedBenchmarks;
                 }
             });

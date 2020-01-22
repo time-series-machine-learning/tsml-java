@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import static utilities.collections.Utils.replace;
 
@@ -230,21 +231,21 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         IncClassifier.super.buildClassifier(trainData);
     }
 
-    @Override public void startBuild(final Instances data) throws Exception {
+    @Override public void startBuild(final Instances trainData) throws Exception {
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
         memoryWatcher.enable();
         if(rebuild) {
             trainTimer.disable();
             memoryWatcher.disable();
-            super.buildClassifier(data);
+            super.buildClassifier(trainData);
             trainTimer.enable();
             memoryWatcher.enable();
-            initFunction.init(data);
+            initFunction.init(trainData);
             rebuild = false;
             trainEstimateTimer.resetAndDisable();
         }
-        trainData = data;
+        this.trainData = trainData;
         memoryWatcher.disable();
         trainTimer.disable();
     }
@@ -272,10 +273,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
         }
         Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
         // either this or the benchmark iterator - should be the latter in most cases
-        logger.fine(() -> "benchmark batch produced:");
-        for(Benchmark benchmark : nextBenchmarks) {
-            logger.fine(benchmark::toString);
-        }
+        logger.fine(() -> nextBenchmarks.size() + "benchmark batch produced");
         memoryWatcher.enableAnyway();
         trainEstimateTimer.enableAnyway();
         replace(collectedBenchmarks, nextBenchmarks);
@@ -294,21 +292,20 @@ public class IncTuner extends EnhancedAbstractClassifier implements IncClassifie
             memoryWatcher.enable();
             for(Benchmark collectedBenchmark : collectedBenchmarks) {
                 trainEstimateTimer.add(collectedBenchmark.getResults().getBuildPlusEstimateTime());
-                // todo add mem
                 trainTimer.add(collectedBenchmark.getResults().getBuildTimeInNanos());
             }
             benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
             collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
             if(collectedBenchmarks.isEmpty()) {
-                if(debug) {
-                    System.out.println("no benchmarks produced");
-                }
+                logger.info(() -> "no benchmarks collected");
                 ensembleWeights = new ArrayList<>();
                 throw new UnsupportedOperationException("todo implement random guess here?");
             } else if(collectedBenchmarks.size() == 1) {
+                logger.info(() -> "single benchmarks collected");
                 ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
                 trainResults = collectedBenchmarks.iterator().next().getResults();
             } else {
+                logger.info(() -> collectedBenchmarks.size() + " benchmarks collected");
                 ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
                 throw new UnsupportedOperationException("todo apply ensemble weights to train results");
             }
