@@ -293,8 +293,10 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                     incTunedClassifier.getTrainTimer().checkDisabled();
                     StopWatch trainEstimateTimer = incTunedClassifier.getTrainEstimateTimer();
                     MemoryWatcher memoryWatcher = incTunedClassifier.getMemoryWatcher();
-                    memoryWatcher.enable();
-                    trainEstimateTimer.enable();
+                    boolean memoryWatcherEnabled = memoryWatcher.isEnabled();
+                    boolean trainEstimateTimerEnabled = trainEstimateTimer.isEnabled();
+                    memoryWatcher.enableAnyway();
+                    trainEstimateTimer.enableAnyway();
                     // train the selected classifier fully, i.e. all neighbours
                     Set<Benchmark> collectedBenchmarks = super.getCollectedBenchmarks();
                     if(collectedBenchmarks.size() > 1) {
@@ -319,8 +321,8 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                             throw new IllegalArgumentException("expected knn");
                         }
                     }
-                    trainEstimateTimer.disable();
-                    memoryWatcher.disable();
+                    if(!memoryWatcherEnabled) memoryWatcher.disable();
+                    if(!trainEstimateTimerEnabled) trainEstimateTimer.disable();
                     return collectedBenchmarks;
                 }
             });
