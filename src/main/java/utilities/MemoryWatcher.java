@@ -1,6 +1,7 @@
 package utilities;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
+import tsml.classifiers.Loggable;
 import tsml.classifiers.MemoryWatchable;
 
 import javax.management.ListenerNotFoundException;
@@ -18,8 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-public class MemoryWatcher extends Stated implements Debugable, Serializable, MemoryWatchable {
+public class MemoryWatcher extends Stated implements Loggable, Serializable, MemoryWatchable {
 
     public synchronized long getMaxMemoryUsageInBytes() {
         return maxMemoryUsageBytes;
@@ -33,7 +35,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
     private long garbageCollectionTimeInMillis = 0;
     private boolean overflowed = false; // to handle overflow of the sq sum of diff from mean (can get reallllyyy big)
 
-    @Override public boolean enableAnyway() {
+    @Override public synchronized boolean enableAnyway() {
         if(super.enableAnyway() && !isEmittersSetup()) {
             setupEmitters();
             return true;
@@ -41,7 +43,19 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         return false;
     }
 
-    private void setupEmitters() {
+    @Override public synchronized boolean enable() {
+        return super.enable();
+    }
+
+    @Override public synchronized boolean disableAnyway() {
+        return super.disableAnyway();
+    }
+
+    @Override public synchronized boolean disable() {
+        return super.disable();
+    }
+
+    private synchronized void setupEmitters() {
         emitters = new ArrayList<>();
         // garbage collector for old and young gen
         List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
@@ -55,7 +69,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         }
     }
 
-    private void tearDownEmitters() {
+    private synchronized void tearDownEmitters() {
         if(emitters != null) {
             for(NotificationEmitter emitter : emitters) {
                 try {
@@ -67,7 +81,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         }
     }
 
-    private boolean isEmittersSetup() {
+    private synchronized boolean isEmittersSetup() {
         return emitters != null;
     }
 
@@ -115,30 +129,32 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         reset();
     }
 
-    private void handleDeltaNonOverflow(double delta) {
+    private synchronized void handleDeltaNonOverflow(double delta) {
         double prev = sqDiffFromMean;
         sqDiffFromMean += Math.pow(delta, 2);
         if(sqDiffFromMean < prev) {
+            sqDiffFromMean = prev;
             overflow(delta);
         }
     }
 
-    private void overflow(double delta) {
+    private synchronized void overflow(double delta) {
+        logger.warning("overflowed");
         overflowed = true;
         bigSqDiffFromMean = BigDecimal.valueOf(sqDiffFromMean);
         handleDeltaOverflow(delta);
     }
 
-    private void handleDeltaOverflow(double delta) {
+    private synchronized void handleDeltaOverflow(double delta) {
         BigDecimal bigDelta = BigDecimal.valueOf(delta);
         bigSqDiffFromMean = bigSqDiffFromMean.add(bigDelta.multiply(bigDelta));
     }
 
-    private void addMemoryUsageReadingInBytesUnchecked(long usage) {
-        maxMemoryUsageBytes = Math.max(maxMemoryUsageBytes, usage);
+    private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
+        maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
         // Welford's online algo for mean and variance
         count++;
-        double delta = (double) usage - mean;
+        double delta = usage - mean;
         mean += delta / count;
         if(overflowed) {
             handleDeltaOverflow(delta);
@@ -147,7 +163,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         }
     }
 
-    private void addMemoryUsageReadingInBytes(long usage) {
+    private synchronized void addMemoryUsageReadingInBytes(double usage) {
         if(isEnabled()) {
             addMemoryUsageReadingInBytesUnchecked(usage);
         }
@@ -174,7 +190,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         }
     }
 
-    public long getMemoryReadingCount() {
+    public synchronized long getMemoryReadingCount() {
         return count;
     }
 
@@ -183,18 +199,6 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
             return StatisticalUtilities.sqrt(getBigVarianceMemoryUsageInBytes()).doubleValue();
         }
         return Math.sqrt(getVarianceMemoryUsageInBytes());
-    }
-
-    @Override
-    public synchronized boolean isDebug() {
-        return debug;
-    }
-
-    private boolean debug = false;
-
-    @Override
-    public synchronized void setDebug(boolean state) {
-        debug = state;
     }
 
     public synchronized long getGarbageCollectionTimeInMillis() {
@@ -208,7 +212,7 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
             '}';
     }
 
-    public void reset() {
+    public synchronized void reset() {
         count = 0;
         mean = 0;
         sqDiffFromMean = 0;
@@ -242,5 +246,11 @@ public class MemoryWatcher extends Stated implements Debugable, Serializable, Me
         System.out.println("----");
         System.out.println(stopWatch.getTimeNanos());
         System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
+    }
+
+    private Logger logger = LogUtils.getLogger(this);
+
+    @Override public Logger getLogger() {
+        return logger;
     }
 }

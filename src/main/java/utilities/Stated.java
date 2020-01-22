@@ -1,11 +1,25 @@
 package utilities;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class Stated {
 
     public Stated() {}
 
     private Stated.State state = Stated.State.DISABLED;
     private Stated.State suspendedState = null;
+    private Set<Stated> listeners = new HashSet<>();
+
+    public void addListener(Stated stated) {
+        listeners.add(stated);
+    }
+
+    public void removeListener(Stated stated) {
+        listeners.remove(stated);
+    }
 
     public Stated(final State state) {
         setStateAnyway(state);
@@ -19,6 +33,9 @@ public class Stated {
     public Stated suspend() {
         suspendedState = state;
         disableAnyway();
+        for(Stated listener : listeners) {
+            listener.suspend();
+        }
         return this;
     }
 
@@ -30,6 +47,9 @@ public class Stated {
         state = suspendedState;
         suspendedState = null;
         setStateAnyway(state);
+        for(Stated listener : listeners) {
+            listener.unsuspend();
+        }
         return this;
     }
 
@@ -106,6 +126,9 @@ public class Stated {
     public boolean enableAnyway() {
         if(!isEnabled()) {
             state = Stated.State.ENABLED;
+            for(Stated listener : listeners) {
+                listener.enableAnyway();
+            }
             return true;
         }
         return false;
@@ -119,6 +142,9 @@ public class Stated {
     public boolean disableAnyway() {
         if(!isDisabled()) {
             state = Stated.State.DISABLED;
+            for(Stated listener : listeners) {
+                listener.disableAnyway();
+            }
             return true;
         }
         return false;
