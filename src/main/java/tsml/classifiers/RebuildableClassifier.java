@@ -22,4 +22,6 @@ public interface RebuildableClassifier extends Classifier {
         setRebuild(true);
         buildClassifier(data);
     }
+
+    boolean isBuilt();
 }

@@ -24,8 +24,7 @@ import java.util.logging.Logger;
 
 public class KnnLoocv
     extends Knn implements TrainTimeContractable,
-                           Checkpointable,
-        IncClassifier {
+                           Checkpointable {
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
@@ -42,7 +41,6 @@ public class KnnLoocv
     protected Iterator<NeighbourSearcher> cvSearcherIterator;
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
-    protected boolean trainEstimateChange = false;
     protected boolean customCache = false;
     protected Logger logger = LogUtils.getLogger(this);
 
@@ -77,24 +75,15 @@ public class KnnLoocv
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.enable();
-        memoryWatcher.enable();
-        boolean result = estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
-        trainEstimateTimer.disable();
-        memoryWatcher.disable();
-        return result;
+        return estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
     }
 
     public long predictNextTrainTimeNanos() {
         return maxNeighbourEvalTimeInNanos;
     }
 
-    public void nextBuildTick() throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.enable();
-        memoryWatcher.enable();
-        trainEstimateChange = true;
+    protected void nextBuildTick() throws Exception {
+        regenerateTrainEstimate = true;
         long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
             leftOutSearcher = leftOutSearcherIterator.next();
@@ -106,7 +95,7 @@ public class KnnLoocv
         Instance instance = searcher.getInstance();
         Instance leftOutInstance = leftOutSearcher.getInstance();
         if(!leftOutInstance.equals(instance)) {
-            boolean seen = false;
+            boolean seen;
             if(customCache) {
                 seen = cache.contains(leftOutInstance, instance);
             } else {
@@ -152,8 +141,6 @@ public class KnnLoocv
         }
         maxNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
         checkpoint();
-        trainEstimateTimer.disable();
-        memoryWatcher.disable();
     }
 
     public NeighbourIteratorBuilder getNeighbourIteratorBuilder() {
@@ -162,6 +149,10 @@ public class KnnLoocv
 
     public void setNeighbourIteratorBuilder(NeighbourIteratorBuilder neighbourIteratorBuilder) {
         this.neighbourIteratorBuilder = neighbourIteratorBuilder;
+    }
+
+    public boolean hasNeighbourLimit() {
+        return neighbourLimit >= 0;
     }
 
     public interface NeighbourIteratorBuilder {
@@ -184,16 +175,22 @@ public class KnnLoocv
     }
 
     protected void loadFromCheckpoint() throws Exception {
+        trainTimer.suspend();
         trainEstimateTimer.suspend();
+        memoryWatcher.suspend();
         super.loadFromCheckpoint();
+        memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
+        trainTimer.unsuspend();
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        IncClassifier.super.buildClassifier(trainData);
+        preBuild(trainData);
+        build(trainData);
+        postBuild(trainData);
     }
 
-    public void startBuild(Instances data) throws Exception {
+    protected void preBuild(Instances data) throws Exception {
         loadFromCheckpoint();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -206,6 +203,7 @@ public class KnnLoocv
             trainTimer.disableAnyway();
             trainEstimateTimer.resetAndEnable();
             rebuild = false;
+            built = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
                     IndexFilter.hashifyInstances(data);
@@ -225,7 +223,7 @@ public class KnnLoocv
                     }
                 }
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
-                trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
+                regenerateTrainEstimate = true; // build the first train estimate irrelevant of any progress made
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
                 if(LogUtils.isAboveLevel(logger, Level.WARNING)) {
                     if(!leftOutSearcherIterator.hasNext()) {
@@ -243,22 +241,23 @@ public class KnnLoocv
             }
         }
         trainTimer.disableAnyway();
-        trainEstimateTimer.disableAnyway();
-        memoryWatcher.disable();
+        trainEstimateTimer.enableAnyway();
     }
 
-    public boolean hasNeighbourLimit() {
-        return neighbourLimit >= 0;
-    }
-
-    public void finishBuild() throws Exception {
+    protected void build(Instances trainData) throws Exception {
         trainTimer.checkDisabled();
-        memoryWatcher.checkDisabled();
-        trainEstimateTimer.checkDisabled();
-        if(trainEstimateChange) {
-            trainEstimateTimer.enable();
-            memoryWatcher.enable();
-            trainEstimateChange = false;
+        trainEstimateTimer.checkEnabled();
+        memoryWatcher.checkEnabled();
+        while(hasNextBuildTick()) {
+            nextBuildTick();
+            checkpoint();
+        }
+    }
+
+    protected void postBuild(Instances trainData) throws Exception {
+        trainTimer.checkDisabled();
+        if(regenerateTrainEstimate) {
+            regenerateTrainEstimate = false;
             if(LogUtils.isAboveLevel(logger, Level.WARNING)
                 && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
@@ -281,6 +280,8 @@ public class KnnLoocv
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
+        built = true;
+        checkpoint();
     }
 
     public long getTrainTimeNanos() {

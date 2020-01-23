@@ -92,8 +92,18 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
+    protected boolean built = false;
+    protected boolean regenerateTrainEstimate = true;
     protected boolean debug=false;
     protected transient final Logger logger = LogUtils.getLogger(this);
+
+    public boolean isRegenerateTrainEstimate() {
+        return regenerateTrainEstimate;
+    }
+
+    public void setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
+        this.regenerateTrainEstimate = regenerateTrainEstimate;
+    }
 
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
@@ -144,6 +154,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return logger;
     }
 
+    @Override
+    public boolean isBuilt() {
+        return built;
+    }
+
     @Override public boolean isRebuild() {
         return rebuild;
     }
@@ -165,6 +180,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             numClasses = trainData.numClasses();
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
+            built = true;
         }
     }
 

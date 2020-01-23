@@ -138,6 +138,10 @@ import weka.core.Randomizable;
  */
 public class ClassifierResults implements DebugPrinting, Serializable{
 
+    public long getEstimateTime() {
+        return getBuildPlusEstimateTime() - getBuildTime();
+    }
+
     private String os = "unknown";
     private String cpuInfo = "unknown";
 

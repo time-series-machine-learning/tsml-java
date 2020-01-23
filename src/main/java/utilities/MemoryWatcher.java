@@ -56,21 +56,24 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     private synchronized void setupEmitters() {
-        emitters = new ArrayList<>();
-        // garbage collector for old and young gen
-        List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
-        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            if(debug) System.out.println("Setting up listener for gc: " + garbageCollectorBean); // todo change
-            // to log
-            // listen to notification from the emitter
-            NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
-            emitters.add(emitter);
-            emitter.addNotificationListener(listener, null, null);
+        if(emitters == null) {
+            emitters = new ArrayList<>();
+            // garbage collector for old and young gen
+            List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
+            logger.finest("Setting up listeners for garbage collection ");
+            for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
+                // to log
+                // listen to notification from the emitter
+                NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
+                emitters.add(emitter);
+                emitter.addNotificationListener(listener, null, null);
+            }
         }
     }
 
     private synchronized void tearDownEmitters() {
         if(emitters != null) {
+            logger.finest("tearing down listeners for garbage collection");
             for(NotificationEmitter emitter : emitters) {
                 try {
                     emitter.removeNotificationListener(listener);

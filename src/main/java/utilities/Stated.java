@@ -31,10 +31,12 @@ public class Stated {
     }
 
     public Stated suspend() {
-        suspendedState = state;
-        disableAnyway();
-        for(Stated listener : listeners) {
-            listener.suspend();
+        if(isUnsuspended()) {
+            suspendedState = state;
+            disableAnyway();
+            for(Stated listener : listeners) {
+                listener.suspend();
+            }
         }
         return this;
     }
@@ -43,12 +45,18 @@ public class Stated {
         return suspendedState != null;
     }
 
+    public boolean isUnsuspended() {
+        return !isSuspended();
+    }
+
     public Stated unsuspend() {
-        state = suspendedState;
-        suspendedState = null;
-        setStateAnyway(state);
-        for(Stated listener : listeners) {
-            listener.unsuspend();
+        if(isSuspended()) {
+            state = suspendedState;
+            suspendedState = null;
+            setStateAnyway(state);
+            for(Stated listener : listeners) {
+                listener.unsuspend();
+            }
         }
         return this;
     }

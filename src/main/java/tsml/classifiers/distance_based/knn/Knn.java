@@ -20,9 +20,7 @@ import java.util.concurrent.TimeUnit;
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
-public class Knn extends EnhancedAbstractClassifier
-    implements
-    Checkpointable, MemoryWatchable, TrainTimeable {
+public class Knn extends EnhancedAbstractClassifier implements Checkpointable, MemoryWatchable, TrainTimeable {
 
     protected transient Instances trainData;
     public static final String K_FLAG = "k";
@@ -34,7 +32,6 @@ public class Knn extends EnhancedAbstractClassifier
     protected StopWatch trainTimer = new StopWatch();
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
-    protected boolean rebuild = true;
     protected long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     protected boolean ignorePreviousCheckpoints = false;
     protected long lastCheckpointTimeStamp = 0;
@@ -56,10 +53,10 @@ public class Knn extends EnhancedAbstractClassifier
         return checkpointDirPath;
     }
 
-    public void checkpoint(boolean force) throws Exception {
+    public void checkpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        if(isCheckpointing() && (force || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
+        if(isCheckpointing() && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
             String path = checkpointDirPath + tempCheckpointFileName;
             logger.fine(() -> "saving checkpoint to: " + path);
             saveToFile(path);
@@ -71,10 +68,6 @@ public class Knn extends EnhancedAbstractClassifier
         }
         trainTimer.unsuspend();
         memoryWatcher.unsuspend();
-    }
-
-    public void checkpoint() throws Exception {
-        checkpoint(false);
     }
 
     protected void loadFromCheckpoint() throws Exception {
@@ -103,14 +96,6 @@ public class Knn extends EnhancedAbstractClassifier
 
     @Override public long getMinCheckpointIntervalNanos() {
         return minCheckpointIntervalNanos;
-    }
-
-    public boolean isRebuild() {
-        return rebuild;
-    }
-
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
     }
 
     @Override public MemoryWatcher getMemoryWatcher() {
@@ -144,10 +129,10 @@ public class Knn extends EnhancedAbstractClassifier
 
     @Override public ParamSet getParams() {
         return super.getParams()
-                                 .add(EARLY_ABANDON_FLAG, earlyAbandon)
-                                 .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
-                                 .add(K_FLAG, k)
-                                 .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+                     .add(EARLY_ABANDON_FLAG, earlyAbandon)
+                     .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
+                     .add(K_FLAG, k)
+                     .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
@@ -164,6 +149,7 @@ public class Knn extends EnhancedAbstractClassifier
             memoryWatcher.enable();
             super.buildClassifier(trainData);
             rebuild = false;
+            built = true;
             distanceFunction.setInstances(trainData);
             this.trainData = trainData;
             checkpoint();

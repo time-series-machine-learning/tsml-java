@@ -263,16 +263,16 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
             // only called when *both* improvements and source remain
             int neighbours = neighbourCount.get();
             int params = paramCount.get();
-            if(params < maxParamSpaceSize / 10 + 1) {
+            if(params < maxParamSpaceSize / 10) {
                 // 10% params, 0% neighbours
                 return true;
-            } else if(neighbours < maxNeighbourhoodSize / 10 + 1) {
+            } else if(neighbours < maxNeighbourhoodSize / 10) {
                 // 10% params, 10% neighbours
                 return false;
-            } else if(params < maxParamSpaceSize / 2 + 1) {
+            } else if(params < maxParamSpaceSize / 2) {
                 // 50% params, 10% neighbours
                 return true;
-            } else if(neighbours < maxNeighbourhoodSize / 2 + 1) {
+            } else if(neighbours < maxNeighbourhoodSize / 2) {
                 // 50% params, 50% neighbours
                 return false;
             } else if(params < maxParamSpaceSize) {
@@ -306,21 +306,22 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                         Classifier classifier = benchmark.getClassifier();
                         if(classifier instanceof KnnLoocv) {
                             KnnLoocv knn = (KnnLoocv) classifier;
+                            long previousBuildTime = benchmark.getResults().getBuildTime();
+                            long previousEstimateTime = benchmark.getResults().getEstimateTime();
                             knn.setNeighbourLimit(-1);
+                            knn.setRegenerateTrainEstimate(true); // todo add timings onto inctuner
+                            trainEstimateTimer.disable();
+                            memoryWatcher.disable();
+                            knn.getMemoryWatcher().addListener(memoryWatcher);
                             try {
-                                trainEstimateTimer.disable();
-                                memoryWatcher.disable();
-                                knn.getMemoryWatcher().addListener(memoryWatcher);
                                 knn.buildClassifier(trainData);
-                                knn.getMemoryWatcher().removeListener(memoryWatcher);
-                                trainEstimateTimer.enable();
-                                memoryWatcher.enable();
                             } catch (Exception e) {
                                 throw new IllegalStateException(e);
                             }
+                            knn.getMemoryWatcher().removeListener(memoryWatcher);
+                            trainEstimateTimer.enable();
+                            memoryWatcher.enable();
                             benchmark.setResults(knn.getTrainResults());
-                            benchmark.getResults().getAcc();
-                            benchmark.getResults().cleanPredictionInfo();
                         } else {
                             throw new IllegalArgumentException("expected knn");
                         }
