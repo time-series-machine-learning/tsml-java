@@ -78,18 +78,5 @@ task fatJar(type: Jar) {
     }
 }
 
-//task buildJarFat(type: Jar) {
-//    zip64 true
-//    manifest = jar.manifest
-//    baseName = project.name + "-all"
-//    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-//}
-
-//task buildJar(type: Jar) {
-//    from copyToLib
-//    manifest = jar.manifest
-//    baseName = project.name
-//}
-
 jar.finalizedBy(fatJar)
 jar.finalizedBy(copyDepsToBuild)
