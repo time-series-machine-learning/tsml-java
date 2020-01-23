@@ -3,6 +3,7 @@ package experiments;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.ee.EeConfig;
 import tsml.classifiers.distance_based.knn.configs.KnnConfig;
 import weka.classifiers.Classifier;
 
@@ -165,6 +166,7 @@ public class ClassifierBuilderFactory {
 
     static {
         getGlobalInstance().addAll(KnnConfig.all());
+        getGlobalInstance().addAll(EeConfig.all());
     }
 
     public static void main(String[] args) {

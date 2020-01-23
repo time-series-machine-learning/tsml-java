@@ -7,8 +7,11 @@ import tsml.classifiers.distance_based.knn.configs.IncKnnTunerBuilder;
 import tsml.classifiers.distance_based.knn.configs.KnnTag;
 import weka.classifiers.Classifier;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.TUNED_TWED_1NN_V2;
@@ -45,6 +48,11 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
     EeConfig(Supplier<? extends Classifier> supplier, ClassifierBuilderFactory.Tag... tags) {
         classifierBuilder = new ClassifierBuilderFactory.SuppliedClassifierBuilder(name(), supplier, tags);
     }
+
+    public static List<ClassifierBuilderFactory.ClassifierBuilder> all() {
+        return Arrays.stream(values()).map(i -> (ClassifierBuilderFactory.ClassifierBuilder) i).collect(Collectors.toList());
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
 
     public static ImmutableList<Classifier> buildV1Constituents() {
@@ -131,6 +139,7 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         Ee ee = new Ee();
         ImmutableList<Classifier> constituents = buildV2Constituents();
         ee.setConstituents(constituents);
+        ee.setLimitedVersion(true);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);
         return ee;
