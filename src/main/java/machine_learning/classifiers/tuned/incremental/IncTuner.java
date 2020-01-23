@@ -211,16 +211,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        preBuild(trainData);
-        build(trainData);
-        postBuild(trainData);
-    }
-
-    protected void preBuild(final Instances trainData) throws Exception {
         trainEstimateTimer.checkDisabled();
         trainTimer.enableAnyway();
         memoryWatcher.enableAnyway();
         if(rebuild) {
+            trainTimer.resetAndEnable();
+            memoryWatcher.resetAndEnable();
             super.buildClassifier(trainData);
             initFunction.init(trainData);
             rebuild = false;
@@ -228,33 +224,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         }
         trainTimer.disable();
         trainEstimateTimer.enable();
-    }
-
-    protected boolean hasNextBuildTick() throws Exception {
-        return hasRemainingTraining();
-    }
-
-    protected void nextBuildTick() throws Exception {
-        final Set<Benchmark> benchmarks = benchmarkExplorer.next();
-        // either this or the benchmark iterator - should be the latter in most cases
-        logger.info(() -> benchmarks.size() + " benchmark(s) changed");
-        if(isCheckpointing()) {
-            replace(benchmarksToCheckpoint, benchmarks);
-        }
-    }
-
-    protected void build(Instances trainData) throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.checkEnabled();
-        memoryWatcher.checkEnabled();
         while(hasNextBuildTick()) {
             nextBuildTick();
             checkpoint();
         }
-    }
-
-    protected void postBuild(Instances trainData) throws Exception {
-        if(!independentBenchmarks) {
+        if(!independentBenchmarks) { // todo sort out checkpointing vs this indep thing
             trainTimer.checkDisabled();
             trainEstimateTimer.checkEnabled();
             memoryWatcher.checkEnabled();
@@ -286,6 +260,19 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         trainTimer.disableAnyway();
         built = true;
         checkpoint();
+    }
+
+    protected boolean hasNextBuildTick() throws Exception {
+        return hasRemainingTraining();
+    }
+
+    protected void nextBuildTick() throws Exception {
+        final Set<Benchmark> benchmarks = benchmarkExplorer.next();
+        // either this or the benchmark iterator - should be the latter in most cases
+        logger.info(() -> benchmarks.size() + " benchmark(s) changed");
+        if(isCheckpointing()) {
+            replace(benchmarksToCheckpoint, benchmarks);
+        }
     }
 
     public BenchmarkIterator getBenchmarkExplorer() {

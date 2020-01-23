@@ -156,18 +156,20 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         loadFromCheckpoint();
+        trainTimer.enable();
+        memoryWatcher.enable();
         if(rebuild) {
-            trainTimer.enable();
-            memoryWatcher.enable();
+            trainTimer.resetAndEnable();
+            memoryWatcher.resetAndEnable();
             super.buildClassifier(trainData);
             rebuild = false;
             built = true;
             distanceFunction.setInstances(trainData);
             this.trainData = trainData;
             checkpoint();
-            trainTimer.disable();
-            memoryWatcher.disable();
         }
+        trainTimer.disable();
+        memoryWatcher.disable();
     }
 
     // todo fail capabilities

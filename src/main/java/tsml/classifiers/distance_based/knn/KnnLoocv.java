@@ -4,6 +4,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
+import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
@@ -23,8 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KnnLoocv
-    extends Knn implements TrainTimeContractable,
-                           Checkpointable {
+    extends Knn implements TrainTimeContractable {
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
@@ -196,22 +196,16 @@ public class KnnLoocv
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        preBuild(trainData);
-        build(trainData);
-        postBuild(trainData);
-    }
-
-    protected void preBuild(final Instances trainData) throws Exception {
         loadFromCheckpoint();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
         memoryWatcher.enable();
         if(rebuild) {
-            trainTimer.disableAnyway();
-            memoryWatcher.disableAnyway();
+            trainTimer.resetAndDisable();
+            memoryWatcher.resetAndDisable();
             super.buildClassifier(trainData);
-            memoryWatcher.enableAnyway();
             trainTimer.disableAnyway();
+            memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
             rebuild = false;
             built = false;
@@ -253,20 +247,10 @@ public class KnnLoocv
         }
         trainTimer.disableAnyway();
         trainEstimateTimer.enableAnyway();
-    }
-
-    protected void build(final Instances trainData) throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.checkEnabled();
-        memoryWatcher.checkEnabled();
         while(hasNextBuildTick()) {
             nextBuildTick();
             checkpoint();
         }
-    }
-
-    protected void postBuild(final Instances trainData) throws Exception {
-        trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
             regenerateTrainEstimate = false;
             if(LogUtils.isAboveLevel(logger, Level.WARNING)
