@@ -1,7 +1,10 @@
 package tsml.classifiers.distance_based.knn.configs;
 
+import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierBuilderFactory;
+import experiments.ClassifierBuilderFactory.ClassifierBuilder;
+import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
@@ -15,54 +18,70 @@ import utilities.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import static utilities.ArrayUtilities.incrementalRange;
 
-public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuilder<?>> {
+public enum KnnConfig implements ClassifierBuilder {
 
-    ED_1NN_V1(KnnConfig::buildEd1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    ED_1NN_V2(KnnConfig::buildEd1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DTW_1NN_V1(KnnConfig::buildDtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DTW_1NN_V2(KnnConfig::buildDtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DDTW_1NN_V1(KnnConfig::buildDdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DDTW_1NN_V2(KnnConfig::buildDdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DTW_1NN_V1(KnnConfig::buildTunedDtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DTW_1NN_V2(KnnConfig::buildTunedDtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DDTW_1NN_V1(KnnConfig::buildTunedDdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DDTW_1NN_V2(KnnConfig::buildTunedDdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDTW_1NN_V1(KnnConfig::buildTunedWdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDTW_1NN_V2(KnnConfig::buildTunedWdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDDTW_1NN_V1(KnnConfig::buildTunedWddtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDDTW_1NN_V2(KnnConfig::buildTunedWddtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_ERP_1NN_V1(KnnConfig::buildTunedErp1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_ERP_1NN_V2(KnnConfig::buildTunedErp1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_MSM_1NN_V1(KnnConfig::buildTunedMsm1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_MSM_1NN_V2(KnnConfig::buildTunedMsm1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_LCSS_1NN_V1(KnnConfig::buildTunedLcss1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_LCSS_1NN_V2(KnnConfig::buildTunedLcss1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_TWED_1NN_V1(KnnConfig::buildTunedTwed1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_TWED_1NN_V2(KnnConfig::buildTunedTwed1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
+    ED_1NN_V1(KnnConfig::buildEd1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DTW_1NN_V1(KnnConfig::buildDtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DDTW_1NN_V1(KnnConfig::buildDdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DTW_1NN_V1(KnnConfig::buildTunedDtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DDTW_1NN_V1(KnnConfig::buildTunedDdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDTW_1NN_V1(KnnConfig::buildTunedWdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDDTW_1NN_V1(KnnConfig::buildTunedWddtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_ERP_1NN_V1(KnnConfig::buildTunedErp1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_MSM_1NN_V1(KnnConfig::buildTunedMsm1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_LCSS_1NN_V1(KnnConfig::buildTunedLcss1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_TWED_1NN_V1(KnnConfig::buildTunedTwed1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+
+    ED_1NN_V2(KnnConfig::buildEd1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DTW_1NN_V2(KnnConfig::buildDtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DDTW_1NN_V2(KnnConfig::buildDdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DTW_1NN_V2(KnnConfig::buildTunedDtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DDTW_1NN_V2(KnnConfig::buildTunedDdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDTW_1NN_V2(KnnConfig::buildTunedWdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDDTW_1NN_V2(KnnConfig::buildTunedWddtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_ERP_1NN_V2(KnnConfig::buildTunedErp1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_MSM_1NN_V2(KnnConfig::buildTunedMsm1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_LCSS_1NN_V2(KnnConfig::buildTunedLcss1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_TWED_1NN_V2(KnnConfig::buildTunedTwed1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+
     ;
 
-    private final ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder;
-
-    KnnConfig(final Supplier<? extends Classifier> supplier, final Supplier<String>... tags) {
-        classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);
+    public String toString() {
+        return classifierBuilder.toString();
     }
 
-    public ClassifierBuilderFactory.ClassifierBuilder<?> getClassifierBuilder() {
-        return classifierBuilder;
+    @Override
+    public String getName() {
+        return classifierBuilder.getName();
     }
 
-    @Override public ClassifierBuilderFactory.ClassifierBuilder<?> get() {
-        return getClassifierBuilder();
+    @Override
+    public Classifier build() {
+        return classifierBuilder.build();
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public ImmutableList<? extends Tag> getTags() {
+        return classifierBuilder.getTags();
+    }
 
+    private final ClassifierBuilder classifierBuilder;
 
+    KnnConfig(Supplier<? extends Classifier> supplier, Tag... tags) {
+        classifierBuilder = new ClassifierBuilderFactory.SuppliedClassifierBuilder(name(), supplier, tags);
+    }
+
+    public static List<ClassifierBuilder> all() {
+        return Arrays.stream(values()).map(i -> (ClassifierBuilder) i).collect(Collectors.toList());
+    }
+    
     public static KnnLoocv build1nnV1() {
         KnnLoocv classifier = new KnnLoocv();
         classifier.setEarlyAbandon(true);

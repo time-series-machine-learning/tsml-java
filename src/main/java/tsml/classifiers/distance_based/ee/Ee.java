@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 
 public class Ee extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
@@ -38,41 +39,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         this.constituents = ImmutableList.copyOf(list);
     }
 
-    public static ImmutableList<Classifier> getV1Constituents() {
-        return ImmutableList.of(
-                ED_1NN_V1.getClassifierBuilder().build(),
-                DTW_1NN_V1.getClassifierBuilder().build(),
-                DDTW_1NN_V1.getClassifierBuilder().build(),
-                TUNED_DTW_1NN_V1.getClassifierBuilder().build(),
-                TUNED_DDTW_1NN_V1.getClassifierBuilder().build(),
-                TUNED_WDTW_1NN_V1.getClassifierBuilder().build(),
-                TUNED_WDDTW_1NN_V1.getClassifierBuilder().build(),
-                TUNED_ERP_1NN_V1.getClassifierBuilder().build(),
-                TUNED_MSM_1NN_V1.getClassifierBuilder().build(),
-                TUNED_LCSS_1NN_V1.getClassifierBuilder().build(),
-                TUNED_TWED_1NN_V1.getClassifierBuilder().build()
-        );
-    }
-
-    public static ImmutableList<Classifier> getV2Constituents() {
-        return ImmutableList.of(
-                ED_1NN_V2.getClassifierBuilder().build(),
-                DTW_1NN_V2.getClassifierBuilder().build(),
-                DDTW_1NN_V2.getClassifierBuilder().build(),
-                TUNED_DTW_1NN_V2.getClassifierBuilder().build(),
-                TUNED_DDTW_1NN_V2.getClassifierBuilder().build(),
-                TUNED_WDTW_1NN_V2.getClassifierBuilder().build(),
-                TUNED_WDDTW_1NN_V2.getClassifierBuilder().build(),
-                TUNED_ERP_1NN_V2.getClassifierBuilder().build(),
-                TUNED_MSM_1NN_V2.getClassifierBuilder().build(),
-                TUNED_LCSS_1NN_V2.getClassifierBuilder().build(),
-                TUNED_TWED_1NN_V2.getClassifierBuilder().build()
-        );
-    }
-
     public Ee() {
         super(true);
-        setConstituents(getV1Constituents());
+        setConstituents(buildV1Constituents());
     }
 
     protected boolean isLimitedVersion() {

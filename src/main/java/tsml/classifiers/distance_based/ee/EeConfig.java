@@ -10,7 +10,10 @@ import weka.classifiers.Classifier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public enum EeConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuilder<?>> {
+import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
+import static tsml.classifiers.distance_based.knn.configs.KnnConfig.TUNED_TWED_1NN_V2;
+
+public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
     EE_V1(EeConfig::buildEeV1, KnnTag.UNIVARIATE, KnnTag.DISTANCE, KnnTag.SIMILARITY),
     EE_V2(EeConfig::buildEeV2, KnnTag.UNIVARIATE, KnnTag.DISTANCE, KnnTag.SIMILARITY),
     CEE_V1(EeConfig::buildCeeV1, KnnTag.UNIVARIATE, KnnTag.DISTANCE, KnnTag.SIMILARITY),
@@ -18,31 +21,73 @@ public enum EeConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuil
     LEE(EeConfig::buildLee, KnnTag.UNIVARIATE, KnnTag.DISTANCE, KnnTag.SIMILARITY),
     ;
 
-    private final ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder;
-
-    EeConfig(final Supplier<? extends Classifier> supplier, final Supplier<String>... tags) {
-        classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);
+    public String toString() {
+        return classifierBuilder.toString();
     }
 
-    public ClassifierBuilderFactory.ClassifierBuilder<?> getClassifierBuilder() {
-        return classifierBuilder;
+    @Override
+    public String getName() {
+        return classifierBuilder.getName();
     }
 
-    @Override public ClassifierBuilderFactory.ClassifierBuilder<?> get() {
-        return getClassifierBuilder();
+    @Override
+    public Classifier build() {
+        return classifierBuilder.build();
     }
 
+    @Override
+    public ImmutableList<? extends ClassifierBuilderFactory.Tag> getTags() {
+        return classifierBuilder.getTags();
+    }
+
+    private final ClassifierBuilderFactory.ClassifierBuilder classifierBuilder;
+
+    EeConfig(Supplier<? extends Classifier> supplier, ClassifierBuilderFactory.Tag... tags) {
+        classifierBuilder = new ClassifierBuilderFactory.SuppliedClassifierBuilder(name(), supplier, tags);
+    }
     // -----------------------------------------------------------------------------------------------------------------
+
+    public static ImmutableList<Classifier> buildV1Constituents() {
+        return ImmutableList.of(
+                ED_1NN_V1.build(),
+                DTW_1NN_V1.build(),
+                DDTW_1NN_V1.build(),
+                TUNED_DTW_1NN_V1.build(),
+                TUNED_DDTW_1NN_V1.build(),
+                TUNED_WDTW_1NN_V1.build(),
+                TUNED_WDDTW_1NN_V1.build(),
+                TUNED_ERP_1NN_V1.build(),
+                TUNED_MSM_1NN_V1.build(),
+                TUNED_LCSS_1NN_V1.build(),
+                TUNED_TWED_1NN_V1.build()
+        );
+    }
+
+    public static ImmutableList<Classifier> buildV2Constituents() {
+        return ImmutableList.of(
+                ED_1NN_V2.build(),
+                DTW_1NN_V2.build(),
+                DDTW_1NN_V2.build(),
+                TUNED_DTW_1NN_V2.build(),
+                TUNED_DDTW_1NN_V2.build(),
+                TUNED_WDTW_1NN_V2.build(),
+                TUNED_WDDTW_1NN_V2.build(),
+                TUNED_ERP_1NN_V2.build(),
+                TUNED_MSM_1NN_V2.build(),
+                TUNED_LCSS_1NN_V2.build(),
+                TUNED_TWED_1NN_V2.build()
+        );
+    }
 
     public static Ee buildEeV1() {
         Ee ee = new Ee();
-        ee.setConstituents(Ee.getV1Constituents());
+        ee.setConstituents(buildV1Constituents());
         return ee; // todo set full ee?
     }
 
     public static Ee buildEeV2() {
         Ee ee = new Ee();
-        ee.setConstituents(Ee.getV2Constituents());
+        ee.setConstituents(buildV2Constituents());
         return ee; // todo set full ee?
     }
 
@@ -84,7 +129,7 @@ public enum EeConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuil
 
     private static Ee buildLee() {
         Ee ee = new Ee();
-        ImmutableList<Classifier> constituents = Ee.getV2Constituents();
+        ImmutableList<Classifier> constituents = buildV2Constituents();
         ee.setConstituents(constituents);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);
