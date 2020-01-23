@@ -55,6 +55,17 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return super.disable();
     }
 
+    public void resetAndEnable() {
+        disableAnyway();
+        reset();
+        enable();
+    }
+    // todo redundancy between this and StopWatch
+    public void resetAndDisable() {
+        disableAnyway();
+        reset();
+    }
+
     private synchronized void setupEmitters() {
         if(emitters == null) {
             emitters = new ArrayList<>();
