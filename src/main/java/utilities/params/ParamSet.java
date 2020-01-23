@@ -99,7 +99,7 @@ public class ParamSet implements ParamHandler {
         return "ParamSet" +
 //            "{" +
 //            "paramMap=" +
-            paramMap
+                StrUtils.join(", ", getOptions())
 //            +
 //            '}'
             ;

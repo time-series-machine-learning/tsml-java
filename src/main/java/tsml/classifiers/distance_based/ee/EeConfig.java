@@ -34,27 +34,27 @@ public enum EeConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuil
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    public static EE buildEeV1() {
-        EE ee = new EE();
-        ee.setConstituents(EE.getV1Constituents());
+    public static Ee buildEeV1() {
+        Ee ee = new Ee();
+        ee.setConstituents(Ee.getV1Constituents());
         return ee; // todo set full ee?
     }
 
-    public static EE buildEeV2() {
-        EE ee = new EE();
-        ee.setConstituents(EE.getV2Constituents());
+    public static Ee buildEeV2() {
+        Ee ee = new Ee();
+        ee.setConstituents(Ee.getV2Constituents());
         return ee; // todo set full ee?
     }
 
-    public static EE buildCeeV1() {
+    public static Ee buildCeeV1() {
         return buildEeV1(); // todo turn off full ee?
     }
 
-    public static EE buildCeeV2() {
+    public static Ee buildCeeV2() {
         return buildEeV2(); // todo turn off full ee?
     }
 
-    private static EE forEachTunedConstituent(EE ee, Consumer<IncKnnTunerBuilder> consumer) {
+    private static Ee forEachTunedConstituent(Ee ee, Consumer<IncKnnTunerBuilder> consumer) {
         for(Classifier classifier : ee.getConstituents()) {
             if(!(classifier instanceof IncTuner)) {
                 continue;
@@ -66,25 +66,25 @@ public enum EeConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuil
         return ee;
     }
 
-    public static EE setLimitedParameters(EE ee, int limit) {
+    public static Ee setLimitedParameters(Ee ee, int limit) {
         return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSize(limit));
     }
 
-    public static EE setLimitedParametersPercentage(EE ee, double limit) {
+    public static Ee setLimitedParametersPercentage(Ee ee, double limit) {
         return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSizePercentage(limit));
     }
 
-    public static EE setLimitedNeighbours(EE ee, int limit) {
+    public static Ee setLimitedNeighbours(Ee ee, int limit) {
         return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxNeighbourhoodSize(limit));
     }
 
-    public static EE setLimitedNeighboursPercentage(EE ee, double limit) { // todo params from cmdline in experiment + append to cls name
+    public static Ee setLimitedNeighboursPercentage(Ee ee, double limit) { // todo params from cmdline in experiment + append to cls name
         return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSizePercentage(limit));
     }
 
-    private static EE buildLee() {
-        EE ee = new EE();
-        ImmutableList<Classifier> constituents = EE.getV2Constituents();
+    private static Ee buildLee() {
+        Ee ee = new Ee();
+        ImmutableList<Classifier> constituents = Ee.getV2Constituents();
         ee.setConstituents(constituents);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);

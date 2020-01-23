@@ -1,7 +1,6 @@
 package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
-import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import utilities.*;
 import utilities.params.ParamHandler;
@@ -14,8 +13,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import static utilities.collections.Utils.replace;
 
@@ -26,19 +23,16 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         super(true);
     }
 
-    public boolean isDelegateMonitoring() {
-        return delegateMonitoring;
-    } // todo do we need this?
-
-    public void setDelegateMonitoring(final boolean delegateMonitoring) {
-        this.delegateMonitoring = delegateMonitoring;
-    }
-
     public interface InitFunction extends Serializable, ParamHandler {
         void init(Instances trainData);
     }
 
-    private BenchmarkIterator benchmarkIterator = new BenchmarkIterator() {
+    private BenchmarkExplorer benchmarkExplorer = new BenchmarkExplorer() {
+        @Override
+        public Set<Benchmark> findFinalBenchmarks() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
         public boolean hasNext() {
             throw new UnsupportedOperationException();
@@ -48,15 +42,13 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             throw new UnsupportedOperationException();
         }
     };
-    protected transient Set<Benchmark> collectedBenchmarks = new HashSet<>();
+    protected transient Set<Benchmark> benchmarks = new HashSet<>();
     protected transient Set<Benchmark> benchmarksToCheckpoint = new HashSet<>();
-    protected BenchmarkCollector benchmarkCollector = new BestBenchmarkCollector(benchmark -> benchmark.getResults().getAcc());
     protected BenchmarkEnsembler benchmarkEnsembler = BenchmarkEnsembler.byScore(benchmark -> benchmark.getResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
     protected InitFunction initFunction = instances -> {};
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
-    protected transient Instances trainData;
     protected StopWatch trainEstimateTimer = new StopWatch();
     protected long trainTimeLimitNanos = -1;
     private static final String checkpointFileName = "checkpoint.ser";
@@ -73,9 +65,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     private boolean ignorePreviousCheckpoints = false;
     private boolean checkpointAfterEveryIteration = false;
     public static final String BENCHMARK_ITERATOR_FLAG = "b";
-    public static final String BENCHMARK_COLLECTOR_FLAG = "c";
     public static final String INIT_FUNCTION_FLAG = "i";
-    private boolean delegateMonitoring = true;
 
     public StopWatch getTrainEstimateTimer() {
         return trainEstimateTimer;
@@ -83,16 +73,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     @Override public ParamSet getParams() {
         return TrainTimeContractable.super.getParams()
-                                    .add(BENCHMARK_COLLECTOR_FLAG, benchmarkCollector)
-                                    .add(BENCHMARK_ITERATOR_FLAG, benchmarkIterator)
+                                    .add(BENCHMARK_ITERATOR_FLAG, benchmarkExplorer)
                                     .add(INIT_FUNCTION_FLAG, initFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
         TrainTimeContractable.super.setParams(params);
-        ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setBenchmarkIterator, BenchmarkIterator.class);
-        ParamHandler.setParam(params, BENCHMARK_COLLECTOR_FLAG, this::setBenchmarkCollector, BenchmarkCollector.class);
-        ParamHandler.setParam(params, BENCHMARK_COLLECTOR_FLAG, this::setInitFunction, InitFunction.class);
+        ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setBenchmarkExplorer, BenchmarkExplorer.class);
+        ParamHandler.setParam(params, INIT_FUNCTION_FLAG, this::setInitFunction, InitFunction.class);
     }
 
     @Override public boolean isIgnorePreviousCheckpoints() {
@@ -238,7 +226,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             rebuild = false;
             built = false;
         }
-        this.trainData = trainData;
         trainTimer.disable();
         trainEstimateTimer.enable();
     }
@@ -248,21 +235,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     protected void nextBuildTick() throws Exception {
-        if(isDelegateMonitoring()) {
-            // we're going to monitor here as the benchmark iterator doesn't (for whatever reason)
-            memoryWatcher.disable();
-            trainEstimateTimer.disable();
-        }
-        Set<Benchmark> nextBenchmarks = benchmarkIterator.next();
-        if(isDelegateMonitoring()) {
-            memoryWatcher.enable();
-            trainEstimateTimer.enableAnyway();
-        }
+        final Set<Benchmark> benchmarks = benchmarkExplorer.next();
         // either this or the benchmark iterator - should be the latter in most cases
-        logger.info(() -> nextBenchmarks.size() + " benchmark(s) in batch");
-        replace(collectedBenchmarks, nextBenchmarks);
+        logger.info(() -> benchmarks.size() + " benchmark(s) changed");
         if(isCheckpointing()) {
-            replace(benchmarksToCheckpoint, nextBenchmarks);
+            replace(benchmarksToCheckpoint, benchmarks);
         }
     }
 
@@ -281,33 +258,18 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             trainTimer.checkDisabled();
             trainEstimateTimer.checkEnabled();
             memoryWatcher.checkEnabled();
-            for(Benchmark collectedBenchmark : collectedBenchmarks) {
-                ClassifierResults results = collectedBenchmark.getResults();
-                trainEstimateTimer.add(results.getEstimateTime());
-                trainTimer.add(results.getBuildTimeInNanos());
-            }
-            Set<Benchmark> prevBenchmarks = new HashSet<>(collectedBenchmarks);
-            benchmarkCollector.addAll(collectedBenchmarks); // add all the current benchmarks to the filter
-            collectedBenchmarks = benchmarkCollector.getCollectedBenchmarks(); // reassign the filtered benchmarks
-            prevBenchmarks.removeAll(collectedBenchmarks); // only keep benchmarks which are not final
-            // for each benchmark which is not final / chosen
-            for(Benchmark benchmark : prevBenchmarks) {
-                // add the resource usage stats onto our resource usage monitors
-                trainEstimateTimer.add(benchmark.getResults().getEstimateTime());
-                trainTimer.add(benchmark.getResults().getBuildTime());
-            }
-            // same for each collected / chosen benchmark, but this time we have may spent extra time on these due to being run through the collector
-            if(collectedBenchmarks.isEmpty()) {
+            benchmarks = benchmarkExplorer.findFinalBenchmarks();
+            if(benchmarks.isEmpty()) {
                 logger.info(() -> "no benchmarks collected");
                 ensembleWeights = new ArrayList<>();
                 throw new UnsupportedOperationException("todo implement random guess here?");
-            } else if(collectedBenchmarks.size() == 1) {
+            } else if(benchmarks.size() == 1) {
                 logger.info(() -> "single benchmarks collected");
                 ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
-                trainResults = collectedBenchmarks.iterator().next().getResults();
+                trainResults = benchmarks.iterator().next().getResults();
             } else {
-                logger.info(() -> collectedBenchmarks.size() + " benchmarks collected");
-                ensembleWeights = benchmarkEnsembler.weightVotes(collectedBenchmarks);
+                logger.info(() -> benchmarks.size() + " benchmarks collected");
+                ensembleWeights = benchmarkEnsembler.weightVotes(benchmarks);
                 throw new UnsupportedOperationException("todo apply ensemble weights to train results");
             }
             memoryWatcher.disable();
@@ -319,29 +281,23 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             trainResults.setFoldID(seed);
             trainResults.setDetails(this, trainData);
         }
-        trainData = null;
+        memoryWatcher.disableAnyway();
+        trainEstimateTimer.disableAnyway();
+        trainTimer.disableAnyway();
         built = true;
         checkpoint();
     }
 
-    public BenchmarkIterator getBenchmarkIterator() {
-        return benchmarkIterator;
+    public BenchmarkIterator getBenchmarkExplorer() {
+        return benchmarkExplorer;
     }
 
-    public void setBenchmarkIterator(BenchmarkIterator benchmarkIterator) {
-        this.benchmarkIterator = benchmarkIterator;
+    public void setBenchmarkExplorer(BenchmarkExplorer benchmarkExplorer) {
+        this.benchmarkExplorer = benchmarkExplorer;
     }
 
-    public Set<Benchmark> getCollectedBenchmarks() {
-        return collectedBenchmarks;
-    }
-
-    public BenchmarkCollector getBenchmarkCollector() {
-        return benchmarkCollector;
-    }
-
-    public void setBenchmarkCollector(BenchmarkCollector benchmarkCollector) {
-        this.benchmarkCollector = benchmarkCollector;
+    public Set<Benchmark> getBenchmarks() {
+        return benchmarks;
     }
 
     public BenchmarkEnsembler getBenchmarkEnsembler() {
@@ -358,12 +314,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     @Override
     public double[] distributionForInstance(Instance testCase) throws Exception {
-        Iterator<Benchmark> benchmarkIterator = collectedBenchmarks.iterator();
-        if(collectedBenchmarks.size() == 1) {
+        Iterator<Benchmark> benchmarkIterator = benchmarks.iterator();
+        if(benchmarks.size() == 1) {
             return benchmarkIterator.next().getClassifier().distributionForInstance(testCase);
         }
         double[] distribution = new double[numClasses];
-        for(int i = 0; i < collectedBenchmarks.size(); i++) {
+        for(int i = 0; i < benchmarks.size(); i++) {
             if(!benchmarkIterator.hasNext()) {
                 throw new IllegalStateException("iterator incorrect");
             }
@@ -394,11 +350,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override public long predictNextTrainTimeNanos() {
-        return benchmarkIterator.predictNextTimeNanos();
+        return benchmarkExplorer.predictNextTimeNanos();
     }
 
     @Override public boolean isDone() {
-        return !benchmarkIterator.hasNext();
+        return !benchmarkExplorer.hasNext();
     }
 
     @Override public long getTrainTimeNanos() {

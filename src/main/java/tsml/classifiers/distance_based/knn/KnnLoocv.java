@@ -42,7 +42,6 @@ public class KnnLoocv
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected boolean customCache = false;
-    protected Logger logger = LogUtils.getLogger(this);
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -51,6 +50,18 @@ public class KnnLoocv
     public KnnLoocv(DistanceFunction df) {
         super(df);
         setAbleToEstimateOwnPerformance(true);
+    }
+
+    public StopWatch getTrainEstimateTimer() {
+        return trainEstimateTimer;
+    }
+
+    public int getNeighbourCount() {
+        return neighbourCount;
+    }
+
+    public int getComparisonCount() {
+        return comparisonCount;
     }
 
     @Override
@@ -84,16 +95,16 @@ public class KnnLoocv
 
     protected void nextBuildTick() throws Exception {
         regenerateTrainEstimate = true;
-        long timeStamp = System.nanoTime();
+        final long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
             leftOutSearcher = leftOutSearcherIterator.next();
             leftOutSearcherIterator.remove();
         }
         comparisonCount++;
-        NeighbourSearcher searcher = cvSearcherIterator.next();
+        final NeighbourSearcher searcher = cvSearcherIterator.next();
         cvSearcherIterator.remove();
-        Instance instance = searcher.getInstance();
-        Instance leftOutInstance = leftOutSearcher.getInstance();
+        final Instance instance = searcher.getInstance();
+        final Instance leftOutInstance = leftOutSearcher.getInstance();
         if(!leftOutInstance.equals(instance)) {
             boolean seen;
             if(customCache) {
@@ -105,9 +116,9 @@ public class KnnLoocv
                 // we've already seen this instance
                 logger.info(() -> comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
             } else {
-                long distanceMeasurementTimeStamp = System.nanoTime();
+                final long distanceMeasurementTimeStamp = System.nanoTime();
                 Double distance = customCache ? cache.get(instance, leftOutInstance) : null;
-                long timeTakenInNanos = System.nanoTime() - distanceMeasurementTimeStamp;
+                final long timeTakenInNanos = System.nanoTime() - distanceMeasurementTimeStamp;
                 if(distance == null) {
                     distance = searcher.add(leftOutInstance);
                 } else {
@@ -147,7 +158,7 @@ public class KnnLoocv
         return neighbourIteratorBuilder;
     }
 
-    public void setNeighbourIteratorBuilder(NeighbourIteratorBuilder neighbourIteratorBuilder) {
+    public void setNeighbourIteratorBuilder(final NeighbourIteratorBuilder neighbourIteratorBuilder) {
         this.neighbourIteratorBuilder = neighbourIteratorBuilder;
     }
 
@@ -190,7 +201,7 @@ public class KnnLoocv
         postBuild(trainData);
     }
 
-    protected void preBuild(Instances data) throws Exception {
+    protected void preBuild(final Instances trainData) throws Exception {
         loadFromCheckpoint();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -198,7 +209,7 @@ public class KnnLoocv
         if(rebuild) {
             trainTimer.disableAnyway();
             memoryWatcher.disableAnyway();
-            super.buildClassifier(data);
+            super.buildClassifier(trainData);
             memoryWatcher.enableAnyway();
             trainTimer.disableAnyway();
             trainEstimateTimer.resetAndEnable();
@@ -206,13 +217,13 @@ public class KnnLoocv
             built = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
-                    IndexFilter.hashifyInstances(data);
+                    IndexFilter.hashifyInstances(trainData);
                 }
                 // build a progressive leave-one-out-cross-validation
-                searchers = new ArrayList<>(data.size());
+                searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
-                for(int i = 0; i < data.size(); i++) {
-                    NeighbourSearcher searcher = new NeighbourSearcher(data.get(i));
+                for(int i = 0; i < trainData.size(); i++) {
+                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i));
                     searchers.add(i, searcher);
                 }
                 if(distanceFunction instanceof AbstractDistanceMeasure) {
@@ -244,7 +255,7 @@ public class KnnLoocv
         trainEstimateTimer.enableAnyway();
     }
 
-    protected void build(Instances trainData) throws Exception {
+    protected void build(final Instances trainData) throws Exception {
         trainTimer.checkDisabled();
         trainEstimateTimer.checkEnabled();
         memoryWatcher.checkEnabled();
@@ -254,7 +265,7 @@ public class KnnLoocv
         }
     }
 
-    protected void postBuild(Instances trainData) throws Exception {
+    protected void postBuild(final Instances trainData) throws Exception {
         trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
             regenerateTrainEstimate = false;
@@ -266,11 +277,11 @@ public class KnnLoocv
             }
             // populate train results
             trainResults = new ClassifierResults();
-            for(NeighbourSearcher searcher : searchers) {
-                double[] distribution = searcher.predict();
-                int prediction = Utilities.argMax(distribution, rand);
-                long time = searcher.getTimeNanos();
-                double trueClassValue = searcher.getInstance().classValue();
+            for(final NeighbourSearcher searcher : searchers) {
+                final double[] distribution = searcher.predict();
+                final int prediction = Utilities.argMax(distribution, rand);
+                final long time = searcher.getTimeNanos();
+                final double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
             trainEstimateTimer.disable();
@@ -293,7 +304,7 @@ public class KnnLoocv
     }
 
     @Override
-    public void setTrainTimeLimitNanos(long trainTimeLimit) {
+    public void setTrainTimeLimitNanos(final long trainTimeLimit) {
         this.trainTimeLimitNanos = trainTimeLimit;
     }
 
@@ -301,7 +312,7 @@ public class KnnLoocv
         return neighbourLimit;
     }
 
-    public void setNeighbourLimit(int neighbourLimit) {
+    public void setNeighbourLimit(final int neighbourLimit) {
         this.neighbourLimit = neighbourLimit;
     }
 
@@ -309,7 +320,7 @@ public class KnnLoocv
         return cache;
     }
 
-    public void setCache(Cache<Instance, Instance, Double> cache) {
+    public void setCache(final Cache<Instance, Instance, Double> cache) {
         this.cache = cache;
         customCache = cache != null;
     }
@@ -322,7 +333,7 @@ public class KnnLoocv
         return cvSearcherIteratorBuilder;
     }
 
-    public void setCvSearcherIteratorBuilder(NeighbourIteratorBuilder cvSearcherIteratorBuilder) {
+    public void setCvSearcherIteratorBuilder(final NeighbourIteratorBuilder cvSearcherIteratorBuilder) {
         this.cvSearcherIteratorBuilder = cvSearcherIteratorBuilder;
     }
 

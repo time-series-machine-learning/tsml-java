@@ -39,6 +39,18 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     public static final String checkpointFileName = "checkpoint.ser";
     public static final String tempCheckpointFileName = checkpointFileName + ".tmp";
 
+    public StopWatch getTrainTimer() {
+        return trainTimer;
+    }
+
+    public Instances getTrainData() {
+        return trainData;
+    }
+
+    public long getLastCheckpointTimeStamp() {
+        return lastCheckpointTimeStamp;
+    }
+
     @Override
     public boolean setSavePath(String path) {
         if(path == null) {
@@ -57,10 +69,10 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         trainTimer.suspend();
         memoryWatcher.suspend();
         if(isCheckpointing() && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            String path = checkpointDirPath + tempCheckpointFileName;
+            final String path = checkpointDirPath + tempCheckpointFileName;
             logger.fine(() -> "saving checkpoint to: " + path);
             saveToFile(path);
-            boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
+            final boolean success = new File(path).renameTo(new File(checkpointDirPath + checkpointFileName));
             if(!success) {
                 throw new IllegalStateException("could not rename checkpoint file");
             }
@@ -74,7 +86,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         trainTimer.suspend();
         memoryWatcher.suspend();
         if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
-            String path = checkpointDirPath + checkpointFileName;
+            final String path = checkpointDirPath + checkpointFileName;
             logger.fine(() -> "loading from checkpoint: " + path);
             loadFromFile(path);
         }
@@ -179,8 +191,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         }
 
         public double add(Instance neighbour) {
-            long timeStamp = System.nanoTime();
-            double distance = distanceFunction.distance(this.instance, neighbour, limit);
+            final long timeStamp = System.nanoTime();
+            final double distance = distanceFunction.distance(this.instance, neighbour, limit);
             add(neighbour, distance, System.nanoTime() - timeStamp);
             return distance;
         }
@@ -197,13 +209,13 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
         public double[] predict() {
             predictTimer.resetAndEnable();
-            PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
-            double[] distribution = new double[instance.numClasses()];
+            final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
+            final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
                 distribution[rand.nextInt(distribution.length)]++;
             } else {
-                for(Double key : nearestNeighbourMap.keys()) {
-                    for(Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
+                for(final Double key : nearestNeighbourMap.keys()) {
+                    for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
                         distribution[(int) nearestNeighbour.classValue()]++; // todo weight by distance
                         if(!randomTieBreak) {
                             break;
@@ -231,8 +243,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                      Exception {
-        NeighbourSearcher searcher = new NeighbourSearcher(testInstance);
-        for(Instance trainInstance : trainData) {
+        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance);
+        for(final Instance trainInstance : trainData) {
             searcher.add(trainInstance);
         }
         return searcher.predict();

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 
-public class EE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
+public class Ee extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
         IncClassifier, MemoryWatchable { // AKA contracted elastic ensemble
 
     public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
@@ -70,7 +70,7 @@ public class EE extends EnhancedAbstractClassifier implements TrainTimeContracta
         );
     }
 
-    public EE() {
+    public Ee() {
         super(true);
         setConstituents(getV1Constituents());
     }

@@ -97,6 +97,14 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean debug=false;
     protected transient final Logger logger = LogUtils.getLogger(this);
 
+    public Random getRand() {
+        return rand;
+    }
+
+    public void setRand(Random rand) {
+        this.rand = rand;
+    }
+
     public boolean isRegenerateTrainEstimate() {
         return regenerateTrainEstimate;
     }
