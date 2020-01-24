@@ -127,14 +127,8 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
             nextBuildTick();
             checkpoint();
         }
-        trainTimer.disable();
         if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
             logger.fine("generating train estimate");
-            if(isLimitedVersion()) {
-                for(EnhancedAbstractClassifier constituent : constituents) {
-                    // todo add resource usage, though it might be better to tack these onto the constituents before build
-                }
-            }
             regenerateTrainEstimate = false;
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
