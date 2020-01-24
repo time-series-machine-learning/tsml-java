@@ -78,8 +78,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
             }
             lastCheckpointTimeStamp = System.nanoTime();
         }
-        trainTimer.unsuspend();
         memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
     }
 
     protected void loadFromCheckpoint() throws Exception {
@@ -90,8 +90,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
             logger.fine(() -> "loading from checkpoint: " + path);
             loadFromFile(path);
         }
-        trainTimer.unsuspend();
         memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
     }
 
     @Override public boolean isIgnorePreviousCheckpoints() {
@@ -156,8 +156,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         loadFromCheckpoint();
-        trainTimer.enable();
         memoryWatcher.enable();
+        trainTimer.enable();
         if(rebuild) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();

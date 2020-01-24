@@ -47,6 +47,23 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     private int fullNeighbourhoodSize = -1;
     private Set<Benchmark> improveableBenchmarks;
     private Set<Benchmark> unimprovableBenchmarks;
+    private boolean limitedVersion = false;
+
+    public Scorer getScorer() {
+        return scorer;
+    }
+
+    public void setScorer(Scorer scorer) {
+        this.scorer = scorer;
+    }
+
+    public boolean isLimitedVersion() {
+        return limitedVersion;
+    }
+
+    public void setLimitedVersion(boolean limitedVersion) {
+        this.limitedVersion = limitedVersion;
+    }
 
     public interface Scorer extends Serializable {
         double score(ClassifierResults results);
@@ -238,22 +255,26 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                 if(incTunedClassifier.isDebug() && selectedBenchmarks.size() > 1) {
                     throw new IllegalStateException("there shouldn't be more than 1");
                 }
-                for(final Benchmark benchmark : selectedBenchmarks) {
-                    final Classifier classifier = benchmark.getClassifier();
-                    if(classifier instanceof KnnLoocv) {
-                        final KnnLoocv knn = (KnnLoocv) classifier;
-                        knn.setNeighbourLimit(-1);
-                        knn.setRegenerateTrainEstimate(true);
-                        delegateResourceMonitoring(knn);
-                        try {
-                            knn.buildClassifier(trainData);
-                        } catch (Exception e) {
-                            throw new IllegalStateException(e);
+                if(limitedVersion) {
+                    incTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
+                    for(final Benchmark benchmark : selectedBenchmarks) {
+                        final Classifier classifier = benchmark.getClassifier();
+                        if(classifier instanceof KnnLoocv) {
+                            final KnnLoocv knn = (KnnLoocv) classifier;
+                            knn.setNeighbourLimit(-1);
+                            knn.setRegenerateTrainEstimate(true);
+                            delegateResourceMonitoring(knn);
+                            try {
+                                knn.buildClassifier(trainData);
+                            } catch (Exception e) {
+                                throw new IllegalStateException(e);
+                            }
+                            // todo should we use delegation for the resource monitoring or get it from benchmarks?
+                            undelegateResourceMonitoring(knn);
+                            benchmark.setResults(knn.getTrainResults());
+                        } else {
+                            throw new IllegalArgumentException("expected knn");
                         }
-                        undelegateResourceMonitoring(knn);
-                        benchmark.setResults(knn.getTrainResults());
-                    } else {
-                        throw new IllegalArgumentException("expected knn");
                     }
                 }
                 return new HashSet<>(selectedBenchmarks);

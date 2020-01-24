@@ -197,9 +197,9 @@ public class KnnLoocv
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         loadFromCheckpoint();
+        memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
-        memoryWatcher.enable();
         if(rebuild) {
             trainTimer.resetAndDisable();
             memoryWatcher.resetAndDisable();
