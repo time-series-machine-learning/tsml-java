@@ -365,11 +365,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     }
 
     public void setDebug(boolean b){
-        Level level = Level.OFF;
-        if(b) {
-            level = Level.ALL;
-        }
-        logger.setLevel(level);
         debug=b;
     }
 

@@ -16,6 +16,7 @@ import weka.core.Instances;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
 import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
@@ -76,6 +77,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private transient Instances trainData;
     private boolean debugConstituents = false;
+    private boolean logConstituents = false;
 
     @Override public long predictNextTrainTimeNanos() {
         long result = -1;
@@ -112,6 +114,11 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                 constituent.setDebug(debugConstituents);
                 constituent.setSeed(rand.nextInt());
                 constituent.setEstimateOwnPerformance(true);
+                if(logConstituents) {
+                    constituent.getLogger().setLevel(logger.getLevel());
+                } else {
+                    constituent.getLogger().setLevel(Level.OFF);
+                }
             }
             nextPartialConstituentsBatch = new ArrayList<>();
             trainTimer.lap();
@@ -152,8 +159,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                 trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTimeNanos(), null);
             }
         }
-        memoryWatcher.disable();
-        trainEstimateTimer.disable();
+        memoryWatcher.disableAnyway();
+        trainEstimateTimer.disableAnyway();
+        trainTimer.disableAnyway();
         trainResults.setSplit("train");
         trainResults.setMemory(getMaxMemoryUsageInBytes()); // todo other fields
         trainResults.setBuildTime(getTrainTimeNanos()); // todo break down to estimate time also
@@ -338,5 +346,13 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
 
     public void setDebugConstituents(final boolean debugConstituents) {
         this.debugConstituents = debugConstituents;
+    }
+
+    public boolean isLogConstituents() {
+        return logConstituents;
+    }
+
+    public void setLogConstituents(boolean logConstituents) {
+        this.logConstituents = logConstituents;
     }
 }

@@ -7,10 +7,9 @@ public class LogUtils {
     private LogUtils() {}
 
     public static Logger getLogger(Object object) {
-        return Logger.getLogger(object.getClass().getSimpleName() + "-" + object.hashCode());
+        Logger logger = Logger.getLogger(object.getClass().getSimpleName() + "-" + object.hashCode());
+        logger.setLevel(Level.OFF); // disable logs by default
+        return logger;
     }
 
-    public static boolean isAboveLevel(final Logger logger, final Level level) {
-        return logger.getLevel().intValue() >= level.intValue(); // todo
-    }
 }

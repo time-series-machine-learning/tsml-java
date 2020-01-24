@@ -54,6 +54,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
@@ -481,6 +484,8 @@ public class Experiments  {
         //for local running, and cluster output files are good enough on there.
 //        LOGGER.addHandler(new FileHandler());
 
+        LOGGER.addHandler(new StreamHandler(System.out, new SimpleFormatter()));
+        LOGGER.info("running");
         if (beQuiet) {
             LOGGER.setLevel(Level.SEVERE);
         }

@@ -23,6 +23,22 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         super(true);
     }
 
+    public boolean isLogBenchmarks() {
+        return logBenchmarks;
+    }
+
+    public void setLogBenchmarks(boolean logBenchmarks) {
+        this.logBenchmarks = logBenchmarks;
+    }
+
+    public boolean isDebugBenchmarks() {
+        return debugBenchmarks;
+    }
+
+    public void setDebugBenchmarks(boolean debugBenchmarks) {
+        this.debugBenchmarks = debugBenchmarks;
+    }
+
     public interface InitFunction extends Serializable, ParamHandler {
         void init(Instances trainData);
     }
@@ -66,6 +82,8 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     private boolean checkpointAfterEveryIteration = false;
     public static final String BENCHMARK_ITERATOR_FLAG = "b";
     public static final String INIT_FUNCTION_FLAG = "i";
+    private boolean debugBenchmarks = false;
+    private boolean logBenchmarks = false;
 
     public StopWatch getTrainEstimateTimer() {
         return trainEstimateTimer;

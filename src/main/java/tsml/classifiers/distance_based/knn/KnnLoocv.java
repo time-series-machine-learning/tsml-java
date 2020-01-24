@@ -137,7 +137,7 @@ public class KnnLoocv
         if(!cvSearcherIterator.hasNext()) {
             if(leftOutSearcherIterator.hasNext()) {
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
-                if(LogUtils.isAboveLevel(logger, Level.WARNING)) {
+                if(logger.isLoggable(Level.WARNING)) {
                     logger.info("---- end of batch ----");
                     if(!cvSearcherIterator.hasNext()) {
                         throw new IllegalStateException("this shouldn't happen!");
@@ -230,7 +230,7 @@ public class KnnLoocv
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
                 regenerateTrainEstimate = true; // build the first train estimate irrelevant of any progress made
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
-                if(LogUtils.isAboveLevel(logger, Level.WARNING)) {
+                if(logger.isLoggable(Level.WARNING)) {
                     if(!leftOutSearcherIterator.hasNext()) {
                         throw new IllegalStateException("hasNext false");
                     }
@@ -253,7 +253,7 @@ public class KnnLoocv
         }
         if(regenerateTrainEstimate) {
             regenerateTrainEstimate = false;
-            if(LogUtils.isAboveLevel(logger, Level.WARNING)
+            if(logger.isLoggable(Level.WARNING)
                 && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
                         (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {

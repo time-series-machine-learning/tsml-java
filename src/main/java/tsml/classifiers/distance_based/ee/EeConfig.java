@@ -135,13 +135,17 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSizePercentage(limit));
     }
 
+    public static Ee setTrainSelectedBenchmarksFully(Ee ee, boolean state) { // todo params from cmdline in experiment + append to cls name
+        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setTrainSelectedBenchmarksFully(state));
+    }
+
     private static Ee buildLee() {
         Ee ee = new Ee();
         ImmutableList<Classifier> constituents = buildV2Constituents();
         ee.setConstituents(constituents);
-        ee.setLimitedVersion(true);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);
+        setTrainSelectedBenchmarksFully(ee,true);
         return ee;
     }
 }
