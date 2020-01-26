@@ -13,8 +13,9 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 script:
-  - ./gradlew build --info
-  - ./gradlew clean test --info --parallel
+  - ./gradlew build --info --parallel
+# testing should be performed in the build above so don't need the following line
+#  - ./gradlew clean test --info --parallel
 deploy:
   provider: script
   script: ./gradew buildJar
