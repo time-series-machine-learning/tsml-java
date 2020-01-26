@@ -18,6 +18,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
@@ -47,7 +48,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     private int fullNeighbourhoodSize = -1;
     private Set<Benchmark> improveableBenchmarks;
     private Set<Benchmark> unimprovableBenchmarks;
-    private boolean limitedVersion = false;
+    private boolean trainSelectedBenchmarksFully = false; // whether to train the final benchmarks up to full neighbourhood or leave as is
 
     public Scorer getScorer() {
         return scorer;
@@ -57,12 +58,12 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         this.scorer = scorer;
     }
 
-    public boolean isLimitedVersion() {
-        return limitedVersion;
+    public boolean isTrainSelectedBenchmarksFully() {
+        return trainSelectedBenchmarksFully;
     }
 
-    public void setLimitedVersion(boolean limitedVersion) {
-        this.limitedVersion = limitedVersion;
+    public void setTrainSelectedBenchmarksFully(boolean trainSelectedBenchmarksFully) {
+        this.trainSelectedBenchmarksFully = trainSelectedBenchmarksFully;
     }
 
     public interface Scorer extends Serializable {
@@ -176,6 +177,12 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                                                 knn.setNeighbourLimit(neighbourCount.get());
                                                 knn.setParams(paramSet);
                                                 knn.setEstimateOwnPerformance(true);
+                                                knn.setDebug(incTunedClassifier.isDebugBenchmarks());
+                                                if(incTunedClassifier.isLogBenchmarks()) {
+                                                    knn.getLogger().setLevel(incTunedClassifier.getLogger().getLevel());
+                                                } else {
+                                                    knn.getLogger().setLevel(Level.OFF);
+                                                }
                                                 timer.disable();
                                                 delegateResourceMonitoring(knn);
                                                 knn.buildClassifier(trainData);
@@ -255,7 +262,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                 if(incTunedClassifier.isDebug() && selectedBenchmarks.size() > 1) {
                     throw new IllegalStateException("there shouldn't be more than 1");
                 }
-                if(limitedVersion) {
+                if(trainSelectedBenchmarksFully) {
                     incTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
                     for(final Benchmark benchmark : selectedBenchmarks) {
                         final Classifier classifier = benchmark.getClassifier();

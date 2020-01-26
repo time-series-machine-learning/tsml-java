@@ -145,7 +145,7 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         ee.setConstituents(constituents);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);
-        setTrainSelectedBenchmarksFully(ee,true);
+        setTrainSelectedBenchmarksFully(ee,true); // disable this in reg ee, same for above also
         return ee;
     }
 }
