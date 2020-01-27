@@ -273,10 +273,10 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             trainResults.setFoldID(seed);
             trainResults.setDetails(this, trainData);
         }
+        built = true;
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
-        built = true;
         checkpoint();
     }
 
@@ -354,7 +354,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return benchmarkExplorer.predictNextTimeNanos();
     }
 
-    @Override public boolean isDone() {
+    @Override public boolean isBuilt() {
         return !benchmarkExplorer.hasNext();
     }
 
