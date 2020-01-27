@@ -8,7 +8,7 @@ import weka.core.Randomizable;
 import java.io.Serializable;
 import java.util.*;
 
-public class RandomIterator<A>
+public class RandomListIterator<A>
     implements DefaultListIterator<A>,
                OptionHandler,
                Randomizable,
@@ -35,8 +35,9 @@ public class RandomIterator<A>
         return removedOnNext;
     }
 
-    public void setRemovedOnNext(final boolean removedOnNext) {
+    public RandomListIterator<A> setRemovedOnNext(final boolean removedOnNext) {
         this.removedOnNext = removedOnNext;
+        return this;
     }
 
     protected boolean removedOnNext = true;
@@ -60,23 +61,23 @@ public class RandomIterator<A>
         }
     }
 
-    public RandomIterator() {
+    public RandomListIterator() {
     }
 
-    public RandomIterator(int seed) {
+    public RandomListIterator(int seed) {
         setSeed(seed);
     }
 
-    public RandomIterator(int seed, List<A> list) {
+    public RandomListIterator(int seed, List<A> list) {
         setSeed(seed);
         setList(list);
     }
 
-    public RandomIterator(List<A> list) {
+    public RandomListIterator(List<A> list) {
         this(-1, list);
     }
 
-    public RandomIterator(List<A> list, int seed) {
+    public RandomListIterator(List<A> list, int seed) {
         this(seed, list);
     }
 
