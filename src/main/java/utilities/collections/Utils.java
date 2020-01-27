@@ -49,4 +49,11 @@ public class Utils {
     public static <A> int size(Iterable<A> iterable) {
         return size(iterable.iterator());
     }
+
+    public static <A> void put(A item, Set<A> set) {
+        boolean result = set.add(item);
+        if(!result) {
+            throw new IllegalStateException("already contains item");
+        }
+    }
 }
