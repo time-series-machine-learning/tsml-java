@@ -25,7 +25,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
     private IncTuner incTunedClassifier = new IncTuner();
     private ParamSpace paramSpace;
-    private SourcedBenchmarkExplorer sourcedBenchmarkExplorer = new SourcedBenchmarkExplorer();
+    private BenchmarkExplorer benchmarkExplorer = null;
     // setup the param space to source classifiers
     private Iterator<ParamSet> paramSetIterator;
     // setup building classifier from param set
@@ -33,22 +33,30 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     private int maxNeighbourhoodSize = -1; // max number of neighbours
     private Box<Integer> neighbourCount; // current number of neighbours
     private Box<Integer> paramCount; // current number of params
-    private long longestParamTimeNanos; // track maximum time taken for a param to run
-    private long longestNeighbourBatchTimeNanos; // track max time taken for an addition of
+    private long longestSourceTimeNanos; // track maximum time taken for a param to run
+    private long longestImprovementTimeNanos; // track max time taken for an addition of
     // neighbours
     private Function<Instances, ParamSpace> paramSpaceFunction;
     private Iterator<Set<Benchmark>> paramSourceIterator;
-    private BenchmarkIterator benchmarkSourceIterator;
-    private BenchmarkImprover benchmarkImprover;
+    private Iterator<Set<Benchmark>> benchmarkSourceIterator;
+    private Iterator<Set<Benchmark>> benchmarkImprovementIterator;
     private Optimiser optimiser;
     private Supplier<KnnLoocv> knnSupplier;
     private double maxNeighbourhoodSizePercentage = -1;
     private double maxParamSpaceSizePercentage = -1;
     private int fullParamSpaceSize = -1;
     private int fullNeighbourhoodSize = -1;
+    private Set<Benchmark> nextImproveableBenchmarks;
     private Set<Benchmark> improveableBenchmarks;
     private Set<Benchmark> unimprovableBenchmarks;
+    private Iterator<Benchmark> improveableBenchmarkIterator;
     private boolean trainSelectedBenchmarksFully = false; // whether to train the final benchmarks up to full neighbourhood or leave as is
+    private PrunedMultimap<Double, Benchmark> finalBenchmarks;
+    private boolean shouldSource;
+
+    public interface Optimiser {
+        boolean shouldSource();
+    }
 
     public Scorer getScorer() {
         return scorer;
@@ -144,14 +152,65 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         incTunedClassifier.getMemoryWatcher().enableAnyway();
     }
 
+
+    public Set<Benchmark> getImproveableBenchmarks() {
+        return improveableBenchmarks;
+    }
+
+    public Set<Benchmark> getUnimprovableBenchmarks() {
+        return unimprovableBenchmarks;
+    }
+
+    public Set<Benchmark> getAllBenchmarks() {
+        final HashSet<Benchmark> benchmarks = new HashSet<>();
+        benchmarks.addAll(unimprovableBenchmarks);
+        benchmarks.addAll(improveableBenchmarks);
+        return benchmarks;
+    }
+
+    private boolean isImproveable(Benchmark benchmark) {
+        try {
+            final KnnLoocv knn = (KnnLoocv) benchmark.getClassifier();
+            return knn.getNeighbourLimit() + 1 <= maxNeighbourhoodSize;
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private boolean hasNextSourceTime() {
+        return longestSourceTimeNanos < incTunedClassifier.getRemainingTrainTimeNanos();
+    }
+
+    private boolean hasNextImprovementTime() {
+        return longestImprovementTimeNanos < incTunedClassifier.getRemainingTrainTimeNanos();
+    }
+
+    private boolean hasNextSource() {
+        return benchmarkSourceIterator.hasNext();
+    }
+
+    private boolean hasNextImprovement() {
+        return benchmarkImprovementIterator.hasNext();
+    }
+
+    private Iterator<Benchmark> buildImproveableBenchmarkIterator() {
+        RandomIterator<Benchmark> iterator = new RandomIterator<>(incTunedClassifier.getSeed(), new ArrayList<>(improveableBenchmarks));
+        iterator.setRemovedOnNext(false);
+        return iterator;
+    }
+
     @Override
     public void init(Instances trainData) {
         neighbourCount = new Box<>(1); // must start at 1 otherwise the loocv produces no train estimate
         paramCount = new Box<>(0);
-        longestParamTimeNanos = 0;
-        longestNeighbourBatchTimeNanos = 0;
+        longestSourceTimeNanos = 0;
+        longestImprovementTimeNanos = 0;
+        nextImproveableBenchmarks = new HashSet<>();
         improveableBenchmarks = new HashSet<>();
         unimprovableBenchmarks = new HashSet<>();
+        improveableBenchmarkIterator = buildImproveableBenchmarkIterator();
+        finalBenchmarks = PrunedMultimap.desc(ArrayList::new);
+        finalBenchmarks.setSoftLimit(1);
         final int seed = incTunedClassifier.getSeed();
         paramSpace = paramSpaceFunction.apply(trainData);
         paramSetIterator = new RandomIterator<>(this.paramSpace, seed);
@@ -189,11 +248,17 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                                                 undelegateResourceMonitoring(knn);
                                                 timer.enable();
                                                 final Benchmark benchmark = new Benchmark(knn, knn.getTrainResults(), id++);
-                                                benchmark.score(scorer::score);
+                                                final double score = benchmark.score(scorer::score);
+                                                finalBenchmarks.put(score, benchmark);
+                                                if(isImproveable(benchmark)) {
+                                                    improveableBenchmarks.add(benchmark);
+                                                } else {
+                                                    unimprovableBenchmarks.add(benchmark);
+                                                }
                                                 final HashSet<Benchmark> benchmarks = new HashSet<>(
                                                     Collections.singletonList(benchmark));
                                                 timer.disable();
-                                                longestParamTimeNanos = Math.max(longestParamTimeNanos, timer.getTimeNanos());
+                                                longestSourceTimeNanos = Math.max(longestSourceTimeNanos, timer.getTimeNanos());
                                                 incTunedClassifier.getLogger().info(() -> "sourced " + paramSet.toString());
                                                 return benchmarks;
                                             } catch(Exception e) {
@@ -202,11 +267,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                                         }
                                     }
             );
-        benchmarkSourceIterator = new BenchmarkIterator() {
-            @Override public long predictNextTimeNanos() {
-                return longestParamTimeNanos;
-            }
-
+        benchmarkSourceIterator = new Iterator<Set<Benchmark>>() {
             @Override public Set<Benchmark> next() {
                 return paramSourceIterator.next();
             }
@@ -216,85 +277,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
             }
         };
         // setup an iterator to improve benchmarks
-        benchmarkImprover = new BenchmarkImprover() {
-
-            @Override public long predictNextTimeNanos() {
-                return longestNeighbourBatchTimeNanos;
-            }
-
-            public Set<Benchmark> getImproveableBenchmarks() {
-                return improveableBenchmarks;
-            }
-
-            public Set<Benchmark> getUnimprovableBenchmarks() {
-                return unimprovableBenchmarks;
-            }
-
-            public Set<Benchmark> getAllBenchmarks() {
-                final HashSet<Benchmark> benchmarks = new HashSet<>();
-                benchmarks.addAll(unimprovableBenchmarks);
-                benchmarks.addAll(improveableBenchmarks);
-                return benchmarks;
-            }
-
-            @Override
-            public void add(Benchmark benchmark) {
-                if(isImproveable(benchmark)) {
-                    improveableBenchmarks.add(benchmark);
-                } else {
-                    unimprovableBenchmarks.add(benchmark);
-                }
-            }
-
-            @Override
-            public Set<Benchmark> findFinalBenchmarks() {
-                incTunedClassifier.getTrainTimer().checkDisabled();
-                final StopWatch trainEstimateTimer = incTunedClassifier.getTrainEstimateTimer();
-                final MemoryWatcher memoryWatcher = incTunedClassifier.getMemoryWatcher();
-                final PrunedMultimap<Double, Benchmark> map = PrunedMultimap.desc(ArrayList::new);
-                map.setSoftLimit(1);
-                for(final Benchmark benchmark : getAllBenchmarks()) {
-                    map.put(benchmark.getScore(), benchmark);
-                }
-                final Collection<Benchmark> benchmarks = map.values();
-                final List<Benchmark> selectedBenchmarks = Utilities.randPickN(benchmarks, 1, incTunedClassifier.getRand());
-                // train the selected classifier fully, i.e. all neighbours
-                if(incTunedClassifier.isDebug() && selectedBenchmarks.size() > 1) {
-                    throw new IllegalStateException("there shouldn't be more than 1");
-                }
-                if(trainSelectedBenchmarksFully) {
-                    incTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
-                    for(final Benchmark benchmark : selectedBenchmarks) {
-                        final Classifier classifier = benchmark.getClassifier();
-                        if(classifier instanceof KnnLoocv) {
-                            final KnnLoocv knn = (KnnLoocv) classifier;
-                            knn.setNeighbourLimit(-1);
-                            knn.setRegenerateTrainEstimate(true);
-                            delegateResourceMonitoring(knn);
-                            try {
-                                knn.buildClassifier(trainData);
-                            } catch (Exception e) {
-                                throw new IllegalStateException(e);
-                            }
-                            // todo should we use delegation for the resource monitoring or get it from benchmarks?
-                            undelegateResourceMonitoring(knn);
-                            benchmark.setResults(knn.getTrainResults());
-                        } else {
-                            throw new IllegalArgumentException("expected knn");
-                        }
-                    }
-                }
-                return new HashSet<>(selectedBenchmarks);
-            }
-
-            private boolean isImproveable(Benchmark benchmark) {
-                try {
-                    final KnnLoocv knn = (KnnLoocv) benchmark.getClassifier();
-                    return knn.getNeighbourLimit() + 1 <= maxNeighbourhoodSize;
-                } catch(Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            }
+        benchmarkImprovementIterator = new Iterator<Set<Benchmark>>() {
 
             @Override
             public Set<Benchmark> next() {
@@ -304,48 +287,57 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                 final int nextNeighbourCount = origNeighbourCount + 1;
                 incTunedClassifier.getLogger().info(() -> "neighbourhood " + origNeighbourCount + " --> " + nextNeighbourCount);
                 neighbourCount.set(nextNeighbourCount);
-                final Set<Benchmark> improvedBenchmarks = new HashSet<>();
-                try {
-                    final Iterator<Benchmark> benchmarkIterator = improveableBenchmarks.iterator();
-                    while(benchmarkIterator.hasNext()) {
-                        final Benchmark benchmark = benchmarkIterator.next();
-                        final Classifier classifier = benchmark.getClassifier();
-                        final KnnLoocv knn = (KnnLoocv) classifier;
-                        if(incTunedClassifier.isDebug()) {
-                            final int currentNeighbourLimit = knn.getNeighbourLimit();
-                            if(nextNeighbourCount <= currentNeighbourLimit) {
-                                throw new IllegalStateException("no improvement to the number of neighbours");
-                            }
-                        }
-                        knn.setNeighbourLimit(nextNeighbourCount);
-                        timer.disable();
-                        delegateResourceMonitoring(knn);
-                        knn.buildClassifier(trainData);
-                        undelegateResourceMonitoring(knn);
-                        timer.enable();
-                        benchmark.setResults(knn.getTrainResults());
-                        benchmark.score(scorer::score);
-                        if(!isImproveable(benchmark)) {
-                            benchmarkIterator.remove();
-                            unimprovableBenchmarks.add(benchmark);
-                        }
-                        improvedBenchmarks.add(benchmark);
+                Set<Benchmark> changedBenchmarks = new HashSet<>();
+                final Benchmark benchmark = improveableBenchmarkIterator.next();
+                improveableBenchmarkIterator.remove();
+                final Classifier classifier = benchmark.getClassifier();
+                final KnnLoocv knn = (KnnLoocv) classifier;
+                if(incTunedClassifier.isDebug()) {
+                    final int currentNeighbourLimit = knn.getNeighbourLimit();
+                    if(nextNeighbourCount <= currentNeighbourLimit) {
+                        throw new IllegalStateException("no improvement to the number of neighbours");
                     }
+                }
+                knn.setNeighbourLimit(nextNeighbourCount);
+                timer.disable();
+                delegateResourceMonitoring(knn);
+                try {
+                    knn.buildClassifier(trainData);
                 } catch(Exception e) {
                     throw new IllegalStateException(e);
                 }
+                undelegateResourceMonitoring(knn);
+                timer.enable();
+                finalBenchmarks.remove(benchmark.getScore(), benchmark); // remove the current benchmark from the final benchmarks
+                benchmark.setResults(knn.getTrainResults());
+                final double score = benchmark.score(scorer::score);
+                finalBenchmarks.put(score, benchmark); // add the benchmark back to the final benchmarks under the new score (which may be worse, hence why we have to remove the original benchmark first
+                if(!isImproveable(benchmark)) {
+                    if(!unimprovableBenchmarks.add(benchmark)) {
+                        throw new IllegalStateException("benchmark should not already be in unimproveable set");
+                    }
+                } else {
+                    if(!nextImproveableBenchmarks.add(benchmark)) {
+                        throw new IllegalStateException("benchmark should not already be in next improveable benchmarks");
+                    }
+                }
+                if(!changedBenchmarks.add(benchmark)) {
+                    throw new IllegalStateException("benchmark should not already be in improved benchmarks");
+                }
+                if(!improveableBenchmarkIterator.hasNext()) {
+                    improveableBenchmarks = nextImproveableBenchmarks;
+                    improveableBenchmarkIterator = buildImproveableBenchmarkIterator();
+                }
                 timer.disable();
-                longestNeighbourBatchTimeNanos = Math.max(longestNeighbourBatchTimeNanos, timer.getTimeNanos());
-                return improvedBenchmarks;
+                longestImprovementTimeNanos = Math.max(longestImprovementTimeNanos, timer.getTimeNanos());
+                return changedBenchmarks;
             }
 
             @Override
             public boolean hasNext() {
-                return !improveableBenchmarks.isEmpty();
+                return improveableBenchmarkIterator.hasNext();
             }
         };
-        sourcedBenchmarkExplorer.setBenchmarkImprover(benchmarkImprover);
-        sourcedBenchmarkExplorer.setBenchmarkSource(benchmarkSourceIterator);
         optimiser = () -> {
             // only called when *both* improvements and source remain
             final int neighbours = neighbourCount.get();
@@ -372,9 +364,81 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                 throw new IllegalStateException("invalid source / improvement state");
             }
         };
-        sourcedBenchmarkExplorer.setOptimiser(optimiser);
+        benchmarkExplorer = new BenchmarkExplorer() {
+            @Override
+            public Set<Benchmark> findFinalBenchmarks() {
+                incTunedClassifier.getTrainTimer().checkDisabled();
+                final StopWatch trainEstimateTimer = incTunedClassifier.getTrainEstimateTimer();
+                final MemoryWatcher memoryWatcher = incTunedClassifier.getMemoryWatcher();
+                final Collection<Benchmark> benchmarks = finalBenchmarks.values();
+                final List<Benchmark> selectedBenchmarks = Utilities.randPickN(benchmarks, 1, incTunedClassifier.getRand());
+                // train the selected classifier fully, i.e. all neighbours
+                if(selectedBenchmarks.size() > 1) {
+                    throw new IllegalStateException("there shouldn't be more than 1");
+                }
+                if(trainSelectedBenchmarksFully) {
+                    incTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
+                    for(final Benchmark benchmark : selectedBenchmarks) {
+                        final Classifier classifier = benchmark.getClassifier();
+                        if(classifier instanceof KnnLoocv) {
+                            final KnnLoocv knn = (KnnLoocv) classifier;
+                            knn.setNeighbourLimit(-1);
+                            knn.setRegenerateTrainEstimate(true);
+                            delegateResourceMonitoring(knn);
+                            try {
+                                knn.buildClassifier(trainData);
+                            } catch (Exception e) {
+                                throw new IllegalStateException(e);
+                            }
+                            undelegateResourceMonitoring(knn);
+                            benchmark.setResults(knn.getTrainResults());
+                        } else {
+                            throw new IllegalArgumentException("expected knn");
+                        }
+                    }
+                }
+                return new HashSet<>(selectedBenchmarks);
+            }
+
+            @Override
+            public boolean hasNext() {
+                boolean source = hasNextSourceTime() && hasNextSource();
+                boolean improve = hasNextImprovementTime() && hasNextImprovement();
+                shouldSource = false; // improve && !source
+                if(!improve && source) {
+                    shouldSource = true;
+                } else if(improve && source) {
+                    shouldSource = optimiser.shouldSource();
+                } else {
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public Set<Benchmark> next() {
+                if(shouldSource) {
+                    return benchmarkSourceIterator.next();
+                } else {
+                    return benchmarkImprovementIterator.next();
+                }
+            }
+
+            @Override
+            public long predictNextTimeNanos() {
+                if(hasNext()) {
+                    if(shouldSource) {
+                        return longestSourceTimeNanos;
+                    } else {
+                        return longestImprovementTimeNanos;
+                    }
+                } else {
+                    return -1;
+                }
+            }
+        };
         // set corresponding iterators in the incremental tuned classifier
-        incTunedClassifier.setBenchmarkExplorer(sourcedBenchmarkExplorer);
+        incTunedClassifier.setBenchmarkExplorer(benchmarkExplorer);
         incTunedClassifier.setBenchmarkEnsembler(BenchmarkEnsembler.single());
         // todo make sure the seeds are set for everything
     }
@@ -394,15 +458,6 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
     public IncKnnTunerBuilder setParamSpace(final ParamSpace paramSpace) {
         this.paramSpace = paramSpace;
-        return this;
-    }
-
-    public SourcedBenchmarkExplorer getSourcedBenchmarkExplorer() {
-        return sourcedBenchmarkExplorer;
-    }
-
-    public IncKnnTunerBuilder setSourcedBenchmarkExplorer(final SourcedBenchmarkExplorer sourcedBenchmarkExplorer) {
-        this.sourcedBenchmarkExplorer = sourcedBenchmarkExplorer;
         return this;
     }
 
@@ -451,21 +506,21 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return this;
     }
 
-    public long getLongestParamTimeNanos() {
-        return longestParamTimeNanos;
+    public long getLongestSourceTimeNanos() {
+        return longestSourceTimeNanos;
     }
 
-    public IncKnnTunerBuilder setLongestParamTimeNanos(final long longestParamTimeNanos) {
-        this.longestParamTimeNanos = longestParamTimeNanos;
+    public IncKnnTunerBuilder setLongestSourceTimeNanos(final long longestSourceTimeNanos) {
+        this.longestSourceTimeNanos = longestSourceTimeNanos;
         return this;
     }
 
-    public long getLongestNeighbourBatchTimeNanos() {
-        return longestNeighbourBatchTimeNanos;
+    public long getLongestImprovementTimeNanos() {
+        return longestImprovementTimeNanos;
     }
 
-    public IncKnnTunerBuilder setLongestNeighbourBatchTimeNanos(final long longestNeighbourBatchTimeNanos) {
-        this.longestNeighbourBatchTimeNanos = longestNeighbourBatchTimeNanos;
+    public IncKnnTunerBuilder setLongestImprovementTimeNanos(final long longestImprovementTimeNanos) {
+        this.longestImprovementTimeNanos = longestImprovementTimeNanos;
         return this;
     }
 
@@ -486,25 +541,6 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     public IncKnnTunerBuilder setParamSourceIterator(
         final Iterator<Set<Benchmark>> paramSourceIterator) {
         this.paramSourceIterator = paramSourceIterator;
-        return this;
-    }
-
-    public BenchmarkIterator getBenchmarkSourceIterator() {
-        return benchmarkSourceIterator;
-    }
-
-    public IncKnnTunerBuilder setBenchmarkSourceIterator(
-        final BenchmarkIterator benchmarkSourceIterator) {
-        this.benchmarkSourceIterator = benchmarkSourceIterator;
-        return this;
-    }
-
-    public BenchmarkImprover getBenchmarkImprover() {
-        return benchmarkImprover;
-    }
-
-    public IncKnnTunerBuilder setBenchmarkImprover(final BenchmarkImprover benchmarkImprover) {
-        this.benchmarkImprover = benchmarkImprover;
         return this;
     }
 

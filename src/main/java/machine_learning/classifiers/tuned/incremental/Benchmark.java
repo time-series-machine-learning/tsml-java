@@ -21,8 +21,9 @@ public class Benchmark implements Serializable, Comparable<Benchmark> {
         this.score = score;
     }
 
-    public void score(Function<ClassifierResults, Double> scorer) {
+    public double score(Function<ClassifierResults, Double> scorer) {
         setScore(scorer.apply(results));
+        return getScore();
     }
 
     public Benchmark(Benchmark benchmark) {

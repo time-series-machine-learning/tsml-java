@@ -293,10 +293,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         }
     }
 
-    public BenchmarkIterator getBenchmarkExplorer() {
-        return benchmarkExplorer;
-    }
-
     public void setBenchmarkExplorer(BenchmarkExplorer benchmarkExplorer) {
         this.benchmarkExplorer = benchmarkExplorer;
     }
@@ -398,4 +394,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         this.checkpointAfterEveryIteration = checkpointAfterEveryIteration;
     }
 
+    public BenchmarkExplorer getBenchmarkExplorer() {
+        return benchmarkExplorer;
+    }
 }
