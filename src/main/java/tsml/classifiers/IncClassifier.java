@@ -14,7 +14,7 @@ public interface IncClassifier
 
     // make sure to start / stop timers / watchers at the beginning / end of each of these methods as they can be
     // called from anywhere! I.e. someone might call hasNextBuildTick(), wait 1 min, then call nextBuildTick(). You
-    // need to stop timers in that time otherwise you're timings are out.
+    // need to stop timers in that time otherwise your timings are out.
 
     default boolean hasNextBuildTick() throws Exception {
         return false;

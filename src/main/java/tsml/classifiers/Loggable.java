@@ -1,7 +1,6 @@
 package tsml.classifiers;
 
-import utilities.Debugable;
-import utilities.Logger;
+import java.util.logging.Logger;
 
 public interface Loggable {
     Logger getLogger();

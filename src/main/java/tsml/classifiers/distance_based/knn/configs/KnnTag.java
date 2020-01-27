@@ -1,14 +1,20 @@
 package tsml.classifiers.distance_based.knn.configs;
 
-import java.util.function.Supplier;
+import experiments.ClassifierBuilderFactory;
 
-public enum KnnTag implements Supplier<String> {
+public enum KnnTag implements ClassifierBuilderFactory.Tag {
     UNIVARIATE,
     DISTANCE,
     SIMILARITY
     ;
 
-    @Override public String get() {
+    @Override
+    public String getName() {
+        return name();
+    }
+
+    @Override
+    public String toString() {
         return name();
     }
 }

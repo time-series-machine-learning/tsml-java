@@ -77,15 +77,9 @@ public interface Checkpointable extends Serializable, Copy {
         }
     }
 
-
-    default void checkpoint(boolean force) throws
-                                           Exception {
-        throw new UnsupportedOperationException();
-    }
-
     default void checkpoint() throws
                               Exception {
-        checkpoint(false);
+        throw new UnsupportedOperationException();
     }
 
     default boolean isCheckpointing() {

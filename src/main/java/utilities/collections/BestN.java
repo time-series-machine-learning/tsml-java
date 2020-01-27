@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class BestN<A extends Comparable<? super A>> implements Randomizable {
+public class BestN<A extends Comparable<? super A>> implements Randomizable { // todo doesn't need to be comparable
 
     private final PrunedMultiset<A> set;
 

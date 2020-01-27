@@ -2,12 +2,12 @@ package utilities.iteration;
 
 import java.util.List;
 
-public class RoundRobin<A> extends LinearListIterator<A> {
-    public RoundRobin(List<A> list) {
+public class RoundRobinListIterator<A> extends LinearListIterator<A> {
+    public RoundRobinListIterator(List<A> list) {
         super(list);
     }
 
-    public RoundRobin() {}
+    public RoundRobinListIterator() {}
 
     @Override
     public A next() {

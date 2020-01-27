@@ -1,76 +1,91 @@
 package tsml.classifiers.distance_based.knn.configs;
 
+import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
 import experiments.ClassifierBuilderFactory;
+import experiments.ClassifierBuilderFactory.ClassifierBuilder;
+import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
+import machine_learning.classifiers.tuned.incremental.Benchmark;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.ee.CEE;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import utilities.ClassifierTools;
+import utilities.iteration.LinearListIterator;
+import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import static utilities.ArrayUtilities.incrementalRange;
 
-public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBuilder<?>> {
+public enum KnnConfig implements ClassifierBuilder {
 
-    ED_1NN_V1(KnnConfig::buildEd1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    ED_1NN_V2(KnnConfig::buildEd1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DTW_1NN_V1(KnnConfig::buildDtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DTW_1NN_V2(KnnConfig::buildDtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DDTW_1NN_V1(KnnConfig::buildDdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    DDTW_1NN_V2(KnnConfig::buildDdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DTW_1NN_V1(KnnConfig::buildTunedDtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DTW_1NN_V2(KnnConfig::buildTunedDtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DDTW_1NN_V1(KnnConfig::buildTunedDdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_DDTW_1NN_V2(KnnConfig::buildTunedDdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDTW_1NN_V1(KnnConfig::buildTunedWdtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDTW_1NN_V2(KnnConfig::buildTunedWdtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDDTW_1NN_V1(KnnConfig::buildTunedWddtw1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_WDDTW_1NN_V2(KnnConfig::buildTunedWddtw1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_ERP_1NN_V1(KnnConfig::buildTunedErp1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_ERP_1NN_V2(KnnConfig::buildTunedErp1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_MSM_1NN_V1(KnnConfig::buildTunedMsm1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_MSM_1NN_V2(KnnConfig::buildTunedMsm1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_LCSS_1NN_V1(KnnConfig::buildTunedLcss1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_LCSS_1NN_V2(KnnConfig::buildTunedLcss1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_TWED_1NN_V1(KnnConfig::buildTunedTwed1nnV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    TUNED_TWED_1NN_V2(KnnConfig::buildTunedTwed1nnV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    CEE_V1(CEE::buildV1, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    CEE_V2(CEE::buildV2, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
-    LEE(CEE::buildLee, KnnTag.UNIVARIATE, KnnTag.SIMILARITY, KnnTag.DISTANCE),
+    ED_1NN_V1(KnnConfig::buildEd1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DTW_1NN_V1(KnnConfig::buildDtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DDTW_1NN_V1(KnnConfig::buildDdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DTW_1NN_V1(KnnConfig::buildTunedDtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DDTW_1NN_V1(KnnConfig::buildTunedDdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDTW_1NN_V1(KnnConfig::buildTunedWdtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDDTW_1NN_V1(KnnConfig::buildTunedWddtw1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_ERP_1NN_V1(KnnConfig::buildTunedErp1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_MSM_1NN_V1(KnnConfig::buildTunedMsm1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_LCSS_1NN_V1(KnnConfig::buildTunedLcss1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_TWED_1NN_V1(KnnConfig::buildTunedTwed1nnV1, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+
+    ED_1NN_V2(KnnConfig::buildEd1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DTW_1NN_V2(KnnConfig::buildDtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    DDTW_1NN_V2(KnnConfig::buildDdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DTW_1NN_V2(KnnConfig::buildTunedDtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_DDTW_1NN_V2(KnnConfig::buildTunedDdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDTW_1NN_V2(KnnConfig::buildTunedWdtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_WDDTW_1NN_V2(KnnConfig::buildTunedWddtw1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_ERP_1NN_V2(KnnConfig::buildTunedErp1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_MSM_1NN_V2(KnnConfig::buildTunedMsm1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_LCSS_1NN_V2(KnnConfig::buildTunedLcss1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+    TUNED_TWED_1NN_V2(KnnConfig::buildTunedTwed1nnV2, KnnTag.DISTANCE, KnnTag.UNIVARIATE, KnnTag.SIMILARITY),
+
     ;
 
-    private final ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder;
-
-    KnnConfig(final Supplier<? extends Classifier> supplier, final String... tags) {
-        classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);
+    public String toString() {
+        return classifierBuilder.toString();
     }
 
-    KnnConfig(final Supplier<? extends Classifier> supplier, final Supplier<String>... tags) {
-        classifierBuilder = new ClassifierBuilderFactory.ClassifierBuilder<>(name(), supplier, tags);
+    @Override
+    public String getName() {
+        return classifierBuilder.getName();
     }
 
-    public ClassifierBuilderFactory.ClassifierBuilder<?> getClassifierBuilder() {
-        return classifierBuilder;
+    @Override
+    public Classifier build() {
+        return classifierBuilder.build();
     }
 
-    @Override public ClassifierBuilderFactory.ClassifierBuilder<?> get() {
-        return getClassifierBuilder();
+    @Override
+    public ImmutableList<? extends Tag> getTags() {
+        return classifierBuilder.getTags();
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
+    private final ClassifierBuilder classifierBuilder;
 
+    KnnConfig(Supplier<? extends Classifier> supplier, Tag... tags) {
+        classifierBuilder = new ClassifierBuilderFactory.SuppliedClassifierBuilder(name(), supplier, tags);
+    }
 
+    public static List<ClassifierBuilder> all() {
+        return Arrays.stream(values()).map(i -> (ClassifierBuilder) i).collect(Collectors.toList());
+    }
+    
     public static KnnLoocv build1nnV1() {
         KnnLoocv classifier = new KnnLoocv();
         classifier.setEarlyAbandon(true);
@@ -87,6 +102,7 @@ public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBui
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
         classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+        classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
         classifier.setRandomTieBreak(true);
         return classifier;
     }
@@ -159,11 +175,11 @@ public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBui
     }
 
     public static IncTuner buildTunedDtw1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildDtwSpaceV2);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildDtwSpaceV2);
     }
 
     public static IncTuner buildTunedDdtw1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildDdtwSpaceV2);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildDdtwSpaceV2);
     }
 
     public static IncTuner buildTunedWdtw1nnV2() {
@@ -191,41 +207,49 @@ public enum KnnConfig implements Supplier<ClassifierBuilderFactory.ClassifierBui
     }
 
     public static IncTuner buildTunedMsm1nnV2() {
-        return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildMsmSpace());
+        return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildMsmSpace());
     }
 
     public static IncTuner buildTunedTwed1nnV2() {
-        return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildTwedSpace());
+        return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildTwedSpace());
     }
 
     public static IncTuner buildTunedErp1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildErpSpace);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildErpSpace);
     }
 
     public static IncTuner buildTunedLcss1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildLcssSpace);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildLcssSpace);
     }
 
-    public static IncTuner buildTunedKnn(Function<Instances, ParamSpace> paramSpaceFunction,
-                                         Supplier<KnnLoocv> supplier) {
+
+    public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        incTunedClassifier.setInitFunction(new IncKnnTunerBuilder().setIncTunedClassifier(incTunedClassifier).setParamSpace(paramSpaceFunction).setKnnSupplier(supplier));
+        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
+        incKnnTunerBuilder
+                .setIncTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
+        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
         return incTunedClassifier;
     }
 
-    public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
-        return buildTunedKnn(paramSpaceFunction, KnnConfig::build1nnV1);
-    }
-
     public static IncTuner buildTuned1nnV1(ParamSpace paramSpace) {
-        return buildTunedKnn(i -> paramSpace, KnnConfig::build1nnV1);
+        return buildTuned1nnV1(i -> paramSpace);
     }
 
     public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
-        return buildTunedKnn(paramSpaceFunction, KnnConfig::build1nnV2);
+        IncTuner incTunedClassifier = new IncTuner();
+        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
+        incKnnTunerBuilder
+                .setIncTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
+        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        return incTunedClassifier;
     }
 
     public static IncTuner buildTuned1nnV2(ParamSpace paramSpace) {
-        return buildTunedKnn(i -> paramSpace, KnnConfig::build1nnV2);
+        return buildTuned1nnV2(i -> paramSpace);
     }
 }

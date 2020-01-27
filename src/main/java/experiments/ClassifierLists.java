@@ -747,7 +747,7 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        ClassifierBuilderFactory.ClassifierBuilder<?> classifierBuilder =
+        ClassifierBuilderFactory.ClassifierBuilder classifierBuilder =
             ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
         Classifier c = null;
         if(classifierBuilder != null) {

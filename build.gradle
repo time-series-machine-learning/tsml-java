@@ -1,0 +1,82 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+version '0.1.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = sourceCompatibility
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile fileTree(dir: 'lib', include: ['*.jar']) // all of the jars in the lib folder
+    // https://mvnrepository.com/artifact/junit/junit
+    testCompile group: 'junit', name: 'junit', version: '4.13'
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-collections4
+    compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+    // https://mvnrepository.com/artifact/com.carrotsearch/hppc
+    compile group: 'com.carrotsearch', name: 'hppc', version: '0.8.0'
+    // https://mvnrepository.com/artifact/com.beust/jcommander
+    compile group: 'com.beust', name: 'jcommander', version: '1.78'
+    // https://mvnrepository.com/artifact/net.sourceforge.jexcelapi/jxl
+    compile group: 'net.sourceforge.jexcelapi', name: 'jxl', version: '2.6.12'
+    // https://mvnrepository.com/artifact/com.esotericsoftware/kryo
+    compile group: 'com.esotericsoftware', name: 'kryo', version: '5.0.0-RC1'
+    // https://mvnrepository.com/artifact/org.n52.matlab/matlab-control
+    compile group: 'org.n52.matlab', name: 'matlab-control', version: '5.0.0'
+    // https://mvnrepository.com/artifact/com.carrotsearch/java-sizeof
+    compile group: 'com.carrotsearch', name: 'java-sizeof', version: '0.0.5'
+    // https://mvnrepository.com/artifact/ml.dmlc/xgboost4j
+    compile group: 'ml.dmlc', name: 'xgboost4j', version: '0.81'
+}
+
+sourceSets {
+    test {
+        java.srcDir 'src/main/java'
+        resources.srcDir 'src/main/resources'
+    }
+}
+
+tasks.withType(Test) {
+    maxParallelForks = Runtime.runtime.availableProcessors()
+}
+
+application {
+    mainClassName = 'experiments.Experiments'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClassName,
+                   'Implementation-Title': project.name,
+                   'Implementation-Version': version
+    }
+}
+
+task copyDepsToBuild(type: Copy) {
+    into "build/libs/lib"
+    from configurations.runtime
+    from 'lib'
+}
+
+task fatJar(type: Jar) {
+    zip64 true
+    manifest = jar.manifest
+    baseName = project.name + "-all"
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+}
+
+jar.finalizedBy(fatJar)
+jar.finalizedBy(copyDepsToBuild)

@@ -4,10 +4,10 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.IncClassifier;
+import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
-import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
@@ -20,25 +20,28 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KnnLoocv
-    extends Knn implements TrainTimeContractable,
-                           Checkpointable,
-        IncClassifier {
+    extends Knn implements TrainTimeContractable {
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-    //    public static final String CACHE_FLAG = "c";
     protected long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
-    protected long previousNeighbourBatchTimeNanos = 0;
+    protected long maxNeighbourEvalTimeInNanos;
     protected int neighbourLimit = -1;
-    protected int neighbourCount = 0;
+    protected int neighbourCount;
+    protected int comparisonCount;
     protected StopWatch trainEstimateTimer = new StopWatch();
     protected Cache<Instance, Instance, Double> cache;
-    protected Iterator<NeighbourSearcher> iterator;
-    protected NeighbourIteratorBuilder neighbourIteratorBuilder = new LinearNeighbourIteratorBuilder(this);
-    protected boolean trainEstimateChange = false;
+    protected NeighbourSearcher leftOutSearcher = null;
+    protected Iterator<NeighbourSearcher> leftOutSearcherIterator;
+    protected Iterator<NeighbourSearcher> cvSearcherIterator;
+    protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
+    protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
+    protected boolean customCache = false;
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -47,6 +50,18 @@ public class KnnLoocv
     public KnnLoocv(DistanceFunction df) {
         super(df);
         setAbleToEstimateOwnPerformance(true);
+    }
+
+    public StopWatch getTrainEstimateTimer() {
+        return trainEstimateTimer;
+    }
+
+    public int getNeighbourCount() {
+        return neighbourCount;
+    }
+
+    public int getComparisonCount() {
+        return comparisonCount;
     }
 
     @Override
@@ -58,72 +73,97 @@ public class KnnLoocv
         return searchers;
     }
 
-    public boolean hasNextTrainTimeLimit() {
-        return (trainTimeLimitNanos < 0 || trainEstimateTimer.getTimeNanos() + previousNeighbourBatchTimeNanos < trainTimeLimitNanos);
-    }
-
-    public boolean hasNextNeighbour() {
-        return iterator.hasNext();
+    public boolean hasNextNeighbourSearch() {
+        return leftOutSearcherIterator.hasNext() || cvSearcherIterator.hasNext();
     }
 
     public boolean hasNextNeighbourLimit() {
         return (neighbourCount < neighbourLimit || neighbourLimit < 0);
     }
 
-    public boolean hasNextUnlimitedTrainTime() {
-        return hasNextNeighbour() && hasNextNeighbourLimit();
+    public boolean hasNextNeighbour() {
+        return hasNextNeighbourSearch() && hasNextNeighbourLimit();
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.enable();
-        memoryWatcher.enable();
-        boolean result = estimateOwnPerformance && hasNextUnlimitedTrainTime() && hasNextTrainTimeLimit();
-        trainEstimateTimer.disable();
-        memoryWatcher.disable();
-        return result;
+        return estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
     }
 
     public long predictNextTrainTimeNanos() {
-        return previousNeighbourBatchTimeNanos;
+        return maxNeighbourEvalTimeInNanos;
     }
 
-    public void nextBuildTick() throws Exception {
-        trainTimer.checkDisabled();
-        trainEstimateTimer.enable();
-        memoryWatcher.enable();
-        trainEstimateChange = true;
-        long timeStamp = System.nanoTime();
-        NeighbourSearcher current = iterator.next();
-        iterator.remove();
-        neighbourCount++;
-        for(int i = 0; i < searchers.size(); i++) {
-            NeighbourSearcher searcher = searchers.get(i);
-            if(!current.getInstance().equals(searcher.getInstance())) {
-                // todo loocv issue with cache GO
-                long distanceMeasurementTimeStamp = System.nanoTime();
-                Double cachedDistance = cache.get(searcher.getInstance(), current.getInstance());
-                if(cachedDistance == null) {
-                    double distance = searcher.add(current.getInstance());
-                    cache.put(searcher.getInstance(), current.getInstance(), distance);
+    protected void nextBuildTick() throws Exception {
+        regenerateTrainEstimate = true;
+        final long timeStamp = System.nanoTime();
+        if(leftOutSearcher == null) {
+            leftOutSearcher = leftOutSearcherIterator.next();
+            leftOutSearcherIterator.remove();
+        }
+        comparisonCount++;
+        final NeighbourSearcher searcher = cvSearcherIterator.next();
+        cvSearcherIterator.remove();
+        final Instance instance = searcher.getInstance();
+        final Instance leftOutInstance = leftOutSearcher.getInstance();
+        if(!leftOutInstance.equals(instance)) {
+            boolean seen;
+            if(customCache) {
+                seen = cache.contains(leftOutInstance, instance);
+            } else {
+                seen = cache.remove(leftOutInstance, instance);
+            }
+            if(seen) {
+                // we've already seen this instance
+                logger.info(() -> comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
+            } else {
+                final long distanceMeasurementTimeStamp = System.nanoTime();
+                Double distance = customCache ? cache.get(instance, leftOutInstance) : null;
+                final long timeTakenInNanos = System.nanoTime() - distanceMeasurementTimeStamp;
+                if(distance == null) {
+                    distance = searcher.add(leftOutInstance);
                 } else {
-                    cache.remove(searcher.getInstance(), current.getInstance());
-                    searcher.add(current.getInstance(), cachedDistance, System.nanoTime() - distanceMeasurementTimeStamp);
+                    searcher.add(leftOutInstance, distance, timeTakenInNanos);
+                }
+                leftOutSearcher.add(instance, distance, 0); // we get this for free!
+                cache.put(instance, leftOutInstance, distance);
+                final Double finalDistance = distance;
+                logger.info(() -> comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() +
+                                 ": " + finalDistance);
+            }
+        } else {
+            logger.info(() -> comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() +
+                            ": left out");
+        }
+        if(!cvSearcherIterator.hasNext()) {
+            if(leftOutSearcherIterator.hasNext()) {
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                if(logger.isLoggable(Level.WARNING)) {
+                    logger.info("---- end of batch ----");
+                    if(!cvSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
+                    if(!leftOutSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
                 }
             }
+            leftOutSearcher = null;
+            neighbourCount++;
         }
-        previousNeighbourBatchTimeNanos = System.nanoTime() - timeStamp;
+        maxNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
         checkpoint();
-        trainEstimateTimer.disable();
-        memoryWatcher.disable();
     }
 
     public NeighbourIteratorBuilder getNeighbourIteratorBuilder() {
         return neighbourIteratorBuilder;
     }
 
-    public void setNeighbourIteratorBuilder(NeighbourIteratorBuilder neighbourIteratorBuilder) {
+    public void setNeighbourIteratorBuilder(final NeighbourIteratorBuilder neighbourIteratorBuilder) {
         this.neighbourIteratorBuilder = neighbourIteratorBuilder;
+    }
+
+    public boolean hasNeighbourLimit() {
+        return neighbourLimit >= 0;
     }
 
     public interface NeighbourIteratorBuilder {
@@ -146,74 +186,86 @@ public class KnnLoocv
     }
 
     protected void loadFromCheckpoint() throws Exception {
+        trainTimer.suspend();
         trainEstimateTimer.suspend();
+        memoryWatcher.suspend();
         super.loadFromCheckpoint();
+        memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
+        trainTimer.unsuspend();
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        IncClassifier.super.buildClassifier(trainData);
-    }
-
-    public void startBuild(Instances data) throws Exception { // todo watch mem
+        loadFromCheckpoint();
+        memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
-        memoryWatcher.enable();
         if(rebuild) {
-            loadFromCheckpoint();
+            trainTimer.resetAndDisable();
+            memoryWatcher.resetAndDisable();
+            super.buildClassifier(trainData);
             trainTimer.disableAnyway();
-            memoryWatcher.disableAnyway();
-            super.buildClassifier(data);
             memoryWatcher.enableAnyway();
-            trainTimer.disableAnyway();
             trainEstimateTimer.resetAndEnable();
             rebuild = false;
+            built = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointing()) {
-                    IndexFilter.hashifyInstances(data);
+                    IndexFilter.hashifyInstances(trainData);
                 }
                 // build a progressive leave-one-out-cross-validation
-                searchers = new ArrayList<>(data.size());
+                searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
-                for(int i = 0; i < data.size(); i++) {
-                    NeighbourSearcher searcher = new NeighbourSearcher(data.get(i));
+                for(int i = 0; i < trainData.size(); i++) {
+                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i));
                     searchers.add(i, searcher);
                 }
-                if(distanceFunction instanceof AbstractDistanceMeasure) { // todo cached version of dist meas
+                if(distanceFunction instanceof AbstractDistanceMeasure) {
                     if(((AbstractDistanceMeasure) distanceFunction).isSymmetric()) {
                         cache = new SymmetricCache<>();
                     } else {
                         cache = new Cache<>();
                     }
                 }
-                iterator = neighbourIteratorBuilder.build();
-                trainEstimateChange = true; // build the first train estimate irrelevant of any progress made
+                leftOutSearcherIterator = neighbourIteratorBuilder.build();
+                regenerateTrainEstimate = true; // build the first train estimate irrelevant of any progress made
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                if(logger.isLoggable(Level.WARNING)) {
+                    if(!leftOutSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("hasNext false");
+                    }
+                    if(!cvSearcherIterator.hasNext()) {
+                        throw new IllegalStateException("this shouldn't happen!");
+                    }
+                }
+                maxNeighbourEvalTimeInNanos = -1;
+                leftOutSearcher = null;
+                cvSearcherIterator = cvSearcherIteratorBuilder.build();
+                neighbourCount = 0;
+                comparisonCount = 0;
             }
         }
         trainTimer.disableAnyway();
-        trainEstimateTimer.disableAnyway();
-        memoryWatcher.disable();
-    }
-
-    public void finishBuild() throws Exception {
-        trainTimer.checkDisabled();
-        memoryWatcher.checkDisabled();
-        trainEstimateTimer.checkDisabled();
-        if(trainEstimateChange) {
-            // todo make sure train timer is paused here + other timings checks
-            trainEstimateTimer.enable();
-            memoryWatcher.enable();
-            trainEstimateChange = false;
-            if(neighbourLimit >= 0 && neighbourCount < neighbourLimit || neighbourLimit < 0 && neighbourCount < trainData.size()) {
-                throw new IllegalStateException("this should not happen");
+        trainEstimateTimer.enableAnyway();
+        while(hasNextBuildTick()) {
+            nextBuildTick();
+            checkpoint();
+        }
+        if(regenerateTrainEstimate) {
+            regenerateTrainEstimate = false;
+            if(logger.isLoggable(Level.WARNING)
+                && !hasTrainTimeLimit()
+                && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
+                        (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
+                throw new IllegalStateException("not fully built");
             }
             // populate train results
             trainResults = new ClassifierResults();
-            for(NeighbourSearcher searcher : searchers) {
-                double[] distribution = searcher.predict();
-                int prediction = ArrayUtilities.argMax(distribution);
-                long time = searcher.getTimeNanos();
-                double trueClassValue = searcher.getInstance().classValue();
+            for(final NeighbourSearcher searcher : searchers) {
+                final double[] distribution = searcher.predict();
+                final int prediction = Utilities.argMax(distribution, rand);
+                final long time = searcher.getTimeNanos();
+                final double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
             trainEstimateTimer.disable();
@@ -223,6 +275,8 @@ public class KnnLoocv
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
+        built = true;
+        checkpoint();
     }
 
     public long getTrainTimeNanos() {
@@ -234,7 +288,7 @@ public class KnnLoocv
     }
 
     @Override
-    public void setTrainTimeLimitNanos(long trainTimeLimit) {
+    public void setTrainTimeLimitNanos(final long trainTimeLimit) {
         this.trainTimeLimitNanos = trainTimeLimit;
     }
 
@@ -242,7 +296,7 @@ public class KnnLoocv
         return neighbourLimit;
     }
 
-    public void setNeighbourLimit(int neighbourLimit) {
+    public void setNeighbourLimit(final int neighbourLimit) {
         this.neighbourLimit = neighbourLimit;
     }
 
@@ -250,21 +304,24 @@ public class KnnLoocv
         return cache;
     }
 
-    public void setCache(Cache<Instance, Instance, Double> cache) {
+    public void setCache(final Cache<Instance, Instance, Double> cache) {
         this.cache = cache;
+        customCache = cache != null;
+    }
+
+    public void setDefaultCache() {
+        setCache(null);
+    }
+
+    public NeighbourIteratorBuilder getCvSearcherIteratorBuilder() {
+        return cvSearcherIteratorBuilder;
+    }
+
+    public void setCvSearcherIteratorBuilder(final NeighbourIteratorBuilder cvSearcherIteratorBuilder) {
+        this.cvSearcherIteratorBuilder = cvSearcherIteratorBuilder;
     }
 
     public static void main(String[] args) throws Exception {
-//        int seed = 0;
-//        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-//        KnnLoocv classifier = new KnnLoocv(new Dtw(-1));//data[0].numAttributes()));
-//        classifier.setSeed(0);
-//        classifier.setEstimateOwnPerformance(true);
-//        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//        System.out.println(classifier.getTrainResults().writeSummaryResultsToString());
-//        System.out.println(results.writeSummaryResultsToString());
-
-
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
         KnnLoocv classifier = new KnnLoocv();
@@ -278,3 +335,4 @@ public class KnnLoocv
         System.out.println(results.writeSummaryResultsToString());
     }
 }
+

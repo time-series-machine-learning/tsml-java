@@ -8,7 +8,7 @@ import weka.core.Randomizable;
 import java.io.Serializable;
 import java.util.*;
 
-public class RandomIterator<A>
+public class RandomListIterator<A>
     implements DefaultListIterator<A>,
                OptionHandler,
                Randomizable,
@@ -31,6 +31,17 @@ public class RandomIterator<A>
     public final static String SEED_FLAG = "-s";
     protected boolean nextIndexSetup = false;
 
+    public boolean isRemovedOnNext() {
+        return removedOnNext;
+    }
+
+    public RandomListIterator<A> setRemovedOnNext(final boolean removedOnNext) {
+        this.removedOnNext = removedOnNext;
+        return this;
+    }
+
+    protected boolean removedOnNext = true;
+
     protected void setRandomIndex() {
         if(!nextIndexSetup) {
             if(random == null) {
@@ -41,34 +52,32 @@ public class RandomIterator<A>
             }
             seed = random.nextInt();
             if(indices.isEmpty()) {
-//            if(list.isEmpty()) {
                 index = -1;
             } else {
                 index = random.nextInt(indices.size());
-//                index = random.nextInt(list.size());
             }
             random.setSeed(seed);
             nextIndexSetup = true;
         }
     }
 
-    public RandomIterator() {
+    public RandomListIterator() {
     }
 
-    public RandomIterator(int seed) {
+    public RandomListIterator(int seed) {
         setSeed(seed);
     }
 
-    public RandomIterator(int seed, List<A> list) {
+    public RandomListIterator(int seed, List<A> list) {
         setSeed(seed);
         setList(list);
     }
 
-    public RandomIterator(List<A> list) {
+    public RandomListIterator(List<A> list) {
         this(-1, list);
     }
 
-    public RandomIterator(List<A> list, int seed) {
+    public RandomListIterator(List<A> list, int seed) {
         this(seed, list);
     }
 
@@ -88,8 +97,13 @@ public class RandomIterator<A>
 
     @Override
     public A next() {
-//        A element = list.remove(nextIndex());
-        A element = list.get(indices.remove(nextIndex()));
+        int index = nextIndex();
+        if(removedOnNext) {
+            index = indices.remove(index);
+        } else {
+            index = indices.get(index);
+        }
+        A element = list.get(index);
         nextIndexSetup = false;
         return element;
     }
@@ -97,7 +111,6 @@ public class RandomIterator<A>
     @Override
     public boolean hasNext() {
         return !indices.isEmpty();
-//        return !list.isEmpty();
     }
 
     @Override
@@ -108,7 +121,9 @@ public class RandomIterator<A>
 
     @Override
     public void remove() {
-        indices.remove(index);
+        if(!removedOnNext) {
+            indices.remove(index);
+        }
     }
 
     @Override

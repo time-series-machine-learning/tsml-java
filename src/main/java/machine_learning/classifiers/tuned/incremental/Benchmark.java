@@ -5,11 +5,26 @@ import utilities.StrUtils;
 import weka.classifiers.Classifier;
 
 import java.io.Serializable;
+import java.util.function.Function;
 
-public class Benchmark implements Serializable {
+public class Benchmark implements Serializable, Comparable<Benchmark> {
     private ClassifierResults results;
     private Classifier classifier;
     private final int id;
+    private double score = -1;
+
+    public double getScore() {
+        return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
+    }
+
+    public double score(Function<ClassifierResults, Double> scorer) {
+        setScore(scorer.apply(results));
+        return getScore();
+    }
 
     public Benchmark(Benchmark benchmark) {
         this(benchmark.classifier, benchmark.results, benchmark.id);
@@ -63,5 +78,10 @@ public class Benchmark implements Serializable {
             ", results=" + results.getAcc() +
             ", classifier=" + StrUtils.toOptionValue(classifier) +
             '}';
+    }
+
+    @Override
+    public int compareTo(Benchmark benchmark) {
+        return Double.compare(score, benchmark.score);
     }
 }

@@ -16,11 +16,14 @@ package tsml.classifiers;
 
 import utilities.Copy;
 import utilities.Debugable;
-import utilities.Logger;
+import utilities.LogUtils;
 import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
@@ -89,8 +92,26 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
+    protected boolean built = false;
+    protected boolean regenerateTrainEstimate = true;
     protected boolean debug=false;
-    protected transient final Logger logger = new Logger(this).setEnabled(debug);
+    protected transient final Logger logger = LogUtils.getLogger(this);
+
+    public Random getRand() {
+        return rand;
+    }
+
+    public void setRand(Random rand) {
+        this.rand = rand;
+    }
+
+    public boolean isRegenerateTrainEstimate() {
+        return regenerateTrainEstimate;
+    }
+
+    public void setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
+        this.regenerateTrainEstimate = regenerateTrainEstimate;
+    }
 
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
@@ -141,6 +162,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return logger;
     }
 
+    @Override
+    public boolean isBuilt() {
+        return built;
+    }
+
     @Override public boolean isRebuild() {
         return rebuild;
     }
@@ -156,12 +182,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         if(rebuild) {
-            logger.log("rebuilding");
+            logger.fine("rebuilding");
             trainResults = new ClassifierResults();
             rand.setSeed(seed);
             numClasses = trainData.numClasses();
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
+            built = true;
         }
     }
 
@@ -171,6 +198,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     public EnhancedAbstractClassifier(boolean ableToEstimateOwnPerformance) {
         this.ableToEstimateOwnPerformance = ableToEstimateOwnPerformance;
+        setDebug(debug);
     }
     
     /**
@@ -337,7 +365,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     }
 
     public void setDebug(boolean b){
-        logger.setEnabled(b);
         debug=b;
     }
 
@@ -349,4 +376,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return getClassifierName();
     }
 
+    @Override public String[] getOptions() {
+        return ParamHandler.super.getOptions();
+    }
+
+    @Override public void setOptions(final String[] options) throws Exception {
+        ParamHandler.super.setOptions(options);
+    }
 }
