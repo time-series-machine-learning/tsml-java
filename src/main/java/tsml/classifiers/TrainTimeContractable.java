@@ -14,12 +14,9 @@
  */
 package tsml.classifiers;
 
-import scala.annotation.meta.param;
 import utilities.params.ParamHandler;
-import utilities.StrUtils;
 import utilities.params.ParamSet;
 
-import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,12 +84,12 @@ public interface TrainTimeContractable
         return 0;
     }
 
-    default boolean isDone() {
+    default boolean isBuilt() {
         throw new UnsupportedOperationException();
     }
 
     default boolean hasRemainingTraining() {
-        return !isDone() && hasRemainingTrainTime();
+        return !isBuilt() && hasRemainingTrainTime();
     }
 
     String TRAIN_TIME_LIMIT_NANOS_FLAG = "trtl";
