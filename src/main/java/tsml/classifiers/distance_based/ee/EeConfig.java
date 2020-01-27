@@ -90,12 +90,14 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
     public static Ee buildEeV1() {
         Ee ee = new Ee();
         ee.setConstituents(buildV1Constituents());
+        setTrainSelectedBenchmarksFully(ee,false);
         return ee; // todo set full ee?
     }
 
     public static Ee buildEeV2() {
         Ee ee = new Ee();
         ee.setConstituents(buildV2Constituents());
+        setTrainSelectedBenchmarksFully(ee,false);
         return ee; // todo set full ee?
     }
 
@@ -120,19 +122,19 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
     }
 
     public static Ee setLimitedParameters(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSize(limit));
+        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimit(limit));
     }
 
     public static Ee setLimitedParametersPercentage(Ee ee, double limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSizePercentage(limit));
+        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setLimitedNeighbours(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxNeighbourhoodSize(limit));
+        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setNeighbourhoodSizeLimit(limit));
     }
 
     public static Ee setLimitedNeighboursPercentage(Ee ee, double limit) { // todo params from cmdline in experiment + append to cls name
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setMaxParamSpaceSizePercentage(limit));
+        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setTrainSelectedBenchmarksFully(Ee ee, boolean state) { // todo params from cmdline in experiment + append to cls name
@@ -145,7 +147,7 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         ee.setConstituents(constituents);
         setLimitedNeighboursPercentage(ee, 0.1);
         setLimitedParametersPercentage(ee, 0.5);
-        setTrainSelectedBenchmarksFully(ee,true); // disable this in reg ee, same for above also
+        setTrainSelectedBenchmarksFully(ee,true);
         return ee;
     }
 }
