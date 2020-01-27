@@ -6,6 +6,7 @@ import experiments.ClassifierBuilderFactory;
 import experiments.ClassifierBuilderFactory.ClassifierBuilder;
 import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
+import machine_learning.classifiers.tuned.incremental.Benchmark;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
@@ -14,11 +15,14 @@ import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import utilities.ClassifierTools;
+import utilities.iteration.LinearListIterator;
+import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -171,11 +175,11 @@ public enum KnnConfig implements ClassifierBuilder {
     }
 
     public static IncTuner buildTunedDtw1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildDtwSpaceV2);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildDtwSpaceV2);
     }
 
     public static IncTuner buildTunedDdtw1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildDdtwSpaceV2);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildDdtwSpaceV2);
     }
 
     public static IncTuner buildTunedWdtw1nnV2() {
@@ -203,41 +207,49 @@ public enum KnnConfig implements ClassifierBuilder {
     }
 
     public static IncTuner buildTunedMsm1nnV2() {
-        return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildMsmSpace());
+        return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildMsmSpace());
     }
 
     public static IncTuner buildTunedTwed1nnV2() {
-        return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildTwedSpace());
+        return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildTwedSpace());
     }
 
     public static IncTuner buildTunedErp1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildErpSpace);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildErpSpace);
     }
 
     public static IncTuner buildTunedLcss1nnV2() {
-        return buildTuned1nnV1(DistanceMeasureConfigs::buildLcssSpace);
+        return buildTuned1nnV2(DistanceMeasureConfigs::buildLcssSpace);
     }
 
-    public static IncTuner buildTunedKnn(Function<Instances, ParamSpace> paramSpaceFunction,
-                                         Supplier<KnnLoocv> supplier) {
+
+    public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        incTunedClassifier.setInitFunction(new IncKnnTunerBuilder().setIncTunedClassifier(incTunedClassifier).setParamSpace(paramSpaceFunction).setKnnSupplier(supplier));
+        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
+        incKnnTunerBuilder
+                .setIncTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
+        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
         return incTunedClassifier;
     }
 
-    public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
-        return buildTunedKnn(paramSpaceFunction, KnnConfig::build1nnV1);
-    }
-
     public static IncTuner buildTuned1nnV1(ParamSpace paramSpace) {
-        return buildTunedKnn(i -> paramSpace, KnnConfig::build1nnV1);
+        return buildTuned1nnV1(i -> paramSpace);
     }
 
     public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
-        return buildTunedKnn(paramSpaceFunction, KnnConfig::build1nnV2);
+        IncTuner incTunedClassifier = new IncTuner();
+        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
+        incKnnTunerBuilder
+                .setIncTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
+        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        return incTunedClassifier;
     }
 
     public static IncTuner buildTuned1nnV2(ParamSpace paramSpace) {
-        return buildTunedKnn(i -> paramSpace, KnnConfig::build1nnV2);
+        return buildTuned1nnV2(i -> paramSpace);
     }
 }

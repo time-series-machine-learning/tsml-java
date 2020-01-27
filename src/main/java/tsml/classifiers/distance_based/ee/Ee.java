@@ -216,7 +216,8 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                    " }");
         memoryWatcher.enable();
         trainTimer.enable();
-        if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent() && ((TrainTimeContractable) constituent).hasRemainingTraining()) {
+        if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent() &&
+                ((TrainTimeContractable) constituent).hasRemainingTraining()) {
             nextPartialConstituentsBatch.add(constituent);
         }
         if(partialConstituentsBatch.isEmpty()) {
@@ -229,7 +230,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         }
     }
 
-    @Override public boolean isDone() {
+    @Override public boolean isBuilt() {
          return partialConstituentsBatch.isEmpty();
     }
 
