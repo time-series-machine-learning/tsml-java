@@ -97,11 +97,12 @@ public class ParamSet implements ParamHandler {
 
     @Override public String toString() {
         return "ParamSet" +
-//            "{" +
+            "{" +
 //            "paramMap=" +
-                StrUtils.join(", ", getOptions())
-//            +
-//            '}'
+//                " \"" +
+                StrUtils.join(", ", getOptions()) +
+//                " \""
+            + '}'
             ;
     }
 
