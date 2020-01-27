@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.knn.neighbour_iteration;
 
 import tsml.classifiers.distance_based.knn.Knn;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
-import utilities.iteration.RandomIterator;
+import utilities.iteration.RandomListIterator;
 
 import java.util.Iterator;
 
@@ -19,7 +19,7 @@ public class RandomNeighbourIteratorBuilder
     @Override
     public Iterator<Knn.NeighbourSearcher> build() {
         if(knn == null) throw new IllegalStateException("knn not set");
-        return new RandomIterator<>(knn.getSeed(), knn.getSearchers());
+        return new RandomListIterator<>(knn.getSeed(), knn.getSearchers());
     }
 
 
