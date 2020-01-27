@@ -39,6 +39,7 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.TrainTimeContractable;
 import utilities.Debugable;
 import utilities.FileUtils;
+import utilities.LogUtils;
 import utilities.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
@@ -98,7 +99,7 @@ import weka.core.Randomizable;
  */
 public class Experiments  {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = LogUtils.getLogger(Experiments.class);
 
     public static boolean debug = false;
 
@@ -484,7 +485,6 @@ public class Experiments  {
         //for local running, and cluster output files are good enough on there.
 //        LOGGER.addHandler(new FileHandler());
 
-        LOGGER.addHandler(new StreamHandler(System.out, new SimpleFormatter()));
         LOGGER.info("running");
         if (beQuiet) {
             LOGGER.setLevel(Level.SEVERE);
