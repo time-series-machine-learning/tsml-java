@@ -1,12 +1,14 @@
 package utilities;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.logging.*;
 
 public class LogUtils {
     private LogUtils() {}
 
     public static Logger getLogger(Object object) {
-        String name = object.getClass().getSimpleName();
+        String name;
         if(object instanceof Class) {
             name = ((Class) object).getSimpleName();
         } else {
@@ -14,42 +16,50 @@ public class LogUtils {
         }
         Logger logger = Logger.getLogger(name);
         logger.setLevel(Level.OFF); // disable logs by default
-        logger.addHandler(buildStdOutStreamHandler(new SimpleFormatter()));
-        logger.addHandler(buildStdErrStreamHandler(new SimpleFormatter()));
+        logger.addHandler(buildStdOutStreamHandler(new CustomLogFormat()));
+        logger.addHandler(buildStdErrStreamHandler(new CustomLogFormat()));
         logger.setUseParentHandlers(false);
         return logger;
     }
 
-    public static StreamHandler buildStdErrStreamHandler(Formatter formatter) {
-        StreamHandler soh = new StreamHandler(System.err, formatter) {
-            @Override
-            public synchronized void publish(LogRecord record) {
-                super.publish(record);
-                flush();
-            }
+    public static class CustomLogFormat extends Formatter {
 
-            @Override
-            public synchronized void close() throws SecurityException {
-                flush();
-            }
-        };
+        @Override public String format(final LogRecord logRecord) {
+            String separator = " | ";
+            return logRecord.getSequenceNumber() + separator +
+                logRecord.getLevel() + separator +
+                logRecord.getLoggerName() + separator +
+//                logRecord.getSourceClassName() + separator +
+                logRecord.getSourceMethodName() + separator +
+                logRecord.getMessage() + System.lineSeparator();
+        }
+    }
+
+    public static class CustomStreamHandler extends StreamHandler {
+        public CustomStreamHandler(final OutputStream out, final Formatter formatter) {
+            super(out, formatter);
+        }
+
+        @Override
+        public synchronized void publish(LogRecord record) {
+            super.publish(record);
+            flush();
+        }
+
+        @Override
+        public synchronized void close() throws SecurityException {
+            flush();
+        }
+    }
+
+    public static StreamHandler buildStdErrStreamHandler(Formatter formatter) {
+        StreamHandler soh = new CustomStreamHandler(System.err, formatter);
         soh.setLevel(Level.SEVERE); //Default StdErr Setting
         return soh;
     }
 
     public static StreamHandler buildStdOutStreamHandler(Formatter formatter) {
-        StreamHandler soh = new StreamHandler(System.out, formatter) {
-            @Override
-            public synchronized void publish(LogRecord record) {
-                super.publish(record);
-                flush();
-            }
-
-            @Override
-            public synchronized void close() throws SecurityException {
-                flush();
-            }
-        };
+        StreamHandler soh = new CustomStreamHandler(System.out, formatter);
         soh.setLevel(Level.ALL); //Default StdOut Setting
         return soh;
     }
