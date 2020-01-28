@@ -163,17 +163,29 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         setSoftLimit(-1);
     }
 
-    public static void main(String[] args) {
-        PrunedMultimap<Integer, String> map = new PrunedMultimap<>(Integer::compare, HashSet::new);
-        map.setHardLimit(1);
-//        map.setSoftLimit(1);
-        map.put(3, "a");
-        map.put(3, "b");
-        map.put(3, "c");
-        map.put(4, "d");
-        map.put(2, "e");
-        map.put(2, "f");
-    }
+//    public static void main(String[] args) throws IOException {
+//        PrunedMultimap<Integer, String> map =
+//            new PrunedMultimap<>((Serializable & Comparator<Integer>) Integer::compare,
+//                                 (Serializable & com.google.common.base.Supplier<Collection<String>>) HashSet::new);
+//        map.setHardLimit(1);
+////        map.setSoftLimit(1);
+//        map.put(3, "a");
+//        map.put(3, "b");
+//        map.put(3, "c");
+//        map.put(4, "d");
+//        map.put(2, "e");
+//        map.put(2, "f");
+//        Serializable t = map; // yep it's
+//        // serializable
+//        String filename = "test.ser";
+//        FileOutputStream fos =
+//            new FileOutputStream(filename);
+//        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+//            out.writeObject(t);
+//            out.close();
+//            fos.close();
+//        }
+//    }
 
     public void hardPruneToSoftLimit() {
         if(hasSoftLimit()) {

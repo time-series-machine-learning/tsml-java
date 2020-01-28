@@ -6,7 +6,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.function.Function;
 
-public interface SerialisedFunction<A, B> extends Function<A, B>,
-                                                  Serializable {
+public interface SerFunction<A, B> extends Function<A, B>,
+                                           Serializable {
 
 }
