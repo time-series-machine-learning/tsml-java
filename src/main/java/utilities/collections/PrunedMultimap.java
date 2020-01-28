@@ -2,12 +2,15 @@ package utilities.collections;
 
 import com.google.common.collect.*;
 import utilities.Utilities;
+import utilities.serialisation.SerComparator;
+import utilities.serialisation.SerSupplier;
 import weka.core.Randomizable;
 
+import java.io.*;
 import java.util.*;
 import java.util.function.Supplier;
 
-public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Randomizable {
+public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Randomizable, Serializable {
 
     private int softLimit = -1;
     private int hardLimit = -1;
@@ -15,11 +18,11 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private Random rand = new Random(seed);
     private final TreeMap<K, Collection<V>> backingMap;
 
-    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<Collection<V>> supplier) {
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<? extends Collection<V>> supplier) {
         return new PrunedMultimap<K, V>(Comparator.naturalOrder(), supplier);
     }
 
-    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc(Supplier<Collection<V>> supplier) {
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc(Supplier<? extends Collection<V>> supplier) {
         return new PrunedMultimap<K, V>(Comparator.reverseOrder(), supplier);
     }
 
@@ -27,13 +30,14 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         return backingMap.lastKey();
     }
 
-    public PrunedMultimap(Comparator<? super K> comparator, Supplier<Collection<V>> supplier) {
-        backingMap = new TreeMap<>(comparator);
-        setMap(Multimaps.newMultimap(backingMap, supplier::get));
+    public PrunedMultimap(Comparator<? super K> comparator, Supplier<? extends Collection<V>> supplier) {
+        backingMap = new TreeMap<>((Serializable & Comparator<K>) comparator::compare);
+        setMap(Multimaps.newMultimap(backingMap,
+                                     (Serializable & com.google.common.base.Supplier<? extends Collection<V>>) supplier::get));
     }
 
     public PrunedMultimap(Comparator<? super K> comparator) {
-        this(comparator, ArrayList::new);
+        this(comparator, (Serializable & com.google.common.base.Supplier<? extends Collection<V>>) ArrayList::new);
     }
 
     public boolean hasSoftLimit() {

@@ -11,11 +11,11 @@ public class PrunedMultiset<K> implements DefaultMultiset<K>, Serializable, Rand
     private final PrunedMultimap<K, K> map;
 
 
-    public static <K extends Comparable<? super K>> PrunedMultiset<K> asc(Supplier<Collection<K>> supplier) {
+    public static <K extends Comparable<? super K>> PrunedMultiset<K> asc(Supplier<? extends Collection<K>> supplier) {
         return new PrunedMultiset<K>(Comparator.naturalOrder(), supplier);
     }
 
-    public static <K extends Comparable<? super K>> PrunedMultiset<K> desc(Supplier<Collection<K>> supplier) {
+    public static <K extends Comparable<? super K>> PrunedMultiset<K> desc(Supplier<? extends Collection<K>> supplier) {
         return new PrunedMultiset<K>(Comparator.reverseOrder(), supplier);
     }
 
@@ -23,7 +23,7 @@ public class PrunedMultiset<K> implements DefaultMultiset<K>, Serializable, Rand
         map = new PrunedMultimap<>(comparator);
     }
 
-    public PrunedMultiset(Comparator<K> comparator, Supplier<Collection<K>> supplier) {
+    public PrunedMultiset(Comparator<K> comparator, Supplier<? extends Collection<K>> supplier) {
         map = new PrunedMultimap<>(comparator, supplier);
     }
 
