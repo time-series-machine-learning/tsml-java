@@ -32,11 +32,9 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tsml.classifiers.Loggable;
-import tsml.classifiers.ParameterSplittable;
+import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.TrainTimeContractable;
 import utilities.Debugable;
 import utilities.FileUtils;
 import utilities.LogUtils;
@@ -58,7 +56,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-import tsml.classifiers.EnhancedAbstractClassifier;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -542,7 +539,7 @@ public class Experiments  {
         System.gc(); System.gc(); // do it twice due to young/old generation mem pool and finalization
 
         for(int i = 0; i < expSettings.trainContracts.size(); i += 2) {
-            String trainContractInClassifierNameStr = "";
+            String classifierNameExtras = "";
             String trainContractStr = expSettings.trainContracts.get(i);
             String trainContractUnitStr = expSettings.trainContracts.get(i + 1);
             if(trainContractStr != null && trainContractUnitStr != null) {
@@ -557,13 +554,15 @@ public class Experiments  {
                     // (so the train time contract is -1 nanoseconds)
                 }
                 if(expSettings.appendTrainContractToClassifierName) {
-                    trainContractInClassifierNameStr = "_" + trainContractAmount + trainContractUnit;
+                    classifierNameExtras = "_" + trainContractAmount + trainContractUnit;
                 }
             }
 
             //Build/make the directory to write the train and/or testFold files to
             String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName +
-                    trainContractInClassifierNameStr + "/Predictions/" + expSettings.datasetName + "/";
+                    classifierNameExtras + "/Predictions/" + expSettings.datasetName + "/";
+            String checkpointLocation = expSettings.resultsWriteLocation + expSettings.classifierName +
+                classifierNameExtras + "/WorkSpace/" + expSettings.datasetName + "/";
             File f = new File(fullWriteLocation);
             if (!f.exists())
                 f.mkdirs();
@@ -581,7 +580,7 @@ public class Experiments  {
 
                 //If needed, build/make the directory to write the train and/or testFold files to
                 if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                    expSettings.supportingFilePath = fullWriteLocation;
+                    expSettings.supportingFilePath = checkpointLocation;
 
                 ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
                 // default builds a foldx/ dir in normal write dir
@@ -614,7 +613,7 @@ public class Experiments  {
                 ClassifierResults[] runResults = runExperiment(expSettings, train, test, classifier,
                                                                fullWriteLocation);
                 LOGGER.log(Level.INFO,
-                           "Experiment finished " + expSettings.toShortString() + trainContractInClassifierNameStr );
+                           "Experiment finished " + expSettings.toShortString() + classifierNameExtras );
                 LOGGER.log(Level.INFO,
                            "Train results: " + System.lineSeparator() + runResults[0].writeSummaryResultsToString());
                 LOGGER.log(Level.INFO,
@@ -669,6 +668,10 @@ public class Experiments  {
         long benchmark = findBenchmarkTime(expSettings);
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
+
+        if(classifier instanceof Checkpointable) {
+            ((Checkpointable) classifier).setSavePath(expSettings.supportingFilePath);
+        }
 
         FileUtils.FileLocker trainLock = new FileUtils.FileLocker(new File(trainPath), false);
         FileUtils.FileLocker testLock = new FileUtils.FileLocker(new File(testPath), false);

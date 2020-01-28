@@ -15,6 +15,7 @@
 package tsml.classifiers;
 
 import utilities.Copy;
+import utilities.FileUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,6 +62,7 @@ public interface Checkpointable extends Serializable, Copy {
 
     //Override both if not using Java serialisation    
     default void saveToFile(String filename) throws IOException{
+        FileUtils.makeParentDir(filename);
         FileOutputStream fos =
         new FileOutputStream(filename);
         try (ObjectOutputStream out = new ObjectOutputStream(fos)) {

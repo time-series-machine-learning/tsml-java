@@ -229,16 +229,15 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        super.buildClassifier(trainData);
         memoryWatcher.enableAnyway();
         trainEstimateTimer.checkDisabled();
         trainTimer.enableAnyway();
-        if(rebuild) {
+        built = false;
+        if(isRebuild()) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
-            super.buildClassifier(trainData);
             initFunction.init(trainData);
-            rebuild = false;
-            built = false;
         }
         trainTimer.disable();
         trainEstimateTimer.enable();

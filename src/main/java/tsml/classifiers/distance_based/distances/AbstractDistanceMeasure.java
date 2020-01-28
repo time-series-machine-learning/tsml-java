@@ -11,9 +11,9 @@ import java.util.Enumeration;
 public abstract class AbstractDistanceMeasure
     implements DistanceMeasure {
 
-    protected boolean debug = false;
-    protected boolean dataHasBeenSet = false;
-    protected Instances data;
+    protected transient boolean debug = false;
+    protected transient boolean dataHasBeenSet = false;
+    protected transient Instances data;
 
     @Override
     public boolean isDebug() {

@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
-import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
 
 public class Ee extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
         MemoryWatchable {
@@ -94,13 +93,13 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         trainTimer.enable();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
+        built = false;
         this.trainData = trainData;
-        if(rebuild) {
+        if(isRebuild()) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
             super.buildClassifier(trainData);
             trainEstimateTimer.resetAndDisable();
-            rebuild = false;
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
             }
@@ -283,14 +282,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         trainEstimateTimer.unsuspend();
-    }
-
-    public boolean isRebuild() {
-        return rebuild;
-    }
-
-    public void setRebuild(final boolean rebuild) {
-        this.rebuild = rebuild;
     }
 
     public ModuleVotingScheme getVotingScheme() {

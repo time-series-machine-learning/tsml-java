@@ -21,7 +21,6 @@ import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import weka.classifiers.Classifier;
@@ -92,9 +91,10 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
+    protected boolean rebuilt = false;
     protected boolean built = false;
     protected boolean regenerateTrainEstimate = true;
-    protected boolean debug=false;
+    protected transient boolean debug=false;
     protected transient final Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
@@ -182,13 +182,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         if(rebuild) {
-            logger.fine("rebuilding");
+            logger.fine("fresh build");
             trainResults = new ClassifierResults();
             rand.setSeed(seed);
             numClasses = trainData.numClasses();
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
-            built = true;
+            rebuild = false;
+            rebuilt = true;
+        } else {
+            rebuilt = false;
         }
     }
 

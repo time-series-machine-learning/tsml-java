@@ -2,13 +2,9 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.IncClassifier;
-import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
-import tsml.filters.IndexFilter;
 import utilities.*;
 import utilities.cache.Cache;
 import utilities.cache.SymmetricCache;
@@ -18,19 +14,19 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class KnnLoocv
     extends Knn implements TrainTimeContractable {
 
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-    protected long trainTimeLimitNanos = -1;
+    protected transient long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
-    protected long maxNeighbourEvalTimeInNanos;
+    protected long longestNeighbourEvalTimeInNanos;
     protected int neighbourLimit = -1;
     protected int neighbourCount;
     protected int comparisonCount;
@@ -90,10 +86,11 @@ public class KnnLoocv
     }
 
     public long predictNextTrainTimeNanos() {
-        return maxNeighbourEvalTimeInNanos;
+        return longestNeighbourEvalTimeInNanos;
     }
 
     protected void nextBuildTick() throws Exception {
+        saveCheckpoint = true;
         regenerateTrainEstimate = true;
         final long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
@@ -150,7 +147,7 @@ public class KnnLoocv
             leftOutSearcher = null;
             neighbourCount++;
         }
-        maxNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
+        longestNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
         checkpoint();
     }
 
@@ -166,7 +163,7 @@ public class KnnLoocv
         return neighbourLimit >= 0;
     }
 
-    public interface NeighbourIteratorBuilder {
+    public interface NeighbourIteratorBuilder extends Serializable {
         Iterator<NeighbourSearcher> build();
     }
 
@@ -185,7 +182,7 @@ public class KnnLoocv
         TrainTimeContractable.super.setParams(params);
     }
 
-    protected void loadFromCheckpoint() throws Exception {
+    protected void loadFromCheckpoint() {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
@@ -196,23 +193,20 @@ public class KnnLoocv
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        loadFromCheckpoint();
+        super.buildClassifier(trainData);
+        built = false;
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
-        if(rebuild) {
-            trainTimer.resetAndDisable();
-            memoryWatcher.resetAndDisable();
-            super.buildClassifier(trainData);
+        if(rebuilt) {
             trainTimer.disableAnyway();
             memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
-            rebuild = false;
             built = false;
             if(getEstimateOwnPerformance()) {
-                if(isCheckpointing()) {
-                    IndexFilter.hashifyInstances(trainData);
-                }
+//                if(isCheckpointing()) { // was needed for caching todo check this is ok
+//                    IndexFilter.hashifyInstances(trainData);
+//                }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
@@ -238,7 +232,7 @@ public class KnnLoocv
                         throw new IllegalStateException("this shouldn't happen!");
                     }
                 }
-                maxNeighbourEvalTimeInNanos = -1;
+                longestNeighbourEvalTimeInNanos = -1;
                 leftOutSearcher = null;
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
                 neighbourCount = 0;
@@ -251,13 +245,8 @@ public class KnnLoocv
             nextBuildTick();
             checkpoint();
         }
-        trainEstimateTimer.disable();
-        memoryWatcher.cleanup();
-        memoryWatcher.disable();
+        trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
-            memoryWatcher.enable();
-            trainEstimateTimer.enable();
-            regenerateTrainEstimate = false;
             if(logger.isLoggable(Level.WARNING)
                 && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
@@ -273,9 +262,12 @@ public class KnnLoocv
                 final double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
-            trainEstimateTimer.disable();
-            memoryWatcher.cleanup();
-            memoryWatcher.disable();
+        }
+        trainEstimateTimer.disable();
+        memoryWatcher.cleanup();
+        memoryWatcher.disable();
+        if(regenerateTrainEstimate) {
+            regenerateTrainEstimate = false;
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
