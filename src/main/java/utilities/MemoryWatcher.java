@@ -172,6 +172,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
+        logger.finest(() -> "memory reading: " + usage);
         maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
         // Welford's online algo for mean and variance
         count++;
@@ -242,44 +243,45 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     public static void main(String[] args) {
-        MemoryWatcher a = new MemoryWatcher();
-        MemoryWatcher b = new MemoryWatcher();
-        for(Double d : Arrays.asList(1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 6.0, 3.0, 3.0, 8.0, 7.0, 8.0, 6.0, 5.0, 5.0, 6.0, 5.0)) {
-            a.addMemoryUsageReadingInBytesUnchecked(d);
-        }
-        for(Double d : Arrays.asList(6.0, 3.0, 5.0, 7.0, 8.0, 9.0, 9.0, 8.0, 7.0, 8.0, 7.0, 8.0, 7.0)) {
-            b.addMemoryUsageReadingInBytesUnchecked(d);
-        }
-        System.out.println(a.getMeanMemoryUsageInBytes());
-        System.out.println(b.getMeanMemoryUsageInBytes());
-        System.out.println(a.getVarianceMemoryUsageInBytes());
-        System.out.println(b.getVarianceMemoryUsageInBytes());
-        a.add(b);
-        System.out.println(a.getMeanMemoryUsageInBytes());
-        System.out.println(a.getVarianceMemoryUsageInBytes());
-//        StopWatch stopWatch = new StopWatch();
-//        MemoryWatcher realMemWatcher = new MemoryWatcher();
-//        realMemWatcher.enable();
-//        MemoryWatcher memoryWatcher = new MemoryWatcher();
-//        stopWatch.enable();
-//        Random rand = new Random(0);
-//        memoryWatcher.overflow(0);
-//        int max = 1_000_000;
-//        for(int i = 0; i < max; i++) {
-//            memoryWatcher.addMemoryUsageReadingInBytesUnchecked(Math.abs(rand.nextInt(100)));
-//            if(rand.nextInt(max) < 10_000) {
-//                System.gc();
-//            }
+//        MemoryWatcher a = new MemoryWatcher();
+//        MemoryWatcher b = new MemoryWatcher();
+//        for(Double d : Arrays.asList(1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 6.0, 3.0, 3.0, 8.0, 7.0, 8.0, 6.0, 5.0, 5.0, 6.0, 5.0)) {
+//            a.addMemoryUsageReadingInBytesUnchecked(d);
 //        }
-//        stopWatch.disable();
-//        realMemWatcher.disable();
-//        System.out.println(realMemWatcher.getMaxMemoryUsageInBytes());
-//        System.out.println(realMemWatcher.getMeanMemoryUsageInBytes());
-//        System.out.println(realMemWatcher.getStdDevMemoryUsageInBytes());
-//        System.out.println(realMemWatcher.getGarbageCollectionTimeInMillis());
-//        System.out.println("----");
-//        System.out.println(stopWatch.getTimeNanos());
-//        System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
+//        for(Double d : Arrays.asList(6.0, 3.0, 5.0, 7.0, 8.0, 9.0, 9.0, 8.0, 7.0, 8.0, 7.0, 8.0, 7.0)) {
+//            b.addMemoryUsageReadingInBytesUnchecked(d);
+//        }
+//        System.out.println(a.getMeanMemoryUsageInBytes());
+//        System.out.println(b.getMeanMemoryUsageInBytes());
+//        System.out.println(a.getVarianceMemoryUsageInBytes());
+//        System.out.println(b.getVarianceMemoryUsageInBytes());
+//        a.add(b);
+//        System.out.println(a.getMeanMemoryUsageInBytes());
+//        System.out.println(a.getVarianceMemoryUsageInBytes());
+
+        StopWatch stopWatch = new StopWatch();
+        MemoryWatcher realMemWatcher = new MemoryWatcher();
+        realMemWatcher.enable();
+        MemoryWatcher memoryWatcher = new MemoryWatcher();
+        stopWatch.enable();
+        Random rand = new Random(0);
+        int max = 1_000_000;
+        for(int i = 0; i < max; i++) {
+            memoryWatcher.addMemoryUsageReadingInBytesUnchecked(Math.abs(rand.nextInt(100)));
+            if(rand.nextInt(max) < 10_000) {
+                System.out.println("gc");
+                System.gc();
+            }
+        }
+        stopWatch.disable();
+        realMemWatcher.disable();
+        System.out.println(realMemWatcher.getMaxMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getMeanMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getStdDevMemoryUsageInBytes());
+        System.out.println(realMemWatcher.getGarbageCollectionTimeInMillis());
+        System.out.println("----");
+        System.out.println(stopWatch.getTimeNanos());
+        System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
     }
 
     private Logger logger = LogUtils.getLogger(this);
