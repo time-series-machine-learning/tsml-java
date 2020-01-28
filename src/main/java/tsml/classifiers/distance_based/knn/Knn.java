@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.knn;
 
-import com.google.common.collect.TreeMultimap;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.Dtw;
@@ -169,6 +168,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
             checkpoint();
         }
         trainTimer.disable();
+        memoryWatcher.cleanup();
         memoryWatcher.disable();
     }
 

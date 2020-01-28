@@ -251,7 +251,12 @@ public class KnnLoocv
             nextBuildTick();
             checkpoint();
         }
+        trainEstimateTimer.disable();
+        memoryWatcher.cleanup();
+        memoryWatcher.disable();
         if(regenerateTrainEstimate) {
+            memoryWatcher.enable();
+            trainEstimateTimer.enable();
             regenerateTrainEstimate = false;
             if(logger.isLoggable(Level.WARNING)
                 && !hasTrainTimeLimit()
@@ -269,6 +274,7 @@ public class KnnLoocv
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
             trainEstimateTimer.disable();
+            memoryWatcher.cleanup();
             memoryWatcher.disable();
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);

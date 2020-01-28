@@ -289,4 +289,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     @Override public Logger getLogger() {
         return logger;
     }
+
+    public void cleanup() {
+        System.gc();
+    }
 }
