@@ -57,6 +57,10 @@ public class StopWatch extends Stated implements Serializable {
         time = 0;
     }
 
+    public void reset() {
+        resetAndDisable();
+    }
+
     public void resetAndEnable() {
         disableAnyway();
         resetTime();
