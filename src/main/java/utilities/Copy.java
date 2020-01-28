@@ -4,6 +4,7 @@ import weka.core.SerializedObject;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,11 +62,10 @@ public interface Copy extends Serializable {
         for(Field srcField : srcFields) {
             for(Field destField : destFields) {
                 if(srcField.equals(destField)) {
-                    boolean srcFieldAccessible = srcField.isAccessible();
-                    boolean destFieldAccessible = destField.isAccessible();
-                    if(srcFieldAccessible && destFieldAccessible) {
-                        Object value = srcField.get(src);
-                        destField.set(dest, copy(value, deep));
+                    int modifiers = destField.getModifiers();
+                    if(!Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)) { // don't overwrite final /
+                        // static fields
+                        setFieldValue(src, srcField, dest, destField, deep);
                     }
                 }
             }
@@ -80,4 +80,36 @@ public interface Copy extends Serializable {
         } while (clazz != null);
         return fields;
     }
+
+    static Object setFieldValue(Object src, Field srcField, Object dest, Field destField, boolean deep) throws Exception {
+        boolean srcAccessible = srcField.isAccessible();
+        boolean destAccessible = destField.isAccessible();
+        srcField.setAccessible(true);
+        destField.setAccessible(true);
+        Object srcValue = srcField.get(src);
+        Object destValue = copy(srcValue, deep);
+        destField.set(dest, destValue);
+        srcField.setAccessible(srcAccessible);
+        destField.setAccessible(destAccessible);
+        return dest;
+    }
+
+    static Object setFieldValue(Object object, String name, Object value) {
+        Field declaredField = null;
+        try {
+            declaredField = object.getClass().getDeclaredField(name);
+        } catch(NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
+        boolean accessible = declaredField.isAccessible();
+        declaredField.setAccessible(true);
+        try {
+            declaredField.set(object, value);
+        } catch(IllegalAccessException e) {
+            throw new IllegalStateException("this shouldn't happen");
+        }
+        declaredField.setAccessible(accessible);
+        return object;
+    }
+
 }
