@@ -203,15 +203,15 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         memoryWatcher.disable();
         logger.fine(() -> "running constituent {id: "+
                    (constituents.size() - partialConstituentsBatch.size())+
-                   "+  "+
+                   " " +
                    constituent.getClassifierName()+
                    " }");
         constituent.buildClassifier(trainData); // todo add train time onto train estimate + mem
         logger.fine(() -> "ran constituent {id: "+
                    (constituents.size() - partialConstituentsBatch.size())+
-                   "+  acc: "+
+                   " acc: "+
                    constituent.getTrainResults().getAcc()+
-                   "+  "+
+                   " "+
                    constituent.getClassifierName()+
                    " }");
         memoryWatcher.enable();
