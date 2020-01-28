@@ -9,9 +9,9 @@ public class Stated {
 
     public Stated() {}
 
-    private Stated.State state = Stated.State.DISABLED;
-    private Stated.State suspendedState = null;
-    private Set<Stated> listeners = new HashSet<>();
+    private transient Stated.State state = Stated.State.DISABLED;
+    private transient Stated.State suspendedState = null;
+    private transient Set<Stated> listeners = new HashSet<>();
 
     public void addListener(Stated stated) {
         listeners.add(stated);

@@ -100,11 +100,14 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
 
     private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
     {
+        Copy.setFieldValue(this, "logger", LogUtils.getLogger(this)); // because it was transient
         in.defaultReadObject();
         setupEmitters();
     }
 
-    private final NotificationListener listener = (notification, handback) -> {
+    private interface SerNotificationListener extends NotificationListener, Serializable {}
+
+    private final SerNotificationListener listener = (notification, handback) -> {
         synchronized(MemoryWatcher.this) {
             if(isEnabled()) {
                 if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
@@ -235,6 +238,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     public synchronized void reset() {
+        disableAnyway();
         count = 0;
         mean = 0;
         garbageCollectionTimeInMillis = 0;
@@ -284,7 +288,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
     }
 
-    private Logger logger = LogUtils.getLogger(this);
+    private transient final Logger logger = LogUtils.getLogger(this);
 
     @Override public Logger getLogger() {
         return logger;
