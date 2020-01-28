@@ -133,28 +133,42 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         reset();
     }
 
+    public boolean hasReadings() {
+        return count > 0;
+    }
+
     private synchronized void add(MemoryWatcher other) { // todo put these online std / mean algos in a util class
-        BigDecimal thisMean = BigDecimal.valueOf(this.mean);
-        BigDecimal thisCount = BigDecimal.valueOf(this.count);
-        BigDecimal otherMean = BigDecimal.valueOf(other.mean);
-        BigDecimal otherCount = BigDecimal.valueOf(other.count);
-        BigDecimal overallCount = thisCount.add(otherCount);
-        BigDecimal thisTotal = thisMean.multiply(thisCount);
-        BigDecimal otherTotal = otherMean.multiply(otherCount);
-        BigDecimal overallMean = thisTotal.add(otherTotal).divide(overallCount, BigDecimal.ROUND_HALF_UP);
-        // error sum of squares
-        BigDecimal thisEss = BigDecimal.valueOf(getStdDevMemoryUsageInBytes()).pow(2).multiply(thisCount);
-        BigDecimal otherEss = BigDecimal.valueOf(other.getStdDevMemoryUsageInBytes()).pow(2).multiply(otherCount);
-        BigDecimal totalEss = thisEss.add(otherEss);
-        // total group sum of squares
-        BigDecimal thisTgss = thisMean.subtract(overallMean).pow(2).multiply(thisCount);
-        BigDecimal otherTgss = otherMean.subtract(overallMean).pow(2).multiply(otherCount);
-        BigDecimal totalTgss = thisTgss.add(otherTgss);
-        // std as root of overall variance
-        BigDecimal totalSqDiffFromMean = totalTgss.add(totalEss);
-        mean = overallMean.doubleValue();
-        count = overallCount.intValue();
-        sqDiffFromMean = totalSqDiffFromMean;
+        if(hasReadings() && other.hasReadings()) {
+            BigDecimal thisMean = BigDecimal.valueOf(this.mean);
+            BigDecimal thisCount = BigDecimal.valueOf(this.count);
+            BigDecimal otherMean = BigDecimal.valueOf(other.mean);
+            BigDecimal otherCount = BigDecimal.valueOf(other.count);
+            BigDecimal overallCount = thisCount.add(otherCount);
+            BigDecimal thisTotal = thisMean.multiply(thisCount);
+            BigDecimal otherTotal = otherMean.multiply(otherCount);
+            BigDecimal overallMean = thisTotal.add(otherTotal).divide(overallCount, RoundingMode.HALF_UP);
+            // error sum of squares
+            BigDecimal thisEss = BigDecimal.valueOf(getStdDevMemoryUsageInBytes()).pow(2).multiply(thisCount);
+            BigDecimal otherEss = BigDecimal.valueOf(other.getStdDevMemoryUsageInBytes()).pow(2).multiply(otherCount);
+            BigDecimal totalEss = thisEss.add(otherEss);
+            // total group sum of squares
+            BigDecimal thisTgss = thisMean.subtract(overallMean).pow(2).multiply(thisCount);
+            BigDecimal otherTgss = otherMean.subtract(overallMean).pow(2).multiply(otherCount);
+            BigDecimal totalTgss = thisTgss.add(otherTgss);
+            // std as root of overall variance
+            BigDecimal totalSqDiffFromMean = totalTgss.add(totalEss);
+            mean = overallMean.doubleValue();
+            count = overallCount.intValue();
+            sqDiffFromMean = totalSqDiffFromMean;
+        } else if(!hasReadings() && other.hasReadings()) {
+            mean = other.mean;
+            count = other.count;
+            sqDiffFromMean = other.sqDiffFromMean;
+        } else if(hasReadings() && !other.hasReadings()) {
+            // don't do anything, all our readings are already in here
+        } else {
+            // don't do anything here, both this and the other memory watcher have no readings
+        }
     }
 
     private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
