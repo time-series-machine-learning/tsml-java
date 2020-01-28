@@ -14,7 +14,7 @@
  */ 
 package tsml.filters;
 
-import utilities.serialisation.SerialisedFunction;
+import utilities.serialisation.SerFunction;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -115,7 +115,7 @@ public class Derivative
 
     public static final Derivative INSTANCE = new Derivative();
 
-    public static final SerialisedFunction<Instance, Instance> INSTANCE_DERIVATIVE_FUNCTION = instance -> {
+    public static final SerFunction<Instance, Instance> INSTANCE_DERIVATIVE_FUNCTION = instance -> {
         try {
             return Utilities.filter(instance, new Derivative());
         } catch (Exception e) {
@@ -124,7 +124,7 @@ public class Derivative
     };
 
 
-    public static final SerialisedFunction<Instances, Instances> INSTANCES_DERIVATIVE_FUNCTION = instances -> {
+    public static final SerFunction<Instances, Instances> INSTANCES_DERIVATIVE_FUNCTION = instances -> {
         try {
             return Utilities.filter(instances, new Derivative());
         } catch (Exception e) {

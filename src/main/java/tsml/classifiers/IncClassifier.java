@@ -4,7 +4,6 @@ import utilities.Copy;
 import utilities.Debugable;
 import utilities.NotNull;
 import utilities.params.ParamHandler;
-import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;

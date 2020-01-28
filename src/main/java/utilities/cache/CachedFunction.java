@@ -1,6 +1,6 @@
 package utilities.cache;
 
-import utilities.serialisation.SerialisedFunction;
+import utilities.serialisation.SerFunction;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -10,9 +10,9 @@ public class CachedFunction<I, O> implements Function<I, O>,
                                              Serializable {
     private final HashMap<I, O> cache = new HashMap<>();
 
-    private SerialisedFunction<I, O> function;
+    private SerFunction<I, O> function;
 
-    public CachedFunction(final SerialisedFunction<I, O> function) {
+    public CachedFunction(final SerFunction<I, O> function) {
         this.function = function;
     }
 
@@ -24,11 +24,11 @@ public class CachedFunction<I, O> implements Function<I, O>,
         cache.clear();
     }
 
-    public SerialisedFunction<I, O> getFunction() {
+    public SerFunction<I, O> getFunction() {
         return function;
     }
 
-    public void setFunction(final SerialisedFunction<I, O> function) {
+    public void setFunction(final SerFunction<I, O> function) {
         this.function = function;
     }
 
