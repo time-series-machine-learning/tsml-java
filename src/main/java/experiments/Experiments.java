@@ -669,7 +669,7 @@ public class Experiments  {
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
-        if(classifier instanceof Checkpointable) {
+        if(classifier instanceof Checkpointable && expSettings.checkpointing) {
             ((Checkpointable) classifier).setSavePath(expSettings.supportingFilePath);
         }
 
