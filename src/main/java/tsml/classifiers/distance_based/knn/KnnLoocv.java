@@ -38,6 +38,7 @@ public class KnnLoocv
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected boolean customCache = false;
+    private boolean rebuild = true;
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -192,17 +193,23 @@ public class KnnLoocv
         trainTimer.unsuspend();
     }
 
+    @Override
+    public void setRebuild(boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRebuild(rebuild);
+    }
+
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         super.buildClassifier(trainData);
         built = false;
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
-        if(rebuilt) {
+        if(rebuild) {
             trainTimer.disableAnyway();
             memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
-            built = false;
+            rebuild = false;
             if(getEstimateOwnPerformance()) {
 //                if(isCheckpointing()) { // was needed for caching todo check this is ok
 //                    IndexFilter.hashifyInstances(trainData);

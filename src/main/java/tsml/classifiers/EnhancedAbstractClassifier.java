@@ -91,7 +91,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
-    protected boolean rebuilt = false;
     protected boolean built = false;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
@@ -189,9 +188,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
             rebuild = false;
-            rebuilt = true;
-        } else {
-            rebuilt = false;
         }
     }
 

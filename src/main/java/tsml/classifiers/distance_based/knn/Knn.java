@@ -39,6 +39,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     public static final String tempCheckpointFileName = checkpointFileName + ".tmp";
     protected transient boolean saveCheckpoint = false; // whether a new checkpoint needs to be saved
     protected transient boolean loadCheckpoint = true; // whether we should load a checkpoint
+    private boolean rebuild = true;
 
     public StopWatch getTrainTimer() {
         return trainTimer;
@@ -78,6 +79,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
             final boolean success = new File(tmpPath).renameTo(new File(path));
             if(!success) {
                 throw new IllegalStateException("could not rename checkpoint file");
+            } else {
+                logger.info(() -> "saved checkpoint to: " + path);
             }
             lastCheckpointTimeStamp = System.nanoTime();
         }
@@ -164,9 +167,15 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
     }
 
+    @Override
+    public void setRebuild(boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRebuild(rebuild);
+    }
+
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         loadFromCheckpoint();
-        if(rebuilt) {
+        if(rebuild) {
             memoryWatcher.reset();
             trainTimer.reset();
         }
@@ -174,7 +183,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         trainTimer.enable();
         super.buildClassifier(trainData);
         built = false;
-        if(rebuilt) {
+        if(rebuild) {
+            rebuild = false;
             saveCheckpoint = true;
         }
         distanceFunction.setInstances(trainData);
