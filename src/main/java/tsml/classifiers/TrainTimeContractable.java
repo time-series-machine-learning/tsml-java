@@ -69,7 +69,8 @@ public interface TrainTimeContractable
     }
 
     default long getRemainingTrainTimeNanos() {
-        return getTrainTimeLimitNanos() - getTrainTimeNanos();
+        long result = getTrainTimeLimitNanos() - getTrainTimeNanos();
+        return result;
     }
 
     default boolean hasRemainingTrainTime() {
