@@ -1,48 +1,62 @@
 package utilities;
 
+import scala.annotation.meta.field;
 import weka.core.SerializedObject;
 
 import java.io.Serializable;
+import java.lang.annotation.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
 
 public interface Copy extends Serializable {
-    default @NotNull Object shallowCopy() throws Exception {
+
+    default Object shallowCopy() throws Exception {
+        return shallowCopy(findFields(this.getClass()));
+    }
+
+    default Object shallowCopy(Collection<Field> fields) throws Exception {
         Copy copy = getClass().newInstance();
-        copy.shallowCopyFrom(this);
+        copy.shallowCopyFrom(this, fields);
         return copy;
     }
 
-    default void shallowCopyFrom(@NotNull Object object) throws
+    default void shallowCopyFrom(Object object) throws
+                                                Exception {
+        shallowCopyFrom(object, findFields(this.getClass()));
+    }
+
+    default void shallowCopyFrom(Object object, Collection<Field> fields) throws
                                                          Exception {
-        copyFields(object, this);
+        copyFields(object, this, false, fields);
     }
 
-    default @NotNull Object deepCopy() throws
+    default Object deepCopy() throws
                                        Exception {
-        return deepCopy(this);
+        return deepCopy(findFields(this.getClass()));
     }
 
-    default void deepCopyFrom(@NotNull Object object) throws
-                                                      Exception {
-        shallowCopyFrom(deepCopy(object));
+    default Object deepCopy(Collection<Field> fields) throws Exception {
+        Copy copy = getClass().newInstance();
+        copy.deepCopyFrom(this, fields);
+        return copy;
     }
 
-    static Object deepCopy(Object object) throws
-                                              Exception {
-        return new SerializedObject(object).getObject();
+    default void deepCopyFrom(Object object) throws
+                                             Exception {
+        deepCopyFrom(object, findFields(this.getClass()));
     }
 
-    static <A> A deepCopy(Object object, Class<? extends A> clazz) throws
-                                                                         Exception {
-        return clazz.cast(deepCopy(object));
+    default void deepCopyFrom(Object object, Collection<Field> fields) throws
+                                             Exception {
+        copyFields(object, this, true, fields);
     }
 
-    static Object copy(Object object, boolean deep) throws
-                                                        Exception {
+    // copy functions
+
+    static <A> A copy(A object, boolean deep) throws
+                                                    Exception {
         if(deep) {
             return deepCopy(object);
         } else {
@@ -50,30 +64,67 @@ public interface Copy extends Serializable {
         }
     }
 
+    static <A> A deepCopy(A object) throws
+                                          Exception {
+        return (A) new SerializedObject(object).getObject();
+    }
+
     static void copyFields(Object src, Object dest) throws
                                                    Exception {
         copyFields(src, dest, false);
     }
 
-    static void copyFields(Object src, Object dest, boolean deep) throws
+    static void copyFields(Object src, Object dest, Collection<Field> fields) throws Exception {
+        copyFields(src, dest, false, fields);
+    }
+
+    static void copyFields(Object src, Object dest, boolean deep, Collection<Field> fields) throws
                                                     Exception {
-        List<Field> srcFields = findAllFields(src.getClass());
-        List<Field> destFields = findAllFields(dest.getClass());
-        for(Field srcField : srcFields) {
-            for(Field destField : destFields) {
-                if(srcField.equals(destField)) {
-                    int modifiers = destField.getModifiers();
-                    if(!Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)) { // don't overwrite final /
-                        // static fields
-                        setFieldValue(src, srcField, dest, destField, deep);
-                    }
-                }
+        for(Field field : fields) {
+            try {
+                Field srcField = getField(src, field.getName());
+                Field destField = getField(dest, field.getName());
+                copyFieldValue(src, srcField, dest, destField, deep);
+            } catch(NoSuchFieldException e) {
+
             }
         }
     }
 
-    static List<Field> findAllFields(Class<?> clazz) {
-        List<Field> fields = new ArrayList<>();
+    static void copyFields(Object src, Object dest, boolean deep) throws Exception {
+        copyFields(src, dest, deep, findFields(dest.getClass(), DEFAULT_FIELDS));
+    }
+
+    static Field getField(Object object, String fieldName) throws NoSuchFieldException {
+        return getField(object.getClass(), fieldName);
+    }
+
+    static Field getField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Field field = null;
+        NoSuchFieldException ex = null;
+        while(clazz != null && field == null) {
+            try {
+                field = clazz.getDeclaredField(fieldName);
+            } catch(NoSuchFieldException e) {
+                ex = e;
+            }
+            clazz = clazz.getSuperclass();
+        }
+        if(field == null) {
+            throw ex;
+        }
+        return field;
+    }
+
+    Predicate<Field> FINAL_OR_STATIC = field -> {
+        int modifiers = field.getModifiers();
+        return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers);
+    };
+    Predicate<Field> COPY = field -> field.getAnnotation(DisableCopy.class) == null;
+    Predicate<Field> DEFAULT_FIELDS = FINAL_OR_STATIC.negate().and(COPY);
+
+    static Set<Field> findFields(Class<?> clazz) {
+        Set<Field> fields = new HashSet<>();
         do {
             Collections.addAll(fields, clazz.getDeclaredFields());
             clazz = clazz.getSuperclass();
@@ -81,7 +132,13 @@ public interface Copy extends Serializable {
         return fields;
     }
 
-    static Object setFieldValue(Object src, Field srcField, Object dest, Field destField, boolean deep) throws Exception {
+    static Set<Field> findFields(Class<?> clazz, Predicate<? super Field> predicate) {
+        Set<Field> fields = findFields(clazz);
+        fields.removeIf(predicate.negate());
+        return fields;
+    }
+
+    static Object copyFieldValue(Object src, Field srcField, Object dest, Field destField, boolean deep) throws Exception {
         boolean srcAccessible = srcField.isAccessible();
         boolean destAccessible = destField.isAccessible();
         srcField.setAccessible(true);
@@ -94,22 +151,25 @@ public interface Copy extends Serializable {
         return dest;
     }
 
-    static Object setFieldValue(Object object, String name, Object value) {
-        Field declaredField = null;
-        try {
-            declaredField = object.getClass().getDeclaredField(name);
-        } catch(NoSuchFieldException e) {
-            throw new IllegalStateException(e);
-        }
-        boolean accessible = declaredField.isAccessible();
-        declaredField.setAccessible(true);
-        try {
-            declaredField.set(object, value);
-        } catch(IllegalAccessException e) {
-            throw new IllegalStateException("this shouldn't happen");
-        }
-        declaredField.setAccessible(accessible);
+    static Object copyFieldValue(Object src, String fieldName, Object dest, boolean deep) throws Exception {
+        return copyFieldValue(src, getField(src, fieldName), dest,
+                              getField(src, fieldName), deep);
+    }
+
+    static Object setFieldValue(Object object, String fieldName, Object value)
+        throws NoSuchFieldException, IllegalAccessException {
+        Field field = getField(object, fieldName);
+        boolean accessible = field.isAccessible();
+        field.setAccessible(true);
+        field.set(object, value);
+        field.setAccessible(accessible);
         return object;
     }
 
+    @Retention(RetentionPolicy.RUNTIME) // accessible at runtime
+    @Documented
+    @Target(ElementType.FIELD) // only apply to fields
+    @interface DisableCopy {
+        String value() default "";
+    }
 }
