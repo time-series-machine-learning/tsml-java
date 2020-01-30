@@ -17,14 +17,12 @@ package tsml.classifiers;
 import utilities.Copy;
 import utilities.FileUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * Interface that allows the user to allow a classifier to checkpoint, i.e. 
@@ -48,6 +46,9 @@ public interface Checkpointable extends Serializable, Copy {
         boolean success=true;
         if(!f.isDirectory())
             success=f.mkdirs();
+        if(!isCheckpointLoadingEnabled()) {
+            setLoadPath(path);
+        }
         return success;
     }
 
@@ -57,36 +58,50 @@ public interface Checkpointable extends Serializable, Copy {
     }
     //Define how to copy from a loaded object to this object
     default void copyFromSerObject(Object obj) throws Exception {
-        shallowCopyFrom(obj);
+        shallowCopyFrom(obj, findSerFields(obj));
+    }
+
+    default boolean setLoadPath(String path) {
+        File f = new File(path);
+        boolean success=true;
+        if(!f.isDirectory())
+            success=f.mkdirs();
+        return success;
+    }
+
+    default String getLoadPath() {
+        return null;
+    }
+
+    static Set<Field> findSerFields(Object obj) {
+        return Copy.findFields(obj.getClass(), TRANSIENT.negate().and(Copy.DEFAULT_FIELDS));
     }
 
     //Override both if not using Java serialisation    
-    default void saveToFile(String filename) throws IOException{
-        FileUtils.makeParentDir(filename);
-        FileOutputStream fos =
-        new FileOutputStream(filename);
-        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+    default void saveToFile(String filename) throws Exception {
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+             FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
+             ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            out.close();
-            fos.close();
         }
     }
     default void loadFromFile(String filename) throws Exception{
-        FileInputStream fis = new FileInputStream(filename);
-        try (ObjectInputStream in = new ObjectInputStream(fis)) {
-            Object obj=in.readObject();
+        Object obj = null;
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+             FileInputStream fis = new FileInputStream(fileLocker.getFile());
+             ObjectInputStream in = new ObjectInputStream(fis)) {
+            obj = in.readObject();
+        }
+        if(obj != null) {
             copyFromSerObject(obj);
         }
     }
 
-    default void checkpoint() throws
+    default boolean checkpoint() throws
                               Exception {
         throw new UnsupportedOperationException();
     }
 
-    default boolean isCheckpointing() {
-        return getSavePath() != null;
-    }
 
     default long getMinCheckpointIntervalNanos() {
         return TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
@@ -100,12 +115,34 @@ public interface Checkpointable extends Serializable, Copy {
         setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(amount, unit));
     }
 
-    default boolean isIgnorePreviousCheckpoints() {
-        return false;
+    default boolean isCheckpointSavingEnabled() {
+        return getSavePath() != null;
     }
 
-    default void setIgnorePreviousCheckpoints(boolean state) {
-        throw new UnsupportedOperationException();
+    default boolean isCheckpointLoadingEnabled() {
+        return getLoadPath() != null;
     }
-    
+
+    default boolean hasCheckpointIntervalElapsed() {
+        long diff = System.nanoTime() - getLastCheckpointTimeStamp();
+        return getMinCheckpointIntervalNanos() < diff;
+    }
+
+    default long getLastCheckpointTimeStamp() {
+        return 0;
+    }
+
+    default void setLastCheckpointTimeStamp(final long nanos) {
+
+    }
+
+//    Predicate<Field> SER = field -> field.getAnnotation(NoSer.class) != null;
+    Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
+
+//    @Retention(RetentionPolicy.RUNTIME) // accessible at runtime
+//    @Documented
+//    @Target(ElementType.FIELD) // only apply to fields
+//    @interface NoSer {
+//        String value() default "";
+//    }
 }
