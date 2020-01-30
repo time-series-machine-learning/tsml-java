@@ -77,6 +77,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     private transient Instances trainData;
     private boolean debugConstituents = false;
     private boolean logConstituents = false;
+    private boolean rebuild = true; // shadows super
 
     @Override public long predictNextTrainTimeNanos() {
         long result = -1;
@@ -126,6 +127,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
             } else {
                 remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / partialConstituentsBatch.size();
             }
+            rebuild = false;
         }
         trainTimer.enableAnyway();
         trainEstimateTimer.disableAnyway();
@@ -265,12 +267,12 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         return checkpointDirPath;
     }
 
-    public void checkpoint() throws
+    public boolean checkpoint() throws
                                           Exception {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        if(isCheckpointing() && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
+        if(isCheckpointSavingEnabled() && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
             logger.fine("checkpointing");
             saveToFile(checkpointDirPath + tempCheckpointFileName);
             boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
@@ -282,6 +284,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         trainEstimateTimer.unsuspend();
+        return false;
     }
 
     public ModuleVotingScheme getVotingScheme() {
@@ -308,13 +311,13 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         this.minCheckpointIntervalNanos = minCheckpointInterval;
     }
 
-    @Override public boolean isIgnorePreviousCheckpoints() {
+    @Override public boolean isCheckpointLoadingEnabled() {
         return ignorePreviousCheckpoints;
     }
 
-    @Override public void setIgnorePreviousCheckpoints(final boolean state) {
-        this.ignorePreviousCheckpoints = state;
-    }
+//    @Override public void setCheckpointLoadingEnabled(final boolean state) {
+//        this.ignorePreviousCheckpoints = state;
+//    }
 
     @Override public long getTrainTimeLimitNanos() {
         return trainTimeLimitNanos;

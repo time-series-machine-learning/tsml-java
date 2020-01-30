@@ -22,9 +22,10 @@ import java.util.logging.Level;
 public class KnnLoocv
     extends Knn implements TrainTimeContractable {
 
+    private static final long serialVersionUID = 0;
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-    protected transient long trainTimeLimitNanos = -1;
+    @DisableCopy protected transient long trainTimeLimitNanos = -1;
     protected List<NeighbourSearcher> searchers;
     protected long longestNeighbourEvalTimeInNanos;
     protected int neighbourLimit = -1;
@@ -38,7 +39,12 @@ public class KnnLoocv
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected boolean customCache = false;
-    private boolean rebuild = true;
+    private boolean rebuild = true; // shadows super
+
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+        // todo last ser time getter for check / init this time to not be 0 from load cls
+        super.copyFromSerObject(obj);
+    }
 
     public KnnLoocv() {
         setAbleToEstimateOwnPerformance(true);
@@ -91,7 +97,6 @@ public class KnnLoocv
     }
 
     protected void nextBuildTick() throws Exception {
-        saveCheckpoint = true;
         regenerateTrainEstimate = true;
         final long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
@@ -183,14 +188,15 @@ public class KnnLoocv
         TrainTimeContractable.super.setParams(params);
     }
 
-    protected void loadFromCheckpoint() {
+    protected boolean loadFromCheckpoint() {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        super.loadFromCheckpoint();
+        boolean result = super.loadFromCheckpoint();
         memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
         trainTimer.unsuspend();
+        return result;
     }
 
     @Override

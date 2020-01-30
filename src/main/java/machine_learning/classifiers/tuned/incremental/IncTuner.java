@@ -84,6 +84,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     public static final String INIT_FUNCTION_FLAG = "i";
     private boolean debugBenchmarks = false;
     private boolean logBenchmarks = false;
+    private boolean rebuild = true; // shadows super
 
     public StopWatch getTrainEstimateTimer() {
         return trainEstimateTimer;
@@ -101,13 +102,13 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         ParamHandler.setParam(params, INIT_FUNCTION_FLAG, this::setInitFunction, InitFunction.class);
     }
 
-    @Override public boolean isIgnorePreviousCheckpoints() {
+    @Override public boolean isCheckpointLoadingEnabled() {
         return ignorePreviousCheckpoints;
     }
 
-    @Override public void setIgnorePreviousCheckpoints(final boolean ignorePreviousCheckpoints) {
-        this.ignorePreviousCheckpoints = ignorePreviousCheckpoints;
-    }
+//    @Override public void setCheckpointLoadingEnabled(final boolean checkpointLoadingEnabled) {
+//        this.ignorePreviousCheckpoints = checkpointLoadingEnabled;
+//    }
 
     @Override public void setMinCheckpointIntervalNanos(final long nanos) {
         minCheckpointIntervalNanos = nanos;
@@ -149,13 +150,13 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime();
     }
 
-    public void checkpoint() throws Exception {
+    public boolean checkpoint() throws Exception {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        if(isCheckpointing() && (built || withinCheckpointInterval() || isCheckpointAfterEveryIteration())) {
+        if(isCheckpointSavingEnabled() && (built || withinCheckpointInterval() || isCheckpointAfterEveryIteration())) {
             String path = checkpointDirPath + tempCheckpointFileName;
-            FileUtils.FileLocker locker = new FileUtils.FileLocker(new File(path));
+            FileUtils.FileLock locker = new FileUtils.FileLock(new File(path));
             if(locker.isUnlocked()) {
                 String msg = "failed to lock file: " + path;
                 logger.severe(msg);
@@ -181,7 +182,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 name += "_" + id;
                 path = getBenchmarksPath(name) + ".csv";
                 final String finalPath = path;
-                locker = new FileUtils.FileLocker(new File(path));
+                locker = new FileUtils.FileLock(new File(path));
                 if(locker.isUnlocked()) {
                     if(independentBenchmarks) {
                         logger.severe(() -> "failed to lock file: " + finalPath + " but that's ok as we're running " +
@@ -208,13 +209,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         trainEstimateTimer.unsuspend();
+        return false;
     }
 
     protected void loadFromCheckpoint() throws Exception {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        if(!isIgnorePreviousCheckpoints() && isCheckpointing() && isRebuild()) {
+        if(!isCheckpointLoadingEnabled() && isCheckpointSavingEnabled() && isRebuild()) {
             String path = checkpointDirPath + checkpointFileName;
             logger.info(() -> "loading from checkpoint: " + path);
             loadFromFile(path);
@@ -238,6 +240,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
             initFunction.init(trainData);
+            rebuild = false;
         }
         trainTimer.disable();
         trainEstimateTimer.enable();
@@ -287,7 +290,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         final Set<Benchmark> benchmarks = benchmarkExplorer.next();
         // either this or the benchmark iterator - should be the latter in most cases
         logger.info(() -> benchmarks.size() + " benchmark(s) changed");
-        if(isCheckpointing()) {
+        if(isCheckpointSavingEnabled()) {
             replace(benchmarksToCheckpoint, benchmarks);
         }
     }

@@ -11,7 +11,6 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +20,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
 
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, MemoryWatchable, TrainTimeable {
 
+    private static final long serialVersionUID = 0;
     protected transient Instances trainData;
     public static final String K_FLAG = "k";
     public static final String EARLY_ABANDON_FLAG = "e";
@@ -32,14 +32,22 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
     protected transient long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
-    protected transient boolean ignorePreviousCheckpoints = false;
     protected transient long lastCheckpointTimeStamp = 0;
-    protected transient String checkpointDirPath;
-    public static final String checkpointFileName = "checkpoint.ser";
-    public static final String tempCheckpointFileName = checkpointFileName + ".tmp";
-    protected transient boolean saveCheckpoint = false; // whether a new checkpoint needs to be saved
-    protected transient boolean loadCheckpoint = true; // whether we should load a checkpoint
-    private boolean rebuild = true;
+    protected transient String checkpointSaveDirPath = null;
+    protected transient String checkpointLoadDirPath = null;
+    private boolean rebuild = true; // shadows super
+
+    @Override public String getLoadPath() {
+        return checkpointLoadDirPath;
+    }
+
+    @Override public boolean setLoadPath(final String path) {
+        if(Checkpointable.super.setLoadPath(path)) {
+            checkpointLoadDirPath = StrUtils.asDirPath(path);
+            return true;
+        }
+        return false;
+    }
 
     public StopWatch getTrainTimer() {
         return trainTimer;
@@ -55,71 +63,42 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
     @Override
     public boolean setSavePath(String path) {
-        if(path == null) {
-            return false;
+        if(Checkpointable.super.setSavePath(path)) {
+            checkpointSaveDirPath = StrUtils.asDirPath(path);
+            return true;
         }
-        checkpointDirPath = StrUtils.asDirPath(path);
-        return true;
+        return false;
     }
 
     @Override
     public String getSavePath() {
-        return checkpointDirPath;
+        return checkpointSaveDirPath;
     }
 
-    public void checkpoint() throws Exception {
+    public boolean checkpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        if(isCheckpointing() &&
-            saveCheckpoint && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            final String tmpPath = checkpointDirPath + tempCheckpointFileName;
-            final String path = checkpointDirPath + checkpointFileName;
-            logger.info(() -> "saving checkpoint to: " + path);
-            saveToFile(tmpPath);
-            final boolean success = new File(tmpPath).renameTo(new File(path));
-            if(!success) {
-                throw new IllegalStateException("could not rename checkpoint file");
-            } else {
-                logger.info(() -> "saved checkpoint to: " + path);
-            }
-            lastCheckpointTimeStamp = System.nanoTime();
-        }
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
+        return result;
     }
 
-    protected void loadFromCheckpoint() {
+    protected boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        if(!isIgnorePreviousCheckpoints() && loadCheckpoint && isCheckpointing() && isRebuild()) {
-            final String path = checkpointDirPath + checkpointFileName;
-            logger.info(() -> "loading from checkpoint: " + path);
-            try {
-                loadFromFile(path);
-                logger.info(() -> "loaded from checkpoint: " + path);
-                lastCheckpointTimeStamp = System.nanoTime();
-            } catch(Exception e) {
-                logger.info("failed to load from checkpoint: " + e.getMessage());
-            }
-            loadCheckpoint = false;
-        }
+        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
+        lastCheckpointTimeStamp = System.nanoTime();
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
+        return result;
     }
 
-    @Override public boolean isIgnorePreviousCheckpoints() {
-        return ignorePreviousCheckpoints;
-    }
-
-    @Override public void setIgnorePreviousCheckpoints(final boolean ignorePreviousCheckpoints) {
-        this.ignorePreviousCheckpoints = ignorePreviousCheckpoints;
-    }
-
-    @Override public void setMinCheckpointIntervalNanos(final long nanos) {
+    public void setMinCheckpointIntervalNanos(final long nanos) {
         minCheckpointIntervalNanos = nanos;
     }
 
-    @Override public long getMinCheckpointIntervalNanos() {
+    public long getMinCheckpointIntervalNanos() {
         return minCheckpointIntervalNanos;
     }
 
@@ -173,8 +152,12 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         super.setRebuild(rebuild);
     }
 
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        loadFromCheckpoint();
+        boolean loadedFromCheckpoint = loadFromCheckpoint();
         if(rebuild) {
             memoryWatcher.reset();
             trainTimer.reset();
@@ -183,18 +166,18 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         trainTimer.enable();
         super.buildClassifier(trainData);
         built = false;
-        if(rebuild) {
-            rebuild = false;
-            saveCheckpoint = true;
-        }
         distanceFunction.setInstances(trainData);
         this.trainData = trainData;
-        built = true;
         rebuild = false;
+        built = true;
         trainTimer.disable();
         memoryWatcher.cleanup();
         memoryWatcher.disable();
-        checkpoint();
+        if(!loadedFromCheckpoint) {
+            checkpoint();
+        } else {
+            logger.info("loaded from checkpoint so not overwriting");
+        }
     }
 
     // todo fail capabilities

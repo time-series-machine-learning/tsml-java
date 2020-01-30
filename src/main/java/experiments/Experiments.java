@@ -14,7 +14,6 @@
  */
 package experiments;
 
-import de.bwaldvogel.liblinear.Train;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -53,8 +52,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
 
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
@@ -673,95 +670,82 @@ public class Experiments  {
             ((Checkpointable) classifier).setSavePath(expSettings.supportingFilePath);
         }
 
-        FileUtils.FileLocker trainLock = new FileUtils.FileLocker(new File(trainPath), false);
-        FileUtils.FileLocker testLock = new FileUtils.FileLocker(new File(testPath), false);
-
         ClassifierResults[] experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()};
 
-        try {
-            trainLock.lock();
-            if(trainLock.isLocked()) {
-                testLock.lock();
+        try(FileUtils.FileLock trainLock = new FileUtils.FileLock(trainPath);
+            FileUtils.FileLock testLock = new FileUtils.FileLock(testPath)) { // only if we have a lock on both the
+            // output files
+            if (expSettings.generateErrorEstimateOnTrainSet) {
+                //Tell the classifier to generate train results if it can do it internally,
+                //otherwise perform the evaluation externally here (e.g. cross validation on the
+                //train data
+                if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
+                    ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
+                else
+                    trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
             }
-            if(trainLock.isLocked() && testLock.isLocked()) {
-                if (expSettings.generateErrorEstimateOnTrainSet) {
-                    //Tell the classifier to generate train results if it can do it internally,
-                    //otherwise perform the evaluation externally here (e.g. cross validation on the
-                    //train data
-                    if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
-                        ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
-                    else
-                        trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
-                }
-                LOGGER.log(Level.FINE, "Train estimate ready.");
+            LOGGER.log(Level.FINE, "Train estimate ready.");
 
 
-                //Build on the full train data here
-                long buildTime = System.nanoTime();
-                classifier.buildClassifier(trainSet);
-                buildTime = System.nanoTime() - buildTime;
-                LOGGER.log(Level.FINE, "Training complete");
+            //Build on the full train data here
+            long buildTime = System.nanoTime();
+            classifier.buildClassifier(trainSet);
+            buildTime = System.nanoTime() - buildTime;
+            LOGGER.log(Level.FINE, "Training complete");
 
-                trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
-                //At this stage, regardless of whether the classifier is able to estimate it's
-                //own accuracy or not, train results should contain either
-                //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
-                //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
+            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
+            //At this stage, regardless of whether the classifier is able to estimate it's
+            //own accuracy or not, train results should contain either
+            //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
+            //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-                if (expSettings.generateErrorEstimateOnTrainSet)
-                    writeResults(expSettings, trainResults, trainPath, "train");
-                LOGGER.log(Level.FINE, "Train estimate written");
+            if (expSettings.generateErrorEstimateOnTrainSet)
+                writeResults(expSettings, trainResults, trainPath, "train");
+            LOGGER.log(Level.FINE, "Train estimate written");
 
-                if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
-                    serialiseClassifier(expSettings, classifier);
+            if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
+                serialiseClassifier(expSettings, classifier);
 
-                //And now evaluate on the test set, if this wasn't a single parameter fold
-                if (expSettings.singleParameterID == null) {
-                    //This is checked before the buildClassifier also, but
-                    //a) another process may have been doing the same experiment
-                    //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
-                    //no reason not to check again
-                    if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(testPath)) {
-                        testResults = evaluateClassifier(expSettings, classifier, testSet);
-                        assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
+            //And now evaluate on the test set, if this wasn't a single parameter fold
+            if (expSettings.singleParameterID == null) {
+                //This is checked before the buildClassifier also, but
+                //a) another process may have been doing the same experiment
+                //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
+                //no reason not to check again
+                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(testPath)) {
+                    testResults = evaluateClassifier(expSettings, classifier, testSet);
+                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
 
-                        testResults.setParas(trainResults.getParas());
+                    testResults.setParas(trainResults.getParas());
 
-                        testResults.turnOffZeroTimingsErrors();
-                        testResults.setBenchmarkTime(benchmark);
-                        testResults.setBuildTime(trainResults.getBuildTime());
-                        testResults.turnOnZeroTimingsErrors();
+                    testResults.turnOffZeroTimingsErrors();
+                    testResults.setBenchmarkTime(benchmark);
+                    testResults.setBuildTime(trainResults.getBuildTime());
+                    testResults.turnOnZeroTimingsErrors();
 
-                        LOGGER.log(Level.FINE, "Testing complete");
+                    LOGGER.log(Level.FINE, "Testing complete");
 
-                        writeResults(expSettings, testResults, testPath, "test");
-                        LOGGER.log(Level.FINE, "Testing written");
-                    }
-                    else {
-                        LOGGER.log(Level.INFO, "Test file already found, written by another process.");
-                        testResults = new ClassifierResults(testPath);
-                    }
-                    experimentResults = new ClassifierResults[] { trainResults, testResults };
+                    writeResults(expSettings, testResults, testPath, "test");
+                    LOGGER.log(Level.FINE, "Testing written");
                 }
                 else {
-                    experimentResults = new ClassifierResults[] { trainResults, new ClassifierResults() }; //not
-                    // error, but we dont
-                    // have a test acc. just returning 0 for now
+                    LOGGER.log(Level.INFO, "Test file already found, written by another process.");
+                    testResults = new ClassifierResults(testPath);
                 }
+                experimentResults = new ClassifierResults[] { trainResults, testResults };
+            }
+            else {
+                experimentResults = new ClassifierResults[] { trainResults, new ClassifierResults() }; //not
+                // error, but we dont
+                // have a test acc. just returning 0 for now
             }
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
+            e.printStackTrace();
             experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()}; //error
             // state
-        } finally {
-            if(trainLock != null) {
-                trainLock.unlock();
-            }
-            if(testLock != null) {
-                testLock.unlock();
-            }
         }
         return experimentResults;
     }
