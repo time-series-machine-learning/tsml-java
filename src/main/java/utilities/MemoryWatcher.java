@@ -3,7 +3,6 @@ package utilities;
 import com.sun.management.GarbageCollectionNotificationInfo;
 import tsml.classifiers.Loggable;
 import tsml.classifiers.MemoryWatchable;
-import weka.core.Memory;
 
 import javax.management.ListenerNotFoundException;
 import javax.management.NotificationEmitter;
@@ -100,7 +99,11 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
 
     private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
     {
-        Copy.setFieldValue(this, "logger", LogUtils.getLogger(this)); // because it was transient
+        try {
+            Copy.setFieldValue(this, "logger", LogUtils.getLogger(this)); // because it was transient
+        } catch(NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalArgumentException(e.toString()); // should never happen
+        }
         in.defaultReadObject();
         setupEmitters();
     }
