@@ -49,40 +49,40 @@ public class FileUtils {
         }
     }
 
-    public static class FileLocker {
+    public static class FileLock implements AutoCloseable {
         private Thread thread;
         private File file;
         private File lockFile;
         private static final long interval = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
         private static final long expiredInterval = interval + TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
-        private final AtomicBoolean unlocked = new AtomicBoolean(false);
+        private final AtomicBoolean unlocked = new AtomicBoolean(true);
 
         public File getFile() {
             return file;
         }
 
-        public FileLocker setFile(File file) {
-            if(!unlock().isUnlocked()) {
-                throw new IllegalStateException("couldn't unlock file");
-            }
-            this.file = file;
-            this.lockFile = new File(file.getPath() + ".lock");
-            return this;
+        public File getLockFile() {
+            return lockFile;
         }
 
-        public FileLocker(File file, boolean lock) {
-            setFile(file);
+        private FileLock(File file, boolean lock) {
+            this.file = file;
+            this.lockFile = new File(file.getPath() + ".lock");
             if(lock) {
                 lock();
             }
         }
 
-        public FileLocker(File file) {
+        public FileLock(File file) {
             // assume we want to lock the file asap
             this(file, true);
         }
 
-        public FileLocker lock() {
+        public FileLock(String path) {
+            this(new File(path));
+        }
+
+        private FileLock lock() {
             if(isUnlocked()) {
                 makeParentDir(lockFile);
                 boolean stop = false;
@@ -90,16 +90,14 @@ public class FileUtils {
                     boolean created = false;
                     try {
                         created = lockFile.createNewFile();
-                    } catch(IOException e) {
-                        created = false;
-                    }
+                    } catch(IOException ignored) {}
                     if(created) {
                         lockFile.deleteOnExit();
                         unlocked.set(false);
                         thread = new Thread(this::watch);
                         thread.setDaemon(true);
                         thread.start();
-                        stop = true;
+                        return this;
                     } else {
                         long lastModified = lockFile.lastModified();
                         if(lastModified <= 0 || lastModified + expiredInterval < System.currentTimeMillis()) {
@@ -109,6 +107,7 @@ public class FileUtils {
                         }
                     }
                 }
+                throw new IllegalStateException("failed to lock file: " + file.getPath());
             }
             return this;
         }
@@ -130,15 +129,17 @@ public class FileUtils {
             lockFile.delete();
         }
 
-        public FileLocker unlock() {
+        public FileLock unlock() {
             unlocked.set(true);
             if(thread != null) {
                 thread.interrupt();
-                try {
-                    thread.join();
-                } catch(InterruptedException e) {
-                    throw new IllegalStateException("interrupted");
-                }
+                do {
+                    try {
+                        thread.join();
+                    } catch(InterruptedException ignored) {
+
+                    }
+                } while(thread.isAlive());
                 thread = null;
             }
             return this;
@@ -150,6 +151,10 @@ public class FileUtils {
 
         public boolean isLocked() {
             return !isUnlocked();
+        }
+
+        @Override public void close() throws Exception {
+            unlock();
         }
     }
 }
