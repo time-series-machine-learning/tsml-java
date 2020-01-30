@@ -3,7 +3,6 @@ package tsml.classifiers.distance_based.knn;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.IncClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
@@ -16,7 +15,6 @@ import utilities.cache.SymmetricCache;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
-import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -171,7 +169,7 @@ public class Tmp extends Evaluator implements Checkpointable, TrainTimeContracta
             trainTimer.disableAnyway();
             trainEstimateTimer.resetAndEnable();
             rebuild = false;
-            if(isCheckpointing()) {
+            if(isCheckpointSavingEnabled()) {
                 IndexFilter.hashifyInstances(data);
             }
             // build a progressive leave-one-out-cross-validation

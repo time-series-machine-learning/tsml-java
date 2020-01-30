@@ -80,7 +80,7 @@ ClassifierResults trainResults can also store other information about the traini
  * @author Tony Bagnall and James Large
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       Randomizable, RebuildableClassifier,
+                                                                                       Randomizable, Rebuildable,
                                                                                        Debugable, Loggable, Copy,
                                                                                        ParamHandler {
         
