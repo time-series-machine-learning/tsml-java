@@ -154,7 +154,6 @@ public class KnnLoocv
             neighbourCount++;
         }
         longestNeighbourEvalTimeInNanos = System.nanoTime() - timeStamp;
-        checkpoint();
     }
 
     public NeighbourIteratorBuilder getNeighbourIteratorBuilder() {
