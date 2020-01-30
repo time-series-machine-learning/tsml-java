@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import com.google.common.testing.GcFinalization;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -533,7 +534,7 @@ public class Experiments  {
 
         Instances[] data = null;
 
-        System.gc(); System.gc(); // do it twice due to young/old generation mem pool and finalization
+        GcFinalization.awaitFullGc();
 
         for(int i = 0; i < expSettings.trainContracts.size(); i += 2) {
             String classifierNameExtras = "";
