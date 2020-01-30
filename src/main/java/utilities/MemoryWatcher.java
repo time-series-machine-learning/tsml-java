@@ -1,5 +1,6 @@
 package utilities;
 
+import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
 import tsml.classifiers.Loggable;
 import tsml.classifiers.MemoryWatchable;
@@ -298,6 +299,6 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     public void cleanup() {
-        System.gc();
+        GcFinalization.awaitFullGc();
     }
 }

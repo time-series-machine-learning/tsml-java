@@ -36,6 +36,9 @@ dependencies {
     compile group: 'com.carrotsearch', name: 'java-sizeof', version: '0.0.5'
     // https://mvnrepository.com/artifact/ml.dmlc/xgboost4j
     compile group: 'ml.dmlc', name: 'xgboost4j', version: '0.81'
+    // https://mvnrepository.com/artifact/com.google.guava/guava-testlib
+    compile group: 'com.google.guava', name: 'guava-testlib', version: '28.2-jre'
+
 }
 
 sourceSets {
