@@ -11,11 +11,13 @@ public class LogUtils {
         String name;
         if(object instanceof Class) {
             name = ((Class) object).getSimpleName();
+        } else if(object instanceof String) {
+            name = (String) object;
         } else {
             name = object.getClass().getSimpleName() + "-" + object.hashCode();
         }
         Logger logger = Logger.getLogger(name);
-        logger.setLevel(Level.OFF); // disable logs by default
+        logger.setLevel(Level.SEVERE); // disable all but severe error logs by default
         logger.addHandler(buildStdOutStreamHandler(new CustomLogFormat()));
         logger.addHandler(buildStdErrStreamHandler(new CustomLogFormat()));
         logger.setUseParentHandlers(false);
