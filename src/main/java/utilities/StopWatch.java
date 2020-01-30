@@ -3,7 +3,7 @@ package utilities;
 import java.io.Serializable;
 
 public class StopWatch extends Stated implements Serializable {
-    private long timeStamp;
+    private transient long timeStamp;
     private long time;
 
     public StopWatch() {
