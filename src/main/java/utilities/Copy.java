@@ -82,9 +82,7 @@ public interface Copy extends Serializable {
                                                     Exception {
         for(Field field : fields) {
             try {
-                Field srcField = getField(src, field.getName());
-                Field destField = getField(dest, field.getName());
-                copyFieldValue(src, srcField, dest, destField, deep);
+                copyFieldValue(src, field, dest, deep);
             } catch(NoSuchFieldException e) {
 
             }
@@ -138,22 +136,18 @@ public interface Copy extends Serializable {
         return fields;
     }
 
-    static Object copyFieldValue(Object src, Field srcField, Object dest, Field destField, boolean deep) throws Exception {
-        boolean srcAccessible = srcField.isAccessible();
-        boolean destAccessible = destField.isAccessible();
-        srcField.setAccessible(true);
-        destField.setAccessible(true);
-        Object srcValue = srcField.get(src);
+    static Object copyFieldValue(Object src, Field field, Object dest, boolean deep) throws Exception {
+        boolean accessible = field.isAccessible();
+        field.setAccessible(true);
+        Object srcValue = field.get(src);
         Object destValue = copy(srcValue, deep);
-        destField.set(dest, destValue);
-        srcField.setAccessible(srcAccessible);
-        destField.setAccessible(destAccessible);
+        field.set(dest, destValue);
+        field.setAccessible(accessible);
         return dest;
     }
 
     static Object copyFieldValue(Object src, String fieldName, Object dest, boolean deep) throws Exception {
-        return copyFieldValue(src, getField(src, fieldName), dest,
-                              getField(src, fieldName), deep);
+        return copyFieldValue(src, getField(src, fieldName), dest, deep);
     }
 
     static Object setFieldValue(Object object, String fieldName, Object value)

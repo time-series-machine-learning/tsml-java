@@ -1,6 +1,7 @@
 package utilities;
 
 import tsml.classifiers.Checkpointable;
+import tsml.classifiers.EnhancedAbstractClassifier;
 
 import java.io.File;
 import java.util.logging.Logger;
