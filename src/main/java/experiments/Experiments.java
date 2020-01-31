@@ -560,7 +560,7 @@ public class Experiments  {
             String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName +
                     classifierNameExtras + "/Predictions/" + expSettings.datasetName + "/";
             String checkpointLocation = expSettings.resultsWriteLocation + expSettings.classifierName +
-                classifierNameExtras + "/WorkSpace/" + expSettings.datasetName + "/";
+                classifierNameExtras + "/WorkSpace/" + expSettings.datasetName + "/" + expSettings.foldId + "/";
             File f = new File(fullWriteLocation);
             if (!f.exists())
                 f.mkdirs();
