@@ -251,8 +251,8 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.yShift);
 
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\TSC Archive\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TEST.arff");
 //        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
 //        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
@@ -289,10 +289,10 @@ public class KShape extends AbstractTimeSeriesClusterer {
         }
 
         public void calculateDistance(Instance first, Instance second, boolean calcShift){
-            int oldLength = first.numAttributes();
-            int oldLengthY = second.numAttributes();
+            int oldLength = first.numAttributes()-1;
+            int oldLengthY = second.numAttributes()-1;
 
-            int length = paddedLength(2*oldLength-1);
+            int length = paddedLength(oldLength);
 
             //FFT and IFFT
             fft = new FFT();
@@ -364,11 +364,6 @@ public class KShape extends AbstractTimeSeriesClusterer {
         private int paddedLength(int oldLength){
             int length = (int)MathsPower2.roundPow2((float)oldLength);
             if (length < oldLength) length *= 2;
-                
-            if(length<oldLength){
-                length *= 2; //need to be here? review whole method
-            }
-            
             return length;
         }
 
