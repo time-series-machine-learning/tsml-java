@@ -46,6 +46,8 @@ import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
 
+import java.io.FileReader;
+import java.io.LineNumberReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.text.DecimalFormat;
@@ -967,9 +969,9 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-       //collateSimulatorResults();
+       collateSimulatorResults();
         //catch22SimulatorChangingSeriesLength();
-        catch22SimulatorChangingTrainSize();
+        //catch22SimulatorChangingTrainSize();
  //       dictionarySimulatorChangingTrainSize();
         System.exit(0);
 
@@ -1178,10 +1180,11 @@ public class SimulationExperiments {
 
     public static void catch22SimulatorChangingSeriesLength() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=true;
-        int experiments=30;
-        String writePath="D:/UEAMachineLearning/Projects/Catch22/SimulationExperiments/";
-        for(int seriesLength=3200;seriesLength<=3200;seriesLength+=200) {
+        boolean overwrite=false;
+        int experiments=100;
+        int expStart=0; //line to start at, for if experiments stopped mid way
+        String writePath="D:/UEAMachineLearning/Projects/Catch22/SimulationExperiments/BOSS/";
+        for(int seriesLength=1000;seriesLength<=1000;seriesLength+=200) {
             File path = new File(writePath + "Catch22SeriesLength" + seriesLength);
             path.mkdirs();
             if(!overwrite) {
@@ -1190,26 +1193,53 @@ public class SimulationExperiments {
                 File f3 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv");
                 File f4 = new File(writePath + "Catch22SeriesLength" + seriesLength + "/mem" + seriesLength + ".csv");
                 if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
-                    System.out.println("SKIPPING series length = "+seriesLength+" as all already present");
-                    continue;
-                }
 
+
+                    FileReader input = new FileReader(f1);
+                    LineNumberReader count = new LineNumberReader(input);
+                    while (count.skip(Long.MAX_VALUE) > 0) { }
+                    expStart = count.getLineNumber();
+
+                    if (expStart < experiments){
+                        System.out.println("Unfinished file found, starting at experiment " + expStart);
+                    }
+                    else {
+                        System.out.println("SKIPPING series length = " + seriesLength + " as all already present");
+                        continue;
+                    }
+                }
             }
-            OutFile accFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/testAcc" + seriesLength + ".csv");
-            OutFile trainTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength +"/trainTime" + seriesLength + ".csv");
-            OutFile testTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/testTime" + seriesLength + ".csv");
-            OutFile memFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength  + "/mem" + seriesLength + ".csv");
+
+            OutFile accFile;
+            OutFile trainTimeFile;
+            OutFile testTimeFile;
+            OutFile memFile;
+            if (expStart > 0) {
+                accFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/testAcc" + seriesLength + ".csv", true);
+                trainTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/trainTime" + seriesLength + ".csv", true);
+                testTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv",true);
+                memFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/mem" + seriesLength + ".csv",true);
+            }
+            else{
+                accFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/testAcc" + seriesLength + ".csv");
+                trainTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/trainTime" + seriesLength + ".csv");
+                testTimeFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/testTime" + seriesLength + ".csv");
+                memFile = new OutFile(writePath + "Catch22SeriesLength" + seriesLength + "/mem" + seriesLength + ".csv");
+            }
+
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = 100;
+            casesPerClass[0] = casesPerClass[1] = 20;
             long t1;
-            String[] classifierNames = {"C22IF","Catch22","TSF"};
+            String[] classifierNames = {"BOSS"};
             double[] acc = new double[classifierNames.length];
             long[] trainTime = new long[classifierNames.length];
             long[] testTime = new long[classifierNames.length];
             long[] finalMem = new long[classifierNames.length];
             long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
+                if (i<expStart) continue;
+
                 Instances data = SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
                 Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
                 System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
@@ -1258,10 +1288,11 @@ public class SimulationExperiments {
 
     public static void catch22SimulatorChangingTrainSize() throws Exception {
         Model.setDefaultSigma(1);
-        boolean overwrite=true;
-        int experiments=30;
-        String writePath="D:/UEAMachineLearning/Projects/Catch22/SimulationExperiments/";
-        for(int trainSize=1200;trainSize<= 1200;trainSize+=100) {
+        boolean overwrite=false;
+        int experiments=100;
+        int expStart=0; //line to start at, for if experiments stopped mid way
+        String writePath="D:/UEAMachineLearning/Projects/Catch22/SimulationExperiments/BOSS/";
+        for(int trainSize=340;trainSize<= 340;trainSize+=100) {
             File path = new File(writePath + "Catch22TrainSize" + trainSize);
             path.mkdirs();
             if(!overwrite) {
@@ -1270,28 +1301,56 @@ public class SimulationExperiments {
                 File f3 = new File(writePath + "Catch22TrainSize" + trainSize + "/testTime" + trainSize + ".csv");
                 File f4 = new File(writePath + "Catch22TrainSize" + trainSize + "/mem" + trainSize + ".csv");
                 if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
-                    System.out.println("SKIPPING series length = "+trainSize+" as all already present");
-                    continue;
+
+
+                    FileReader input = new FileReader(f1);
+                    LineNumberReader count = new LineNumberReader(input);
+                    while (count.skip(Long.MAX_VALUE) > 0) { }
+                    expStart = count.getLineNumber();
+
+                    if (expStart < experiments){
+                        System.out.println("Unfinished file found, starting at experiment " + expStart);
+                    }
+                    else {
+                        System.out.println("SKIPPING series length = "+trainSize+" as all already present");
+                        continue;
+                    }
                 }
 
             }
-            OutFile accFile = new OutFile(writePath + "Catch22TrainSize" + trainSize  + "/testAcc" + trainSize + ".csv");
-            OutFile trainTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize +"/trainTime" + trainSize + ".csv");
-            OutFile testTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize  + "/testTime" + trainSize + ".csv");
-            OutFile memFile = new OutFile(writePath + "Catch22TrainSize" + trainSize  + "/mem" + trainSize + ".csv");
+
+            OutFile accFile;
+            OutFile trainTimeFile;
+            OutFile testTimeFile;
+            OutFile memFile;
+            if (expStart > 0) {
+                accFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/testAcc" + trainSize + ".csv", true);
+                trainTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/trainTime" + trainSize + ".csv", true);
+                testTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/testTime" + trainSize + ".csv",true);
+                memFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/mem" + trainSize + ".csv",true);
+            }
+            else{
+                accFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/testAcc" + trainSize + ".csv");
+                trainTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/trainTime" + trainSize + ".csv");
+                testTimeFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/testTime" + trainSize + ".csv");
+                memFile = new OutFile(writePath + "Catch22TrainSize" + trainSize + "/mem" + trainSize + ".csv");
+            }
+
             System.out.println(" Generating simulated data ....");
             int[] casesPerClass = new int[2];
-            casesPerClass[0] = casesPerClass[1] = (trainSize/2)+50;
+            casesPerClass[0] = casesPerClass[1] = (trainSize/2)+10;
             long t1;
-            String[] classifierNames = {"C22IF","Catch22","TSF"};
+            String[] classifierNames = {"BOSS"};
             double[] acc = new double[classifierNames.length];
             long[] trainTime = new long[classifierNames.length];
             long[] testTime = new long[classifierNames.length];
             long[] finalMem = new long[classifierNames.length];
             long[] maxMem = new long[classifierNames.length];
             for (int i = 0; i < experiments; i++) {
+                if (i<expStart) continue;
+
                 Instances data = SimulateIntervalData.generateIntervalData(200, casesPerClass);
-                Instances[] split = InstanceTools.resampleInstances(data, i, 1-(100.0/(trainSize+100)));
+                Instances[] split = InstanceTools.resampleInstances(data, i, 1-(20.0/(trainSize+20)));
                 System.out.println(" series length =" + 200 + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
                 for (int j = 0; j < classifierNames.length; j++) {
                     System.gc();
@@ -1339,25 +1398,32 @@ public class SimulationExperiments {
 
     public static void collateSimulatorResults(){
         String type="Catch22";
-        String path="D:\\UEAMachineLearning\\Projects\\"+type+"\\SimulationExperiments\\";
+//        String path="D:\\UEAMachineLearning\\Projects\\"+type+"\\SimulationExperiments\\";
+        String path="D:\\UEAMachineLearning\\Projects\\"+type+"\\SimulationExperiments\\BOSS\\";
         File f= new File(path+type+"Summary");
         f.mkdirs();
         String[] files={"mem","testAcc","testTime","trainTime"};
-        int numClassifiers=3;
+        int numClassifiers=1;
         OutFile[] out=new OutFile[files.length];
         OutFile[] outDiffs=new OutFile[files.length];
         for(int i=0;i<files.length;i++){
+//            out[i]=new OutFile(path+type+"Summary\\"+files[i]+"Mean.csv");
+//            out[i].writeLine("Means,C22IF,Catch22,TSF,StDevs,C22IF,Catch22,TSF");
+//            outDiffs[i]=new OutFile(path+type+"Summary\\"+files[i]+"MeanDiffs.csv");
+//            outDiffs[i].writeLine("MeanDiffsToC22IF,Catch22,TSF,StDevs,C22IF,Catch22,TSF");
             out[i]=new OutFile(path+type+"Summary\\"+files[i]+"Mean.csv");
-            out[i].writeLine("Means,TSF-SS,Catch22,TSF,StDevs,TSF-SS,Catch22,TSF");
+            out[i].writeLine("Means,BOSS,StDevs,BOSS");
             outDiffs[i]=new OutFile(path+type+"Summary\\"+files[i]+"MeanDiffs.csv");
-            outDiffs[i].writeLine("MeanDiffsToTSF-SS,Catch22,TSF,StDevs,TSF-SS,Catch22,TSF");
+            outDiffs[i].writeLine("MeanDiffsToBOSS,StDevs,BOSS");
         }
 
 
         for(int i=0;i<files.length;i++){
             String s=files[i];
             ArrayList<double[]> medians=new ArrayList<>();
-            for(int trainSize=20;trainSize<=400;trainSize+=20) {
+            int m = s.equals("mem") ? numClassifiers+1 : 0;
+
+            for(int trainSize=20;trainSize<=340;trainSize+=20) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "TrainSize" + trainSize + "\\" + s + trainSize + ".csv";
@@ -1375,9 +1441,9 @@ public class SimulationExperiments {
                 double[][] diffs = new double[l][numClassifiers-1];
                 for (int j = 0; j < l; j++) {
                     String[] line = inf.readLine().split(",");
-                    vals[j][0] = Double.parseDouble(line[1]);
+                    vals[j][0] = Double.parseDouble(line[1 + m]);
                     for (int k = 1; k < numClassifiers; k++) {
-                        vals[j][k] = Double.parseDouble(line[k + 1]);
+                        vals[j][k] = Double.parseDouble(line[k + m + 1]);
                         diffs[j][k - 1] = vals[j][k] - vals[j][0];
                     }
                 }
@@ -1451,7 +1517,7 @@ public class SimulationExperiments {
                 outDiffs[i].writeString("\n");
             }
 
-            for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
+            for(int seriesLength=200;seriesLength<=1000;seriesLength+=50) {
                 File test;
                 int lines = 0;
                 String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
@@ -1469,9 +1535,9 @@ public class SimulationExperiments {
                 double[][] diffs = new double[l][numClassifiers-1];
                 for (int j = 0; j < l; j++) {
                     String[] line = inf.readLine().split(",");
-                    vals[j][0] = Double.parseDouble(line[1]);
+                    vals[j][0] = Double.parseDouble(line[1 + m]);
                     for (int k = 1; k < numClassifiers; k++) {
-                        vals[j][k] = Double.parseDouble(line[k + 1]);
+                        vals[j][k] = Double.parseDouble(line[k + m + 1]);
                         diffs[j][k - 1] = vals[j][k] - vals[j][0];
                     }
                 }

@@ -12,7 +12,6 @@ import java.util.Arrays;
 
 import static utilities.ArrayUtilities.mean;
 import static utilities.ClusteringUtilities.zNormalise;
-import static utilities.ClusteringUtilities.zNormaliseWithClass;
 import static utilities.GenericTools.*;
 import static utilities.StatisticalUtilities.median;
 import static utilities.StatisticalUtilities.standardDeviation;
@@ -39,7 +38,7 @@ public class Catch22 implements Transformer {
     private boolean outlierNorm = false;
 
     //for summary stat by index
-    private int currentSeriesIndex = -1;
+    private int currentSeriesIndex = Integer.MIN_VALUE;
     private double idxMin;
     private double idxMax;
     private double idxMean;
@@ -242,7 +241,7 @@ public class Catch22 implements Transformer {
                     if (length < idxSeries.length) length *= 2;
                     idxFFT = new FFT.Complex[length];
                     for (int i = 0; i < idxSeries.length; i++){
-                        idxFFT[i] = new FFT.Complex(idxSeries.length-idxMean, 0);
+                        idxFFT[i] = new FFT.Complex(idxSeries[i]-idxMean, 0);
                     }
                     for (int i = idxSeries.length; i < length; i++){
                         idxFFT[i] = new FFT.Complex(0,0);
@@ -267,7 +266,7 @@ public class Catch22 implements Transformer {
                         if (length < idxSeries.length) length *= 2;
                         idxFFT = new FFT.Complex[length];
                         for (int i = 0; i < idxSeries.length; i++){
-                            idxFFT[i] = new FFT.Complex(idxSeries.length-idxMean, 0);
+                            idxFFT[i] = new FFT.Complex(idxSeries[i]-idxMean, 0);
                         }
                         for (int i = idxSeries.length; i < length; i++){
                             idxFFT[i] = new FFT.Complex(0,0);

@@ -22,12 +22,10 @@ import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
-import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 
 import java.io.File;
@@ -119,6 +117,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     public boolean attSubsample = false;
     public boolean attSubsampleInterval = false;
     public int attSubsampleNum = 16;
+    public boolean maxIntervalLength = false;
 
     public int numAttributes = 22;
     public int ogNumAttributes;
@@ -131,6 +130,9 @@ public class Catch22TSF extends EnhancedAbstractClassifier
     public int gsAttSubsamplePerTree = 0;
     public int gsBagging = 0;
 
+    public int seriesLength;
+
+    public boolean saveAfterBuild = false;
 
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
 
@@ -139,14 +141,14 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
     private int numIntervals=0;
-    private Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+    public Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
     /** Secondary parameter, mainly there to avoid single item intervals,
      which have no slope or std dev*/
     public int minIntervalLength=3;
 
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    public Classifier base= new RandomTree();
+    public Classifier base= new RandomTreeTSF();
 
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and
      ends  at  intervals[i][j][1] */
@@ -232,8 +234,8 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         int nt = numClassifiers;
         if (trees != null) nt = trees.size();
         String temp=super.getParameters()+",numTrees,"+nt+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
-        if(base instanceof RandomTree)
-            temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
+        if(base instanceof RandomTreeTSF)
+            temp+=",AttsConsideredPerNode,"+((RandomTreeTSF)base).getKValue();
         return temp;
 
     }
@@ -375,6 +377,8 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         getCapabilities().testWithFail(orgData);
         long t1=System.nanoTime();
 
+        seriesLength = orgData.numAttributes()-1;
+
         Instances data;
         if (preNorm){
             data = new Instances(orgData);
@@ -386,13 +390,13 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
         Catch22 c22 = new Catch22();
 
-        File file = new File(checkpointPath + "TSF" + seed + ".ser");
+        File file = new File(checkpointPath + "C22IF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
             //path checkpoint files will be saved to
             if(debug)
                 System.out.println("Loading from checkpoint file");
-            loadFromFile(checkpointPath + "TSF" + seed + ".ser");
+            loadFromFile(checkpointPath + "C22IF" + seed + ".ser");
         }
         //initialise variables
         else {
@@ -442,6 +446,21 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                     numIntervals = (int) Math.round(Math.pow(Math.sqrt(data.numAttributes() - 1), 0.85));
                     numClassifiers = 250;
                     numAttributes = 25;
+                    break;
+                case 4:
+                    numIntervals = (int) Math.round(Math.pow(Math.sqrt(data.numAttributes() - 1), 0.85));
+                    break;
+                case 5:
+                    minIntervalLength = 12;
+
+                    if ((data.numAttributes()-1)/10 < minIntervalLength){
+                        minIntervalLength = (data.numAttributes()-1)/10 < 3 ? 3 : (data.numAttributes()-1)/10;
+                    }
+                    numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
+                    break;
+                case 6:
+                    maxIntervalLength = true;
+                    numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
                     break;
                 case 99:
                     if (gsNumIntervals == 0) {
@@ -506,11 +525,12 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                     break;
             }
 
+            ogNumAttributes = numAttributes;
+
             if (attSubsample) {
                 subsampleAtts = new ArrayList();
 
                 if (attSubsampleNum < numAttributes) {
-                    ogNumAttributes = numAttributes;
                     numAttributes = attSubsampleNum;
                 }
             }
@@ -522,7 +542,6 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 }
 
                 if (attSubsampleNum < numAttributes) {
-                    ogNumAttributes = numAttributes;
                     numAttributes = attSubsampleNum;
                 }
             }
@@ -541,7 +560,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 
             //cancel loop using time instead of number built.
             if (trainTimeContract){
-                numClassifiers = 0;
+                numClassifiers = -1;
                 trees = new ArrayList<>();
                 intervals = new ArrayList<>();
             }
@@ -577,18 +596,18 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(base instanceof RandomTree){
+        if(base instanceof RandomTreeTSF){
 
             if (experimentalOptions == 99){
                 if (gsRandomTreeK == 0){
-                    ((RandomTree) base).setKValue(result.numAttributes() - 1);
+                    ((RandomTreeTSF) base).setKValue(result.numAttributes() - 1);
                 }
                 else if (gsRandomTreeK == 1){
-                    ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
+                    ((RandomTreeTSF) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
                 }
             }
             else {
-                ((RandomTree) base).setKValue(result.numAttributes() - 1);
+                ((RandomTreeTSF) base).setKValue(result.numAttributes() - 1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
             }
 
@@ -599,10 +618,13 @@ public class Catch22TSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-t1)+checkpointTimeElapsed < contractTime || trees.size() < numClassifiers)
+        while((System.nanoTime()-t1 < contractTime || trees.size() < numClassifiers)
                 && trees.size() < maxClassifiers){
 
             int i = trees.size();
+
+            //System.out.println(i + " " + contractTime + " " + (System.nanoTime()-t1));
+
             //1. Select random intervals for tree i
 
             int[][] interval =new int[numIntervals][2];  //Start and end
@@ -648,13 +670,50 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                     }
                 }
             }
+            else if (intSelection == 2){
+                if (data.numAttributes() - 1 <= minIntervalLength)
+                    minIntervalLength = (data.numAttributes()-1)/2;
+                for (int j = 0; j < numIntervals; j++) {
+                    int length = rand.nextInt(data.numAttributes() - 1 - minIntervalLength) + minIntervalLength; //Min length 3
+                    int position = rand.nextInt(data.numAttributes() - 1);
+
+                        int side = (length-1)/2;
+                        int start = position-side;
+                        int end = position+side;
+
+                        if (length%2 == 0){
+                            if (rand.nextBoolean()){
+                                start--;
+                            }
+                            else{
+                                end++;
+                            }
+                        }
+
+                        interval[j][0] = start < 0 ? 0 : start;
+                        interval[j][1] = end > data.numAttributes()-2 ? data.numAttributes()-2 : end;
+                }
+            }
             else {
-                if (data.numAttributes() - 1 < minIntervalLength)
-                    minIntervalLength = data.numAttributes() - 1;
+                if (data.numAttributes() - 1 <= minIntervalLength)
+                    minIntervalLength = (data.numAttributes()-1)/2;
                 for (int j = 0; j < numIntervals; j++) {
                     interval[j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
-                    int length = rand.nextInt(data.numAttributes() - 1 - interval[j][0]);//Min length 3
-                    if (length < minIntervalLength)
+
+
+                    int length;
+                    if (maxIntervalLength){
+                        length = rand.nextInt((data.numAttributes() - 1)/2);
+                        if (interval[j][0] + length > data.numAttributes()-2){
+                            length = data.numAttributes() - 2 - interval[j][0];
+                        }
+                    }
+                    else {
+                        length = rand.nextInt(data.numAttributes() - 1 - interval[j][0]);
+                    }
+
+
+                    if (length < minIntervalLength) //min length 3
                         length = minIntervalLength;
                     interval[j][1] = interval[j][0] + length;
                 }
@@ -756,12 +815,31 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                                 continue;
                             }
 
-                            result.instance(k).setValue(j * numAttributes + g - offset, c22.getSummaryStatByIndex(g, k, intervalDA));
+                            result.instance(k).setValue(j * numAttributes + g - offset, c22.getSummaryStatByIndex(g, j, intervalDA));
                         }
                     }
                     else if (attSubsample){
                         for (int g = 0; g < subsampleAtts.get(i).size(); g++){
-                            result.instance(k).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), k, intervalDA));
+                            if (subsampleAtts.get(i).get(g) < 22) {
+                                result.instance(k).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalDA));
+                            }
+                            else{
+                                TSF.FeatureSet f = new TSF.FeatureSet();
+                                f.setFeatures(series, interval[j][0], interval[j][1]);
+                                switch(subsampleAtts.get(i).get(g)) {
+                                    case 22:
+                                        result.instance(k).setValue(j * numAttributes + g, f.mean);
+                                        break;
+                                    case 23:
+                                        result.instance(k).setValue(j * numAttributes + g, f.stDev);
+                                        break;
+                                    case 24:
+                                        result.instance(k).setValue(j * numAttributes + g, f.slope);
+                                        break;
+                                    default:
+                                        throw new Exception("att subsample basic features broke");
+                                }
+                            }
                         }
                     }
                     else if (attSubsampleInterval){
@@ -778,7 +856,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                         }
 
                         for (int g = 0; g < subsampleIntervalAtts[j].get(i).size(); g++){
-                            result.instance(k).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleIntervalAtts[j].get(i).get(g), k, intervalDA));
+                            result.instance(k).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleIntervalAtts[j].get(i).get(g), j, intervalDA));
                         }
                     }
                     else{
@@ -911,6 +989,12 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             }
         }
         trainResults.setBuildTime(t2-t1);
+
+        //RandomTree t = (RandomTree)trees.get(0);
+
+        if (saveAfterBuild){
+            checkpoint(t1);
+        }
     }
 
     private void copyParameters(Catch22TSF other){
@@ -991,7 +1075,26 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 }
                 else if (attSubsample){
                     for (int g = 0; g < subsampleAtts.get(i).size(); g++){
-                        testHolder.instance(0).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, interval));
+                        if (subsampleAtts.get(i).get(g) < 22) {
+                            testHolder.instance(0).setValue(j * numAttributes + g, c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, interval));
+                        }
+                        else{
+                            TSF.FeatureSet f = new TSF.FeatureSet();
+                            f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                            switch(subsampleAtts.get(i).get(g)) {
+                                case 22:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
+                                    break;
+                                case 23:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
+                                    break;
+                                case 24:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
+                                    break;
+                                default:
+                                    throw new Exception("att subsample basic features broke");
+                            }
+                        }
                     }
                 }
                 else if (attSubsampleInterval){
@@ -1101,7 +1204,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         boolean validPath=Checkpointable.super.setSavePath(path);
         if(validPath){
             checkpointPath = path;
-            checkpoint = true;
+            //checkpoint = true;
         }
         return validPath;
     }
@@ -1193,10 +1296,10 @@ public class Catch22TSF extends EnhancedAbstractClassifier
                 checkpointTime = ((System.nanoTime() - startTime) + checkpointTimeElapsed);
 
                 //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
+                saveToFile(checkpointPath + "C22IF" + seed + "temp.ser");
 
-                File file = new File(checkpointPath + "TSF" + seed + "temp.ser");
-                File file2 = new File(checkpointPath + "TSF" + seed + ".ser");
+                File file = new File(checkpointPath + "C22IF" + seed + "temp.ser");
+                File file2 = new File(checkpointPath + "C22IF" + seed + ".ser");
                 file2.delete();
                 file.renameTo(file2);
 
@@ -1204,7 +1307,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
             }
             catch(Exception e){
                 e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+"TSF" + seed + ".ser FAILED");
+                System.out.println("Serialisation to "+checkpointPath+"C22IF" + seed + ".ser FAILED");
             }
         }
     }
@@ -1276,6 +1379,60 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 //        }
 //    }
 
+    public double[][] temporalImportanceCurve() throws Exception{
+        if (!(base instanceof RandomTreeTSF))
+            throw new Exception("Temporal importance curve only available for random tree");
+
+        double[][] curves = new double[numAttributes][seriesLength];
+
+        for (int i = 0; i < trees.size(); i++){
+            RandomTreeTSF tree = (RandomTreeTSF)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/numAttributes);
+                int att = (int)(split%numAttributes);
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        return curves;
+    }
+
+    public double[][] temporalImportanceCurve2() throws Exception{
+        if (!(base instanceof TimeSeriesTree))
+            throw new Exception("Temporal importance curve only available for time series tree");
+
+        double[][] curves = new double[ogNumAttributes][seriesLength];
+
+        for (int i = 0; i < trees.size(); i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/numAttributes);
+
+                int att = (int)(split%numAttributes);
+                if (attSubsample){
+                    att = subsampleAtts.get(i).get(att);
+                }
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        return curves;
+    }
+
     public static void main(String[] arg) throws Exception{
 
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
@@ -1284,7 +1441,7 @@ public class Catch22TSF extends EnhancedAbstractClassifier
 // Basic correctness tests, including setting paras through 
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
 //        String resultsLocation="C:\\temp\\";
-        String problem="ItalyPowerDemand";
+        String problem="Beef";
 //        File f= new File(resultsLocation+problem);
 //        if(!f.isDirectory())
 //            f.mkdirs();
@@ -1293,12 +1450,17 @@ public class Catch22TSF extends EnhancedAbstractClassifier
         Catch22TSF tsf = new Catch22TSF();
         tsf.setSeed(0);
         tsf.outlierNorm = true;
-        tsf.attSubsample = true;
+        tsf.minIntervalLength = 3;
+        //tsf.setBaseClassifier(new TimeSeriesTree());
+        tsf.experimentalOptions = 99;
+        tsf.gsAttSubsamplePerTree = 1;
+        tsf.gsRandomTreeK = 1;
         //tsf.setTrainTimeLimit(TimeUnit.SECONDS,5);
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         long t1 = System.nanoTime();
         tsf.buildClassifier(train);
+        //System.out.println(Arrays.deepToString(tsf.temporalImportanceCurve()));
         System.out.println("Train time="+(System.nanoTime()-t1)*1e-9);
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.trees.size()+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);

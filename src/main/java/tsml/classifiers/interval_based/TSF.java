@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -28,6 +27,7 @@ import weka.core.TechnicalInformation;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -108,6 +108,9 @@ public class TSF extends EnhancedAbstractClassifier
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
+
+    int seriesLength;
+    public int intSelection = 0;
  
     /** Primary parameters potentially tunable*/   
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
@@ -121,7 +124,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private Classifier[] trees; 
-    private Classifier base= new RandomTree();
+    private Classifier base= new RandomTreeTSF();
  
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
      ends  at  intervals[i][j][1] */
@@ -194,8 +197,8 @@ public class TSF extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
-        if(base instanceof RandomTree)
-           temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
+        if(base instanceof RandomTreeTSF)
+           temp+=",AttsConsideredPerNode,"+((RandomTreeTSF)base).getKValue();
         return temp;
  
     }
@@ -336,6 +339,9 @@ public class TSF extends EnhancedAbstractClassifier
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
+
+        seriesLength = data.numAttributes()-1;
+
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
 //Set up instances size and format. 
         trees=new AbstractClassifier[numClassifiers];        
@@ -364,8 +370,8 @@ public class TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(base instanceof RandomTree){
-            ((RandomTree) base).setKValue(result.numAttributes()-1);
+        if(base instanceof RandomTreeTSF){
+            ((RandomTreeTSF) base).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
         }        
         /** Set up for Bagging if required **/
@@ -384,14 +390,42 @@ public class TSF extends EnhancedAbstractClassifier
         for(int i=0;i<numClassifiers;i++){
         //1. Select random intervals for tree i
             intervals[i]=new int[numIntervals][2];  //Start and end
-            if(data.numAttributes()-1<minIntervalLength)
-                 minIntervalLength=data.numAttributes()-1;
-            for(int j=0;j<numIntervals;j++){
-               intervals[i][j][0]=rand.nextInt(data.numAttributes()-1-minIntervalLength);       //Start point
-               int length=rand.nextInt(data.numAttributes()-1-intervals[i][j][0]);//Min length 3
-               if(length<minIntervalLength)
-                   length=minIntervalLength;
-               intervals[i][j][1]=intervals[i][j][0]+length;
+
+            if (intSelection == 2){
+                if (data.numAttributes() - 1 <= minIntervalLength)
+                    minIntervalLength = (data.numAttributes()-1)/2;
+
+                for (int j = 0; j < numIntervals; j++) {
+                    int length = rand.nextInt(data.numAttributes() - 1 - minIntervalLength) + minIntervalLength; //Min length 3
+                    int position = rand.nextInt(data.numAttributes() - 1);
+
+                    int side = (length-1)/2;
+                    int start = position-side;
+                    int end = position+side;
+
+                    if (length%2 == 0){
+                        if (rand.nextBoolean()){
+                            start--;
+                        }
+                        else{
+                            end++;
+                        }
+                    }
+
+                    intervals[i][j][0] = start < 0 ? 0 : start;
+                    intervals[i][j][1] = end > data.numAttributes()-2 ? data.numAttributes()-2 : end;
+                }
+            }
+            else {
+                if (data.numAttributes() - 1 < minIntervalLength)
+                    minIntervalLength = data.numAttributes() - 1;
+                for (int j = 0; j < numIntervals; j++) {
+                    intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+                    int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
+                    if (length < minIntervalLength)
+                        length = minIntervalLength;
+                    intervals[i][j][1] = intervals[i][j][0] + length;
+                }
             }
         //2. Generate and store attributes            
             for(int j=0;j<numIntervals;j++){
@@ -698,7 +732,57 @@ public class TSF extends EnhancedAbstractClassifier
         public String toString(){
             return "mean="+mean+" stdev = "+stDev+" slope ="+slope;
         }
-    } 
+    }
+
+    public double[][] temporalImportanceCurve() throws Exception{
+        if (!(base instanceof RandomTreeTSF))
+            throw new Exception("Temporal importance curve only available for random tree");
+
+        double[][] curves = new double[3][seriesLength];
+
+        for (int i = 0; i < trees.length; i++){
+            RandomTreeTSF tree = (RandomTreeTSF)trees[i];
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/3);
+                int att = (int)(split%3);
+
+                for (int j = intervals[i][interval][0]; j <= intervals[i][interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        return curves;
+    }
+
+    public double[][] temporalImportanceCurve2() throws Exception{
+        if (!(base instanceof TimeSeriesTree))
+            throw new Exception("Temporal importance curve only available for time series tree");
+
+        double[][] curves = new double[3][seriesLength];
+
+        for (int i = 0; i < trees.length; i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees[i];
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/3);
+                int att = (int)(split%3);
+
+                for (int j = intervals[i][interval][0]; j <= intervals[i][interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        return curves;
+    }
      
     public static void main(String[] arg) throws Exception{
         
@@ -716,10 +800,12 @@ public class TSF extends EnhancedAbstractClassifier
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.setSeed(0);
+        //tsf.setBaseClassifier(new TimeSeriesTree());
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
-        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        //System.out.println(Arrays.deepToString(tsf.temporalImportanceCurve()));
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
         String[] options=new String[4];
@@ -729,7 +815,7 @@ public class TSF extends EnhancedAbstractClassifier
         options[3]="1";
         tsf.setOptions(options);
         tsf.buildClassifier(train);
-        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
          
