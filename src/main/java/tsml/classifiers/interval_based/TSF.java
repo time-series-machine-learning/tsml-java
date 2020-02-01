@@ -16,6 +16,8 @@
 package tsml.classifiers.interval_based;
  
 import java.util.ArrayList;
+
+import machine_learning.classifiers.TimeSeriesTree;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -26,8 +28,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
-import java.io.File;
-import java.util.Arrays;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import tsml.classifiers.EnhancedAbstractClassifier;
