@@ -490,7 +490,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"CAWPEPLUS","CAWPEFROMFILE","CawpeAsCote",
-            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF","FullHC-SB","HC-Catch22TSF"};
+            "CAWPE_AS_COTE_NO_EE","HC-Standard","HC-Alpha1","HC-NewBOSS","HC-NoEE","HC-SB","HC-NoEE-SB","HC-WEASEL","HC-cBOSS", "HC-PF","HC-PF-SB","FullHC","FullHC-SB","FullHC-SB-PF","HC-Latest","HC-Catch22TSF"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
