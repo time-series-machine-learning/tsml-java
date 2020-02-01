@@ -208,7 +208,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             //I have no idea why this happens or which datasets this may happen in
             if (Math.round(eigSum) == subsample.get(0).numAttributes() && Math.round(eigSumNeg) == subsample.get(0).numAttributes()){
                 col++;
-                //System.err.println("Possible eigenvalue error");
+                System.err.println("Possible eigenvalue error, moving onto next column. Look into why this happens.");
             }
             else{
                 break;
@@ -362,17 +362,11 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         //Amount of padding required for FFT
         private int paddedLength(int oldLength){
-            int length;
-            
-            if(!MathsPower2.isPow2(oldLength)){
-                length = (int)MathsPower2.roundPow2((float)oldLength);
+            int length = (int)MathsPower2.roundPow2((float)oldLength);
+            if (length < oldLength) length *= 2;
                 
-                if(length<oldLength){
-                    length *= 2;
-                }
-            }
-            else{
-                length = oldLength;
+            if(length<oldLength){
+                length *= 2; //need to be here? review whole method
             }
             
             return length;
