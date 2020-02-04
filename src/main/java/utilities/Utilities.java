@@ -14,7 +14,11 @@
  */
 package utilities;
 
+import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.TrainTimeable;
+import tsml.classifiers.distance_based.knn.KnnLoocv;
 import utilities.collections.IntListView;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializedObject;
@@ -25,6 +29,61 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class Utilities {
+
+
+    public static void listenToTrainTimer(Object obj, StopWatch stated) {
+        if(obj instanceof TrainTimeable) {
+            try {
+                StopWatch trainTimer = ((TrainTimeable) obj).getTrainTimer();
+                trainTimer.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
+        if(obj instanceof TrainTimeable) {
+            try {
+                StopWatch trainTimer = ((TrainTimeable) obj).getTrainEstimateTimer();
+                trainTimer.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
+        if(obj instanceof MemoryWatchable) {
+            try {
+                MemoryWatcher memoryWatcher = ((MemoryWatchable) obj).getMemoryWatcher();
+                memoryWatcher.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
+        if(obj instanceof TrainTimeable) {
+            try {
+                StopWatch trainTimer = ((TrainTimeable) obj).getTrainTimer();
+                trainTimer.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
+        if(obj instanceof TrainTimeable) {
+            try {
+                StopWatch trainTimer = ((TrainTimeable) obj).getTrainEstimateTimer();
+                trainTimer.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
+        if(obj instanceof MemoryWatchable) {
+            try {
+                MemoryWatcher memoryWatcher = ((MemoryWatchable) obj).getMemoryWatcher();
+                memoryWatcher.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
 
     public static long toNanos(String amountStr, String unitStr) {
         long amount = Long.parseLong(amountStr);

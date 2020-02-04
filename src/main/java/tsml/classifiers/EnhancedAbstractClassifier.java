@@ -199,6 +199,20 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         this.ableToEstimateOwnPerformance = ableToEstimateOwnPerformance;
         setDebug(debug);
     }
+
+    @Override
+    public int hashCode() {
+        return classifierName.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if(!(other instanceof EnhancedAbstractClassifier)) {
+            return false;
+        }
+        EnhancedAbstractClassifier eac = (EnhancedAbstractClassifier) other;
+        return classifierName.equalsIgnoreCase(eac.classifierName);
+    }
     
     /**
      * This flags whether the classifier shall estimate their own performance 

@@ -33,20 +33,49 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     protected boolean randomTieBreak = false;
     protected transient long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     protected transient long lastCheckpointTimeStamp = 0;
-    protected transient String checkpointSaveDirPath = null;
-    protected transient String checkpointLoadDirPath = null;
+    protected transient String savePath = null;
+    protected transient String loadPath = null;
+    protected transient boolean skipFinalCheckpoint = false;
     private boolean rebuild = true; // shadows super
 
+    @Override
+    public boolean isSkipFinalCheckpoint() {
+        return skipFinalCheckpoint;
+    }
+
+    @Override
+    public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
+        this.skipFinalCheckpoint = skipFinalCheckpoint;
+    }
+
+    @Override
+    public String getSavePath() {
+        return savePath;
+    }
+
+    @Override
+    public boolean setSavePath(String path) {
+        boolean result = Checkpointable.super.setSavePath(path);
+        if(result) {
+            savePath = StrUtils.asDirPath(path);
+        } else {
+            savePath = null;
+        }
+        return result;
+    }
+
     @Override public String getLoadPath() {
-        return checkpointLoadDirPath;
+        return loadPath;
     }
 
     @Override public boolean setLoadPath(final String path) {
-        if(Checkpointable.super.setLoadPath(path)) {
-            checkpointLoadDirPath = StrUtils.asDirPath(path);
-            return true;
+        boolean result = Checkpointable.super.setLoadPath(path);
+        if(result) {
+            loadPath = StrUtils.asDirPath(path);
+        } else {
+            loadPath = null;
         }
-        return false;
+        return result;
     }
 
     public StopWatch getTrainTimer() {
@@ -61,30 +90,16 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         return lastCheckpointTimeStamp;
     }
 
-    @Override
-    public boolean setSavePath(String path) {
-        if(Checkpointable.super.setSavePath(path)) {
-            checkpointSaveDirPath = StrUtils.asDirPath(path);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public String getSavePath() {
-        return checkpointSaveDirPath;
-    }
-
-    public boolean checkpoint() throws Exception {
+    public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
     }
 
-    protected boolean loadFromCheckpoint() {
+    public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
         boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
@@ -174,7 +189,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         memoryWatcher.cleanup();
         memoryWatcher.disable();
         if(!loadedFromCheckpoint) {
-            checkpoint();
+            saveToCheckpoint();
         } else {
             logger.info("loaded from checkpoint so not overwriting");
         }

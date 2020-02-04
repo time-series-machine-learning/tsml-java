@@ -14,6 +14,7 @@
  */
 package tsml.classifiers;
 
+import utilities.StopWatch;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 

@@ -31,6 +31,17 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     private BigDecimal sqDiffFromMean = BigDecimal.ZERO;
     private double mean = 0;
     private long garbageCollectionTimeInMillis = 0;
+    private transient Set<MemoryWatcher> listeners = new HashSet<>();
+
+    public void addListener(MemoryWatcher other) {
+        listeners.add(other);
+        super.addListener(other);
+    }
+
+    public void removeListener(MemoryWatcher other) {
+        listeners.remove(other);
+        super.removeListener(other);
+    }
 
     @Override public synchronized boolean enableAnyway() {
         if(super.enableAnyway() && !isEmittersSetup()) {
@@ -175,6 +186,9 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
             // don't do anything, all our readings are already in here
         } else {
             // don't do anything here, both this and the other memory watcher have no readings
+        }
+        for(MemoryWatcher listener : listeners) {
+            listener.add(other);
         }
     }
 

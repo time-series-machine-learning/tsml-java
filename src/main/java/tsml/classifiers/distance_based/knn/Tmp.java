@@ -120,7 +120,7 @@ public class Tmp extends Evaluator implements Checkpointable, TrainTimeContracta
             }
         }
         previousNeighbourBatchTimeNanos = System.nanoTime() - timeStamp;
-        checkpoint();
+        saveToCheckpoint();
         trainEstimateTimer.disable();
         memoryWatcher.disable();
     }

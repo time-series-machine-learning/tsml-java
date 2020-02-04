@@ -133,7 +133,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         trainEstimateTimer.disableAnyway();
         while(hasNextBuildTick()) {
             nextBuildTick();
-            checkpoint();
+            saveToCheckpoint();
         }
         if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
             logger.fine("generating train estimate");
@@ -173,7 +173,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         this.trainData = null;
         built = true;
         logger.info("build finished");
-        checkpoint();
+        saveToCheckpoint();
     }
 
     private boolean timeRemainingPerConstituent() {
@@ -242,7 +242,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     public void nextBuildTick() throws Exception {
         improveNextConstituent();
         regenerateTrainEstimate = true;
-        checkpoint();
+        saveToCheckpoint();
     }
 
     @Override public void loadFromFile(final String filename) throws Exception {
@@ -267,7 +267,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         return checkpointDirPath;
     }
 
-    public boolean checkpoint() throws
+    public boolean saveToCheckpoint() throws
                                           Exception {
         trainTimer.suspend();
         trainEstimateTimer.suspend();

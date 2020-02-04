@@ -3,7 +3,7 @@ package tsml.classifiers;
 import utilities.MemoryWatcher;
 
 public interface MemoryWatchable {
-    default MemoryWatcher getMemoryWatcher() {
+    default MemoryWatcher getMemoryWatcher() { // todo do we need this or just have the raw getters?
         throw new UnsupportedOperationException();
     }
     default long getMaxMemoryUsageInBytes() { return getMemoryWatcher().getMaxMemoryUsageInBytes(); };

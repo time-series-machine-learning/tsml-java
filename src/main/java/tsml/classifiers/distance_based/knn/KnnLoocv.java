@@ -187,7 +187,7 @@ public class KnnLoocv
         TrainTimeContractable.super.setParams(params);
     }
 
-    protected boolean loadFromCheckpoint() {
+    public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
@@ -255,7 +255,7 @@ public class KnnLoocv
         trainEstimateTimer.enableAnyway();
         while(hasNextBuildTick()) {
             nextBuildTick();
-            checkpoint();
+            saveToCheckpoint();
         }
         trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
@@ -286,7 +286,7 @@ public class KnnLoocv
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
         built = true;
-        checkpoint();
+        saveToCheckpoint();
     }
 
     public long getTrainTimeNanos() {

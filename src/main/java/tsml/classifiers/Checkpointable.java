@@ -97,8 +97,12 @@ public interface Checkpointable extends Serializable, Copy {
         }
     }
 
-    default boolean checkpoint() throws
+    default boolean saveToCheckpoint() throws
                               Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean loadFromCheckpoint() throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -133,6 +137,14 @@ public interface Checkpointable extends Serializable, Copy {
     }
 
     default void setLastCheckpointTimeStamp(final long nanos) {
+
+    }
+
+    default boolean isSkipFinalCheckpoint() {
+        return false;
+    }
+
+    default void setSkipFinalCheckpoint(boolean state) {
 
     }
 
