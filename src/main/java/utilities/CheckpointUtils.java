@@ -1,9 +1,8 @@
 package utilities;
 
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.EnhancedAbstractClassifier;
 
-import java.io.File;
+import java.io.*;
 import java.util.logging.Logger;
 
 public class CheckpointUtils {
@@ -62,5 +61,23 @@ public class CheckpointUtils {
     public static boolean saveToSingleCheckpoint(Checkpointable checkpointable, Logger logger) throws Exception {
 
         return saveToSingleCheckpoint(checkpointable, logger, false);
+    }
+
+    public static void serialise(Serializable serializable, String path) throws Exception {
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
+             FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
+             ObjectOutputStream out = new ObjectOutputStream(fos)) {
+            out.writeObject(serializable);
+        }
+    }
+
+    public static Object deserialise(String path) throws Exception{
+        Object obj = null;
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
+             FileInputStream fis = new FileInputStream(fileLocker.getFile());
+             ObjectInputStream in = new ObjectInputStream(fis)) {
+            obj = in.readObject();
+        }
+        return obj;
     }
 }

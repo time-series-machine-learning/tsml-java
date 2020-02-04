@@ -20,6 +20,8 @@ import utilities.LogUtils;
 import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+
+import java.io.Serializable;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -82,7 +84,7 @@ ClassifierResults trainResults can also store other information about the traini
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Randomizable, Rebuildable,
                                                                                        Debugable, Loggable, Copy,
-                                                                                       ParamHandler {
+                                                                                       ParamHandler, Serializable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
