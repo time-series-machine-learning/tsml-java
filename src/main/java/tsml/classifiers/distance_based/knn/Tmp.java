@@ -150,10 +150,11 @@ public class Tmp extends Evaluator implements Checkpointable, TrainTimeContracta
         TrainTimeContractable.super.setParams(params);
     }
 
-    protected void loadFromCheckpoint() throws Exception {
+    public boolean loadFromCheckpoint() throws Exception {
         trainEstimateTimer.suspend();
-        knn.loadFromCheckpoint();
+        boolean result = knn.loadFromCheckpoint();
         trainEstimateTimer.unsuspend();
+        return result;
     }
 
     public void startBuild(Instances data) throws Exception { // todo watch mem
