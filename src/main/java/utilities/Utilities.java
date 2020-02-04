@@ -14,7 +14,9 @@
  */
 package utilities;
 
+import tsml.classifiers.GcMemoryWatchable;
 import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.StopWatchTrainTimeable;
 import tsml.classifiers.TrainTimeable;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import utilities.collections.IntListView;
@@ -32,54 +34,54 @@ public class Utilities {
 
 
     public static void listenToTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof TrainTimeable) {
+        if(obj instanceof StopWatchTrainTimeable) {
             try {
-                StopWatch trainTimer = ((TrainTimeable) obj).getTrainTimer();
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
                 trainTimer.addListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }
     }
 
     public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof TrainTimeable) {
+        if(obj instanceof StopWatchTrainTimeable) {
             try {
-                StopWatch trainTimer = ((TrainTimeable) obj).getTrainEstimateTimer();
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
                 trainTimer.addListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }
     }
 
     public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof MemoryWatchable) {
+        if(obj instanceof GcMemoryWatchable) {
             try {
-                MemoryWatcher memoryWatcher = ((MemoryWatchable) obj).getMemoryWatcher();
+                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
                 memoryWatcher.addListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }
     }
 
     public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof TrainTimeable) {
+        if(obj instanceof StopWatchTrainTimeable) {
             try {
-                StopWatch trainTimer = ((TrainTimeable) obj).getTrainTimer();
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
                 trainTimer.removeListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }
     }
 
     public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof TrainTimeable) {
+        if(obj instanceof StopWatchTrainTimeable) {
             try {
-                StopWatch trainTimer = ((TrainTimeable) obj).getTrainEstimateTimer();
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
                 trainTimer.removeListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }
     }
 
     public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof MemoryWatchable) {
+        if(obj instanceof GcMemoryWatchable) {
             try {
-                MemoryWatcher memoryWatcher = ((MemoryWatchable) obj).getMemoryWatcher();
+                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
                 memoryWatcher.removeListener(stated);
             } catch (UnsupportedOperationException ignored) {}
         }

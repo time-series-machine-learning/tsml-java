@@ -96,7 +96,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean built = false;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
-    protected transient final Logger logger = LogUtils.getLogger(this);
+    protected transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
         return rand;
@@ -204,6 +204,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     @Override
     public int hashCode() {
+        if(classifierName == null) {
+            return super.hashCode();
+        }
         return classifierName.hashCode();
     }
 
@@ -377,6 +380,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
+        if(classifierName != null) {
+            logger = LogUtils.getLogger(classifierName);
+        } else {
+            logger = LogUtils.getLogger(this);
+        }
     }
 
     public void setDebug(boolean b){

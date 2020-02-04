@@ -7,21 +7,23 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+import machine_learning.classifiers.tuned.incremental.Agent;
+import sun.management.resources.agent;
 import tsml.classifiers.*;
 import utilities.*;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.File;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
 
 public class Ee extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
-        MemoryWatchable {
+        GcMemoryWatchable, StopWatchTrainTimeable {
 
     public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
         return constituents;
@@ -59,7 +61,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     protected List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
     // constituents which still have work remaining - tentative version
     protected List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
-    protected long trainTimeLimitNanos = -1;
     protected StopWatch trainTimer = new StopWatch();
     protected StopWatch trainEstimateTimer = new StopWatch();
     protected ModuleVotingScheme votingScheme = new MajorityVote();
@@ -67,17 +68,112 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     protected AbstractEnsemble.EnsembleModule[] modules;
     protected long remainingTrainTimeNanosPerConstituent;
     protected boolean firstBatchDone;
-    private String checkpointDirPath;
-    private long lastCheckpointTimeStamp = 0;
-    private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
-    private static final String checkpointFileName = "checkpoint.ser";
-    private static final String tempCheckpointFileName = checkpointFileName + ".tmp";
-    private boolean ignorePreviousCheckpoints = false;
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private transient Instances trainData;
     private boolean debugConstituents = false;
     private boolean logConstituents = false;
+
+    // start boiler plate ----------------------------------------------------------------------------------------------
+
     private boolean rebuild = true; // shadows super
+    protected transient long trainTimeLimitNanos = -1;
+    private static final long serialVersionUID = 0;
+    protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    protected transient long lastCheckpointTimeStamp = 0;
+    protected transient String savePath = null;
+    protected transient String loadPath = null;
+    protected transient boolean skipFinalCheckpoint = false;
+
+    @Override
+    public boolean isSkipFinalCheckpoint() {
+        return skipFinalCheckpoint;
+    }
+
+    @Override
+    public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
+        this.skipFinalCheckpoint = skipFinalCheckpoint;
+    }
+
+    @Override
+    public String getSavePath() {
+        return savePath;
+    }
+
+    @Override
+    public boolean setSavePath(String path) {
+        boolean result = Checkpointable.super.setSavePath(path);
+        if(result) {
+            savePath = StrUtils.asDirPath(path);
+        } else {
+            savePath = null;
+        }
+        return result;
+    }
+
+    @Override public String getLoadPath() {
+        return loadPath;
+    }
+
+    @Override public boolean setLoadPath(final String path) {
+        boolean result = Checkpointable.super.setLoadPath(path);
+        if(result) {
+            loadPath = StrUtils.asDirPath(path);
+        } else {
+            loadPath = null;
+        }
+        return result;
+    }
+
+    public StopWatch getTrainTimer() {
+        return trainTimer;
+    }
+
+    public Instances getTrainData() {
+        return trainData;
+    }
+
+    public long getLastCheckpointTimeStamp() {
+        return lastCheckpointTimeStamp;
+    }
+
+    public boolean saveToCheckpoint() throws Exception {
+        return false;
+    }
+
+    public boolean loadFromCheckpoint() {
+        return false;
+    }
+
+    public void setMinCheckpointIntervalNanos(final long nanos) {
+        minCheckpointIntervalNanos = nanos;
+    }
+
+    public long getMinCheckpointIntervalNanos() {
+        return minCheckpointIntervalNanos;
+    }
+
+    @Override public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
+    }
+
+    @Override
+    public void setRebuild(boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRebuild(rebuild);
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
+    public StopWatch getTrainEstimateTimer() {
+        return trainEstimateTimer;
+    }
+
+
+    @Override public void setTrainTimeLimitNanos(final long nanos) {
+        trainTimeLimitNanos = nanos;
+    }
 
     @Override public long predictNextTrainTimeNanos() {
         long result = -1;
@@ -90,13 +186,23 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         return result;
     }
 
+    @Override public boolean isBuilt() {
+        return built;
+    }
+
+    @Override public long getTrainTimeLimitNanos() {
+        return trainTimeLimitNanos;
+    }
+
+    // end boiler plate ------------------------------------------------------------------------------------------------
+
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         trainTimer.enable();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         built = false;
         this.trainData = trainData;
-        if(isRebuild()) {
+        if(rebuild) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
             super.buildClassifier(trainData);
@@ -163,17 +269,11 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
-        trainResults.setSplit("train");
-        trainResults.setMemory(getMaxMemoryUsageInBytes()); // todo other fields
-        trainResults.setBuildTime(getTrainTimeNanos()); // todo break down to estimate time also
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setFoldID(seed); // todo set other details
         trainResults.setDetails(this, trainData);
         // todo combine memory watcher + train times + test times
         this.trainData = null;
         built = true;
         logger.info("build finished");
-        saveToCheckpoint();
     }
 
     private boolean timeRemainingPerConstituent() {
@@ -231,9 +331,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         }
     }
 
-    @Override public boolean isBuilt() {
-         return partialConstituentsBatch.isEmpty();
-    }
 
     public boolean hasNextBuildTick() throws Exception {
         return !firstBatchDone || hasRemainingTraining();
@@ -245,46 +342,8 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         saveToCheckpoint();
     }
 
-    @Override public void loadFromFile(final String filename) throws Exception {
-        throw new UnsupportedOperationException(); // todo
-    }
-
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
         return votingScheme.distributionForInstance(modules, instance);
-    }
-
-    @Override
-    public boolean setSavePath(final String path) {
-        if(path == null) {
-            return false;
-        }
-        checkpointDirPath = StrUtils.asDirPath(path);
-        return true;
-    }
-
-    @Override
-    public String getSavePath() {
-        return checkpointDirPath;
-    }
-
-    public boolean saveToCheckpoint() throws
-                                          Exception {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
-        if(isCheckpointSavingEnabled() && (built || lastCheckpointTimeStamp + minCheckpointIntervalNanos < System.nanoTime())) {
-            logger.fine("checkpointing");
-            saveToFile(checkpointDirPath + tempCheckpointFileName);
-            boolean success = new File(checkpointDirPath + tempCheckpointFileName).renameTo(new File(checkpointDirPath + checkpointDirPath));
-            if(!success) {
-                throw new IllegalStateException("could not rename checkpoint file");
-            }
-            lastCheckpointTimeStamp = System.nanoTime();
-        }
-        memoryWatcher.unsuspend();
-        trainTimer.unsuspend();
-        trainEstimateTimer.unsuspend();
-        return false;
     }
 
     public ModuleVotingScheme getVotingScheme() {
@@ -301,38 +360,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
 
     public void setWeightingScheme(final ModuleWeightingScheme weightingScheme) {
         this.weightingScheme = weightingScheme;
-    }
-
-    @Override public long getMinCheckpointIntervalNanos() {
-        return minCheckpointIntervalNanos;
-    }
-
-    @Override public void setMinCheckpointIntervalNanos(final long minCheckpointInterval) {
-        this.minCheckpointIntervalNanos = minCheckpointInterval;
-    }
-
-    @Override public boolean isCheckpointLoadingEnabled() {
-        return ignorePreviousCheckpoints;
-    }
-
-//    @Override public void setCheckpointLoadingEnabled(final boolean state) {
-//        this.ignorePreviousCheckpoints = state;
-//    }
-
-    @Override public long getTrainTimeLimitNanos() {
-        return trainTimeLimitNanos;
-    }
-
-    @Override public void setTrainTimeLimitNanos(final long nanos) {
-        this.trainTimeLimitNanos = nanos;
-    }
-
-    @Override public long getTrainTimeNanos() {
-        return trainTimer.getTimeNanos();
-    }
-
-    @Override public MemoryWatcher getMemoryWatcher() {
-        return memoryWatcher;
     }
 
     public boolean isDebugConstituents() {

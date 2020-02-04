@@ -42,7 +42,7 @@ public class CheckpointUtils {
                 return false;
             }
         } else {
-            logger.info("forcing checkpoint irrelevant of interval");
+            logger.info("forcing checkpoint");
         }
         final String checkpointDirPath = checkpointable.getSavePath();
         final String tmpPath = checkpointDirPath + tempCheckpointFileName;

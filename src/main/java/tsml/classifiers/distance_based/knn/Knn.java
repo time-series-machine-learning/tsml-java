@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.knn;
 
+import com.google.gson.annotations.SerializedName;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.Dtw;
@@ -18,7 +19,8 @@ import java.util.concurrent.TimeUnit;
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
-public class Knn extends EnhancedAbstractClassifier implements Checkpointable, MemoryWatchable, TrainTimeable {
+public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
+                                                               StopWatchTrainTimeable {
 
     private static final long serialVersionUID = 0;
     protected transient Instances trainData;
@@ -31,7 +33,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     protected StopWatch trainTimer = new StopWatch();
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
-    protected transient long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     protected transient long lastCheckpointTimeStamp = 0;
     protected transient String savePath = null;
     protected transient String loadPath = null;
@@ -121,6 +123,32 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         return memoryWatcher;
     }
 
+
+    @Override public ParamSet getParams() {
+        return super.getParams()
+                    .add(EARLY_ABANDON_FLAG, earlyAbandon)
+                    .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
+                    .add(K_FLAG, k)
+                    .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
+        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
+        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
+    }
+
+    @Override
+    public void setRebuild(boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRebuild(rebuild);
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
     public boolean isRandomTieBreak() {
         return randomTieBreak;
     }
@@ -144,31 +172,6 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
     public void setEarlyAbandon(final boolean earlyAbandon) {
         this.earlyAbandon = earlyAbandon;
-    }
-
-    @Override public ParamSet getParams() {
-        return super.getParams()
-                     .add(EARLY_ABANDON_FLAG, earlyAbandon)
-                     .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
-                     .add(K_FLAG, k)
-                     .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
-    }
-
-    @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
-        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
-        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
-        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
-    }
-
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
-        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {

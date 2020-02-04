@@ -155,12 +155,12 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return count > 0;
     }
 
-    private synchronized void add(MemoryWatcher other) { // todo put these online std / mean algos in a util class
-        if(hasReadings() && other.hasReadings()) {
+    public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
+        if(hasReadings() && other.hasMemoryReadings()) {
             BigDecimal thisMean = BigDecimal.valueOf(this.mean);
             BigDecimal thisCount = BigDecimal.valueOf(this.count);
-            BigDecimal otherMean = BigDecimal.valueOf(other.mean);
-            BigDecimal otherCount = BigDecimal.valueOf(other.count);
+            BigDecimal otherMean = BigDecimal.valueOf(other.getMeanMemoryUsageInBytes());
+            BigDecimal otherCount = BigDecimal.valueOf(other.getMemoryReadingCount());
             BigDecimal overallCount = thisCount.add(otherCount);
             BigDecimal thisTotal = thisMean.multiply(thisCount);
             BigDecimal otherTotal = otherMean.multiply(otherCount);
@@ -178,11 +178,13 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
             mean = overallMean.doubleValue();
             count = overallCount.intValue();
             sqDiffFromMean = totalSqDiffFromMean;
-        } else if(!hasReadings() && other.hasReadings()) {
-            mean = other.mean;
-            count = other.count;
-            sqDiffFromMean = other.sqDiffFromMean;
-        } else if(hasReadings() && !other.hasReadings()) {
+        } else if(!hasReadings() && other.hasMemoryReadings()) {
+            mean = other.getMeanMemoryUsageInBytes();
+            count = other.getMemoryReadingCount();
+            BigDecimal ess =
+                BigDecimal.valueOf(other.getStdDevMemoryUsageInBytes()).pow(2).multiply(BigDecimal.valueOf(count));
+            sqDiffFromMean = ess;
+        } else if(hasReadings() && !other.hasMemoryReadings()) {
             // don't do anything, all our readings are already in here
         } else {
             // don't do anything here, both this and the other memory watcher have no readings
@@ -191,6 +193,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
             listener.add(other);
         }
     }
+
+
 
     private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
         logger.finest(() -> "memory reading: " + usage);

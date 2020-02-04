@@ -61,10 +61,6 @@ public interface TrainTimeContractable
         setTrainTimeLimit(nanos);
     }
 
-    default long getTrainTimeNanos() {
-        throw new UnsupportedOperationException();
-    }
-
     default boolean hasTrainTimeLimit() {
         return getTrainTimeLimitNanos() >= 0;
     }

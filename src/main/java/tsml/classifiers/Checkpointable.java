@@ -140,13 +140,6 @@ public interface Checkpointable extends Serializable, Copy {
 
     }
 
-//    Predicate<Field> SER = field -> field.getAnnotation(NoSer.class) != null;
     Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
-
-//    @Retention(RetentionPolicy.RUNTIME) // accessible at runtime
-//    @Documented
-//    @Target(ElementType.FIELD) // only apply to fields
-//    @interface NoSer {
-//        String value() default "";
-//    }
+    long DEFAULT_MIN_CHECKPOINT_INTERVAL = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
 }
