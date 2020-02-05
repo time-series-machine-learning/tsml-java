@@ -30,6 +30,7 @@ public class CheckpointUtils {
         return false;
     }
 
+
     public static boolean saveToSingleCheckpoint(Checkpointable checkpointable, Logger logger,
                                                  boolean ignoreInterval) throws Exception {
         if(!checkpointable.isCheckpointSavingEnabled()) {
@@ -42,7 +43,7 @@ public class CheckpointUtils {
                 return false;
             }
         } else {
-            logger.info("forcing checkpoint");
+            logger.info("ignoring checkpoint interval");
         }
         final String checkpointDirPath = checkpointable.getSavePath();
         final String tmpPath = checkpointDirPath + tempCheckpointFileName;
@@ -63,7 +64,7 @@ public class CheckpointUtils {
         return saveToSingleCheckpoint(checkpointable, logger, false);
     }
 
-    public static void serialise(Serializable serializable, String path) throws Exception {
+    public static void serialise(Object serializable, String path) throws Exception {
         try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
              FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
