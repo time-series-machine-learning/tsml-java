@@ -8,7 +8,6 @@ import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.tuned.incremental.Agent;
-import sun.management.resources.agent;
 import tsml.classifiers.*;
 import utilities.*;
 import utilities.params.ParamHandler;
