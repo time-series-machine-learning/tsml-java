@@ -104,8 +104,6 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
 
         @Override
         public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
-            // sanity check the resource monitors are disabled
-            incTunedClassifier.getTrainTimer().checkDisabled();
             // randomly pick 1 of the best classifiers
             final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
             final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1, incTunedClassifier.getRand());
@@ -118,14 +116,14 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         @Override
         public boolean feedback(EnhancedAbstractClassifier classifier) {
             finalBenchmarks.put(scorer.findScore(classifier), classifier); // add the benchmark back to the final benchmarks under the new score (which may be worse, hence why we have to remove the original benchmark first
-            incTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + classifier.toString() + " " + classifier.getParams().toString());
+            incTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + classifier.getClassifierName() + " " + classifier.getParams().toString());
             boolean result;
             if(!isImproveable(classifier)) {
-                incTunedClassifier.getLogger().info(() -> "unimproveable classifier " + classifier.toString() + " " + classifier.getParams().toString());
+                incTunedClassifier.getLogger().info(() -> "unimproveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
                 Utils.put(classifier, unimprovableBenchmarks);
                 result = false;
             } else {
-                incTunedClassifier.getLogger().info(() -> "improveable classifier " + classifier.toString() + " " + classifier.getParams().toString());
+                incTunedClassifier.getLogger().info(() -> "improveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
                 Utils.put(classifier, nextImproveableBenchmarks);
                 long time = classifier.getTrainResults().getBuildPlusEstimateTime();
                 if(explore) {
@@ -364,10 +362,10 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
             ParamSet paramSet = paramSetIterator.next();
             paramCount.set(paramCount.get() + 1);
             final KnnLoocv knn = knnSupplier.get();
+            knn.setParams(paramSet);
             final String name = knn.getClassifierName() + "_" + (id++);
             knn.setClassifierName(name);
             knn.setNeighbourLimit(neighbourCount.get());
-            knn.setParams(paramSet);
             return knn;
         }
 

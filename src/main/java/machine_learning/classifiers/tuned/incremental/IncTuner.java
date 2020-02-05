@@ -6,7 +6,6 @@ import tsml.classifiers.*;
 import utilities.*;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
-import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -16,7 +15,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 import static utilities.collections.Utils.replace;
 
 public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
@@ -276,16 +274,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             rebuild = false;
         }
         // going into train estimate phase
-        trainTimer.disable();
-        trainEstimateTimer.enable(); // todo should this be train estimate or just train time?
         // while we've got more benchmarks to examine
         while(hasNextBuildTick()) {
             // get those benchmarks
             nextBuildTick();
         }
         // sanity check resource monitors (as the benchmark iterator *should* have been using them)
-        trainTimer.checkDisabled();
-        trainEstimateTimer.checkEnabled();
+        trainEstimateTimer.checkDisabled();
+        trainTimer.checkEnabled();
         memoryWatcher.checkEnabled();
         // find the final benchmarks
         benchmarks = agent.findFinalClassifiers();
@@ -304,7 +300,8 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
         }
         // cleanup
-        trainEstimateTimer.disable();
+        trainEstimateTimer.checkDisabled();
+        trainTimer.disable();
         memoryWatcher.disable();
         memoryWatcher.cleanup();
         trainResults.setMemory(getMaxMemoryUsageInBytes());
@@ -329,24 +326,27 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         final boolean isExplore = agent.isExploringOrExploiting();
         // get the next classifier
         EnhancedAbstractClassifier classifier = agent.next();
-        boolean evaluate;
+        boolean evaluate = true;
         // find the save path for the classifier
-        final String classifierSavePath = savePath + classifier.getClassifierName() + File.separator;
+        String classifierSavePath = null;
         // if we're running in distributed mode then attempt to lock the classifier
         FileUtils.FileLock lock = null;
-        if(!incrementalMode && isCheckpointSavingEnabled()) {
-            lock = new FileUtils.FileLock(classifierSavePath); // todo suspend monitors
-            evaluate = lock.isLocked();
-        } else {
-            evaluate = true;
+        if(isCheckpointSavingEnabled()) {
+            classifierSavePath = buildClassifierSavePath(classifier);
+            if(classifier instanceof Checkpointable) {
+                ((Checkpointable) classifier).setSavePath(classifierSavePath);
+            }
+            if(!incrementalMode) {
+                lock = new FileUtils.FileLock(classifierSavePath); // todo suspend monitors
+                evaluate = lock.isLocked();
+            }
         }
         // if we managed to lock the file OR we're not running in distributed mode
         if(evaluate) {
             // then evaluate the classifier
             if(isExplore) {
                 // if we're exploring then load classifier from checkpoint (if enabled)
-                final String classifierLoadPath = loadPath + classifier.getClassifierName() + File.separator;
-                classifier = loadClassifier(classifier, classifierLoadPath);
+                classifier = loadClassifier(classifier);
                 // and set meta fields
                 classifier.setSeed(seed);
                 classifier.setDebug(isDebugBenchmarks());
@@ -354,6 +354,11 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                     classifier.getLogger().setLevel(getLogger().getLevel());
                 } else {
                     classifier.getLogger().setLevel(Level.SEVERE);
+                }
+                // setup checkpoint saving
+                if(isCheckpointSavingEnabled() && classifier instanceof Checkpointable) {
+                    ((Checkpointable) classifier).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+                    ((Checkpointable) classifier).setSavePath(buildClassifierSavePath(classifier));
                 }
             }
             // build the classifier
@@ -375,9 +380,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             // build the classifier
             classifier.buildClassifier(trainData);
             // enable tracking of resources for tuning process
-            trainTimer.checkDisabled();
+            trainEstimateTimer.checkDisabled();
             memoryWatcher.enableAnyway();
-            trainEstimateTimer.enableAnyway();
+            trainTimer.enableAnyway();
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
@@ -395,7 +400,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             // feed the built classifier back to the agent (which will decide what to do with it)
             if (!agent.feedback(classifier)) {
                 // no more exploitations will be made to this classifier, therefore let's save to disk
-                saveClassifier(classifier, classifierSavePath);
+                saveClassifier(classifier);
             }
             // if we've been running in distributed mode then we need to unlock the lock file
             if(lock != null) {
@@ -408,32 +413,33 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         }
     }
 
-    protected EnhancedAbstractClassifier loadClassifier(EnhancedAbstractClassifier classifier, String classifierLoadPath) throws Exception {
+    protected EnhancedAbstractClassifier loadClassifier(EnhancedAbstractClassifier classifier) throws Exception {
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        if(classifier instanceof Checkpointable) {
-            ((Checkpointable) classifier).setLoadPath(classifierLoadPath);
-            ((Checkpointable) classifier).setMinCheckpointIntervalNanos(getMinCheckpointIntervalNanos());
-            ((Checkpointable) classifier).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
-            ((Checkpointable) classifier).loadFromCheckpoint();
-            // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
-            // to catch up)
-            if(classifier instanceof TrainTimeable) {
-                trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+        if(isCheckpointLoadingEnabled()) {
+            final String classifierLoadPath = buildClassifierLoadPath(classifier);
+            if(classifier instanceof Checkpointable) {
+                ((Checkpointable) classifier).setLoadPath(classifierLoadPath);
+                ((Checkpointable) classifier).loadFromCheckpoint();
+                // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
+                // to catch up)
+                if(classifier instanceof TrainTimeable) {
+                    trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                    trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+                }
+                if(classifier instanceof MemoryWatchable) {
+                    memoryWatcher.add(((MemoryWatchable) classifier));
+                }
+            } else {
+                // load classifier manually
+                classifier =
+                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
+                ClassifierResults results = classifier.getTrainResults();
+                trainTimer.add(results.getTrainTimeNanos());
+                trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
+                memoryWatcher.add(results);
             }
-            if(classifier instanceof MemoryWatchable) {
-                memoryWatcher.add(((MemoryWatchable) classifier));
-            }
-        } else {
-            // load classifier manually
-            classifier =
-                (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
-            ClassifierResults results = classifier.getTrainResults();
-            trainTimer.add(results.getTrainTimeNanos());
-            trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
-            memoryWatcher.add(results);
         }
         memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
@@ -441,17 +447,28 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return classifier;
     }
 
-    protected void saveClassifier(EnhancedAbstractClassifier classifier, String classifierSavePath) throws Exception {
+    protected String buildClassifierSavePath(EnhancedAbstractClassifier classifier) {
+        return savePath + classifier.getClassifierName() + File.separator;
+    }
+
+    protected String buildClassifierLoadPath(EnhancedAbstractClassifier classifier) {
+        return loadPath + classifier.getClassifierName() + File.separator;
+    }
+
+    protected void saveClassifier(EnhancedAbstractClassifier classifier) throws Exception {
         trainTimer.suspend(); // todo use chkputils
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        if(classifier instanceof Checkpointable) {
-            ((Checkpointable) classifier).setSavePath(classifierSavePath);
-            ((Checkpointable) classifier).setSkipFinalCheckpoint(false);
-            ((Checkpointable) classifier).saveToCheckpoint();
-        } else {
-            // save classifier manually
-            CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
+        if(isCheckpointSavingEnabled()) {
+            final String classifierSavePath = buildClassifierSavePath(classifier);
+            if(classifier instanceof Checkpointable) {
+                ((Checkpointable) classifier).setSavePath(classifierSavePath);
+                ((Checkpointable) classifier).setSkipFinalCheckpoint(false);
+                ((Checkpointable) classifier).saveToCheckpoint();
+            } else {
+                // save classifier manually
+                CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
+            }
         }
         memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
