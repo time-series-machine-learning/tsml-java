@@ -224,6 +224,15 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                 } else {
                     constituent.getLogger().setLevel(Level.OFF);
                 }
+                if(constituent instanceof Checkpointable) {
+                    if(isCheckpointLoadingEnabled()) {
+                        ((Checkpointable) constituent).setLoadPath(loadPath);
+                    }
+                    if(isCheckpointSavingEnabled()) {
+                        ((Checkpointable) constituent).setSavePath(savePath);
+                    }
+                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+                }
             }
             nextPartialConstituentsBatch = new ArrayList<>();
             trainTimer.lap();

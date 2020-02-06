@@ -96,6 +96,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean built = false;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
+    protected Random testRand = new Random(seed);
     protected transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
@@ -326,7 +327,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         seedClassifier=true;
         this.seed = seed;
         rand=new Random(seed);
-//        rand.setSeed(seed);
+        testRand.setSeed(seed);
     }
 
     /**
