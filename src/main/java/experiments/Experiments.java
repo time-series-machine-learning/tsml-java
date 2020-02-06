@@ -694,6 +694,12 @@ public class Experiments  {
             buildTime = System.nanoTime() - buildTime;
             LOGGER.log(Level.FINE, "Training complete");
 
+            if(classifier instanceof Parallelisable) {
+                if(!((Parallelisable) classifier).isFullyTrained()) {
+
+                }
+            }
+
             trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either

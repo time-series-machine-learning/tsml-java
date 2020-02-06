@@ -7,11 +7,8 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import machine_learning.classifiers.tuned.incremental.Agent;
 import tsml.classifiers.*;
 import utilities.*;
-import utilities.params.ParamHandler;
-import utilities.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -156,9 +153,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     }
 
     @Override
-    public void setRebuild(boolean rebuild) {
+    public void setRetrain(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRebuild(rebuild);
+        super.setRetrain(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

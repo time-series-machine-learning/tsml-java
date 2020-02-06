@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.knn;
 
-import com.google.gson.annotations.SerializedName;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.Dtw;
@@ -14,7 +13,6 @@ import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
@@ -140,9 +138,9 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     }
 
     @Override
-    public void setRebuild(boolean rebuild) {
+    public void setRetrain(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRebuild(rebuild);
+        super.setRetrain(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

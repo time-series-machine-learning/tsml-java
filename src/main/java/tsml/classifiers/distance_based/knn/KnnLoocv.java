@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.knn;
 
-import com.google.gson.annotations.SerializedName;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
@@ -196,9 +195,9 @@ public class KnnLoocv
     }
 
     @Override
-    public void setRebuild(boolean rebuild) {
+    public void setRetrain(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRebuild(rebuild);
+        super.setRetrain(rebuild);
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {

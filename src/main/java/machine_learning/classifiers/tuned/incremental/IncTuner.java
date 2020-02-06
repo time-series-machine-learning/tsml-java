@@ -10,6 +10,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +20,7 @@ import static utilities.collections.Utils.replace;
 
 public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
                                                                     StopWatchTrainTimeable,
-                                                                    Checkpointable {
+                                                                    Checkpointable, Parallelisable {
 
     /*
         how do we do tuning?
@@ -81,6 +82,21 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         this.debugBenchmarks = debugBenchmarks;
     }
 
+    @Override
+    public boolean isParallelisationEnabled() {
+
+    }
+
+    @Override
+    public void setParallelisationEnabled(boolean state) {
+
+    }
+
+    @Override
+    public boolean isFullyTrained() {
+        
+    }
+
     public interface InitFunction extends Serializable, ParamHandler {
         void init(Instances trainData);
     }
@@ -129,6 +145,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected transient String savePath = null;
     protected transient String loadPath = null;
     protected transient boolean skipFinalCheckpoint = false;
+    protected static final String DONE_FILE_EXTENSION = "done";
 
     @Override
     public boolean isSkipFinalCheckpoint() {
@@ -203,9 +220,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override
-    public void setRebuild(boolean rebuild) {
+    public void setRetrain(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRebuild(rebuild);
+        super.setRetrain(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
@@ -321,29 +338,50 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return hasRemainingTraining(); // todo sure this is what we want? A bit round about the houses
     }
 
+    protected void suspendResourceMonitors() {
+        trainTimer.suspend();
+        trainEstimateTimer.suspend();
+        memoryWatcher.suspend();
+    }
+
+    protected void unsuspendResourceMonitors() {
+        trainTimer.unsuspend();
+        trainEstimateTimer.unsuspend();
+        memoryWatcher.unsuspend(); // todo make this into an interface
+    }
+
     protected void nextBuildTick() throws Exception {
         // check whether we're exploring or exploiting
         final boolean isExplore = agent.isExploringOrExploiting();
         // get the next classifier
         EnhancedAbstractClassifier classifier = agent.next();
         boolean evaluate = true;
+        // suspend the resource monitors while we're sorting out checkpointing bits
+        suspendResourceMonitors();
         // find the save path for the classifier
         String classifierSavePath = null;
-        // if we're running in distributed mode then attempt to lock the classifier
+        // we may be running in distributed mode therefore must get a lock on the classifier
+        // we'll do this by locking the checkpoint directory for the classifier
         FileUtils.FileLock lock = null;
         if(isCheckpointSavingEnabled()) {
-            classifierSavePath = buildClassifierSavePath(classifier);
-            if(classifier instanceof Checkpointable) {
-                ((Checkpointable) classifier).setSavePath(classifierSavePath);
-            }
-            if(!incrementalMode) {
+            if(doneFileExists(classifier)) {
+                // classifier is already done so don't evaluate it
+                evaluate = false;
+            } else {
+                // otherwise no done file, so let's try and lock the classifier's checkpoint dir to claim it
+                classifierSavePath = buildClassifierSavePath(classifier);
+                if(classifier instanceof Checkpointable) {
+                    ((Checkpointable) classifier).setSavePath(classifierSavePath);
+                }
                 lock = new FileUtils.FileLock(classifierSavePath); // todo suspend monitors
+                // if we're claimed the lock then we can evaluate the classifier
                 evaluate = lock.isLocked();
             }
         }
-        // if we managed to lock the file OR we're not running in distributed mode
+        // if we managed to lock the file OR we're not checkpointing whatsoever OR the classifier is not already done
         if(evaluate) {
             // then evaluate the classifier
+            unsuspendResourceMonitors();
             if(isExplore) {
                 // if we're exploring then load classifier from checkpoint (if enabled)
                 classifier = loadClassifier(classifier);
@@ -398,18 +436,48 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             classifier.getTrainResults().setBuildTime(trainTimer.getTimeNanos());
             classifier.getTrainResults().setBuildPlusEstimateTime(trainTimer.getTimeNanos() + trainEstimateTimer.getTimeNanos());
             // feed the built classifier back to the agent (which will decide what to do with it)
-            if (!agent.feedback(classifier)) {
+            boolean complete = !agent.feedback(classifier);
+            suspendResourceMonitors();
+            if (complete) {
                 // no more exploitations will be made to this classifier, therefore let's save to disk
                 saveClassifier(classifier);
+                // create a done file to indicate this classifier is complete (only useful for distributed mode)
+                // the thinking here is we may be running in distributed mode (i.e. multiple threads / processes / pcs
+                // distributed mode assumes there's a shared filesystem which we're writing checkpoints to
+                // therefore we'll create a done file to indicate we've completed this classifier
+                if(!createDoneFile(classifier)) {
+                    throw new IllegalStateException("cannot create done file, this should never happen!");
+                }
             }
             // if we've been running in distributed mode then we need to unlock the lock file
             if(lock != null) {
                 lock.unlock(); // todo suspend monitors
             }
+            unsuspendResourceMonitors();
         } else {
             // couldn't lock file, so we'll skip this classifier as another process is working on it
             EnhancedAbstractClassifier finalClassifier1 = classifier;
             logger.info(() -> "lock skip evaluating " + StrUtils.toOptionValue(finalClassifier1));
+        }
+    }
+
+    private boolean createDoneFile(EnhancedAbstractClassifier classifier) throws IOException {
+        if(isCheckpointSavingEnabled()) {
+            // we're checkpointing therefore we need to create a file to say we're done
+            return new File(savePath + classifier.getClassifierName() + "." + DONE_FILE_EXTENSION).createNewFile();
+        } else {
+            // we're not checkpointing so this should have no effect
+            return true;
+        }
+    }
+
+    private boolean doneFileExists(EnhancedAbstractClassifier classifier) {
+        if(isCheckpointSavingEnabled()) {
+            // we're checkpointing so we need to check if the file exists
+            return new File(savePath + classifier.getClassifierName() + "." + DONE_FILE_EXTENSION).exists();
+        } else {
+            // we're not checkpointing therefore no capability for done files
+            return false;
         }
     }
 
