@@ -319,6 +319,33 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 boolean createdOverallDoneFile = new File(savePath, "overall.done").createNewFile();
                 if(createdOverallDoneFile) {
                     // then continue with regular bits
+                    // find the final benchmarks
+                    benchmarks = agent.findFinalClassifiers();
+                    // sanity check and ensemble
+                    if(benchmarks.isEmpty()) {
+                        logger.info(() -> "no benchmarks collected");
+                        ensembleWeights = new ArrayList<>();
+                        throw new UnsupportedOperationException("todo implement random guess here?");
+                    } else if(benchmarks.size() == 1) {
+                        logger.info(() -> "single benchmarks collected");
+                        ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
+                        trainResults = benchmarks.iterator().next().getTrainResults();
+                    } else {
+                        logger.info(() -> benchmarks.size() + " benchmarks collected");
+                        ensembleWeights = ensembler.weightVotes(benchmarks);
+                        throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
+                    }
+                    // cleanup
+                    trainEstimateTimer.checkDisabled();
+                    trainTimer.disable();
+                    memoryWatcher.disable();
+                    memoryWatcher.cleanup();
+                    trainResults.setMemory(getMaxMemoryUsageInBytes());
+                    trainResults.setBuildTime(trainTimer.getTimeNanos());
+                    trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());
+                    trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+                    trainResults.setFoldID(seed);
+                    trainResults.setDetails(this, trainData);
                 } else {
                     // quit as another process is going to finish up the build
                     // todo make sure there's a method in Parallelisable interface + corresponding method in experiments
@@ -326,38 +353,16 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 }
             }
         }
-        // find the final benchmarks
-        benchmarks = agent.findFinalClassifiers();
-        // sanity check and ensemble
-        if(benchmarks.isEmpty()) {
-            logger.info(() -> "no benchmarks collected");
-            ensembleWeights = new ArrayList<>();
-            throw new UnsupportedOperationException("todo implement random guess here?");
-        } else if(benchmarks.size() == 1) {
-            logger.info(() -> "single benchmarks collected");
-            ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
-            trainResults = benchmarks.iterator().next().getTrainResults();
-        } else {
-            logger.info(() -> benchmarks.size() + " benchmarks collected");
-            ensembleWeights = ensembler.weightVotes(benchmarks);
-            throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
-        }
-        // cleanup
-        trainEstimateTimer.checkDisabled();
-        trainTimer.disable();
-        memoryWatcher.disable();
-        memoryWatcher.cleanup();
-        trainResults.setMemory(getMaxMemoryUsageInBytes());
-        trainResults.setBuildTime(trainTimer.getTimeNanos());
-        trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setFoldID(seed);
-        trainResults.setDetails(this, trainData);
         built = true;
         this.trainData = null;
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
+    }
+
+    @Override
+    public boolean isFinalModel() {
+        return !hasSkippedEvaluation;
     }
 
     protected boolean hasNextBuildTick() {
@@ -389,19 +394,23 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         // we may be running in distributed mode therefore must get a lock on the classifier
         // we'll do this by locking the checkpoint directory for the classifier
         FileUtils.FileLock lock = null;
-        if(classifierAlreadyFullyBuilt(classifier.getClassifierName())) {
-            // classifier is already done so don't evaluate it
-            evaluate = false;
-        } else if(isCheckpointSavingEnabled()){
+        if(isCheckpointSavingEnabled()){
             // otherwise no done file, so let's try and lock the classifier's checkpoint dir to claim it
             classifierSavePath = buildClassifierSavePath(classifier);
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setSavePath(classifierSavePath);
             }
-            lock = new FileUtils.FileLock(classifierSavePath); // todo suspend monitors
+            lock = new FileUtils.FileLock(classifierSavePath);
             // if we're claimed the lock then we can evaluate the classifier
             evaluate = lock.isLocked();
+            if(evaluate) {
+                // we've claimed the lock
+                // if classifier is already done don't evaluate it
+                evaluate = !classifierAlreadyFullyBuilt(classifier.getClassifierName());
+            }
+
         }
+        unsuspendResourceMonitors();
         // update whether we've ever skipped an evaluation
         hasSkippedEvaluation |= evaluate;
         // add the classifier name to the set so we know which ones we've seen
@@ -409,7 +418,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         // if we managed to lock the file OR we're not checkpointing whatsoever OR the classifier is not already done
         if(evaluate) {
             // then evaluate the classifier
-            unsuspendResourceMonitors();
             if(isExplore) {
                 // if we're exploring then load classifier from checkpoint (if enabled)
                 classifier = loadClassifier(classifier);
@@ -429,7 +437,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             }
             // build the classifier
             EnhancedAbstractClassifier finalClassifier = classifier;
-            logger.info(() -> "evaluating " + StrUtils.toOptionValue(finalClassifier)); // todo better logs here
+            logger.info(() -> "evaluating " + StrUtils.toOptionValue(finalClassifier));
             classifier.setEstimateOwnPerformance(true);
             if(classifier instanceof TrainTimeable) {
                 // then we don't need to record train time as classifier does so internally

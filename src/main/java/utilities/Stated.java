@@ -60,28 +60,28 @@ public class Stated {
     }
 
     public Stated checkDisabled() {
-        if(!isDisabled()) {
+        if(!isDisabled() || isSuspended()) {
             throw new IllegalStateException("not disabled");
         }
         return this;
     }
 
     public Stated checkEnabled() {
-        if(!isEnabled()) {
+        if(!isEnabled() || isSuspended()) {
             throw new IllegalStateException("not enabled");
         }
         return this;
     }
 
     public Stated checkNotDisabled() {
-        if(isDisabled()) {
+        if(isDisabled() || isSuspended()) {
             throw new IllegalStateException("already disabled");
         }
         return this;
     }
 
     public Stated checkNotEnabled() {
-        if(isEnabled()) {
+        if(isEnabled() || isSuspended()) {
             throw new IllegalStateException("already enabled");
         }
         return this;
@@ -130,6 +130,9 @@ public class Stated {
     }
 
     public boolean enableAnyway() {
+        if(isSuspended()) {
+            throw new IllegalStateException("suspended");
+        }
         if(!isEnabled()) {
             state = Stated.State.ENABLED;
             for(Stated listener : listeners) {
@@ -146,6 +149,9 @@ public class Stated {
     }
 
     public boolean disableAnyway() {
+        if(isSuspended()) {
+            throw new IllegalStateException("suspended");
+        }
         if(!isDisabled()) {
             state = Stated.State.DISABLED;
             for(Stated listener : listeners) {
