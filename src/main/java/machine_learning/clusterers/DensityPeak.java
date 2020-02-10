@@ -3,9 +3,9 @@ package machine_learning.clusterers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
 import experiments.data.DatasetLoading;
+import utilities.GenericTools;
 import weka.core.Instances;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
@@ -177,7 +177,7 @@ public class DensityPeak extends AbstractVectorClusterer {
             sortedDensitiesIndex[i] = i;
         }
         
-        SortIndexDescending sort = new SortIndexDescending(localDensities);
+        GenericTools.SortIndexDescending sort = new GenericTools.SortIndexDescending(localDensities);
         Arrays.sort(sortedDensitiesIndex, sort);
         
         shortestDist = new double[numInstances];
@@ -247,7 +247,7 @@ public class DensityPeak extends AbstractVectorClusterer {
         for (int i = 0; i < numInstances; i++){
             estIndexes[i] = i;
         }
-        SortIndexAscending sort = new SortIndexAscending(estimates);
+        GenericTools.SortIndexAscending sort = new GenericTools.SortIndexAscending(estimates);
         Arrays.sort(estIndexes, sort);
         
         double mean = sum/numInstances;
@@ -377,47 +377,5 @@ public class DensityPeak extends AbstractVectorClusterer {
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }
         }
-    }
-    
-    private class SortIndexDescending implements Comparator<Integer>{
-        private double[] values;
-
-        public SortIndexDescending(double[] values){
-            this.values = values;
-        }
-        
-        @Override
-        public int compare(Integer index1, Integer index2) {
-            if (values[index2] < values[index1]){
-                return -1;
-            }
-            else if (values[index2] > values[index1]){
-                return 1;
-            }
-            else{
-                return 0;
-            }
-        }     
-    }
-    
-    private class SortIndexAscending implements Comparator<Integer>{
-        private double[] values;
-
-        public SortIndexAscending(double[] values){
-            this.values = values;
-        }
-        
-        @Override
-        public int compare(Integer index1, Integer index2) {
-            if (values[index1] < values[index2]){
-                return -1;
-            }
-            else if (values[index1] > values[index2]){
-                return 1;
-            }
-            else{
-                return 0;
-            }
-        }     
     }
 }

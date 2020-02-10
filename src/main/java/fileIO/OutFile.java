@@ -88,6 +88,13 @@ public class OutFile{
             return(false);
         return(true);
     }
+    public boolean writeLong(long v)
+    {
+        outFile.print(""+v+delimit);
+        if(outFile.checkError())
+            return(false);
+        return(true);
+    }
     public boolean writeChar(char c)
     {
         outFile.print(c);
@@ -121,7 +128,5 @@ public class OutFile{
     {
         outFile.close();
     }
-        
-        
 }
 	

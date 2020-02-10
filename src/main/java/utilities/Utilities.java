@@ -36,7 +36,7 @@ public class Utilities {
  * @return array of doubles with the class value removed
 */
     public static final double[] extractTimeSeries(Instance instance) {
-        if(instance.classIsMissing()) {
+        if(instance.classIndex() < 0) {
             return instance.toDoubleArray();
         } else {
             double[] timeSeries = new double[instance.numAttributes() - 1];
