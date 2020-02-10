@@ -156,6 +156,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     }
 
     public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
+        maxMemoryUsageBytes = other.getMaxMemoryUsageInBytes();
+        garbageCollectionTimeInMillis += other.getGarbageCollectionTimeInMillis();
         if(hasReadings() && other.hasMemoryReadings()) {
             BigDecimal thisMean = BigDecimal.valueOf(this.mean);
             BigDecimal thisCount = BigDecimal.valueOf(this.count);
