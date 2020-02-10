@@ -24,6 +24,7 @@ import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.Catch22RISE;
 import tsml.classifiers.frequency_based.cRISE;
+import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.FlatCote;
 import tsml.classifiers.hybrids.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
