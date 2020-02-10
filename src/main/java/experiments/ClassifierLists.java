@@ -22,8 +22,8 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
+import tsml.classifiers.frequency_based.Catch22RISE;
 import tsml.classifiers.frequency_based.cRISE;
-import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.FlatCote;
 import tsml.classifiers.hybrids.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
@@ -250,12 +250,19 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE","cRISE"};
+    public static String[] frequency= {"RISE", "cRISE", "Catch22RISEFFT_ACF", "Catch22RISEFFT", "Catch22RISEACF", "CAWPEFROMCATCH22"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
-        Classifier c;
+        String classifier=exp.classifierName,resultsPath="",dataset="";
         int fold=exp.foldId;
+        Classifier c;
+        boolean canLoadFromFile=true;
+        if(exp.resultsWriteLocation==null || exp.datasetName==null)
+            canLoadFromFile=false;
+        else{
+            resultsPath=exp.resultsWriteLocation;
+            dataset=exp.datasetName;
+        }
         switch(classifier) {
             case "RISE":
                 c=new RISE();
@@ -263,6 +270,24 @@ public class ClassifierLists {
                 break;
             case "cRISE":
                 c=new cRISE();
+                break;
+            case "Catch22RISEFFT_ACF":
+                c=new Catch22RISE();
+                break;
+            case "Catch22RISEFFT":
+                c=new Catch22RISE();
+                ((cRISE)c).setTransformType(cRISE.TransformType.FFT);
+                break;
+            case "Catch22RISEACF":
+                c=new Catch22RISE();
+                ((cRISE)c).setTransformType(cRISE.TransformType.ACF);
+                break;
+            case "CAWPEFROMCATCH22":
+                String[] classifiers={"Catch22RISEACF", "Catch22RISEFFT"};
+                c=new CAWPE();
+                ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
+                ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                ((CAWPE)c).setClassifiersNamesForFileRead(classifiers);
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");

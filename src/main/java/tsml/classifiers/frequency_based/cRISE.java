@@ -74,34 +74,53 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
+/*
+Dataset = ADIAC
+With reload (@ 200 trees)
+    Accuracy: 0.7868020304568528
+    Build time (ns): 60958242098
+
+With reload (@ 500 trees (Completed build))
+    Accuracy: 0.7868020304568528
+    Build time (ns): 8844999832
+
+With no reload but serialising at 100 intervals.
+    Accuracy: 0.7868020304568528
+    Build time (ns): 96078716938
+
+No serialising
+    Accuracy: 0.7868020304568528
+    Build time (ns): 88964973765
+*/
+
 public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
 
-    private int maxIntervalLength = 0;
-    private int minIntervalLength = 16;
-    private int numTrees = 500;
-    private int treeCount = 0;
-    private int minNumTrees = 0;
-    private boolean downSample = false;
-    private boolean loadedFromFile = false;
-    private int stabilise = 0;
-    private final int DEFAULT_MAXLAG = 100;
-    private final int DEFAULT_MINLAG = 1;
+    protected int maxIntervalLength = 0;
+    protected int minIntervalLength = 16;
+    protected int numTrees = 500;
+    protected int treeCount = 0;
+    protected int minNumTrees = 0;
+    protected boolean downSample = false;
+    protected boolean loadedFromFile = false;
+    protected int stabilise = 0;
+    protected final int DEFAULT_MAXLAG = 100;
+    protected final int DEFAULT_MINLAG = 1;
 
-    private Timer timer = null;
+    protected Timer timer = null;
 
     //private Random random = null;
-    private Classifier classifier = new RandomTree();
-    private ArrayList<Classifier> baseClassifiers = null;
-    private ArrayList<int[]> intervalsInfo = null;
-    private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
-    private ArrayList<Integer> rawIntervalIndexes = null;
-    private PowerSpectrum PS;
-    private TransformType transformType = TransformType.ACF_PS;
-    private String serialisePath = null;
-    private Instances data = null;
+    protected Classifier classifier = new RandomTree();
+    protected ArrayList<Classifier> baseClassifiers = null;
+    protected ArrayList<int[]> intervalsInfo = null;
+    protected ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
+    protected ArrayList<Integer> rawIntervalIndexes = null;
+    protected PowerSpectrum PS;
+    protected TransformType transformType = TransformType.ACF_PS;
+    protected String serialisePath = null;
+    protected Instances data = null;
 
     //Updated work
-    private ArrayList<int[]> startEndPoints = null;
+    protected ArrayList<int[]> startEndPoints = null;
 
     /**
      * Constructor
@@ -128,7 +147,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * Is called at beginning of buildClassifier.
  Can subsequently call buildClassifier multiple times per instance of CRISE.
      */
-    private void initialise(){
+    protected void initialise(){
         timer.reset();
         baseClassifiers = new ArrayList<>();
         intervalsInfo = new ArrayList<>();
@@ -412,7 +431,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         return testInstances.firstInstance();
     }
 
-    private Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
+    Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
         Instances intervalInstances = null;
         ArrayList<Attribute>attributes = new ArrayList<>();
         //int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]);
@@ -449,7 +468,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * @param instances
      * @return transformed instances.
      */
-    private Instances transformInstances(Instances instances, TransformType transformType){
+    protected Instances transformInstances(Instances instances, TransformType transformType){
         Instances temp = null;
 
         switch(transformType){
@@ -566,7 +585,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         }
     }
 
-    private cRISE readSerialise(long seed){
+    protected cRISE readSerialise(long seed){
         ObjectInputStream oi = null;
         cRISE temp = null;
         try {
@@ -620,7 +639,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      * mid way through a contract.
      * @return
      */
-    private long getTime(){
+    protected long getTime(){
         long time = 0;
         if(loadedFromFile){
             time = timer.forestElapsedTime;
@@ -716,7 +735,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
     }
 
-    private Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
+    protected Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
         Instances intervalInstances;
         ArrayList<Attribute>attributes = new ArrayList<>();
         ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
@@ -907,7 +926,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
  The equation is then reordered to solve for positive x, providing the upper bound on the interval space.
  Dividing this by minNumtrees - treeCount gives the maximum space such that in the worse case the contract is met.
      */
-    private class Timer implements Serializable{
+    protected class Timer implements Serializable{
 
         protected long forestTimeLimit = Long.MAX_VALUE;
         protected long forestStartTime = 0;
@@ -1075,14 +1094,14 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
 
-            /*cRISE = new cRISE();
+            cRISE = new cRISE();
             //cRISE.setSavePath("D:/Test/Testing/Serialising/");
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_FFT);
+            cRISE.setTransformType(TransformType.FFT);
             cr = sse.evaluate(cRISE, data);
             System.out.println("ACF");
             System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1096,22 +1115,3 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         }
     }
 }
-
-/*
-Dataset = ADIAC
-With reload (@ 200 trees)
-    Accuracy: 0.7868020304568528
-    Build time (ns): 60958242098
-
-With reload (@ 500 trees (Completed build))
-    Accuracy: 0.7868020304568528
-    Build time (ns): 8844999832
-
-With no reload but serialising at 100 intervals.
-    Accuracy: 0.7868020304568528
-    Build time (ns): 96078716938
-
-No serialising
-    Accuracy: 0.7868020304568528
-    Build time (ns): 88964973765
-*/
