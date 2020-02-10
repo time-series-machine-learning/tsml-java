@@ -188,6 +188,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
             rebuild = false;
+            if(trainData.classIndex() != trainData.numAttributes() - 1) {
+                throw new IllegalArgumentException("class value not at the end");
+            }
         }
     }
 
