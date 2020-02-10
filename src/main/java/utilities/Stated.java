@@ -60,28 +60,40 @@ public class Stated {
     }
 
     public Stated checkDisabled() {
-        if(!isDisabled() || isSuspended()) {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
+        if(!isDisabled()) {
             throw new IllegalStateException("not disabled");
         }
         return this;
     }
 
     public Stated checkEnabled() {
-        if(!isEnabled() || isSuspended()) {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
+        if(!isEnabled()) {
             throw new IllegalStateException("not enabled");
         }
         return this;
     }
 
     public Stated checkNotDisabled() {
-        if(isDisabled() || isSuspended()) {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
+        if(isDisabled()) {
             throw new IllegalStateException("already disabled");
         }
         return this;
     }
 
     public Stated checkNotEnabled() {
-        if(isEnabled() || isSuspended()) {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
+        if(isEnabled()) {
             throw new IllegalStateException("already enabled");
         }
         return this;
