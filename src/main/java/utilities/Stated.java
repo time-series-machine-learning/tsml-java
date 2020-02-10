@@ -31,7 +31,7 @@ public class Stated {
     public Stated suspend() {
         if(isUnsuspended()) {
             suspendedState = state;
-            disableAnyway();
+            disableAnywayUnchecked();
             for(Stated listener : listeners) {
                 listener.suspend();
             }
@@ -145,6 +145,10 @@ public class Stated {
         if(isSuspended()) {
             throw new IllegalStateException("suspended");
         }
+        return enableAnywayUnchecked();
+    }
+
+    private boolean enableAnywayUnchecked() {
         if(!isEnabled()) {
             state = Stated.State.ENABLED;
             for(Stated listener : listeners) {
@@ -164,6 +168,10 @@ public class Stated {
         if(isSuspended()) {
             throw new IllegalStateException("suspended");
         }
+        return disableAnywayUnchecked();
+    }
+
+    private boolean disableAnywayUnchecked() {
         if(!isDisabled()) {
             state = Stated.State.DISABLED;
             for(Stated listener : listeners) {
