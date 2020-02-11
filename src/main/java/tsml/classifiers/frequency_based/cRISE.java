@@ -626,6 +626,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             this.timer = ((cRISE)temp).timer;
             this.transformType = ((cRISE)temp).transformType;
             this.treeCount = ((cRISE)temp).treeCount;
+            this.startEndPoints = ((cRISE)temp).startEndPoints;
             this.loadedFromFile = true;
             System.out.println("Varible assignment: successful.");
         }catch(Exception ex){
@@ -1099,7 +1100,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             cRISE.setTransformType(TransformType.FFT);
             cr = sse.evaluate(cRISE, data);
-            System.out.println("ACF");
+            System.out.println("FFT");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
