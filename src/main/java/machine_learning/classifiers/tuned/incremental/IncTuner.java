@@ -82,21 +82,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         this.debugBenchmarks = debugBenchmarks;
     }
 
-    @Override
-    public boolean isParallelisationEnabled() {
-        return parallelisationEnabled;
-    }
-
-    @Override
-    public void setParallelisationEnabled(boolean state) {
-        parallelisationEnabled = state;
-    }
-
-    @Override
-    public boolean isFullyTrained() {
-        // todo
-    }
-
     public interface InitFunction extends Serializable, ParamHandler {
         void init(Instances trainData);
     }
@@ -136,6 +121,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected boolean parallelisationEnabled = false;
     private boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
+    boolean yielded = false;
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 
@@ -276,16 +262,16 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         // we're not built at the moment
         built = false;
         this.trainData = trainData;
+        lastCheckpointTimeStamp = System.nanoTime();
         // if we're rebuilding
         if(rebuild) {
             // reset resource monitors
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
-            initFunction.init(trainData); // todo do the build/rebuild pattern on this with set instances
+            initFunction.init(trainData);
             // reset this switch so we don't reset again next time (unless someone calls the setter)
             rebuild = false;
             hasSkippedEvaluation = false;
-            // todo error on parallelisation without checkpointing!
             classifierNames = new HashSet<>();
         }
         // going into train estimate phase
@@ -303,7 +289,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             if(!isCheckpointSavingEnabled()) {
                 throw new IllegalStateException("skipped evaluation but checkpointing not enabled");
             }
-            // todo check parallelisation
         } else {
             // if we haven't skipped any evaluation then we can have a go at finding all the done files and creating the
             // overall done file
@@ -316,8 +301,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             }
             if(!waitingForOthers) {
                 // try and create the overall done file
-                boolean createdOverallDoneFile = new File(savePath, "overall.done").createNewFile();
-                if(createdOverallDoneFile) {
+                try (FileUtils.FileLock lock = new FileUtils.FileLock(savePath + "overall.done")) {
                     // then continue with regular bits
                     // find the final benchmarks
                     benchmarks = agent.findFinalClassifiers();
@@ -346,14 +330,18 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                     trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
                     trainResults.setFoldID(seed);
                     trainResults.setDetails(this, trainData);
-                } else {
+                    boolean created = createDoneFile("overall");
+                    if(!created) {
+                        throw new IllegalStateException("could not create overall done file");
+                    }
+                    built = true;
+                } catch (FileUtils.FileLock.LockException e) {
+                    logger.info(() -> "cannot lock overall done file");
+                    yielded = true;
                     // quit as another process is going to finish up the build
-                    // todo make sure there's a method in Parallelisable interface + corresponding method in experiments
-                    // todo to deal with this occurrence and skip testing
                 }
             }
         }
-        built = true;
         this.trainData = null;
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
@@ -361,8 +349,13 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override
+    public boolean isFullyTrained() {
+        return built;
+    }
+
+    @Override
     public boolean isFinalModel() {
-        return !hasSkippedEvaluation;
+        return !hasSkippedEvaluation && !yielded;
     }
 
     protected boolean hasNextBuildTick() {
@@ -378,7 +371,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected void unsuspendResourceMonitors() {
         trainTimer.unsuspend();
         trainEstimateTimer.unsuspend();
-        memoryWatcher.unsuspend(); // todo make this into an interface
+        memoryWatcher.unsuspend();
     }
 
     protected void nextBuildTick() throws Exception {
@@ -408,13 +401,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 // if classifier is already done don't evaluate it
                 evaluate = !classifierAlreadyFullyBuilt(classifier.getClassifierName());
             }
-
+            // add the classifier name to the set so we know which ones we've seen
+            classifierNames.add(classifier.getClassifierName());
         }
         unsuspendResourceMonitors();
         // update whether we've ever skipped an evaluation
-        hasSkippedEvaluation |= evaluate;
-        // add the classifier name to the set so we know which ones we've seen
-        classifierNames.add(classifier.getClassifierName());
+        hasSkippedEvaluation |= !evaluate;
         // if we managed to lock the file OR we're not checkpointing whatsoever OR the classifier is not already done
         if(evaluate) {
             // then evaluate the classifier
@@ -435,6 +427,8 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                     ((Checkpointable) classifier).setSavePath(buildClassifierSavePath(classifier));
                 }
             }
+            StopWatch classifierTrainTimer = new StopWatch();
+            MemoryWatcher classifierMemoryWatcher = new MemoryWatcher();
             // build the classifier
             EnhancedAbstractClassifier finalClassifier = classifier;
             logger.info(() -> "evaluating " + StrUtils.toOptionValue(finalClassifier));
@@ -443,51 +437,68 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 // then we don't need to record train time as classifier does so internally
             } else {
                 // otherwise we'll enable our train timer to record timings
-                trainTimer.enable(); // todo should it be train timer or train estimate timer?
+                classifierTrainTimer.enable();
             }
             if(classifier instanceof MemoryWatchable) {
                 // then we don't need to record memory usage as classifier does so internally
             } else {
                 // otherwise we'll enable our memory watcher to record memory usage
-                memoryWatcher.enable();
+                classifierMemoryWatcher.enable();
             }
             // build the classifier
             classifier.buildClassifier(trainData);
             // enable tracking of resources for tuning process
-            trainEstimateTimer.checkDisabled();
-            memoryWatcher.enableAnyway();
-            trainTimer.enableAnyway();
+            classifierTrainTimer.disableAnyway();
+            classifierMemoryWatcher.disableAnyway();
+            this.trainEstimateTimer.checkDisabled();
+            this.memoryWatcher.enableAnyway();
+            this.trainTimer.enableAnyway();
+            // set train info
+            classifier.getTrainResults().setDetails(classifier, trainData);
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
-                trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+                // the classifier tracked its time internally
+                this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+            } else {
+                // we tracked the classifier's time
+                trainTimer.add(classifierTrainTimer);
+                // set train results info
+                classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTimeNanos());
             }
             if(classifier instanceof MemoryWatchable) {
+                // the classifier tracked its own memory
                 memoryWatcher.add((MemoryWatchable) classifier);
+            } else {
+                // we tracked the memory usage of the classifier
+                memoryWatcher.add(classifierMemoryWatcher);
+                // set train results info
+                classifier.getTrainResults().setMemoryDetails(classifierMemoryWatcher);
             }
-            // add resource monitoring stats to results (classifier may handle this internally but doesn't matter as
-            // we're overwriting with the same value (or what *should* be))
-            classifier.getTrainResults().setNonResourceDetails(classifier, trainData); // todo use the clsRes setDetails instead
-            classifier.getTrainResults().setMemoryDetails(memoryWatcher);
-            classifier.getTrainResults().setBuildTime(trainTimer.getTimeNanos());
-            classifier.getTrainResults().setBuildPlusEstimateTime(trainTimer.getTimeNanos() + trainEstimateTimer.getTimeNanos());
             // feed the built classifier back to the agent (which will decide what to do with it)
             boolean classifierFullyBuilt = !agent.feedback(classifier);
             suspendResourceMonitors();
-            if (classifierFullyBuilt) { // todo or ser non checkpointable if checkpoint time exceeded
+            // if classifier is fully built OR we're dealing with a classifier which cannot checkpoint itself and the
+            // checkpoint interval has elapsed
+            if (classifierFullyBuilt ||
+                    (hasCheckpointIntervalElapsed() && !(classifier instanceof Checkpointable))
+                ) {
                 // no more exploitations will be made to this classifier, therefore let's save to disk
                 saveClassifier(classifier);
+                lastCheckpointTimeStamp = System.nanoTime();
                 // create a done file to indicate this classifier is complete (only useful for distributed mode)
                 // the thinking here is we may be running in distributed mode (i.e. multiple threads / processes / pcs
                 // distributed mode assumes there's a shared filesystem which we're writing checkpoints to
                 // therefore we'll create a done file to indicate we've completed this classifier
-                if(!createDoneFile(classifier.getClassifierName())) {
-                    throw new IllegalStateException("cannot create done file, this should never happen!");
+                if(classifierFullyBuilt) {
+                    if(!createDoneFile(classifier.getClassifierName())) {
+                        throw new IllegalStateException("cannot create done file, this should never happen!");
+                    }
                 }
             }
             // if we've been running in distributed mode then we need to unlock the lock file
             if(lock != null) {
-                lock.unlock(); // todo suspend monitors
+                lock.unlock();
             }
             unsuspendResourceMonitors();
         } else {
@@ -514,12 +525,10 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     private boolean classifierAlreadyFullyBuilt(String name) {
-        if(isCheckpointSavingEnabled() && isParallelisationEnabled()) {
+        if(isCheckpointSavingEnabled()) {
             return classifierAlreadyFullyBuiltUnchecked(name);
         } else {
             // we're not checkpointing therefore no capability for done files
-            // parallelisation isn't enabled therefore we assume (and hope) there isn't any other process's reading /
-            // writing data to the checkpoint save location
             return false;
         }
     }
@@ -567,9 +576,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     protected void saveClassifier(EnhancedAbstractClassifier classifier) throws Exception {
-        trainTimer.suspend(); // todo use chkputils
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
         if(isCheckpointSavingEnabled()) {
             final String classifierSavePath = buildClassifierSavePath(classifier);
             if(classifier instanceof Checkpointable) {
@@ -581,9 +587,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
             }
         }
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
     }
 
     public void setAgent(Agent agent) {

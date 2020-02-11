@@ -38,6 +38,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     private long longestExploreTimeNanos; // track maximum time taken for a param to run
     private long longestExploitTimeNanos; // track max time taken for an addition of
     // neighbours
+    private boolean incrementalMode = true;
     private Function<Instances, ParamSpace> paramSpaceFunction;
     private Iterator<EnhancedAbstractClassifier> explorer;
     private Iterator<EnhancedAbstractClassifier> exploiter;
@@ -85,6 +86,14 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
                 throw new IllegalArgumentException("expected knn");
             }
         }
+    }
+
+    public boolean isIncrementalMode() {
+        return incrementalMode;
+    }
+
+    public void setIncrementalMode(boolean incrementalMode) {
+        this.incrementalMode = incrementalMode;
     }
 
     private class KnnAgent implements Agent {
@@ -342,7 +351,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         if(incTunedClassifier.hasTrainTimeLimit() && hasLimits()) {
             throw new IllegalStateException("cannot train under a contract with limits set");
         }
-        if(!incTunedClassifier.isIncrementalMode()) {
+        if(!incrementalMode) {
             neighbourCount.set(maxNeighbourhoodSize);
         }
         // transform classifiers into benchmarks

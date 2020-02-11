@@ -68,6 +68,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     private transient Instances trainData;
     private boolean debugConstituents = false;
     private boolean logConstituents = false;
+    protected boolean built;
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 

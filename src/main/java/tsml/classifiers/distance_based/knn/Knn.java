@@ -18,7 +18,7 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
-                                                               StopWatchTrainTimeable {
+                                                               StopWatchTrainTimeable, Trainable {
 
     private static final long serialVersionUID = 0;
     protected transient Instances trainData;
@@ -37,6 +37,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     protected transient String loadPath = null;
     protected transient boolean skipFinalCheckpoint = false;
     private boolean rebuild = true; // shadows super
+    protected boolean built = false;
 
     @Override
     public boolean isSkipFinalCheckpoint() {
@@ -194,6 +195,11 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         } else {
             logger.info("loaded from checkpoint so not overwriting");
         }
+    }
+
+    @Override
+    public boolean isFullyTrained() {
+        return built;
     }
 
     // todo fail capabilities

@@ -696,7 +696,7 @@ public class Experiments  {
 
             if(classifier instanceof Parallelisable) {
                 if(!((Parallelisable) classifier).isFullyTrained()) {
-
+                    throw new Exception("paralellised job, yielding to another process");
                 }
             }
 
