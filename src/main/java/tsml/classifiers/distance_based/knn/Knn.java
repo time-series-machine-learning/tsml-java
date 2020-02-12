@@ -18,7 +18,7 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
-                                                               StopWatchTrainTimeable, Trainable {
+                                                               StopWatchTrainTimeable, Trainable, TestSeedable {
 
     private static final long serialVersionUID = 0;
     protected transient Instances trainData;
@@ -38,6 +38,17 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     protected transient boolean skipFinalCheckpoint = false;
     private boolean rebuild = true; // shadows super
     protected boolean built = false;
+    protected int testSeed = 0;
+    protected Random testRand = new Random(testSeed);
+
+    @Override public void setTestSeed(final int testSeed) {
+        this.testSeed = testSeed;
+        testRand.setSeed(testSeed);
+    }
+
+    @Override public int getTestSeed() {
+        return testSeed;
+    }
 
     @Override
     public boolean isSkipFinalCheckpoint() {
@@ -244,7 +255,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
-                distribution[rand.nextInt(distribution.length)]++;
+                distribution[testRand.nextInt(distribution.length)]++;
             } else {
                 for(final Double key : nearestNeighbourMap.keys()) {
                     for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {

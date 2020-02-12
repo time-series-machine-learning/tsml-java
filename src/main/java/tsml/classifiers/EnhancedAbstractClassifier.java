@@ -82,7 +82,7 @@ ClassifierResults trainResults can also store other information about the traini
  * @author Tony Bagnall and James Large
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       Randomizable, Retrainable,
+                                                                                       TrainSeedable, Retrainable,
                                                                                        Debugable, Loggable, Copy,
                                                                                        ParamHandler, Serializable {
         
@@ -95,7 +95,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean rebuild = true;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
-    protected Random testRand = new Random(seed);
     protected transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
@@ -321,7 +320,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         seedClassifier=true;
         this.seed = seed;
         rand=new Random(seed);
-        testRand.setSeed(seed);
     }
 
     /**
