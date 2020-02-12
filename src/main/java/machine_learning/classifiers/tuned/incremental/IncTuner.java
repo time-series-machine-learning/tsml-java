@@ -20,7 +20,7 @@ import static utilities.collections.Utils.replace;
 
 public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
                                                                     StopWatchTrainTimeable,
-                                                                    Checkpointable, Parallelisable {
+                                                                    Checkpointable, Parallelisable, TestSeedable {
 
     /*
         how do we do tuning?
@@ -121,7 +121,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected boolean parallelisationEnabled = false;
     private boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
-    boolean yielded = false;
+    private boolean yielded = false;
+    protected int testSeed = 0;
+    protected Random testRand = new Random(0);
+
+    @Override public void setTestSeed(final int testSeed) {
+        this.testSeed = testSeed;
+    }
+
+    @Override public int getTestSeed() {
+        return testSeed;
+    }
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 
@@ -513,14 +523,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             // we're checkpointing therefore we need to create a file to say we're done
             String path = savePath + name + "." + DONE_FILE_EXTENSION;
             File file = new File(path);
-            try {
-                FileUtils.FileLock lock = new FileUtils.FileLock(file);
-            } catch(FileUtils.FileLock.LockException e) {
-                return false;
-            }
             if(!file.createNewFile()) {
                 if(!file.exists()) {
-                    throw new IllegalStateException("failed to create done file: " + name);
+                    throw new IllegalStateException("failed to create file: " + file);
                 }
             }
             return true;
@@ -643,7 +648,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     @Override
     public double classifyInstance(Instance testCase) throws Exception {
-        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
+        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), testRand);
     }
 
     public InitFunction getInitFunction() {
