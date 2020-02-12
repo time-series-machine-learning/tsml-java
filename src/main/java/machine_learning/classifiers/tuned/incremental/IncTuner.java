@@ -511,7 +511,19 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     private boolean createDoneFile(String name) throws IOException {
         if(isCheckpointSavingEnabled()) {
             // we're checkpointing therefore we need to create a file to say we're done
-            return new File(savePath + name + "." + DONE_FILE_EXTENSION).createNewFile();
+            String path = savePath + name + "." + DONE_FILE_EXTENSION;
+            File file = new File(path);
+            try {
+                FileUtils.FileLock lock = new FileUtils.FileLock(file);
+            } catch(FileUtils.FileLock.LockException e) {
+                return false;
+            }
+            if(!file.createNewFile()) {
+                if(!file.exists()) {
+                    throw new IllegalStateException("failed to create done file: " + name);
+                }
+            }
+            return true;
         } else {
             // we're not checkpointing so this should have no effect
             return true;
