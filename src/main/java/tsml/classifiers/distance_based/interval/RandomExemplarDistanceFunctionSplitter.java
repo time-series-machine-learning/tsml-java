@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.interval;
 
+import com.google.common.collect.Lists;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import utilities.ArrayUtilities;
 import utilities.Resetable;
 import utilities.Utilities;
@@ -11,19 +13,31 @@ import utilities.serialisation.SerConsumer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.util.*;
 
-public class RandomExemplarDistanceFunctionSplitter implements Splitter, Resetable {
+public class RandomExemplarDistanceFunctionSplitter implements Splitter, Resetable, Randomizable {
 
-    private Random random = new Random(0);
+    private int seed = 0;
+    private Random random = new Random(seed);
     private List<ParamSpace> paramSpaces;
-    private Scorer scorer = Utilities::giniScore;
+    private Scorer scorer = Scorer.giniScore;
     private ExemplarPicker picker = null;
     private SerConsumer<Instances> splitSetupFunction = (SerConsumer<Instances>) instances -> {
         RandomExemplarPicker randomExemplarPicker = new RandomExemplarPicker();
-        randomExemplarPicker.setRandom(random);
+        randomExemplarPicker.setSeed(seed);
         picker = randomExemplarPicker;
+        paramSpaces = Lists.newArrayList(
+                DistanceMeasureConfigs.buildDtwSpaceV2(instances),
+                DistanceMeasureConfigs.buildDdtwSpaceV2(instances),
+                DistanceMeasureConfigs.buildWdtwSpaceV2(),
+                DistanceMeasureConfigs.buildWddtwSpaceV2(),
+                DistanceMeasureConfigs.buildLcssSpace(instances),
+                DistanceMeasureConfigs.buildErpSpace(instances),
+                DistanceMeasureConfigs.buildTwedSpace(),
+                DistanceMeasureConfigs.buildMsmSpace()
+        );
     };
     private boolean reset = true;
 
@@ -34,29 +48,19 @@ public class RandomExemplarDistanceFunctionSplitter implements Splitter, Resetab
         }
         ParamSpace paramSpace = paramSpaces.get(random.nextInt(paramSpaces.size()));
         ParamSet paramSet = paramSpace.get(random.nextInt(paramSpace.size()));
-        DistanceFunction distanceFunction;
-        Map<Instance, Instances> splitByExemplarMap = new HashMap<>();
+        List<Object> distanceFunctions = paramSet.get(DistanceMeasure.DISTANCE_FUNCTION_FLAG);
+        if(distanceFunctions.size() != 1) {
+            throw new IllegalStateException("was expecting only 1");
+        }
+        DistanceFunction distanceFunction = (DistanceFunction) distanceFunctions.get(0);
         ExemplarSplit split = new ExemplarSplit();
         split.setDistanceFunction(distanceFunction);
         List<Instance> exemplars = picker.pickExemplars(data);
         split.setExemplars(exemplars);
         List<Instances> parts = split.split(data);
-        int[] partSizes = new int[parts.size()];
-        for(int i = 0; i < parts.size(); i++) {
-            int size = parts.get(i).size();
-            partSizes[i] = size;
-        }
-        double score = scorer.findScore(data.size(), partSizes);
+        double score = scorer.findScore(data, parts);
         split.setScore(score);
         return split;
-    }
-
-    public Random getRandom() {
-        return random;
-    }
-
-    public void setRandom(final Random random) {
-        this.random = random;
     }
 
     @Override public boolean isReset() {
@@ -65,5 +69,16 @@ public class RandomExemplarDistanceFunctionSplitter implements Splitter, Resetab
 
     @Override public void setReset(final boolean state) {
         reset = state;
+    }
+
+    @Override
+    public void setSeed(int seed) {
+        this.seed = seed;
+        random.setSeed(seed);
+    }
+
+    @Override
+    public int getSeed() {
+        return seed;
     }
 }

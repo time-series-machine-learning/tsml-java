@@ -606,4 +606,17 @@ public class ArrayUtilities {
         }
         return sum;
     }
+
+
+    public static int sum(Iterator<Integer> iterator) {
+        int sum = 0;
+        while(iterator.hasNext()) {
+            sum += iterator.next();
+        }
+        return sum;
+    }
+
+    public static int sum(Iterable<Integer> iterable) {
+        return sum(iterable.iterator());
+    }
 }

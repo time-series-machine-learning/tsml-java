@@ -5,15 +5,17 @@ import utilities.Randomised;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class RandomExemplarPicker implements ExemplarPicker, Randomised {
+public class RandomExemplarPicker implements ExemplarPicker, Randomizable {
 
-    private Random random = new Random(0);
+    private int seed = 0;
+    private Random random = new Random(seed);
 
     @Override public List<Instance> pickExemplars(final Instances data) {
         List<Instance> exemplars = new ArrayList<>();
@@ -26,11 +28,14 @@ public class RandomExemplarPicker implements ExemplarPicker, Randomised {
         return exemplars;
     }
 
-    @Override public Random getRandom() {
-        return random;
+    @Override
+    public void setSeed(int seed) {
+        this.seed = seed;
+        random.setSeed(seed);
     }
 
-    @Override public void setRandom(final Random random) {
-        this.random = random;
+    @Override
+    public int getSeed() {
+        return seed;
     }
 }

@@ -4,15 +4,15 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.serialisation.SerConsumer;
 import weka.core.Instances;
 
+import java.util.List;
+
 public class ProximityTree extends EnhancedAbstractClassifier {
     // todo estimate train const / actually do it
 
 
-    private Splitter splitter = new Splitter() {
-        @Override public void split(final Instances data) {
-            throw new UnsupportedOperationException();
-        }
-    };
+    private Splitter splitter = data -> {
+        throw new UnsupportedOperationException();
+    }
     private boolean retrain = true;
     private SerConsumer<Instances> trainSetupFunction = (SerConsumer<Instances>) instances -> {};
 

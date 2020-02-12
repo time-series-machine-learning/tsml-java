@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.interval;
 
+import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.List;
@@ -13,9 +14,7 @@ public interface Split {
     double getScore();
     void setScore(double score);
     List<Instances> split(Instances data);
-
-
-//    private Instances data;
+    //    private Instances data;
 //    private List<Instances> parts = new ArrayList<>();
 //    private double score = -1;
 //

@@ -29,9 +29,31 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Utilities {
 
+    public static <A, B> List<B> convert(Iterable<A> source, Function<A, B> converter) { // todo stream version
+        return convert(source.iterator(), converter);
+    }
+
+    public static <A, B> List<B> convert(Iterator<A> source, Function<A, B> converter) {
+        return convert(source, converter, ArrayList::new);
+    }
+
+    public static <A, B, C extends Collection<B>> C convert(Iterator<A> source, Function<A, B> converter, Supplier<C> supplier) {
+        C destination = supplier.get();
+        while(source.hasNext()) {
+            A item = source.next();
+            B convertedItem = converter.apply(item);
+            destination.add(convertedItem);
+        }
+        return destination;
+    }
+
+    public static <A, B, C extends Collection<B>> C convert(Iterable<A> source, Function<A, B> converter, Supplier<C> supplier) {
+        return convert(source.iterator(), converter, supplier);
+    }
 
     public static void listenToTrainTimer(Object obj, StopWatch stated) {
         if(obj instanceof StopWatchTrainTimeable) {
@@ -226,8 +248,7 @@ public class Utilities {
         return Math.log(value) / Math.log(base);
     }
 
-
-    public static double giniScore(int parent, int... children) {
+    public static double giniScore(int parent, Iterable<Integer> children) {
         if(parent <= 0) {
             throw new IllegalArgumentException("parent leq 0");
         }
@@ -253,7 +274,7 @@ public class Utilities {
         return map;
     }
 
-    public static double informationGain(int parent, int... children) {
+    public static double infoGain(int parent, Iterable<Integer> children) {
         if(parent <= 0) {
             throw new IllegalArgumentException("parent leq 0");
         }
@@ -499,21 +520,9 @@ public class Utilities {
         return distribution;
     }
 
-    public static int sum(Iterator<Integer> iterator) {
-        int sum = 0;
-        while(iterator.hasNext()) {
-            sum += iterator.next();
-        }
-        return sum;
-    }
-
-    public static int sum(Iterable<Integer> iterable) {
-        return sum(iterable.iterator());
-    }
-
     public static <A> Map<A, Double> normalise(Map<A, Integer> map) {
         Map<A, Double> distribution = new HashMap<>();
-        int sum = sum(map.values());
+        int sum = ArrayUtilities.sum(map.values());
         for(Map.Entry<A, Integer> entry : map.entrySet()) {
             distribution.put(entry.getKey(), ((double) entry.getValue()) / sum);
         }
@@ -559,17 +568,4 @@ public class Utilities {
         return removed;
     }
 
-    public static <A, B> List<B> convert(Iterable<A> iterable, Function<A, B> func) {
-        return convert(iterable.iterator(), func);
-    }
-
-    public static <A, B> List<B> convert(Iterator<A> iterator, Function<A, B> func) {
-        List<B> list = new ArrayList<>();
-        while(iterator.hasNext()) {
-            A item = iterator.next();
-            B convertedItem = func.apply(item);
-            list.add(convertedItem);
-        }
-        return list;
-    }
 }
