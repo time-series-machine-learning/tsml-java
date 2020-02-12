@@ -228,7 +228,7 @@ public class KnnLoocv
                 searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
                 for(int i = 0; i < trainData.size(); i++) {
-                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i));
+                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i), random);
                     searchers.add(i, searcher);
                 }
                 if(distanceFunction instanceof AbstractDistanceMeasure) {

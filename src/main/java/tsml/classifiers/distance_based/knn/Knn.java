@@ -39,11 +39,11 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     private boolean rebuild = true; // shadows super
     protected boolean built = false;
     protected int testSeed = 0;
-    protected Random testRand = new Random(testSeed);
+    protected Random testRandom = new Random(testSeed);
 
     @Override public void setTestSeed(final int testSeed) {
         this.testSeed = testSeed;
-        testRand.setSeed(testSeed);
+        testRandom.setSeed(testSeed);
     }
 
     @Override public int getTestSeed() {
@@ -221,12 +221,14 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         private double limit = Double.POSITIVE_INFINITY;
         private StopWatch comparisonTimer = new StopWatch();
         private StopWatch predictTimer = new StopWatch();
+        private final Random random;
 
         public Instance getInstance() {
             return instance;
         }
 
-        public NeighbourSearcher(Instance instance) {
+        public NeighbourSearcher(Instance instance, final Random random) {
+            this.random = random;
             this.prunedMap =
                 new PrunedMultimap<>(((Comparator<Double> & Serializable) Double::compare));
             prunedMap.setSoftLimit(k);
@@ -255,7 +257,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
-                distribution[testRand.nextInt(distribution.length)]++;
+                distribution[random.nextInt(distribution.length)]++;
             } else {
                 for(final Double key : nearestNeighbourMap.keys()) {
                     for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
@@ -286,7 +288,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                      Exception {
-        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance);
+        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance, testRandom);
         for(final Instance trainInstance : trainData) {
             searcher.add(trainInstance);
         }

@@ -226,6 +226,49 @@ public class Utilities {
         return Math.log(value) / Math.log(base);
     }
 
+
+    public static double giniScore(int parent, int... children) {
+        if(parent <= 0) {
+            throw new IllegalArgumentException("parent leq 0");
+        }
+        int sum = ArrayUtilities.sum(children);
+        if(sum > parent) {
+            throw new IllegalArgumentException("children sum greater than parent");
+        }
+        double scoreSum = 0;
+        for(int child : children) {
+            double proportion = (double) child / parent;
+            double score = Math.pow(child, 2);
+            score *= proportion;
+            scoreSum += score;
+        }
+        return 1 - scoreSum;
+    }
+
+    public static Map<Double, Instances> instancesByClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
+    }
+
+    public static double informationGain(int parent, int... children) {
+        if(parent <= 0) {
+            throw new IllegalArgumentException("parent leq 0");
+        }
+        int sum = ArrayUtilities.sum(children);
+        if(sum > parent) {
+            throw new IllegalArgumentException("children sum greater than parent");
+        }
+        double scoreSum = 0;
+        for(int child : children) {
+            double score = child * Utilities.log(child, 2);
+            scoreSum += score;
+        }
+        return 0 - scoreSum;
+    }
+
     public static final double[] interpolate(double min, double max, int num) {
         double[] result = new double[num];
         double diff = (max - min) / (num - 1);
@@ -486,6 +529,14 @@ public class Utilities {
             Object object = StrUtils.fromOptionValue(str);
             return (A) object;
         }
+    }
+
+    public static <A> A randPickOne(Collection<A> collection, Random random) {
+        List<A> list = randPickN(collection, 1, random);
+        if(list.size() != 1) {
+            throw new IllegalStateException("was expecting only 1 result");
+        }
+        return list.get(0);
     }
 
     public static <A> List<A> randPickN(Collection<A> collection, int num, Random rand) {

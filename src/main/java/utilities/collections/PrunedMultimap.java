@@ -2,8 +2,6 @@ package utilities.collections;
 
 import com.google.common.collect.*;
 import utilities.Utilities;
-import utilities.serialisation.SerComparator;
-import utilities.serialisation.SerSupplier;
 import weka.core.Randomizable;
 
 import java.io.*;
@@ -15,7 +13,7 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private int softLimit = -1;
     private int hardLimit = -1;
     private int seed = 0;
-    private Random rand = new Random(seed);
+    private Random random = new Random(seed);
     private final TreeMap<K, Collection<V>> backingMap;
 
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<? extends Collection<V>> supplier) {
@@ -28,6 +26,10 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
 
     public K lastKey() {
         return backingMap.lastKey();
+    }
+
+    public K firstKey() {
+        return backingMap.firstKey();
     }
 
     public PrunedMultimap(Comparator<? super K> comparator, Supplier<? extends Collection<V>> supplier) {
@@ -80,7 +82,7 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         if(diff > 0) {
             Map.Entry<K, Collection<V>> entry = backingMap.lastEntry();
             Collection<V> values = entry.getValue();
-            List<V> toRemove = Utilities.randPickN(values, diff, rand);
+            List<V> toRemove = Utilities.randPickN(values, diff, random);
             K k = entry.getKey();
             for(V v : toRemove) {
                 remove(k, v);
@@ -122,7 +124,7 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
 
     @Override public void setSeed(final int seed) {
         this.seed = seed;
-        rand.setSeed(seed);
+        random.setSeed(seed);
     }
 
     @Override public int getSeed() {
@@ -147,12 +149,12 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         prune();
     }
 
-    public Random getRand() {
-        return rand;
+    public Random getRandom() {
+        return random;
     }
 
-    public void setRand(final Random rand) {
-        this.rand = rand;
+    public void setRandom(final Random random) {
+        this.random = random;
     }
 
     public void disableHardLimit() {

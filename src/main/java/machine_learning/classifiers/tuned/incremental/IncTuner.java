@@ -6,12 +6,12 @@ import tsml.classifiers.*;
 import utilities.*;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
+import utilities.serialisation.SerConsumer;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -82,10 +82,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         this.debugBenchmarks = debugBenchmarks;
     }
 
-    public interface InitFunction extends Serializable, ParamHandler {
-        void init(Instances trainData);
-    }
-
     protected Agent agent = new Agent() {
         @Override
         public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
@@ -109,12 +105,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected transient Set<EnhancedAbstractClassifier> benchmarks = new HashSet<>();
     protected Ensembler ensembler = Ensembler.byScore(benchmark -> benchmark.getTrainResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected InitFunction initFunction = instances -> {};
+    protected SerConsumer<Instances> trainSetupFunction = instances -> {};
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected StopWatch trainEstimateTimer = new StopWatch();
     public static final String BENCHMARK_ITERATOR_FLAG = "b";
-    public static final String INIT_FUNCTION_FLAG = "i";
+    public static final String TRAIN_SETUP_FUNCTION_FLAG = "i";
     private boolean debugBenchmarks = false;
     private boolean logBenchmarks = false;
     private transient Instances trainData;
@@ -235,13 +231,15 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     @Override public ParamSet getParams() {
         return TrainTimeContractable.super.getParams()
                                     .add(BENCHMARK_ITERATOR_FLAG, agent)
-                                    .add(INIT_FUNCTION_FLAG, initFunction);
+                                    .add(TRAIN_SETUP_FUNCTION_FLAG, trainSetupFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
         TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, INIT_FUNCTION_FLAG, this::setInitFunction, InitFunction.class); // todo finish params
+        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction, SerConsumer.class); //
+        // todo
+        // finish params
     }
 
     @Override public void setTrainTimeLimitNanos(final long nanos) {
@@ -278,7 +276,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             // reset resource monitors
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
-            initFunction.init(trainData);
+            trainSetupFunction.accept(trainData);
             // reset this switch so we don't reset again next time (unless someone calls the setter)
             rebuild = false;
             hasSkippedEvaluation = false;
@@ -651,12 +649,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), testRand);
     }
 
-    public InitFunction getInitFunction() {
-        return initFunction;
+    public SerConsumer<Instances> getTrainSetupFunction() {
+        return trainSetupFunction;
     }
 
-    public void setInitFunction(final InitFunction initFunction) {
-        this.initFunction = initFunction;
+    public void setTrainSetupFunction(final SerConsumer<Instances> trainSetupFunction) {
+        this.trainSetupFunction = trainSetupFunction;
     }
 
     public Agent getAgent() {
