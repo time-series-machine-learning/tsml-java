@@ -111,13 +111,12 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected StopWatch trainEstimateTimer = new StopWatch();
     public static final String BENCHMARK_ITERATOR_FLAG = "b";
     public static final String TRAIN_SETUP_FUNCTION_FLAG = "i";
-    private boolean debugBenchmarks = false;
-    private boolean logBenchmarks = false;
+    private transient boolean debugBenchmarks = false;
+    private transient boolean logBenchmarks = false;
     private transient Instances trainData;
-    protected boolean parallelisationEnabled = false;
-    private boolean hasSkippedEvaluation = false;
+    private transient boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
-    private boolean yielded = false;
+    private transient boolean yielded = false;
     protected int testSeed = 0;
     protected Random testRand = new Random(0);
 
@@ -280,6 +279,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             // reset this switch so we don't reset again next time (unless someone calls the setter)
             rebuild = false;
             hasSkippedEvaluation = false;
+            yielded = false;
             classifierNames = new HashSet<>();
         }
         // going into train estimate phase
