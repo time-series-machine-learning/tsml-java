@@ -13,12 +13,12 @@ import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
-public class Knn extends EnhancedAbstractClassifier implements Checkpointable, MemoryWatchable, TrainTimeable {
+public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
+                                                               StopWatchTrainTimeable, Trainable, TestSeedable {
 
     private static final long serialVersionUID = 0;
     protected transient Instances trainData;
@@ -31,22 +31,63 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     protected StopWatch trainTimer = new StopWatch();
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
-    protected transient long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     protected transient long lastCheckpointTimeStamp = 0;
-    protected transient String checkpointSaveDirPath = null;
-    protected transient String checkpointLoadDirPath = null;
+    protected transient String savePath = null;
+    protected transient String loadPath = null;
+    protected transient boolean skipFinalCheckpoint = false;
     private boolean rebuild = true; // shadows super
+    protected boolean built = false;
+    protected int testSeed = 0;
+    protected Random testRandom = new Random(testSeed);
+
+    @Override public void setTestSeed(final int testSeed) {
+        this.testSeed = testSeed;
+        testRandom.setSeed(testSeed);
+    }
+
+    @Override public int getTestSeed() {
+        return testSeed;
+    }
+
+    @Override
+    public boolean isSkipFinalCheckpoint() {
+        return skipFinalCheckpoint;
+    }
+
+    @Override
+    public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
+        this.skipFinalCheckpoint = skipFinalCheckpoint;
+    }
+
+    @Override
+    public String getSavePath() {
+        return savePath;
+    }
+
+    @Override
+    public boolean setSavePath(String path) {
+        boolean result = Checkpointable.super.setSavePath(path);
+        if(result) {
+            savePath = StrUtils.asDirPath(path);
+        } else {
+            savePath = null;
+        }
+        return result;
+    }
 
     @Override public String getLoadPath() {
-        return checkpointLoadDirPath;
+        return loadPath;
     }
 
     @Override public boolean setLoadPath(final String path) {
-        if(Checkpointable.super.setLoadPath(path)) {
-            checkpointLoadDirPath = StrUtils.asDirPath(path);
-            return true;
+        boolean result = Checkpointable.super.setLoadPath(path);
+        if(result) {
+            loadPath = StrUtils.asDirPath(path);
+        } else {
+            loadPath = null;
         }
-        return false;
+        return result;
     }
 
     public StopWatch getTrainTimer() {
@@ -61,30 +102,16 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         return lastCheckpointTimeStamp;
     }
 
-    @Override
-    public boolean setSavePath(String path) {
-        if(Checkpointable.super.setSavePath(path)) {
-            checkpointSaveDirPath = StrUtils.asDirPath(path);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public String getSavePath() {
-        return checkpointSaveDirPath;
-    }
-
-    public boolean checkpoint() throws Exception {
+    public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
     }
 
-    protected boolean loadFromCheckpoint() {
+    public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
         boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
@@ -104,6 +131,32 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
 
     @Override public MemoryWatcher getMemoryWatcher() {
         return memoryWatcher;
+    }
+
+
+    @Override public ParamSet getParams() {
+        return super.getParams()
+                    .add(EARLY_ABANDON_FLAG, earlyAbandon)
+                    .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
+                    .add(K_FLAG, k)
+                    .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+    }
+
+    @Override public void setParams(final ParamSet params) {
+        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
+        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
+        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
+    }
+
+    @Override
+    public void setRetrain(boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRetrain(rebuild);
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
     public boolean isRandomTieBreak() {
@@ -131,31 +184,6 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         this.earlyAbandon = earlyAbandon;
     }
 
-    @Override public ParamSet getParams() {
-        return super.getParams()
-                     .add(EARLY_ABANDON_FLAG, earlyAbandon)
-                     .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
-                     .add(K_FLAG, k)
-                     .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
-    }
-
-    @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
-        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
-        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
-        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
-    }
-
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
-        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
-    }
-
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         boolean loadedFromCheckpoint = loadFromCheckpoint();
         if(rebuild) {
@@ -174,10 +202,15 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         memoryWatcher.cleanup();
         memoryWatcher.disable();
         if(!loadedFromCheckpoint) {
-            checkpoint();
+            saveToCheckpoint();
         } else {
             logger.info("loaded from checkpoint so not overwriting");
         }
+    }
+
+    @Override
+    public boolean isFullyTrained() {
+        return built;
     }
 
     // todo fail capabilities
@@ -188,12 +221,14 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
         private double limit = Double.POSITIVE_INFINITY;
         private StopWatch comparisonTimer = new StopWatch();
         private StopWatch predictTimer = new StopWatch();
+        private final Random random;
 
         public Instance getInstance() {
             return instance;
         }
 
-        public NeighbourSearcher(Instance instance) {
+        public NeighbourSearcher(Instance instance, final Random random) {
+            this.random = random;
             this.prunedMap =
                 new PrunedMultimap<>(((Comparator<Double> & Serializable) Double::compare));
             prunedMap.setSoftLimit(k);
@@ -222,7 +257,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
-                distribution[rand.nextInt(distribution.length)]++;
+                distribution[random.nextInt(distribution.length)]++;
             } else {
                 for(final Double key : nearestNeighbourMap.keys()) {
                     for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
@@ -253,7 +288,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, M
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                      Exception {
-        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance);
+        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance, testRandom);
         for(final Instance trainInstance : trainData) {
             searcher.add(trainInstance);
         }

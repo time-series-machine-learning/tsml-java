@@ -14,7 +14,13 @@
  */
 package utilities;
 
+import tsml.classifiers.GcMemoryWatchable;
+import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.StopWatchTrainTimeable;
+import tsml.classifiers.TrainTimeable;
+import tsml.classifiers.distance_based.knn.KnnLoocv;
 import utilities.collections.IntListView;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializedObject;
@@ -23,8 +29,85 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Utilities {
+
+    public static <A, B> List<B> convert(Iterable<A> source, Function<A, B> converter) { // todo stream version
+        return convert(source.iterator(), converter);
+    }
+
+    public static <A, B> List<B> convert(Iterator<A> source, Function<A, B> converter) {
+        return convert(source, converter, ArrayList::new);
+    }
+
+    public static <A, B, C extends Collection<B>> C convert(Iterator<A> source, Function<A, B> converter, Supplier<C> supplier) {
+        C destination = supplier.get();
+        while(source.hasNext()) {
+            A item = source.next();
+            B convertedItem = converter.apply(item);
+            destination.add(convertedItem);
+        }
+        return destination;
+    }
+
+    public static <A, B, C extends Collection<B>> C convert(Iterable<A> source, Function<A, B> converter, Supplier<C> supplier) {
+        return convert(source.iterator(), converter, supplier);
+    }
+
+    public static void listenToTrainTimer(Object obj, StopWatch stated) {
+        if(obj instanceof StopWatchTrainTimeable) {
+            try {
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
+                trainTimer.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
+        if(obj instanceof StopWatchTrainTimeable) {
+            try {
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
+                trainTimer.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
+        if(obj instanceof GcMemoryWatchable) {
+            try {
+                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
+                memoryWatcher.addListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
+        if(obj instanceof StopWatchTrainTimeable) {
+            try {
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
+                trainTimer.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
+        if(obj instanceof StopWatchTrainTimeable) {
+            try {
+                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
+                trainTimer.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
+
+    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
+        if(obj instanceof GcMemoryWatchable) {
+            try {
+                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
+                memoryWatcher.removeListener(stated);
+            } catch (UnsupportedOperationException ignored) {}
+        }
+    }
 
     public static long toNanos(String amountStr, String unitStr) {
         long amount = Long.parseLong(amountStr);
@@ -163,6 +246,48 @@ public class Utilities {
 
     public static final double log(double value, double base) { // beware, this is inaccurate due to floating point error!
         return Math.log(value) / Math.log(base);
+    }
+
+    public static double giniScore(int parent, Iterable<Integer> children) {
+        if(parent <= 0) {
+            throw new IllegalArgumentException("parent leq 0");
+        }
+        int sum = ArrayUtilities.sum(children);
+        if(sum > parent) {
+            throw new IllegalArgumentException("children sum greater than parent");
+        }
+        double scoreSum = 0;
+        for(int child : children) {
+            double proportion = (double) child / parent;
+            double score = Math.pow(child, 2);
+            score *= proportion;
+            scoreSum += score;
+        }
+        return 1 - scoreSum;
+    }
+
+    public static Map<Double, Instances> instancesByClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
+    }
+
+    public static double infoGain(int parent, Iterable<Integer> children) {
+        if(parent <= 0) {
+            throw new IllegalArgumentException("parent leq 0");
+        }
+        int sum = ArrayUtilities.sum(children);
+        if(sum > parent) {
+            throw new IllegalArgumentException("children sum greater than parent");
+        }
+        double scoreSum = 0;
+        for(int child : children) {
+            double score = child * Utilities.log(child, 2);
+            scoreSum += score;
+        }
+        return 0 - scoreSum;
     }
 
     public static final double[] interpolate(double min, double max, int num) {
@@ -395,21 +520,9 @@ public class Utilities {
         return distribution;
     }
 
-    public static int sum(Iterator<Integer> iterator) {
-        int sum = 0;
-        while(iterator.hasNext()) {
-            sum += iterator.next();
-        }
-        return sum;
-    }
-
-    public static int sum(Iterable<Integer> iterable) {
-        return sum(iterable.iterator());
-    }
-
     public static <A> Map<A, Double> normalise(Map<A, Integer> map) {
         Map<A, Double> distribution = new HashMap<>();
-        int sum = sum(map.values());
+        int sum = ArrayUtilities.sum(map.values());
         for(Map.Entry<A, Integer> entry : map.entrySet()) {
             distribution.put(entry.getKey(), ((double) entry.getValue()) / sum);
         }
@@ -425,6 +538,14 @@ public class Utilities {
             Object object = StrUtils.fromOptionValue(str);
             return (A) object;
         }
+    }
+
+    public static <A> A randPickOne(Collection<A> collection, Random random) {
+        List<A> list = randPickN(collection, 1, random);
+        if(list.size() != 1) {
+            throw new IllegalStateException("was expecting only 1 result");
+        }
+        return list.get(0);
     }
 
     public static <A> List<A> randPickN(Collection<A> collection, int num, Random rand) {
@@ -447,17 +568,4 @@ public class Utilities {
         return removed;
     }
 
-    public static <A, B> List<B> convert(Iterable<A> iterable, Function<A, B> func) {
-        return convert(iterable.iterator(), func);
-    }
-
-    public static <A, B> List<B> convert(Iterator<A> iterator, Function<A, B> func) {
-        List<B> list = new ArrayList<>();
-        while(iterator.hasNext()) {
-            A item = iterator.next();
-            B convertedItem = func.apply(item);
-            list.add(convertedItem);
-        }
-        return list;
-    }
 }

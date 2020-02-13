@@ -6,7 +6,6 @@ import experiments.ClassifierBuilderFactory;
 import experiments.ClassifierBuilderFactory.ClassifierBuilder;
 import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.tuned.incremental.Benchmark;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
@@ -22,7 +21,6 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;

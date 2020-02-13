@@ -1,10 +1,13 @@
 package utilities;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 public class StopWatch extends Stated implements Serializable {
     private transient long timeStamp;
     private long time;
+    private transient Set<StopWatch> listeners = new HashSet<>();
 
     public StopWatch() {
         super();
@@ -12,6 +15,16 @@ public class StopWatch extends Stated implements Serializable {
 
     public StopWatch(State state) {
         super(state);
+    }
+
+    public void addListener(StopWatch other) {
+        super.addListener(other);
+        listeners.add(other);
+    }
+
+    public void removeListener(StopWatch other) {
+        super.removeListener(other);
+        listeners.remove(other);
     }
 
     public long lap() {
@@ -75,6 +88,9 @@ public class StopWatch extends Stated implements Serializable {
 
     public void add(long nanos) {
         time += nanos;
+        for(StopWatch other : listeners) {
+            other.add(nanos);
+        }
     }
 
     public void add(StopWatch stopWatch) {

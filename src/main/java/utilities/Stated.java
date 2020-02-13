@@ -1,8 +1,6 @@
 package utilities;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class Stated {
@@ -33,7 +31,7 @@ public class Stated {
     public Stated suspend() {
         if(isUnsuspended()) {
             suspendedState = state;
-            disableAnyway();
+            disableAnywayUnchecked();
             for(Stated listener : listeners) {
                 listener.suspend();
             }
@@ -62,6 +60,9 @@ public class Stated {
     }
 
     public Stated checkDisabled() {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
         if(!isDisabled()) {
             throw new IllegalStateException("not disabled");
         }
@@ -69,6 +70,9 @@ public class Stated {
     }
 
     public Stated checkEnabled() {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
         if(!isEnabled()) {
             throw new IllegalStateException("not enabled");
         }
@@ -76,6 +80,9 @@ public class Stated {
     }
 
     public Stated checkNotDisabled() {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
         if(isDisabled()) {
             throw new IllegalStateException("already disabled");
         }
@@ -83,6 +90,9 @@ public class Stated {
     }
 
     public Stated checkNotEnabled() {
+        if(isSuspended()) {
+            throw new IllegalStateException("already suspended");
+        }
         if(isEnabled()) {
             throw new IllegalStateException("already enabled");
         }
@@ -132,6 +142,13 @@ public class Stated {
     }
 
     public boolean enableAnyway() {
+        if(isSuspended()) {
+            throw new IllegalStateException("suspended");
+        }
+        return enableAnywayUnchecked();
+    }
+
+    private boolean enableAnywayUnchecked() {
         if(!isEnabled()) {
             state = Stated.State.ENABLED;
             for(Stated listener : listeners) {
@@ -148,6 +165,13 @@ public class Stated {
     }
 
     public boolean disableAnyway() {
+        if(isSuspended()) {
+            throw new IllegalStateException("suspended");
+        }
+        return disableAnywayUnchecked();
+    }
+
+    private boolean disableAnywayUnchecked() {
         if(!isDisabled()) {
             state = Stated.State.DISABLED;
             for(Stated listener : listeners) {

@@ -4,8 +4,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.function.BinaryOperator;
-import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 public class ArrayUtilities {
@@ -599,5 +597,26 @@ public class ArrayUtilities {
             }
         }
         return size;
+    }
+
+    public static int sum(final int... nums) {
+        int sum = 0;
+        for(int num : nums) {
+            sum += num;
+        }
+        return sum;
+    }
+
+
+    public static int sum(Iterator<Integer> iterator) {
+        int sum = 0;
+        while(iterator.hasNext()) {
+            sum += iterator.next();
+        }
+        return sum;
+    }
+
+    public static int sum(Iterable<Integer> iterable) {
+        return sum(iterable.iterator());
     }
 }

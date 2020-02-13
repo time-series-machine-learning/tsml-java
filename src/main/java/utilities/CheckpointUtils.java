@@ -1,9 +1,8 @@
 package utilities;
 
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.EnhancedAbstractClassifier;
 
-import java.io.File;
+import java.io.*;
 import java.util.logging.Logger;
 
 public class CheckpointUtils {
@@ -31,6 +30,7 @@ public class CheckpointUtils {
         return false;
     }
 
+
     public static boolean saveToSingleCheckpoint(Checkpointable checkpointable, Logger logger,
                                                  boolean ignoreInterval) throws Exception {
         if(!checkpointable.isCheckpointSavingEnabled()) {
@@ -43,7 +43,7 @@ public class CheckpointUtils {
                 return false;
             }
         } else {
-            logger.info("forcing checkpoint irrelevant of interval");
+            logger.info("ignoring checkpoint interval");
         }
         final String checkpointDirPath = checkpointable.getSavePath();
         final String tmpPath = checkpointDirPath + tempCheckpointFileName;
@@ -62,5 +62,23 @@ public class CheckpointUtils {
     public static boolean saveToSingleCheckpoint(Checkpointable checkpointable, Logger logger) throws Exception {
 
         return saveToSingleCheckpoint(checkpointable, logger, false);
+    }
+
+    public static void serialise(Object serializable, String path) throws Exception {
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
+             FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
+             ObjectOutputStream out = new ObjectOutputStream(fos)) {
+            out.writeObject(serializable);
+        }
+    }
+
+    public static Object deserialise(String path) throws Exception{
+        Object obj = null;
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
+             FileInputStream fis = new FileInputStream(fileLocker.getFile());
+             ObjectInputStream in = new ObjectInputStream(fis)) {
+            obj = in.readObject();
+        }
+        return obj;
     }
 }
