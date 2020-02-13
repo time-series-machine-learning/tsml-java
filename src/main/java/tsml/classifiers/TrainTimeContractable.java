@@ -14,6 +14,10 @@
  */
 package tsml.classifiers;
 
+import utilities.StopWatch;
+import utilities.params.ParamHandler;
+import utilities.params.ParamSet;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,7 +27,8 @@ import java.util.concurrent.TimeUnit;
 known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
 * BOSS (check), TSF (check)
  */
-public interface TrainTimeContractable {
+public interface TrainTimeContractable
+    extends ParamHandler, TrainTimeable {
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }
@@ -37,8 +42,62 @@ public interface TrainTimeContractable {
     default void setMinuteLimit(int t){ setTrainTimeLimit(TimeUnit.MINUTES, t); }
 
     //set any value in nanoseconds you like.
-    default void setTrainTimeLimit(long time) { setTrainTimeLimit(TimeUnit.NANOSECONDS, time); }
+    default void setTrainTimeLimit(long time) { throw new UnsupportedOperationException(); }
 
     //pass in an value from the TimeUnit enum and the amount of said values.
-    void setTrainTimeLimit(TimeUnit time, long amount);
+    default void setTrainTimeLimit(TimeUnit time, long amount) {
+        setTrainTimeLimitNanos(TimeUnit.NANOSECONDS.convert(amount, time));
+    }
+
+    default void setTrainTimeLimit(long amount, TimeUnit time) {
+        setTrainTimeLimit(time, amount);
+    }
+
+    default long getTrainTimeLimitNanos() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setTrainTimeLimitNanos(long nanos) {
+        setTrainTimeLimit(nanos);
+    }
+
+    default boolean hasTrainTimeLimit() {
+        return getTrainTimeLimitNanos() >= 0;
+    }
+
+    default long getRemainingTrainTimeNanos() {
+        long result = getTrainTimeLimitNanos() - getTrainTimeNanos();
+        return result;
+    }
+
+    default boolean hasRemainingTrainTime() {
+        if(!hasTrainTimeLimit()) {
+            return true; // if there's no train time limit then there's always remaining train time
+        }
+        long prediction = predictNextTrainTimeNanos();
+        return getRemainingTrainTimeNanos() > prediction;
+    }
+
+    default long predictNextTrainTimeNanos() {
+        return 0;
+    }
+
+    default boolean isBuilt() {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean hasRemainingTraining() {
+        return !isBuilt() && hasRemainingTrainTime();
+    }
+
+    String TRAIN_TIME_LIMIT_NANOS_FLAG = "trtl";
+
+    @Override default ParamSet getParams() {
+        return ParamHandler.super.getParams().add(TRAIN_TIME_LIMIT_NANOS_FLAG, getTrainTimeLimitNanos());
+    }
+
+    @Override default void setParams(ParamSet param) {
+        ParamHandler.setParam(param, TRAIN_TIME_LIMIT_NANOS_FLAG, this::setTrainTimeLimitNanos, Long.class);
+    }
+
 }

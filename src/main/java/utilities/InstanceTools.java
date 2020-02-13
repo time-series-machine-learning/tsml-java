@@ -775,6 +775,14 @@ public class InstanceTools {
         return combo;
     }
 
+    public static Map<Double, Instances> byClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(), k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
+    }
+
     public static Instance reverseSeries(Instance inst){
         Instance newInst = new DenseInstance(inst);
 

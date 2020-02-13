@@ -14,8 +14,8 @@
  */
 package tsml.classifiers.multivariate;
 
-import tsml.elastic_distance_measures.multivariate.DTW_D;
-import tsml.elastic_distance_measures.multivariate.DTW_I;
+import tsml.classifiers.distance_based.distances.old.DTW_D;
+import tsml.classifiers.distance_based.distances.old.DTW_I;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +24,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.elastic_distance_measures.DTW_DistanceBasic;
+import tsml.classifiers.distance_based.distances.old.DTW_DistanceBasic;
 import static utilities.InstanceTools.findMinDistance;
 
 /**

@@ -47,3 +47,5 @@ Analysis/
 # Personal working environments.
 src/main/java/Michael/*
 out/production/classes/META-INF/tsml.main.kotlin_module
+
+src/main/java/go/

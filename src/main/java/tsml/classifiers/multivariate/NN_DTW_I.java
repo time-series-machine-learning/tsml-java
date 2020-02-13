@@ -14,7 +14,7 @@
  */
 package tsml.classifiers.multivariate;
 
-import tsml.elastic_distance_measures.multivariate.DTW_I;
+import tsml.classifiers.distance_based.distances.old.DTW_I;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;
 import weka.classifiers.AbstractClassifier;

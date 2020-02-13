@@ -18,7 +18,6 @@ import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,9 +26,15 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.DebugPrinting;
-import utilities.GenericTools;
-import utilities.InstanceTools;
+
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.TrainTimeable;
+import utilities.*;
+import weka.classifiers.Classifier;
+import weka.core.Instances;
+import weka.core.OptionHandler;
+import weka.core.Randomizable;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
@@ -132,7 +137,99 @@ import utilities.InstanceTools;
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
  */
-public class ClassifierResults implements DebugPrinting, Serializable{
+public class ClassifierResults implements DebugPrinting, Serializable, MemoryWatchable, TrainTimeable {
+
+    @Override public long getMaxMemoryUsageInBytes() {
+        return getMemory();
+    }
+
+    @Override public double getVarianceMemoryUsageInBytes() {
+        return Math.pow(stdDevMemoryUsageInBytes, 2);
+    }
+
+    @Override public long getMemoryReadingCount() {
+        return memoryReadingCount;
+    }
+
+    @Override public long getTrainTimeNanos() {
+        return getBuildTimeInNanos();
+    }
+
+    @Override public long getTrainEstimateTimeNanos() {
+        return getBuildPlusEstimateTime() - getBuildTime();
+    }
+
+    @Override public long getTrainPlusEstimateTimeNanos() {
+        return getBuildPlusEstimateTime();
+    }
+
+    private String os = "unknown";
+    private String cpuInfo = "unknown";
+
+    public String getOs() {
+        return os;
+    }
+
+    public void setOs(final String os) {
+        this.os = os;
+    }
+
+    public String getCpuInfo() {
+        return cpuInfo;
+    }
+
+    public void setCpuInfo(final String cpuInfo) {
+        this.cpuInfo = cpuInfo;
+    }
+
+    public void setNonResourceDetails(final Classifier classifier, final Instances data) {
+        setDatasetName(data.relationName());
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
+            setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
+        } else {
+            setClassifierName(classifier.getClass().getSimpleName());
+        }
+        if(classifier instanceof Randomizable) {
+            setFoldID(((Randomizable) classifier).getSeed());
+        }
+        if(classifier instanceof OptionHandler) {
+            setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
+        }
+        setOs(SysUtils.getOsName());
+        setCpuInfo(SysUtils.findCpuInfo());
+    }
+
+    public void setDetails(final Classifier classifier, final Instances data) {
+        setNonResourceDetails(classifier, data);
+        setMemoryDetails(classifier);
+        setTimeDetails(classifier);
+    }
+
+    public void setTimeDetails(final Object obj) {
+        if(obj instanceof TrainTimeable) {
+            setTimeDetails((TrainTimeable) obj);
+        }
+    }
+
+    public void setTimeDetails(final TrainTimeable trainTimeable) {
+        setBuildTime(trainTimeable.getTrainTimeNanos());
+        setBuildPlusEstimateTime(trainTimeable.getTrainTimeNanos() + trainTimeable.getTrainEstimateTimeNanos());
+    }
+
+    public void setMemoryDetails(final Object obj) {
+        if(obj instanceof MemoryWatchable) {
+            setMemoryDetails((MemoryWatchable) obj);
+        }
+    }
+
+    public void setMemoryDetails(final MemoryWatchable memoryWatchable) {
+        setMemory(memoryWatchable.getMaxMemoryUsageInBytes());
+        setMeanMemoryUsageInBytes(memoryWatchable.getMeanMemoryUsageInBytes());
+        setGarbageCollectionTimeInMillis(memoryWatchable.getGarbageCollectionTimeInMillis());
+        setStdDevMemoryUsageInBytes(memoryWatchable.getStdDevMemoryUsageInBytes());
+        setMemoryReadingCount(memoryWatchable.getMemoryReadingCount());
+    }
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -148,6 +245,39 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
+    private double meanMemoryUsageInBytes = -1;
+    private double stdDevMemoryUsageInBytes = -1;
+    private long garbageCollectionTimeInMillis = -1;
+
+    public void setMemoryReadingCount(final long memoryReadingCount) {
+        this.memoryReadingCount = memoryReadingCount;
+    }
+
+    private long memoryReadingCount = 0;
+
+    public double getMeanMemoryUsageInBytes() {
+        return meanMemoryUsageInBytes;
+    }
+
+    public void setMeanMemoryUsageInBytes(final double meanMemoryUsageInBytes) {
+        this.meanMemoryUsageInBytes = meanMemoryUsageInBytes;
+    }
+
+    public double getStdDevMemoryUsageInBytes() {
+        return stdDevMemoryUsageInBytes;
+    }
+
+    public void setStdDevMemoryUsageInBytes(final double stdDevMemoryUsageInBytes) {
+        this.stdDevMemoryUsageInBytes = stdDevMemoryUsageInBytes;
+    }
+
+    public long getGarbageCollectionTimeInMillis() {
+        return garbageCollectionTimeInMillis;
+    }
+
+    public void setGarbageCollectionTimeInMillis(final long garbageCollectionTimeInMillis) {
+        this.garbageCollectionTimeInMillis = garbageCollectionTimeInMillis;
+    }
 
 
     private enum FileType {
@@ -782,9 +912,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * @throws Exception if buildTime is less than 1
      */
-    public void setBuildTime(long buildTime) throws Exception {
+    public void setBuildTime(long buildTime) {
         if (errorOnTimingOfZero && buildTime < 1)
-            throw new Exception("Build time passed has invalid value, " + buildTime + ". If greater resolution is needed, "
+            throw new RuntimeException("Build time passed has invalid value, " + buildTime + ". If greater resolution" +
+                                           " is needed, "
                         + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
                     + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
                     + "for this call");
@@ -1622,6 +1753,24 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             errorEstimateTime = Long.parseLong(parts[7]);
         if (parts.length > 8)
             buildPlusEstimateTime = Long.parseLong(parts[8]);
+        if(parts.length > 9) {
+            os = parts[9];
+        }
+        if(parts.length > 10) {
+            cpuInfo = parts[10];
+        }
+        if(parts.length > 11) {
+            meanMemoryUsageInBytes = Double.parseDouble(parts[11]);
+        }
+        if(parts.length > 12) {
+            stdDevMemoryUsageInBytes = Double.parseDouble(parts[12]);
+        }
+        if(parts.length > 13) {
+            garbageCollectionTimeInMillis = Long.parseLong(parts[13]);
+        }
+        if(parts.length > 14) {
+            memoryReadingCount = Long.parseLong(parts[14]);
+        }
         return acc;
     }
     private String generateThirdLine() {
@@ -1633,7 +1782,14 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             + "," + numClasses()
             + "," + errorEstimateMethod
             + "," + errorEstimateTime
-            + "," + buildPlusEstimateTime;
+            + "," + buildPlusEstimateTime
+            + "," + os
+            + "," + cpuInfo
+            + "," + meanMemoryUsageInBytes
+            + "," + stdDevMemoryUsageInBytes
+            + "," + garbageCollectionTimeInMillis
+            + "," + memoryReadingCount
+            ;
 
         return res;
     }

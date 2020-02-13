@@ -99,7 +99,9 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW"};
+            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW"
+//        , "CEE", "LEE", "DTWV1", "DTWCVV1"
+    };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -763,8 +765,12 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        Classifier c;
-        if(distanceBased.contains(classifier))
+        ClassifierBuilderFactory.ClassifierBuilder classifierBuilder =
+            ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
+        Classifier c = null;
+        if(classifierBuilder != null) {
+            return classifierBuilder.build();
+        } else if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
             c=setDictionaryBased(exp);
