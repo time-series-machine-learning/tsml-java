@@ -27,52 +27,6 @@ public class Dtw extends AbstractDistanceMeasure {
 
     protected double[][] distanceMatrix;
     protected boolean keepDistanceMatrix = false;
-    protected int firstIntervalStart = 0;
-    protected int firstIntervalLength = -1;
-    protected int secondIntervalStart = 0;
-    protected int secondIntervalLength = -1;
-
-    public void setIntervalStart(int intervalStart) {
-        setFirstIntervalStart(intervalStart);
-        setSecondIntervalStart(intervalStart);
-    }
-
-    public void setIntervalLength(int intervalLength) {
-        setFirstIntervalLength(intervalLength);
-        setSecondIntervalLength(intervalLength);
-    }
-
-    public int getFirstIntervalStart() {
-        return firstIntervalStart;
-    }
-
-    public void setFirstIntervalStart(final int firstIntervalStart) {
-        this.firstIntervalStart = firstIntervalStart;
-    }
-
-    public int getFirstIntervalLength() {
-        return firstIntervalLength;
-    }
-
-    public void setFirstIntervalLength(final int firstIntervalLength) {
-        this.firstIntervalLength = firstIntervalLength;
-    }
-
-    public int getSecondIntervalStart() {
-        return secondIntervalStart;
-    }
-
-    public void setSecondIntervalStart(final int secondIntervalStart) {
-        this.secondIntervalStart = secondIntervalStart;
-    }
-
-    public int getSecondIntervalLength() {
-        return secondIntervalLength;
-    }
-
-    public void setSecondIntervalLength(final int secondIntervalLength) {
-        this.secondIntervalLength = secondIntervalLength;
-    }
 
     public double[][] getDistanceMatrix() {
         return distanceMatrix;
@@ -107,14 +61,8 @@ public class Dtw extends AbstractDistanceMeasure {
         double minDist;
         boolean tooBig;
 
-        int aLength = firstIntervalLength;
-        if(aLength < 0) {
-            aLength = first.numAttributes() - 1;
-        }
-        int bLength = secondIntervalLength;
-        if(bLength < 0) {
-            bLength = second.numAttributes() - 1;
-        }
+        int aLength = first.numAttributes() - 1;
+        int bLength = second.numAttributes() - 1;
 
         /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
          generalised for variable window size
@@ -132,7 +80,7 @@ public class Dtw extends AbstractDistanceMeasure {
          //Set boundary elements to max.
          */
         int start, end;
-        for (int i = firstIntervalStart; i < aLength; i++) {
+        for (int i = 0; i < aLength; i++) {
             start = windowSize < i ? i - windowSize : 0;
             end = Math.min(i + windowSize + 1, bLength);
             for (int j = start; j < end; j++) {
@@ -140,19 +88,19 @@ public class Dtw extends AbstractDistanceMeasure {
             }
         }
         distanceMatrix[0][0] =
-            (first.value(firstIntervalStart) - second.value(secondIntervalStart)) * (first.value(firstIntervalStart) - second.value(secondIntervalStart));
+            (first.value(0) - second.value(0)) * (first.value(0) - second.value(0));
 //a is the longer series.
 //Base cases for warping 0 to all with max interval	r
 //Warp first[0] onto all second[1]...second[r+1]
         for (int j = 1; j < windowSize && j < bLength; j++) {
             distanceMatrix[0][j] =
-                distanceMatrix[0][j - 1] + (first.value(firstIntervalStart) - second.value(j + secondIntervalStart)) * (first.value(firstIntervalStart) - second.value(j + secondIntervalStart));
+                distanceMatrix[0][j - 1] + (first.value(0) - second.value(j)) * (first.value(0) - second.value(j));
         }
 
 //	Warp second[0] onto all first[1]...first[r+1]
         for (int i = 1; i < windowSize && i < aLength; i++) {
             distanceMatrix[i][0] =
-                distanceMatrix[i - 1][0] + (first.value(i + firstIntervalStart) - second.value(secondIntervalStart)) * (first.value(i + firstIntervalStart) - second.value(secondIntervalStart));
+                distanceMatrix[i - 1][0] + (first.value(i) - second.value(0)) * (first.value(i) - second.value(0));
         }
 //Warp the rest,
         for (int i = 1; i < aLength; i++) {
@@ -171,7 +119,7 @@ public class Dtw extends AbstractDistanceMeasure {
                     minDist = distanceMatrix[i - 1][j - 1];
                 }
                 distanceMatrix[i][j] =
-                    minDist + (first.value(i + firstIntervalStart) - second.value(j + secondIntervalStart)) * (first.value(i + firstIntervalStart) - second.value(j + secondIntervalStart));
+                    minDist + (first.value(i) - second.value(j)) * (first.value(i) - second.value(js));
                 if (tooBig && distanceMatrix[i][j] < limit) {
                     tooBig = false;
                 }
