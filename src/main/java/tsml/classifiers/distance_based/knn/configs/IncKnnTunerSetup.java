@@ -12,6 +12,7 @@ import utilities.iteration.LinearListIterator;
 import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
+import utilities.serialisation.SerConsumer;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
 
 import static utilities.collections.Utils.replace;
 
-public class IncKnnTunerBuilder implements IncTuner.InitFunction {
+public class IncKnnTunerSetup implements SerConsumer<Instances> {
 
 
     private IncTuner incTunedClassifier = new IncTuner();
@@ -237,7 +238,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     // todo param handling
 
     public IncTuner build() {
-        incTunedClassifier.setInitFunction(this);
+        incTunedClassifier.setTrainSetupFunction(this);
         return incTunedClassifier;
     }
 
@@ -282,7 +283,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return paramSpaceSizeLimitPercentage;
     }
 
-    public IncKnnTunerBuilder setParamSpaceSizeLimitPercentage(final double paramSpaceSizeLimitPercentage) {
+    public IncKnnTunerSetup setParamSpaceSizeLimitPercentage(final double paramSpaceSizeLimitPercentage) {
         this.paramSpaceSizeLimitPercentage = paramSpaceSizeLimitPercentage;
         return this;
     }
@@ -328,7 +329,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
     }
 
     @Override
-    public void init(Instances trainData) {
+    public void accept(Instances trainData) {
         neighbourCount = new Box<>(1); // must start at 1 otherwise the loocv produces no train estimate
         paramCount = new Box<>(0);
         longestExploreTimeNanos = 0;
@@ -490,7 +491,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return incTunedClassifier;
     }
 
-    public IncKnnTunerBuilder setIncTunedClassifier(final IncTuner incTunedClassifier) {
+    public IncKnnTunerSetup setIncTunedClassifier(final IncTuner incTunedClassifier) {
         this.incTunedClassifier = incTunedClassifier;
         return this;
     }
@@ -499,7 +500,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return paramSpace;
     }
 
-    public IncKnnTunerBuilder setParamSpace(final ParamSpace paramSpace) {
+    public IncKnnTunerSetup setParamSpace(final ParamSpace paramSpace) {
         this.paramSpace = paramSpace;
         return this;
     }
@@ -508,7 +509,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return paramSetIterator;
     }
 
-    public IncKnnTunerBuilder setParamSetIterator(final Iterator<ParamSet> paramSetIterator) {
+    public IncKnnTunerSetup setParamSetIterator(final Iterator<ParamSet> paramSetIterator) {
         this.paramSetIterator = paramSetIterator;
         return this;
     }
@@ -517,7 +518,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return maxParamSpaceSize;
     }
 
-    public IncKnnTunerBuilder setParamSpaceSizeLimit(final int limit) {
+    public IncKnnTunerSetup setParamSpaceSizeLimit(final int limit) {
         this.neighbourhoodSizeLimit = limit;
         return this;
     }
@@ -526,7 +527,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return maxNeighbourhoodSize;
     }
 
-    public IncKnnTunerBuilder setNeighbourhoodSizeLimit(final int limit) {
+    public IncKnnTunerSetup setNeighbourhoodSizeLimit(final int limit) {
         this.neighbourhoodSizeLimit = limit;
         return this;
     }
@@ -551,7 +552,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return longestExploreTimeNanos;
     }
 
-    public IncKnnTunerBuilder setLongestExploreTimeNanos(final long longestExploreTimeNanos) {
+    public IncKnnTunerSetup setLongestExploreTimeNanos(final long longestExploreTimeNanos) {
         this.longestExploreTimeNanos = longestExploreTimeNanos;
         return this;
     }
@@ -560,7 +561,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return longestExploitTimeNanos;
     }
 
-    public IncKnnTunerBuilder setLongestExploitTimeNanos(final long longestExploitTimeNanos) {
+    public IncKnnTunerSetup setLongestExploitTimeNanos(final long longestExploitTimeNanos) {
         this.longestExploitTimeNanos = longestExploitTimeNanos;
         return this;
     }
@@ -569,7 +570,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return paramSpaceFunction;
     }
 
-    public IncKnnTunerBuilder setParamSpaceFunction(
+    public IncKnnTunerSetup setParamSpaceFunction(
         final Function<Instances, ParamSpace> paramSpaceFunction) {
         this.paramSpaceFunction = paramSpaceFunction;
         return this;
@@ -579,7 +580,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return optimiser;
     }
 
-    public IncKnnTunerBuilder setOptimiser(final Optimiser optimiser) {
+    public IncKnnTunerSetup setOptimiser(final Optimiser optimiser) {
         this.optimiser = optimiser;
         return this;
     }
@@ -588,20 +589,20 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return knnSupplier;
     }
 
-    public IncKnnTunerBuilder setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
+    public IncKnnTunerSetup setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
         this.knnSupplier = knnSupplier;
         return this;
     }
 
-    public IncKnnTunerBuilder setParamSpace(Function<Instances, ParamSpace> func) {
+    public IncKnnTunerSetup setParamSpace(Function<Instances, ParamSpace> func) {
         return setParamSpaceFunction(func);
     }
 
-    public IncKnnTunerBuilder setParamSpaceFunction(Supplier<ParamSpace> supplier) {
+    public IncKnnTunerSetup setParamSpaceFunction(Supplier<ParamSpace> supplier) {
         return setParamSpace(i -> supplier.get());
     }
 
-    public IncKnnTunerBuilder setParamSpace(Supplier<ParamSpace> supplier) {
+    public IncKnnTunerSetup setParamSpace(Supplier<ParamSpace> supplier) {
         return setParamSpaceFunction(supplier);
     }
 
@@ -609,7 +610,7 @@ public class IncKnnTunerBuilder implements IncTuner.InitFunction {
         return neighbourhoodSizeLimitPercentage;
     }
 
-    public IncKnnTunerBuilder setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
+    public IncKnnTunerSetup setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
         this.neighbourhoodSizeLimitPercentage = neighbourhoodSizeLimitPercentage;
         return this;
     }

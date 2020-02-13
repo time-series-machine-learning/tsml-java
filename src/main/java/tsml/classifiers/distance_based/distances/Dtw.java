@@ -119,7 +119,7 @@ public class Dtw extends AbstractDistanceMeasure {
                     minDist = distanceMatrix[i - 1][j - 1];
                 }
                 distanceMatrix[i][j] =
-                    minDist + (first.value(i) - second.value(j)) * (first.value(i) - second.value(js));
+                    minDist + (first.value(i) - second.value(j)) * (first.value(i) - second.value(j));
                 if (tooBig && distanceMatrix[i][j] < limit) {
                     tooBig = false;
                 }

@@ -223,12 +223,12 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
-        incKnnTunerBuilder
+        IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
+        incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
-        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        incTunedClassifier.setTrainSetupFunction(incKnnTunerSetup);
         return incTunedClassifier;
     }
 
@@ -238,12 +238,12 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
-        incKnnTunerBuilder
+        IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
+        incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
-        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        incTunedClassifier.setTrainSetupFunction(incKnnTunerSetup);
         return incTunedClassifier;
     }
 
