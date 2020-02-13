@@ -23,9 +23,11 @@ import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.cRISE;
+import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.FlatCote;
 import tsml.classifiers.hybrids.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
+import tsml.classifiers.interval_based.C22IF;
 import tsml.classifiers.interval_based.cTSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
@@ -43,6 +45,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import tsml.classifiers.shapelet_based.ShapeletTree;
+import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -210,7 +213,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF"};
+    public static String[] interval= {"LPS","TSF","cTSF","C22IF-A","C22IF-B"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -225,6 +228,16 @@ public class ClassifierLists {
                 break;
             case "cTSF":
                 c=new cTSF();
+                break;
+            case "C22IF-A":
+                c=new C22IF();
+                //((C22IF)c).setOutlierNorm(false);
+                ((C22IF)c).setAttSubsampleSize(22);
+                ((C22IF)c).setUseSummaryStats(false);
+                ((C22IF)c).setBaseClassifier(new RandomTree());
+                break;
+            case "C22IF-B":
+                c=new C22IF();
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
@@ -298,7 +311,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF","Catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -315,6 +328,13 @@ public class ClassifierLists {
             case "TSCHIEF":
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
+                break;
+            case "Catch22":
+                c=new Catch22Classifier();
+                RandomForest rf = new RandomForest();
+                rf.setNumTrees(500);
+                rf.setSeed(fold);
+                ((Catch22Classifier)c).setClassifier(rf);
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
@@ -720,8 +740,6 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
-
-
             default:
                 System.out.println("Unknown bespoke classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between bespokeClassifiers and the switch statement ");
