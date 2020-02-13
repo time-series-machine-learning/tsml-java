@@ -66,9 +66,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     protected boolean firstBatchDone;
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private transient Instances trainData;
-    private boolean debugConstituents = false;
-    private boolean logConstituents = false;
-    protected boolean built;
+    private transient boolean debugConstituents = false;
+    private transient boolean logConstituents = false;
+    protected boolean built = false;
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 
@@ -134,11 +134,22 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     }
 
     public boolean saveToCheckpoint() throws Exception {
-        return false;
+        trainTimer.suspend();
+        memoryWatcher.suspend();
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
+        memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
+        return result;
     }
 
     public boolean loadFromCheckpoint() {
-        return false;
+        trainTimer.suspend();
+        memoryWatcher.suspend();
+        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
+        lastCheckpointTimeStamp = System.nanoTime();
+        memoryWatcher.unsuspend();
+        trainTimer.unsuspend();
+        return result;
     }
 
     public void setMinCheckpointIntervalNanos(final long nanos) {
@@ -194,16 +205,19 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     // end boiler plate ------------------------------------------------------------------------------------------------
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        loadFromCheckpoint();
         trainTimer.enable();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
-        built = false;
-        this.trainData = trainData;
         if(rebuild) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
-            super.buildClassifier(trainData);
             trainEstimateTimer.resetAndDisable();
+        }
+        super.buildClassifier(trainData);
+        built = false;
+        this.trainData = trainData;
+        if(rebuild) {
             if(constituents == null || constituents.isEmpty()) {
                 throw new IllegalStateException("empty constituents");
             }
@@ -230,6 +244,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                         ((Checkpointable) constituent).setSavePath(savePath);
                     }
                     ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
                 }
             }
             nextPartialConstituentsBatch = new ArrayList<>();
@@ -276,7 +291,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
         trainResults.setDetails(this, trainData);
-        // todo combine memory watcher + train times + test times
         this.trainData = null;
         built = true;
         logger.info("build finished");
@@ -306,8 +320,20 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent()) {
             ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
+        StopWatch constituentTrainTimer = new StopWatch();
         trainTimer.disable();
+        if(constituent instanceof TrainTimeable) {
+            constituentTrainTimer.disableAnyway();
+        } else {
+            constituentTrainTimer.enableAnyway();
+        }
+        MemoryWatcher constituentMemoryWatcher = new MemoryWatcher();
         memoryWatcher.disable();
+        if(constituent instanceof MemoryWatchable) {
+            constituentMemoryWatcher.disableAnyway();
+        } else {
+            constituentMemoryWatcher.enableAnyway();
+        }
         logger.fine(() -> "running constituent {id: "+
                    (constituents.size() - partialConstituentsBatch.size())+
                    " " +
@@ -321,8 +347,21 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                    " "+
                    constituent.getClassifierName()+
                    " }");
+        constituentTrainTimer.disableAnyway();
+        constituentMemoryWatcher.disableAnyway();
         memoryWatcher.enable();
         trainTimer.enable();
+        if(constituent instanceof TrainTimeable) {
+            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            trainEstimateTimer.add(((TrainTimeable) constituent).getTrainEstimateTimeNanos());
+        } else {
+            trainTimer.add(constituentTrainTimer);
+        }
+        if(constituent instanceof MemoryWatchable) {
+            memoryWatcher.add((MemoryWatchable) constituent);
+        } else {
+            memoryWatcher.add(constituentMemoryWatcher);
+        }
         if(constituent instanceof TrainTimeContractable && timeRemainingPerConstituent() &&
                 ((TrainTimeContractable) constituent).hasRemainingTraining()) {
             nextPartialConstituentsBatch.add(constituent);
@@ -345,7 +384,6 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     public void nextBuildTick() throws Exception {
         improveNextConstituent();
         regenerateTrainEstimate = true;
-        saveToCheckpoint();
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
