@@ -58,12 +58,15 @@ import static weka.core.Utils.sum;
 public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
-
-
-    public int experimentOption = 0;
     public int maxWindow;
     public boolean tuneK = false;
     public boolean tuneWeight = false;
+    public boolean featureSelection = false;
+    public boolean bigrams = false;
+    public boolean useLogistic = false;
+    public boolean histogramIntersection = false;
+    public int limitVal = 100000;
+    public int limitOp = 0;
 
 
     private ArrayList<Double>[] paramAccuracy;
@@ -99,9 +102,9 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private final int[] wordLengths = { 16, 14, 12, 10, 8 };
     private final int[] alphabetSize = { 4 };
     private final boolean[] normOptions = { true, false };
-    private Integer[] levels = { 1, 2, 3 };
+    public Integer[] levels = { 1, 2, 3 };
     private final double correctThreshold = 0.92;
-    private double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
+    public double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
@@ -463,25 +466,6 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-
-        if (experimentOption == 1){
-            chiLimits = new double[]{ 0.3 };
-        }
-        else if (experimentOption == 2 || experimentOption == 6 || experimentOption == 7){
-            chiLimits = new double[]{ 0 };
-        }
-        else if (experimentOption == 4){
-            levels = new Integer[]{ 1 };
-        }
-        else if (experimentOption == 5){
-            chiLimits = new double[]{ 0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0/7, 0.8, 0.9, 1 };
-        }
-        else if (experimentOption == 10 || experimentOption == 11){
-            chiLimits = new double[]{ 0 };
-            bayesianParameterSelection = false;
-        }
-
-
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -651,13 +635,25 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.cleanAfterBuild = true;
             boss.seed = seed;
 
-            boss.experimentOption = experimentOption;
-            boss.maxWindowSize = maxWindow;
+            int limit;
+            // limit number of features avoid excessive features
+            if (limitOp == 1){
+                limit = (int)(10 * (maxWindow-parameters[2]+10) * parameters[4]);
+            }
+            else{
+                limit = (int)(parameters[5] * limitVal);
+            }
+
             boss.tuningK = tuneK;
+            boss.featureSelection = featureSelection;
+            boss.fsLimit = limit;
+            boss.bigrams = bigrams;
+            boss.wekaClassifier = useLogistic;
+            boss.histogramIntersection = histogramIntersection;
             boss.numClasses = data.numClasses();
 
             boss.buildClassifier(data);
-            if (experimentOption == 9) boss.accuracy = boss.trainAcc();
+            if (useLogistic) boss.accuracy = boss.trainAcc();
             else boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
             if (useWeights){
@@ -1472,7 +1468,6 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 //        c.bayesianParameterSelection = false;
         c.setSeed(fold);
 //        c.setFindTrainAccuracyEstimate(true);
-        c.experimentOption = 10;
         c.tuneK = true;
         //c.tuneWeight = true;
         c.buildClassifier(train);

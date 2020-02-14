@@ -157,7 +157,7 @@ public class ClassifierLists {
     public static String[] dictionary= {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble",
 
-            "KTunecSBOSS", "WeightTunecSBOSS", "cSBOSS", "HIcSBOSS", "HISPcBOSS"};
+            "cS-BOSS","BcS-BOSS","KTune-cS-BOSS","WeightTune-cS-BOSS","Bigram-BcS-BOSS","Bigram-BcBOSS","HI-Bigram-BcS-BOSS","HI-BcS-BOSS","HI-cS-BOSS","FBcS-BOSS","WinLenScale-FBcS-BOSS","HI-FBcS-BOSS","Wise-FBcS-BOSS","Wise2-FBcS-BOSS","Logistic-FBcS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -193,77 +193,94 @@ public class ClassifierLists {
                 c = new WEASEL();
                 break;
 
-            case "OFScBOSS":
+
+            case "cS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 0;
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
                 break;
-            case "FScBOSS":
+            case "BcS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 1;
+                ((cBOSSSP) c).chiLimits = new double[]{0};
                 break;
-            case "BISPcBOSS":
+            case "KTune-cS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 2;
-                break;
-            case "HIOFScBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 3;
-                break;
-            case "BIcBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 4;
-                break;
-            case "SPcBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 5;
-                break;
-            case "HIBISPcBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 6;
-                break;
-            case "HISPcBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 7;
-                break;
-            case "WiseFScBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 8;
-                break;
-            case "LogisticFScBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 9;
-                break;
-            case "cSBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 10;
-                break;
-            case "HIcSBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 11;
-                break;
-            case "KTunecSBOSS":
-                c = new cBOSSSP();
-                ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 10;
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
                 ((cBOSSSP) c).tuneK = true;
                 break;
-            case "WeightTunecSBOSS":
+            case "WeightTune-cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).tuneWeight = true;
+                break;
+            case "Bigram-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).bigrams = true;
+                break;
+            case "Bigram-BcBOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).levels = new Integer[]{1};
+                ((cBOSSSP) c).bigrams = true;
+                break;
+            case "HI-Bigram-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "FBcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                break;
+            case "WinLenScale-FBcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).chiLimits = new double[]{0.3};
+                ((cBOSSSP) c).limitOp = 1;
+                break;
+            case "HI-FBcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "Wise-FBcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).experimentOption = 10;
-                ((cBOSSSP) c).tuneWeight = true;
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).limitVal = 200000;
+                break;
+            case "Wise2-FBcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).setSeed(fold);
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).chiLimits = new double[]{0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
+                ((cBOSSSP) c).limitVal = 200000;
+                break;
+            case "Logistic-FBcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).useLogistic = true;
                 break;
 
 

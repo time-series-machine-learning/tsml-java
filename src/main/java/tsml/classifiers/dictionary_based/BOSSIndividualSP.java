@@ -37,8 +37,11 @@ import static utilities.Utilities.argMax;
  */
 public class BOSSIndividualSP extends AbstractClassifier implements Serializable, Comparable<BOSSIndividualSP>, MultiThreadable {
 
-    public int experimentOption = 0;
-    public int maxWindowSize = 0;
+    public boolean bigrams;
+    public boolean featureSelection;
+    public int fsLimit;
+    public boolean histogramIntersection;
+    public boolean wekaClassifier;
     public boolean tuningK = false;
     public ArrayList<PriorityQueue<ComparableKeyPair<Double,Double>>> neighbours = new ArrayList<>();
     public int maxK = 35;
@@ -191,7 +194,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public void clean() {
         SFAwords = null;
 
-        if (experimentOption == 9){
+        if (wekaClassifier){
             bags = null;
         }
     }
@@ -437,7 +440,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             BitWordLong word = createWord(d);
             words[wInd] = word;
 
-            if (experimentOption != 5 && experimentOption != 7 && experimentOption != 10 && experimentOption != 11) {
+            if (bigrams) {
                 if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
                     BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
 
@@ -557,7 +560,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                 word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
             newWords[wInd] = word;
 
-            if (experimentOption != 5 && experimentOption != 7 && experimentOption != 10 && experimentOption != 11) {
+            if (bigrams) {
                 if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
                     BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
@@ -722,17 +725,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        int limitVal = 100000;
-        if (experimentOption == 8) limitVal = 200000;
-
         // limit number of features avoid excessive features
-        int limit = (int)(chiLimit * limitVal);
+        int limit = fsLimit;
 
-        if (experimentOption == 1){
-            limit = 10 * (maxWindowSize-windowSize+10) * levels;
-        }
-
-        System.out.println(values.size() + " " + limit + " " + levels + " " + windowSize + " " + wordLength + " " + norm);
+        //System.out.println(values.size() + " " + limit + " " + levels + " " + windowSize + " " + wordLength + " " + norm);
 
         if (values.size() > limit) {
             // sort by p_value-squared value
@@ -796,9 +792,9 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        if (chiLimit < 1 && experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7 && experimentOption != 10 && experimentOption != 11) chiSquared();
+        if (featureSelection && chiLimit < 1) chiSquared();
 
-        if (experimentOption == 9) {
+        if (wekaClassifier) {
             words = new HashMap();
 
             int idx = 0;
@@ -891,7 +887,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public double classifyInstance(Instance instance) throws Exception{
         BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
 
-        if (chiLimit < 1 && experimentOption != 2 && experimentOption != 4 && experimentOption != 5 && experimentOption != 6 && experimentOption != 7 && experimentOption != 10 && experimentOption != 11) {
+        if (featureSelection && chiLimit < 1) {
             SPBag oldBag = testBag;
             testBag = new SPBag(oldBag.classVal);
             for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
@@ -901,7 +897,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        if (experimentOption == 9){
+        if (wekaClassifier){
             double[] values = new double[words.size() + 1];
 
             for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : testBag.entrySet()) {
@@ -923,7 +919,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
             for (int i = 0; i < bags.size(); ++i) {
                 double dist;
-                if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7 || experimentOption == 11)
+                if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bags.get(i));
                 else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), Double.MAX_VALUE);
 
@@ -946,7 +942,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
             for (int i = 0; i < bags.size(); ++i) {
                 double dist;
-                if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7 || experimentOption == 11)
+                if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bags.get(i));
                 else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
@@ -980,7 +976,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                     continue;
 
                 double dist;
-                if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7 || experimentOption == 11)
+                if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bags.get(i));
                 else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), Double.MAX_VALUE);
 
@@ -1001,7 +997,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
 
                 double dist;
-                if (experimentOption == 3 || experimentOption == 6 || experimentOption == 7 || experimentOption == 11)
+                if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bags.get(i));
                 else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
 
