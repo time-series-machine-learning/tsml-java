@@ -30,6 +30,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.junit.Test;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
@@ -411,7 +413,7 @@ public class BasicReproductionTests {
         StringBuilder sb = new StringBuilder();
         while (scan.hasNext()) {
             String t = scan.nextLine();
-            if (t.contains("AvgPredTimes:"))
+            if (t.contains("AvgPredTimesBenchmarked:"))
                 break;
             sb.append(t).append("\n");
         }
@@ -520,7 +522,12 @@ public class BasicReproductionTests {
         
         return res;
     }
-    
+
+    @Test
+    public void test() throws Exception {
+        main(new String[0]);
+    }
+
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();
@@ -531,7 +538,7 @@ public class BasicReproductionTests {
         if (!classifiersComplete) {
             System.out.println("Classifiers simple eval recreation failed!");
         }
-        
+
         if (!analysisReproduced) {
             System.out.println("CAWPE analysis recreation failed!");
         }

@@ -29,7 +29,7 @@ import java.util.ArrayList;
      * copyright: Anthony Bagnall
 
  * Global stats:
- * 		mean, variance, skewness, kurtosis,slope, min, max,,
+ * 		mean, variance, skewness, kurtosis, slope, min, max
  * */
 public class SummaryStats extends SimpleBatchFilter {
         private int numMoments=5;
@@ -190,11 +190,11 @@ public Instances process(Instances inst) throws Exception {
 	
 		
             try{
-                Instances test=DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN.arff");
-               Instances filter=new SummaryStats().process(test);
-//               SummaryStats m=new SummaryStats();
-//               m.setInputFormat(test);
-//               Instances filter=Filter.useFilter(test,m);
+                Instances test=DatasetLoading.loadDataNullable("C:\\Users\\ajb\\Dropbox\\TSC Problems\\Beef\\Beef_TRAIN");
+//                Instances filter=new SummaryStats().process(test);
+               SummaryStats m=new SummaryStats();
+               m.setInputFormat(test);
+               Instances filter=Filter.useFilter(test,m);
                System.out.println(filter);
             }
             catch(Exception e){

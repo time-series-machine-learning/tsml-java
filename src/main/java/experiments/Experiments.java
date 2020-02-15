@@ -14,6 +14,7 @@
  */
 package experiments;
 
+import de.bwaldvogel.liblinear.Train;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -33,6 +34,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.ParameterSplittable;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import tsml.classifiers.TrainTimeContractable;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -67,21 +69,21 @@ import weka.core.Instances;
  (see the class of the same name under utilities).
 
  main(String[] args) info:
-      Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
-      Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
+ Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
+ Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
 
-      Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
-          Para name (short/long)  |    Example
-          -dp --dataPath          |    --dataPath=C:/Datasets/
-          -rp --resultsPath       |    --resultsPath=C:/Results/
-          -cn --classifierName    |    --classifierName=RandF
-          -dn --datasetName       |    --datasetName=ItalyPowerDemand
-          -f  --fold              |    --fold=1
+ Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
+ Para name (short/long)  |    Example
+ -dp --dataPath          |    --dataPath=C:/Datasets/
+ -rp --resultsPath       |    --resultsPath=C:/Results/
+ -cn --classifierName    |    --classifierName=RandF
+ -dn --datasetName       |    --datasetName=ItalyPowerDemand
+ -f  --fold              |    --fold=1
 
-      Use --help to see all the optional parameters, and more information about each of them.
+ Use --help to see all the optional parameters, and more information about each of them.
 
-      If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
-      directly, instead of building the String[] args and calling main like a lot of legacy code does.
+ If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
+ directly, instead of building the String[] args and calling main like a lot of legacy code does.
  *
  * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
@@ -105,7 +107,7 @@ public class Experiments  {
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
 
-    //REQUIRED PARAMETERS
+        //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
@@ -125,7 +127,7 @@ public class Experiments  {
                 + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
         public int foldId = 0;
 
-    //OPTIONAL PARAMETERS
+        //OPTIONAL PARAMETERS
         @Parameter(names={"--help"}, hidden=true) //hidden from usage() printout
         private boolean help = false;
 
@@ -174,7 +176,7 @@ public class Experiments  {
                 + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractTrainTimeHours = 0;
 
-                @Parameter(names={"-ctem","--contractTestMillis"}, description = "(long) Defines a time limit, in miliseconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
+        @Parameter(names={"-ctem","--contractTestMillis"}, description = "(long) Defines a time limit, in miliseconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
                 + "Defaults to 0, which sets no contract time. Only one of --contractTestMillis and --contractTestSecs should be supplied. If both are supplied, milis takes preference over seconds. "
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public long contractPredTimeMillis = 0;
@@ -336,7 +338,7 @@ public class Experiments  {
      * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
      * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
 
- Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
+     Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
      Para name (short/long)  |    Example
      -dp --dataPath          |    --dataPath=C:/Datasets/
      -rp --resultsPath       |    --resultsPath=C:/Results/
@@ -344,10 +346,10 @@ public class Experiments  {
      -dn --datasetName       |    --datasetName=ItalyPowerDemand
      -f  --fold              |    --fold=1
 
- Use --help to see all the optional parameters, and more information about each of them.
+     Use --help to see all the optional parameters, and more information about each of them.
 
- If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
- directly, instead of building the String[] args and calling main like a lot of legacy code does.
+     If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
+     directly, instead of building the String[] args and calling main like a lot of legacy code does.
      */
     public static void main(String[] args) throws Exception {
         //even if all else fails, print the args as a sanity check for cluster.
@@ -368,14 +370,14 @@ public class Experiments  {
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
 //                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\";//Where to write results
+                settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-PF-SB"; //Classifier name
+                settings[3]="-cn=HC-Catch22TSF"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 folds=30;
-                String classifier="HC-PF-SB";
+                String classifier="HC-Catch22TSF";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
                 String[] probFiles= DatasetLists.tscProblems112;
@@ -443,13 +445,12 @@ public class Experiments  {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
-
         //2019_06_03: cases in the classifier can now change the classifier name to reflect
-        //paritcular parameters wanting to be represented as different classifiers
-        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the
+        //particular parameters wanting to be represented as different classifiers
+        //e.g. a case ShapeletsContracted might take a contract time (e.g. 1 day) from the args and set up the
         //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
         //such that if the experimenter is looping over contract times, they need only create one case
-        //in the setclassifier switch and pass one classifier name, but loop over contract time directly
+        //in the setClassifier switch and pass one classifier name, but loop over contract time directly
         //
         //so, the setClassifier has been moved to up here, previously only done after the check for
         //whether we abort due to the results file already existing. the instantiation of a classifier
@@ -457,6 +458,9 @@ public class Experiments  {
         //moved to here before the first proper usage of classifiername, such that it can
         //be updated first if need be
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        if(classifier instanceof TrainTimeContractable && expSettings.contractTrainTimeSeconds>0){
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(TimeUnit.SECONDS,expSettings.contractTrainTimeSeconds);
+        }
 
         //Build/make the directory to write the train and/or testFold files to
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
@@ -466,7 +470,6 @@ public class Experiments  {
 
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         String targetFileNameTrain = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
-
         testFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileName);
         trainFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileNameTrain);
 
@@ -556,8 +559,7 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            //Setup train results
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists) {
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -567,7 +569,6 @@ public class Experiments  {
                     trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
             }
             LOGGER.log(Level.FINE, "Train estimate ready.");
-
 
             //Build on the full train data here
             long buildTime = System.nanoTime();
@@ -581,7 +582,7 @@ public class Experiments  {
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists)
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation)
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
 
@@ -647,7 +648,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
 
         /*
         if estimateacc { //want full predictions
@@ -822,7 +823,7 @@ public class Experiments  {
     }
 
     /**
-     * Meta info shall be set by writeResults(...), just generating the prediction info and 
+     * Meta info shall be set by writeResults(...), just generating the prediction info and
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
@@ -832,12 +833,12 @@ public class Experiments  {
     }
 
     /**
-     * If exp.performTimingBenchmark = true, this will return the total time to 
+     * If exp.performTimingBenchmark = true, this will return the total time to
      * sort 1,000 arrays of size 10,000
      *
      * Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds
      *
-     * This can still anecdotally vary between 0.75 to 1.05 on my windows machine, however. 
+     * This can still anecdotally vary between 0.75 to 1.05 on my windows machine, however.
      */
     public static long findBenchmarkTime(ExperimentalArguments exp) {
         if (!exp.performTimingBenchmark)
@@ -867,8 +868,8 @@ public class Experiments  {
 
             int halfR = repeats/2;
             long median = repeats % 2 == 0 ?
-                (times[halfR] + times[halfR+1]) / 2 :
-                times[halfR];
+                    (times[halfR] + times[halfR+1]) / 2 :
+                    times[halfR];
 
             double d = 1000000000;
             StringBuilder sb = new StringBuilder("BENCHMARK TIMINGS, summary of times to "
@@ -934,7 +935,7 @@ public class Experiments  {
     }
 
     /**
-     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the 
+     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. Will by default set numThreads = numCores
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
@@ -942,9 +943,9 @@ public class Experiments  {
     }
 
     /**
-     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the 
-     * standardArgs. If numThreads > 0, will spawn that many threads. If numThreads == 0, will use as many threads as there are cores, 
-     * else if numThreads == -1, will spawn as many threads as there are cores minus 1, to aid usability of the machine. 
+     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
+     * standardArgs. If numThreads > 0, will spawn that many threads. If numThreads == 0, will use as many threads as there are cores,
+     * else if numThreads == -1, will spawn as many threads as there are cores minus 1, to aid usability of the machine.
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds, int numThreads) throws Exception{
         int numCores = Runtime.getRuntime().availableProcessors();

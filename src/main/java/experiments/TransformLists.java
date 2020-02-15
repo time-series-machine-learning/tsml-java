@@ -15,7 +15,7 @@
 package experiments;
 
 import tsml.filters.*;
-import tsml.filters.shapelet_transforms.ShapeletTransform;
+import tsml.filters.shapelet_filters.ShapeletFilter;
 import weka.filters.SimpleBatchFilter;
 
 /**
@@ -46,7 +46,7 @@ public class TransformLists {
         SimpleBatchFilter transformer = null;
         switch(transformName){
             case "ShapeletTransform": case "ST":
-                transformer = new ShapeletTransform();
+                transformer = new ShapeletFilter();
                 break;
             case "ACF":
                 transformer = new ACF();

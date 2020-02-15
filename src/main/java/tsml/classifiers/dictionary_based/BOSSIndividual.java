@@ -576,7 +576,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        double nn = -1;
 
         for (int i = 0; i < bags.size(); ++i) {
             double dist = BOSSdistance(testBag, bags.get(i), bestDist);
@@ -603,7 +603,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        double nn = -1;
 
         for (int i = 0; i < bags.size(); ++i) {
             if (i == testIndex) //skip 'this' one, leave-one-out
@@ -633,7 +633,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
-            double nn = 0;
+            double nn = -1;
 
             for (int i = 0; i < bags.size(); ++i) {
                 double dist = BOSSdistance(testBag, bags.get(i), bestDist);
@@ -661,7 +661,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
-            double nn = 0;
+            double nn = -1;
 
             for (int i = 0; i < bags.size(); ++i) {
                 if (i == testIndex) //skip 'this' one, leave-one-out

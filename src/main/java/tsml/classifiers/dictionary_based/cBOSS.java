@@ -858,7 +858,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     private String checkpointName(String datasetName){
-        String name = datasetName + seed + "BOSS";
+        String name = datasetName + seed + "cBOSS";
 
         if (trainTimeContract){
             name += ("TTC" + contractTime);
@@ -1389,7 +1389,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         c = new cBOSS(false);
         c.useRecommendedSettings();
-        c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
@@ -1399,7 +1398,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         c = new cBOSS(false);
         c.useRecommendedSettings();
-        c.bayesianParameterSelection = false;
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
@@ -1409,6 +1407,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         c = new cBOSS(false);
         c.useRecommendedSettings();
+        c.bayesianParameterSelection = true;
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
@@ -1418,6 +1417,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         c = new cBOSS(false);
         c.useRecommendedSettings();
+        c.bayesianParameterSelection = true;
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
@@ -1485,10 +1485,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c.setSavePath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
+        long startTime = System.nanoTime();
         c.buildClassifier(train);
+        long endTime =System.nanoTime() - startTime;
         accuracy = ClassifierTools.accuracy(test, c);
 
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers) + " in " + endTime*1e-9 + " seconds");
 
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
@@ -1496,10 +1498,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c.setSavePath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
+        long startTime2 = System.nanoTime();
         c.buildClassifier(train2);
+        long endTime2 = System.nanoTime() - startTime2;
         accuracy = ClassifierTools.accuracy(test2, c);
 
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
 
         c = new cBOSS(false);
         c.setMemoryLimit(DataUnit.MEGABYTE, 500);
@@ -1519,32 +1523,20 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        //Output 02/08/19
+        //Output 19/11/19
         /*
         JAVAGENT: call premain instrumentation for class SizeOf
-        CV acc =0.9552238805970149
         CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.923226433430515 numClassifiers = [50]
-        CV acc =0.7666666666666667
         CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
-        CV acc =0.9402985074626866
         Bayesian CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.9300291545189504 numClassifiers = [50]
-        CV acc =0.9
         Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
-        CV acc =0.8955223880597015
         FastMax CVAcc BOSS accuracy on ItalyPowerDemand fold 0 = 0.8415937803692906 numClassifiers = [50]
-        CV acc =0.4
         FastMax CVAcc BOSS accuracy on ERing fold 0 = 0.725925925925926 numClassifiers = [50, 50, 50, 50]
-        CV acc =0.9552238805970149
         CAWPE Subsample BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [80]
-        CV acc =0.7
         CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8481481481481481 numClassifiers = [25, 25, 25, 25]
-        CV acc =0.6865671641791045
-        Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80]
-        CV acc =0.3
-        Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190]
-        CV acc =0.6865671641791045
+        Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80] in 2.2928520000000003 seconds
+        Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190] in 27.359452200000003 seconds
         Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7094266277939747 numClassifiers = [50]
-        CV acc =0.3
         Contract 500MB BOSS accuracy on ERing fold 0 = 0.4777777777777778 numClassifiers = [13, 13, 12, 12]
         */
     }

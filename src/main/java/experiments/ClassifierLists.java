@@ -41,7 +41,7 @@ import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
-import tsml.classifiers.shapelet_based.ShapeletTreeClassifier;
+import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
 import weka.classifiers.bayes.NaiveBayes;
@@ -370,7 +370,7 @@ public class ClassifierLists {
                 c=new ShapeletTransformClassifier();
                 break;
             case "ShapeletTreeClassifier":
-                c=new ShapeletTreeClassifier();
+                c=new ShapeletTree();
                 break;
            default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");

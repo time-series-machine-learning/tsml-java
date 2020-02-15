@@ -36,7 +36,7 @@ import weka.core.converters.ArffSaver;
 
 /**
  * Class for handling the loading of datasets, from disk and the baked-in example datasets
- * 
+ *
  * @author James Large (james.large@uea.ac.uk)
  */
 public class DatasetLoading {
@@ -44,18 +44,20 @@ public class DatasetLoading {
     private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
 
     private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
-    
+
     public static final String BAKED_IN_UCI_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "uci/";
     public static final String BAKED_IN_TSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "tsc/";
     public static final String BAKED_IN_MTSC_DATA_PATH = BAKED_IN_DATA_MASTERPATH + "mtsc/";
-    
+
     public static final String[] BAKED_IN_UCI_DATASETS = { "iris", "hayes-roth", "teaching" };
     public static final String[] BAKED_IN_TSC_DATASETS = { "ItalyPowerDemand", "Beef" };
     public static final String[] BAKED_IN_MTSC_DATASETS = { "BasicMotions" };
-    
+
     private static String LOXO_ATT_ID = "experimentsSplitAttribute";
     private static double proportionKeptForTraining = 0.5;
-    
+
+    private static int MAX_DECIMAL_PLACES = Integer.MAX_VALUE;
+
     private static boolean debug = false;
 
     public static String getLeaveOneXOutAttributeID() {
@@ -65,7 +67,7 @@ public class DatasetLoading {
     public static void setLeaveOneXOutAttributeID(String LOXO_ATT_ID) {
         DatasetLoading.LOXO_ATT_ID = LOXO_ATT_ID;
     }
-    
+
     public static double getProportionKeptForTraining() {
         return proportionKeptForTraining;
     }
@@ -73,65 +75,69 @@ public class DatasetLoading {
     public static void setProportionKeptForTraining(double proportionKeptForTraining) {
         DatasetLoading.proportionKeptForTraining = proportionKeptForTraining;
     }
-    
-    
-    
+
+
+
     public static void setDebug(boolean d) {
         debug = d;
-        
+
         if (debug)
             LOGGER.setLevel(Level.FINEST);
-        else 
+        else
             LOGGER.setLevel(Level.INFO);
     }
     public static boolean getDebug() {
         return debug;
     }
-    
-    
+
+
     /**
-     * Helper function for loading the baked-in ItalyPowerDemand dataset, one of the 
+     * Helper function for loading the baked-in ItalyPowerDemand dataset, one of the
      * UCR datasets for TSC
      *
      * http://timeseriesclassification.com/description.php?Dataset=ItalyPowerDemand
-     * 
+     *
      * UCR data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
      * Train/test distributions are maintained between resamples.
-     * 
-     * @param seed the seed for resampling the data. 
+     *
+     * @param seed the seed for resampling the data.
      * @return new Instances[] { trainSet, testSet };
      * @throws Exception if data loading or sampling failed
      */
     public static Instances[] sampleItalyPowerDemand(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
-    
+
+    public static Instances[] sampleGunPoint(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "GunPoint", seed);
+    }
+
     /**
-     * Helper function for loading the baked-in Beef dataset, one of the 
+     * Helper function for loading the baked-in Beef dataset, one of the
      * UCR datasets for TSC
      *
      * http://timeseriesclassification.com/description.php?Dataset=Beef
-     * 
+     *
      * UCR data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
      * Train/test distributions are maintained between resamples.
-     * 
-     * @param seed the seed for resampling the data. 
+     *
+     * @param seed the seed for resampling the data.
      * @return new Instances[] { trainSet, testSet };
      * @throws Exception if data loading or sampling failed
      */
     public static Instances[] sampleBeef(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "Beef", seed);
     }
-    
+
     /**
-     * Helper function for loading the baked-in BasicMotions dataset, one of the 
+     * Helper function for loading the baked-in BasicMotions dataset, one of the
      * UEA datasets for MTSC
-     * 
+     *
      * http://timeseriesclassification.com/description.php?Dataset=BasicMotions
-     * 
+     *
      * UEA-MTSC data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
      * Train/test distributions are maintained between resamples.
-     * 
+     *
      * @param seed the seed for resampling the data
      * @return new Instances[] { trainSet, testSet };
      * @throws Exception if data loading or sampling failed
@@ -139,16 +145,16 @@ public class DatasetLoading {
     public static Instances[] sampleBasicMotions(int seed) throws Exception {
         return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
     }
-    
+
     /**
-     * Helper function for loading the baked-in Iris dataset, one of the classical 
+     * Helper function for loading the baked-in Iris dataset, one of the classical
      * UCI datasets for general classification
-     * 
+     *
      * https://archive.ics.uci.edu/ml/datasets/iris
-     * 
-     * UCI data comes in a single file. The proportion of data kept for training is 
+     *
+     * UCI data comes in a single file. The proportion of data kept for training is
      * defined by the static proportionKeptForTraining, default = 0.5
-     * 
+     *
      * @param seed the seed for resampling the data.
      * @return new Instances[] { trainSet, testSet };
      * @throws Exception if data loading or sampling failed
@@ -156,16 +162,16 @@ public class DatasetLoading {
     public static Instances[] sampleIris(int seed) throws Exception {
         return sampleDataset(BAKED_IN_UCI_DATA_PATH, "iris", seed);
     }
-    
+
     /**
-     * Helper function for loading the baked-in Hayes-Roth dataset, one of the classical 
+     * Helper function for loading the baked-in Hayes-Roth dataset, one of the classical
      * UCI datasets for general classification
-     * 
+     *
      * https://archive.ics.uci.edu/ml/datasets/Hayes-Roth
-     * 
-     * UCI data comes in a single file. The proportion of data kept for training is 
+     *
+     * UCI data comes in a single file. The proportion of data kept for training is
      * defined by the static proportionKeptForTraining, default = 0.5
-     * 
+     *
      * @param seed the seed for resampling the data.
      * @return new Instances[] { trainSet, testSet };
      * @throws Exception if data loading or sampling failed
@@ -173,9 +179,9 @@ public class DatasetLoading {
     public static Instances[] sampleHayesRoth(int seed) throws Exception {
         return sampleDataset(BAKED_IN_UCI_DATA_PATH, "hayes-roth", seed);
     }
-    
-    
-    
+
+
+
     /**
      * This method will return a train/test split of the problem, resampled with the fold ID given.
      *
@@ -252,17 +258,17 @@ public class DatasetLoading {
         return data;
     }
 
-        /**
-     * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase() 
-     * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of 
+    /**
+     * If the dataset loaded has a first attribute whose name _contains_ the string "experimentsSplitAttribute".toLowerCase()
+     * then it will be assumed that we want to perform a leave out one X cross validation. Instances are sampled such that fold N is comprised of
      * a test set with all instances with first-attribute equal to the Nth unique value in a sorted list of first-attributes. The train
      * set would be all other instances. The first attribute would then be removed from all instances, so that they are not given
-     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible 
+     * to the classifier to potentially learn from. It is up to the user to ensure the the foldID requested is within the range of possible
      * values 1 to numUniqueFirstAttValues
-     * 
+     *
      * @return new Instances[] { trainSet, testSet };
      */
-    public static Instances[] splitDatasetByFirstAttribute(Instances all, int foldId) {        
+    public static Instances[] splitDatasetByFirstAttribute(Instances all, int foldId) {
         TreeMap<Double, Integer> splitVariables = new TreeMap<>();
         for (int i = 0; i < all.numInstances(); i++) {
             //even if it's a string attribute, this val corresponds to the index into the array of possible strings for this att
@@ -270,7 +276,7 @@ public class DatasetLoading {
             Integer val = splitVariables.get(key);
             if (val == null)
                 val = 0;
-            splitVariables.put(key, ++val); 
+            splitVariables.put(key, ++val);
         }
 
         //find the split attribute value to keep for testing this fold
@@ -295,15 +301,15 @@ public class DatasetLoading {
         //delete the split attribute
         train.deleteAttributeAt(0);
         test.deleteAttributeAt(0);
-        
+
         return new Instances[] { train, test };
     }
-    
-    
+
+
     /**
-     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * Loads the arff file at the target location and sets the last attribute to be the class value,
      * or throws IOException on any error.
-     * 
+     *
      * @param fullPath path to the file to try and load
      * @return Instances from file.
      * @throws java.io.IOException if cannot find the file, or file is malformed
@@ -311,14 +317,14 @@ public class DatasetLoading {
     public static Instances loadDataThrowable(String fullPath) throws IOException {
         if (!fullPath.toLowerCase().endsWith(".arff"))
             fullPath += ".arff";
-            
+
         return loadDataThrowable(new File(fullPath));
     }
 
     /**
-     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * Loads the arff file at the target location and sets the last attribute to be the class value,
      * or throws IOException on any error.
-     * 
+     *
      * @param targetFile the file to try and load
      * @return Instances from file.
      * @throws java.io.IOException if cannot find the file, or file is malformed
@@ -330,42 +336,42 @@ public class DatasetLoading {
         reader.close();
         return inst;
     }
-    
+
 
     /**
-     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * Loads the arff file at the target location and sets the last attribute to be the class value,
      * or returns null on any error, such as not finding the file or it being malformed
-     * 
+     *
      * @param fullPath path to the file to try and load
      * @return Instances from file.
      */
     public static Instances loadData(String fullPath) {
         if (!fullPath.toLowerCase().endsWith(".arff"))
             fullPath += ".arff";
-            
+
         return loadDataNullable(new File(fullPath));
     }
 
 
-    
+
     /**
-     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * Loads the arff file at the target location and sets the last attribute to be the class value,
      * or returns null on any error, such as not finding the file or it being malformed
-     * 
+     *
      * @param fullPath path to the file to try and load
      * @return Instances from file.
      */
     public static Instances loadDataNullable(String fullPath) {
         if (!fullPath.toLowerCase().endsWith(".arff"))
             fullPath += ".arff";
-            
+
         return loadDataNullable(new File(fullPath));
     }
 
     /**
-     * Loads the arff file at the target location and sets the last attribute to be the class value, 
+     * Loads the arff file at the target location and sets the last attribute to be the class value,
      * or returns null on any error, such as not finding the file or it being malformed
-     * 
+     *
      * @param targetFile the file to try and load
      * @return Instances from file.
      */
@@ -377,7 +383,7 @@ public class DatasetLoading {
             return null;
         }
     }
-    
+
     /**
      *  Simple util to saveDatasets out. Useful for shapelet transform.
      *
@@ -387,6 +393,7 @@ public class DatasetLoading {
     public static void saveDataset(Instances dataSet, String fileName) {
         try {
             ArffSaver saver = new ArffSaver();
+            saver.setMaxDecimalPlaces(MAX_DECIMAL_PLACES);
             saver.setInstances(dataSet);
             if (fileName.endsWith(".arff")) {
                 saver.setFile(new File(fileName));
@@ -399,154 +406,154 @@ public class DatasetLoading {
         }
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public static void main(String[] args) throws Exception {
         tests();
     }
-    
-    private static boolean quickEval(Instances insts) throws Exception { 
+
+    private static boolean quickEval(Instances insts) throws Exception {
         Classifier ed = ClassifierLists.setClassifierClassic("ED", 0);
         ed.buildClassifier(insts);
         return ClassifierTools.accuracy(insts, ed) == 1.0;
     }
-    
+
     private static void assert_t(boolean result) throws Exception {
         if (!result) //todo reassess how the proper assert works...
             throw new Exception("Hacky assert failed");
     }
-    
+
     /**
      * Obvious candidate for moving over to proper unit tests when codebase updates 
      * to incorporate them properly
      */
     private static void tests() throws Exception {
-        
+
         //should handle both with/without extension
         String dataPath = BAKED_IN_UCI_DATA_PATH + "iris/iris";
         System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
             System.out.println("Passed: testARFFLoad("+dataPath+")\n");
-        
-        dataPath += ".arff"; 
+
+        dataPath += ".arff";
         System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
             System.out.println("Passed: testARFFLoad("+dataPath+")\n");
-        
+
         System.out.println("Testing: testUCILoad()");
         if (testUCILoad())
             System.out.println("Passed: testUCILoad()\n");
-        
+
         // 0 loads default split, 1 will resample
         System.out.println("Testing: testTSCLoad("+0+")");
         if (testTSCLoad(0))
             System.out.println("Passed: testTSCLoad("+0+")\n");
-        
+
         System.out.println("Testing: testTSCLoad("+1+")");
         if (testTSCLoad(1))
             System.out.println("Passed: testTSCLoad("+1+")\n");
-        
+
         System.out.println("Testing: testMTSCLoad("+0+")");
         if (testMTSCLoad(0))
             System.out.println("Passed: testMTSCLoad("+0+")\n");
-        
+
         System.out.println("Testing: testMTSCLoad("+1+")");
         if (testMTSCLoad(1))
             System.out.println("Passed: testMTSCLoad("+1+")\n");
     }
-    
-    private static boolean testARFFLoad(String dataPath) throws Exception { 
-        
+
+    private static boolean testARFFLoad(String dataPath) throws Exception {
+
         Instances data = DatasetLoading.loadDataThrowable(dataPath);
-                
+
         assert_t(data != null);
         assert_t(data.relationName().equals("iris"));
         assert_t(data.numInstances() == 150);
         assert_t(data.numAttributes() == 5);
         assert_t(data.numClasses() == 3);
         assert_t(data.classIndex() == data.numAttributes()-1);
-        
+
         assert_t(quickEval(data));
-        
+
         return true;
     }
-    
-    private static boolean testUCILoad() throws Exception { 
+
+    private static boolean testUCILoad() throws Exception {
         proportionKeptForTraining = 0.5;
         Instances[] data = sampleIris(0);
-                
+
         assert_t(data != null);
-        
+
         assert_t(data[0] != null);
         assert_t(data[0].relationName().equals("iris"));
         assert_t(data[0].numInstances() == 75);
         assert_t(data[0].numAttributes() == 5);
         assert_t(data[0].numClasses() == 3);
         assert_t(data[0].classIndex() == data[0].numAttributes()-1);
-        
+
         assert_t(data[1] != null);
         assert_t(data[1].relationName().equals("iris"));
         assert_t(data[1].numInstances() == 75);
         assert_t(data[1].numAttributes() == 5);
         assert_t(data[1].numClasses() == 3);
         assert_t(data[1].classIndex() == data[1].numAttributes()-1);
-        
+
         assert_t(quickEval(data[0]));
         assert_t(quickEval(data[1]));
-        
+
         return true;
     }
-    
-    private static boolean testTSCLoad(int seed) throws Exception { 
+
+    private static boolean testTSCLoad(int seed) throws Exception {
         //2 class
         Instances[] data = sampleItalyPowerDemand(seed);
-                        
+
         assert_t(data != null);
-        
+
         assert_t(data[0] != null);
         assert_t(data[0].relationName().equals("ItalyPowerDemand"));
         assert_t(data[0].numInstances() == 67);
         assert_t(data[0].numAttributes() == 25);
         assert_t(data[0].numClasses() == 2);
         assert_t(data[0].classIndex() == data[0].numAttributes()-1);
-        
+
         assert_t(data[1] != null);
         assert_t(data[1].relationName().equals("ItalyPowerDemand"));
         assert_t(data[1].numInstances() == 1029);
         assert_t(data[1].numAttributes() == 25);
         assert_t(data[1].numClasses() == 2);
         assert_t(data[1].classIndex() == data[1].numAttributes()-1);
-        
+
         assert_t(quickEval(data[0]));
         assert_t(quickEval(data[1]));
-        
+
         return true;
     }
-    
-    private static boolean testMTSCLoad(int seed) throws Exception { 
+
+    private static boolean testMTSCLoad(int seed) throws Exception {
         Instances[] data = sampleBasicMotions(seed);
-        
+
         assert_t(data != null);
-        
+
         assert_t(data[0] != null);
         assert_t(data[0].relationName().equals("BasicMotions"));
         assert_t(data[0].numInstances() == 40);
@@ -554,7 +561,7 @@ public class DatasetLoading {
         assert_t(data[0].attribute(0).relation().numAttributes() == 100);
         assert_t(data[0].numClasses() == 4);
         assert_t(data[0].classIndex() == data[0].numAttributes()-1);
-        
+
         assert_t(data[1] != null);
         assert_t(data[1].relationName().equals("BasicMotions"));
         assert_t(data[1].numInstances() == 40);
@@ -562,12 +569,12 @@ public class DatasetLoading {
         assert_t(data[1].attribute(0).relation().numAttributes() == 100);
         assert_t(data[1].numClasses() == 4);
         assert_t(data[1].classIndex() == data[1].numAttributes()-1);
-        
+
         assert_t(quickEval(data[0]));
         assert_t(quickEval(data[1]));
-        
+
         return true;
     }
-    
-    
+
+
 }

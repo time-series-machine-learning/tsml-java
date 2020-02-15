@@ -14,8 +14,8 @@
  */
 package tsml.classifiers.distance_based;
 import java.util.ArrayList;
-import tsml.elastic_distance_measures.DTW;
-import tsml.elastic_distance_measures.DTW_DistanceBasic;
+import tsml.classifiers.distance_based.distances.old.DTW;
+import tsml.classifiers.distance_based.distances.old.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
