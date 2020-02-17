@@ -33,7 +33,7 @@ import weka.filters.Filter;
  * @author Jason Lines (j.lines@uea.ac.uk)
  * 
  * Implementation of:
- * Górecki, Tomasz, and Maciej Łuczak. 
+ * Gorecki, Tomasz, and Maciej Luczak.
  * Non-isometric transforms in time series classification using DTW
  * Knowledge-Based Systems 61 (2014): 98-108.
  * 
@@ -94,7 +94,7 @@ public class DTD_C extends DD_DTW{
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "T. Górecki and M. Łuczak");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "T. Gorecki and M. Luczak");
         result.setValue(TechnicalInformation.Field.TITLE, "Non-isometric transforms in time series classification using DTW");
         result.setValue(TechnicalInformation.Field.JOURNAL, "Knowledge-Based Systems");
         result.setValue(TechnicalInformation.Field.VOLUME, "61");
