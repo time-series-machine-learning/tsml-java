@@ -7,19 +7,15 @@ created edited by goastler on 17/02/2020
     
 */
 
-import weka.core.Instances;
+public class Ensembler {
 
-public class Info {
-
-    public Info() {
+    public Ensembler() {
 
     }
 
-    public Info(Info other) {
+    public Ensembler(Ensembler other) {
         throw new UnsupportedOperationException();
     }
-
-    private Instances data;
 
     @Override
     public String toString() {

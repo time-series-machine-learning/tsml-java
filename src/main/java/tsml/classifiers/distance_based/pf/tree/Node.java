@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.pf;
+package tsml.classifiers.distance_based.pf.tree;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,6 +7,7 @@ import java.util.List;
 public class Node<A> {
     private List<Node<? extends A>> children = new ArrayList<>();
     private A element;
+    private int level = -1;
 
     public Node() {}
 
@@ -86,5 +87,18 @@ public class Node<A> {
             }
         }
         return maxHeight;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public void addChild(Node<A> child) {
+        children.add(child);
+        child.setLevel(level + 1);
     }
 }

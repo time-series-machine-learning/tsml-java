@@ -1,91 +1,166 @@
 package tsml.classifiers.distance_based.pf;
 
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.pf.relative.ExemplarSplit;
-import tsml.classifiers.distance_based.pf.relative.RandomExemplarSplitter;
-import utilities.ClassifierTools;
+import tsml.classifiers.*;
+import tsml.classifiers.distance_based.pf.partition.Partitioner;
+import tsml.classifiers.distance_based.pf.tree.Node;
+import tsml.classifiers.distance_based.pf.tree.Tree;
+import utilities.*;
 import utilities.serialisation.SerConsumer;
+import utilities.serialisation.SerFunction;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class ProximityTree extends EnhancedAbstractClassifier {
+public class ProximityTree extends EnhancedAbstractClassifier implements Rand, StopWatchTrainTimeable, TrainTimeContractable, GcMemoryWatchable {
     // todo estimate train const / actually do it
 
-    private Tree<ExemplarSplit> tree;
-    private Splitter splitter = data -> {
-        throw new UnsupportedOperationException();
-    };
-    private boolean retrain = true;
-    private SerConsumer<Instances> trainSetupFunction = (SerConsumer<Instances>) instances -> {};
-    private List<Node<ExemplarSplit>> backlog;
+    private Tree<Partitioner> tree;
+    private boolean rebuild = true;
+    private SerConsumer<Instances> trainSetupFunction = instances -> {};
+    private List<Node<Partitioner>> backlog;
+    private SerFunction<Instances, Partitioner> partitionerBuilder;
+    private long trainTimeLimitNanos = -1;
+    private StopWatch trainTimer = new StopWatch();
+    private MemoryWatcher memoryWatcher = new MemoryWatcher();
 
-    @Override public void setRetrain(final boolean retrain) {
-        this.retrain = retrain;
-        super.setRetrain(retrain);
+    @Override
+    public StopWatch getTrainTimer() {
+        return trainTimer;
+    }
+
+    @Override
+    public StopWatch getTrainEstimateTimer() {
+        return new StopWatch();
+    }
+
+    @Override
+    public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
+    }
+
+    @Override
+    public void setTrainTimeLimitNanos(long trainTimeLimitNanos) {
+        this.trainTimeLimitNanos = trainTimeLimitNanos;
+    }
+
+    @Override
+    public long getTrainTimeLimitNanos() {
+        return trainTimeLimitNanos;
+    }
+
+    @Override public void setRebuild(final boolean rebuild) {
+        this.rebuild = rebuild;
+        super.setRebuild(rebuild);
+    }
+
+    private Partitioner buildPartitioner(Instances data) {
+        return partitionerBuilder.apply(data);
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        if(rebuild) {
+            trainTimer.resetAndEnable();
+        }
         super.buildClassifier(trainData);
-        if(retrain) {
+        if(rebuild) {
+            rebuild = false;
             trainSetupFunction.accept(trainData);
             tree = new Tree<>();
             backlog = new ArrayList<>();
-            ExemplarSplit exemplarSplit = new ExemplarSplit();
-            exemplarSplit.setData(trainData);
-            Node<ExemplarSplit> node = new Node<>(exemplarSplit);
+            Partitioner partitioner = buildPartitioner(trainData);
+            partitioner.buildClassifier(trainData);
+            Node<Partitioner> node = new Node<>(partitioner);
             backlog.add(node);
             tree.setRoot(node);
         }
         while (hasNext()) {
             next();
         }
+        trainTimer.disable();
+    }
+
+    @Override
+    public double[] distributionForInstance(Instance instance) throws Exception {
+        Node<? extends Partitioner> node = tree.getRoot();
+        boolean stop = false;
+        double[] distribution = new double[numClasses];
+        while (!stop) {
+            Partitioner partitioner = node.getElement();
+            int index = partitioner.getPartitionIndex(instance);
+            if(node.isLeaf()) {
+                node = null;
+                stop = true;
+                distribution[index]++;
+            } else {
+                node = node.getChildren().get(index);
+            }
+        }
+        return distribution;
+    }
+
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        return Utilities.argMax(distributionForInstance(instance), rand);
+    }
+
+    @Override
+    public long predictNextTrainTimeNanos() {
+
     }
 
     public boolean hasNext() {
-        return !backlog.isEmpty();
+        return !backlog.isEmpty() && hasRemainingTraining();
     }
 
     public ProximityTree next() {
-        Node<ExemplarSplit> node = backlog.remove(0);
-        ExemplarSplit exemplarSplit = node.getElement();
-        List<Instances> parts = exemplarSplit.split();
+        Node<Partitioner> node = backlog.remove(0);
+        Partitioner partitioner = node.getElement();
+        partitioner.buildClassifier();
+        List<Instances> parts = partitioner.getPartitions();
         for(Instances part : parts) {
-            ExemplarSplit sub = new ExemplarSplit();
+            Partitioner sub = buildPartitioner(part);
             sub.setData(part);
-            Node<ExemplarSplit> child = new Node<>(sub);
+            Node<Partitioner> child = new Node<>(sub);
             node.getChildren().add(child);
             backlog.add(child);
+            partitioner.cleanUp();
         }
         return this;
-    }
-
-    public Splitter getSplitter() {
-        return splitter;
-    }
-
-    public void setSplitter(final Splitter splitter) {
-        this.splitter = splitter;
     }
 
     public SerConsumer<Instances> getTrainSetupFunction() {
         return trainSetupFunction;
     }
 
-    public void setTrainSetupFunction(final SerConsumer<Instances> trainSetupFunction) {
-        this.trainSetupFunction = trainSetupFunction;
+    public void setTrainSetupFunction(Consumer<Instances> trainSetupFunction) {
+        this.trainSetupFunction = trainSetupFunction::accept;
+    }
+
+    public Function<Instances, Partitioner> getPartitionerBuilder() {
+        return partitionerBuilder;
+    }
+
+    public void setPartitionerBuilder(Function<Instances, Partitioner> partitionerBuilder) {
+        this.partitionerBuilder = partitionerBuilder::apply;
     }
 
     public static void main(String[] args) throws Exception {
-        ProximityTree pt = new ProximityTree();
-        int seed = 0;
-        pt.setSeed(seed);
-        pt.setTrainSetupFunction(trainData -> {
-            RandomExemplarSplitter randomExemplarSplitter = new RandomExemplarSplitter();
-            randomExemplarSplitter.setSeed(pt.getSeed());
-            pt.setSplitter(randomExemplarSplitter);
-        });
+        ProximityTree pt = ProximityTreeConfigs.buildDefaultProximityTree();
         ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
+    }
+
+    @Override
+    public void setRandom(Random random) {
+        this.rand = random;
+    }
+
+    @Override
+    public Random getRandom() {
+        return rand;
     }
 }

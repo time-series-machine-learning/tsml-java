@@ -11,7 +11,7 @@ import java.util.*;
 public class RandomListIterator<A>
     implements DefaultListIterator<A>,
                OptionHandler,
-               Randomizable,
+               Rand,
                Serializable {
 
     public List<A> getList() {
@@ -66,6 +66,10 @@ public class RandomListIterator<A>
 
     public RandomListIterator(int seed) {
         setSeed(seed);
+    }
+
+    public RandomListIterator(Random random) {
+        setRandom(random);
     }
 
     public RandomListIterator(int seed, List<A> list) {
@@ -142,5 +146,13 @@ public class RandomListIterator<A>
         ArrayList<String> options = new ArrayList<>();
         options.add(SEED_FLAG); options.add(String.valueOf(seed));
         return options.toArray(new String[0]);
+    }
+
+    public void setRandom(Random random) {
+        this.random = random;
+    }
+
+    public Random getRandom() {
+        return random;
     }
 }

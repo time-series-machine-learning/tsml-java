@@ -7,7 +7,7 @@ import utilities.StopWatch;
  */
 public interface StopWatchTrainTimeable extends TrainTimeable {
     default StopWatch getTrainTimer() {
-        throw new UnsupportedOperationException();
+        return new StopWatch();
     }
     default StopWatch getTrainEstimateTimer() {
         return new StopWatch();

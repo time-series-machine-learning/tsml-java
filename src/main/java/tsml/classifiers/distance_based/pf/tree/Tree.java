@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.pf;
+package tsml.classifiers.distance_based.pf.tree;
 /*
 
 purpose: // todo - docs - type the purpose of the code here
@@ -7,13 +7,11 @@ created edited by goastler on 17/02/2020
     
 */
 
-import utilities.ArrayUtilities;
 import utilities.Utilities;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.function.Function;
 
 public class Tree<A> {
 
@@ -33,6 +31,7 @@ public class Tree<A> {
 
     public void setRoot(Node<? extends A> root) {
         this.root = root;
+        root.setLevel(0);
     }
 
     @Override

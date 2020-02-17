@@ -5,14 +5,11 @@ import weka.core.Instances;
 import java.util.List;
 
 public interface Split {
-    List<Instances> getParts();
-    Instances getData();
-    default void cleanUp() {
+    List<Instances> getSplitOutputData();
+    Instances getSplitInputData();
+    default void cleanUpSplit() {
 
     }
-    double getScore();
-    void setScore(double score);
-    List<Instances> split(Instances data);
-    void setData(Instances data);
-    List<Instances> split();
+    double getSplitScore();
+    void setSplitScore(double score);
 }

@@ -195,9 +195,9 @@ public class KnnLoocv
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {

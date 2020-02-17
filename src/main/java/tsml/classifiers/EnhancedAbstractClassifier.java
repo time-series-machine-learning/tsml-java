@@ -17,6 +17,7 @@ package tsml.classifiers;
 import utilities.Copy;
 import utilities.Debugable;
 import utilities.LogUtils;
+import utilities.Rand;
 import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
@@ -84,7 +85,7 @@ ClassifierResults trainResults can also store other information about the traini
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        TrainSeedable, Retrainable,
                                                                                        Debugable, Loggable, Copy,
-                                                                                       ParamHandler, Serializable {
+                                                                                       ParamHandler, Serializable, Rand {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -92,7 +93,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
-    protected boolean rebuild = true;
+    private boolean rebuild = true;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
     protected transient Logger logger = LogUtils.getLogger(this);
@@ -111,6 +112,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     public void setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
         this.regenerateTrainEstimate = regenerateTrainEstimate;
+    }
+
+    @Override
+    public Random getRandom() {
+        return rand;
+    }
+
+    @Override
+    public void setRandom(Random random) {
+        rand = random;
     }
 
     /**
@@ -166,7 +177,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return rebuild;
     }
 
-    @Override public void setRetrain(final boolean rebuild) {
+    @Override public void setRebuild(final boolean rebuild) {
         this.rebuild = rebuild;
     }
 

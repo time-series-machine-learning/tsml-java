@@ -15,13 +15,8 @@
 package utilities;
 
 import tsml.classifiers.GcMemoryWatchable;
-import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.StopWatchTrainTimeable;
-import tsml.classifiers.TrainTimeable;
-import tsml.classifiers.distance_based.knn.KnnLoocv;
-import tsml.classifiers.distance_based.pf.Node;
 import utilities.collections.IntListView;
-import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializedObject;

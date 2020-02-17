@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class RandomExemplarPicker implements ExemplarPicker, Randomizable {
+public class RandomExemplarPicker implements ExemplarPicker {
 
     private int seed = 0;
     private Random random = new Random(seed);
@@ -24,6 +24,16 @@ public class RandomExemplarPicker implements ExemplarPicker, Randomizable {
             exemplars.add(exemplar);
         }
         return exemplars;
+    }
+
+    @Override
+    public void setRandom(Random random) {
+        this.random = random;
+    }
+
+    @Override
+    public Random getRandom() {
+        return random;
     }
 
     @Override
