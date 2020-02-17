@@ -733,6 +733,7 @@ public class ClassifierTools {
 
     public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
         throws Exception {
+        dataPath = StrUtils.asDirPath(dataPath);
         Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
         return trainAndTest(data[0], data[1], classifier);
     }

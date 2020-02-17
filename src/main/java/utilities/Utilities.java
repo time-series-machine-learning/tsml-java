@@ -19,6 +19,7 @@ import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.StopWatchTrainTimeable;
 import tsml.classifiers.TrainTimeable;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
+import tsml.classifiers.distance_based.pf.Node;
 import utilities.collections.IntListView;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -568,4 +569,13 @@ public class Utilities {
         return removed;
     }
 
+    public static <A> int sum(Iterator<? extends A> iterator, Function<A, Integer> func) {
+        int sum = 0;
+        while (iterator.hasNext()) {
+            A next = iterator.next();
+            Integer integer = func.apply(next);
+            sum += integer;
+        }
+        return sum;
+    }
 }
