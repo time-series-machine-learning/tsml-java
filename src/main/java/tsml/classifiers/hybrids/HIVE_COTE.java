@@ -15,11 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package machine_learning.classifiers.ensembles;
+package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
 import java.util.concurrent.TimeUnit;
+
+import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.BOSS;

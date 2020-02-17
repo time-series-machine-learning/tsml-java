@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.hybrids.cote;
+package tsml.classifiers.hybrids.legacy_cote.cote;
 
 import experiments.data.DatasetLists;
 import java.util.ArrayList;

@@ -16,7 +16,7 @@ package experiments;
 
 
 import experiments.Experiments.ExperimentalArguments;
-import machine_learning.classifiers.ensembles.HIVE_COTE;
+import tsml.classifiers.hybrids.HIVE_COTE;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
@@ -24,8 +24,8 @@ import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.cRISE;
-import tsml.classifiers.hybrids.FlatCote;
-import tsml.classifiers.hybrids.HiveCote;
+import tsml.classifiers.hybrids.legacy_cote.FlatCote;
+import tsml.classifiers.hybrids.legacy_cote.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.cTSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -44,7 +44,6 @@ import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
 import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import tsml.classifiers.shapelet_based.ShapeletTree;
-import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
