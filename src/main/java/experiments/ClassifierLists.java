@@ -157,7 +157,10 @@ public class ClassifierLists {
     public static String[] dictionary= {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble",
 
-            "cS-BOSS","BcS-BOSS","KTune-cS-BOSS","WeightTune-cS-BOSS","Bigram-BcS-BOSS","Bigram-BcBOSS","HI-Bigram-BcS-BOSS","HI-BcS-BOSS","HI-cS-BOSS","FBcS-BOSS","WinLenScale-FBcS-BOSS","HI-FBcS-BOSS","Wise-FBcS-BOSS","Wise2-FBcS-BOSS","Logistic-FBcS-BOSS"};
+            "cS-BOSS","BcS-BOSS","KTune-cS-BOSS","WeightTune-cS-BOSS","Bigram-BcS-BOSS","Bigram-BcBOSS",
+            "HI-Bigram-BcS-BOSS","HI-BcS-BOSS","HI-cS-BOSS","FBcS-BOSS","WinLenScale-FBcS-BOSS","HI-FBcS-BOSS",
+            "Wise-FBcS-BOSS","Wise2-FBcS-BOSS","Logistic-FBcS-BOSS","FCNN-BcS-BOSS","HI-FCNN-BcS-BOSS",
+            "HI-LimitFCNN-BcS-BOSS","HI-SLimitFCNN-BcS-BOSS","HI-CompFCNN-BcS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -282,7 +285,38 @@ public class ClassifierLists {
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).useLogistic = true;
                 break;
-
+            case "FCNN-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).FCNN = true;
+                break;
+            case "HI-FCNN-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).FCNN = true;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-LimitFCNN-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).FCNN = true;
+                ((cBOSSSP) c).FCNNlimit = 100;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-SLimitFCNN-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).FCNN = true;
+                ((cBOSSSP) c).FCNNsoftlimit = 100;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-CompFCNN-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).FCNN = true;
+                ((cBOSSSP) c).FCNNcomp = true;
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
 
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");

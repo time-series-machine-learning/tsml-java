@@ -1051,6 +1051,148 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         }
     }
 
+    public double FCNN(boolean FCNNcomp, int FCNNsoftlimit) {
+        double[][] distances = new double[bags.size()][bags.size()];
+        for (int i = 0; i < bags.size(); i++) {
+            for (int n = 0; n < bags.size(); n++) {
+                if (histogramIntersection) distances[i][n] = -histogramIntersection(bags.get(i), bags.get(n));
+                else distances[i][n] = BOSSSpatialPyramidsDistance(bags.get(i), bags.get(n), Double.MAX_VALUE);
+            }
+        }
+
+        HashSet<Integer> S = new HashSet<>();
+        HashSet<Integer> S2 = new HashSet<>();
+        ArrayList<Integer> T = new ArrayList<>(bags.size());
+        for (int i = 0; i < bags.size(); i++) {
+            T.add(i);
+        }
+
+        while (S.size() < FCNNsoftlimit){
+            //centroids
+            for (int c = 0; c < numClasses; c++) {
+                double minDist = Double.MAX_VALUE;
+                int bestMedoid = -1;
+
+                for (int i = 0; i < bags.size(); i++) {
+                    if (bags.get(i).classVal != c)
+                        continue;
+
+                    double medoidDist = 0;
+
+                    for (int n = 0; n < bags.size(); n++) {
+                        if (bags.get(n).classVal != c)
+                            continue;
+
+                        medoidDist += distances[i][n];
+                    }
+
+                    if (medoidDist < minDist) {
+                        minDist = medoidDist;
+                        bestMedoid = i;
+                    }
+                }
+
+                if (bestMedoid != -1) {
+                    S2.add(bestMedoid);
+                }
+            }
+
+            int[] nearest = new int[bags.size()];
+
+            while (!S2.isEmpty()) {
+                S.addAll(S2);
+                T.removeAll(S2);
+                int[] rep = new int[bags.size()];
+                for (int i = 0; i < bags.size(); i++) {
+                    rep[i] = -1;
+                }
+
+                for (Integer q : T) {
+                    for (Integer p : S2) {
+                        if (distances[nearest[q]][q] < distances[p][q]) {
+                            nearest[q] = p;
+                        }
+                    }
+
+                    if (bags.get(q).classVal != bags.get(nearest[q]).classVal &&
+                            (rep[nearest[q]] == -1 || distances[nearest[q]][q] < distances[nearest[q]][rep[nearest[q]]])) {
+                        rep[nearest[q]] = q;
+                    }
+                }
+
+                S2 = new HashSet<>();
+                for (Integer p : S) {
+                    if (rep[p] != -1) {
+                        S2.add(rep[p]);
+                    }
+                }
+            }
+        }
+
+        double correct = 0;
+        for (int i = 0; i < bags.size(); ++i) {
+            double bestDist = Double.MAX_VALUE;
+            double nn = 0;
+
+            for (Integer p: S) {
+                if (p == i) //skip 'this' one, leave-one-out
+                    continue;
+
+                if (distances[i][p] < bestDist) {
+                    bestDist = distances[i][p];
+                    nn = bags.get(p).getClassVal();
+                }
+            }
+
+            if (bags.get(i).classVal == nn)
+                correct++;
+        }
+        double acc = correct/bags.size();
+
+        if (FCNNcomp) {
+            double correct2 = 0;
+            for (int i = 0; i < bags.size(); ++i) {
+                double bestDist = Double.MAX_VALUE;
+                double nn = 0;
+
+                for (int p = 0; p < bags.size(); ++p) {
+                    if (p == i) //skip 'this' one, leave-one-out
+                        continue;
+
+                    if (distances[i][p] < bestDist) {
+                        bestDist = distances[i][p];
+                        nn = bags.get(p).getClassVal();
+                    }
+                }
+
+                if (bags.get(i).classVal == nn)
+                    correct2++;
+            }
+            double acc2 = correct2 / bags.size();
+
+            if (acc2 <= acc) {
+                ArrayList<SPBag> newBags = new ArrayList<>(S.size());
+                for (Integer p : S) {
+                    newBags.add(bags.get(p));
+                }
+                bags = newBags;
+
+                return acc;
+            }
+
+            return acc2;
+        }
+        else {
+            ArrayList<SPBag> newBags = new ArrayList<>(S.size());
+            for (Integer p : S) {
+                newBags.add(bags.get(p));
+            }
+            bags = newBags;
+
+            return acc;
+        }
+    }
+
     public class TestNearestNeighbourThread implements Callable<Double>{
         Instance inst;
 

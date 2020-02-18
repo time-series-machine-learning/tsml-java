@@ -67,7 +67,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public boolean histogramIntersection = false;
     public int limitVal = 100000;
     public int limitOp = 0;
-
+    public boolean FCNN = false;
+    public boolean FCNNcomp = false;
+    public int FCNNlimit = 1;
+    public int FCNNsoftlimit = 1;
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
@@ -654,6 +657,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             boss.buildClassifier(data);
             if (useLogistic) boss.accuracy = boss.trainAcc();
+            else if (FCNN && data.numInstances() >= FCNNlimit) boss.accuracy = boss.FCNN(FCNNcomp, FCNNsoftlimit);
             else boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
             if (useWeights){
@@ -1465,15 +1469,20 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
         c = new cBOSSSP();
         c.useRecommendedSettings();
-//        c.bayesianParameterSelection = false;
         c.setSeed(fold);
-//        c.setFindTrainAccuracyEstimate(true);
-        c.tuneK = true;
-        //c.tuneWeight = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+
+        c = new cBOSSSP();
+        c.useRecommendedSettings();
+        c.setSeed(fold);
+        c.FCNN = true;
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("CVAcc CAWPE BOSS 2 accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
 //        c = new cBOSSSP();
 //        c.useRecommendedSettings();
