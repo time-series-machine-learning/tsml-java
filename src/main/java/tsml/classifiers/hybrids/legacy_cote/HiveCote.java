@@ -33,13 +33,9 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.filters.shapelet_filters.ShapeletFilter;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
+import weka.core.*;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
-import weka.core.Randomizable;
 /**
  * NOTE: consider this code experimental. This is a first pass and may not be final; 
  * it has been informally tested but awaiting rigorous testing before being signed off.
@@ -657,10 +653,24 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         }
     }
 
+    /**
+     * Parses a given list of options to set the parameters of the classifier.
+     * We use this for the tuning mechanism, setting parameters through setOptions
+     <!-- options-start -->
+     * Valid options are: <p/>
+     * <pre> -T
+     * Number of trees.</pre>
+     *
+     * <pre> -I
+     * Number of intervals to fit.</pre>
+     *
+     <!-- options-end -->
+     *
+     * @param options the list of options as an array of strings
+     * @throws Exception if an option is not supported
+     */
 
-    
-    
-    private class ConstituentHiveEnsemble{
+        private class ConstituentHiveEnsemble{
 
         public final Classifier classifier;
         public final double ensembleCvAcc;
