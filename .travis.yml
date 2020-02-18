@@ -16,12 +16,3 @@ script:
   - ./gradlew build --info --parallel
 # testing should be performed in the build above so don't need the following line
 #  - ./gradlew clean test --info --parallel
-deploy:
-  - provider: script
-    script: ./gradew buildJar
-    on:
-      branch: master
-  - provider: script
-    script: ./gradew buildJar
-    on:
-      branch: dev
