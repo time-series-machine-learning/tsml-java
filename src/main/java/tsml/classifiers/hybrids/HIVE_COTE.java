@@ -15,11 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package machine_learning.classifiers.ensembles;
+package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
 import java.util.concurrent.TimeUnit;
+
+import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.BOSS;
@@ -29,10 +31,7 @@ import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.core.Instances;
-import weka.core.Randomizable;
-import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
+import weka.core.*;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 
@@ -213,8 +212,20 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         for (EnsembleModule module : modules)
             if(module.getClassifier() instanceof Randomizable)
                 ((Randomizable)module.getClassifier()).setSeed(seed);
-    }    
-    
+    }
+
+    @Override
+    public void setOptions(String[] options) throws Exception {
+//        System.out.print("TSF para sets ");
+//        for (String str:options)
+//             System.out.print(","+str);
+//        System.out.print("\n");
+        String alpha = Utils.getOption('a', options);
+
+    }
+
+
+
     public static void main(String[] args) throws Exception {
         System.out.println(ClassifierTools.testUtils_getIPDAcc(new HIVE_COTE()));
     }
