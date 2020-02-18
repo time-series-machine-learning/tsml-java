@@ -27,16 +27,16 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.ClassifierTools;
+
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import weka_extras.classifiers.SaveEachParameter;
+import machine_learning.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 
 /**
  *

@@ -190,7 +190,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.closeMatlabConnectionWhenFinished = closeMatlabConnectionWhenFinished;
         return this;
     }
-    
+
     /**
      * if true, will null the individual prediction info of each ClassifierResults object after stats are found 
      */

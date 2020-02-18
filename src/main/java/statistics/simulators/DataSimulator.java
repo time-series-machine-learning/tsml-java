@@ -20,7 +20,7 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.filters.NormalizeCase;
 
 /**
  *
@@ -158,9 +158,8 @@ public class DataSimulator {
     
     
     public double[] generate(int length, int modelNos){
-        double[] d=new double[length];
         Model a=models.get(modelNos);
-        d=a.generateSeries(length);
+        double[] d=a.generateSeries(length);
         return d;
     }
 /** 

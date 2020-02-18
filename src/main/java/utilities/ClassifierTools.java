@@ -18,13 +18,15 @@ package utilities;
 
  */
 
-import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import experiments.data.DatasetLoading;
-import java.io.FileReader;
+
 import java.util.ArrayList;
 import java.util.Random;
+
+import tsml.classifiers.distance_based.distances.Dtw;
+import tsml.classifiers.distance_based.knn.Knn;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -32,7 +34,6 @@ import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
@@ -45,14 +46,10 @@ import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 
 import fileIO.OutFile;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.converters.ArffSaver;
 
 /**
  * @author ajb
@@ -732,5 +729,29 @@ public class ClassifierTools {
         System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
         return res.getAcc() == expectedTestAccuracy;
     }
-    
+
+
+    public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
+        throws Exception {
+        Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances[] data, Classifier classifier) throws Exception {
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances trainData, Instances testData, Classifier classifier)
+        throws Exception {
+        classifier.buildClassifier(trainData);
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testCase : testData) {
+            long timestamp = System.nanoTime();
+            double[] distribution = classifier.distributionForInstance(testCase);
+            long timeTaken = System.nanoTime() - timestamp;
+            int prediction = ArrayUtilities.argMax(distribution);
+            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
+        }
+        return results;
+    }
 }

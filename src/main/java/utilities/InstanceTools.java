@@ -481,7 +481,16 @@ public class InstanceTools {
         return del;
         
     }
-    
+
+    /**
+     * Removes attributes deemed redundant. These are either
+     * 1. All one value (i.e. constant)
+     * 2. Some odd test to count the number different to the one before.
+     * I think this is meant to count the number of different values?
+     * It would be good to delete attributes that are identical to other attributes.
+     * @param train instances from which to remove redundant attributes
+     * @return array of indexes of attributes remove
+     */
      //Returns the *shifted* indexes, so just deleting them should work
 //Removes all constant attributes or attributes with just a single value
     public static int[] removeRedundantTrainAttributes(Instances train){
@@ -500,7 +509,9 @@ public class InstanceTools {
             if(j==train.numInstances())
                 remove=true;
             else{
-//Test if just a single value to remove
+//Test pairwise similarity?
+//I think this is meant to test how many different values there are. If so, it should be
+//done with a HashSet of doubles. This counts how many values are identical to their predecessor
                 count =0;
                 for(j=1;j<train.numInstances();j++){
                     if(train.instance(j-1).value(i)==train.instance(j).value(i))
@@ -509,16 +520,14 @@ public class InstanceTools {
                 if(train.numInstances()-count<minNumDifferent+1)
                     remove=true;
             }
-            if(remove)
-            {
-    // Remove from train
+            if(remove){
+    // Remove from data
                 train.deleteAttributeAt(i);
                 list.add(i);
-    // Remove from test            
             }else{
                 i++;
             }
-            count++;
+  //          count++;
         }
         int[] del=new int[list.size()];
         count=0;
@@ -764,5 +773,96 @@ public class InstanceTools {
         combo=Instances.mergeInstances(combo,b);
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
+    }
+
+    public static Map<Double, Instances> byClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(), k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
+    }
+
+    public static Instance reverseSeries(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            newInst.setValue(i, inst.value(inst.numAttributes()-i-2));
+        }
+
+        return newInst;
+    }
+
+    public static Instance shiftSeries(Instance inst, int shift){
+        Instance newInst = new DenseInstance(inst);
+
+        if (shift < 0){
+            shift = Math.abs(shift);
+
+            for (int i = 0; i < inst.numAttributes()-shift-1; i++){
+                newInst.setValue(i, inst.value(i+shift));
+            }
+
+            for (int i = inst.numAttributes()-shift-1; i < inst.numAttributes()-1; i++){
+                newInst.setValue(i, 0);
+            }
+        }
+        else if (shift > 0){
+            for (int i = 0; i < shift; i++){
+                newInst.setValue(i, 0);
+            }
+
+            for (int i = shift; i < inst.numAttributes()-1; i++){
+                newInst.setValue(i, inst.value(i-shift));
+            }
+        }
+
+        return newInst;
+    }
+
+    public static Instance randomlyAddToSeriesValues(Instance inst, Random rand, int minAdd, int maxAdd, int maxValue){
+        Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            int n = rand.nextInt(maxAdd+1-minAdd)+minAdd;
+            double newVal = inst.value(i)+n;
+            if (newVal > maxValue) newVal = maxValue;
+            newInst.setValue(i, newVal);
+        }
+
+        return newInst;
+    }
+
+    public static Instance randomlySubtractFromSeriesValues(Instance inst, Random rand, int minSubtract, int maxSubtract, int minValue){
+        Instance newInst = new DenseInstance(inst);
+
+        for (int i = 0; i < inst.numAttributes()-1; i++){
+            int n = rand.nextInt(maxSubtract+1-maxSubtract)+maxSubtract;
+            double newVal = inst.value(i)-n;
+            if (newVal < minValue) newVal = minValue;
+            newInst.setValue(i, newVal);
+        }
+
+        return newInst;
+    }
+
+    public static Instance randomlyAlterSeries(Instance inst, Random rand){
+        Instance newInst = new DenseInstance(inst);
+
+        if (rand.nextBoolean()){
+            newInst = reverseSeries(newInst);
+        }
+
+        int shift = rand.nextInt(240)-120;
+        newInst = shiftSeries(newInst, shift);
+
+        if (rand.nextBoolean()){
+            newInst = randomlyAddToSeriesValues(newInst, rand, 0, 5, Integer.MAX_VALUE);
+        }
+        else{
+            newInst = randomlySubtractFromSeriesValues(newInst, rand, 0, 5, 0);
+        }
+
+        return newInst;
     }
 }
