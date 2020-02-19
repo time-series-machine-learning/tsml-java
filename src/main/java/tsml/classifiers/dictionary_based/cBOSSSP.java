@@ -655,6 +655,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.histogramIntersection = histogramIntersection;
             boss.numClasses = data.numClasses();
 
+            if (FCNNlimit < FCNNsoftlimit){
+                FCNNlimit = FCNNsoftlimit;
+            }
+
             boss.buildClassifier(data);
             if (useLogistic) boss.accuracy = boss.trainAcc();
             else if (FCNN && data.numInstances() >= FCNNlimit) boss.accuracy = boss.FCNN(FCNNcomp, FCNNsoftlimit);
