@@ -221,6 +221,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //             System.out.print(","+str);
 //        System.out.print("\n");
         String alpha = Utils.getOption('a', options);
+        this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
 
     }
 
