@@ -17,3 +17,5 @@ script:
 deploy:
   provider: script
   script: ./gradew buildJar
+  on:
+      all_branches: true
