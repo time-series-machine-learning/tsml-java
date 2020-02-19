@@ -14,9 +14,11 @@ cache:
     - $HOME/.gradle/wrapper/
 script:
   - ./gradlew build --info --parallel
-deploy:
-  provider: script
-  script: ./gradew buildJar
-  on:
-      all_branches: true
-      skip_cleanup: true
+# @goastler says:
+# below can be used to deploy jars / releases *but* we need somewhere to upload it to, e.g. github using OAUTH tokens etc etc etc. More hassle than it's worth atm.
+# deploy:
+#   provider: script
+#   script: ./gradew buildJar
+#   on:
+#       all_branches: true
+#       skip_cleanup: true
