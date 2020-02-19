@@ -19,3 +19,4 @@ deploy:
   script: ./gradew buildJar
   on:
       all_branches: true
+      skip_cleanup: true
