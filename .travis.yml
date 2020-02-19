@@ -17,8 +17,3 @@ script:
 deploy:
   provider: script
   script: ./gradew buildJar
-  on:
-    branches:
-      only:
-        - master
-        - dev
