@@ -1454,7 +1454,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         int fold = 0;
 
         //Minimum working example
-        String dataset = "ItalyPowerDemand";
+        String dataset = "Coffee";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1483,6 +1483,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         c.useRecommendedSettings();
         c.setSeed(fold);
         c.FCNN = true;
+        c.FCNNsoftlimit = 100;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 

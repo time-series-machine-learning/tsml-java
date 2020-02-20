@@ -1073,22 +1073,22 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                 double minDist = Double.MAX_VALUE;
                 int bestMedoid = -1;
 
-                for (int i = 0; i < bags.size(); i++) {
-                    if (bags.get(i).classVal != c)
+                for (int i = 0; i < T.size(); i++) {
+                    if (bags.get(T.get(i)).classVal != c)
                         continue;
 
                     double medoidDist = 0;
 
-                    for (int n = 0; n < bags.size(); n++) {
-                        if (bags.get(n).classVal != c)
+                    for (int n = 0; n < T.size(); n++) {
+                        if (bags.get(T.get(n)).classVal != c)
                             continue;
 
-                        medoidDist += distances[i][n];
+                        medoidDist += distances[T.get(i)][T.get(n)];
                     }
 
                     if (medoidDist < minDist) {
                         minDist = medoidDist;
-                        bestMedoid = i;
+                        bestMedoid = T.get(i);
                     }
                 }
 
