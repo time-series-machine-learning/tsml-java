@@ -160,7 +160,9 @@ public class ClassifierLists {
             "cS-BOSS","BcS-BOSS","KTune-cS-BOSS","WeightTune-cS-BOSS","Bigram-BcS-BOSS","Bigram-BcBOSS",
             "HI-Bigram-BcS-BOSS","HI-BcS-BOSS","HI-cS-BOSS","FBcS-BOSS","WinLenScale-FBcS-BOSS","HI-FBcS-BOSS",
             "Wise-FBcS-BOSS","Wise2-FBcS-BOSS","Logistic-FBcS-BOSS","FCNN-BcS-BOSS","HI-FCNN-BcS-BOSS",
-            "HI-LimitFCNN-BcS-BOSS","HI-SLimitFCNN-BcS-BOSS","HI-CompFCNN-BcS-BOSS"};
+            "HI-LimitFCNN-BcS-BOSS","HI-SLimitFCNN-BcS-BOSS","HI-CompFCNN-BcS-BOSS",
+            "IGB-BcS-BOSS","Anova-BcS-BOSS","MFT-BcS-BOSS","DFT-BcS-BOSS","AnovaMFT-BcS-BOSS","AnovaIGB-BcS-BOSS",
+            "pIGB-BcS-BOSS","pAnova-BcS-BOSS","pAnovaIGB-BcS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -317,6 +319,57 @@ public class ClassifierLists {
                 ((cBOSSSP) c).FCNNcomp = true;
                 ((cBOSSSP) c).histogramIntersection = true;
                 break;
+
+            case "IGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true};
+                break;
+            case "Anova-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useAnova = new boolean[]{true};
+                break;
+            case "MFT-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).newMFT = true;
+                break;
+            case "DFT-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).newDFT = true;
+                break;
+            case "AnovaMFT-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useAnova = new boolean[]{true};
+                ((cBOSSSP) c).newMFT = true;
+                break;
+            case "AnovaIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useAnova = new boolean[]{true};
+                ((cBOSSSP) c).useIGB = new boolean[]{true};
+                break;
+
+            case "pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                break;
+            case "pAnova-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                break;
+            case "pAnovaIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                break;
+
 
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");

@@ -2,8 +2,10 @@ package tsml.classifiers.dictionary_based;
 
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.DoubleIntCursor;
+import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.cursors.ObjectDoubleCursor;
 import com.carrotsearch.hppc.cursors.ObjectIntCursor;
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import evaluation.evaluators.CrossValidationEvaluator;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
@@ -21,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static tsml.classifiers.dictionary_based.WEASEL.MFT.*;
 import static utilities.Utilities.argMax;
 
 /**
@@ -47,6 +50,13 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     public int maxK = 35;
     public int bestK = 1;
     public int numClasses = -1;
+
+    public boolean IGB = false;
+    public boolean anova = false;
+    int maxWordLength;
+    int[] bestValues;
+    public boolean newDFT = false;
+    public boolean newMFT = false;
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     protected BitWordLong[/*instance*/][/*windowindex*/] SFAwords;
@@ -94,6 +104,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
 
     public BOSSIndividualSP(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, double chiLimit, boolean multiThread, int numThreads, ExecutorService ex) {
+        this.maxWordLength = wordLength;
+
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
@@ -221,6 +233,31 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     }
 
     protected double[] DFT(double[] series) {
+        if (anova || newDFT){
+            double[] data = new double[this.windowSize];
+            System.arraycopy(series, 0, data, 0, Math.min(this.windowSize, series.length));
+
+            DoubleFFT_1D fft = new DoubleFFT_1D(this.windowSize);
+            int startOffset =  norm ? 2 : 0;
+
+            fft.realForward(data);
+            data[1] = 0; // DC-coefficient imaginary part
+
+            // make it even length for uneven windowSize
+            double[] copy = new double[maxWordLength];
+            int length = Math.min(this.windowSize - startOffset, maxWordLength);
+            System.arraycopy(data, startOffset, copy, 0, length);
+
+            // norming
+            int sign = 1;
+            for (int i = 0; i < copy.length; i++) {
+                copy[i] *= sign;
+                sign *= -1;
+            }
+
+            return copy;
+        }
+
         //taken from FFT.java but
         //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
         //instead of Complex[] size n/2
@@ -259,7 +296,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         //only calculating first wordlength/2 coefficients (output values),
         //and skipping first coefficient if the data is to be normalised
         int n=series.length;
-        int outputLength = wordLength/2;
+        int outputLength = maxWordLength/2;
         int start = (norm ? 1 : 0);
 
         double[] dft = new double[outputLength*2];
@@ -287,9 +324,79 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     }
 
     private double[][] performMFT(double[] series) {
+        if (newMFT){
+            DoubleFFT_1D fft = new DoubleFFT_1D(this.windowSize);
+            int startOffset =  norm ? 2 : 0;
+
+            int wordLength = Math.min(windowSize, maxWordLength + startOffset);
+            wordLength += wordLength%2; // make it even
+            double[] phis = new double[wordLength];
+
+            for (int u = 0; u < phis.length; u += 2) {
+                double uHalve = -u / 2;
+                phis[u] = realPartEPhi(uHalve, this.windowSize);
+                phis[u + 1] = complexPartEPhi(uHalve, this.windowSize);
+            }
+
+            // means and stddev for each sliding window
+            int end = Math.max(1, series.length - this.windowSize + 1);
+            double[] means = new double[end];
+            double[] stds = new double[end];
+            calcIncrementalMeanStddev(this.windowSize, series, means, stds);
+
+            double[][] transformed = new double[end][];
+
+            // holds the DFT of each sliding window
+            double[] mftData = new double[wordLength];
+            double[] data = series;
+
+            for (int t = 0; t < end; t++) {
+                // use the MFT
+                if (t > 0) {
+                    for (int k = 0; k < wordLength; k += 2) {
+                        double real1 = (mftData[k] + data[t + this.windowSize - 1] - data[t - 1]);
+                        double imag1 = (mftData[k + 1]);
+
+                        double real = complexMultiplyRealPart(real1, imag1, phis[k], phis[k + 1]);
+                        double imag = complexMultiplyImagPart(real1, imag1, phis[k], phis[k + 1]);
+
+                        mftData[k] = real;
+                        mftData[k + 1] = imag;
+                    }
+                }
+                // use the DFT for the first offset
+                else {
+                    double[] dft = new double[this.windowSize];
+                    double[] data2 = series;
+                    System.arraycopy(data2, 0, dft, 0, Math.min(this.windowSize, data.length));
+
+                    fft.realForward(dft);
+                    dft[1] = 0; // DC-coefficient imag part
+
+                    // if windowSize > mftData.queryLength, the remaining data should be 0 now.
+                    System.arraycopy(dft, 0, mftData, 0, Math.min(mftData.length, dft.length));
+
+//          double[] dft = new double[this.windowSize];
+//          System.arraycopy(toArrayNoClass(timeSeries), 0, dft, 0, Math.min(this.windowSize, instanceLength(timeSeries)));
+//          dft = transform(dft, dft.length, true);
+//          dft[1] = 0; // DC-coefficient imag part
+//
+//          // if windowSize > mftData.queryLength, the remaining data should be 0 now.
+//          System.arraycopy(dft, 0, mftData, 0, Math.min(mftData.length, dft.length));
+                }
+
+                double[] copy = new double[maxWordLength];
+                System.arraycopy(mftData, startOffset, copy, 0, Math.min(maxWordLength, mftData.length-startOffset));
+
+                transformed[t] = normalizeFT(copy, stds[t]);
+            }
+
+            return transformed;
+        }
+
         // ignore DC value?
         int startOffset = norm ? 2 : 0;
-        int l = wordLength;
+        int l = maxWordLength;
         l = l + l % 2; // make it even
         double[] phis = new double[l];
         for (int u = 0; u < phis.length; u += 2) {
@@ -385,9 +492,32 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     protected double[][] MCB(Instances data) {
         double[][][] dfts = new double[data.numInstances()][][];
 
+        ArrayList<double[]> samples = new ArrayList<>();
+        ArrayList<double[]> transformedSamples = new ArrayList<>();
+        ArrayList<Double> labels = new ArrayList<>();
+
         int sample = 0;
-        for (Instance inst : data)
-            dfts[sample++] = performDFT(disjointWindows(toArrayNoClass(inst))); //approximation
+        for (Instance inst : data) {
+            double[][] windows = disjointWindows(toArrayNoClass(inst));
+            dfts[sample] = performDFT(windows); //approximation
+
+            for (int i = 0; i < dfts[sample].length; i++) {
+                samples.add(windows[i]);
+                transformedSamples.add(dfts[sample][i]);
+                labels.add(inst.classValue());
+            }
+
+            sample++;
+        }
+
+        double[][] allSamples = new double[samples.size()][];
+        double[][] allTransformedSamples = new double[transformedSamples.size()][];
+        double[] allLabels = new double[samples.size()];
+        for (int i = 0; i < samples.size(); i++) {
+            allSamples[i] = samples.get(i);
+            allTransformedSamples[i] = transformedSamples.get(i);
+            allLabels[i] = labels.get(i);
+        }
 
         int numInsts = dfts.length;
         int numWindowsPerInst = dfts[0].length;
@@ -419,8 +549,321 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             breakpoints[letter][alphabetSize-1] = Double.MAX_VALUE; //last one can always = infinity
         }
 
+        if (anova){
+            anova(allSamples, allTransformedSamples, allLabels);
+        }
+
         return breakpoints;
     }
+
+    ///// WEASEL TEST START /////
+
+    protected double[][] IGB(Instances data) {
+        ArrayList<ComparablePair<Double,Double>>[] orderline = new ArrayList[wordLength];
+        for (int i = 0; i < orderline.length; i++) {
+            orderline[i] = new ArrayList<>();
+        }
+
+        ArrayList<double[]> samples = new ArrayList<>();
+        ArrayList<double[]> transformedSamples = new ArrayList<>();
+        ArrayList<Double> labels = new ArrayList<>();
+        for (Instance inst : data) {
+            double[][] windows = disjointWindows(toArrayNoClass(inst));
+            double[][] dfts = performDFT(windows); //approximation
+
+            for (int i = 0; i < dfts.length; i++) {
+                for (int n = 0; n < dfts[i].length; n++) {
+                    // round to 2 decimal places to reduce noise
+                    double value = Math.round(dfts[i][n] * 100.0) / 100.0;
+
+                    orderline[n].add(new ComparablePair<>(value, inst.classValue()));
+                }
+
+                samples.add(windows[i]);
+                transformedSamples.add(dfts[i]);
+                labels.add(inst.classValue());
+            }
+        }
+
+        double[][] allSamples = new double[samples.size()][];
+        double[][] allTransformedSamples = new double[transformedSamples.size()][];
+        double[] allLabels = new double[samples.size()];
+        for (int i = 0; i < samples.size(); i++) {
+            allSamples[i] = samples.get(i);
+            allTransformedSamples[i] = transformedSamples.get(i);
+            allLabels[i] = labels.get(i);
+        }
+
+        breakpoints = new double[wordLength][alphabetSize];
+
+        for (int i = 0; i < orderline.length; i++) {
+            if (!orderline[i].isEmpty()) {
+                Collections.sort(orderline[i]);
+
+                ArrayList<Integer> splitPoints = new ArrayList<>();
+                findBestSplit(orderline[i], 0, orderline[i].size(), alphabetSize, splitPoints);
+
+                Collections.sort(splitPoints);
+
+                for (int n = 0; n < splitPoints.size(); n++) {
+                   breakpoints[i][n] = orderline[i].get(splitPoints.get(n) + 1).var1;
+                }
+
+                breakpoints[i][alphabetSize-1] = Double.MAX_VALUE;
+            }
+        }
+
+        if (anova){
+            anova(allSamples, allTransformedSamples, allLabels);
+        }
+
+        return breakpoints;
+    }
+
+    protected void findBestSplit(List<ComparablePair<Double,Double>> element, int start, int end, int remainingSymbols,
+                                 List<Integer> splitPoints) {
+        double bestGain = -1;
+        int bestPos = -1;
+
+        // class entropy
+        int total = end - start;
+        ObjectIntHashMap<Double> cIn = new ObjectIntHashMap<>();
+        ObjectIntHashMap<Double> cOut = new ObjectIntHashMap<>();
+        for (int pos = start; pos < end; pos++) {
+            cOut.putOrAdd(element.get(pos).var2, 1, 1);
+        }
+        double class_entropy = entropy(cOut, total);
+
+        int i = start;
+        Double lastLabel = element.get(i).var2;
+        i += moveElement(element, cIn, cOut, start);
+
+        for (int split = start + 1; split < end - 1; split++) {
+            Double label = element.get(i).var2;
+            i += moveElement(element, cIn, cOut, split);
+
+            // only inspect changes of the label
+            if (!label.equals(lastLabel)) {
+                double gain = calculateInformationGain(cIn, cOut, class_entropy, i, total);
+                gain = Math.round(gain * 1000.0) / 1000.0; // round for 4 decimal places
+
+                if (gain >= bestGain) {
+                    bestPos = split;
+                    bestGain = gain;
+                }
+            }
+            lastLabel = label;
+        }
+
+        if (bestPos > -1) {
+            splitPoints.add(bestPos);
+
+            // recursive split
+            remainingSymbols = remainingSymbols / 2;
+            if (remainingSymbols > 1) {
+                if (bestPos - start > 2 && end - bestPos > 2) { // enough data points?
+                    findBestSplit(element, start, bestPos, remainingSymbols, splitPoints);
+                    findBestSplit(element, bestPos, end, remainingSymbols, splitPoints);
+                } else if (end - bestPos > 4) { // enough data points?
+                    findBestSplit(element, bestPos, (end - bestPos) / 2, remainingSymbols, splitPoints);
+                    findBestSplit(element, (end - bestPos) / 2, end, remainingSymbols, splitPoints);
+                } else if (bestPos - start > 4) { // enough data points?
+                    findBestSplit(element, start, (bestPos - start) / 2, remainingSymbols, splitPoints);
+                    findBestSplit(element, (bestPos - start) / 2, end, remainingSymbols, splitPoints);
+                }
+            }
+        }
+    }
+
+    protected double entropy(ObjectIntHashMap<Double> frequency, double total) {
+        double entropy = 0;
+        double log2 = 1.0 / Math.log(2.0);
+        for (IntCursor element : frequency.values()) {
+            double p = element.value / total;
+            if (p > 0) {
+                entropy -= p * Math.log(p) * log2;
+            }
+        }
+        return entropy;
+    }
+
+    protected double calculateInformationGain(ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
+                                              double class_entropy, double total_c_in, double total) {
+        double total_c_out = (total - total_c_in);
+        return class_entropy
+                - total_c_in / total * entropy(cIn, total_c_in)
+                - total_c_out / total * entropy(cOut, total_c_out);
+    }
+
+    protected int moveElement(List<ComparablePair<Double,Double>> element, ObjectIntHashMap<Double> cIn,
+                              ObjectIntHashMap<Double> cOut, int pos) {
+        cIn.putOrAdd(element.get(pos).var2, 1, 1);
+        cOut.putOrAdd(element.get(pos).var2, -1, -1);
+        return 1;
+    }
+
+    public void anova(double[][] samples, double[][] transformedSignal, double[] labels){
+        WEASEL.SFASupervised.Indices<Double>[] best = calcBestCoefficients(samples, labels, transformedSignal);
+
+        // use best coefficients (the ones with largest f-value)
+        bestValues = new int[Math.min(best.length, wordLength)];
+        maxWordLength = 0;
+        for (int i = 0; i < this.bestValues.length; i++) {
+            bestValues[i] = best[i].index;
+            maxWordLength = Math.max(best[i].index + 1, maxWordLength);
+        }
+
+        // make sure it is an even number
+        maxWordLength += maxWordLength % 2;
+
+        System.out.println(wordLength + " " + maxWordLength + " " + bestValues.length);
+    }
+
+
+    /**
+     * calculate ANOVA F-stat
+     * compare : https://github.com/scikit-learn/scikit-learn/blob/c957249/sklearn/feature_selection/univariate_selection.py#L121
+     *
+     * @param transformedSignal
+     * @return
+     */
+    public static WEASEL.SFASupervised.Indices<Double>[] calcBestCoefficients(
+            double[][] samples,
+            double[] labels,
+            double[][] transformedSignal) {
+        HashMap<Double, ArrayList<double[]>> classes = new HashMap<>();
+        for (int i = 0; i < samples.length; i++) {
+            ArrayList<double[]> allTs = classes.get(labels[i]);
+            if (allTs == null) {
+                allTs = new ArrayList<>();
+                classes.put(labels[i], allTs);
+            }
+            allTs.add(transformedSignal[i]);
+        }
+
+        double nSamples = transformedSignal.length;
+        double nClasses = classes.keySet().size();
+
+//    int length = 0;
+//    for (int i = 0; i < transformedSignal.length; i++) {
+//      length = Math.max(transformedSignal[i].length, length);
+//    }
+        int length = (transformedSignal != null && transformedSignal.length > 0) ? transformedSignal[0].length : 0;
+
+        double[] f = getFoneway(length, classes, nSamples, nClasses);
+
+        // sort by largest f-value
+        @SuppressWarnings("unchecked")
+        List<WEASEL.SFASupervised.Indices<Double>> best = new ArrayList<>(f.length);
+        for (int i = 0; i < f.length; i++) {
+            if (!Double.isNaN(f[i])) {
+                best.add(new WEASEL.SFASupervised.Indices<>(i, f[i]));
+            }
+        }
+        Collections.sort(best);
+        return best.toArray(new WEASEL.SFASupervised.Indices[]{});
+    }
+
+    /**
+     * The one-way ANOVA tests the null hypothesis that 2 or more groups have
+     * the same population mean. The test is applied to samples from two or
+     * more groups, possibly with differing sizes.
+     *
+     * @param length
+     * @param classes
+     * @param nSamples
+     * @param nClasses
+     * @return
+     */
+    public static double[] getFoneway(
+            int length,
+            Map<Double, ArrayList<double[]>> classes,
+            double nSamples,
+            double nClasses) {
+        double[] ss_alldata = new double[length];
+        HashMap<Double, double[]> sums_args = new HashMap<>();
+
+        for (Map.Entry<Double, ArrayList<double[]>> allTs : classes.entrySet()) {
+
+            double[] sums = new double[ss_alldata.length];
+            sums_args.put(allTs.getKey(), sums);
+
+            for (double[] ts : allTs.getValue()) {
+                for (int i = 0; i < ts.length; i++) {
+                    ss_alldata[i] += ts[i] * ts[i];
+                    sums[i] += ts[i];
+                }
+            }
+        }
+
+        double[] square_of_sums_alldata = new double[ss_alldata.length];
+        Map<Double, double[]> square_of_sums_args = new HashMap<>();
+        for (Map.Entry<Double, double[]> sums : sums_args.entrySet()) {
+            for (int i = 0; i < sums.getValue().length; i++) {
+                square_of_sums_alldata[i] += sums.getValue()[i];
+            }
+
+            double[] squares = new double[sums.getValue().length];
+            square_of_sums_args.put(sums.getKey(), squares);
+            for (int i = 0; i < sums.getValue().length; i++) {
+                squares[i] += sums.getValue()[i] * sums.getValue()[i];
+            }
+        }
+
+        for (int i = 0; i < square_of_sums_alldata.length; i++) {
+            square_of_sums_alldata[i] *= square_of_sums_alldata[i];
+        }
+
+        double[] sstot = new double[ss_alldata.length];
+        for (int i = 0; i < sstot.length; i++) {
+            sstot[i] = ss_alldata[i] - square_of_sums_alldata[i] / nSamples;
+        }
+
+        double[] ssbn = new double[ss_alldata.length];    // sum of squares between
+        double[] sswn = new double[ss_alldata.length];    // sum of squares within
+
+        for (Map.Entry<Double, double[]> sums : square_of_sums_args.entrySet()) {
+            double n_samples_per_class = classes.get(sums.getKey()).size();
+            for (int i = 0; i < sums.getValue().length; i++) {
+                ssbn[i] += sums.getValue()[i] / n_samples_per_class;
+            }
+        }
+
+        for (int i = 0; i < square_of_sums_alldata.length; i++) {
+            ssbn[i] -= square_of_sums_alldata[i] / nSamples;
+        }
+
+        double dfbn = nClasses - 1;                       // degrees of freedom between
+        double dfwn = nSamples - nClasses;              // degrees of freedom within
+        double[] msb = new double[ss_alldata.length];   // variance (mean square) between classes
+        double[] msw = new double[ss_alldata.length];   // variance (mean square) within samples
+        double[] f = new double[ss_alldata.length];     // f-ratio
+
+        for (int i = 0; i < sswn.length; i++) {
+            sswn[i] = sstot[i] - ssbn[i];
+            msb[i] = ssbn[i] / dfbn;
+            msw[i] = sswn[i] / dfwn;
+            f[i] = msb[i] / msw[i];
+        }
+        return f;
+    }
+
+    protected BitWordLong createWordAnova(double[] dft) {
+        BitWordLong word = new BitWordLong(wordLength);
+        int length = Math.min(wordLength, this.bestValues.length);
+        for (int i = 0; i < length; ++i) { //for each letter
+            int l = bestValues[i];
+            for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
+                if (dft[l] <= breakpoints[l][bp]) {
+                    word.push(bp); //add corresponding letter to word
+                    break;
+                }
+        }
+
+        return word;
+    }
+
+    ///// WEASEL TEST END /////
 
     /**
      * Builds a brand new boss bag from the passed fourier transformed data, rather than from
@@ -437,7 +880,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         int trivialMatchCount = 0;
 
         for (double[] d : dfts) {
-            BitWordLong word = createWord(d);
+            BitWordLong word;
+            if (anova) word = createWordAnova(d);
+            else word = createWord(d);
+
             words[wInd] = word;
 
             if (bigrams) {
@@ -654,13 +1100,13 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     protected BitWordLong[] createSFAwords(Instance inst) {
         double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
         BitWordLong[] words = new BitWordLong[dfts.length];
-        for (int window = 0; window < dfts.length; ++window)
-            words[window] = createWord(dfts[window]);//discretisation
+        for (int window = 0; window < dfts.length; ++window) {
+            if (anova) words[window] = createWordAnova(dfts[window]);//discretisation
+            else words[window] = createWord(dfts[window]);//discretisation
+        }
 
         return words;
     }
-
-    //Try FCBF?
 
     // Modified version of the trainChiSquared method created by Patrick Schaefer in the WEASEL class
     protected void chiSquared(){
@@ -759,7 +1205,9 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
             throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
-        breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
+        if (IGB) breakpoints = IGB(data);
+        else breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
+
         SFAwords = new BitWordLong[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);

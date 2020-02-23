@@ -1680,35 +1680,35 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
     /**
      * Calculate the real part of a multiplication of two complex numbers
      */
-    private double complexMultiplyRealPart(double r1, double im1, double r2, double im2) {
+    public static double complexMultiplyRealPart(double r1, double im1, double r2, double im2) {
       return r1 * r2 - im1 * im2;
     }
 
     /**
      * Caluculate the imaginary part of a multiplication of two complex numbers
      */
-    private double complexMultiplyImagPart(double r1, double im1, double r2, double im2) {
+    public static double complexMultiplyImagPart(double r1, double im1, double r2, double im2) {
       return r1 * im2 + r2 * im1;
     }
 
     /**
      * Real part of e^(2*pi*u/M)
      */
-    private double realPartEPhi(double u, double M) {
+    public static double realPartEPhi(double u, double M) {
       return Math.cos(2 * Math.PI * u / M);
     }
 
     /**
      * Imaginary part of e^(2*pi*u/M)
      */
-    private double complexPartEPhi(double u, double M) {
+    public static double complexPartEPhi(double u, double M) {
       return -Math.sin(2 * Math.PI * u / M);
     }
 
     /**
      * Apply normalization to the Fourier coefficients to allow lower bounding in Euclidean space
      */
-    private double[] normalizeFT(double[] copy, double std) {
+    public static double[] normalizeFT(double[] copy, double std) {
       double normalisingFactor = std > 0 ? 1.0 / std : 1.0;
       int sign = 1;
       for (int i = 0; i < copy.length; i++) {

@@ -67,10 +67,15 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public boolean histogramIntersection = false;
     public int limitVal = 100000;
     public int limitOp = 0;
+
     public boolean FCNN = false;
     public boolean FCNNcomp = false;
     public int FCNNlimit = 1;
     public int FCNNsoftlimit = 1;
+    public boolean[] useIGB = { false };
+    public boolean[] useAnova = { false };
+    public boolean newDFT = false;
+    public boolean newMFT = false;
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
@@ -654,6 +659,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.wekaClassifier = useLogistic;
             boss.histogramIntersection = histogramIntersection;
             boss.numClasses = data.numClasses();
+            boss.IGB = parameters[7] == 1;
+            boss.anova = parameters[6] == 1;
+            boss.newDFT = newDFT;
+            boss.newMFT = newMFT;
 
             if (FCNNlimit < FCNNsoftlimit){
                 FCNNlimit = FCNNsoftlimit;
@@ -969,8 +978,12 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                     for (Integer wordLen : wordLengths) {
                         for (Integer level : levels) {
                             for (Double chi: chiLimits) {
-                                double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi};
-                                possibleParameters.add(parameters);
+                                for (Boolean anova: useAnova) {
+                                    for (Boolean igb: useIGB) {
+                                        double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi, anova ? 1 : 0, igb ? 1 : 0};
+                                        possibleParameters.add(parameters);
+                                    }
+                                }
                             }
                         }
                     }
@@ -1451,10 +1464,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     public static void main(String[] args) throws Exception{
-        int fold = 0;
+        int fold =1;
 
         //Minimum working example
-        String dataset = "Coffee";
+        String dataset = "ItalyPowerDemand";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -1482,8 +1495,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         c = new cBOSSSP();
         c.useRecommendedSettings();
         c.setSeed(fold);
-        c.FCNN = true;
-        c.FCNNsoftlimit = 100;
+        c.newDFT = true;
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
