@@ -431,7 +431,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         return testInstances.firstInstance();
     }
 
-    Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
+    public Instances produceIntervalInstanceUpdate(Instance testInstance, int classifierNum){
         Instances intervalInstances = null;
         ArrayList<Attribute>attributes = new ArrayList<>();
         //int nearestPowerOfTwo = (int)FFT.MathsPower2.roundPow2((float) startEndPoints.get(classifierNum)[1] - startEndPoints.get(classifierNum)[0]);
@@ -929,13 +929,13 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
      */
     protected class Timer implements Serializable{
 
-        protected long forestTimeLimit = Long.MAX_VALUE;
-        protected long forestStartTime = 0;
-        protected long treeStartTime = 0;
+        public long forestTimeLimit = Long.MAX_VALUE;
+        public long forestStartTime = 0;
+        public long treeStartTime = 0;
         protected long forestElapsedTime = 0;
 
-        protected ArrayList<Integer> independantVariables = null;
-        protected ArrayList<Long> dependantVariables = null;
+        public ArrayList<Integer> independantVariables = null;
+        public ArrayList<Long> dependantVariables = null;
         protected ArrayList<Double> predictions = null;
         private ArrayList<Double> aValues = null;
         private ArrayList<Double> bValues = null;
@@ -945,7 +945,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         protected double b = 0.0;
         protected double c = 0.0;
 
-        protected String modelOutPath = null;
+        public String modelOutPath = null;
 
         /**
          * Called in CRISE.initialise in order to reset timer.
@@ -962,7 +962,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         /**
          * computes coefficients (a, b, c).
          */
-        protected void buildModel(){
+        public void buildModel(){
 
             a = 0.0;
             b = 0.0;
@@ -1005,7 +1005,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
          * Adds x(y') to predictions arrayList for model output.
          * @param x interval size.
          */
-        protected void makePrediciton(int x){
+        public void makePrediciton(int x){
             predictions.add(a * Math.pow(x, 2) + b * x + c);
         }
 
@@ -1017,7 +1017,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
          * @param timeRemaining
          * @return interval length
          */
-        protected double getFeatureSpace(long timeRemaining){
+        public double getFeatureSpace(long timeRemaining){
             double y = timeRemaining;
             double x = ((-b) + (Math.sqrt((b * b) - (4 * a * (c - y))))) / (2 * a);
 
@@ -1049,7 +1049,7 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        protected void saveModelToCSV(String problemName){
+        public void saveModelToCSV(String problemName){
             try{
                 FullAccessOutFile outFile = new FullAccessOutFile((modelOutPath.isEmpty() ? "timingModel" + (int) seed + ".csv" : modelOutPath + "/" + problemName + "/" + "/timingModel" + (int) seed + ".csv"));
                 for (int i = 0; i < independantVariables.size(); i++) {
