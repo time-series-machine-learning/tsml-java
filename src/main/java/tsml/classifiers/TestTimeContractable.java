@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface TestTimeContractable {
+public interface TestTimeContractable extends TestTimeable {
     default void setOneSecondLimit(){ setTestTimeLimit(TimeUnit.SECONDS, 1); }
 
     default void setOneMillisecondLimit(){ setTestTimeLimit(TimeUnit.MILLISECONDS, 1); }

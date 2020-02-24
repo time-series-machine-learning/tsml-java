@@ -14,9 +14,13 @@
  */
 package utilities;
 
+import weka.core.Instances;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.*;
+
+import static java.math.BigDecimal.ROUND_HALF_UP;
 
 /**
  * A class offering statistical utility functions like the average and the
@@ -38,9 +42,28 @@ public class StatisticalUtilities {
 
         return sum / (double) (values.length - offset);
     }
-    
-    
-    
+
+
+    public static double pStdDev(Instances input){
+        // todo make sure class val at end of attributes
+        double sumx = 0;
+        double sumx2 = 0;
+        double[] ins2array;
+        for(int i = 0; i < input.numInstances(); i++){
+            ins2array = input.instance(i).toDoubleArray();
+            for(int j = 0; j < ins2array.length-1; j++){//-1 to avoid classVal
+                sumx+=ins2array[j];
+                sumx2+=ins2array[j]*ins2array[j];
+            }
+        }
+        int n = input.numInstances()*(input.numAttributes()-1);
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+
+    }
+
+
+
     // jamesl
     // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
     // can make O(n) if wanted later
@@ -245,5 +268,22 @@ public class StatisticalUtilities {
     
     public static double averageFinalDimension(double[] results) { 
         return StatisticalUtilities.mean(results, false);
+    }
+
+    public static BigDecimal sqrt(BigDecimal decimal) {
+        int scale = MathContext.DECIMAL128.getPrecision();
+        BigDecimal x0 = new BigDecimal("0");
+        BigDecimal x1 = BigDecimal.valueOf(Math.sqrt(decimal.doubleValue()));
+        while (!x0.equals(x1)) {
+            x0 = x1;
+            x1 = decimal.divide(x0, scale, ROUND_HALF_UP);
+            x1 = x1.add(x0);
+            x1 = x1.divide(TWO, scale, ROUND_HALF_UP);
+        }
+        return x1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sqrt(BigDecimal.valueOf(12345)));
     }
 }

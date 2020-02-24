@@ -15,7 +15,7 @@
 package tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.assessingNN;
 
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.elastic_distance_measures.MSMDistance;
+import tsml.classifiers.distance_based.distances.old.MSMDistance;
 import weka.core.Instance;
 
 /**

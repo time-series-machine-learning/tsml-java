@@ -17,7 +17,6 @@ package tsml.classifiers.interval_based;
  
 import java.util.ArrayList;
 
-import machine_learning.classifiers.TimeSeriesTree;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -707,31 +706,6 @@ public class TSF extends EnhancedAbstractClassifier
             return "mean="+mean+" stdev = "+stDev+" slope ="+slope;
         }
     }
-
-    public double[][] temporalImportanceCurve() throws Exception{
-        if (!(base instanceof TimeSeriesTree))
-            throw new Exception("Temporal importance curve only available for time series tree");
-
-        double[][] curves = new double[3][seriesLength];
-
-        for (int i = 0; i < trees.length; i++){
-            TimeSeriesTree tree = (TimeSeriesTree)trees[i];
-            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
-
-            for (int n = 0; n < sg[0].size(); n++){
-                double split = sg[0].get(n);
-                double gain = sg[1].get(n);
-                int interval = (int)(split/3);
-                int att = (int)(split%3);
-
-                for (int j = intervals[i][interval][0]; j <= intervals[i][interval][1]; j++){
-                    curves[att][j] += gain;
-                }
-            }
-        }
-
-        return curves;
-    }
      
     public static void main(String[] arg) throws Exception{
         
@@ -753,7 +727,6 @@ public class TSF extends EnhancedAbstractClassifier
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
-        //System.out.println(Arrays.deepToString(tsf.temporalImportanceCurve()));
         System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);

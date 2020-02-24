@@ -19,7 +19,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.Ca
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.assessingNN.LazyAssessNN_DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.lowerBounds.LbKeogh;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.elastic_distance_measures.DTW;
+import tsml.classifiers.distance_based.distances.old.DTW;
 import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;

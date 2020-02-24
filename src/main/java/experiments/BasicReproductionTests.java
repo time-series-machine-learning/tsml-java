@@ -30,6 +30,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.junit.Test;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
@@ -73,7 +75,8 @@ public class BasicReproductionTests {
         tsClassifiers + "distance_based.SlowDTW_1NN",
         
         tsClassifiers + "frequency_based.cRISE",
-        
+//        tsClassifiers + "hybrids.HIVE_COTE",
+
 //        tsClassifiers + "hybrids.FlatCote", 
 //        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
         
@@ -87,7 +90,6 @@ public class BasicReproductionTests {
         extraClassifiers + "kNN",
         
         extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.HIVE_COTE",
         extraClassifiers + "ensembles.cRotationForest",
         extraClassifiers + "ensembles.stackers.SMLR",
         
@@ -520,7 +522,12 @@ public class BasicReproductionTests {
         
         return res;
     }
-    
+
+    @Test
+    public void test() throws Exception {
+        main(new String[0]);
+    }
+
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();

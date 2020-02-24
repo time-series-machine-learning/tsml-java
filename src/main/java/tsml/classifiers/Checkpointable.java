@@ -14,13 +14,16 @@
  */
 package tsml.classifiers;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import utilities.CheckpointUtils;
+import utilities.Copy;
+import utilities.FileUtils;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * Interface that allows the user to allow a classifier to checkpoint, i.e. 
@@ -36,7 +39,7 @@ number
 
  * @author Tony Bagnall 2018
  */
-public interface Checkpointable extends Serializable{
+public interface Checkpointable extends Serializable, Copy {
 
     //Set the path where checkpointed versions will be stored
     default boolean setSavePath(String path){
@@ -44,28 +47,99 @@ public interface Checkpointable extends Serializable{
         boolean success=true;
         if(!f.isDirectory())
             success=f.mkdirs();
+        if(!isCheckpointLoadingEnabled()) {
+            setLoadPath(path);
+        }
         return success;
     }
+
+    // save path for checkpoints. If this returns null then checkpointing is disabled
+    default String getSavePath() {
+        return null;
+    }
     //Define how to copy from a loaded object to this object
-    public void copyFromSerObject(Object obj) throws Exception;
+    default void copyFromSerObject(Object obj) throws Exception {
+        shallowCopyFrom(obj, findSerFields(obj));
+    }
+
+    default boolean setLoadPath(String path) {
+        File f = new File(path);
+        boolean success=true;
+        if(!f.isDirectory())
+            success=f.mkdirs();
+        return success;
+    }
+
+    default String getLoadPath() {
+        return null;
+    }
+
+    static Set<Field> findSerFields(Object obj) {
+        return Copy.findFields(obj.getClass(), TRANSIENT.negate().and(Copy.DEFAULT_FIELDS));
+    }
 
     //Override both if not using Java serialisation    
-    public default void saveToFile(String filename) throws IOException{
-        FileOutputStream fos =
-        new FileOutputStream(filename);
-        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
-            out.writeObject(this);
-            out.close();
-            fos.close();
-        }
+    default void saveToFile(String filename) throws Exception {
+        CheckpointUtils.serialise(this, filename);
     }
-    public default void loadFromFile(String filename) throws Exception{
-        FileInputStream fis = new FileInputStream(filename);
-        try (ObjectInputStream in = new ObjectInputStream(fis)) {
-            Object obj=in.readObject();
+    default void loadFromFile(String filename) throws Exception{
+        Object obj = CheckpointUtils.deserialise(filename);
+        if(obj != null) {
             copyFromSerObject(obj);
         }
     }
-    
-    
+
+    default boolean saveToCheckpoint() throws
+                              Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean loadFromCheckpoint() throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+
+    default long getMinCheckpointIntervalNanos() {
+        return TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    }
+
+    default void setMinCheckpointIntervalNanos(final long minCheckpointInterval) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setMinCheckpointInterval(long amount, TimeUnit unit) {
+        setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(amount, unit));
+    }
+
+    default boolean isCheckpointSavingEnabled() {
+        return getSavePath() != null;
+    }
+
+    default boolean isCheckpointLoadingEnabled() {
+        return getLoadPath() != null;
+    }
+
+    default boolean hasCheckpointIntervalElapsed() {
+        long diff = System.nanoTime() - getLastCheckpointTimeStamp();
+        return getMinCheckpointIntervalNanos() < diff;
+    }
+
+    default long getLastCheckpointTimeStamp() {
+        return 0;
+    }
+
+    default void setLastCheckpointTimeStamp(final long nanos) {
+
+    }
+
+    default boolean isSkipFinalCheckpoint() {
+        return false;
+    }
+
+    default void setSkipFinalCheckpoint(boolean state) {
+
+    }
+
+    Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
+    long DEFAULT_MIN_CHECKPOINT_INTERVAL = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
 }
