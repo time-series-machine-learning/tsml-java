@@ -1,14 +1,11 @@
 package tsml.classifiers.distance_based.distances;
 
 import experiments.data.DatasetLoading;
-import utilities.StrUtils;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-
-import java.util.*;
 
 public class Lcss extends AbstractDistanceMeasure {
 
@@ -33,7 +30,7 @@ public class Lcss extends AbstractDistanceMeasure {
                             double limit,
                            final PerformanceStats stats) {
 
-        checks(first, second);
+        checkData(first, second);
 
         int aLength = first.numAttributes() - 1;
         int bLength = second.numAttributes() - 1;

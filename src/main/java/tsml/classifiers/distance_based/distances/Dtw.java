@@ -1,13 +1,10 @@
 package tsml.classifiers.distance_based.distances;
 
 
-import utilities.StrUtils;
 import utilities.params.ParamSet;
 import utilities.params.ParamHandler;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
-
-import java.util.*;
 
 public class Dtw extends AbstractDistanceMeasure {
 
@@ -55,7 +52,7 @@ public class Dtw extends AbstractDistanceMeasure {
                                   final Instance second,
                                   final double limit,
                                   final PerformanceStats stats) {
-        checks(first, second);
+        checkData(first, second);
 
 
         double minDist;

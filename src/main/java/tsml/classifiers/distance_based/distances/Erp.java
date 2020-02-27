@@ -1,12 +1,9 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StrUtils;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
-
-import java.util.*;
 
 public class Erp extends AbstractDistanceMeasure {
 
@@ -26,7 +23,7 @@ public class Erp extends AbstractDistanceMeasure {
                            final double limit,
                            final PerformanceStats stats) {
 
-        checks(first, second);
+        checkData(first, second);
 
         int aLength = first.numAttributes() - 1;
         int bLength = second.numAttributes() - 1;

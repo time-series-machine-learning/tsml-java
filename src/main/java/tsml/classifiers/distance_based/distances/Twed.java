@@ -1,12 +1,9 @@
 package tsml.classifiers.distance_based.distances;
 
-import utilities.StrUtils;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
-
-import java.util.*;
 
 public class Twed
     extends AbstractDistanceMeasure {
@@ -17,7 +14,7 @@ public class Twed
                            final double limit,
                            final PerformanceStats stats) {
 
-        checks(first, second);
+        checkData(first, second);
 
         /*This code is faithful to the c version, so uses a redundant
  * Multidimensional representation. The c code does not describe what the

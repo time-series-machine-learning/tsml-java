@@ -15,17 +15,20 @@ public interface DistanceMeasure
             ParamHandler
 {
 
-    String DISTANCE_FUNCTION_FLAG = "d";
-    double MAX_DISTANCE = Double.POSITIVE_INFINITY;
+    static String getDistanceFunctionFlag() {
+        return "d";
+    }
 
-    void checks(Instance first, Instance second);
+    default double getMaxDistance() {
+        return Double.POSITIVE_INFINITY;
+    }
+
+    void checkData(Instance first, Instance second);
 
     boolean isSymmetric();
 
-    // todo list options
-
     default double distance(final Instance first, final Instance second) {
-        return distance(first, second, MAX_DISTANCE);
+        return distance(first, second, getMaxDistance());
     }
 
     default double distance(final Instance first, final Instance second, final double limit) {
@@ -35,7 +38,34 @@ public interface DistanceMeasure
     @Override
     default double distance(final Instance first, final Instance second, final PerformanceStats stats) throws
                                                                                                               Exception {
-        return distance(first, second, MAX_DISTANCE, stats);
+        return distance(first, second, getMaxDistance(), stats);
+    }
+
+    // default implementations of fussy methods around distance measures
+
+    @Override
+    default void setAttributeIndices(final String value) {
+
+    }
+
+    @Override
+    default String getAttributeIndices() {
+        return null;
+    }
+
+    @Override
+    default void setInvertSelection(final boolean value) {
+
+    }
+
+    @Override
+    default boolean getInvertSelection() {
+        return false;
+    }
+
+    @Override
+    default void postProcessDistances(final double[] distances) {
+
     }
 
 }

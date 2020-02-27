@@ -1,19 +1,14 @@
 package tsml.classifiers.distance_based.distances;
 
-import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.neighboursearch.PerformanceStats;
-
-import java.io.Serializable;
-import java.util.Enumeration;
 
 public abstract class AbstractDistanceMeasure
     implements DistanceMeasure {
 
-    protected transient boolean debug = false;
-    protected transient boolean dataHasBeenSet = false;
-    protected transient Instances data;
+    private transient boolean debug = false;
+    private transient boolean dataHasBeenSet = false;
+    private transient Instances data;
 
     @Override
     public boolean isDebug() {
@@ -27,13 +22,7 @@ public abstract class AbstractDistanceMeasure
 
     public AbstractDistanceMeasure() { }
 
-    public void checks(Instance first, Instance second) {
-        if(first.classIndex() != first.numAttributes() - 1) {
-            throw new IllegalStateException("class value must be at the end");
-        }
-        if(second.classIndex() != second.numAttributes() - 1) {
-            throw new IllegalStateException("class value must be at the end");
-        }
+    public void checkData(Instance first, Instance second) {
         if(!dataHasBeenSet) {
             throw new IllegalStateException("must call setInstances first to setup the distance measure");
         }
@@ -43,36 +32,14 @@ public abstract class AbstractDistanceMeasure
     public void setInstances(final Instances data) {
         this.data = data;
         dataHasBeenSet = true;
+        if(data.classIndex() != data.numAttributes() - 1) {
+            throw new IllegalStateException("class value must be at the end");
+        }
     }
 
     @Override
     public Instances getInstances() {
         return data;
-    }
-
-    @Override
-    public void setAttributeIndices(final String value) {
-
-    } // todo
-
-    @Override
-    public String getAttributeIndices() {
-        return null;
-    } // todo
-
-    @Override
-    public void setInvertSelection(final boolean value) {
-
-    }
-
-    @Override
-    public boolean getInvertSelection() {
-        return false;
-    }
-
-    @Override
-    public void postProcessDistances(final double[] distances) {
-
     }
 
     @Override
@@ -88,17 +55,5 @@ public abstract class AbstractDistanceMeasure
     public boolean isSymmetric() {
         return true;
     }
-
-//    public int hashcode() {
-//        return toString().hashCode();
-//    }
-//
-//    public boolean equals(Object other) {
-//        if(other instanceof AbstractDistanceMeasure) {
-//            return hashcode() == other.hashCode();
-//        } else {
-//            return false;
-//        }
-//    }
 
 }
