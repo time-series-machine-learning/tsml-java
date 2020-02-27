@@ -284,7 +284,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
             } else {
                 for(final Double key : nearestNeighbourMap.keys()) {
                     for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
-                        distribution[(int) nearestNeighbour.classValue()]++; // todo weight by distance
+                        distribution[(int) nearestNeighbour.classValue()]++;
                     }
                 }
                 ArrayUtilities.normaliseInPlace(distribution);
