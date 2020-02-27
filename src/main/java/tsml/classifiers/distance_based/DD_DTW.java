@@ -34,7 +34,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * @author Jason Lines (j.lines@uea.ac.uk)
  * 
  * Implementation of:
- * Górecki, Tomasz, and Maciej Łuczak. 
+ * Gorecki, Tomasz, and Maciej Luczak.
  * Using derivatives in time series classification.
  * Data Mining and Knowledge Discovery 26.2 (2013): 310-331.
  * 
@@ -86,7 +86,7 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "T. Górecki and M. Łuczak");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "T. Gorecki and M. Luczak");
         result.setValue(TechnicalInformation.Field.TITLE, "Using derivatives in time series classification");
         result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
         result.setValue(TechnicalInformation.Field.VOLUME, "26");

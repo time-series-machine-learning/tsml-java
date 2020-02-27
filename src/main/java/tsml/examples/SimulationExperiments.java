@@ -15,7 +15,7 @@
 package tsml.examples;
 
 import tsml.classifiers.distance_based.DTWCV;
-import tsml.classifiers.hybrids.FlatCote;
+import tsml.classifiers.hybrids.legacy_cote.FlatCote;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.interval_based.TSBF;
@@ -28,7 +28,7 @@ import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.distance_based.DD_DTW;
 import tsml.classifiers.dictionary_based.BagOfPatterns;
-import tsml.classifiers.hybrids.HiveCote;
+import tsml.classifiers.hybrids.legacy_cote.HiveCote;
 import fileIO.OutFile;
 import statistics.simulators.Model;
 import statistics.simulators.SimulateSpectralData;
