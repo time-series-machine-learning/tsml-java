@@ -23,7 +23,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
  * k-nearest-neighbour classifier.
  *
  * Change history:
- *  27/2/20 - goastler - refactored to include multiple distance measures
+ *  27/2/20 - goastler - overhaul to fix test seeding + interfaces
  */
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
                                                                StopWatchTrainTimeable  {
