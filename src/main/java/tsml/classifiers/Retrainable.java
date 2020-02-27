@@ -7,5 +7,5 @@ public interface Retrainable {
 
     boolean isRetrain();
 
-    void setRetrain(boolean state);
+    void setRebuild(boolean state);
 }

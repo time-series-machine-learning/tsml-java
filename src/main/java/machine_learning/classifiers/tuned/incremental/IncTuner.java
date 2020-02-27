@@ -7,6 +7,7 @@ import utilities.*;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import utilities.serialisation.SerConsumer;
+import utilities.stopwatch.StopWatch;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -214,9 +215,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
@@ -367,6 +368,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     protected boolean hasNextBuildTick() {
+
+        System.out.println(getTrainTimeNanos() + " < " + getTrainTimeLimitNanos());
+
         return agent.hasNext() && hasRemainingTraining();
     }
 

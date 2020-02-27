@@ -11,6 +11,7 @@ import utilities.cache.Cache;
 import utilities.cache.SymmetricCache;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
+import utilities.stopwatch.StopWatch;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -184,6 +185,8 @@ public class KnnLoocv
     }
 
     public boolean loadFromCheckpoint() {
+        final StopWatch trainTimer = getTrainTimer();
+        final MemoryWatcher memoryWatcher = getMemoryWatcher();
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
@@ -195,12 +198,15 @@ public class KnnLoocv
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        final StopWatch trainTimer = getTrainTimer();
+        final MemoryWatcher memoryWatcher = getMemoryWatcher();
+        final DistanceFunction distanceFunction = getDistanceFunction();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -211,7 +217,7 @@ public class KnnLoocv
         memoryWatcher.disable();
         super.buildClassifier(trainData);
         setSkipFinalCheckpoint(skip);
-        built = false;
+        setBuilt(false);
         memoryWatcher.enableAnyway();
         trainEstimateTimer.checkDisabled();
         trainTimer.enableAnyway();
@@ -228,7 +234,7 @@ public class KnnLoocv
                 searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
                 for(int i = 0; i < trainData.size(); i++) {
-                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i), rand);
+                    final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i));
                     searchers.add(i, searcher);
                 }
                 if(distanceFunction instanceof AbstractDistanceMeasure) {
@@ -275,7 +281,7 @@ public class KnnLoocv
             for(final NeighbourSearcher searcher : searchers) {
                 final double[] distribution = searcher.predict();
                 final int prediction = Utilities.argMax(distribution, rand);
-                final long time = searcher.getTimeNanos();
+                final long time = searcher.getTimeInNanos();
                 final double trueClassValue = searcher.getInstance().classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
@@ -290,12 +296,12 @@ public class KnnLoocv
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
-        built = true;
+        setBuilt(true);
         saveToCheckpoint();
     }
 
     public long getTrainTimeNanos() {
-        return trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos();
+        return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
     }
 
     public long getTrainTimeLimitNanos() {

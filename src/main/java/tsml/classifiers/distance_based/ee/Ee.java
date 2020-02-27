@@ -9,6 +9,7 @@ import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.*;
 import utilities.*;
+import utilities.stopwatch.StopWatch;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -165,9 +166,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

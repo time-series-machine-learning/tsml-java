@@ -81,10 +81,7 @@ ClassifierResults trainResults can also store other information about the traini
  * 
  * @author Tony Bagnall and James Large
  */
-abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       TrainSeedable, Retrainable,
-                                                                                       Debugable, Loggable, Copy,
-                                                                                       ParamHandler, Serializable {
+abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements EnhanceableClassifier {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -166,7 +163,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return rebuild;
     }
 
-    @Override public void setRetrain(final boolean rebuild) {
+    @Override public void setRebuild(final boolean rebuild) {
         this.rebuild = rebuild;
     }
 

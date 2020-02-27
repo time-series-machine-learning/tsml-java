@@ -13,6 +13,7 @@ import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
 import utilities.serialisation.SerConsumer;
+import utilities.stopwatch.StopWatch;
 import weka.core.Instances;
 
 import java.io.Serializable;

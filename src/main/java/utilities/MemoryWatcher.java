@@ -4,6 +4,7 @@ import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
 import tsml.classifiers.Loggable;
 import tsml.classifiers.MemoryWatchable;
+import utilities.stopwatch.StopWatch;
 
 import javax.management.ListenerNotFoundException;
 import javax.management.NotificationEmitter;
@@ -69,10 +70,10 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         enable();
     }
     // todo redundancy between this and StopWatch
-    public void resetAndDisable() {
-        disableAnyway();
-        reset();
-    }
+//    public void resetAndDisable() {
+//        disableAnyway();
+//        reset();
+//    }
 
     private synchronized void setupEmitters() {
         if(emitters == null) {
