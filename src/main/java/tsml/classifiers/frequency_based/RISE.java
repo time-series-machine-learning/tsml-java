@@ -19,10 +19,13 @@ import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLists;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import tsml.filters.Fast_FFT;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
+import weka.classifiers.meta.Bagging;
 import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -123,7 +126,7 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
     private boolean subSample=false;
     private double sampleProp=1;
     public RISE(){
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         filters=new SimpleFilter[3];
         ACF acf= new ACF();
         acf.setNormalized(false);
@@ -371,8 +374,169 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
                 ((Randomizable)baseClassifiers[i]).setSeed(i*seed);
             baseClassifiers[i].buildClassifier(newTrain);
         }
+
+        if (getEstimateOwnPerformance())
+            findTrainAcc(data);
+
         trainResults.setBuildTime(System.currentTimeMillis()-start);
     }
+
+    private void findTrainAcc(Instances data){
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        trainResults.setParas(getParameters());
+        int numTrees = 500;
+        int bagProp = 100;
+        Classifier[] classifiers = new Classifier[numTrees];
+        RISE RISE = new RISE(seed);
+        int[] timesInTest = new int[data.size()];
+        double[][][] distributions = new double[numTrees][data.size()][(int)data.numClasses()];
+        double[][] finalDistributions = new double[data.size()][(int)data.numClasses()];
+        int[][] bags;
+        ArrayList[] testIndexs = new ArrayList[numTrees];
+        double[] bagAccuracies = new double[numTrees];
+
+        bags = generateBags(numTrees, bagProp, data);
+
+        for (int i = 0; i < bags.length; i++) {
+
+            Instances intervalInstances = produceIntervalInstances(data, i);
+            try {
+                intervalInstances = filterData(intervalInstances);
+            } catch (Exception e) {
+                System.out.println("Could not filter data in findTrainAcc: " + e.toString());
+            }
+            Instances trainHeader = new Instances(intervalInstances, 0);
+            Instances testHeader = new Instances(intervalInstances, 0);
+
+            ArrayList<Integer> indexs = new ArrayList<>();
+            for (int j = 0; j < bags[i].length; j++) {
+                if(bags[i][j] == 0){
+                    testHeader.add(intervalInstances.get(j));
+                    timesInTest[j]++;
+                    indexs.add(j);
+                }
+                for (int k = 0; k < bags[i][j]; k++) {
+                    trainHeader.add(intervalInstances.get(j));
+                }
+            }
+            testIndexs[i] = indexs;
+            classifiers[i] = new RandomTree();
+            ((RandomTree)classifiers[i]).setKValue(trainHeader.numAttributes() - 1);
+            try {
+                //RISE.buildClassifier(trainHeader);
+                classifiers[i].buildClassifier(trainHeader);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            for (int j = 0; j < testHeader.size(); j++) {
+                try {
+                    //distributions[i][indexs.get(j)] = RISE.distributionForInstance(testHeader.get(j));
+                    distributions[i][indexs.get(j)] = classifiers[i].distributionForInstance(testHeader.get(j));
+                    //if (RISE.classifyInstance(testHeader.get(j)) == testHeader.get(j).classValue()){
+                    if (classifiers[i].classifyInstance(testHeader.get(j)) == testHeader.get(j).classValue()){
+                        bagAccuracies[i]++;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            bagAccuracies[i] /= testHeader.size();
+            trainHeader.clear();
+            testHeader.clear();
+        }
+
+        double testAcc = 0.0;
+        for (int i = 0; i < bagAccuracies.length; i++) {
+            testAcc += bagAccuracies[i];
+        }
+        testAcc /= bagAccuracies.length;
+        System.out.println("Train acc 1: " + testAcc);
+
+        for (int i = 0; i < bags.length; i++) {
+            for (int j = 0; j < bags[i].length; j++) {
+                if(bags[i][j] == 0){
+                    for (int k = 0; k < finalDistributions[j].length; k++) {
+                        finalDistributions[j][k] += distributions[i][j][k];
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < finalDistributions.length; i++) {
+            if (timesInTest[i] > 1){
+                for (int j = 0; j < finalDistributions[i].length; j++) {
+                    finalDistributions[i][j] /= timesInTest[i];
+                }
+            }
+        }
+
+        //Add to trainResults.
+        double acc = 0.0;
+        for (int i = 0; i < finalDistributions.length; i++) {
+            double predClass = 0;
+            double predProb = 0.0;
+            for (int j = 0; j < finalDistributions[i].length; j++) {
+                if (finalDistributions[i][j] > predProb){
+                    predProb = finalDistributions[i][j];
+                    predClass = j;
+                }
+            }
+            trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
+            if (predClass == data.get(i).classValue()){
+                acc++;
+            }
+            trainResults.setAcc(acc / data.size());
+        }
+        System.out.println("Train acc 2: " + trainResults.getAcc());
+    }
+
+    private int[][] generateBags(int numBags, int bagProp, Instances data){
+        int[][] bags = new int[numBags][data.size()];
+
+        Random random = new Random(seed);
+        for (int i = 0; i < numBags; i++) {
+            for (int j = 0; j < data.size() * (bagProp/100.0); j++) {
+                bags[i][random.nextInt(data.size())]++;
+            }
+        }
+        return bags;
+    }
+
+    private Instances produceIntervalInstances(Instances data, int x){
+        Instances intervalInstances;
+        ArrayList<Attribute>attributes = new ArrayList<>();
+        ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
+
+        for (int i = startPoints[x]; i < endPoints[x]; i++) {
+            attributes.add(data.attribute(i));
+            intervalAttIndexes.add(i);
+        }
+
+        //intervalsAttIndexes.add(intervalAttIndexes);
+        attributes.add(data.attribute(data.numAttributes()-1));
+        intervalInstances = new Instances(data.relationName(), attributes, data.size());
+        double[] intervalInstanceValues = new double[(endPoints[x] - startPoints[x]) + 1];
+
+        for (int i = 0; i < data.size(); i++) {
+
+            for (int j = 0; j < (endPoints[x] - startPoints[x]); j++) {
+                intervalInstanceValues[j] = data.get(i).value(intervalAttIndexes.get(j));
+            }
+
+            DenseInstance intervalInstance = new DenseInstance(intervalInstanceValues.length);
+            intervalInstance.replaceMissingValues(intervalInstanceValues);
+            intervalInstance.setValue(intervalInstanceValues.length-1, data.get(i).classValue());
+            intervalInstances.add(intervalInstance);
+        }
+
+        intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
+
+        return intervalInstances;
+    }
+
     private Instances filterData(Instances result) throws Exception{
             int maxLag=(result.numAttributes()-1)/4;
             if(maxLag>ACF.DEFAULT_MAXLAG)
@@ -440,9 +604,9 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
         System.out.println("\n");
         try {
             RISE = new RISE();
-            RISE.setTransforms("PS", "ACF");
+            RISE.setTransforms("PS");
             cr = sse.evaluate(RISE, data);
-            System.out.println("PS_ACF");
+            System.out.println("PS");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
