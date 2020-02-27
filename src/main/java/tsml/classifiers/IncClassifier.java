@@ -9,7 +9,7 @@ import weka.core.Instances;
 import weka.core.Randomizable;
 
 public interface IncClassifier
-    extends Classifier, Copy, Loggable, Debugable, Randomizable, Retrainable, ParamHandler {
+    extends Classifier, Copy, Loggable, Debugable, Randomizable, Rebuildable, ParamHandler {
 
     // make sure to start / stop timers / watchers at the beginning / end of each of these methods as they can be
     // called from anywhere! I.e. someone might call hasNextBuildTick(), wait 1 min, then call nextBuildTick(). You
@@ -31,7 +31,7 @@ public interface IncClassifier
                                                           Exception {}
 
     default void incBuildClassifier(Instances trainData) throws Exception {
-        if(isRetrain()) {
+        if(isRebuild()) {
             startBuild(trainData);
             setRebuild(false);
             if (hasNextBuildTick()) {

@@ -14,6 +14,7 @@ import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
@@ -25,7 +26,7 @@ import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE
  *  27/2/20 - goastler - refactored to include multiple distance measures
  */
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
-                                                               StopWatchTrainTimeable, Trainable, TestSeedable {
+                                                               StopWatchTrainTimeable  {
 
     private static String getKFlag() {
         return "k";
@@ -127,7 +128,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), built && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -136,7 +137,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
+        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
         lastCheckpointTimeStamp = System.nanoTime();
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
@@ -215,16 +216,13 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         if(!loadedFromCheckpoint) {
             saveToCheckpoint();
         } else {
-            logger.info("loaded from checkpoint so not overwriting");
+            getLogger().info("loaded from checkpoint so not overwriting");
         }
     }
 
-    @Override
-    public boolean isFullyTrained() { // todo not sure if we need this
+    @Override public boolean isBuilt() {
         return built;
     }
-
-    // todo fail capabilities + make sure class val at end
 
     /**
      * NeighbourSearcher class to find the set of nearest neighbours for a given instance.
@@ -277,7 +275,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         public double[] predict() {
             predictTimer.resetAndEnable();
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
-            final Random random = getRand();
+            final Random random = getRandom();
+            final Logger logger = getLogger();
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
                 logger.info("no neighbours available, random guessing");

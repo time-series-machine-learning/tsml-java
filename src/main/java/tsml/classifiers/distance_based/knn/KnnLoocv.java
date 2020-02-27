@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KnnLoocv
     extends Knn implements TrainTimeContractable {
@@ -94,7 +95,8 @@ public class KnnLoocv
     }
 
     protected void nextBuildTick() throws Exception {
-        regenerateTrainEstimate = true;
+        final Logger logger = getLogger();
+        setRegenerateTrainEstimate(true);
         final long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
             leftOutSearcher = leftOutSearcherIterator.next();
@@ -207,6 +209,7 @@ public class KnnLoocv
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
         final DistanceFunction distanceFunction = getDistanceFunction();
+        final Logger logger = getLogger();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -245,7 +248,7 @@ public class KnnLoocv
                     }
                 }
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
-                regenerateTrainEstimate = true; // build the first train estimate irrelevant of any progress made
+                setRegenerateTrainEstimate(true); // build the first train estimate irrelevant of any progress made
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
                 if(logger.isLoggable(Level.WARNING)) {
                     if(!leftOutSearcherIterator.hasNext()) {
@@ -269,7 +272,7 @@ public class KnnLoocv
             saveToCheckpoint();
         }
         trainTimer.checkDisabled();
-        if(regenerateTrainEstimate) {
+        if(isRegenerateTrainEstimate()) {
             if(logger.isLoggable(Level.WARNING)
                 && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
@@ -289,8 +292,8 @@ public class KnnLoocv
         trainEstimateTimer.disable();
         memoryWatcher.cleanup();
         memoryWatcher.disable();
-        if(regenerateTrainEstimate) {
-            regenerateTrainEstimate = false;
+        if(isRegenerateTrainEstimate()) {
+            setRegenerateTrainEstimate(false);
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());

@@ -695,7 +695,7 @@ public class Experiments  {
             LOGGER.log(Level.FINE, "Training complete");
 
             if(classifier instanceof Parallelisable) {
-                if(!((Parallelisable) classifier).isFullyTrained()) {
+                if(((Parallelisable) classifier).hasYielded()) {
                     throw new Exception("paralellised job, yielding to another process");
                 }
             }

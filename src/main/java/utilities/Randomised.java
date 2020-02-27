@@ -1,8 +1,10 @@
 package utilities;
 
+import weka.core.Randomizable;
+
 import java.util.Random;
 
-public interface Randomised {
+public interface Randomised extends Randomizable {
 
     Random getRandom();
 
