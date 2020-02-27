@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.old;
+package tsml.classifiers.distance_based.distances.deprecated;
 /**
 
 Basic DTW implementation for Weka. /Each instance is assumed to be a time series. Basically we

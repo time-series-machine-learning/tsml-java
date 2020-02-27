@@ -1,7 +1,7 @@
 /*
  * Sakoe Chiba DTW distance metric
  */
-package tsml.classifiers.distance_based.distances.old;
+package tsml.classifiers.distance_based.distances.deprecated;
 
 /**
  *

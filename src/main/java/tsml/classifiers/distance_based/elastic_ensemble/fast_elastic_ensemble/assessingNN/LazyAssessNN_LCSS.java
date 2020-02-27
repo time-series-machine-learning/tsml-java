@@ -16,7 +16,7 @@ package tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.a
 
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.classifiers.distance_based.distances.old.LCSSDistance;
+import tsml.classifiers.distance_based.distances.deprecated.LCSSDistance;
 import weka.core.Instance;
 
 /**

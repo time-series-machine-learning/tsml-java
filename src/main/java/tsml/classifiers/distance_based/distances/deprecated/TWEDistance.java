@@ -36,7 +36,7 @@ Matching},
 */
 
 
-package tsml.classifiers.distance_based.distances.old;
+package tsml.classifiers.distance_based.distances.deprecated;
 
 import weka.core.EuclideanDistance;
 import weka.core.Instance;

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.old;
+package tsml.classifiers.distance_based.distances.deprecated;
 
 /*
  * Move Split Merge distance measure from

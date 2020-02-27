@@ -1,7 +1,7 @@
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.distances.old.DTW;
+import tsml.classifiers.distance_based.distances.deprecated.DTW;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;

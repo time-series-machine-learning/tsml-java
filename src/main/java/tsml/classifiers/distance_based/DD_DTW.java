@@ -26,7 +26,7 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import tsml.classifiers.distance_based.distances.old.DTW_DistanceBasic;
+import tsml.classifiers.distance_based.distances.deprecated.DTW_DistanceBasic;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
