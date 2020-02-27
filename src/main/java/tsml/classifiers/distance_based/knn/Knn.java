@@ -314,7 +314,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     }
 
     @Override public double classifyInstance(final Instance instance) throws Exception {
-        return super.classifyInstance(instance);
+        return Utilities.argMax(distributionForInstance(instance), getRandom());
     }
 
     public int getK() {
