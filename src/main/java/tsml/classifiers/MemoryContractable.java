@@ -37,4 +37,23 @@ public interface MemoryContractable extends MemoryWatchable {
 
     //pass in an value from the DataUnit enum and the amount of said values.
     void setMemoryLimit(DataUnit unit, long amount);
+
+    default long getMaxMemoryUsageInBytes() {
+        return -1;
+    }
+    default double getMeanMemoryUsageInBytes() {
+        return -1;
+    }
+    default double getVarianceMemoryUsageInBytes() {
+        return -1;
+    }
+    default double getStdDevMemoryUsageInBytes() {
+        return -1;
+    }
+    default long getGarbageCollectionTimeInMillis() {
+        return -1;
+    }
+    default long getMemoryReadingCount() {
+        return -1;
+    }
 }

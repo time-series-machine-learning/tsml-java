@@ -14,6 +14,7 @@
  */
 package tsml.classifiers;
 
+import utilities.CheckpointUtils;
 import utilities.Copy;
 import utilities.FileUtils;
 
@@ -79,26 +80,21 @@ public interface Checkpointable extends Serializable, Copy {
 
     //Override both if not using Java serialisation    
     default void saveToFile(String filename) throws Exception {
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
-             FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
-             ObjectOutputStream out = new ObjectOutputStream(fos)) {
-            out.writeObject(this);
-        }
+        CheckpointUtils.serialise(this, filename);
     }
     default void loadFromFile(String filename) throws Exception{
-        Object obj = null;
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
-             FileInputStream fis = new FileInputStream(fileLocker.getFile());
-             ObjectInputStream in = new ObjectInputStream(fis)) {
-            obj = in.readObject();
-        }
+        Object obj = CheckpointUtils.deserialise(filename);
         if(obj != null) {
             copyFromSerObject(obj);
         }
     }
 
-    default boolean checkpoint() throws
+    default boolean saveToCheckpoint() throws
                               Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean loadFromCheckpoint() throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -136,13 +132,14 @@ public interface Checkpointable extends Serializable, Copy {
 
     }
 
-//    Predicate<Field> SER = field -> field.getAnnotation(NoSer.class) != null;
-    Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
+    default boolean isSkipFinalCheckpoint() {
+        return false;
+    }
 
-//    @Retention(RetentionPolicy.RUNTIME) // accessible at runtime
-//    @Documented
-//    @Target(ElementType.FIELD) // only apply to fields
-//    @interface NoSer {
-//        String value() default "";
-//    }
+    default void setSkipFinalCheckpoint(boolean state) {
+
+    }
+
+    Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
+    long DEFAULT_MIN_CHECKPOINT_INTERVAL = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
 }

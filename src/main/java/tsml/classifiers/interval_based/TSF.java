@@ -16,6 +16,7 @@
 package tsml.classifiers.interval_based;
  
 import java.util.ArrayList;
+
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -27,7 +28,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
-import java.io.File;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -153,8 +154,9 @@ public class TSF extends EnhancedAbstractClassifier
     private EstimatorMethod estimator=EstimatorMethod.CV;
     private String trainFoldPath="";
 /* If trainFoldPath is set, train results are overwritten with 
- each call to buildClassifier.*/    
-     
+ each call to buildClassifier.*/
+
+    private int seriesLength;
      
     public TSF(){
 //TSF Has the capability to form train estimates         
@@ -336,6 +338,9 @@ public class TSF extends EnhancedAbstractClassifier
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long t1=System.nanoTime();
+
+        seriesLength = data.numAttributes()-1;
+
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
 //Set up instances size and format. 
         trees=new AbstractClassifier[numClassifiers];        
@@ -384,15 +389,17 @@ public class TSF extends EnhancedAbstractClassifier
         for(int i=0;i<numClassifiers;i++){
         //1. Select random intervals for tree i
             intervals[i]=new int[numIntervals][2];  //Start and end
-            if(data.numAttributes()-1<minIntervalLength)
-                 minIntervalLength=data.numAttributes()-1;
-            for(int j=0;j<numIntervals;j++){
-               intervals[i][j][0]=rand.nextInt(data.numAttributes()-1-minIntervalLength);       //Start point
-               int length=rand.nextInt(data.numAttributes()-1-intervals[i][j][0]);//Min length 3
-               if(length<minIntervalLength)
-                   length=minIntervalLength;
-               intervals[i][j][1]=intervals[i][j][0]+length;
+
+            if (data.numAttributes() - 1 < minIntervalLength)
+                minIntervalLength = data.numAttributes() - 1;
+            for (int j = 0; j < numIntervals; j++) {
+                intervals[i][j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+                int length = rand.nextInt(data.numAttributes() - 1 - intervals[i][j][0]);//Min length 3
+                if (length < minIntervalLength)
+                    length = minIntervalLength;
+                intervals[i][j][1] = intervals[i][j][0] + length;
             }
+
         //2. Generate and store attributes            
             for(int j=0;j<numIntervals;j++){
                 //For each instance
@@ -698,7 +705,7 @@ public class TSF extends EnhancedAbstractClassifier
         public String toString(){
             return "mean="+mean+" stdev = "+stDev+" slope ="+slope;
         }
-    } 
+    }
      
     public static void main(String[] arg) throws Exception{
         
@@ -706,20 +713,21 @@ public class TSF extends EnhancedAbstractClassifier
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
         
 // Basic correctness tests, including setting paras through 
-        String dataLocation="Z:\\Data\\TSCProblems2018\\";
-        String resultsLocation="C:\\temp\\";
+        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
+//        String resultsLocation="C:\\temp\\";
         String problem="ItalyPowerDemand";
-        File f= new File(resultsLocation+problem);
-        if(!f.isDirectory())
-            f.mkdirs();
+//        File f= new File(resultsLocation+problem);
+//        if(!f.isDirectory())
+//            f.mkdirs();
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.setSeed(0);
+        //tsf.setBaseClassifier(new TimeSeriesTree());
 //        tsf.writeTrainEstimatesToFile(resultsLocation+problem+"trainFold0.csv");
         double a;
         tsf.buildClassifier(train);
-        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
         String[] options=new String[4];
@@ -729,7 +737,7 @@ public class TSF extends EnhancedAbstractClassifier
         options[3]="1";
         tsf.setOptions(options);
         tsf.buildClassifier(train);
-        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+tsf.testHolder.numAttributes()+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
+        System.out.println("build ok: original atts="+(train.numAttributes()-1)+" new atts ="+(tsf.testHolder.numAttributes()-1)+" num trees = "+tsf.numClassifiers+" num intervals = "+tsf.numIntervals);
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
          

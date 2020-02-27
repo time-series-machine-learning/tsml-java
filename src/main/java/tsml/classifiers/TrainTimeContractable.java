@@ -14,6 +14,7 @@
  */
 package tsml.classifiers;
 
+import utilities.StopWatch;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 
@@ -58,10 +59,6 @@ public interface TrainTimeContractable
 
     default void setTrainTimeLimitNanos(long nanos) {
         setTrainTimeLimit(nanos);
-    }
-
-    default long getTrainTimeNanos() {
-        throw new UnsupportedOperationException();
     }
 
     default boolean hasTrainTimeLimit() {

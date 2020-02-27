@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.hybrids;
+package tsml.classifiers.hybrids.legacy_cote;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.ElasticEnsemble;

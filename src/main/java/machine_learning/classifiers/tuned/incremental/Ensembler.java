@@ -1,5 +1,6 @@
 package machine_learning.classifiers.tuned.incremental;
 
+import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.ArrayUtilities;
 import utilities.collections.Utils;
 
@@ -9,13 +10,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public interface BenchmarkEnsembler extends Serializable {
-    List<Double> weightVotes(Iterable<Benchmark> benchmarks);
+public interface Ensembler extends Serializable {
+    List<Double> weightVotes(Iterable<EnhancedAbstractClassifier> benchmarks);
 
-    static BenchmarkEnsembler byScore(Function<Benchmark, Double> scorer) {
+    static Ensembler byScore(Function<EnhancedAbstractClassifier, Double> scorer) {
         return (benchmarks) -> {
             List<Double> weights = new ArrayList<>();
-            for(Benchmark benchmark : benchmarks) {
+            for(EnhancedAbstractClassifier benchmark : benchmarks) {
                 weights.add(scorer.apply(benchmark));
             }
             ArrayUtilities.normaliseInPlace(weights);
@@ -23,7 +24,7 @@ public interface BenchmarkEnsembler extends Serializable {
         };
     }
 
-    static BenchmarkEnsembler single() {
+    static Ensembler single() {
         return (benchmarks) -> {
             if(Utils.size(benchmarks) != 1) {
                 throw new IllegalArgumentException("was only expecting 1 benchmark");

@@ -6,7 +6,6 @@ import experiments.ClassifierBuilderFactory;
 import experiments.ClassifierBuilderFactory.ClassifierBuilder;
 import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.tuned.incremental.Benchmark;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
@@ -22,7 +21,6 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -225,12 +223,12 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
-        incKnnTunerBuilder
+        IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
+        incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
-        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        incTunedClassifier.setTrainSetupFunction(incKnnTunerSetup);
         return incTunedClassifier;
     }
 
@@ -240,12 +238,12 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
         IncTuner incTunedClassifier = new IncTuner();
-        IncKnnTunerBuilder incKnnTunerBuilder = new IncKnnTunerBuilder();
-        incKnnTunerBuilder
+        IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
+        incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(KnnConfig::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
-        incTunedClassifier.setInitFunction(incKnnTunerBuilder);
+        incTunedClassifier.setTrainSetupFunction(incKnnTunerSetup);
         return incTunedClassifier;
     }
 

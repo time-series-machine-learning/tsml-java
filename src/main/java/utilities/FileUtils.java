@@ -50,6 +50,13 @@ public class FileUtils {
     }
 
     public static class FileLock implements AutoCloseable {
+        public static class LockException extends Exception {
+
+            public LockException(String s) {
+                super(s);
+            }
+        }
+
         private Thread thread;
         private File file;
         private File lockFile;
@@ -65,7 +72,7 @@ public class FileUtils {
             return lockFile;
         }
 
-        private FileLock(File file, boolean lock) {
+        private FileLock(File file, boolean lock) throws LockException {
             this.file = file;
             this.lockFile = new File(file.getPath() + ".lock");
             if(lock) {
@@ -73,16 +80,16 @@ public class FileUtils {
             }
         }
 
-        public FileLock(File file) {
+        public FileLock(File file) throws LockException {
             // assume we want to lock the file asap
             this(file, true);
         }
 
-        public FileLock(String path) {
+        public FileLock(String path) throws LockException {
             this(new File(path));
         }
 
-        private FileLock lock() {
+        private FileLock lock() throws LockException {
             if(isUnlocked()) {
                 makeParentDir(lockFile);
                 boolean stop = false;
@@ -107,7 +114,7 @@ public class FileUtils {
                         }
                     }
                 }
-                throw new IllegalStateException("failed to lock file: " + file.getPath());
+                throw new LockException("failed to lock file: " + file.getPath());
             }
             return this;
         }

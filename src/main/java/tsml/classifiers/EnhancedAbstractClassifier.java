@@ -20,6 +20,8 @@ import utilities.LogUtils;
 import utilities.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+
+import java.io.Serializable;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -80,9 +82,9 @@ ClassifierResults trainResults can also store other information about the traini
  * @author Tony Bagnall and James Large
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       Randomizable, Rebuildable,
+                                                                                       TrainSeedable, Retrainable,
                                                                                        Debugable, Loggable, Copy,
-                                                                                       ParamHandler {
+                                                                                       ParamHandler, Serializable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -91,10 +93,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected boolean rebuild = true;
-    protected boolean built = false;
     protected boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
-    protected transient final Logger logger = LogUtils.getLogger(this);
+    protected transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
         return rand;
@@ -161,16 +162,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return logger;
     }
 
-    @Override
-    public boolean isBuilt() {
-        return built;
-    }
-
-    @Override public boolean isRebuild() {
+    @Override public boolean isRetrain() {
         return rebuild;
     }
 
-    @Override public void setRebuild(final boolean rebuild) {
+    @Override public void setRetrain(final boolean rebuild) {
         this.rebuild = rebuild;
     }
 
@@ -188,6 +184,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             trainResults.setClassifierName(getClassifierName());
             trainResults.setParas(getParameters());
             rebuild = false;
+            if(trainData.classIndex() != trainData.numAttributes() - 1) {
+                throw new IllegalArgumentException("class value not at the end");
+            }
         }
     }
 
@@ -198,6 +197,23 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public EnhancedAbstractClassifier(boolean ableToEstimateOwnPerformance) {
         this.ableToEstimateOwnPerformance = ableToEstimateOwnPerformance;
         setDebug(debug);
+    }
+
+    @Override
+    public int hashCode() {
+        if(classifierName == null) {
+            return super.hashCode();
+        }
+        return classifierName.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if(!(other instanceof EnhancedAbstractClassifier)) {
+            return false;
+        }
+        EnhancedAbstractClassifier eac = (EnhancedAbstractClassifier) other;
+        return classifierName.equalsIgnoreCase(eac.classifierName);
     }
     
     /**
@@ -307,7 +323,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         seedClassifier=true;
         this.seed = seed;
         rand=new Random(seed);
-//        rand.setSeed(seed);
     }
 
     /**
@@ -361,6 +376,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
+        if(classifierName != null) {
+            logger = LogUtils.getLogger(classifierName);
+        } else {
+            logger = LogUtils.getLogger(this);
+        }
     }
 
     public void setDebug(boolean b){

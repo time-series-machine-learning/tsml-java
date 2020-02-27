@@ -11,7 +11,7 @@ import java.util.*;
  * holds a mapping of parameter names to their corresponding values, where the values are stored as a ParamValues
  * object to allow for sub parameter spaces.
  */
-public class ParamSpace implements DefaultList<ParamSet> {
+public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend list
 
     /**
      * holds a set of values (e.g. DTW and DDTW) and a set of corresponding params for those values (e.g. a set of

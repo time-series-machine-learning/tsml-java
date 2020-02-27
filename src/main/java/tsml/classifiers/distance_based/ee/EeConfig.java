@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.ee;
 import com.google.common.collect.ImmutableList;
 import experiments.ClassifierBuilderFactory;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
-import tsml.classifiers.distance_based.knn.configs.IncKnnTunerBuilder;
+import tsml.classifiers.distance_based.knn.configs.IncKnnTunerSetup;
 import tsml.classifiers.distance_based.knn.configs.KnnTag;
 import weka.classifiers.Classifier;
 
@@ -109,36 +109,36 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         return buildEeV2(); // todo turn off full ee?
     }
 
-    private static Ee forEachTunedConstituent(Ee ee, Consumer<IncKnnTunerBuilder> consumer) {
+    private static Ee forEachTunedConstituent(Ee ee, Consumer<IncKnnTunerSetup> consumer) {
         for(Classifier classifier : ee.getConstituents()) {
             if(!(classifier instanceof IncTuner)) {
                 continue;
             }
             IncTuner tuner = (IncTuner) classifier;
-            IncKnnTunerBuilder config = (IncKnnTunerBuilder) tuner.getInitFunction();
+            IncKnnTunerSetup config = (IncKnnTunerSetup) tuner.getTrainSetupFunction();
             consumer.accept(config);
         }
         return ee;
     }
 
     public static Ee setLimitedParameters(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimit(limit));
+        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimit(limit));
     }
 
     public static Ee setLimitedParametersPercentage(Ee ee, double limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimitPercentage(limit));
+        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setLimitedNeighbours(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setNeighbourhoodSizeLimit(limit));
+        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setNeighbourhoodSizeLimit(limit));
     }
 
     public static Ee setLimitedNeighboursPercentage(Ee ee, double limit) { // todo params from cmdline in experiment + append to cls name
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setParamSpaceSizeLimitPercentage(limit));
+        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setTrainSelectedBenchmarksFully(Ee ee, boolean state) { // todo params from cmdline in experiment + append to cls name
-        return forEachTunedConstituent(ee, incKnnTunerBuilder -> incKnnTunerBuilder.setTrainSelectedBenchmarksFully(state));
+        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setTrainSelectedBenchmarksFully(state));
     }
 
     private static Ee buildLee() {
