@@ -25,6 +25,8 @@ import weka.core.neighboursearch.PerformanceStats;
  * @author ABostrom
  */
 
+
+@Deprecated
 public class DTW_D extends DTW_DistanceBasic{
 
     public DTW_D(){}

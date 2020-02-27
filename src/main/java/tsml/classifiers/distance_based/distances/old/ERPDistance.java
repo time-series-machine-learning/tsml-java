@@ -33,6 +33,8 @@ import weka.core.EuclideanDistance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
+
+@Deprecated
 public class ERPDistance extends EuclideanDistance {
 
     private double g;

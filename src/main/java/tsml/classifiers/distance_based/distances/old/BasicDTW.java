@@ -14,6 +14,8 @@ import weka.core.neighboursearch.PerformanceStats;
  *
  * @author Chris Rimmer
  */
+
+@Deprecated
 public class BasicDTW extends EuclideanDistance{
     
     protected double[][] distances;

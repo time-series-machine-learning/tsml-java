@@ -11,6 +11,8 @@ import weka.core.neighboursearch.PerformanceStats;
  *
  * @author Jason Lines (adapted from BasicDTW)
  */
+
+@Deprecated
 public class WeightedDTW extends BasicDTW{
     
     protected double[][] distances;

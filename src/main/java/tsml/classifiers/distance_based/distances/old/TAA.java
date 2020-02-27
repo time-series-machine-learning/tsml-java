@@ -12,6 +12,8 @@ import weka.core.NormalizableDistance;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
+
+@Deprecated
 public class TAA extends NormalizableDistance implements SaveParameterInfo, TechnicalInformationHandler {
 
 // WARNING: NOT DEBUGGED. ADD MORE COMMENTS. odo summary for each measure / relate to paper

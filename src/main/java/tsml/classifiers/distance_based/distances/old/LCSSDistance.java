@@ -14,6 +14,8 @@ import weka.core.neighboursearch.PerformanceStats;
 /**
  * @author sjx07ngu
  */
+
+@Deprecated
 public class LCSSDistance extends EuclideanDistance {
 
     private double epsilon;

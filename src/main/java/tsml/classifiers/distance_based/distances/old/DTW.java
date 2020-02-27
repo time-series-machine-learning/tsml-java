@@ -10,6 +10,7 @@ import weka.core.Instance;
 /**
  * @author ajb
  */
+@Deprecated
 public final class DTW extends DTW_DistanceBasic {
 
 

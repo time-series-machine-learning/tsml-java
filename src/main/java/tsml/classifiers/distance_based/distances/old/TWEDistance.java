@@ -58,6 +58,8 @@ lambda is selected from 0; .25; .5; .75; 1.0.
  */
 
 
+
+@Deprecated
 public class TWEDistance extends EuclideanDistance{
 
     double nu=1;

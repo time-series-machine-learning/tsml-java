@@ -12,6 +12,8 @@ import weka.core.Instances;
 
 import weka.core.neighboursearch.PerformanceStats;
 
+
+@Deprecated
 public class DTW_DistanceBasic extends EuclideanDistance{
 
     private static final long serialVersionUID = 1L;

@@ -6,6 +6,8 @@ Basic DTW implementation for Weka. /Each instance is assumed to be a time series
 
 import weka.core.Instances;
 
+
+@Deprecated
 public class DTW_DistanceEfficient extends DTW_DistanceBasic{
     double[] row1;
     double[] row2;

@@ -7,6 +7,8 @@ package tsml.classifiers.distance_based.distances.old;
  *
  * @author Chris Rimmer
  */
+
+@Deprecated
 public class SakoeChibaDTW extends BasicDTW {
 
 //    private int bandSize;

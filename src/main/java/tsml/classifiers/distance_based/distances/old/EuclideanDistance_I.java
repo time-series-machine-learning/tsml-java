@@ -23,6 +23,8 @@ import weka.core.Instances;
  *
  * @author Aaron
  */
+
+@Deprecated
 public class EuclideanDistance_I extends EuclideanDistance{
        
     public EuclideanDistance_I(){}

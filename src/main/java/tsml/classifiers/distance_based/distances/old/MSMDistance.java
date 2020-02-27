@@ -21,6 +21,8 @@ import weka.core.neighboursearch.PerformanceStats;
  *
  * @author Chris Rimmer
  */
+
+@Deprecated
 public class MSMDistance extends EuclideanDistance{
 
     // c - cost of Split/Merge operation. Change this value to what is more
