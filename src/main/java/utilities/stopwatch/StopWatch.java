@@ -1,13 +1,23 @@
-package utilities;
+package utilities.stopwatch;
+
+import utilities.Stated;
 
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+import static utilities.Stated.State.ENABLED;
+
 public class StopWatch extends Stated implements Serializable {
     private transient long timeStamp;
     private long time;
     private transient Set<StopWatch> listeners = new HashSet<>();
+
+    public static StopWatch newStopWatchEnabled() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.enable();
+        return stopWatch;
+    }
 
     public StopWatch() {
         super();

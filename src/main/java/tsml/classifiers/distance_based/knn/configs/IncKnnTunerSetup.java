@@ -13,6 +13,7 @@ import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
 import utilities.serialisation.SerConsumer;
+import utilities.stopwatch.StopWatch;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -116,7 +117,8 @@ public class IncKnnTunerSetup implements SerConsumer<Instances> {
         public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
             // randomly pick 1 of the best classifiers
             final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
-            final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1, incTunedClassifier.getRand());
+            final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
+                                                                                            incTunedClassifier.getRandom());
             if(selectedBenchmarks.size() > 1) {
                 throw new IllegalStateException("there shouldn't be more than 1");
             }

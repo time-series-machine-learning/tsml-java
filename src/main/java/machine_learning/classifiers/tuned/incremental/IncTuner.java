@@ -7,6 +7,7 @@ import utilities.*;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import utilities.serialisation.SerConsumer;
+import utilities.stopwatch.StopWatch;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -15,12 +16,13 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static utilities.collections.Utils.replace;
 
 public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
                                                                     StopWatchTrainTimeable,
-                                                                    Checkpointable, Parallelisable, TestSeedable {
+                                                                    Checkpointable, Parallelisable {
 
     /*
         how do we do tuning?
@@ -117,16 +119,6 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     private transient boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
     private transient boolean yielded = false;
-    protected int testSeed = 0;
-    protected Random testRand = new Random(0);
-
-    @Override public void setTestSeed(final int testSeed) {
-        this.testSeed = testSeed;
-    }
-
-    @Override public int getTestSeed() {
-        return testSeed;
-    }
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 
@@ -214,9 +206,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
@@ -250,7 +242,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override public boolean isBuilt() {
-        return !agent.hasNext();
+        return !agent.hasNext() && !hasSkippedEvaluation;
     }
 
     @Override public long getTrainTimeLimitNanos() {
@@ -261,6 +253,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // setup parent
+        final Logger logger = getLogger();
         super.buildClassifier(trainData);
         // enable resource monitors
         memoryWatcher.enableAnyway();
@@ -357,16 +350,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     }
 
     @Override
-    public boolean isFullyTrained() {
-        return built;
-    }
-
-    @Override
-    public boolean isFinalModel() {
-        return !hasSkippedEvaluation && !yielded;
+    public boolean hasYielded() {
+        return hasSkippedEvaluation || yielded;
     }
 
     protected boolean hasNextBuildTick() {
+
+        System.out.println(getTrainTimeNanos() + " < " + getTrainTimeLimitNanos());
+
         return agent.hasNext() && hasRemainingTraining();
     }
 
@@ -384,6 +375,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     protected void nextBuildTick() throws Exception {
         // check whether we're exploring or exploiting
+        final Logger logger = getLogger();
         final boolean isExplore = agent.isExploringOrExploiting();
         // get the next classifier
         EnhancedAbstractClassifier classifier = agent.next();
@@ -467,12 +459,17 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
                 this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
                 // set train results info
                 classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTimeNanos());
+            }
+            if(classifier instanceof TrainEstimateTimeable) {
+                // the classifier tracked its time internally
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+            } else {
+                // we already tracked this as part of the train time
             }
             if(classifier instanceof MemoryWatchable) {
                 // the classifier tracked its own memory
@@ -561,7 +558,9 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
                     trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                    trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+                }
+                if(classifier instanceof TrainEstimateTimeable) {
+                    trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
                 }
                 if(classifier instanceof MemoryWatchable) {
                     memoryWatcher.add(((MemoryWatchable) classifier));
@@ -630,7 +629,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         if(benchmarks.size() == 1) {
             return benchmarkIterator.next().distributionForInstance(testCase);
         }
-        double[] distribution = new double[numClasses];
+        double[] distribution = new double[getNumClasses()];
         for(int i = 0; i < benchmarks.size(); i++) {
             if(!benchmarkIterator.hasNext()) {
                 throw new IllegalStateException("iterator incorrect");
@@ -646,7 +645,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     @Override
     public double classifyInstance(Instance testCase) throws Exception {
-        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), testRand);
+        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)));
     }
 
     public SerConsumer<Instances> getTrainSetupFunction() {

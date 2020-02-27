@@ -1,6 +1,6 @@
 package tsml.classifiers;
 
-import utilities.StopWatch;
+import utilities.stopwatch.StopWatch;
 
 /**
  * Simple interface to defer TrainTimeable to StopWatch implementations.

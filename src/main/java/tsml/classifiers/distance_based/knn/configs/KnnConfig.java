@@ -90,7 +90,7 @@ public enum KnnConfig implements ClassifierBuilder {
         classifier.setK(1);
         classifier.setNeighbourLimit(-1);
         classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
-        classifier.setRandomTieBreak(false);
+//        classifier.setRandomTieBreak(false);
         return classifier;
     }
 
@@ -101,7 +101,7 @@ public enum KnnConfig implements ClassifierBuilder {
         classifier.setNeighbourLimit(-1);
         classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
         classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
-        classifier.setRandomTieBreak(true);
+//        classifier.setRandomTieBreak(true);
         return classifier;
     }
 

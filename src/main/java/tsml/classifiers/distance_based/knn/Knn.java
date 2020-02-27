@@ -7,48 +7,71 @@ import utilities.*;
 import utilities.collections.PrunedMultimap;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
+import utilities.stopwatch.StopWatch;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
 
+/**
+ * k-nearest-neighbour classifier.
+ *
+ * Change history:
+ *  27/2/20 - goastler - refactored to include multiple distance measures
+ */
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
-                                                               StopWatchTrainTimeable, Trainable, TestSeedable {
+                                                               StopWatchTrainTimeable  {
 
+    private static String getKFlag() {
+        return "k";
+    }
+
+    private static String getEarlyAbandonFlag() {
+        return "e";
+    }
+
+    private static String getRandomTieBreakFlag() {
+        return "r";
+    }
+
+    protected void setBuilt(final boolean built) {
+        this.built = built;
+    }
+
+    // serialisation id
     private static final long serialVersionUID = 0;
-    protected transient Instances trainData;
-    public static final String K_FLAG = "k";
-    public static final String EARLY_ABANDON_FLAG = "e";
-    public static final String RANDOM_TIE_BREAK_FLAG = "r";
-    protected int k = 1;
-    protected boolean earlyAbandon = true;
-    protected DistanceFunction distanceFunction = new Dtw(0);
-    protected StopWatch trainTimer = new StopWatch();
-    protected MemoryWatcher memoryWatcher = new MemoryWatcher();
-    protected boolean randomTieBreak = false;
-    protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
-    protected transient long lastCheckpointTimeStamp = 0;
-    protected transient String savePath = null;
-    protected transient String loadPath = null;
-    protected transient boolean skipFinalCheckpoint = false;
+    // train data (we won't store this in serialisation because it causes mega bloat!)
+    private transient Instances trainData;
+    // k, the number of neighbours to use
+    private int k = 1;
+    // whether to early abandon on distance measure calculations
+    private boolean earlyAbandon = true;
+    // the distance function
+    private DistanceFunction distanceFunction = new Dtw(0);
+    // track the train time
+    private StopWatch trainTimer = new StopWatch();
+    // track the memory
+    private MemoryWatcher memoryWatcher = new MemoryWatcher();
+    // min time between checkpointing
+    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    // last timestamp of checkpoint
+    private transient long lastCheckpointTimeStamp = 0;
+    // path to save checkpoints to
+    private transient String savePath = null;
+    // path to load checkpoints from
+    private transient String loadPath = null;
+    // whether we should skip the final checkpoint
+    private transient boolean skipFinalCheckpoint = false;
+    // whether we're rebuilding the classifier or not
     private boolean rebuild = true; // shadows super
-    protected boolean built = false;
-    protected int testSeed = 0;
-    protected Random testRandom = new Random(testSeed);
-
-    @Override public void setTestSeed(final int testSeed) {
-        this.testSeed = testSeed;
-        testRandom.setSeed(testSeed);
-    }
-
-    @Override public int getTestSeed() {
-        return testSeed;
-    }
+    // whether the classifier is built
+    private boolean built = false;
 
     @Override
     public boolean isSkipFinalCheckpoint() {
@@ -105,7 +128,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), built && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -114,7 +137,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
+        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
         lastCheckpointTimeStamp = System.nanoTime();
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
@@ -136,35 +159,25 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
 
     @Override public ParamSet getParams() {
         return super.getParams()
-                    .add(EARLY_ABANDON_FLAG, earlyAbandon)
-                    .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
-                    .add(K_FLAG, k)
+                    .add(getEarlyAbandonFlag(), earlyAbandon)
+                    .add(getKFlag(), k)
                     .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
         ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
-        ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
-        ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
-        ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);
+        ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
+        ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
-    }
-
-    public boolean isRandomTieBreak() {
-        return randomTieBreak;
-    }
-
-    public void setRandomTieBreak(boolean randomTieBreak) {
-        this.randomTieBreak = randomTieBreak;
     }
 
     public Knn() {
@@ -186,62 +199,69 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         boolean loadedFromCheckpoint = loadFromCheckpoint();
-        if(rebuild) {
-            memoryWatcher.reset();
-            trainTimer.reset();
-        }
         memoryWatcher.enable();
         trainTimer.enable();
+        if(rebuild) {
+            memoryWatcher.resetAndEnable();
+            trainTimer.resetAndEnable();
+            built = false;
+            rebuild = false;
+        }
         super.buildClassifier(trainData);
-        built = false;
         distanceFunction.setInstances(trainData);
         this.trainData = trainData;
-        rebuild = false;
         built = true;
         trainTimer.disable();
-        memoryWatcher.cleanup();
         memoryWatcher.disable();
         if(!loadedFromCheckpoint) {
             saveToCheckpoint();
         } else {
-            logger.info("loaded from checkpoint so not overwriting");
+            getLogger().info("loaded from checkpoint so not overwriting");
         }
     }
 
-    @Override
-    public boolean isFullyTrained() {
+    @Override public boolean isBuilt() {
         return built;
     }
 
-    // todo fail capabilities
-
+    /**
+     * NeighbourSearcher class to find the set of nearest neighbours for a given instance.
+     */
     public class NeighbourSearcher implements Serializable {
+        // map of distance to instances, allowing multiple instances to have the same distance
         private final PrunedMultimap<Double, Instance> prunedMap;
+        // the target instance we're trying to find the closest neighbour to
         private final Instance instance;
+        // distance limit if we're early abandoning
         private double limit = Double.POSITIVE_INFINITY;
+        // timer to record comparison time
         private StopWatch comparisonTimer = new StopWatch();
+        // timer to record the prediction time
         private StopWatch predictTimer = new StopWatch();
-        private final Random random;
 
         public Instance getInstance() {
             return instance;
         }
 
-        public NeighbourSearcher(Instance instance, final Random random) {
-            this.random = random;
+        public NeighbourSearcher(Instance instance) {
             this.prunedMap =
                 new PrunedMultimap<>(((Comparator<Double> & Serializable) Double::compare));
+            // set the map to look for the k closest neighbours but keep neighbours which draw (e.g. both have a
+            // distance of 2, say
             prunedMap.setSoftLimit(k);
             this.instance = instance;
         }
 
+        // add an instance, finding the distance between the target instance and the given instance
         public double add(Instance neighbour) {
-            final long timeStamp = System.nanoTime();
+            StopWatch timer = StopWatch.newStopWatchEnabled();
             final double distance = distanceFunction.distance(this.instance, neighbour, limit);
-            add(neighbour, distance, System.nanoTime() - timeStamp);
+            timer.disable();
+            add(neighbour, distance, timer.getTimeNanos());
             return distance;
         }
 
+        // add an instance given a precomputed distance and corresponding time it took to find that distance
         public void add(Instance neighbour, double distance, long distanceMeasurementTime) {
             comparisonTimer.enable();
             prunedMap.put(distance, neighbour);
@@ -255,19 +275,16 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         public double[] predict() {
             predictTimer.resetAndEnable();
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
+            final Random random = getRandom();
+            final Logger logger = getLogger();
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
+                logger.info("no neighbours available, random guessing");
                 distribution[random.nextInt(distribution.length)]++;
             } else {
                 for(final Double key : nearestNeighbourMap.keys()) {
                     for(final Instance nearestNeighbour : nearestNeighbourMap.get(key)) {
                         distribution[(int) nearestNeighbour.classValue()]++; // todo weight by distance
-                        if(!randomTieBreak) {
-                            break;
-                        }
-                    }
-                    if(!randomTieBreak) {
-                        break;
                     }
                 }
                 ArrayUtilities.normaliseInPlace(distribution);
@@ -276,7 +293,8 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
             return distribution;
         }
 
-        public long getTimeNanos() {
+        public long getTimeInNanos() {
+            // the time taken to find the nearest neighbours and make a prediction for the target instance
             return predictTimer.getTimeNanos() + comparisonTimer.getTimeNanos();
         }
 
@@ -288,11 +306,15 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws
                                                                      Exception {
-        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance, testRandom);
+        final NeighbourSearcher searcher = new NeighbourSearcher(testInstance);
         for(final Instance trainInstance : trainData) {
             searcher.add(trainInstance);
         }
         return searcher.predict();
+    }
+
+    @Override public double classifyInstance(final Instance instance) throws Exception {
+        return super.classifyInstance(instance);
     }
 
     public int getK() {
