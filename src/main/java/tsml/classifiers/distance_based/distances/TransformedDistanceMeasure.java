@@ -8,41 +8,30 @@ Contributors: goastler
 */
 
 import java.util.function.Function;
+import weka.classifiers.evaluation.output.prediction.Null;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-public class TransformedDistanceMeasure extends AbstractDistanceMeasure {
+public class TransformedDistanceMeasure extends ImmutableTransformedDistanceMeasure {
 
-    public TransformedDistanceMeasure(String name, Function<Instance, Instance> transformer, DistanceFunction distanceFunction) {
-        super(name);
-        setDistanceFunction(distanceFunction);
-        setTransformer(transformer);
-    }
-
-    private DistanceFunction distanceFunction;
-    private Function<Instance, Instance> transformer;
-
-    public DistanceFunction getDistanceFunction() {
-        return distanceFunction;
-    }
-
-    public void setDistanceFunction(DistanceFunction distanceFunction) {
-        if(distanceFunction == null) throw new NullPointerException();
-        this.distanceFunction = distanceFunction;
-    }
-
-    public Function<Instance, Instance> getTransformer() {
-        return transformer;
-    }
-
-    public void setTransformer(Function<Instance, Instance> transformer) {
-        if(transformer == null) throw new NullPointerException();
-        this.transformer = transformer;
+    public TransformedDistanceMeasure(String name,
+        Function<Instance, Instance> transformer, DistanceFunction distanceFunction) {
+        super(name, transformer, distanceFunction);
     }
 
     @Override
-    public double distance(Instance first, Instance second, double cutOffValue, PerformanceStats stats) {
-        return distanceFunction.distance(first, second, cutOffValue, stats);
+    public void setDistanceFunction(DistanceFunction distanceFunction) {
+        super.setDistanceFunction(distanceFunction);
+    }
+
+    @Override
+    public void setTransformer(Function<Instance, Instance> transformer) {
+        super.setTransformer(transformer);
+    }
+
+    @Override
+    public void setName(String name) {
+        super.setName(name);
     }
 }
