@@ -19,6 +19,7 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.distance_based.ee.Ee;
+import tsml.classifiers.distance_based.ee.EeConfig;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
@@ -124,7 +125,7 @@ public class ClassifierLists {
                 c = new ProximityForestWrapper();
                 break;
             case "ElasticEnsemble":
-                c=new Ee();
+                c= EeConfig.buildCeeV2();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -548,12 +549,8 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        ClassifierBuilderFactory.ClassifierBuilder classifierBuilder =
-            ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
         Classifier c = null;
-        if(classifierBuilder != null) {
-            c = classifierBuilder.build();
-        } else if(distanceBased.contains(classifier))
+        if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
             c=setDictionaryBased(exp);
