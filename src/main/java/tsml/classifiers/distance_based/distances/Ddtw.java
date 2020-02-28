@@ -7,7 +7,7 @@ import weka.core.neighboursearch.PerformanceStats;
 import static tsml.filters.Derivative.INSTANCE_DERIVATIVE_FUNCTION;
 
 
-public class Ddtw extends Dtw {
+public class Ddtw extends DTWDistance {
     public static final CachedFunction<Instance, Instance> DERIVATIVE_CACHE = new CachedFunction<>(INSTANCE_DERIVATIVE_FUNCTION);
 
     private CachedFunction<Instance, Instance> derivativeCache = DERIVATIVE_CACHE;

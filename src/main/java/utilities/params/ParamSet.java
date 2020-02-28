@@ -1,17 +1,11 @@
 package utilities.params;
 
-import scala.Serializable;
-import scala.annotation.meta.param;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.distances.Lcss;
+import tsml.classifiers.distance_based.distances.DTWDistance;
 import utilities.StrUtils;
-import utilities.Utilities;
-import weka.core.OptionHandler;
 import weka.core.Utils;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 
 public class ParamSet implements ParamHandler {
 
@@ -108,9 +102,9 @@ public class ParamSet implements ParamHandler {
 
     public static void main(String[] args) {
         ParamSet oParamSet = new ParamSet();
-        oParamSet.add(Dtw.WARPING_WINDOW_FLAG, 3);
+        oParamSet.add(DTWDistance.WARPING_WINDOW_FLAG, 3);
         ParamSet paramSet = new ParamSet();
-        paramSet.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new Dtw(), oParamSet);
+        paramSet.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new DTWDistance(), oParamSet);
         String[] options;
         options = oParamSet.getOptions();
         System.out.println(Utils.joinOptions(options));

@@ -6,7 +6,7 @@ import utilities.params.ParamHandler;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-public class Dtw extends AbstractDistanceMeasure {
+public class DTWDistance extends AbstractDistanceMeasure {
 
     public int getWarpingWindow() {
         return warpingWindow;
@@ -16,9 +16,9 @@ public class Dtw extends AbstractDistanceMeasure {
         this.warpingWindow = warpingWindow;
     }
 
-    public Dtw() {}
+    public DTWDistance() {}
 
-    public Dtw(int warpingWindow) {
+    public DTWDistance(int warpingWindow) {
         setWarpingWindow(warpingWindow);
     }
 

@@ -9,7 +9,7 @@ import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.distances.Dtw;
+import tsml.classifiers.distance_based.distances.DTWDistance;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
@@ -107,13 +107,13 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static KnnLoocv buildEd1nnV1() {
         KnnLoocv knn = build1nnV1();
-        knn.setDistanceFunction(new Dtw(0));
+        knn.setDistanceFunction(new DTWDistance(0));
         return knn;
     }
 
     public static KnnLoocv buildDtw1nnV1() {
         KnnLoocv knn = build1nnV1();
-        knn.setDistanceFunction(new Dtw(-1));
+        knn.setDistanceFunction(new DTWDistance(-1));
         return knn;
     }
 
@@ -125,13 +125,13 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static KnnLoocv buildEd1nnV2() {
         KnnLoocv knn = build1nnV2();
-        knn.setDistanceFunction(new Dtw(0));
+        knn.setDistanceFunction(new DTWDistance(0));
         return knn;
     }
 
     public static KnnLoocv buildDtw1nnV2() {
         KnnLoocv knn = build1nnV2();
-        knn.setDistanceFunction(new Dtw(-1));
+        knn.setDistanceFunction(new DTWDistance(-1));
         return knn;
     }
 

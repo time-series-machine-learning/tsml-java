@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.distances.Dtw;
+import tsml.classifiers.distance_based.distances.DTWDistance;
 import utilities.*;
 import utilities.collections.PrunedMultimap;
 import utilities.params.ParamHandler;
@@ -27,7 +27,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     public static final String RANDOM_TIE_BREAK_FLAG = "r";
     protected int k = 1;
     protected boolean earlyAbandon = true;
-    protected DistanceFunction distanceFunction = new Dtw(0);
+    protected DistanceFunction distanceFunction = new DTWDistance(0);
     protected StopWatch trainTimer = new StopWatch();
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected boolean randomTieBreak = false;
@@ -315,7 +315,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         int seed = 0;
         Instances[] data = sampleGunPoint(seed);
         Instances trainData = data[0];
-        Knn classifier = new Knn(new Dtw(trainData.numAttributes() - 1));
+        Knn classifier = new Knn(new DTWDistance(trainData.numAttributes() - 1));
         classifier.setSeed(0);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
         System.out.println(results.writeSummaryResultsToString());

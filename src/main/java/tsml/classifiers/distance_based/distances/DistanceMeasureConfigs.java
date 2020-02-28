@@ -17,21 +17,21 @@ public class DistanceMeasureConfigs {
     
     public static ParamSpace buildDtwParamsV1(Instances instances) {
         ParamSpace params = new ParamSpace();
-        params.add(Dtw.WARPING_WINDOW_FLAG,
+        params.add(DTWDistance.WARPING_WINDOW_FLAG,
                    ArrayUtilities.unique(incrementalRange(0, instances.numAttributes() - 1, 100)));
         return params;
     }
 
     public static ParamSpace buildDtwSpaceV1(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Dtw()), buildDtwParamsV1(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new DTWDistance()), buildDtwParamsV1(instances));
     }
 
     public static ParamSpace buildDtwParamsV2(Instances instances) {
-        return new ParamSpace().add(Dtw.WARPING_WINDOW_FLAG, ArrayUtilities.unique(ArrayUtilities.range(0, instances.numAttributes() - 1, 100)));
+        return new ParamSpace().add(DTWDistance.WARPING_WINDOW_FLAG, ArrayUtilities.unique(ArrayUtilities.range(0, instances.numAttributes() - 1, 100)));
     }
 
     public static ParamSpace buildDtwSpaceV2(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Dtw()), buildDtwParamsV2(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new DTWDistance()), buildDtwParamsV2(instances));
     }
     
     public static ParamSpace buildDdtwParamsV1(Instances instances) {
