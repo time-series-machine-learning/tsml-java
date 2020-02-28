@@ -55,14 +55,14 @@ The lists of implemented TSC algorithms shall continue to grow over time. These 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 
 ===============  ================  ==============  =================  ==============  =========
-Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Ensembles         
+Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Hybrids
 ===============  ================  ==============  =================  ==============  =========
-DD_DTW           BOSS              RISE            LearnShapelets     TSF             FlatCote
-DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            HiveCote
+DD_DTW           BOSS              RISE            LearnShapelets     TSF             HIVE-COTE
+DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            TS-CHIEF
 ElasticEnsemble  BOP                               FastShapelets      LPS
 NN_CID           WEASEL        
 SAX_1NN          SAXVSM
-ProximityForest              
+ProximityForest  SpatialBOSS
 ===============  ================  ==============  =================  ==============  =========
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
@@ -83,11 +83,11 @@ Currently quite limited, aside from those already shipped with Weka.
 UnsupervisedShapelets
 =====================  =======
 
-Filters/Transformations
+Filters
 ```````````````````````
 
 SimpleBatchFilters that take an Instances (the set of time series), transforms them
-and returns a new Instances object
+and returns a new Instances object.
 
 ===================  ===================  ===================
 ACF                  ACF_PACF             ARMA
@@ -99,6 +99,11 @@ PAA                  PACF                 PowerCepstrum
 PowerSepstrum        RankOrder            RunLength
 SAX                  Sine                 SummaryStats
 ===================  ===================  ===================
+
+Transformers
+We will be shifting over to a bespoke Transformer interface
+===================
+ShapeletTransorm
 
 Paper-Supporting Branches
 -------------------------
