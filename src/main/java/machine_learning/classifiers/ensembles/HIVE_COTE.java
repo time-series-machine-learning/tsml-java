@@ -15,13 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package tsml.classifiers.hybrids;
+package machine_learning.classifiers.ensembles;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
 import java.util.concurrent.TimeUnit;
-
-import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.BOSS;
@@ -31,21 +29,17 @@ import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.core.*;
+import weka.core.Instances;
+import weka.core.Randomizable;
+import weka.core.TechnicalInformation;
+import weka.core.TechnicalInformationHandler;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 
 /**
- *
- * @author James Large (james.large@uea.ac.uk), Tony Bagnall
- * @maintainer Tony Bagnall
- *
- * This classifier is the latest version of the Hierarchical Vote Ensemble Collective of Transformation-based
- * Ensembles (HIVE-COTE).
- *
- * The original classifier used in [1] has  been moved to legacy_cote. This new one
- *
- * 1. Threadable Contractable
+ * TODO jay/tony update javadoc/author list as wanted
+ * 
+ * @author James Large (james.large@uea.ac.uk)
  */
 public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
 
@@ -219,21 +213,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         for (EnsembleModule module : modules)
             if(module.getClassifier() instanceof Randomizable)
                 ((Randomizable)module.getClassifier()).setSeed(seed);
-    }
-
-    @Override
-    public void setOptions(String[] options) throws Exception {
-//        System.out.print("TSF para sets ");
-//        for (String str:options)
-//             System.out.print(","+str);
-//        System.out.print("\n");
-        String alpha = Utils.getOption('a', options);
-        this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
-
-    }
-
-
-
+    }    
+    
     public static void main(String[] args) throws Exception {
         System.out.println(ClassifierTools.testUtils_getIPDAcc(new HIVE_COTE()));
     }
