@@ -553,7 +553,7 @@ public class ClassifierLists {
             ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
         Classifier c = null;
         if(classifierBuilder != null) {
-            return classifierBuilder.build();
+            c = classifierBuilder.build();
         } else if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
