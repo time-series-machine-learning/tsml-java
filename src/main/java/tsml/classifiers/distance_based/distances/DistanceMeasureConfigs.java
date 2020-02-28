@@ -39,7 +39,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDdtwSpaceV1(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Ddtw()), buildDdtwParamsV1(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new DDTWDistance()), buildDdtwParamsV1(instances));
     }
 
     public static ParamSpace buildDdtwParamsV2(Instances instances) {
@@ -47,7 +47,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDdtwSpaceV2(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Ddtw()), buildDdtwParamsV2(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new DDTWDistance()), buildDdtwParamsV2(instances));
     }
 
     public static ParamSpace buildWdtwParamsV1() {
@@ -57,12 +57,12 @@ public class DistanceMeasureConfigs {
         }
         List<Double> gValuesUnique = ArrayUtilities.unique(gValues);
         ParamSpace params = new ParamSpace();
-        params.add(Wdtw.G_FLAG, gValuesUnique);
+        params.add(WDTWDistance.G_FLAG, gValuesUnique);
         return params;
     }
 
     public static ParamSpace buildWdtwSpaceV1() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Wdtw()), buildWdtwParamsV1());
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new WDTWDistance()), buildWdtwParamsV1());
     }
 
     public static ParamSpace buildWdtwParamsV2() {
@@ -72,12 +72,12 @@ public class DistanceMeasureConfigs {
         }
         List<Double> gValuesUnique = ArrayUtilities.unique(gValues);
         ParamSpace params = new ParamSpace();
-        params.add(Wdtw.G_FLAG, gValuesUnique);
+        params.add(WDTWDistance.G_FLAG, gValuesUnique);
         return params;
     }
 
     public static ParamSpace buildWdtwSpaceV2() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Wdtw()), buildWdtwParamsV2());
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new WDTWDistance()), buildWdtwParamsV2());
     }
     
     public static ParamSpace buildWddtwParamsV1() {
@@ -85,7 +85,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWddtwSpaceV1() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Wddtw()), buildWddtwParamsV1());
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new WDDTWDistance()), buildWddtwParamsV1());
     }
     
     public static ParamSpace buildWddtwParamsV2() {
@@ -93,7 +93,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWddtwSpaceV2() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Wddtw()), buildWddtwParamsV2());
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new WDDTWDistance()), buildWddtwParamsV2());
     }
     
     public static ParamSpace buildLcssParams(Instances instances) {
@@ -104,13 +104,13 @@ public class DistanceMeasureConfigs {
         List<Double> epsilonValuesUnique = ArrayUtilities.unique(epsilonValues);
         List<Integer> deltaValuesUnique = ArrayUtilities.unique(deltaValues);
         ParamSpace params = new ParamSpace();
-        params.add(Lcss.EPSILON_FLAG, epsilonValuesUnique);
-        params.add(Lcss.DELTA_FLAG, deltaValuesUnique);
+        params.add(LCSSDistance.EPSILON_FLAG, epsilonValuesUnique);
+        params.add(LCSSDistance.DELTA_FLAG, deltaValuesUnique);
         return params;
     }
     
     public static ParamSpace buildLcssSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Lcss()), buildLcssParams(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new LCSSDistance()), buildLcssParams(instances));
     }
 
     public static ParamSpace buildTwedParams() {
@@ -143,13 +143,13 @@ public class DistanceMeasureConfigs {
         List<Double> nuValuesUnique = ArrayUtilities.unique(nuValues);
         List<Double> lambdaValuesUnique = ArrayUtilities.unique(lambdaValues);
         ParamSpace params = new ParamSpace();
-        params.add(Twed.LAMBDA_FLAG, lambdaValuesUnique);
-        params.add(Twed.NU_FLAG, nuValuesUnique);
+        params.add(TWEDistance.LAMBDA_FLAG, lambdaValuesUnique);
+        params.add(TWEDistance.NU_FLAG, nuValuesUnique);
         return params;
     }
 
     public static ParamSpace buildTwedSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Twed()),
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new TWEDistance()),
                                     buildTwedParams());
     }
 
@@ -161,13 +161,13 @@ public class DistanceMeasureConfigs {
         List<Double> penaltyValuesUnique = ArrayUtilities.unique(penaltyValues);
         List<Integer> bandSizeValuesUnique = ArrayUtilities.unique(bandSizeValues);
         ParamSpace params = new ParamSpace();
-        params.add(Erp.BAND_SIZE_FLAG, bandSizeValuesUnique);
-        params.add(Erp.PENALTY_FLAG, penaltyValuesUnique);
+        params.add(ERPDistance.BAND_SIZE_FLAG, bandSizeValuesUnique);
+        params.add(ERPDistance.PENALTY_FLAG, penaltyValuesUnique);
         return params;
     }
 
     public static ParamSpace buildErpSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Erp()),
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new ERPDistance()),
                                     buildErpParams(instances));
     }
 
@@ -277,12 +277,12 @@ public class DistanceMeasureConfigs {
         };
         List<Double> costValuesUnique = ArrayUtilities.unique(costValues);
         ParamSpace params = new ParamSpace();
-        params.add(Msm.COST_FLAG, costValuesUnique);
+        params.add(MSMDistance.COST_FLAG, costValuesUnique);
         return params;
     }
 
     public static ParamSpace buildMsmSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new Msm()),
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, Arrays.asList(new MSMDistance()),
                                     buildMsmParams());
     }
 }

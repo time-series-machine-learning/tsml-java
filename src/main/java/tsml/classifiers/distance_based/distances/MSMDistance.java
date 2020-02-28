@@ -5,7 +5,7 @@ import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-public class Msm
+public class MSMDistance
     extends AbstractDistanceMeasure {
 
 

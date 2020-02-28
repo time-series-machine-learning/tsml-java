@@ -7,7 +7,7 @@ import experiments.ClassifierBuilderFactory.ClassifierBuilder;
 import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
-import tsml.classifiers.distance_based.distances.Ddtw;
+import tsml.classifiers.distance_based.distances.DDTWDistance;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.DTWDistance;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
@@ -119,7 +119,7 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static KnnLoocv buildDdtw1nnV1() {
         KnnLoocv knn = build1nnV1();
-        knn.setDistanceFunction(new Ddtw(-1));
+        knn.setDistanceFunction(new DDTWDistance(-1));
         return knn;
     }
 
@@ -137,7 +137,7 @@ public enum KnnConfig implements ClassifierBuilder {
 
     public static KnnLoocv buildDdtw1nnV2() {
         KnnLoocv knn = build1nnV2();
-        knn.setDistanceFunction(new Ddtw(-1));
+        knn.setDistanceFunction(new DDTWDistance(-1));
         return knn;
     }
 

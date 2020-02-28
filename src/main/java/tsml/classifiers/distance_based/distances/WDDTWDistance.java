@@ -3,9 +3,9 @@ package tsml.classifiers.distance_based.distances;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-import static tsml.classifiers.distance_based.distances.Ddtw.DERIVATIVE_CACHE;
+import static tsml.classifiers.distance_based.distances.DDTWDistance.DERIVATIVE_CACHE;
 
-public class Wddtw extends Wdtw {
+public class WDDTWDistance extends WDTWDistance {
 
     private utilities.cache.CachedFunction<Instance, Instance> derivativeCache = DERIVATIVE_CACHE;
 

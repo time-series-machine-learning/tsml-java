@@ -5,7 +5,7 @@ import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-public class Erp extends AbstractDistanceMeasure {
+public class ERPDistance extends AbstractDistanceMeasure {
 
     private double penalty = 0;
 

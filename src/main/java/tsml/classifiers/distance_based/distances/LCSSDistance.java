@@ -7,7 +7,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
-public class Lcss extends AbstractDistanceMeasure {
+public class LCSSDistance extends AbstractDistanceMeasure {
 
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance
@@ -93,7 +93,7 @@ public class Lcss extends AbstractDistanceMeasure {
                                            Exception {
         double[] a = {1,2,3,4,4,3,2,1};
         double[] b = {2,1,3,2,5,7,3,1};
-        Lcss df = new Lcss();
+        LCSSDistance df = new LCSSDistance();
         df.setDelta(5);
         df.setEpsilon(1);
         Instances data = DatasetLoading.sampleGunPoint(0)[0];
