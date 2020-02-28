@@ -18,7 +18,9 @@ public abstract class AbstractDistanceMeasure implements DistanceMeasure {
     // the data which was passed to setInstances
     private transient Instances data;
 
-    public AbstractDistanceMeasure() {
+    @Override
+    public String getName() {
+        return getClass().getSimpleName();
     }
 
     @Override
@@ -44,7 +46,7 @@ public abstract class AbstractDistanceMeasure implements DistanceMeasure {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getName();
     }
 
     @Override

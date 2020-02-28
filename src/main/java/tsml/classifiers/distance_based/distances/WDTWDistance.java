@@ -5,6 +5,11 @@ import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
+/**
+ * WDTW distance measure.
+ * <p>
+ * Contributors: goastler
+ */
 public class WDTWDistance
     extends AbstractDistanceMeasure {
 

@@ -13,10 +13,6 @@ import weka.core.neighboursearch.PerformanceStats;
  */
 public class DDTWDistance extends DTWDistance {
 
-    // Global derivative function which is cached, i.e. if you ask it to convert the same instance twice it will
-    // instead fetch from the cache the second time
-    public static final CachedFunction<Instance, Instance> DERIVATIVE_CACHE =
-        new CachedFunction<>(INSTANCE_DERIVATIVE_FUNCTION);
     // Cache function for taking the derivative. I suggest setting these all to use the same cache if you've got
     // multiple derivative based distance measures
     private CachedFunction<Instance, Instance> derivativeCache = DERIVATIVE_CACHE;

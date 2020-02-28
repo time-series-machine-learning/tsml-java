@@ -37,6 +37,8 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, Debugab
         return distance(first, second, getMaxDistance(), stats);
     }
 
+    String getName();
+
     // default implementations of fussy methods around distance measures
 
     @Override

@@ -13,6 +13,15 @@ import weka.core.neighboursearch.PerformanceStats;
 public class ERPDistance extends AbstractDistanceMeasure {
 
     private double penalty = 0;
+    private int bandSize = 0;
+
+    public static String getPenaltyFlag() {
+        return "p";
+    }
+
+    public static String getBandSizeFlag() {
+        return "b";
+    }
 
     public double getPenalty() {
         return penalty;
@@ -24,9 +33,9 @@ public class ERPDistance extends AbstractDistanceMeasure {
 
     @Override
     public double distance(final Instance first,
-                           final Instance second,
-                           final double limit,
-                           final PerformanceStats stats) {
+        final Instance second,
+        final double limit,
+        final PerformanceStats stats) {
 
         checkData(first, second);
 
@@ -39,18 +48,18 @@ public class ERPDistance extends AbstractDistanceMeasure {
 
         // size of edit distance band
         // bandsize is the maximum allowed distance to the diagonal
-//        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
+        //        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
         int band = getBandSize();
-        if (band < 0) {
+        if(band < 0) {
             band = aLength + 1;
         }
 
         // g parameters for local usage
         double gValue = penalty;
 
-        for (int i = 0;
-             i < aLength;
-             i++) {
+        for(int i = 0;
+            i < aLength;
+            i++) {
             // Swap current and prev arrays. We'll just overwrite the new curr.
             {
                 double[] temp = prev;
@@ -58,20 +67,20 @@ public class ERPDistance extends AbstractDistanceMeasure {
                 curr = temp;
             }
             int l = i - (band + 1);
-            if (l < 0) {
+            if(l < 0) {
                 l = 0;
             }
             int r = i + (band + 1);
-            if (r > (bLength - 1)) {
+            if(r > (bLength - 1)) {
                 r = (bLength - 1);
             }
 
             boolean tooBig = true;
 
-            for (int j = l;
-                 j <= r;
-                 j++) {
-                if (Math.abs(i - j) <= band) {
+            for(int j = l;
+                j <= r;
+                j++) {
+                if(Math.abs(i - j) <= band) {
                     // compute squared distance of feature vectors
                     double val1 = first.value(i);
                     double val2 = gValue;
@@ -90,11 +99,13 @@ public class ERPDistance extends AbstractDistanceMeasure {
 
                     final double cost;
 
-                    if ((i + j) != 0) {
-                        if ((i == 0) || ((j != 0) && (((prev[j - 1] + dist12) > (curr[j - 1] + dist2)) && ((curr[j - 1] + dist2) < (prev[j] + dist1))))) {
+                    if((i + j) != 0) {
+                        if((i == 0) || ((j != 0) && (((prev[j - 1] + dist12) > (curr[j - 1] + dist2)) && (
+                            (curr[j - 1] + dist2) < (prev[j] + dist1))))) {
                             // del
                             cost = curr[j - 1] + dist2;
-                        } else if ((j == 0) || ((i != 0) && (((prev[j - 1] + dist12) > (prev[j] + dist1)) && ((prev[j] + dist1) < (curr[j - 1] + dist2))))) {
+                        } else if((j == 0) || ((i != 0) && (((prev[j - 1] + dist12) > (prev[j] + dist1)) && (
+                            (prev[j] + dist1) < (curr[j - 1] + dist2))))) {
                             // ins
                             cost = prev[j] + dist1;
                         } else {
@@ -107,14 +118,14 @@ public class ERPDistance extends AbstractDistanceMeasure {
 
                     curr[j] = cost;
 
-                    if (tooBig && cost < limit) {
+                    if(tooBig && cost < limit) {
                         tooBig = false;
                     }
                 } else {
                     curr[j] = Double.POSITIVE_INFINITY; // outside band
                 }
             }
-            if (tooBig) {
+            if(tooBig) {
                 return Double.POSITIVE_INFINITY;
             }
         }
@@ -122,21 +133,13 @@ public class ERPDistance extends AbstractDistanceMeasure {
         return curr[bLength - 1];
     }
 
-    public static String getPenaltyFlag() {
-        return "p";
-    }
-    
-    public static String getBandSizeFlag() {
-        return "b";
-    }
-
-    private int bandSize = 0;
-
-    @Override public ParamSet getParams() {
+    @Override
+    public ParamSet getParams() {
         return super.getParams().add(getPenaltyFlag(), penalty).add(getBandSizeFlag(), bandSize);
     }
 
-    @Override public void setParams(final ParamSet param) {
+    @Override
+    public void setParams(final ParamSet param) {
         ParamHandler.setParam(param, getPenaltyFlag(), this::setPenalty, Double.class);
         ParamHandler.setParam(param, getBandSizeFlag(), this::setBandSize, Integer.class);
     }

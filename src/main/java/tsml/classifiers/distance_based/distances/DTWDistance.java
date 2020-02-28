@@ -23,6 +23,7 @@ public class DTWDistance extends AbstractDistanceMeasure {
     }
 
     public DTWDistance(int warpingWindow) {
+        this();
         setWarpingWindow(warpingWindow);
     }
 
