@@ -16,7 +16,7 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import net.sourceforge.sizeof.SizeOf;
+//import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
 import utilities.ClassifierTools;
 import utilities.samplers.RandomIndexSampler;
@@ -538,7 +538,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 }
             }
         }
-
+/*
         if (memoryContract) {
             try {
                 SizeOf.deepSizeOf("test");
@@ -547,7 +547,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                             "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
             }
         }
-
+*/
         train = data;
 
         if (getEstimateOwnPerformance()){
@@ -633,7 +633,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+//            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (numClassifiers[currentSeries] < maxEnsembleSize){
                 if (boss.accuracy < lowestAcc[currentSeries]){
@@ -767,7 +767,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+  //          if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (getEstimateOwnPerformance()){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
