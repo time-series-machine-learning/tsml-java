@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.distance_based.distances.deprecated;
+package tsml.classifiers.distance_based.distances.legacy;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
 import weka.core.EuclideanDistance;
@@ -25,17 +25,17 @@ import weka.core.Instances;
  */
 
 @Deprecated
-public class EuclideanDistance_I extends EuclideanDistance{
-       
-    public EuclideanDistance_I(){}
+public class EuclideanDistance_D extends EuclideanDistance{
     
-    public EuclideanDistance_I(Instances train){
+    
+    public EuclideanDistance_D(){}
+    
+    public EuclideanDistance_D(Instances train){
         super(train);
         
         m_Data = null;
         m_Validated = true;
     }
-    
     
 
     @Override
@@ -48,14 +48,14 @@ public class EuclideanDistance_I extends EuclideanDistance{
         //TODO: might need to normalise here.
         double[][] data1 = utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToTransposedArrays(multi1);
         double[][] data2 = utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToTransposedArrays(multi2);
-        return distance(data1, data2, cutoff);
+        return Math.sqrt(distance(data1, data2, cutoff));
     }
     
     public double distance(double[][] a, double[][] b, double cutoff){
         //assume a and b are the same length.
         double sum =0;
         for(int i=0; i<a.length; i++){
-            sum += Math.sqrt(sqMultiDist(a[i],b[i]));
+            sum += sqMultiDist(a[i],b[i]);
         }
         return sum;
     }
@@ -72,4 +72,5 @@ public class EuclideanDistance_I extends EuclideanDistance{
         }
         return sum;
     }
+    
 }

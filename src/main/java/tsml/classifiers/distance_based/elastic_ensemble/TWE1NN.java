@@ -23,7 +23,7 @@ import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.classifiers.distance_based.distances.deprecated.TWEDistance;
+import tsml.classifiers.distance_based.distances.legacy.TWEDistance;
 
 import java.util.ArrayList;
 import java.util.Collections;

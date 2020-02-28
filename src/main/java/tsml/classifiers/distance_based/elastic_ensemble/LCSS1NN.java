@@ -20,7 +20,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.Ca
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.assessingNN.LazyAssessNN_LCSS;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.lowerBounds.LbLcss;
 import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.classifiers.distance_based.distances.deprecated.LCSSDistance;
+import tsml.classifiers.distance_based.distances.legacy.LCSSDistance;
 import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;

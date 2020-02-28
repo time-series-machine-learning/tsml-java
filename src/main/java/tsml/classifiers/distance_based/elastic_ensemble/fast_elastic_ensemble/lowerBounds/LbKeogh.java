@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 package tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.lowerBounds;
 
-import tsml.classifiers.distance_based.distances.deprecated.DTW;
+import tsml.classifiers.distance_based.distances.legacy.DTW;
 import tsml.filters.Derivative;
 import weka.core.Instance;
 

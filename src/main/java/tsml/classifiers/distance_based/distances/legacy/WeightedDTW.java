@@ -2,7 +2,7 @@
  * A simple DTW algorithm that computes the warped path with no constraints 
  * 
  */
-package tsml.classifiers.distance_based.distances.deprecated;
+package tsml.classifiers.distance_based.distances.legacy;
 
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;

@@ -14,7 +14,7 @@
  */
 package tsml.classifiers.multivariate;
 
-import tsml.classifiers.distance_based.distances.deprecated.EuclideanDistance_I;
+import tsml.classifiers.distance_based.distances.legacy.EuclideanDistance_I;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;
 import weka.classifiers.AbstractClassifier;
