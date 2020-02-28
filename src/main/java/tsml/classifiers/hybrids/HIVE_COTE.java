@@ -36,9 +36,16 @@ import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 
 /**
- * TODO jay/tony update javadoc/author list as wanted
- * 
- * @author James Large (james.large@uea.ac.uk)
+ *
+ * @author James Large (james.large@uea.ac.uk), Tony Bagnall
+ * @maintainer Tony Bagnall
+ *
+ * This classifier is the latest version of the Hierarchical Vote Ensemble Collective of Transformation-based
+ * Ensembles (HIVE-COTE).
+ *
+ * The original classifier used in [1] has  been moved to legacy_cote. This new one
+ *
+ * 1. Threadable Contractable
  */
 public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
 
@@ -221,6 +228,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //             System.out.print(","+str);
 //        System.out.print("\n");
         String alpha = Utils.getOption('a', options);
+        this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
 
     }
 
