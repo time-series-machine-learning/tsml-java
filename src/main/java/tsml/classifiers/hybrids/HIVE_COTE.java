@@ -110,11 +110,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //        CAWPE st_classifier = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
 //        st_classifier.setTransform(st_transform);
-        ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         if (contractingTrainTime)
-            st.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
-        classifiers[1] = st;
-        classifierNames[1] = "ST";
+            stc.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        classifiers[1] = stc;
+        classifierNames[1] = "STC";
         
         classifiers[2] = new RISE();
         classifierNames[2] = "RISE";
@@ -132,7 +132,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
-            System.out.println("Exception thrown when setting up DEFUALT settings of " + this.getClass().getSimpleName() + ". Should "
+            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
                     + "be fixed before continuing");
             System.exit(1);
         }
@@ -143,12 +143,18 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
     }
 
-    
     @Override
     public void buildClassifier(Instances data) throws Exception {        
         if (contractingTrainTime) 
             setupContracting();
-        
+        if(debug) {
+            printDebug(" Building HIVE-COTE with components: ");
+            for (EnsembleModule module : modules){
+                if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                    ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
+                printDebug(module.getModuleName()+" ");
+            }
+        }
         super.buildClassifier(data);
     }
     
