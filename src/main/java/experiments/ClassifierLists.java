@@ -18,6 +18,7 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.ee.Ee;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
@@ -123,7 +124,7 @@ public class ClassifierLists {
                 c = new ProximityForestWrapper();
                 break;
             case "ElasticEnsemble":
-                c=new ElasticEnsemble();
+                c=new Ee();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -159,8 +160,6 @@ public class ClassifierLists {
         }
         return c;
     }
-
-
     /**
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
