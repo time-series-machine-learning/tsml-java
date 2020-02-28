@@ -164,8 +164,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
-        printLineDebug("DEBUG in STC. Total transform time = "+transformBuildTime/1000000000L);
-        printLineDebug("DATASET: num cases "+data.numInstances()+" series length "+(data.numAttributes()-1));
         printLineDebug("SECONDS:Transform contract =" +(transformTimeLimit/1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit)));
         printLineDebug(" Transform getParas  ="+transform.getParameters());
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
@@ -175,7 +173,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         if(classifier instanceof TrainTimeContractable)
             ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
 //Here get the train estimate directly from classifier using cv for now
+
+
         printLineDebug("Starting build classifier ......");
+        if(getEstimateOwnPerformance()){
+            printLineDebug("Doing a CV to estimate accuracy");
+
+        }
+
+
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
