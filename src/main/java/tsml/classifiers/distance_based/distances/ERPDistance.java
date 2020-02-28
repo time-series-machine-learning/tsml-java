@@ -5,6 +5,11 @@ import utilities.params.ParamSet;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
+/**
+ * ERP distance measure.
+ * <p>
+ * Contributors: goastler
+ */
 public class ERPDistance extends AbstractDistanceMeasure {
 
     private double penalty = 0;
@@ -117,19 +122,23 @@ public class ERPDistance extends AbstractDistanceMeasure {
         return curr[bLength - 1];
     }
 
-
-    public static final String PENALTY_FLAG = "p";
-    public static final String BAND_SIZE_FLAG = "b";
+    public static String getPenaltyFlag() {
+        return "p";
+    }
+    
+    public static String getBandSizeFlag() {
+        return "b";
+    }
 
     private int bandSize = 0;
 
     @Override public ParamSet getParams() {
-        return super.getParams().add(PENALTY_FLAG, penalty).add(BAND_SIZE_FLAG, bandSize);
+        return super.getParams().add(getPenaltyFlag(), penalty).add(getBandSizeFlag(), bandSize);
     }
 
     @Override public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, PENALTY_FLAG, this::setPenalty, Double.class);
-        ParamHandler.setParam(param, BAND_SIZE_FLAG, this::setBandSize, Integer.class);
+        ParamHandler.setParam(param, getPenaltyFlag(), this::setPenalty, Double.class);
+        ParamHandler.setParam(param, getBandSizeFlag(), this::setBandSize, Integer.class);
     }
 
     public int getBandSize() {
