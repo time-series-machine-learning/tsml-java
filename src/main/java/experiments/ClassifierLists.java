@@ -159,8 +159,6 @@ public class ClassifierLists {
         }
         return c;
     }
-
-
     /**
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
