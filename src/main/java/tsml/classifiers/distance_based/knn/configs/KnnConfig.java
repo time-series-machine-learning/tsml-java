@@ -2,9 +2,9 @@ package tsml.classifiers.distance_based.knn.configs;
 
 import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
-import experiments.ClassifierBuilderFactory;
-import experiments.ClassifierBuilderFactory.ClassifierBuilder;
-import experiments.ClassifierBuilderFactory.Tag;
+import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory;
+import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory.ClassifierBuilder;
+import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.Ddtw;

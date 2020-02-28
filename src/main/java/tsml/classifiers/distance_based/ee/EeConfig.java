@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.ee;
 
 import com.google.common.collect.ImmutableList;
-import experiments.ClassifierBuilderFactory;
+import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.knn.configs.IncKnnTunerSetup;
 import tsml.classifiers.distance_based.knn.configs.KnnTag;
