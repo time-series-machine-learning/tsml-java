@@ -1,5 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.filters.Derivative;
 import utilities.ArrayUtilities;
 import utilities.StatisticalUtilities;
@@ -24,7 +26,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDtwSpaceV1(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new DTWDistance()), buildDtwParamsV1(instances));
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new DTWDistance()), buildDtwParamsV1(instances));
     }
 
     public static ParamSpace buildDtwParamsV2(Instances instances) {
@@ -32,7 +34,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDtwSpaceV2(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new DTWDistance()), buildDtwParamsV2(instances));
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new DTWDistance()), buildDtwParamsV2(instances));
     }
     
     public static ParamSpace buildDdtwParamsV1(Instances instances) {
@@ -40,7 +42,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDdtwSpaceV1(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new DDTWDistance()), buildDdtwParamsV1(instances));
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new DDTWDistance()), buildDdtwParamsV1(instances));
     }
 
     public static ParamSpace buildDdtwParamsV2(Instances instances) {
@@ -48,7 +50,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDdtwSpaceV2(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new DDTWDistance()), buildDdtwParamsV2(instances));
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new DDTWDistance()), buildDdtwParamsV2(instances));
     }
 
     public static ParamSpace buildWdtwParamsV1() {
@@ -63,7 +65,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWdtwSpaceV1() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new WDTWDistance()), buildWdtwParamsV1());
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new WDTWDistance()), buildWdtwParamsV1());
     }
 
     public static ParamSpace buildWdtwParamsV2() {
@@ -78,7 +80,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWdtwSpaceV2() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new WDTWDistance()), buildWdtwParamsV2());
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new WDTWDistance()), buildWdtwParamsV2());
     }
     
     public static ParamSpace buildWddtwParamsV1() {
@@ -86,7 +88,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWddtwSpaceV1() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new WDDTWDistance()), buildWddtwParamsV1());
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new WDDTWDistance()), buildWddtwParamsV1());
     }
     
     public static ParamSpace buildWddtwParamsV2() {
@@ -94,7 +96,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildWddtwSpaceV2() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new WDDTWDistance()), buildWddtwParamsV2());
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new WDDTWDistance()), buildWddtwParamsV2());
     }
     
     public static ParamSpace buildLcssParams(Instances instances) {
@@ -111,7 +113,7 @@ public class DistanceMeasureConfigs {
     }
     
     public static ParamSpace buildLcssSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new LCSSDistance()), buildLcssParams(instances));
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new LCSSDistance()), buildLcssParams(instances));
     }
 
     public static ParamSpace buildTwedParams() {
@@ -150,7 +152,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildTwedSpace() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new TWEDistance()),
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new TWEDistance()),
                                     buildTwedParams());
     }
 
@@ -168,7 +170,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildErpSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new ERPDistance()),
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new ERPDistance()),
                                     buildErpParams(instances));
     }
 
@@ -283,19 +285,19 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildMsmSpace() {
-        return new ParamSpace().add(DistanceMeasure.getDistanceFunctionFlag(), Arrays.asList(new MSMDistance()),
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Arrays.asList(new MSMDistance()),
                                     buildMsmParams());
     }
 
-    public static TransformedDistanceMeasure buildDdtwDistance() {
-        TransformedDistanceMeasure distanceMeasure = new TransformedDistanceMeasure("DDTW");
+    public static TransformDistanceMeasure buildDdtwDistance() {
+        TransformDistanceMeasure distanceMeasure = new TransformDistanceMeasure("DDTW");
         distanceMeasure.setTransformer(Derivative.getGlobalCache());
         distanceMeasure.setDistanceFunction(new DTWDistance());
         return distanceMeasure;
     }
 
-    public static TransformedDistanceMeasure buildWddtwDistance() {
-        TransformedDistanceMeasure distanceMeasure = new TransformedDistanceMeasure("WDDTW");
+    public static TransformDistanceMeasure buildWddtwDistance() {
+        TransformDistanceMeasure distanceMeasure = new TransformDistanceMeasure("WDDTW");
         distanceMeasure.setTransformer(Derivative.getGlobalCache());
         distanceMeasure.setDistanceFunction(new WDTWDistance());
         return distanceMeasure;

@@ -1,7 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import static tsml.filters.Derivative.INSTANCE_DERIVATIVE_FUNCTION;
-
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import utilities.cache.CachedFunction;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;

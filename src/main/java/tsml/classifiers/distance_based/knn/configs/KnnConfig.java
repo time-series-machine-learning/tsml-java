@@ -9,7 +9,7 @@ import experiments.data.DatasetLoading;
 import machine_learning.classifiers.tuned.incremental.IncTuner;
 import tsml.classifiers.distance_based.distances.DDTWDistance;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.distances.DTWDistance;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;

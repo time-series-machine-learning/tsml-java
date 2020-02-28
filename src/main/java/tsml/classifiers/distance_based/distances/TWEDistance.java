@@ -11,7 +11,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class TWEDistance
-    extends AbstractDistanceMeasure {
+    extends BaseDistanceMeasure {
 
     private double lambda;
     private double nu;

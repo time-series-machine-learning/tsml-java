@@ -9,7 +9,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public abstract class AbstractDistanceMeasure implements DistanceMeasure {
+public abstract class BaseDistanceMeasure implements DistanceMeasureable {
 
     // simple debug switch
     private transient boolean debug = false;

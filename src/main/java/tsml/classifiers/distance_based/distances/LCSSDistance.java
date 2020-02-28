@@ -1,10 +1,8 @@
 package tsml.classifiers.distance_based.distances;
 
-import experiments.data.DatasetLoading;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
-import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
@@ -12,7 +10,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * <p>
  * Contributors: goastler
  */
-public class LCSSDistance extends AbstractDistanceMeasure {
+public class LCSSDistance extends BaseDistanceMeasure {
 
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance

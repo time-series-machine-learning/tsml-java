@@ -1,6 +1,7 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.dtw;
 
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
@@ -11,7 +12,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends AbstractDistanceMeasure {
+public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
     // the distance matrix produced by the distance function
     private double[][] distanceMatrix;
@@ -25,10 +26,6 @@ public class DTWDistance extends AbstractDistanceMeasure {
     public DTWDistance(int warpingWindow) {
         this();
         setWarpingWindow(warpingWindow);
-    }
-
-    public static String getWarpingWindowFlag() {
-        return "w";
     }
 
     public int getWarpingWindow() {
@@ -150,11 +147,11 @@ public class DTWDistance extends AbstractDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getWarpingWindowFlag(), warpingWindow);
+        return super.getParams().add(DTW.getWarpingWindowFlag(), warpingWindow);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getWarpingWindowFlag(), this::setWarpingWindow, Integer.class);
+        ParamHandler.setParam(param, DTW.getWarpingWindowFlag(), this::setWarpingWindow, Integer.class);
     }
 }

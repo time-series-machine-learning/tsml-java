@@ -1,7 +1,7 @@
 package utilities.params;
 
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.DTWDistance;
+import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import utilities.StrUtils;
 import weka.core.Utils;
 
@@ -104,7 +104,7 @@ public class ParamSet implements ParamHandler {
         ParamSet oParamSet = new ParamSet();
         oParamSet.add(DTWDistance.WARPING_WINDOW_FLAG, 3);
         ParamSet paramSet = new ParamSet();
-        paramSet.add(DistanceMeasure.DISTANCE_FUNCTION_FLAG, new DTWDistance(), oParamSet);
+        paramSet.add(DistanceMeasureable.DISTANCE_FUNCTION_FLAG, new DTWDistance(), oParamSet);
         String[] options;
         options = oParamSet.getOptions();
         System.out.println(Utils.joinOptions(options));

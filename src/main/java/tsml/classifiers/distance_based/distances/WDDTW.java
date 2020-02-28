@@ -7,12 +7,10 @@ Contributors: goastler
     
 */
 
-import java.util.function.Function;
+import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.filters.Derivative;
-import weka.core.DistanceFunction;
-import weka.core.Instance;
 
-public class WDDTW extends ImmutableTransformedDistanceMeasure {
+public class WDDTW extends TransformedDistanceMeasure {
 
 
     public WDDTW() {

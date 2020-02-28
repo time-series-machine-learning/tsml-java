@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.transformed;
 /*
 
 Purpose: // todo - docs - type the purpose of the code here
@@ -8,15 +8,14 @@ Contributors: goastler
 */
 
 import java.util.function.Function;
-import weka.classifiers.evaluation.output.prediction.Null;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
+import weka.filters.Filter;
 
-public class TransformedDistanceMeasure extends ImmutableTransformedDistanceMeasure {
+public class TransformDistanceMeasure extends TransformedDistanceMeasure implements TransformDistanceMeasureable {
 
-    public TransformedDistanceMeasure(String name,
-        Function<Instance, Instance> transformer, DistanceFunction distanceFunction) {
+    public TransformDistanceMeasure(String name,
+        Filter transformer, DistanceFunction distanceFunction) {
         super(name, transformer, distanceFunction);
     }
 
@@ -26,7 +25,7 @@ public class TransformedDistanceMeasure extends ImmutableTransformedDistanceMeas
     }
 
     @Override
-    public void setTransformer(Function<Instance, Instance> transformer) {
+    public void setTransformer(Filter transformer) {
         super.setTransformer(transformer);
     }
 
@@ -34,4 +33,7 @@ public class TransformedDistanceMeasure extends ImmutableTransformedDistanceMeas
     public void setName(String name) {
         super.setName(name);
     }
+
+
+
 }

@@ -11,7 +11,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class MSMDistance
-    extends AbstractDistanceMeasure {
+    extends BaseDistanceMeasure {
 
 
     private double cost = 1;

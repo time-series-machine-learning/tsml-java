@@ -7,7 +7,7 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
-public interface DistanceMeasure extends Serializable, DistanceFunction, Debugable, ParamHandler {
+public interface DistanceMeasureable extends Serializable, DistanceFunction, Debugable, ParamHandler {
 
     static String getDistanceFunctionFlag() {
         return "d";

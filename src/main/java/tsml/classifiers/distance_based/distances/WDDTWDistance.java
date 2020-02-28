@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
+import go.TransformedDistanceMeasureTmp;
 import tsml.filters.Derivative;
 import utilities.cache.CachedFunction;
 import weka.core.Instance;

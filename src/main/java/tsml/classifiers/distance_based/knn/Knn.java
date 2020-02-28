@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.distances.DTWDistance;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import utilities.*;
 import utilities.collections.PrunedMultimap;
 import utilities.params.ParamHandler;
@@ -15,7 +15,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
-import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_FUNCTION_FLAG;
+import static tsml.classifiers.distance_based.distances.DistanceMeasureable.DISTANCE_FUNCTION_FLAG;
 
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
                                                                StopWatchTrainTimeable, Trainable, TestSeedable {

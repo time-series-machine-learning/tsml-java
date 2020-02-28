@@ -10,7 +10,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * <p>
  * Contributors: goastler
  */
-public class ERPDistance extends AbstractDistanceMeasure {
+public class ERPDistance extends BaseDistanceMeasure {
 
     private double penalty = 0;
     private int bandSize = 0;

@@ -11,7 +11,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class WDTWDistance
-    extends AbstractDistanceMeasure {
+    extends BaseDistanceMeasure {
 
     public double getG() {
         return g;

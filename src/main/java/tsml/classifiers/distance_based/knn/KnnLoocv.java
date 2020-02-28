@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.knn;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
-import tsml.classifiers.distance_based.distances.AbstractDistanceMeasure;
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.filters.IndexFilter;
 import utilities.*;
@@ -231,8 +231,8 @@ public class KnnLoocv
                     final NeighbourSearcher searcher = new NeighbourSearcher(trainData.get(i), rand);
                     searchers.add(i, searcher);
                 }
-                if(distanceFunction instanceof AbstractDistanceMeasure) {
-                    if(((AbstractDistanceMeasure) distanceFunction).isSymmetric()) {
+                if(distanceFunction instanceof BaseDistanceMeasure) {
+                    if(((BaseDistanceMeasure) distanceFunction).isSymmetric()) {
                         cache = new SymmetricCache<>();
                     } else {
                         cache = new Cache<>();
