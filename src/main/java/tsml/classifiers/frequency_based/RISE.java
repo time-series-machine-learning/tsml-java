@@ -448,13 +448,6 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
             testHeader.clear();
         }
 
-        double testAcc = 0.0;
-        for (int i = 0; i < bagAccuracies.length; i++) {
-            testAcc += bagAccuracies[i];
-        }
-        testAcc /= bagAccuracies.length;
-        System.out.println("Train acc 1: " + testAcc);
-
         for (int i = 0; i < bags.length; i++) {
             for (int j = 0; j < bags[i].length; j++) {
                 if(bags[i][j] == 0){
@@ -490,7 +483,6 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
             }
             trainResults.setAcc(acc / data.size());
         }
-        System.out.println("Train acc 2: " + trainResults.getAcc());
     }
 
     private int[][] generateBags(int numBags, int bagProp, Instances data){
