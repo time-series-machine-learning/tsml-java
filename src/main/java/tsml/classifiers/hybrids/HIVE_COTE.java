@@ -113,6 +113,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         if (contractingTrainTime)
             stc.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        stc.setEstimateOwnPerformance(true);
         classifiers[1] = stc;
         classifierNames[1] = "STC";
         
@@ -147,15 +148,18 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     public void buildClassifier(Instances data) throws Exception {        
         if (contractingTrainTime) 
             setupContracting();
+
         if(debug) {
             printDebug(" Building HIVE-COTE with components: ");
             for (EnsembleModule module : modules){
                 if (module.getClassifier() instanceof EnhancedAbstractClassifier)
                     ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
                 printDebug(module.getModuleName()+" ");
+                printDebug(" \n ");
             }
         }
         super.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
     
     /**
@@ -237,7 +241,21 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
 
     }
+    @Override
+    public String getParameters() {
+        String str="";
+        for (EnsembleModule module : modules)
+            str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
+        for (EnsembleModule module : modules) {
+            if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                str += ((EnhancedAbstractClassifier) module.getClassifier()).getParameters();
+            else
+                str += "NoParaInfo,";
+            str += ",,";
+        }
+        return str;
 
+    }
 
 
     public static void main(String[] args) throws Exception {

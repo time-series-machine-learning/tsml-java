@@ -24,9 +24,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
+import weka.classifiers.meta.OptimisedRotationForest;
+import weka.classifiers.meta.RotationForest;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
@@ -107,12 +110,16 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     ShapeletConfig sConfig=ShapeletConfig.DEFAULT;//The default or user set up, to avoid overwriting user defined config
 
     public ShapeletTransformClassifier(){
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         configureDefaultShapeletTransform();
-        CAWPE base= new CAWPE();//Change to RotF
+        RotationForest rotf=new RotationForest();
+        rotf.setNumIterations(200);
+        classifier=rotf;
+/*        CAWPE base= new CAWPE();//Change to RotF
         base.setupOriginalHESCASettings();
         base.setEstimateOwnPerformance(false);//Defaults to false anyway
         classifier=base;
+*/
     }
 
     @Override
@@ -175,16 +182,22 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Here get the train estimate directly from classifier using cv for now
 
 
-        printLineDebug("Starting build classifier ......");
+        printLineDebug("Starting STC build classifier ......");
         if(getEstimateOwnPerformance()){
             printLineDebug("Doing a CV to estimate accuracy");
-
+            int numCVFolds=10;
+            numCVFolds = Math.min(data.numInstances(), numCVFolds);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            cv.setSeed(seed*12);
+            cv.setNumFolds(numCVFolds);
+            trainResults = cv.crossValidateWithStats(classifier, shapeletData);
         }
 
 
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
+        trainResults.setParas(getParameters());
 //HERE: If the base classifier can estimate its own performance, then lets do it here
 
     }
@@ -215,7 +228,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         shapeletData.remove(0);
         return classifier.distributionForInstance(test);
     }
-    
+
+
+
+
     public void setShapeletOutputFilePath(String path){
         shapeletOutputPath = path;
         saveShapelets=true;
@@ -442,9 +458,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     @Override
     public String getParameters(){
         String paras=transform.getShapeletCounts();
-        String classifierParas="No Classifier Para Info";
-        if(classifier instanceof EnhancedAbstractClassifier)
-            classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
         //Build time info
         String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ totalTimeLimit+",transformTimeContract,"+ transformTimeLimit;
         //Shapelet numbers and contract info
@@ -453,6 +466,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         str+=",SearchType,"+searchType;
         str+=","+transformOptions.toString();
         str+=",ConfigSetup,"+sConfig;
+        String classifierParas="No Classifier Para Info";
+        if(classifier instanceof EnhancedAbstractClassifier)
+            classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
         str+=","+paras+","+classifierParas;
         return str;
     }
