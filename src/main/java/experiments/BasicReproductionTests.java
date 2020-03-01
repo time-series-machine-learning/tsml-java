@@ -90,7 +90,6 @@ public class BasicReproductionTests {
         extraClassifiers + "kNN",
         
         extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.cRotationForest",
         extraClassifiers + "ensembles.stackers.SMLR",
         
     };
