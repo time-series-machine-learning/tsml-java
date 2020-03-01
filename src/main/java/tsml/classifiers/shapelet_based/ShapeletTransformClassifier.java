@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
+import machine_learning.classifiers.ensembles.ContractRotationForest;
 import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.classifiers.meta.OptimisedRotationForest;
@@ -115,6 +116,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         RotationForest rotf=new RotationForest();
         rotf.setNumIterations(200);
         classifier=rotf;
+
+
 /*        CAWPE base= new CAWPE();//Change to RotF
         base.setupOriginalHESCASettings();
         base.setEstimateOwnPerformance(false);//Defaults to false anyway
@@ -184,6 +187,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         printLineDebug("Starting STC build classifier ......");
         if(getEstimateOwnPerformance()){
+// if the classifier can estimate its own performance, do that
+//            if(classifier instanceof EnhancedAbstractClassifier)
             printLineDebug("Doing a CV to estimate accuracy");
             int numCVFolds=10;
             numCVFolds = Math.min(data.numInstances(), numCVFolds);
