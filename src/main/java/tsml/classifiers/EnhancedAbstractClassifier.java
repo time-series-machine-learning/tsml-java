@@ -402,4 +402,12 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override public void setOptions(final String[] options) throws Exception {
         ParamHandler.super.setOptions(options);
     }
+    public void printDebug(String s){
+        if(debug)
+            System.out.print(s);
+    }
+    public void printLineDebug(String s){
+        if(debug)
+            System.out.println(s);
+    }
 }
