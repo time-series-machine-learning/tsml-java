@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
 * BOSS (check), TSF (check)
+ *
+ * ********************************NOTES********************************
+ * 1) contract time of <=0 means no contract!
  */
 public interface TrainTimeContractable
     extends ParamHandler, TrainTimeable {
