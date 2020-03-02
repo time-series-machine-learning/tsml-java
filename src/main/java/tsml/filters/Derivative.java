@@ -15,38 +15,39 @@
 package tsml.filters;
 
 import java.io.Serializable;
-import utilities.cache.CachedFunction;
-import utilities.serialisation.SerFunction;
 import weka.core.DenseInstance;
-import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
-
+/**
+ * Purpose: class to take the derivative of a time series.
+ * <p>
+ * Contributors: goastler, Jason Lines
+ */
 public class Derivative
     extends SimpleBatchFilter implements Serializable {
 
-    public static final String PREFIX = "der_";
-    public static final Derivative INSTANCE = new Derivative();
-    public static final SerFunction<Instance, Instance> INSTANCE_DERIVATIVE_FUNCTION = instance -> {
-        try {
-            return Utilities.filter(instance, new Derivative());
-        } catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
-    };
-    public static final SerFunction<Instances, Instances> INSTANCES_DERIVATIVE_FUNCTION = instances -> {
-        try {
-            return Utilities.filter(instances, new Derivative());
-        } catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
-    };
+    private static Derivative INSTANCE;
     // Global derivative function which is cached, i.e. if you ask it to convert the same instance twice it will
     // instead fetch from the cache the second time
-    private static final CachedFunction<Instance, Instance> GLOBAL_CACHE =
-        new CachedFunction<>(INSTANCE_DERIVATIVE_FUNCTION);
-    public static CachedFunction<Instance, Instance> getGlobalCache() {
+    private static CachedFilter GLOBAL_CACHE;
+
+    // prefix for dataset name
+    public static String getPrefix() {
+        return "der_";
+    }
+
+    public static Derivative getGlobalInstance() {
+        if(INSTANCE == null) {
+            INSTANCE = new Derivative();
+        }
+        return INSTANCE;
+    }
+
+    public static CachedFilter getGlobalCache() {
+        if(GLOBAL_CACHE == null) {
+            GLOBAL_CACHE = new CachedFilter(getGlobalInstance());
+        }
         return GLOBAL_CACHE;
     }
 
@@ -84,11 +85,13 @@ public class Derivative
         inputFormat = new Instances(inputFormat, 0);
         for(int i = 0; i < inputFormat.numAttributes(); i++) {
             if(i != inputFormat.classIndex()) {
-                inputFormat.renameAttribute(i, PREFIX + inputFormat.attribute(i).name());
+                inputFormat.renameAttribute(i, getPrefix() + inputFormat.attribute(i).name());
             }
         }
-        inputFormat.setRelationName(PREFIX + inputFormat.relationName());
+        inputFormat.setRelationName(getPrefix() + inputFormat.relationName());
         return inputFormat;
+
+        // below: old fastvector implementation
 
         //        int numAttributes = inputFormat.numAttributes();
         //
