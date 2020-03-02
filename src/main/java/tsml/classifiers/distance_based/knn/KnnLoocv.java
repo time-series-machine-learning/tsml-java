@@ -5,7 +5,7 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
-import tsml.filters.IndexFilter;
+import tsml.filters.HashFilter;
 import utilities.*;
 import utilities.cache.Cache;
 import utilities.cache.SymmetricCache;
@@ -222,7 +222,7 @@ public class KnnLoocv
             rebuild = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointSavingEnabled()) { // was needed for caching
-                    IndexFilter.hashifyInstances(trainData);
+                    HashFilter.hashInstances(trainData);
                 }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());

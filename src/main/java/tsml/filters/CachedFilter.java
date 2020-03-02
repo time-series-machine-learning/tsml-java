@@ -4,17 +4,19 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 
 /**
- * Cache the filtering operation using a map.
+ * Cache the filtering operation using a map. Note, the instances must be hashed first to use the cache reliably
+ * otherwise issues occur with instance copying changing the hashcode due to memory locations.
  * <p>
  * Contributors: goastler
  */
-public class CachedFilter extends Filter {
+public class CachedFilter extends HashFilter {
 
     private Filter filter;
     private Map<Instance, Instance> cache;
@@ -28,6 +30,7 @@ public class CachedFilter extends Filter {
         setFilter(filter);
         setCache(cache);
     }
+
     public CachedFilter(CachedFilter other) {
         throw new UnsupportedOperationException();
     }
@@ -42,7 +45,9 @@ public class CachedFilter extends Filter {
     }
 
     public boolean setInputFormat(Instances instanceInfo) throws Exception {
-        return filter.setInputFormat(instanceInfo);
+        super.setInputFormat(instanceInfo);
+        boolean outputFormatHasBeenSetup = filter.setInputFormat(instanceInfo);
+        return outputFormatHasBeenSetup;
     }
 
     public boolean batchFinished() throws Exception {
@@ -50,6 +55,10 @@ public class CachedFilter extends Filter {
             throw new NullPointerException("No input instance format defined");
         }
         filter.batchFinished();
+        Instances outputFormat = filter.getOutputFormat();
+        if(outputFormat != null) {
+            setOutputFormat(outputFormat);
+        }
         flushInput();
         m_NewBatch = true;
         m_FirstBatchDone = true;
@@ -75,6 +84,9 @@ public class CachedFilter extends Filter {
 
     @Override
     public boolean input(Instance instance) throws Exception {
+        if(!(instance instanceof HashFilter.HashedDenseInstance)) {
+            throw new IllegalArgumentException("can only handle hashed instances for reliable hashing");
+        }
         Instance transformed = cache.get(instance);
         if(transformed == null) {
             // no cached copy so input to the filter

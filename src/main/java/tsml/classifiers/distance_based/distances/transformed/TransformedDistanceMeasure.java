@@ -8,6 +8,7 @@ Contributors: goastler
 */
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.filters.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -41,6 +42,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     @Override
     public void setInstances(Instances data) {
         super.setInstances(data);
+        distanceFunction.setInstances(data);
         try {
             transformer.setInputFormat(data);
         } catch(Exception e) {
@@ -72,7 +74,14 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     @Override
-    public double distance(Instance first, Instance second, double cutOffValue, PerformanceStats stats) {
-        return distanceFunction.distance(first, second, cutOffValue, stats);
+    public double distance(final Instance first, final Instance second, final double cutOffValue,
+                           final PerformanceStats stats) {
+        try {
+            final Instance firstTransformed = Utilities.filter(first, transformer);
+            final Instance secondTransformed = Utilities.filter(second, transformer);
+            return distanceFunction.distance(firstTransformed, secondTransformed, cutOffValue, stats);
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
