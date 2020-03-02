@@ -14,23 +14,12 @@
  */
 package evaluation;
 
-import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import ResultsProcessing.ResultColumn;
 import ResultsProcessing.ResultTable;
+import evaluation.storage.ClassifierResults;
 import evaluation.storage.ClassifierResultsCollection;
 import fileIO.OutFile;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.function.Function;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.write.WritableCellFormat;
@@ -45,6 +34,11 @@ import utilities.StatisticalUtilities;
 import utilities.generic_storage.Pair;
 import weka.clusterers.XMeans;
 import weka.core.Instances;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
+import java.util.function.Function;
 
 
 
