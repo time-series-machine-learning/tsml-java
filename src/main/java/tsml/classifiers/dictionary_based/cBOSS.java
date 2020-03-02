@@ -17,7 +17,7 @@ package tsml.classifiers.dictionary_based;
 import java.security.InvalidParameterException;
 import java.util.*;
 
-import net.sourceforge.sizeof.SizeOf;
+//import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
 
 import java.io.File;
@@ -535,7 +535,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        if (memoryContract) {
+/*        if (memoryContract) {
             try {
                 SizeOf.deepSizeOf("test");
             } catch (IllegalStateException e) {
@@ -543,7 +543,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                             "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
             }
         }
-
+*/
         train = data;
 
         if (getEstimateOwnPerformance()){
@@ -629,7 +629,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+//            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (numClassifiers[currentSeries] < maxEnsembleSize){
                 if (boss.accuracy < lowestAcc[currentSeries]){
@@ -763,7 +763,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+//            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (getEstimateOwnPerformance()){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);

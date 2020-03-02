@@ -14,7 +14,7 @@
  */
 package experiments;
 
-import de.bwaldvogel.liblinear.Train;
+//import de.bwaldvogel.liblinear.Train;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -374,14 +374,15 @@ public class Experiments  {
 //                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
                 settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-NEWTEST"; //Classifier name
+                settings[3]="-cn=HIVE-COTE"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 folds=30;
-                String classifier="HC-NEWTEST";
+                String classifier="TunedHIVE-COTE";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
+//                String[] probFiles= {"Chinatown"};
                 String[] probFiles= DatasetLists.tscProblems112;
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
 

@@ -145,6 +145,8 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
+        printDebug("Building BOSS");
+
         trainResults.setBuildTime(System.nanoTime());
 
         // can classifier handle the data?
@@ -238,7 +240,8 @@ public class BOSS extends EnhancedAbstractClassifier implements
                             bestClassifierForWinSize = boss;
                         }
                     }
-
+                    if(classifiers[n].size()%10==0)
+                        printLineDebug(" BOSS Model "+(classifiers[n].size()+1)+" found ");
                     //if this window size's accuracy is not good enough to make it into the ensemble, dont bother storing at all
                     if (makesItIntoEnsemble(bestAccForWinSize, maxAcc, minMaxAcc, classifiers[n].size())) {
                         bestClassifierForWinSize.clean();

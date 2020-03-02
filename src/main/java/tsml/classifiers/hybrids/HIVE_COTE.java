@@ -36,9 +36,16 @@ import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 
 /**
- * TODO jay/tony update javadoc/author list as wanted
- * 
- * @author James Large (james.large@uea.ac.uk)
+ *
+ * @author James Large (james.large@uea.ac.uk), Tony Bagnall
+ * @maintainer Tony Bagnall
+ *
+ * This classifier is the latest version of the Hierarchical Vote Ensemble Collective of Transformation-based
+ * Ensembles (HIVE-COTE).
+ *
+ * The original classifier used in [1] has  been moved to legacy_cote. This new one
+ *
+ * 1. Threadable Contractable
  */
 public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
 
@@ -103,11 +110,12 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //        CAWPE st_classifier = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
 //        st_classifier.setTransform(st_transform);
-        ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         if (contractingTrainTime)
-            st.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
-        classifiers[1] = st;
-        classifierNames[1] = "ST";
+            stc.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        stc.setEstimateOwnPerformance(true);
+        classifiers[1] = stc;
+        classifierNames[1] = "STC";
         
         classifiers[2] = new RISE();
         classifierNames[2] = "RISE";
@@ -125,7 +133,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
-            System.out.println("Exception thrown when setting up DEFUALT settings of " + this.getClass().getSimpleName() + ". Should "
+            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
                     + "be fixed before continuing");
             System.exit(1);
         }
@@ -136,13 +144,22 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
     }
 
-    
     @Override
     public void buildClassifier(Instances data) throws Exception {        
         if (contractingTrainTime) 
             setupContracting();
-        
+
+        if(debug) {
+            printDebug(" Building HIVE-COTE with components: ");
+            for (EnsembleModule module : modules){
+                if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                    ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
+                printDebug(module.getModuleName()+" ");
+                printDebug(" \n ");
+            }
+        }
         super.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
     
     /**
@@ -221,9 +238,24 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //             System.out.print(","+str);
 //        System.out.print("\n");
         String alpha = Utils.getOption('a', options);
+        this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
 
     }
+    @Override
+    public String getParameters() {
+        String str="";
+        for (EnsembleModule module : modules)
+            str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
+        for (EnsembleModule module : modules) {
+            if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                str += ((EnhancedAbstractClassifier) module.getClassifier()).getParameters();
+            else
+                str += "NoParaInfo,";
+            str += ",,";
+        }
+        return str;
 
+    }
 
 
     public static void main(String[] args) throws Exception {
