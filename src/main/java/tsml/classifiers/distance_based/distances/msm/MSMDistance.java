@@ -1,5 +1,6 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.msm;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
@@ -17,7 +18,7 @@ public class MSMDistance
     private double cost = 1;
 
     public MSMDistance() {
-        super("MSM");
+
     }
 
     public static String getCostFlag() {

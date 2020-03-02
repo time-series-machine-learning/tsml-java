@@ -7,13 +7,12 @@ Contributors: goastler
     
 */
 
-import java.util.function.Function;
+import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.filters.Derivative;
-import weka.core.DistanceFunction;
-import weka.core.Instance;
+import weka.core.Instances;
 
 public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 
@@ -26,14 +25,29 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
         setDistanceFunction(dtw);
     }
 
-    @Override
-    public void setWarpingWindow(int warpingWindow) {
-        dtw.setWarpingWindow(warpingWindow);
+    public DDTWDistance(int warpingWindow) {
+        this();
+        setWarpingWindow(warpingWindow);
+    }
+
+    public static void main(String[] args) throws Exception {
+        final Instances[] data = DatasetLoading.sampleGunPoint(0);
+        final Instances train = data[0];
+        DDTWDistance ddtwDistance = new DDTWDistance();
+        ddtwDistance.setInstances(train);
+        double distanceA = ddtwDistance.distance(train.get(0), train.get(1));
+        double distanceB = ddtwDistance.distance(train.get(0), train.get(1));// it should cache the transform here
+        System.out.println();
     }
 
     @Override
     public int getWarpingWindow() {
         return dtw.getWarpingWindow();
+    }
+
+    @Override
+    public void setWarpingWindow(int warpingWindow) {
+        dtw.setWarpingWindow(warpingWindow);
     }
 
     @Override

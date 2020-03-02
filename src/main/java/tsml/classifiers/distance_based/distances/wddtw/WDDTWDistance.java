@@ -1,45 +1,37 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.wddtw;
 
-import go.TransformedDistanceMeasureTmp;
+import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.wdtw.WDTW;
+import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
+import tsml.filters.CachedFilter;
 import tsml.filters.Derivative;
-import utilities.cache.CachedFunction;
-import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
-import static tsml.classifiers.distance_based.distances.DDTWDistance.DERIVATIVE_CACHE;
 
 /**
  * WDDTW distance measure.
  * <p>
  * Contributors: goastler
  */
-public class WDDTWDistance extends WDTWDistance implements TransformedDistanceMeasureTmp {
+public class WDDTWDistance extends TransformedDistanceMeasure implements WDTW {
 
     // Global derivative function which is cached, i.e. if you ask it to convert the same instance twice it will
     // instead fetch from the cache the second time
-    private CachedFunction<Instance, Instance> derivativeCache = Derivative.getGlobalCache();
+    private CachedFilter derivativeCache;
+    private WDTW wdtw;
 
-    @Override
-    public double decoratedDistance(Instance first, Instance second, double limit, PerformanceStats stats) {
-        return super.distance(first, second, limit, stats);
+    public WDDTWDistance() {
+        wdtw = new WDTWDistance();
+        setTransformer(Derivative.getGlobalCache());
+        setDistanceFunction(wdtw);
     }
 
     @Override
-    public CachedFunction<Instance, Instance> getCache() {
-        return derivativeCache;
+    public double getG() {
+        return wdtw.getG();
     }
 
     @Override
-    public void setCache(CachedFunction<Instance, Instance> cache) {
-        derivativeCache = cache;
+    public void setG(double g) {
+        wdtw.setG(g);
     }
-
-    @Override
-    public double distance(final Instance first,
-                           final Instance second,
-                           final double limit,
-                           final PerformanceStats stats) {
-        return TransformedDistanceMeasureTmp.super.distance(first, second, limit, stats);
-    }
-
 }

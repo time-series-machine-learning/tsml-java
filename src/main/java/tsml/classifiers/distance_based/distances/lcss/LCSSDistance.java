@@ -1,5 +1,6 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.lcss;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
@@ -17,10 +18,6 @@ public class LCSSDistance extends BaseDistanceMeasure {
 
     private double epsilon = 0.01;
     private int delta = 0;
-
-    public LCSSDistance() {
-        super("LCSS");
-    }
 
     public static String getEpsilonFlag() {
         return "e";

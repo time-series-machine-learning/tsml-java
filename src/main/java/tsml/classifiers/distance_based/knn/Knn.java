@@ -1,7 +1,9 @@
 package tsml.classifiers.distance_based.knn;
 
+import distance.elastic.DistanceMeasure;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import utilities.*;
 import utilities.collections.PrunedMultimap;
@@ -15,7 +17,6 @@ import java.io.Serializable;
 import java.util.*;
 
 import static experiments.data.DatasetLoading.sampleGunPoint;
-import static tsml.classifiers.distance_based.distances.DistanceMeasureable.DISTANCE_FUNCTION_FLAG;
 
 public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
                                                                StopWatchTrainTimeable, Trainable, TestSeedable {
@@ -139,11 +140,11 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
                     .add(EARLY_ABANDON_FLAG, earlyAbandon)
                     .add(RANDOM_TIE_BREAK_FLAG, randomTieBreak)
                     .add(K_FLAG, k)
-                    .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+                    .add(DistanceMeasureable.getDistanceFunctionFlag(), distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandler.setParam(params, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction, DistanceFunction.class);
         ParamHandler.setParam(params, K_FLAG, this::setK, Integer.class);
         ParamHandler.setParam(params, RANDOM_TIE_BREAK_FLAG, this::setRandomTieBreak, Boolean.class);
         ParamHandler.setParam(params, EARLY_ABANDON_FLAG, this::setEarlyAbandon, Boolean.class);

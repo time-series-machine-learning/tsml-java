@@ -1,5 +1,6 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.wdtw;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
@@ -11,12 +12,14 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class WDTWDistance
-    extends BaseDistanceMeasure {
+    extends BaseDistanceMeasure implements WDTW {
 
+    @Override
     public double getG() {
         return g;
     }
 
+    @Override
     public void setG(double g) {
         this.g = g;
     }
@@ -96,14 +99,11 @@ public class WDTWDistance
         return distances[aLength - 1][bLength - 1];
     }
 
-
-    public static final String G_FLAG = "g";
-
     @Override public ParamSet getParams() {
-        return super.getParams().add(G_FLAG, g);
+        return super.getParams().add(WDTW.getGFlag(), g);
     }
 
     @Override public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, G_FLAG, this::setG, Double.class);
+        ParamHandler.setParam(param, WDTW.getGFlag(), this::setG, Double.class);
     }
 }

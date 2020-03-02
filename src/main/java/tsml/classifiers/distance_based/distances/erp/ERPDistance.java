@@ -1,5 +1,6 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.erp;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
 import weka.core.Instance;
