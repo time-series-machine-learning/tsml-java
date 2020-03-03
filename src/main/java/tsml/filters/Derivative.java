@@ -78,6 +78,11 @@ public class Derivative
     }
 
     @Override
+    public boolean setInputFormat(Instances instanceInfo) throws Exception {
+        return super.setInputFormat(instanceInfo);
+    }
+
+    @Override
     protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
         if(inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
             throw new IllegalArgumentException("cannot handle class values not at end");

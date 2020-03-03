@@ -35,38 +35,35 @@ public class HashFilter extends SimpleBatchFilter {
 
     public static class HashedDenseInstance
         extends DenseInstance {
-        private static int hashCodeGlobalIndex = 0;
-        private int hashcode;
-        private boolean buildHashcode = true;
-
-        public HashedDenseInstance(HashedDenseInstance instance) {
-            this((Instance) instance);
-            hashcode = instance.hashcode;
-            buildHashcode = instance.buildHashcode;
-        }
+        private int id;
 
         public HashedDenseInstance(Instance instance) {
             super(instance);
             setDataset(instance.dataset());
-            hashcode = hashCodeGlobalIndex++;
+            if(instance instanceof HashedDenseInstance) {
+                id = ((HashedDenseInstance) instance).id;
+            } else {
+                rebuildId();
+            }
+        }
+
+        private void rebuildId() {
+            id = Arrays.hashCode(m_AttValues);
         }
 
         @Override
         public int hashCode() {
-//            if(buildHashcode) {
-//                buildHashcode = false;
-//                hashcode = Arrays.hashCode(m_AttValues);
-//            }
-            return hashcode;
+            return id;
         }
 
         @Override
-        public boolean equals(final Object o) {
-            if(!(o instanceof HashedDenseInstance)) {
-                return false;
+        public boolean equals(Object o) {
+            boolean result = false;
+            if(o instanceof HashedDenseInstance) {
+                HashedDenseInstance other = (HashedDenseInstance) o;
+                result = other.id == id;
             }
-            HashedDenseInstance other = (HashedDenseInstance) o;
-            return Arrays.equals(m_AttValues, other.m_AttValues);
+            return result;
         }
 
         @Override
@@ -74,20 +71,23 @@ public class HashFilter extends SimpleBatchFilter {
             return new HashedDenseInstance(this);
         }
 
-//        @Override public Instance mergeInstance(final Instance inst) {
-//            buildHashcode = true;
-//            return super.mergeInstance(inst);
-//        }
-//
-//        @Override protected void forceDeleteAttributeAt(final int position) {
-//            buildHashcode = true;
-//            super.forceDeleteAttributeAt(position);
-//        }
-//
-//        @Override protected void forceInsertAttributeAt(final int position) {
-//            buildHashcode = true;
-//            super.forceInsertAttributeAt(position);
-//        }
+        @Override
+        protected void forceDeleteAttributeAt(int position) {
+            rebuildId();
+            super.forceDeleteAttributeAt(position);
+        }
+
+        @Override
+        protected void forceInsertAttributeAt(int position) {
+            rebuildId();
+            super.forceInsertAttributeAt(position);
+        }
+
+        @Override
+        public Instance mergeInstance(Instance inst) {
+            rebuildId();
+            return super.mergeInstance(inst);
+        }
     }
 
     public static void hashInstances(List<Instance> instances) {

@@ -11,15 +11,18 @@ import weka.core.Instances;
 import weka.filters.Filter;
 
 /**
- * Cache the filtering operation using a map. Note, the instances must be hashed first to use the cache reliably
- * otherwise issues occur with instance copying changing the hashcode due to memory locations.
+ * Purpose: cache the filtering operation using a map. Note, the instances must be hashed first to use the cache
+ * reliably otherwise issues occur with instance copying changing the hashcode due to memory locations.
  * <p>
  * Contributors: goastler
  */
 public class CachedFilter extends HashFilter {
 
+    // the filter to cache the output of
     private Filter filter;
+    // the cache to store instances against their corresponding output
     private Map<Instance, Instance> cache;
+    // custom queue for managing cached transformations
     private Queue<Instance> transformQueue = new LinkedList<>();
 
     public CachedFilter(Filter filter) {
@@ -44,22 +47,46 @@ public class CachedFilter extends HashFilter {
         return filter.getCapabilities();
     }
 
+    /**
+     * set the input format for the filter. This sets up the output format also, providing the filter does. This must
+     * be called before any filtering operations.
+     * @param instanceInfo
+     * @return
+     * @throws Exception
+     */
     public boolean setInputFormat(Instances instanceInfo) throws Exception {
         super.setInputFormat(instanceInfo);
         boolean outputFormatHasBeenSetup = filter.setInputFormat(instanceInfo);
+        if(outputFormatHasBeenSetup) {
+            setOutputFormat(filter.getOutputFormat());
+        }
         return outputFormatHasBeenSetup;
     }
 
+    /**
+     * call this when you've finished inputting instances.
+     * @return
+     * @throws Exception
+     */
     public boolean batchFinished() throws Exception {
         if(getInputFormat() == null) {
             throw new NullPointerException("No input instance format defined");
         }
+        // indicate the batch has finished for the filter
         filter.batchFinished();
+        // get the output format sorted
         Instances outputFormat = filter.getOutputFormat();
         if(outputFormat != null) {
             setOutputFormat(outputFormat);
         }
+        // for each instance waiting (which is already transformed
+        for(Instance instance : getInputFormat()) {
+            // add it to the queue
+            push(instance);
+        }
+        // get rid of the waiting instances (which should now be empty)
         flushInput();
+        // reset batch stuff
         m_NewBatch = true;
         m_FirstBatchDone = true;
         return (numPendingOutput() != 0);
@@ -67,8 +94,10 @@ public class CachedFilter extends HashFilter {
 
     @Override
     public Instance output() {
+        // see if this filter has output (i.e. a cached transformation)
         Instance output = super.output();
         if(output == null) {
+            // null, therefore the instance has not already been transformed and is waiting in the queue
             if(transformQueue.isEmpty()) {
                 // then nothing left to output
                 return null;
@@ -76,6 +105,7 @@ public class CachedFilter extends HashFilter {
             // then the filter has the output
             Instance transformed = filter.output();
             Instance instance = transformQueue.remove();
+            // add the transform to the cache
             cache.put(instance, transformed);
             output = transformed;
         }
@@ -98,20 +128,20 @@ public class CachedFilter extends HashFilter {
                 // add it back to the cache
                 cache.put(instance, transformed);
                 // add it to the output queue
-                push(transformed);
+                bufferInput(transformed);
                 return true;
             } else {
                 // no, instance is waiting for processing
                 // null signifies that the instance has been passed to the filter for transformation
                 // so when encountering nulls on the output func we know to get the instance from the filter instead
-                push(null);
+                bufferInput(null);
                 // add the raw instance to the transform queue
                 transformQueue.add(instance);
             }
             return processed;
         } else {
             // cached copy so add to processing queue as nothing needs to be done
-            push(transformed);
+            bufferInput(transformed);
             return true;
         }
     }
