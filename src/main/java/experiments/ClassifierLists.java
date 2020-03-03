@@ -18,10 +18,7 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
-import tsml.classifiers.distance_based.ee.Ee;
-import tsml.classifiers.distance_based.ee.EeConfig;
 import tsml.classifiers.hybrids.HIVE_COTE;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
@@ -43,10 +40,10 @@ import tsml.classifiers.multivariate.NN_DTW_A;
 import tsml.classifiers.multivariate.NN_DTW_D;
 import tsml.classifiers.multivariate.NN_DTW_I;
 import tsml.classifiers.multivariate.NN_ED_I;
-import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import tsml.classifiers.distance_based.legacy.elastic_ensemble.DTW1NN;
+import tsml.classifiers.distance_based.legacy.elastic_ensemble.ED1NN;
+import tsml.classifiers.distance_based.legacy.elastic_ensemble.MSM1NN;
+import tsml.classifiers.distance_based.legacy.elastic_ensemble.WDTW1NN;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -66,7 +63,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -107,7 +103,7 @@ public class ClassifierLists {
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        Classifier c;
+        Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
             case "DTW":
@@ -125,7 +121,7 @@ public class ClassifierLists {
                 c = new ProximityForestWrapper();
                 break;
             case "ElasticEnsemble":
-                c= EeConfig.buildCeeV2();
+//                c= ElasticEnsembleConfig.buildCeeV2();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();

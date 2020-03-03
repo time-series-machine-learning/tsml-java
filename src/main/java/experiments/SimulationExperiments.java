@@ -55,7 +55,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
+import tsml.classifiers.distance_based.legacy.elastic_ensemble.DTW1NN;
 import tsml.filters.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
