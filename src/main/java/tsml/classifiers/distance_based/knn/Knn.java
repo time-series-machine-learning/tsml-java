@@ -56,7 +56,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     // whether to early abandon on distance measure calculations
     private boolean earlyAbandon = true;
     // the distance function
-    private DistanceFunction distanceFunction = new Dtw(0);
+    private DistanceFunction distanceFunction = new DTWDistance(0);
     // track the train time
     private StopWatch trainTimer = new StopWatch();
     // track the memory
@@ -164,11 +164,11 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         return super.getParams()
                     .add(getEarlyAbandonFlag(), earlyAbandon)
                     .add(getKFlag(), k)
-                    .add(DISTANCE_FUNCTION_FLAG, distanceFunction);
+                    .add(DistanceMeasureable.getDistanceFunctionFlag(), distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DISTANCE_FUNCTION_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandler.setParam(params, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction, DistanceFunction.class);
         ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
         ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
     }

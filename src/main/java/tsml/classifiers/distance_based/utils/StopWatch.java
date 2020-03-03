@@ -14,6 +14,12 @@ public class StopWatch extends Stated implements Serializable {
     private long time;
     private transient Set<StopWatch> listeners = new HashSet<>();
 
+    public static StopWatch newStopWatchEnabled() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.enable();
+        return stopWatch;
+    }
+
     public StopWatch() {
         super();
     }

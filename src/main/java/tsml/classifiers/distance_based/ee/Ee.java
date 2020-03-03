@@ -14,7 +14,6 @@ import tsml.classifiers.distance_based.utils.Stated;
 import tsml.classifiers.distance_based.utils.StopWatch;
 import tsml.classifiers.distance_based.utils.StrUtils;
 import utilities.*;
-import utilities.stopwatch.StopWatch;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;

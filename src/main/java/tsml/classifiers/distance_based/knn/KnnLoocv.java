@@ -5,6 +5,7 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
+import tsml.classifiers.distance_based.utils.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.StopWatch;
 import tsml.filters.HashFilter;
 import utilities.*;
