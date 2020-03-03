@@ -17,7 +17,6 @@ package tsml.classifiers.multivariate;
 import tsml.classifiers.distance_based.distances.old.DTW_I;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;
-import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -25,7 +24,7 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class NN_DTW_I extends AbstractClassifier{
+public class NN_DTW_I extends MultivariateAbstractClassifier{
     
     Instances train;
     DTW_I I;
@@ -37,13 +36,17 @@ public class NN_DTW_I extends AbstractClassifier{
         I.setR(r);
     }
 
+
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
+        testWithFailRelationalInstances(data);
         train = data;
     }
     
     @Override
     public double classifyInstance(Instance instance) throws Exception{
+        testWithFailRelationalInstance(instance);
         Pair<Instance, Double> minD = findMinDistance(train, instance, I);
         return minD.var1.classValue();
     }
