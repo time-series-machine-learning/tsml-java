@@ -1,10 +1,9 @@
 package tsml.classifiers.distance_based.utils.classifier_building;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.ee.EeConfig;
-import tsml.classifiers.distance_based.knn.configs.KNNConfig;
+import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import weka.classifiers.Classifier;
 
 import java.util.*;
@@ -13,42 +12,28 @@ import java.util.stream.Collectors;
 
 public class ClassifierBuilderFactory {
 
-    public interface Tag {
-        String getName();
-    }
-
-    public interface ClassifierBuilder {
+    public interface ClassifierBuilder extends Supplier<Classifier> {
         String toString();
         String getName();
         Classifier build();
-        ImmutableList<? extends Tag> getTags();
+
+        @Override
+        default Classifier get() {
+            return build();
+        }
     }
 
     public static class SuppliedClassifierBuilder implements ClassifierBuilder {
         private final String name;
-        private final ImmutableList<? extends Tag> tags;
         private final Supplier<? extends Classifier> supplier;
 
-        public SuppliedClassifierBuilder(final String name,
-                                         final Supplier<? extends Classifier> supplier,
-                                         final Tag... tags) {
-            this(name, supplier, Arrays.asList(tags));
-        }
-
-        public SuppliedClassifierBuilder(final String name, final Supplier<? extends Classifier> supplier,
-                                         final List<? extends Tag> tags) { // todo i'd like this to be an
-            // Iterable<Supplier<String>> rather than list but somehow it conflicts with the other constructor!! Odd.
+        public SuppliedClassifierBuilder(final String name, final Supplier<? extends Classifier> supplier) {
             this.name = name;
             this.supplier = supplier;
-            this.tags = ImmutableList.copyOf(tags);
         }
 
         public String getName() {
             return name;
-        }
-
-        public ImmutableList<? extends Tag> getTags() {
-            return tags;
         }
 
         public Supplier<? extends Classifier> getSupplier() {
@@ -60,7 +45,6 @@ public class ClassifierBuilderFactory {
             if(classifier instanceof EnhancedAbstractClassifier) {
                 ((EnhancedAbstractClassifier) classifier).setClassifierName(getName());
             }
-            // todo we could also set tags then the classifier knows it's capabilities...
             return classifier;
         }
 
@@ -69,9 +53,8 @@ public class ClassifierBuilderFactory {
         }
     }
 
-    private static ClassifierBuilderFactory INSTANCE = new ClassifierBuilderFactory();
-    private final Map<String, ClassifierBuilder> classifierBuildersByName = new TreeMap<>();
-    private final Map<Tag, Set<ClassifierBuilder>> classifierBuildersByTag = new TreeMap<>((tag, t1) -> tag.getName().compareToIgnoreCase(t1.getName()));
+    private static ClassifierBuilderFactory INSTANCE;
+    private final Map<String, ClassifierBuilder> classifierBuildersByName = new HashMap<>();
     private final Set<ClassifierBuilder> classifierBuilders = new HashSet<>();
 
     public ClassifierBuilderFactory() {}
@@ -83,7 +66,6 @@ public class ClassifierBuilderFactory {
             stringBuilder.append("\t");
             stringBuilder.append(entry.getKey());
             stringBuilder.append(": ");
-            stringBuilder.append(entry.getValue().getTags().toString());
             stringBuilder.append(System.lineSeparator());
         }
         stringBuilder.append("}");
@@ -91,10 +73,23 @@ public class ClassifierBuilderFactory {
     }
 
     public static ClassifierBuilderFactory getGlobalInstance() {
+        if(INSTANCE == null) {
+            INSTANCE = new ClassifierBuilderFactory();
+            INSTANCE.addAll(KNNLOOCV.FACTORY);
+            INSTANCE.addAll(ElasticEnsemble.FACTORY);
+        }
         return INSTANCE;
     }
 
-    public void addAll(List<ClassifierBuilder> all) {
+    public Set<ClassifierBuilder> all() {
+        return new HashSet<>(classifierBuilders);
+    }
+
+    public void addAll(ClassifierBuilderFactory other) {
+        addAll(other.classifierBuilders);
+    }
+
+    public void addAll(Collection<ClassifierBuilder> all) {
         for(ClassifierBuilder builder : all) {
             add(builder);
         }
@@ -108,7 +103,7 @@ public class ClassifierBuilderFactory {
         addAll(Arrays.stream(suppliers).map(Supplier::get).collect(Collectors.toList()));
     }
 
-    public void add(ClassifierBuilder classifierBuilder) {
+    public ClassifierBuilder add(ClassifierBuilder classifierBuilder) {
         String name = classifierBuilder.getName();
         name = name.toLowerCase();
         if(classifierBuildersByName.containsKey(name)) {
@@ -119,9 +114,7 @@ public class ClassifierBuilderFactory {
             classifierBuilders.add(classifierBuilder);
             classifierBuildersByName.put(name, classifierBuilder);
         }
-        for(Tag tag : classifierBuilder.getTags()) {
-            classifierBuildersByTag.computeIfAbsent(tag, k -> new HashSet<>()).add(classifierBuilder);
-        }
+        return classifierBuilder;
     }
 
     public ClassifierBuilder getClassifierBuilderByName(String name) {
@@ -140,33 +133,6 @@ public class ClassifierBuilderFactory {
             set.add(getClassifierBuilderByName(name));
         }
         return ImmutableSet.copyOf(set);
-    }
-
-    public Set<ClassifierBuilder> getClassifierBuildersByTag(String tag) {
-        tag = tag.toLowerCase();
-        Set<ClassifierBuilder> classifierBuilders = classifierBuildersByTag.get(tag);
-        if(classifierBuilders != null) {
-            return ImmutableSet.copyOf(classifierBuilders);
-        } else {
-            return ImmutableSet.of();
-        }
-    }
-
-    public Set<ClassifierBuilder> getClassifierBuildersByTags(Iterable<String> tags) {
-        Set<ClassifierBuilder> set = new HashSet<>();
-        for(String tag : tags) {
-            set.addAll(getClassifierBuildersByTag(tag));
-        }
-        return ImmutableSet.copyOf(set);
-    }
-
-    public Set<ClassifierBuilder> getClassifierBuildersByTags(String... tags) {
-        return getClassifierBuildersByTags(Arrays.asList(tags));
-    }
-
-    static {
-        getGlobalInstance().addAll(KNNConfig.all());
-        getGlobalInstance().addAll(EeConfig.all());
     }
 
     public static void main(String[] args) {
