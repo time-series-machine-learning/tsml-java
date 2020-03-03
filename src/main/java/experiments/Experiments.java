@@ -307,7 +307,6 @@ public class Experiments  {
 
             foldId -= 1; //go from one-indexed to zero-indexed
             Experiments.debug = this.debug;
-            classifierName = classifierName.toUpperCase();
 
             //populating the contract times if present
             //todo refactor to timeunits
