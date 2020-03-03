@@ -75,6 +75,8 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
     private boolean rebuild = true; // shadows super
     // whether the classifier is built
     private boolean built = false;
+    // whether to random tie break (defaults to true / yes and drawing neighbours are put into a majority vote)
+    private boolean randomTieBreak = true;
 
     @Override
     public boolean isSkipFinalCheckpoint() {
@@ -159,11 +161,11 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
         return memoryWatcher;
     }
 
-
     @Override public ParamSet getParams() {
         return super.getParams()
                     .add(getEarlyAbandonFlag(), earlyAbandon)
                     .add(getKFlag(), k)
+                    .add(getRandomTieBreakFlag(), randomTieBreak)
                     .add(DistanceMeasureable.getDistanceFunctionFlag(), distanceFunction);
     }
 
@@ -171,6 +173,7 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
         ParamHandler.setParam(params, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction, DistanceFunction.class);
         ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
         ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
+        ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
     }
 
     @Override
@@ -225,6 +228,15 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
 
     @Override public boolean isBuilt() {
         return built;
+    }
+
+    public boolean isRandomTieBreak() {
+        return randomTieBreak;
+    }
+
+    public KNN setRandomTieBreak(boolean randomTieBreak) {
+        this.randomTieBreak = randomTieBreak;
+        return this;
     }
 
     /**
