@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.knn.configs;
+package tsml.classifiers.distance_based.knn.strategies;
 
 import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
