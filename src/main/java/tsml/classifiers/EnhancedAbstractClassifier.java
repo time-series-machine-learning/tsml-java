@@ -14,10 +14,10 @@
  */
 package tsml.classifiers;
 
-import utilities.Copy;
-import utilities.Debugable;
-import utilities.LogUtils;
-import utilities.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.Copy;
+import tsml.classifiers.distance_based.utils.Debugable;
+import tsml.classifiers.distance_based.utils.LogUtils;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
@@ -28,7 +28,6 @@ import java.util.logging.Logger;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
-import weka.core.Randomizable;
 
 /**
  *
@@ -92,9 +91,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
+    // whether to rebuild the classifier when buildClassifier() is called
     protected boolean rebuild = true;
+    // whether to regenerate the train estimate when buildClassifier() is called
     protected boolean regenerateTrainEstimate = true;
+    // whether to debug
     protected transient boolean debug=false;
+    // logging output
     protected transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRand() {
@@ -162,11 +165,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return logger;
     }
 
-    @Override public boolean isRetrain() {
+    @Override public boolean isRebuild() {
         return rebuild;
     }
 
-    @Override public void setRetrain(final boolean rebuild) {
+    @Override public void setRebuild(final boolean rebuild) {
         this.rebuild = rebuild;
     }
 

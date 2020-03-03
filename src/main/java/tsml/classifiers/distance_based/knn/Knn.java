@@ -1,14 +1,17 @@
 package tsml.classifiers.distance_based.knn;
 
-import distance.elastic.DistanceMeasure;
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.utils.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.StrUtils;
 import utilities.*;
-import utilities.collections.PrunedMultimap;
-import utilities.params.ParamHandler;
-import utilities.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -151,9 +154,9 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

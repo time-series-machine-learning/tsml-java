@@ -16,7 +16,7 @@ import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import utilities.ArrayUtilities;
 import utilities.StatisticalUtilities;
-import utilities.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import weka.core.Instances;
 
 public class DistanceMeasureConfigs {

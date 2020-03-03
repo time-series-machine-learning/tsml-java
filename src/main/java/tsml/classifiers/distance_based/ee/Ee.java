@@ -8,6 +8,11 @@ import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.Stated;
+import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.StrUtils;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -165,9 +170,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     }
 
     @Override
-    public void setRetrain(boolean rebuild) {
+    public void setRebuild(boolean rebuild) {
         this.rebuild = rebuild;
-        super.setRetrain(rebuild);
+        super.setRebuild(rebuild);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

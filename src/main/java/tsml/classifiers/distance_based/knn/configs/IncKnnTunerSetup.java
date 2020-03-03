@@ -2,17 +2,18 @@ package tsml.classifiers.distance_based.knn.configs;
 
 import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
-import machine_learning.classifiers.tuned.incremental.*;
+import tsml.classifiers.distance_based.rltuning.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
+import tsml.classifiers.distance_based.utils.StopWatch;
 import utilities.*;
-import utilities.collections.PrunedMultimap;
-import utilities.collections.Utils;
-import utilities.collections.box.Box;
-import utilities.iteration.LinearListIterator;
-import utilities.iteration.RandomListIterator;
-import utilities.params.ParamSet;
-import utilities.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
+import tsml.classifiers.distance_based.utils.collections.Utils;
+import tsml.classifiers.distance_based.utils.collections.box.Box;
+import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
+import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -20,12 +21,12 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static utilities.collections.Utils.replace;
+import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
 public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
 
-    private IncTuner incTunedClassifier = new IncTuner();
+    private RLTuner incTunedClassifier = new RLTuner();
     private ParamSpace paramSpace;
     private Agent agent = null;
     private Iterator<ParamSet> paramSetIterator;
@@ -237,7 +238,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
     // todo param handling
 
-    public IncTuner build() {
+    public RLTuner build() {
         incTunedClassifier.setTrainSetupFunction(this);
         return incTunedClassifier;
     }
@@ -487,11 +488,11 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return explore;
     }
 
-    public IncTuner getIncTunedClassifier() {
+    public RLTuner getIncTunedClassifier() {
         return incTunedClassifier;
     }
 
-    public IncKnnTunerSetup setIncTunedClassifier(final IncTuner incTunedClassifier) {
+    public IncKnnTunerSetup setIncTunedClassifier(final RLTuner incTunedClassifier) {
         this.incTunedClassifier = incTunedClassifier;
         return this;
     }

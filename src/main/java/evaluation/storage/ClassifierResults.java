@@ -30,6 +30,8 @@ import java.util.function.Function;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MemoryWatchable;
 import tsml.classifiers.TrainTimeable;
+import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.SysUtils;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instances;

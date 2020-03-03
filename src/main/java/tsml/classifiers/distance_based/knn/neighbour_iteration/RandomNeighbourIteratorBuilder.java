@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.knn.neighbour_iteration;
 
 import tsml.classifiers.distance_based.knn.Knn;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
-import utilities.iteration.RandomListIterator;
+import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 
 import java.util.Iterator;
 

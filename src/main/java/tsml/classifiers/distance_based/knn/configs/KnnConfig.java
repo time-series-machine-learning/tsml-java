@@ -6,7 +6,7 @@ import experiments.ClassifierBuilderFactory;
 import experiments.ClassifierBuilderFactory.ClassifierBuilder;
 import experiments.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.tuned.incremental.IncTuner;
+import tsml.classifiers.distance_based.rltuning.RLTuner;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -14,9 +14,9 @@ import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import utilities.ClassifierTools;
-import utilities.iteration.LinearListIterator;
-import utilities.iteration.RandomListIterator;
-import utilities.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
+import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
@@ -145,7 +145,7 @@ public enum KnnConfig implements ClassifierBuilder {
     public static void main(String[] args) throws Exception {
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        IncTuner classifier = buildTunedDtw1nnV1();
+        RLTuner classifier = buildTunedDtw1nnV1();
         classifier.setSeed(seed); // set seed
         classifier.setEstimateOwnPerformance(true);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
@@ -156,73 +156,73 @@ public enum KnnConfig implements ClassifierBuilder {
         System.out.println(results.writeSummaryResultsToString());
     }
 
-    public static IncTuner buildTunedDtw1nnV1() {
+    public static RLTuner buildTunedDtw1nnV1() {
         return buildTuned1nnV1(DistanceMeasureConfigs::buildDtwSpaceV1);
     }
 
-    public static IncTuner buildTunedDdtw1nnV1() {
+    public static RLTuner buildTunedDdtw1nnV1() {
         return buildTuned1nnV1(DistanceMeasureConfigs::buildDdtwSpaceV1);
     }
 
-    public static IncTuner buildTunedWdtw1nnV1() {
+    public static RLTuner buildTunedWdtw1nnV1() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV1());
     }
 
-    public static IncTuner buildTunedWddtw1nnV1() {
+    public static RLTuner buildTunedWddtw1nnV1() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV1());
     }
 
-    public static IncTuner buildTunedDtw1nnV2() {
+    public static RLTuner buildTunedDtw1nnV2() {
         return buildTuned1nnV2(DistanceMeasureConfigs::buildDtwSpaceV2);
     }
 
-    public static IncTuner buildTunedDdtw1nnV2() {
+    public static RLTuner buildTunedDdtw1nnV2() {
         return buildTuned1nnV2(DistanceMeasureConfigs::buildDdtwSpaceV2);
     }
 
-    public static IncTuner buildTunedWdtw1nnV2() {
+    public static RLTuner buildTunedWdtw1nnV2() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV2());
     }
 
-    public static IncTuner buildTunedWddtw1nnV2() {
+    public static RLTuner buildTunedWddtw1nnV2() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV2());
     }
 
-    public static IncTuner buildTunedMsm1nnV1() {
+    public static RLTuner buildTunedMsm1nnV1() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildMsmSpace());
     }
 
-    public static IncTuner buildTunedTwed1nnV1() {
+    public static RLTuner buildTunedTwed1nnV1() {
         return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildTwedSpace());
     }
 
-    public static IncTuner buildTunedErp1nnV1() {
+    public static RLTuner buildTunedErp1nnV1() {
         return buildTuned1nnV1(DistanceMeasureConfigs::buildErpSpace);
     }
 
-    public static IncTuner buildTunedLcss1nnV1() {
+    public static RLTuner buildTunedLcss1nnV1() {
         return buildTuned1nnV1(DistanceMeasureConfigs::buildLcssSpace);
     }
 
-    public static IncTuner buildTunedMsm1nnV2() {
+    public static RLTuner buildTunedMsm1nnV2() {
         return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildMsmSpace());
     }
 
-    public static IncTuner buildTunedTwed1nnV2() {
+    public static RLTuner buildTunedTwed1nnV2() {
         return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildTwedSpace());
     }
 
-    public static IncTuner buildTunedErp1nnV2() {
+    public static RLTuner buildTunedErp1nnV2() {
         return buildTuned1nnV2(DistanceMeasureConfigs::buildErpSpace);
     }
 
-    public static IncTuner buildTunedLcss1nnV2() {
+    public static RLTuner buildTunedLcss1nnV2() {
         return buildTuned1nnV2(DistanceMeasureConfigs::buildLcssSpace);
     }
 
 
-    public static IncTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
-        IncTuner incTunedClassifier = new IncTuner();
+    public static RLTuner buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
+        RLTuner incTunedClassifier = new RLTuner();
         IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
         incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
@@ -232,12 +232,12 @@ public enum KnnConfig implements ClassifierBuilder {
         return incTunedClassifier;
     }
 
-    public static IncTuner buildTuned1nnV1(ParamSpace paramSpace) {
+    public static RLTuner buildTuned1nnV1(ParamSpace paramSpace) {
         return buildTuned1nnV1(i -> paramSpace);
     }
 
-    public static IncTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
-        IncTuner incTunedClassifier = new IncTuner();
+    public static RLTuner buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
+        RLTuner incTunedClassifier = new RLTuner();
         IncKnnTunerSetup incKnnTunerSetup = new IncKnnTunerSetup();
         incKnnTunerSetup
                 .setIncTunedClassifier(incTunedClassifier)
@@ -247,7 +247,7 @@ public enum KnnConfig implements ClassifierBuilder {
         return incTunedClassifier;
     }
 
-    public static IncTuner buildTuned1nnV2(ParamSpace paramSpace) {
+    public static RLTuner buildTuned1nnV2(ParamSpace paramSpace) {
         return buildTuned1nnV2(i -> paramSpace);
     }
 }
