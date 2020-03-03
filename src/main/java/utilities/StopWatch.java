@@ -4,6 +4,11 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Purpose: track time, ability to pause and add on time from another stop watch
+ *
+ * Contributors: goastler
+ */
 public class StopWatch extends Stated implements Serializable {
     private transient long timeStamp;
     private long time;
@@ -17,6 +22,10 @@ public class StopWatch extends Stated implements Serializable {
         super(state);
     }
 
+    /**
+     * listen to another stopwatch, updating the other stopwatch's state when this stopwatch's state changes.
+     * @param other
+     */
     public void addListener(StopWatch other) {
         super.addListener(other);
         listeners.add(other);
@@ -27,6 +36,10 @@ public class StopWatch extends Stated implements Serializable {
         listeners.remove(other);
     }
 
+    /**
+     * just update the time
+     * @return
+     */
     public long lap() {
         if(isEnabled()) {
             uncheckedLap();
@@ -34,6 +47,11 @@ public class StopWatch extends Stated implements Serializable {
         return time;
     }
 
+    /**
+     * this is dangerous, don't use unless you know what you're doing. It updates the time without any checks on the
+     * state of the stopwatch.
+     * @return
+     */
     private long uncheckedLap() {
         long nextTimeStamp = System.nanoTime();
         long diff = nextTimeStamp - this.timeStamp;
@@ -46,6 +64,10 @@ public class StopWatch extends Stated implements Serializable {
         return time;
     }
 
+    /**
+     * enable irrelevant of current state
+     * @return
+     */
     @Override public boolean enableAnyway() {
         boolean change = super.enableAnyway();
         if(change) {
@@ -54,6 +76,10 @@ public class StopWatch extends Stated implements Serializable {
         return change;
     }
 
+    /**
+     * disable irrelevant of current state
+     * @return
+     */
     @Override public boolean disableAnyway() {
         boolean change = super.disableAnyway();
         if(change) {
@@ -62,14 +88,23 @@ public class StopWatch extends Stated implements Serializable {
         return change;
     }
 
+    /**
+     * reset the clock, useful post serialisation
+     */
     public void resetClock() {
         timeStamp = System.nanoTime();
     }
 
+    /**
+     * reset time count
+     */
     public void resetTime() {
         time = 0;
     }
 
+    /**
+     * reset entirely
+     */
     public void reset() {
         resetAndDisable();
     }
@@ -86,6 +121,10 @@ public class StopWatch extends Stated implements Serializable {
         resetClock();
     }
 
+    /**
+     * add time from another source
+     * @param nanos
+     */
     public void add(long nanos) {
         time += nanos;
         for(StopWatch other : listeners) {
