@@ -18,6 +18,8 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
@@ -40,10 +42,6 @@ import tsml.classifiers.multivariate.NN_DTW_A;
 import tsml.classifiers.multivariate.NN_DTW_D;
 import tsml.classifiers.multivariate.NN_DTW_I;
 import tsml.classifiers.multivariate.NN_ED_I;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.DTW1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.ED1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.MSM1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.WDTW1NN;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -96,9 +94,35 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW"
-//        , "CEE", "LEE", "DTWV1", "DTWCVV1"
+        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","NN_CID",
+        "EE_V1",
+        "EE_V2",
+        "CEE_V1",
+        "CEE_V2",
+        "LEE",
+        "ED_1NN_V1",
+        "DTW_1NN_V1",
+        "DDTW_1NN_V1",
+        "TUNED_DTW_1NN_V1",
+        "TUNED_DDTW_1NN_V1",
+        "TUNED_WDTW_1NN_V1",
+        "TUNED_WDDTW_1NN_V1",
+        "TUNED_MSM_1NN_V1",
+        "TUNED_TWED_1NN_V1",
+        "TUNED_ERP_1NN_V1",
+        "TUNED_LCSS_1NN_V1",
+        "ED_1NN_V2",
+        "DTW_1NN_V2",
+        "DDTW_1NN_V2",
+        "TUNED_DTW_1NN_V2",
+        "TUNED_DDTW_1NN_V2",
+        "TUNED_WDTW_1NN_V2",
+        "TUNED_WDDTW_1NN_V2",
+        "TUNED_MSM_1NN_V2",
+        "TUNED_TWED_1NN_V2",
+        "TUNED_ERP_1NN_V2",
+        "TUNED_LCSS_1NN_V2",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -106,22 +130,93 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "DTW":
-                c=new DTW1NN();
-                ((DTW1NN )c).setWindow(1);
+            case "EE_V1":
+                c = ElasticEnsemble.FACTORY.EE_V1.build();
                 break;
-            case "DTWCV":
-                c=new DTWCV();
-                ((DTWCV)c).optimiseWindow(true);
+            case "EE_V2":
+                c = ElasticEnsemble.FACTORY.EE_V2.build();
                 break;
+            case "CEE_V1":
+                c = ElasticEnsemble.FACTORY.CEE_V1.build();
+                break;
+            case "CEE_V2":
+                c = ElasticEnsemble.FACTORY.CEE_V2.build();
+                break;
+            case "LEE":
+                c = ElasticEnsemble.FACTORY.LEE.build();
+                break;
+            case "ED_1NN_V1":
+                c = KNNLOOCV.FACTORY.ED_1NN_V1.build();
+                break;
+            case "DTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.DTW_1NN_V1.build();
+                break;
+            case "DDTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.DDTW_1NN_V1.build();
+                break;
+            case "ED_1NN_V2":
+                c = KNNLOOCV.FACTORY.ED_1NN_V2.build();
+                break;
+            case "DTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.DTW_1NN_V2.build();
+                break;
+            case "DDTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.DDTW_1NN_V2.build();
+                break;
+            case "TUNED_DTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_DTW_1NN_V1.build();
+                break;
+            case "TUNED_DDTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V1.build();
+                break;
+            case "TUNED_WDTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V1.build();
+                break;
+            case "TUNED_WDDTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V1.build();
+                break;
+            case "TUNED_ERP_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_ERP_1NN_V1.build();
+                break;
+            case "TUNED_MSM_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_MSM_1NN_V1.build();
+                break;
+            case "TUNED_LCSS_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V1.build();
+                break;
+            case "TUNED_TWED_1NN_V1":
+                c = KNNLOOCV.FACTORY.TUNED_TWED_1NN_V1.build();
+                break;
+            case "TUNED_DTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_DTW_1NN_V2.build();
+                break;
+            case "TUNED_DDTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V2.build();
+                break;
+            case "TUNED_WDTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V2.build();
+                break;
+            case "TUNED_WDDTW_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V2.build();
+                break;
+            case "TUNED_ERP_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_ERP_1NN_V2.build();
+                break;
+            case "TUNED_MSM_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_MSM_1NN_V2.build();
+                break;
+            case "TUNED_LCSS_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V2.build();
+                break;
+            case "TUNED_TWED_1NN_V2":
+                c = KNNLOOCV.FACTORY.TUNED_TWED_1NN_V2.build();
+                break;
+
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;
             case "ProximityForest":
                 c = new ProximityForestWrapper();
-                break;
-            case "ElasticEnsemble":
-//                c= ElasticEnsembleConfig.buildCeeV2();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -138,15 +233,6 @@ public class ClassifierLists {
                 break;
             case "NN_CID":
                 c = new NN_CID();
-                break;
-            case "MSM":
-                c=new MSM1NN();
-                break;
-            case "TWE":
-                c=new MSM1NN();
-                break;
-            case "WDTW":
-                c=new WDTW1NN();
                 break;
             default:
                 System.out.println("Unknown distance based classifier "+classifier+" should not be able to get here ");
