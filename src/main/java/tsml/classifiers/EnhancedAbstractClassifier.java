@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  *
@@ -85,7 +86,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
                                                                                        RebuildableTrainEstimateable,
                                                                                        Debugable, Loggable, Copy,
                                                                                        Serializable,
-                                                                                       Randomised, ParamHandler, Buildable {
+                                                                                       Randomizable, ParamHandler,
+                                                                                        Buildable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -93,7 +95,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
+    // rebuild on buildClassifier?
     private boolean rebuild = true;
+    // regenerate train estimate on buildClassifier?
     private boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
     private transient Logger logger = LogUtils.getLogger(this);
