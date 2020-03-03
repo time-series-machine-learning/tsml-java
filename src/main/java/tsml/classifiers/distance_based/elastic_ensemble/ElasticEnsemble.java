@@ -1,18 +1,25 @@
-package tsml.classifiers.distance_based.ee;
+package tsml.classifiers.distance_based.elastic_ensemble;
+
+import static tsml.classifiers.distance_based.knn.KNNLOOCV.FACTORY;
 
 import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
+import java.util.function.Consumer;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
+import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.Stated;
 import tsml.classifiers.distance_based.utils.StopWatch;
 import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -22,10 +29,120 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
-
-public class Ee extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
+public class ElasticEnsemble extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
         GcMemoryWatchable, StopWatchTrainTimeable {
+
+    public static final ClassifierBuilderFactory FACTORY = new ClassifierBuilderFactory();
+
+    public static class ClassifierBuilderFactory extends CompileTimeClassifierBuilderFactory {
+        public final ClassifierBuilder EE_V1 = add(new SuppliedClassifierBuilder("EE_V1",
+            ClassifierBuilderFactory::buildEeV1));
+        public final ClassifierBuilder EE_V2 = add(new SuppliedClassifierBuilder("EE_V2",
+            ClassifierBuilderFactory::buildEeV2));
+        public final ClassifierBuilder CEE_V1 = add(new SuppliedClassifierBuilder("CEE_V1",
+            ClassifierBuilderFactory::buildCeeV1));
+        public final ClassifierBuilder CEE_V2 = add(new SuppliedClassifierBuilder("CEE_V2",
+            ClassifierBuilderFactory::buildCeeV2));
+        public final ClassifierBuilder LEE = add(new SuppliedClassifierBuilder("LEE",
+            ClassifierBuilderFactory::buildLee));
+
+
+        public static ImmutableList<Classifier> buildV1Constituents() {
+            return ImmutableList.of(
+                KNNLOOCV.FACTORY.ED_1NN_V1.build(),
+                KNNLOOCV.FACTORY.DTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.DDTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_DTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_ERP_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_MSM_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V1.build(),
+                KNNLOOCV.FACTORY.TUNED_TWED_1NN_V1.build()
+            );
+        }
+
+        public static ImmutableList<Classifier> buildV2Constituents() {
+            return ImmutableList.of(
+                KNNLOOCV.FACTORY.ED_1NN_V2.build(),
+                KNNLOOCV.FACTORY.DTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.DDTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_DTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_ERP_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_MSM_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V2.build(),
+                KNNLOOCV.FACTORY.TUNED_TWED_1NN_V2.build()
+            );
+        }
+
+        public static ElasticEnsemble buildEeV1() {
+            ElasticEnsemble elasticEnsemble = new ElasticEnsemble();
+            elasticEnsemble.setConstituents(buildV1Constituents());
+            setTrainSelectedBenchmarksFully(elasticEnsemble,false);
+            return elasticEnsemble; // todo set full ee?
+        }
+
+        public static ElasticEnsemble buildEeV2() {
+            ElasticEnsemble elasticEnsemble = new ElasticEnsemble();
+            elasticEnsemble.setConstituents(buildV2Constituents());
+            setTrainSelectedBenchmarksFully(elasticEnsemble,false);
+            return elasticEnsemble; // todo set full ee?
+        }
+
+        public static ElasticEnsemble buildCeeV1() {
+            return buildEeV1(); // todo turn off full ee?
+        }
+
+        public static ElasticEnsemble buildCeeV2() {
+            return buildEeV2(); // todo turn off full ee?
+        }
+
+        private static ElasticEnsemble forEachTunedConstituent(ElasticEnsemble elasticEnsemble, Consumer<RLTunedKNNSetup> consumer) {
+            for(Classifier classifier : elasticEnsemble.getConstituents()) {
+                if(!(classifier instanceof RLTunedClassifier)) {
+                    continue;
+                }
+                RLTunedClassifier tuner = (RLTunedClassifier) classifier;
+                RLTunedKNNSetup config = (RLTunedKNNSetup) tuner.getTrainSetupFunction();
+                consumer.accept(config);
+            }
+            return elasticEnsemble;
+        }
+
+        public static ElasticEnsemble setLimitedParameters(ElasticEnsemble elasticEnsemble, int limit) {
+            return forEachTunedConstituent(elasticEnsemble, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimit(limit));
+        }
+
+        public static ElasticEnsemble setLimitedParametersPercentage(ElasticEnsemble elasticEnsemble, double limit) {
+            return forEachTunedConstituent(elasticEnsemble, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimitPercentage(limit));
+        }
+
+        public static ElasticEnsemble setLimitedNeighbours(ElasticEnsemble elasticEnsemble, int limit) {
+            return forEachTunedConstituent(elasticEnsemble, RLTunedKNNSetup -> RLTunedKNNSetup.setNeighbourhoodSizeLimit(limit));
+        }
+
+        public static ElasticEnsemble setLimitedNeighboursPercentage(ElasticEnsemble elasticEnsemble, double limit) { // todo params from cmdline in experiment + append to cls name
+            return forEachTunedConstituent(elasticEnsemble, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimitPercentage(limit));
+        }
+
+        public static ElasticEnsemble setTrainSelectedBenchmarksFully(ElasticEnsemble elasticEnsemble, boolean state) { // todo params from cmdline in experiment + append to cls name
+            return forEachTunedConstituent(elasticEnsemble, RLTunedKNNSetup -> RLTunedKNNSetup.setTrainSelectedBenchmarksFully(state));
+        }
+
+        private static ElasticEnsemble buildLee() {
+            ElasticEnsemble elasticEnsemble = new ElasticEnsemble();
+            ImmutableList<Classifier> constituents = buildV2Constituents();
+            elasticEnsemble.setConstituents(constituents);
+            setLimitedNeighboursPercentage(elasticEnsemble, 0.1);
+            setLimitedParametersPercentage(elasticEnsemble, 0.5);
+            setTrainSelectedBenchmarksFully(elasticEnsemble,true);
+            return elasticEnsemble;
+        }
+    }
 
     public ImmutableList<EnhancedAbstractClassifier> getConstituents() {
         return constituents;
@@ -37,15 +154,16 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
             if(constituent instanceof EnhancedAbstractClassifier) {
                 list.add((EnhancedAbstractClassifier) constituent);
             } else {
-                throw new IllegalArgumentException("constituents have to be EAC");
+                throw new IllegalArgumentException("constituents have to be EAC"); // todo some kind of wrapper
+                // around ones which aren't EAC for generic'ness, not important right now
             }
         }
         this.constituents = ImmutableList.copyOf(list);
     }
 
-    public Ee() {
+    public ElasticEnsemble() {
         super(true);
-        setConstituents(buildV1Constituents());
+        setConstituents(ClassifierBuilderFactory.buildV1Constituents());
     }
 
     public boolean isLimitedVersion() {
