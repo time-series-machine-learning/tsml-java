@@ -25,7 +25,7 @@ import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
 public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
                                                                     StopWatchTrainTimeable,
-                                                                    Checkpointable, Parallelisable, TestSeedable {
+                                                                    Checkpointable, Parallelisable {
 
     /*
         how do we do tuning?
@@ -123,16 +123,6 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
     private transient boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
     private transient boolean yielded = false;
-    protected int testSeed = 0;
-    protected Random testRand = new Random(0);
-
-    @Override public void setTestSeed(final int testSeed) {
-        this.testSeed = testSeed;
-    }
-
-    @Override public int getTestSeed() {
-        return testSeed;
-    }
 
     // start boiler plate ----------------------------------------------------------------------------------------------
 
@@ -321,15 +311,15 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
                     benchmarks = agent.findFinalClassifiers();
                     // sanity check and ensemble
                     if(benchmarks.isEmpty()) {
-                        logger.info(() -> "no benchmarks collected");
+                        getLogger().info(() -> "no benchmarks collected");
                         ensembleWeights = new ArrayList<>();
                         throw new UnsupportedOperationException("todo implement random guess here?");
                     } else if(benchmarks.size() == 1) {
-                        logger.info(() -> "single benchmarks collected");
+                        getLogger().info(() -> "single benchmarks collected");
                         ensembleWeights = new ArrayList<>(Collections.singletonList(1d));
                         trainResults = benchmarks.iterator().next().getTrainResults();
                     } else {
-                        logger.info(() -> benchmarks.size() + " benchmarks collected");
+                        getLogger().info(() -> benchmarks.size() + " benchmarks collected");
                         ensembleWeights = ensembler.weightVotes(benchmarks);
                         throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
                     }
@@ -350,7 +340,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
                     }
                     built = true;
                 } catch (FileUtils.FileLock.LockException e) {
-                    logger.info(() -> "cannot lock overall done file");
+                    getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;
                     // quit as another process is going to finish up the build
                 }
@@ -361,17 +351,12 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
     }
-
+    
     @Override
-    public boolean isFullyTrained() {
-        return built;
+    public boolean hasYielded() {
+        return hasSkippedEvaluation || yielded;
     }
-
-    @Override
-    public boolean isFinalModel() {
-        return !hasSkippedEvaluation && !yielded;
-    }
-
+    
     protected boolean hasNextBuildTick() {
         return agent.hasNext() && hasRemainingTraining();
     }
@@ -445,7 +430,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
             MemoryWatcher classifierMemoryWatcher = new MemoryWatcher();
             // build the classifier
             EnhancedAbstractClassifier finalClassifier = classifier;
-            logger.info(() -> "evaluating " + StrUtils.toOptionValue(finalClassifier));
+            getLogger().info(() -> "evaluating " + StrUtils.toOptionValue(finalClassifier));
             classifier.setEstimateOwnPerformance(true);
             if(classifier instanceof TrainTimeable) {
                 // then we don't need to record train time as classifier does so internally
@@ -473,12 +458,17 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
                 this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
                 // set train results info
                 classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTimeNanos());
+            }
+            if(classifier instanceof TrainEstimateTimeable) {
+                // the classifier tracked its time internally
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+            } else {
+                // we already tracked this as part of the train time
             }
             if(classifier instanceof MemoryWatchable) {
                 // the classifier tracked its own memory
@@ -518,7 +508,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
         } else {
             // couldn't lock file, so we'll skip this classifier as another process is working on it
             EnhancedAbstractClassifier finalClassifier1 = classifier;
-            logger.info(() -> "skip evaluation due to parallelisation or already done: " + StrUtils.toOptionValue(finalClassifier1));
+            getLogger().info(() -> "skip evaluation due to parallelisation or already done: " + StrUtils.toOptionValue(finalClassifier1));
         }
     }
 
@@ -567,7 +557,9 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
                     trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
-                    trainEstimateTimer.add(((TrainTimeable) classifier).getTrainEstimateTimeNanos());
+                }
+                if(classifier instanceof TrainEstimateTimeable) {
+                    trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
                 }
                 if(classifier instanceof MemoryWatchable) {
                     memoryWatcher.add(((MemoryWatchable) classifier));
@@ -636,7 +628,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
         if(benchmarks.size() == 1) {
             return benchmarkIterator.next().distributionForInstance(testCase);
         }
-        double[] distribution = new double[numClasses];
+        double[] distribution = new double[getNumClasses()];
         for(int i = 0; i < benchmarks.size(); i++) {
             if(!benchmarkIterator.hasNext()) {
                 throw new IllegalStateException("iterator incorrect");
@@ -652,7 +644,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
 
     @Override
     public double classifyInstance(Instance testCase) throws Exception {
-        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), testRand);
+        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
 
     public Consumer<Instances> getTrainSetupFunction() {
