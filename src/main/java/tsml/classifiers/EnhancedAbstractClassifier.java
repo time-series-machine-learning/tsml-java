@@ -80,10 +80,12 @@ ClassifierResults trainResults can also store other information about the traini
  * 
  * @author Tony Bagnall and James Large
  */
-abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       TrainSeedable, Retrainable,
+abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements TrainEstimateable, SaveParameterInfo,
+                                                                                       Rebuildable,
+                                                                                       RebuildableTrainEstimateable,
                                                                                        Debugable, Loggable, Copy,
-                                                                                       ParamHandler, Serializable {
+                                                                                       Serializable,
+                                                                                       Randomised, ParamHandler, Buildable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -91,20 +93,20 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
-    // whether to rebuild the classifier when buildClassifier() is called
-    protected boolean rebuild = true;
-    // whether to regenerate the train estimate when buildClassifier() is called
-    protected boolean regenerateTrainEstimate = true;
-    // whether to debug
+    private boolean rebuild = true;
+    private boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
-    // logging output
-    protected transient Logger logger = LogUtils.getLogger(this);
+    private transient Logger logger = LogUtils.getLogger(this);
 
-    public Random getRand() {
+    @Override public boolean isBuilt() {
+        return !rebuild;
+    }
+
+    public Random getRandom() {
         return rand;
     }
 
-    public void setRand(Random rand) {
+    public void setRandom(Random rand) {
         this.rand = rand;
     }
 
@@ -159,7 +161,11 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
-    protected int numClasses = -1;
+    private int numClasses = -1;
+
+    public int getNumClasses() {
+        return numClasses;
+    }
 
     @Override public Logger getLogger() {
         return logger;

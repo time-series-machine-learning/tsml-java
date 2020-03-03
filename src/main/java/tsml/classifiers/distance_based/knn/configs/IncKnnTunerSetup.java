@@ -117,7 +117,8 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
             // randomly pick 1 of the best classifiers
             final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
-            final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1, incTunedClassifier.getRand());
+            final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
+                                                                                            incTunedClassifier.getRandom());
             if(selectedBenchmarks.size() > 1) {
                 throw new IllegalStateException("there shouldn't be more than 1");
             }

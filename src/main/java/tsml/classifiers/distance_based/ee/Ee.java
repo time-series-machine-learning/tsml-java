@@ -14,12 +14,14 @@ import tsml.classifiers.distance_based.utils.Stated;
 import tsml.classifiers.distance_based.utils.StopWatch;
 import tsml.classifiers.distance_based.utils.StrUtils;
 import utilities.*;
+import utilities.stopwatch.StopWatch;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static tsml.classifiers.distance_based.ee.EeConfig.buildV1Constituents;
 
@@ -141,7 +143,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, logger, built && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), built && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -150,7 +152,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     public boolean loadFromCheckpoint() {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, logger);
+        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
         lastCheckpointTimeStamp = System.nanoTime();
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
@@ -210,6 +212,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
     // end boiler plate ------------------------------------------------------------------------------------------------
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        final Logger logger = getLogger();
         loadFromCheckpoint();
         trainTimer.enable();
         memoryWatcher.enable();
@@ -237,7 +240,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
                 constituent.setSeed(rand.nextInt());
                 constituent.setEstimateOwnPerformance(true);
                 if(logConstituents) {
-                    constituent.getLogger().setLevel(logger.getLevel());
+                    constituent.getLogger().setLevel(getLogger().getLevel());
                 } else {
                     constituent.getLogger().setLevel(Level.OFF);
                 }
@@ -267,9 +270,9 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
             nextBuildTick();
             saveToCheckpoint();
         }
-        if(regenerateTrainEstimate && getEstimateOwnPerformance()) {
+        if(isRegenerateTrainEstimate() && getEstimateOwnPerformance()) {
             logger.fine("generating train estimate");
-            regenerateTrainEstimate = false;
+            setRegenerateTrainEstimate(false);
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
             for(EnhancedAbstractClassifier constituent : constituents) {
@@ -318,6 +321,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
      * @throws Exception
      */
     private void improveNextConstituent() throws Exception {
+        final Logger logger = getLogger();
         EnhancedAbstractClassifier constituent = partialConstituentsBatch.remove(0);
         if(constituent == null) {
             throw new IllegalStateException("something has gone wrong, constituent should not be null");
@@ -358,9 +362,14 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
         trainTimer.enable();
         if(constituent instanceof TrainTimeable) {
             trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
-            trainEstimateTimer.add(((TrainTimeable) constituent).getTrainEstimateTimeNanos());
         } else {
             trainTimer.add(constituentTrainTimer);
+        }
+        if(constituent instanceof TrainEstimateTimeable) {
+            // the classifier tracked its time internally
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+        } else {
+            // we already tracked this as part of the train time
         }
         if(constituent instanceof MemoryWatchable) {
             memoryWatcher.add((MemoryWatchable) constituent);
@@ -388,7 +397,7 @@ public class Ee extends EnhancedAbstractClassifier implements TrainTimeContracta
 
     public void nextBuildTick() throws Exception {
         improveNextConstituent();
-        regenerateTrainEstimate = true;
+        setRegenerateTrainEstimate(true);
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {

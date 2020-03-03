@@ -32,6 +32,28 @@ import java.util.function.Supplier;
 
 public class Utilities {
 
+//    public static int add(int a, int b) {
+//        int result = a + b;
+//        if(result < a || result < b) {
+//            throw new IllegalStateException("integer overflow");
+//        }
+//        return result;
+//    }
+
+    public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
+        int sum = 0;
+        while(iterator.hasNext()) {
+            A next = iterator.next();
+            Integer integer = func.apply(next);
+            sum += integer;
+        }
+        return sum;
+    }
+
+    public static <A> int sum(Iterable<A> iterable, Function<A, Integer> func) {
+        return sum(iterable.iterator(), func);
+    }
+
     public static <A, B> List<B> convert(Iterable<A> source, Function<A, B> converter) { // todo stream version
         return convert(source.iterator(), converter);
     }
