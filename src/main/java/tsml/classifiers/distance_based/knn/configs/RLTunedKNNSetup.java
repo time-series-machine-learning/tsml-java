@@ -4,7 +4,7 @@ import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.knn.KnnLoocv;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.StopWatch;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
-public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
+public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
 
 
     private RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
@@ -45,7 +45,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
     private Iterator<EnhancedAbstractClassifier> explorer;
     private Iterator<EnhancedAbstractClassifier> exploiter;
     private Optimiser optimiser;
-    private Supplier<KnnLoocv> knnSupplier;
+    private Supplier<KNNLOOCV> knnSupplier;
     private double neighbourhoodSizeLimitPercentage = -1;
     private double paramSpaceSizeLimitPercentage = -1;
     private int fullParamSpaceSize = -1;
@@ -78,8 +78,8 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         @Override
         public EnhancedAbstractClassifier next() {
             EnhancedAbstractClassifier classifier = super.next();
-            if(classifier instanceof KnnLoocv) {
-                final KnnLoocv knn = (KnnLoocv) classifier;
+            if(classifier instanceof KNNLOOCV) {
+                final KNNLOOCV knn = (KNNLOOCV) classifier;
                 incTunedClassifier.getLogger().info(() -> "enabling full train for " + classifier.toString() + " " + classifier.getParams().toString());
                 knn.setNeighbourLimit(-1);
                 knn.setRegenerateTrainEstimate(true);
@@ -285,7 +285,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return paramSpaceSizeLimitPercentage;
     }
 
-    public IncKnnTunerSetup setParamSpaceSizeLimitPercentage(final double paramSpaceSizeLimitPercentage) {
+    public RLTunedKNNSetup setParamSpaceSizeLimitPercentage(final double paramSpaceSizeLimitPercentage) {
         this.paramSpaceSizeLimitPercentage = paramSpaceSizeLimitPercentage;
         return this;
     }
@@ -307,7 +307,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
     private boolean isImproveable(EnhancedAbstractClassifier benchmark) {
         try {
-            final KnnLoocv knn = (KnnLoocv) benchmark;
+            final KNNLOOCV knn = (KNNLOOCV) benchmark;
             return knn.getNeighbourLimit() + 1 <= maxNeighbourhoodSize;
         } catch(Exception e) {
             throw new IllegalStateException(e);
@@ -373,7 +373,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         @Override public EnhancedAbstractClassifier next() {
             ParamSet paramSet = paramSetIterator.next();
             paramCount.set(paramCount.get() + 1);
-            final KnnLoocv knn = knnSupplier.get();
+            final KNNLOOCV knn = knnSupplier.get();
             knn.setParams(paramSet);
             final String name = knn.getClassifierName() + "_" + (id++);
             knn.setClassifierName(name);
@@ -404,7 +404,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
             }
             final EnhancedAbstractClassifier classifier = improveableBenchmarkIterator.next();
             improveableBenchmarkIterator.remove();
-            final KnnLoocv knn = (KnnLoocv) classifier; // todo should get rid of this with some generic twisting
+            final KNNLOOCV knn = (KNNLOOCV) classifier; // todo should get rid of this with some generic twisting
             if(incTunedClassifier.isDebug()) {
                 final int currentNeighbourLimit = knn.getNeighbourLimit();
                 if(nextNeighbourCount <= currentNeighbourLimit) {
@@ -493,7 +493,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return incTunedClassifier;
     }
 
-    public IncKnnTunerSetup setIncTunedClassifier(final RLTunedClassifier incTunedClassifier) {
+    public RLTunedKNNSetup setIncTunedClassifier(final RLTunedClassifier incTunedClassifier) {
         this.incTunedClassifier = incTunedClassifier;
         return this;
     }
@@ -502,7 +502,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return paramSpace;
     }
 
-    public IncKnnTunerSetup setParamSpace(final ParamSpace paramSpace) {
+    public RLTunedKNNSetup setParamSpace(final ParamSpace paramSpace) {
         this.paramSpace = paramSpace;
         return this;
     }
@@ -511,7 +511,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return paramSetIterator;
     }
 
-    public IncKnnTunerSetup setParamSetIterator(final Iterator<ParamSet> paramSetIterator) {
+    public RLTunedKNNSetup setParamSetIterator(final Iterator<ParamSet> paramSetIterator) {
         this.paramSetIterator = paramSetIterator;
         return this;
     }
@@ -520,7 +520,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return maxParamSpaceSize;
     }
 
-    public IncKnnTunerSetup setParamSpaceSizeLimit(final int limit) {
+    public RLTunedKNNSetup setParamSpaceSizeLimit(final int limit) {
         this.neighbourhoodSizeLimit = limit;
         return this;
     }
@@ -529,7 +529,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return maxNeighbourhoodSize;
     }
 
-    public IncKnnTunerSetup setNeighbourhoodSizeLimit(final int limit) {
+    public RLTunedKNNSetup setNeighbourhoodSizeLimit(final int limit) {
         this.neighbourhoodSizeLimit = limit;
         return this;
     }
@@ -554,7 +554,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return longestExploreTimeNanos;
     }
 
-    public IncKnnTunerSetup setLongestExploreTimeNanos(final long longestExploreTimeNanos) {
+    public RLTunedKNNSetup setLongestExploreTimeNanos(final long longestExploreTimeNanos) {
         this.longestExploreTimeNanos = longestExploreTimeNanos;
         return this;
     }
@@ -563,7 +563,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return longestExploitTimeNanos;
     }
 
-    public IncKnnTunerSetup setLongestExploitTimeNanos(final long longestExploitTimeNanos) {
+    public RLTunedKNNSetup setLongestExploitTimeNanos(final long longestExploitTimeNanos) {
         this.longestExploitTimeNanos = longestExploitTimeNanos;
         return this;
     }
@@ -572,7 +572,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return paramSpaceFunction;
     }
 
-    public IncKnnTunerSetup setParamSpaceFunction(
+    public RLTunedKNNSetup setParamSpaceFunction(
         final Function<Instances, ParamSpace> paramSpaceFunction) {
         this.paramSpaceFunction = paramSpaceFunction;
         return this;
@@ -582,29 +582,29 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return optimiser;
     }
 
-    public IncKnnTunerSetup setOptimiser(final Optimiser optimiser) {
+    public RLTunedKNNSetup setOptimiser(final Optimiser optimiser) {
         this.optimiser = optimiser;
         return this;
     }
 
-    public Supplier<KnnLoocv> getKnnSupplier() {
+    public Supplier<KNNLOOCV> getKnnSupplier() {
         return knnSupplier;
     }
 
-    public IncKnnTunerSetup setKnnSupplier(final Supplier<KnnLoocv> knnSupplier) {
+    public RLTunedKNNSetup setKnnSupplier(final Supplier<KNNLOOCV> knnSupplier) {
         this.knnSupplier = knnSupplier;
         return this;
     }
 
-    public IncKnnTunerSetup setParamSpace(Function<Instances, ParamSpace> func) {
+    public RLTunedKNNSetup setParamSpace(Function<Instances, ParamSpace> func) {
         return setParamSpaceFunction(func);
     }
 
-    public IncKnnTunerSetup setParamSpaceFunction(Supplier<ParamSpace> supplier) {
+    public RLTunedKNNSetup setParamSpaceFunction(Supplier<ParamSpace> supplier) {
         return setParamSpace(i -> supplier.get());
     }
 
-    public IncKnnTunerSetup setParamSpace(Supplier<ParamSpace> supplier) {
+    public RLTunedKNNSetup setParamSpace(Supplier<ParamSpace> supplier) {
         return setParamSpaceFunction(supplier);
     }
 
@@ -612,7 +612,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return neighbourhoodSizeLimitPercentage;
     }
 
-    public IncKnnTunerSetup setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
+    public RLTunedKNNSetup setNeighbourhoodSizeLimitPercentage(final double neighbourhoodSizeLimitPercentage) {
         this.neighbourhoodSizeLimitPercentage = neighbourhoodSizeLimitPercentage;
         return this;
     }

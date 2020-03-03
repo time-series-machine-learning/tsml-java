@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KnnLoocv
-    extends Knn implements TrainTimeContractable {
+public class KNNLOOCV
+    extends KNN implements TrainTimeContractable {
 
     private static final long serialVersionUID = 0;
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
@@ -45,11 +45,11 @@ public class KnnLoocv
     protected boolean customCache = false;
     private boolean rebuild = true; // shadows super
 
-    public KnnLoocv() {
+    public KNNLOOCV() {
         setAbleToEstimateOwnPerformance(true);
     }
 
-    public KnnLoocv(DistanceFunction df) {
+    public KNNLOOCV(DistanceFunction df) {
         super(df);
         setAbleToEstimateOwnPerformance(true);
     }
@@ -349,7 +349,7 @@ public class KnnLoocv
     public static void main(String[] args) throws Exception {
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        KnnLoocv classifier = new KnnLoocv();
+        KNNLOOCV classifier = new KNNLOOCV();
         classifier.setSeed(seed); // set seed
         classifier.setEstimateOwnPerformance(true);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);

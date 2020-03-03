@@ -1,18 +1,18 @@
 package tsml.classifiers.distance_based.knn.neighbour_iteration;
 
-import tsml.classifiers.distance_based.knn.Knn;
-import tsml.classifiers.distance_based.knn.KnnLoocv;
+import tsml.classifiers.distance_based.knn.KNN;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class LinearNeighbourIteratorBuilder
-    implements KnnLoocv.NeighbourIteratorBuilder {
+    implements KNNLOOCV.NeighbourIteratorBuilder {
 
-    protected KnnLoocv knn;
+    protected KNNLOOCV knn;
 
-    public LinearNeighbourIteratorBuilder(KnnLoocv knn) {
+    public LinearNeighbourIteratorBuilder(KNNLOOCV knn) {
         this.knn = knn;
     }
 
@@ -20,16 +20,16 @@ public class LinearNeighbourIteratorBuilder
 
     }
 
-    public KnnLoocv getKnn() {
+    public KNNLOOCV getKnn() {
         return knn;
     }
 
-    public void setKnn(KnnLoocv knn) {
+    public void setKnn(KNNLOOCV knn) {
         this.knn = knn;
     }
 
     @Override
-    public Iterator<Knn.NeighbourSearcher> build() {
+    public Iterator<KNN.NeighbourSearcher> build() {
         if(knn == null) throw new IllegalStateException("knn not set");
         return new LinearListIterator<>(new ArrayList<>(knn.getSearchers()));
     }

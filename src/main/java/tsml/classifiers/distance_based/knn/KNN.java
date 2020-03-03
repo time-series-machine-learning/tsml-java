@@ -28,7 +28,7 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
  * Change history:
  *  27/2/20 - goastler - overhaul to fix test seeding + interfaces
  */
-public class Knn extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
+public class KNN extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
                                                                StopWatchTrainTimeable  {
 
     private static String getKFlag() {
@@ -183,11 +183,11 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
-    public Knn() {
+    public KNN() {
         super(false);
     }
 
-    public Knn(DistanceFunction df) {
+    public KNN(DistanceFunction df) {
         this();
         setDistanceFunction(df);
     }
@@ -340,7 +340,7 @@ public class Knn extends EnhancedAbstractClassifier implements Checkpointable, G
         int seed = 0;
         Instances[] data = sampleGunPoint(seed);
         Instances trainData = data[0];
-        Knn classifier = new Knn(new DTWDistance(trainData.numAttributes() - 1));
+        KNN classifier = new KNN(new DTWDistance(trainData.numAttributes() - 1));
         classifier.setSeed(0);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
         System.out.println(results.writeSummaryResultsToString());

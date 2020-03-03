@@ -2,8 +2,7 @@ package tsml.classifiers.distance_based.ee;
 
 import com.google.common.collect.ImmutableList;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
-import tsml.classifiers.distance_based.knn.configs.IncKnnTunerSetup;
-import tsml.classifiers.distance_based.knn.configs.KnnTag;
+import tsml.classifiers.distance_based.knn.configs.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import weka.classifiers.Classifier;
 
@@ -13,8 +12,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static tsml.classifiers.distance_based.knn.configs.KnnConfig.*;
-import static tsml.classifiers.distance_based.knn.configs.KnnConfig.TUNED_TWED_1NN_V2;
+import static tsml.classifiers.distance_based.knn.configs.KNNConfig.*;
+import static tsml.classifiers.distance_based.knn.configs.KNNConfig.TUNED_TWED_1NN_V2;
 
 public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
     EE_V1(EeConfig::buildEeV1, KnnTag.UNIVARIATE, KnnTag.DISTANCE, KnnTag.SIMILARITY),
@@ -109,36 +108,36 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
         return buildEeV2(); // todo turn off full ee?
     }
 
-    private static Ee forEachTunedConstituent(Ee ee, Consumer<IncKnnTunerSetup> consumer) {
+    private static Ee forEachTunedConstituent(Ee ee, Consumer<RLTunedKNNSetup> consumer) {
         for(Classifier classifier : ee.getConstituents()) {
             if(!(classifier instanceof RLTunedClassifier)) {
                 continue;
             }
             RLTunedClassifier tuner = (RLTunedClassifier) classifier;
-            IncKnnTunerSetup config = (IncKnnTunerSetup) tuner.getTrainSetupFunction();
+            RLTunedKNNSetup config = (RLTunedKNNSetup) tuner.getTrainSetupFunction();
             consumer.accept(config);
         }
         return ee;
     }
 
     public static Ee setLimitedParameters(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimit(limit));
+        return forEachTunedConstituent(ee, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimit(limit));
     }
 
     public static Ee setLimitedParametersPercentage(Ee ee, double limit) {
-        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimitPercentage(limit));
+        return forEachTunedConstituent(ee, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setLimitedNeighbours(Ee ee, int limit) {
-        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setNeighbourhoodSizeLimit(limit));
+        return forEachTunedConstituent(ee, RLTunedKNNSetup -> RLTunedKNNSetup.setNeighbourhoodSizeLimit(limit));
     }
 
     public static Ee setLimitedNeighboursPercentage(Ee ee, double limit) { // todo params from cmdline in experiment + append to cls name
-        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setParamSpaceSizeLimitPercentage(limit));
+        return forEachTunedConstituent(ee, RLTunedKNNSetup -> RLTunedKNNSetup.setParamSpaceSizeLimitPercentage(limit));
     }
 
     public static Ee setTrainSelectedBenchmarksFully(Ee ee, boolean state) { // todo params from cmdline in experiment + append to cls name
-        return forEachTunedConstituent(ee, incKnnTunerSetup -> incKnnTunerSetup.setTrainSelectedBenchmarksFully(state));
+        return forEachTunedConstituent(ee, RLTunedKNNSetup -> RLTunedKNNSetup.setTrainSelectedBenchmarksFully(state));
     }
 
     private static Ee buildLee() {

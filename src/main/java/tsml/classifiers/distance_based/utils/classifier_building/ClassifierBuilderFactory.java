@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.ee.EeConfig;
-import tsml.classifiers.distance_based.knn.configs.KnnConfig;
+import tsml.classifiers.distance_based.knn.configs.KNNConfig;
 import weka.classifiers.Classifier;
 
 import java.util.*;
@@ -165,7 +165,7 @@ public class ClassifierBuilderFactory {
     }
 
     static {
-        getGlobalInstance().addAll(KnnConfig.all());
+        getGlobalInstance().addAll(KNNConfig.all());
         getGlobalInstance().addAll(EeConfig.all());
     }
 
