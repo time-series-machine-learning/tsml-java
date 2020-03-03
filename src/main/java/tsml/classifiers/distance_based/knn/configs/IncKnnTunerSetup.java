@@ -26,7 +26,7 @@ import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
 
-    private RLTuner incTunedClassifier = new RLTuner();
+    private RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
     private ParamSpace paramSpace;
     private Agent agent = null;
     private Iterator<ParamSet> paramSetIterator;
@@ -239,7 +239,7 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
     // todo param handling
 
-    public RLTuner build() {
+    public RLTunedClassifier build() {
         incTunedClassifier.setTrainSetupFunction(this);
         return incTunedClassifier;
     }
@@ -489,11 +489,11 @@ public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
         return explore;
     }
 
-    public RLTuner getIncTunedClassifier() {
+    public RLTunedClassifier getIncTunedClassifier() {
         return incTunedClassifier;
     }
 
-    public IncKnnTunerSetup setIncTunedClassifier(final RLTuner incTunedClassifier) {
+    public IncKnnTunerSetup setIncTunedClassifier(final RLTunedClassifier incTunedClassifier) {
         this.incTunedClassifier = incTunedClassifier;
         return this;
     }

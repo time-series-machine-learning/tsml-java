@@ -1,10 +1,10 @@
 package tsml.classifiers.distance_based.ee;
 
 import com.google.common.collect.ImmutableList;
-import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory;
-import machine_learning.classifiers.tuned.incremental.IncTuner;
+import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 import tsml.classifiers.distance_based.knn.configs.IncKnnTunerSetup;
 import tsml.classifiers.distance_based.knn.configs.KnnTag;
+import tsml.classifiers.distance_based.rltuning.RLTunedClassifier;
 import weka.classifiers.Classifier;
 
 import java.util.Arrays;
@@ -111,10 +111,10 @@ public enum EeConfig implements ClassifierBuilderFactory.ClassifierBuilder {
 
     private static Ee forEachTunedConstituent(Ee ee, Consumer<IncKnnTunerSetup> consumer) {
         for(Classifier classifier : ee.getConstituents()) {
-            if(!(classifier instanceof RLTuner)) {
+            if(!(classifier instanceof RLTunedClassifier)) {
                 continue;
             }
-            RLTuner tuner = (RLTuner) classifier;
+            RLTunedClassifier tuner = (RLTunedClassifier) classifier;
             IncKnnTunerSetup config = (IncKnnTunerSetup) tuner.getTrainSetupFunction();
             consumer.accept(config);
         }

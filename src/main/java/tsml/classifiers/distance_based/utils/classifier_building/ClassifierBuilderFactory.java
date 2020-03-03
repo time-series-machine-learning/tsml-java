@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.ee.george_utils;
+package tsml.classifiers.distance_based.utils.classifier_building;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

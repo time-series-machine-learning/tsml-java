@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.knn.configs;
 
-import tsml.classifiers.distance_based.ee.george_utils.ClassifierBuilderFactory;
+import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 
 public enum KnnTag implements ClassifierBuilderFactory.Tag {
     UNIVARIATE,
