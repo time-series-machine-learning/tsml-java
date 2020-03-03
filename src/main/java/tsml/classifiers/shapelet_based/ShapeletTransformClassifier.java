@@ -28,9 +28,6 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import utilities.InstanceTools;
-import machine_learning.classifiers.ensembles.CAWPE;
-import weka.classifiers.meta.OptimisedRotationForest;
-import weka.classifiers.meta.RotationForest;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
@@ -83,13 +80,16 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
      * If this is zero and no contract time is set, a full evaluation is done.
       */
+    private long contractTime = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
+    private long transformContractTime = 0;//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
+    private boolean contractClassifier=true;
+    private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
+
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
-    private long transformBuildTime;
     private double singleShapeletTime=0;    //Estimate of the time to evaluate a single shapelet
     private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
     private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
-    private long totalTimeLimit = 0; //Time limit for transform + classifier, fixed by user
-    private long transformTimeLimit = 0;//Time limit assigned to transform, based on totalTimeLimit, but fixed in buildClassifier in an adhoc way
+    private long transformBuildTime=0;
 
 /************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
 //Check pointing is not fully debugged
@@ -113,8 +113,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     public ShapeletTransformClassifier(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         configureDefaultShapeletTransform();
-        RotationForest rotf=new RotationForest();
-        rotf.setNumIterations(200);
+        ContractRotationForest rotf=new ContractRotationForest();
+        rotf.setMaxNumTrees(200);
         classifier=rotf;
 
 
@@ -131,8 +131,16 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
-        transformTimeLimit=(long)((((double) totalTimeLimit)*2.0)/3.0);
-//       Full set up of configs to match published. Note these will reset
+//All in nanos
+        if(contractClassifier) {
+            transformContractTime = contractTime * 2 / 3;
+            classifierContractTime = contractTime - transformContractTime;
+        }
+        else{
+            transformContractTime = contractTime;
+            classifierContractTime=0;
+        }
+//       Full set up of configs to match published. Note these will reset other parameters to their default
 //      to the default, so user set parameters prior to this point will be overwritten,
         switch(sConfig){
             case BAKEOFF:
@@ -148,9 +156,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
 //Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
 //This is done by estimating the time to evaluate a single shapelet then extrapolating (not in aarons way)
-        if(transformTimeLimit>0) {
-            printLineDebug(" Contract time limit = "+transformTimeLimit);
-            configureTrainTimeContract(data, transformTimeLimit);
+        if(transformContractTime >0) {
+            printLineDebug(" Contract time limit = "+ transformContractTime);
+            configureTrainTimeContract(data, transformContractTime);
         }
         //This is hacked to build a cShapeletTransform
         transform= constructShapeletTransform(data);
@@ -159,11 +167,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //The cConfig CONTRACT option is currently hacked into buildTransfom. here for now
 //        if(transform instanceof cShapeletFilter)
 //            ((cShapeletFilter)transform).setContractTime(transformTimeLimit);
-        if(transformTimeLimit>0) {
+        if(transformContractTime >0) {
 //            long numberOfShapeletsPerSeries=numShapeletsInProblem/data.numInstances();
-            double timePerShapelet=transformTimeLimit/numShapeletsToEvaluate;
+            double timePerShapelet= transformContractTime /numShapeletsToEvaluate;
             printLineDebug("Total shapelets per series "+numShapeletsInProblem/data.numInstances()+" num to eval = "+numShapeletsToEvaluate/data.numInstances());
-            transform.setContractTime(transformTimeLimit);
+            transform.setContractTime(transformContractTime);
             transform.setAdaptiveTiming(true);
             transform.setTimePerShapelet(timePerShapelet);
             printLineDebug(" Time per shapelet = "+timePerShapelet);
@@ -174,20 +182,16 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
-        printLineDebug("SECONDS:Transform contract =" +(transformTimeLimit/1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/transformTimeLimit)));
+        printLineDebug("SECONDS:Transform contract =" +(transformContractTime /1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/ transformContractTime)));
         printLineDebug(" Transform getParas  ="+transform.getParameters());
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets)
             saveShapeletData(data);
-        long classifierTime= totalTimeLimit -transformBuildTime;
-        if(classifier instanceof TrainTimeContractable)
-            ((TrainTimeContractable)classifier).setTrainTimeLimit(classifierTime);
-//Here get the train estimate directly from classifier using cv for now
 
 
         printLineDebug("Starting STC build classifier ......");
         if(getEstimateOwnPerformance()){
-// if the classifier can estimate its own performance, do that
+// if the classifier can estimate its own performance, do that. This is not yet in the time contract!
 //            if(classifier instanceof EnhancedAbstractClassifier)
             printLineDebug("Doing a CV to estimate accuracy");
             int numCVFolds=10;
@@ -198,7 +202,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             trainResults = cv.crossValidateWithStats(classifier, shapeletData);
         }
 
-
+        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
+        }
+//Here get the train estimate directly from classifier using cv for now
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
@@ -464,17 +471,19 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     public String getParameters(){
         String paras=transform.getShapeletCounts();
         //Build time info
-        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ totalTimeLimit+",transformTimeContract,"+ transformTimeLimit;
+        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ contractTime +",transformTimeContract,"+ transformContractTime;
         //Shapelet numbers and contract info
         str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
         //transform config
         str+=",SearchType,"+searchType;
         str+=","+transformOptions.toString();
         str+=",ConfigSetup,"+sConfig;
+        str+=","+paras;
+        str+=",Classifier,"+classifier.getClass().getSimpleName();
         String classifierParas="No Classifier Para Info";
         if(classifier instanceof EnhancedAbstractClassifier)
             classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
-        str+=","+paras+","+classifierParas;
+        str+=","+classifierParas;
         return str;
     }
 
@@ -484,7 +493,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      */
     public String getTransformParameters(){
         String paras=transform.getShapeletCounts();
-        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ totalTimeLimit+",transformTimeContract,"+ transformTimeLimit;
+        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ contractTime +",transformTimeContract,"+ transformContractTime;
         //Shapelet numbers and contract info
         str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
         //transform config
@@ -500,31 +509,35 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     }
 
 
+    public void setTrainTimeLimit(long amount) {
+        contractTime = amount;
+    }
+/*    I think this is now redundant, default method in TrainTimeContractable does this
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTrainTimeLimit(TimeUnit time, long amount) {
         //min,hour,day converted to nanosecs.
         switch(time){
             case NANOSECONDS:
-                totalTimeLimit = amount;
+                contractTime = amount;
                 break;
             case SECONDS:
-                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
+                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
                 break;
             case MINUTES:
-                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
+                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
                 break;
             case HOURS:
-                totalTimeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
+                contractTime = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
                 break;
             case DAYS:
-                totalTimeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
+                contractTime = ShapeletTransformTimingUtilities.dayNano * amount;
                 break;
             default:
                 throw new InvalidParameterException("Invalid time unit");
         }
     }
-
+*/
     public void setNumberOfShapeletsToEvaluate(long numS){
         numShapeletsToEvaluate = numS;
     }
@@ -572,7 +585,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         numShapeletsToEvaluate =st.numShapeletsToEvaluate;
         seed =st.seed;
         seedClassifier=st.seedClassifier;
-        totalTimeLimit =st.totalTimeLimit;
+        contractTime =st.contractTime;
 
         
     }
@@ -636,7 +649,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         long t1= System.currentTimeMillis();
 
         st.configureDefaultShapeletTransform();
-        st.configureTrainTimeContract(train,st.totalTimeLimit);
+        st.configureTrainTimeContract(train,st.contractTime);
         Instances stTrain=st.transform.fitTransform(train);
         long t2= System.currentTimeMillis();
         System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");
