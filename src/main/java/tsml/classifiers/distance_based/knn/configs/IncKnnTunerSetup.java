@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.knn.configs;
 
 import evaluation.storage.ClassifierResults;
+import java.util.function.Consumer;
 import machine_learning.classifiers.tuned.incremental.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
@@ -12,7 +13,6 @@ import utilities.iteration.LinearListIterator;
 import utilities.iteration.RandomListIterator;
 import utilities.params.ParamSet;
 import utilities.params.ParamSpace;
-import utilities.serialisation.SerConsumer;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 import static utilities.collections.Utils.replace;
 
-public class IncKnnTunerSetup implements SerConsumer<Instances> {
+public class IncKnnTunerSetup implements Consumer<Instances>, Serializable {
 
 
     private IncTuner incTunedClassifier = new IncTuner();

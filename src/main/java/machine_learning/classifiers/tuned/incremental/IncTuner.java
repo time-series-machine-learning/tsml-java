@@ -2,11 +2,12 @@ package machine_learning.classifiers.tuned.incremental;
 
 import com.google.common.primitives.Doubles;
 import evaluation.storage.ClassifierResults;
+import java.io.Serializable;
+import java.util.function.Consumer;
 import tsml.classifiers.*;
 import utilities.*;
 import utilities.params.ParamHandler;
 import utilities.params.ParamSet;
-import utilities.serialisation.SerConsumer;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -64,6 +65,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
 
     public IncTuner() {
         super(true);
+        setTrainSetupFunction(instances -> {});
     }
 
     public boolean isLogBenchmarks() {
@@ -105,7 +107,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     protected transient Set<EnhancedAbstractClassifier> benchmarks = new HashSet<>();
     protected Ensembler ensembler = Ensembler.byScore(benchmark -> benchmark.getTrainResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected SerConsumer<Instances> trainSetupFunction = instances -> {};
+    protected Consumer<Instances> trainSetupFunction;
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected StopWatch trainEstimateTimer = new StopWatch();
@@ -236,7 +238,7 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
     @Override public void setParams(final ParamSet params) {
         TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction, SerConsumer.class); //
+        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction, Consumer.class); //
         // todo
         // finish params
     }
@@ -649,11 +651,14 @@ public class IncTuner extends EnhancedAbstractClassifier implements TrainTimeCon
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), testRand);
     }
 
-    public SerConsumer<Instances> getTrainSetupFunction() {
+    public Consumer<Instances> getTrainSetupFunction() {
         return trainSetupFunction;
     }
 
-    public void setTrainSetupFunction(final SerConsumer<Instances> trainSetupFunction) {
+    public void setTrainSetupFunction(Consumer<Instances> trainSetupFunction) {
+        if((trainSetupFunction instanceof Serializable)) {
+            trainSetupFunction = (Serializable & Consumer<Instances>) trainSetupFunction::accept;
+        }
         this.trainSetupFunction = trainSetupFunction;
     }
 
