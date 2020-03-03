@@ -19,7 +19,17 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.utils.Stated;
+import tsml.classifiers.distance_based.utils.StopWatch;
 
+/**
+ * Purpose: watch the memory whilst enabled, tracking the mean, std dev, count, gc time and max mem usage.
+ *
+ * Note, most methods in this class are synchronized as the garbage collection updates come from another thread,
+ * therefore all memory updates come from another thread and must be synced.
+ *
+ * Contributors: goastler
+ */
 public class MemoryWatcher extends Stated implements Loggable, Serializable, MemoryWatchable {
 
     public synchronized long getMaxMemoryUsageInBytes() {
@@ -28,11 +38,18 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
 
     private long maxMemoryUsageBytes = -1;
     private long count = 0;
+    // must store the squared diff from the mean as big decimal as this number gets reallyyyyyyy big over time.
+    // Downside is of course computation time, but given the updates are done on another thread this shouldn't impact
+    // the main thread performance.
     private BigDecimal sqDiffFromMean = BigDecimal.ZERO;
     private double mean = 0;
     private long garbageCollectionTimeInMillis = 0;
     private transient Set<MemoryWatcher> listeners = new HashSet<>();
 
+    /**
+     * pass state changes to another MemoryWatcher.
+     * @param other
+     */
     public void addListener(MemoryWatcher other) {
         listeners.add(other);
         super.addListener(other);
@@ -43,6 +60,10 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         super.removeListener(other);
     }
 
+    /**
+     * enable if not already
+     * @return
+     */
     @Override public synchronized boolean enableAnyway() {
         if(super.enableAnyway() && !isEmittersSetup()) {
             setupEmitters();
@@ -55,6 +76,10 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return super.enable();
     }
 
+    /**
+     * disable if not already
+     * @return
+     */
     @Override public synchronized boolean disableAnyway() {
         return super.disableAnyway();
     }
@@ -68,12 +93,16 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         reset();
         enable();
     }
-    // todo redundancy between this and StopWatch
+    // todo redundancy between this and StopWatch. We can combine the reset funcs.
     public void resetAndDisable() {
         disableAnyway();
         reset();
     }
 
+    /**
+     * emitters are used to listen to each memory pool (usually young / old gen). This function sets up the emitters
+     * if not already
+     */
     private synchronized void setupEmitters() {
         if(emitters == null) {
             emitters = new ArrayList<>();
@@ -90,6 +119,9 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         }
     }
 
+    /**
+     * tear down emitters
+     */
     private synchronized void tearDownEmitters() {
         if(emitters != null) {
             logger.finest("tearing down listeners for garbage collection");
@@ -103,12 +135,23 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         }
     }
 
+    /**
+     * just check whether we're listening to memory updates
+     * @return
+     */
     private synchronized boolean isEmittersSetup() {
         return emitters != null;
     }
 
+    // the list of emitters. They're transient as there's no point in storing emitters for a previous setup in storage.
     private transient List<NotificationEmitter> emitters;
 
+    /**
+     * deserialise and setup emitters
+     * @param in
+     * @throws ClassNotFoundException
+     * @throws IOException
+     */
     private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
     {
         try {
@@ -122,6 +165,9 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
 
     private interface SerNotificationListener extends NotificationListener, Serializable {}
 
+    /**
+     * the memory update listener
+     */
     private final SerNotificationListener listener = (notification, handback) -> {
         synchronized(MemoryWatcher.this) {
             if(isEnabled()) {
@@ -155,6 +201,10 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return count > 0;
     }
 
+    /**
+     * update the stats by adding stats from another instance
+     * @param other
+     */
     public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
         maxMemoryUsageBytes = other.getMaxMemoryUsageInBytes();
         garbageCollectionTimeInMillis += other.getGarbageCollectionTimeInMillis();
@@ -196,8 +246,10 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         }
     }
 
-
-
+    /**
+     * update stats from a usage reading. Beware, this is unchecked so will ignore state requirements
+     * @param usage
+     */
     private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
         logger.finest(() -> "memory reading: " + usage);
         maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
@@ -211,11 +263,15 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
             double deltaAfter = usage - mean; // note the mean has changed so this isn't the same as deltaBefore
             BigDecimal bigDeltaBefore = BigDecimal.valueOf(deltaBefore);
             BigDecimal bigDeltaAfter = BigDecimal.valueOf(deltaAfter);
-            BigDecimal sqDiff = bigDeltaBefore.multiply(bigDeltaAfter);
+            BigDecimal sqDiff = bigDeltaBefore.multiply(bigDeltaAfter); // square diff from the mean
             sqDiffFromMean = sqDiffFromMean.add(sqDiff);
         }
     }
 
+    /**
+     * checked reading
+     * @param usage
+     */
     private synchronized void addMemoryUsageReadingInBytes(double usage) {
         if(isEnabled()) {
             addMemoryUsageReadingInBytesUnchecked(usage);
@@ -318,6 +374,12 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return logger;
     }
 
+    /**
+     * this cleans the memory by forcing the garbage collector invokation. Guava's finalization tools not only invoke
+     * the gc but also create a weak ref and continue to invoke the gc until said weak ref is cleaned up. The theory
+     * here is if the most recently created weak ref has been cleaned up, all older memory should have already been
+     * dealt with / cleaned up as matter of priority over the latest memory allocation.
+     */
     public void cleanup() {
         GcFinalization.awaitFullGc();
     }
