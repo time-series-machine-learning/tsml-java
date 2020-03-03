@@ -1635,9 +1635,6 @@ public class ClassifierResultsAnalysis {
 
         for (PerformanceMetric metric : metrics) {
             try {
-                if (metric.name.equalsIgnoreCase("TrainTimesBenchmarked"))
-                    System.out.println("boo");
-
                 Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
                 String[] classifierNames = asd.var1;
                 double[][] allResults = asd.var2;
@@ -1682,10 +1679,10 @@ public class ClassifierResultsAnalysis {
                         concat.append(c2name.replaceAll("_", "\\\\_"));
                         concat.append("'");
                         proxy.eval("labels = {" + concat.toString() + "};");
-
-                        System.out.println(sb.toString() + "];");
-                        System.out.println("labels = {" + concat.toString() + "}");
-                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"')");
+//
+//                        System.out.println(sb.toString() + "];");
+//                        System.out.println("labels = {" + concat.toString() + "}");
+//                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"')");
 
                         proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"')");
                         proxy.eval("clear");
