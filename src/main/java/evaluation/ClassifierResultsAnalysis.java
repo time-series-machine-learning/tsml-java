@@ -15,8 +15,6 @@
 package evaluation;
 
 import ResultsProcessing.MatlabController;
-import ResultsProcessing.ResultColumn;
-import ResultsProcessing.ResultTable;
 import evaluation.storage.ClassifierResults;
 import evaluation.storage.ClassifierResultsCollection;
 import fileIO.OutFile;
@@ -1637,33 +1635,44 @@ public class ClassifierResultsAnalysis {
 
         for (PerformanceMetric metric : metrics) {
             try {
-                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
-                ResultTable rt = new ResultTable(ResultTable.createColumns(asd.var1, dsets, asd.var2));
+                if (metric.name.equalsIgnoreCase("TrainTimesBenchmarked"))
+                    System.out.println("boo");
 
-                int numClassiifers = rt.getColumns().size();
+                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
+                String[] classifierNames = asd.var1;
+                double[][] allResults = asd.var2;
+
+                int numClassifiers = allResults.length;
 
                 MatlabController proxy = MatlabController.getInstance();
 
-                for (int c1 = 0; c1 < numClassiifers-1; c1++) {
-                    for (int c2 = c1+1; c2 < numClassiifers; c2++) {
-                        String c1name = rt.getColumns().get(c1).getName();
-                        String c2name = rt.getColumns().get(c2).getName();
+                for (int c1 = 0; c1 < numClassifiers-1; c1++) {
+                    for (int c2 = c1+1; c2 < numClassifiers; c2++) {
+
+                        String c1name = classifierNames[c1];
+                        String c2name = classifierNames[c2];
+
+                        double[] c1res = allResults[c1];
+                        double[] c2res = allResults[c2];
 
                         if (c1name.compareTo(c2name) > 0) {
                             String t = c1name;
                             c1name = c2name;
                             c2name = t;
+
+                            double[] t2 = c1res;
+                            c1res = c2res;
+                            c2res = c1res;
                         }
 
                         String pwFolderName = outPath + c1name + "vs" + c2name + "/";
                         (new File(pwFolderName)).mkdir();
 
-                        List<ResultColumn> pwrl = new ArrayList<>(2);
-                        pwrl.add(rt.getColumn(c1name).get());
-                        pwrl.add(rt.getColumn(c2name).get());
-                        ResultTable pwrt = new ResultTable(pwrl);
-
-                        proxy.eval("array = ["+ pwrt.toStringValues(false) + "];");
+                        StringBuilder sb = new StringBuilder("array = [");
+                        for (int i = 0; i < dsets.length; i++) {
+                            sb.append(c1res[i] + "," + c2res[i] + ";");
+                        }
+                        proxy.eval(sb.toString() + "];");
 
                         final StringBuilder concat = new StringBuilder();
                         concat.append("'");
@@ -1674,9 +1683,9 @@ public class ClassifierResultsAnalysis {
                         concat.append("'");
                         proxy.eval("labels = {" + concat.toString() + "};");
 
-//                        System.out.println("array = ["+ pwrt.toStringValues(false) + "];");
-//                        System.out.println("labels = {" + concat.toString() + "}");
-//                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, statName).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+statName+"')");
+                        System.out.println(sb.toString() + "];");
+                        System.out.println("labels = {" + concat.toString() + "}");
+                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"')");
 
                         proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"')");
                         proxy.eval("clear");
