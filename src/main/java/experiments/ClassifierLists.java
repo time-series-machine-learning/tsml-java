@@ -162,7 +162,8 @@ public class ClassifierLists {
             "Wise-FBcS-BOSS","Wise2-FBcS-BOSS","Logistic-FBcS-BOSS","FCNN-BcS-BOSS","HI-FCNN-BcS-BOSS",
             "HI-LimitFCNN-BcS-BOSS","HI-SLimitFCNN-BcS-BOSS","HI-CompFCNN-BcS-BOSS",
             "IGB-BcS-BOSS","Anova-BcS-BOSS","MFT-BcS-BOSS","DFT-BcS-BOSS","AnovaMFT-BcS-BOSS","AnovaIGB-BcS-BOSS",
-            "pIGB-BcS-BOSS","pAnova-BcS-BOSS","pAnovaIGB-BcS-BOSS"};
+            "pIGB-BcS-BOSS","pAnova-BcS-BOSS","pAnovaIGB-BcS-BOSS","HI-SLimitFCNN-pIGB-BcS-BOSS","HI-pIGB-BcS-BOSS",
+            "HI-100pIGB-BcS-BOSS","HI-100pAnovaIGB-BcS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -368,6 +369,40 @@ public class ClassifierLists {
                 ((cBOSSSP) c).chiLimits = new double[]{0};
                 ((cBOSSSP) c).useAnova = new boolean[]{true, false};
                 ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                break;
+
+            case "HI-SLimitFCNN-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).FCNN = true;
+                ((cBOSSSP) c).FCNNsoftlimit = 100;
+                ((cBOSSSP) c).histogramIntersection = true;
+
+                //((cBOSSSP) c).bigrams = true;
+                //((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                //((cBOSSSP) c).tuneWeight = true;
+                break;
+            case "HI-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                break;
+            case "HI-100pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).initialRandomParameters = 100;
+                break;
+            case "HI-100pAnovaIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).initialRandomParameters = 100;
                 break;
 
 

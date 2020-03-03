@@ -116,7 +116,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
-    private int initialRandomParameters = 50;
+    public int initialRandomParameters = 50;
     private int[] initialParameterCount;
     private Instances[] parameterPool;
     private Instances[] prevParameters;
