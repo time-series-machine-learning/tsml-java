@@ -5,18 +5,40 @@ import weka.core.OptionHandler;
 import java.util.*;
 import java.util.function.Consumer;
 
+/**
+ * Purpose: handle generic options for a class. These may be in the form of a String[] (weka style), List<String> or
+ * bespoke ParamSet / ParamSpace themselves.
+ *
+ * You must override the getParams() and setParams() functions. These will be automatically transformed into list /
+ * array format for compatibility with non-bespoke non-ParamSet / ParamSpace code.
+ *
+ * Contributors: goastler
+ */
 public interface ParamHandler
     extends OptionHandler {
 
+    /**
+     * get the options array
+     * @return
+     */
     @Override
     default String[] getOptions() {
         return getOptionsList().toArray(new String[0]);
     }
 
+    /**
+     * get the options list.
+     * @return
+     */
     default List<String> getOptionsList() {
         return getParams().getOptionsList();
     }
 
+    /**
+     * set options via list.
+     * @param options
+     * @throws Exception
+     */
     default void setOptionsList(List<String> options) throws
                                                       Exception {
         ParamSet params = new ParamSet();
@@ -24,6 +46,11 @@ public interface ParamHandler
         setParams(params);
     }
 
+    /**
+     * set options via array.
+     * @param options the list of options as an array of strings
+     * @throws Exception
+     */
     @Override
     default void setOptions(String[] options) throws
                                       Exception {
@@ -43,7 +70,15 @@ public interface ParamHandler
         return new ParamSet();
     }
 
-    // todo some kind of check against listparams to ensure it's settable
+    /**
+     * Set parameter using name, a setter and a class type of the parameter. This is a utility method so you don't
+     * have to keep typing out the parameter propogation code every time you set a parameter from options.
+     * @param params
+     * @param name
+     * @param setter
+     * @param clazz
+     * @param <A>
+     */
     static <A> void setParam(ParamSet params, String name, Consumer<A> setter, Class<? extends A> clazz) {
         List<Object> paramSets = params.get(name);
         if(paramSets == null) {
@@ -59,6 +94,12 @@ public interface ParamHandler
         throw new UnsupportedOperationException("param list not specified");
     }
 
+    /**
+     * set a parameter to a ParamSet. Parameters are propogated through that object to children, if any parameters
+     * are specified for the children.
+     * @param object
+     * @param paramSet
+     */
     static void setParams(Object object, ParamSet paramSet) {
         try {
             if(object instanceof ParamHandler) {

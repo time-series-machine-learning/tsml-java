@@ -8,6 +8,11 @@ import weka.core.OptionHandler;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
+/**
+ * Purpose: Iterate over several ParamSets whilst building a corresponding classifier for each one.
+ *
+ * Contributors: goastler
+ */
 public class ParamSetClassifierIterator extends TransformIterator<ParamSet, Classifier> {
     private Supplier<Classifier> classifierBuilder;
 

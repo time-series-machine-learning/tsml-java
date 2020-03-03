@@ -20,8 +20,14 @@ import utilities.Utilities;
 import utilities.collections.DefaultList;
 
 /**
- * holds a mapping of parameter names to their corresponding values, where the values are stored as a ParamValues object
- * to allow for sub parameter spaces.
+ * Purpose: holds a mapping of parameter names to their corresponding values, where the values are stored as a
+ * ParamValues object to allow for sub parameter spaces. Each ParamValues object stores a mapping of String (name) to
+ * ParamValues list. ParamValues holds a list of raw values and a list of ParamSpace, facilitating subspaces. This
+ * allows several values to share a sub space if required. As ParamSpace stores a list of ParamValues as the mapping,
+ * you could have some values which share sub space A and another set of values sharing sub space B, all mapped under
+ * the same parameter. This is designed to be very flexible to handle any parameter space situation.
+ * 
+ * Contributors: goastler
  */
 public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend list
 
@@ -52,8 +58,12 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
 
     }
 
-    // todo remove
+    // todo remove function
 
+    /**
+     * gets a list of the sizes of each parameter.
+     * @return
+     */
     public List<Integer> getBins() {
         List<Integer> bins = new ArrayList<>();
         Iterator<Map.Entry<String, List<ParamValues>>> iterator = paramsMap.entrySet().iterator();
@@ -68,6 +78,11 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
         return bins;
     }
 
+    /**
+     * gets a ParamSet for the corresponding index in the ParamSpace.
+     * @param index
+     * @return
+     */
     public ParamSet get(int index) {
         List<Integer> indices = ArrayUtilities.fromPermutation(index, getBins());
         int i = 0;
@@ -98,25 +113,55 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
         return param;
     }
 
+    /**
+     * finds the size of the parameter space.
+     * @return
+     */
     public int size() {
         return ArrayUtilities.numPermutations(getBins());
     }
 
+    /**
+     * add a parameter given ParamValues already setup.
+     * @param name
+     * @param param
+     * @return
+     */
     public ParamSpace add(String name, ParamValues param) {
         paramsMap.computeIfAbsent(name, k -> new ArrayList<>()).add(param);
         return this;
     }
 
+    /**
+     * add a parameter name mapping to several values.
+     * @param name
+     * @param values
+     * @return
+     */
     public ParamSpace add(String name, List<?> values) {
         add(name, new ParamValues(values));
         return this;
     }
 
+    /**
+     * add a parameter name mapping to several values, each sharing several sub spaces.
+     * @param name
+     * @param values
+     * @param params
+     * @return
+     */
     public ParamSpace add(String name, List<?> values, List<ParamSpace> params) {
         add(name, new ParamValues(values, params));
         return this;
     }
 
+    /**
+     * add a parameter name mapping of several values with a single shared sub space.
+     * @param name
+     * @param values
+     * @param params
+     * @return
+     */
     public ParamSpace add(String name, List<?> values, ParamSpace params) {
         add(name, values, new ArrayList<>(Collections.singletonList(params)));
         return this;
@@ -143,8 +188,8 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
      */
     public static class ParamValues {
 
-        private List<?> values = new ArrayList<>();
-        private List<ParamSpace> paramsList = new ArrayList<>();
+        private List<?> values = new ArrayList<>(); // raw values
+        private List<ParamSpace> paramsList = new ArrayList<>(); // sub spaces
 
         public ParamValues() {
         }
@@ -158,6 +203,10 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
             this(values, null); // no sub param space
         }
 
+        /**
+         * get the size of each parameter in the space, adding the raw values also.
+         * @return
+         */
         public List<Integer> getBins() {
             List<Integer> bins = new ArrayList<>();
             for(ParamSpace paramSets : paramsList) {
@@ -171,6 +220,11 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
             return ArrayUtilities.numPermutations(getBins());
         }
 
+        /**
+         * get the index of a value in the space.
+         * @param index
+         * @return
+         */
         public Object get(final int index) {
             List<Integer> indices = ArrayUtilities.fromPermutation(index, getBins());
             Object value = values.get(indices.get(indices.size() - 1));
