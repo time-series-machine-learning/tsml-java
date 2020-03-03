@@ -23,7 +23,7 @@ import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
-public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
+public class RLTunedClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
                                                                     StopWatchTrainTimeable,
                                                                     Checkpointable, Parallelisable {
 
@@ -67,7 +67,7 @@ public class RLTuner extends EnhancedAbstractClassifier implements TrainTimeCont
 
      */
 
-    public RLTuner() {
+    public RLTunedClassifier() {
         super(true);
         setTrainSetupFunction(instances -> {});
     }
