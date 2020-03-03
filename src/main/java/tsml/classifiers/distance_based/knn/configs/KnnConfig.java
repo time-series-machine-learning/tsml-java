@@ -6,7 +6,7 @@ import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuild
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory.ClassifierBuilder;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory.Tag;
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.rltuning.RLTunedClassifier;
+import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;

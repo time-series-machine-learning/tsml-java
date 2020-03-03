@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 import tsml.classifiers.distance_based.knn.configs.IncKnnTunerSetup;
 import tsml.classifiers.distance_based.knn.configs.KnnTag;
-import tsml.classifiers.distance_based.rltuning.RLTunedClassifier;
+import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import weka.classifiers.Classifier;
 
 import java.util.Arrays;

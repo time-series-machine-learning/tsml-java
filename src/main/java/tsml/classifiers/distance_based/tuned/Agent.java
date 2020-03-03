@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.rltuning;
+package tsml.classifiers.distance_based.tuned;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.collections.DefaultIterator;

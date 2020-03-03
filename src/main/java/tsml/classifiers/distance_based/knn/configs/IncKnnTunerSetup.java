@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn.configs;
 
 import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
-import tsml.classifiers.distance_based.rltuning.*;
+import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KnnLoocv;
 import tsml.classifiers.distance_based.utils.StopWatch;
