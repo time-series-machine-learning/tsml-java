@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
  * Interface that allows the user to impose a train time contract of a classifier that
     implements this interface
 
-known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
-* BOSS (check), TSF (check)
+known classifiers: ShapeletTransformClassifier, RISE (not tested) HIVE_COTE (partial),
+* BOSS, TSF , ContractRotationForest
  *
  * ********************************NOTES********************************
  * 1) contract time of <=0 means no contract!

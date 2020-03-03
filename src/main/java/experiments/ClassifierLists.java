@@ -15,7 +15,11 @@
 package experiments;
 
 
+import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
+import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.ee.Ee;
+import tsml.classifiers.distance_based.ee.EeConfig;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
@@ -121,7 +125,7 @@ public class ClassifierLists {
                 c = new ProximityForestWrapper();
                 break;
             case "ElasticEnsemble":
-                c=new ElasticEnsemble();
+                c= EeConfig.buildCeeV2();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -157,8 +161,6 @@ public class ClassifierLists {
         }
         return c;
     }
-
-
     /**
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
@@ -472,7 +474,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HC-NEWTEST"};
+    public static String[] bespoke= {"HIVE-COTE","TunedHIVE-COTE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -486,14 +488,10 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
-            case "HC-NEWTEST":
+            case "HIVE-COTE":
                 if(canLoadFromFile){
                     String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
                     c=new HIVE_COTE();
-//                    c=new CAWPE();
-//                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
-//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
-
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
                     ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
@@ -504,181 +502,28 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
-            case "HC-Alpha1":
+            case "TunedHIVE-COTE":
                 if(canLoadFromFile){
                     String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setWeightingScheme(new TrainAcc(1));
-//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-NewBOSS":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS-New","RISE","STC","EE"};//RotF for ST
-                    c=new CAWPE();
-//                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
-//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
-
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-NoEE":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC"};//RotF for ST
-                    c=new CAWPE();
-//                    ((CAWPE)c).setWeightingScheme(new TrainAcc(4));
-//                    ((CAWPE)c).setVotingScheme(new MajorityConfidence());
-
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
+                    HIVE_COTE hc=new HIVE_COTE();
+                    hc.setFillMissingDistsWithOneHotVectors(true);
+                    hc.setSeed(fold);
+                    hc.setBuildIndividualsFromResultsFiles(true);
+                    hc.setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    hc.setClassifiersNamesForFileRead(cls);
+                    TunedClassifier tuner=new TunedClassifier();
+                    tuner.setClassifier(hc);
+                    ParameterSpace pc=new ParameterSpace();
+                    double[] alphaVals={1,2,3,4,5,6,7,8,9,10};
+                    pc.addParameter("a",alphaVals);
+                    tuner.setParameterSpace(pc);
+                    c=tuner;
                 }
                 else
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
 
-            case "HC-SB":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","S-BOSS","RISE","STC","EE"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-NoEE-SB":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","S-BOSS","RISE","STC"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-WEASEL":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","WEASEL","RISE","STC","EE"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-PF-SB":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","S-BOSS","RISE","STC","ProximityForest"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-PF":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC","ProximityForest"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-//            "FullHC","FullHC-SB","FullHC-SB-PF"
-            case "FullHC":
-                ArrayList<Classifier> cls=new ArrayList<>();
-                cls.add(new TSF());
-                cls.add(new BOSS());
-                cls.add(new RISE());
-                cls.add(new ShapeletTransformClassifier());
-                cls.add(new ElasticEnsemble());
-                String[] clsNames={"TSF","BOSS","RISE","STC","ElasticEnsemble"};
-                ArrayList<String> names = new ArrayList<>(Arrays.asList(clsNames));
-                c=new HiveCote(cls,names);
-                ((HiveCote)c).setContract(4);
-                break;
-
-            case "FullHC-SB":
-                ArrayList<Classifier> cls2=new ArrayList<>();
-                cls2.add(new TSF());
-                cls2.add(new SpatialBOSS());
-                cls2.add(new RISE());
-                cls2.add(new ShapeletTransformClassifier());
-                cls2.add(new ElasticEnsemble());
-                String[] clsNames2={"TSF","S-BOSS","RISE","STC","ElasticEnsemble"};
-                ArrayList<String> names2 = new ArrayList<>(Arrays.asList(clsNames2));
-                c=new HiveCote(cls2,names2);
-                ((HiveCote)c).setContract(4);
-                break;
-            case "HC-Latest":
-                if(canLoadFromFile){
-                    clsNames2=new String[]{"TSF","S-BOSS","RISE","STC","PF"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(clsNames2);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
-            case "HC-Catch22TSF":
-                if(canLoadFromFile){
-                    String[] cls3={"Catch22TSF","BOSS","RISE","STC","EE"};//RotF for ST
-                    c=new CAWPE();
-                    ((CAWPE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((CAWPE)c).setSeed(fold);
-                    ((CAWPE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((CAWPE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((CAWPE)c).setClassifiersNamesForFileRead(cls3);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;
             default:
                 System.out.println("Unknown bespoke classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between bespokeClassifiers and the switch statement ");
@@ -704,12 +549,8 @@ public class ClassifierLists {
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        ClassifierBuilderFactory.ClassifierBuilder classifierBuilder =
-            ClassifierBuilderFactory.getGlobalInstance().getClassifierBuilderByName(classifier);
         Classifier c = null;
-        if(classifierBuilder != null) {
-            c = classifierBuilder.build();
-        } else if(distanceBased.contains(classifier))
+        if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
         else if(dictionaryBased.contains(classifier))
             c=setDictionaryBased(exp);
