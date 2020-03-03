@@ -13,6 +13,9 @@ public class PCA extends PrincipalComponents implements Transformer {
     int numAttributesToKeep=100;
     @Override
     public void fit(Instances data) {
+        if(data.numAttributes()-1<numAttributesToKeep)
+            numAttributesToKeep=data.numAttributes()-1;
+        setMaximumAttributes(numAttributesToKeep);
 
     }
 
