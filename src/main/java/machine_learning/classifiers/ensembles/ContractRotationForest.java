@@ -88,6 +88,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
 //Added features
+    long contractTime=0;
     double contractHours=0;    //Defaults to no contract
     protected ClassifierResults res;
     double estSingleTree;
@@ -357,7 +358,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             //  Update single tree estimate                
                 estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
            //Taking much longer than we thought!
-                if(estSingleTree*minNumTrees>contractHours)
+                if(contractHours>0 && estSingleTree*minNumTrees>contractHours)
                     buildFullTree=false;
                 else
                     buildFullTree=true;
@@ -1011,7 +1012,15 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     
     }
 
-
+    /**
+     * abstract method from TrainTimeContractable interface
+     * @param amount
+     */
+    @Override
+    public void setTrainTimeLimit(long amount) {
+        contractTime = amount;
+        contractHours=amount/1000000000/60/60;
+    }
   
   /**
    * Main method for testing this class.

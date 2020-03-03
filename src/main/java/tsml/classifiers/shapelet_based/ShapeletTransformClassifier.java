@@ -80,13 +80,16 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
      * If this is zero and no contract time is set, a full evaluation is done.
       */
+    private long contractTime = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
+    private long transformContractTime = 0;//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
+    private boolean contractClassifier=true;
+    private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
+
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
-    private long transformBuildTime;
     private double singleShapeletTime=0;    //Estimate of the time to evaluate a single shapelet
     private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
     private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
-    private long contractTime = 0; //Time limit for transform + classifier, fixed by user. If 0, no contract
-    private long transformContractTime = 0;//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
+    private long transformBuildTime=0;
 
 /************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
 //Check pointing is not fully debugged
@@ -128,8 +131,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
-//What units of time??
-        transformContractTime =(long)((((double) contractTime)*2.0)/3.0);
+//All in nanos
+        if(contractClassifier) {
+            transformContractTime = contractTime * 2 / 3;
+            classifierContractTime = contractTime - transformContractTime;
+        }
+        else{
+            transformContractTime = contractTime;
+            classifierContractTime=0;
+        }
 //       Full set up of configs to match published. Note these will reset other parameters to their default
 //      to the default, so user set parameters prior to this point will be overwritten,
         switch(sConfig){
@@ -177,16 +187,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets)
             saveShapeletData(data);
-        if(contractTime>0 && classifier instanceof TrainTimeContractable) {
-            long classifierTime = contractTime - transformBuildTime;
-            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierTime);
-        }
-//Here get the train estimate directly from classifier using cv for now
 
 
         printLineDebug("Starting STC build classifier ......");
         if(getEstimateOwnPerformance()){
-// if the classifier can estimate its own performance, do that
+// if the classifier can estimate its own performance, do that. This is not yet in the time contract!
 //            if(classifier instanceof EnhancedAbstractClassifier)
             printLineDebug("Doing a CV to estimate accuracy");
             int numCVFolds=10;
@@ -197,7 +202,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             trainResults = cv.crossValidateWithStats(classifier, shapeletData);
         }
 
-
+        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
+        }
+//Here get the train estimate directly from classifier using cv for now
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
@@ -470,10 +478,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         str+=",SearchType,"+searchType;
         str+=","+transformOptions.toString();
         str+=",ConfigSetup,"+sConfig;
+        str+=","+paras;
+        str+=",Classifier,"+classifier.getClass().getSimpleName();
         String classifierParas="No Classifier Para Info";
         if(classifier instanceof EnhancedAbstractClassifier)
             classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
-        str+=","+paras+","+classifierParas;
+        str+=","+classifierParas;
         return str;
     }
 
@@ -499,6 +509,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     }
 
 
+    public void setTrainTimeLimit(long amount) {
+        contractTime = amount;
+    }
+/*    I think this is now redundant, default method in TrainTimeContractable does this
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTrainTimeLimit(TimeUnit time, long amount) {
@@ -523,7 +537,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
                 throw new InvalidParameterException("Invalid time unit");
         }
     }
-
+*/
     public void setNumberOfShapeletsToEvaluate(long numS){
         numShapeletsToEvaluate = numS;
     }
