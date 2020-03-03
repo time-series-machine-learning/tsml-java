@@ -492,7 +492,7 @@ public class ClassifierLists {
                 c = new BayesNet();
                 break;
             case "ED":
-                c=new ED1NN();
+                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();;
                 break;
             case "C45":
                 c=new J48();
