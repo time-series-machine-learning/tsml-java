@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import utilities.generic_storage.Pair;
-import weka.classifiers.AbstractClassifier;
-import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import tsml.classifiers.distance_based.distances.legacy.DTW_DistanceBasic;
@@ -31,7 +29,7 @@ import static utilities.InstanceTools.findMinDistance;
  *
  * @author ABostrom
  */
-public class NN_DTW_A extends AbstractClassifier{
+public class NN_DTW_A extends MultivariateAbstractClassifier{
 
     Instances train;
     
@@ -53,16 +51,12 @@ public class NN_DTW_A extends AbstractClassifier{
         D.setR(R);
     }
     
-    
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
-        return result;
-    }
+
     
     @Override
     public void buildClassifier(Instances data) throws Exception{
+        testWithFailRelationalInstances(data);
+
         train = data;
         threshold = learnThreshold(train);
         System.out.println("threshold = " + threshold);
@@ -72,6 +66,7 @@ public class NN_DTW_A extends AbstractClassifier{
     
     @Override
     public double classifyInstance(Instance instance) throws Exception{
+        testWithFailRelationalInstance(instance);
         Pair<Instance, Double> minD = findMinDistance(train, instance, D);
         Pair<Instance, Double> minI = findMinDistance(train, instance, I);
         //System.out.println("minD = " + minD + "minI = " + minI);
