@@ -1,6 +1,6 @@
 package tsml.classifiers.multivariate;
 
-import tsml.classifiers.distance_based.distances.old.DTW_D;
+//import tsml.classifiers.distance_based.distances.old.DTW_D;
 import utilities.generic_storage.Pair;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.AbstractClassifier;
@@ -38,8 +38,8 @@ public abstract class MultivariateAbstractClassifier extends AbstractClassifier 
     }
 
     protected void testWithFailRelationalInstance(Instance data) throws Exception {
-            Instances group = MultivariateInstanceTools.splitMultivariateInstanceOnInstances(data);
-            getCapabilities().testWithFail(group);
+//            Instances group = MultivariateInstanceTools.splitMultivariateInstanceOnInstances(data);
+//            getCapabilities().testWithFail(group);
     }
 
 
