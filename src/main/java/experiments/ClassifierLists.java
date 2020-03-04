@@ -80,7 +80,7 @@ public class ClassifierLists {
 //Interval Based
             "LPS","TSF","cTSF",
 //Frequency Based
-            "RISE","cRISE",
+            "RISE",
 //Shapelet Based
             "FastShapelets","LearnShapelets","ShapeletTransformClassifier",
 //Hybrids
@@ -323,7 +323,7 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE","cRISE"};
+    public static String[] frequency= {"RISE"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -331,10 +331,6 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "RISE":
-                c=new tsml.classifiers.legacy.RISE();
-                ((tsml.classifiers.legacy.RISE) c).setTransforms("PS","ACF");
-                break;
-            case "cRISE":
                 c=new RISE();
                 break;
             default:
