@@ -26,7 +26,7 @@ import tsml.classifiers.multivariate.NN_ED_D;
 import tsml.classifiers.multivariate.NN_ED_I;
 import tsml.classifiers.multivariate.IndependentDimensionEnsemble;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.DTW1NN;
+import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.functions.SMO;

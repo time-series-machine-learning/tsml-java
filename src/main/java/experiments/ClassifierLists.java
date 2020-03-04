@@ -26,9 +26,9 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.frequency_based.cRISE;
-import tsml.classifiers.hybrids.legacy_cote.FlatCote;
-import tsml.classifiers.hybrids.legacy_cote.HiveCote;
+import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.legacy.COTE.FlatCote;
+import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.cTSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -36,7 +36,6 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.interval_based.LPS;
-import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
 import tsml.classifiers.multivariate.NN_DTW_A;
 import tsml.classifiers.multivariate.NN_DTW_D;
@@ -332,11 +331,11 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "RISE":
-                c=new RISE();
-                ((RISE) c).setTransforms("PS","ACF");
+                c=new tsml.classifiers.legacy.RISE();
+                ((tsml.classifiers.legacy.RISE) c).setTransforms("PS","ACF");
                 break;
             case "cRISE":
-                c=new cRISE();
+                c=new RISE();
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");
