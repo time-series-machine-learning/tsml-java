@@ -10,7 +10,7 @@ Number of Feature Subsets, K=
 Number of features in a subset: M = 3;
 Number of classifiers in the ensemble, L=
 
-Maybe try get the OOB errpr?
+Maybe try get the OOB error?
 the feature set is split randomly into K subsets, principal component analysis (PCA) is
 run separately on each subset, and a new set of n linear extracted features
 is constructed by pooling all principal components.

@@ -340,8 +340,8 @@ public class TSF extends EnhancedAbstractClassifier
         long t1=System.nanoTime();
 
         seriesLength = data.numAttributes()-1;
-
         numIntervals=numIntervalsFinder.apply(data.numAttributes()-1);
+        printDebug("Building TSF: number of intervals = "+numIntervals);
 //Set up instances size and format. 
         trees=new AbstractClassifier[numClassifiers];        
         ArrayList<Attribute> atts=new ArrayList<>();
@@ -378,6 +378,7 @@ public class TSF extends EnhancedAbstractClassifier
            inBag=new boolean[numClassifiers][];
            trainDistributions= new double[data.numInstances()][data.numClasses()];
            oobCounts=new int[data.numInstances()];
+           printLineDebug("TSF is using Bagging");
         }
          
         /** For each base classifier 
@@ -387,7 +388,10 @@ public class TSF extends EnhancedAbstractClassifier
          * */
         intervals =new int[numClassifiers][][];
         for(int i=0;i<numClassifiers;i++){
-        //1. Select random intervals for tree i
+            if(i%100==0)
+                printLineDebug("\t\t\t\t\tBuilding TSF tree "+i);
+
+            //1. Select random intervals for tree i
             intervals[i]=new int[numIntervals][2];  //Start and end
 
             if (data.numAttributes() - 1 < minIntervalLength)
@@ -599,10 +603,6 @@ public class TSF extends EnhancedAbstractClassifier
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-//        System.out.print("TSF para sets ");
-//        for (String str:options)
-//             System.out.print(","+str);
-//        System.out.print("\n");
         String numTreesString=Utils.getOption('T', options);
         if (numTreesString.length() != 0)
             numClassifiers = Integer.parseInt(numTreesString);
@@ -627,7 +627,6 @@ public class TSF extends EnhancedAbstractClassifier
                         else
                             numIntervalsFinder = (numAtts) -> (int)(d);
  
-//                        System.out.println("Proportion/number of intervals = "+d);
                  }
             }catch(Exception e){
                 System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
@@ -636,7 +635,7 @@ public class TSF extends EnhancedAbstractClassifier
             }
         }
         else
-            System.out.println("Unable to read number of intervals, not set");
+            throw new Exception("in setOptions Unable to read number of intervals, -T flag is not set");
     }
  
  

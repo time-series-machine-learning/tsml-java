@@ -16,8 +16,10 @@ package utilities;
 
 import tsml.classifiers.GcMemoryWatchable;
 import tsml.classifiers.StopWatchTrainTimeable;
-import utilities.collections.IntListView;
-import utilities.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.collections.IntListView;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializedObject;
