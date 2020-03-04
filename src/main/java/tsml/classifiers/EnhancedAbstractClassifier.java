@@ -14,10 +14,10 @@
  */
 package tsml.classifiers;
 
-import utilities.Copy;
-import utilities.Debugable;
-import utilities.LogUtils;
-import utilities.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.Copy;
+import tsml.classifiers.distance_based.utils.Debugable;
+import tsml.classifiers.distance_based.utils.LogUtils;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
@@ -81,10 +81,13 @@ ClassifierResults trainResults can also store other information about the traini
  * 
  * @author Tony Bagnall and James Large
  */
-abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
-                                                                                       TrainSeedable, Retrainable,
+abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements TrainEstimateable, SaveParameterInfo,
+                                                                                       Rebuildable,
+                                                                                       RebuildableTrainEstimateable,
                                                                                        Debugable, Loggable, Copy,
-                                                                                       ParamHandler, Serializable {
+                                                                                       Serializable,
+                                                                                       Randomizable, ParamHandler,
+                                                                                        Buildable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -92,16 +95,22 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
-    protected boolean rebuild = true;
-    protected boolean regenerateTrainEstimate = true;
+    // rebuild on buildClassifier?
+    private boolean rebuild = true;
+    // regenerate train estimate on buildClassifier?
+    private boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
-    protected transient Logger logger = LogUtils.getLogger(this);
+    private transient Logger logger = LogUtils.getLogger(this);
 
-    public Random getRand() {
+    @Override public boolean isBuilt() {
+        return !rebuild;
+    }
+
+    public Random getRandom() {
         return rand;
     }
 
-    public void setRand(Random rand) {
+    public void setRandom(Random rand) {
         this.rand = rand;
     }
 
@@ -156,17 +165,21 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
-    protected int numClasses = -1;
+    private int numClasses = -1;
+
+    public int getNumClasses() {
+        return numClasses;
+    }
 
     @Override public Logger getLogger() {
         return logger;
     }
 
-    @Override public boolean isRetrain() {
+    @Override public boolean isRebuild() {
         return rebuild;
     }
 
-    @Override public void setRetrain(final boolean rebuild) {
+    @Override public void setRebuild(final boolean rebuild) {
         this.rebuild = rebuild;
     }
 

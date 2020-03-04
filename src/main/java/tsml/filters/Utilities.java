@@ -11,7 +11,7 @@ import static utilities.Utilities.toInstances;
 public class Utilities {
     public static Instances filter(Instances data, Filter filter) throws
                                                                   Exception {
-        filter.setInputFormat(data);
+        filter.setInputFormat(new Instances(data, 0));
         return Filter.useFilter(data, filter);
     }
 
