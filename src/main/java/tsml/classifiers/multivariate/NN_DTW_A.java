@@ -14,15 +14,15 @@
  */
 package tsml.classifiers.multivariate;
 
-import tsml.classifiers.distance_based.distances.old.DTW_D;
-import tsml.classifiers.distance_based.distances.old.DTW_I;
+import tsml.classifiers.distance_based.distances.legacy.DTW_D;
+import tsml.classifiers.distance_based.distances.legacy.DTW_I;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import utilities.generic_storage.Pair;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.classifiers.distance_based.distances.old.DTW_DistanceBasic;
+import tsml.classifiers.distance_based.distances.legacy.DTW_DistanceBasic;
 import static utilities.InstanceTools.findMinDistance;
 
 /**
