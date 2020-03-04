@@ -5,7 +5,7 @@
 
 package tsml.classifiers.distance_based.distances.legacy;
 
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
+import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
