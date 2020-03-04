@@ -32,7 +32,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
 
     private DistanceFunction distanceFunction;
     private Filter transformer;
-    private String name;
+    private String name = super.getName();
 
     protected void setName(String name) {
         if(name == null) throw new NullPointerException();
