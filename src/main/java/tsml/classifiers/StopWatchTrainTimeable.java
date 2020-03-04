@@ -1,9 +1,11 @@
 package tsml.classifiers;
 
-import utilities.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.StopWatch;
 
 /**
- * Simple interface to defer TrainTimeable to StopWatch implementations.
+ * Purpose: simple interface to defer TrainTimeable to StopWatch implementations.
+ *
+ * Contributors: goastler
  */
 public interface StopWatchTrainTimeable extends TrainTimeable {
     default StopWatch getTrainTimer() {

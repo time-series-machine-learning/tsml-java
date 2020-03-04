@@ -1,7 +1,10 @@
 package tsml.classifiers;
 
-import utilities.MemoryWatcher;
-
+/**
+ * Purpose: get stats related to memory.
+ *
+ * Contributors: goastler
+ */
 public interface MemoryWatchable {
     long getMaxMemoryUsageInBytes();
     double getMeanMemoryUsageInBytes();

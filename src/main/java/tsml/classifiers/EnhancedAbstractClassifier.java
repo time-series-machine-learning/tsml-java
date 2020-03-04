@@ -14,11 +14,10 @@
  */
 package tsml.classifiers;
 
-import utilities.Copy;
-import utilities.Debugable;
-import utilities.LogUtils;
-import utilities.Randomised;
-import utilities.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.Copy;
+import tsml.classifiers.distance_based.utils.Debugable;
+import tsml.classifiers.distance_based.utils.LogUtils;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
@@ -29,6 +28,7 @@ import java.util.logging.Logger;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  *
@@ -86,7 +86,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
                                                                                        RebuildableTrainEstimateable,
                                                                                        Debugable, Loggable, Copy,
                                                                                        Serializable,
-                                                                                       Randomised, ParamHandler, Buildable {
+                                                                                       Randomizable, ParamHandler,
+                                                                                        Buildable {
         
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -94,7 +95,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
+    // rebuild on buildClassifier?
     private boolean rebuild = true;
+    // regenerate train estimate on buildClassifier?
     private boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
     private transient Logger logger = LogUtils.getLogger(this);
@@ -411,5 +414,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     @Override public void setOptions(final String[] options) throws Exception {
         ParamHandler.super.setOptions(options);
+    }
+    public void printDebug(String s){
+        if(debug)
+            System.out.print(s);
+    }
+    public void printLineDebug(String s){
+        if(debug)
+            System.out.println(s);
     }
 }
