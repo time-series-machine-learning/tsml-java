@@ -147,7 +147,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(DTW.getWarpingWindowFlag(), warpingWindow);
+        return super.getParams().add(DTW.getWarpingWindowFlag(), getWarpingWindow());
     }
 
     @Override

@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -75,5 +76,11 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
         data.add(ins);
     }
 
+    @Override public void setParams(final ParamSet param) {
 
+    }
+
+    @Override public ParamSet getParams() {
+        return new ParamSet();
+    }
 }
