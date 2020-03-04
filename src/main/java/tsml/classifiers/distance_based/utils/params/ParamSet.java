@@ -170,7 +170,7 @@ public class ParamSet implements ParamHandler {
             //                " \"" +
             StrUtils.join(", ", getOptions()) +
             //                " \""
-            +'}'
+            "}"
             ;
     }
 
