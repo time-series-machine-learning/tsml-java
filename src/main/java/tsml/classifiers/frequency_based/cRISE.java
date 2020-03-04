@@ -74,7 +74,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @date 19/02/19
  **/
 
-public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable{
+public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable{
 
     private int maxIntervalLength = 0;
     private int minIntervalLength = 16;
@@ -119,6 +119,11 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         super.setSeed((int)seed);
         timer = new Timer();
         this.setTransformType(TransformType.ACF_FFT);
+    }
+
+    @Override
+    public TechnicalInformation getTechnicalInformation() {
+        return null;
     }
 
     public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
@@ -715,6 +720,8 @@ public class cRISE extends EnhancedAbstractClassifier implements TrainTimeContra
         }
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
+        trainResults.setParas(getParameters());
+
     }
 
     private Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
