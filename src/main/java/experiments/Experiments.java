@@ -645,10 +645,8 @@ public class Experiments  {
      * is Actual Class, Predicted Class, Class probabilities
      *
      * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
-     * @return the accuracy of c on fold for problem given in train/test, or -1 on an error
+     * @return { trainResults, testResults }. trainResults shall contain timings even if the experiment did not call for train estimate generation, and therefore there are no predictions
      */
-
-
     public static ClassifierResults[] runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
 
         //if this is a parameter split run, train file name is defined by this
@@ -665,6 +663,7 @@ public class Experiments  {
         //we're going to write them out, to store at minimum the build times
         ClassifierResults trainResults = new ClassifierResults();
         ClassifierResults testResults = new ClassifierResults();
+        ClassifierResults[] experimentResults = null; // the combined container, to hold { train, test } on return
 
         long benchmark = findBenchmarkTime(expSettings);
 
@@ -674,7 +673,9 @@ public class Experiments  {
             ((Checkpointable) classifier).setSavePath(expSettings.supportingFilePath);
         }
 
-        ClassifierResults[] experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()};
+        // Latest point before 'actual' experimental work may start - setting up the memory monitor
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.installMonitor();
 
         try(FileUtils.FileLock trainLock = new FileUtils.FileLock(trainPath);
             FileUtils.FileLock testLock = new FileUtils.FileLock(testPath)) { // only if we have a lock on both the
@@ -703,21 +704,28 @@ public class Experiments  {
                 }
             }
 
-            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
+            // Training done, collect memory monitor results
+            // Need to wait for an update, otherwise very quick classifiers may not experience gc calls during training,
+            // or the monitor may not update in time before collecting the max
+            GcFinalization.awaitFullGc();
+            long maxMemory = memoryMonitor.getMaxMemoryUsed();
+
+            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either
-            //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
-            //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
+            //    a) timings and memory, if expSettings.generateErrorEstimateOnTrainSet == false
+            //    b) also full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
             if (expSettings.generateErrorEstimateOnTrainSet)
                 writeResults(expSettings, trainResults, trainPath, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
 
-            if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
+            if (expSettings.serialiseTrainedClassifier)
                 serialiseClassifier(expSettings, classifier);
 
             //And now evaluate on the test set, if this wasn't a single parameter fold
             if (expSettings.singleParameterID == null) {
+
                 //This is checked before the buildClassifier also, but
                 //a) another process may have been doing the same experiment
                 //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
@@ -732,6 +740,7 @@ public class Experiments  {
                     testResults.setBenchmarkTime(benchmark);
                     testResults.setBuildTime(trainResults.getBuildTime());
                     testResults.turnOnZeroTimingsErrors();
+                    testResults.setMemory(maxMemory);
 
                     LOGGER.log(Level.FINE, "Testing complete");
 
@@ -742,20 +751,17 @@ public class Experiments  {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(testPath);
                 }
-                experimentResults = new ClassifierResults[] { trainResults, testResults };
             }
-            else {
-                experimentResults = new ClassifierResults[] { trainResults, new ClassifierResults() }; //not
-                // error, but we dont
-                // have a test acc. just returning 0 for now
-            }
+
+            testResults.setMemory(maxMemory);
+
+            experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
             e.printStackTrace();
-            experimentResults = new ClassifierResults[] {new ClassifierResults(), new ClassifierResults()}; //error
-            // state
+            experimentResults = new ClassifierResults[] { null, null }; //error state
         }
         return experimentResults;
     }
@@ -780,7 +786,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
+    private static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, long maxMemory) throws Exception {
 
         /*
         if estimateacc { //want full predictions
@@ -812,6 +818,11 @@ public class Experiments  {
                 if (eac.getEstimateOwnPerformance()) {
                     ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
                     res.setBenchmarkTime(benchmarkTime);
+
+                    //set the mem too, if the classifier hasn't recorded it itself
+                    if (res.getMemory() == -1)
+                        res.setMemory(maxMemory);
+
                     return res;
                 }
                 else {
@@ -836,6 +847,10 @@ public class Experiments  {
                 trainResults.setBenchmarkTime(benchmarkTime);
             }
         }
+
+        //set the mem too, if the classifier hasn't recorded it itself
+        if (trainResults.getMemory() == -1L)
+            trainResults.setMemory(maxMemory);
 
         return trainResults;
     }
@@ -940,6 +955,13 @@ public class Experiments  {
     }
 
     public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws FileNotFoundException, IOException {
+        if (!(classifier instanceof Serializable)) {
+            LOGGER.log(Level.WARNING, "Serialisation of model requested, but classifier is not serialisable! " +
+                    "Classiifer name: " + expSettings.classifierName + ", java class: " + classifier.getClass().getName());
+
+            return;
+        }
+
         String filename = expSettings.supportingFilePath + expSettings.classifierName + "_" + expSettings.datasetName + "_" + expSettings.foldId + ".ser";
 
         LOGGER.log(Level.FINE, "Attempting classifier serialisation, to " + filename);
