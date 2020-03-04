@@ -21,7 +21,7 @@ import machine_learning.classifiers.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import tsml.classifiers.distance_based.distances.old.DTW_DistanceBasic;
+import tsml.classifiers.distance_based.distances.legacy.DTW_DistanceBasic;
 import weka.filters.SimpleBatchFilter;
 import tsml.filters.Cosine;
 import tsml.filters.Sine;

@@ -25,8 +25,6 @@ import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 
-import tsml.classifiers.distance_based.distances.Dtw;
-import tsml.classifiers.distance_based.knn.Knn;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
