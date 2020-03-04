@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.wddtw;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.filters.CachedFilter;
 import tsml.filters.Derivative;
 
@@ -33,5 +34,14 @@ public class WDDTWDistance extends TransformedDistanceMeasure implements WDTW {
     @Override
     public void setG(double g) {
         wdtw.setG(g);
+    }
+
+
+    @Override public ParamSet getParams() {
+        return wdtw.getParams(); // not including super params as we handle them manually in this class
+    }
+
+    @Override public void setParams(final ParamSet param) {
+        wdtw.setParams(param); // not including super params as we handle them manually in this class
     }
 }
