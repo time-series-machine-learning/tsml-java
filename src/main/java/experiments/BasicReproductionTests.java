@@ -74,7 +74,7 @@ public class BasicReproductionTests {
         tsClassifiers + "distance_based.ProximityForestWrapper",
         tsClassifiers + "distance_based.SlowDTW_1NN",
         
-        tsClassifiers + "frequency_based.cRISE",
+//        tsClassifiers + "frequency_based.cRISE",
 //        tsClassifiers + "hybrids.HIVE_COTE",
 
 //        tsClassifiers + "hybrids.FlatCote", 
