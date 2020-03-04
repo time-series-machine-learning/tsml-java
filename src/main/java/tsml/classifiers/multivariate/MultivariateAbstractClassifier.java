@@ -38,8 +38,8 @@ public abstract class MultivariateAbstractClassifier extends AbstractClassifier 
     }
 
     protected void testWithFailRelationalInstance(Instance data) throws Exception {
-//            Instances group = MultivariateInstanceTools.splitMultivariateInstanceOnInstances(data);
-//            getCapabilities().testWithFail(group);
+            Instances group = MultivariateInstanceTools.splitMultivariateInstanceOnInstances(data);
+            getCapabilities().testWithFail(group);
     }
 
 
