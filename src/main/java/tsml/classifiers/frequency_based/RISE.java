@@ -48,6 +48,9 @@ import tsml.classifiers.Tuneable;
 import static experiments.data.DatasetLoading.loadDataNullable;
 
 /**
+ * This version is now here only for legacy reasons. The new version in tsml.classifiers.frequency_based is as accurate
+ * and *much* faster
+ *
  * Development code for RISE
  * 1. set number of trees to max(500,m)
  * 2. Set the first tree to the full interval
@@ -60,7 +63,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 * A2. Test whether we need all four components, particularly AR and PACF!
 * A3. Implement speed up to avoid recalculating ACF each time
 * A4. Compare to python version
-*
+* @author Tony Bagnall.
  <!-- globalinfo-start -->
  * Random Interval Spectral Ensemble
  *
@@ -300,7 +303,7 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
         startPoints =new int[numBaseClassifiers];
         endPoints =new int[numBaseClassifiers];
 //      TO DO  trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        long start=System.currentTimeMillis();
+        long start=System.nanoTime();
         //Option to sub sample for training
          if(subSample){
             data=subSample(data,sampleProp,seed);
@@ -378,7 +381,9 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
         if (getEstimateOwnPerformance())
             findTrainAcc(data);
 
-        trainResults.setBuildTime(System.currentTimeMillis()-start);
+        trainResults.setBuildTime(System.nanoTime()-start);
+        trainResults.setParas(getParameters());
+
     }
 
     private void findTrainAcc(Instances data){
