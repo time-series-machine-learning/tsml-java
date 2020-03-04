@@ -63,7 +63,8 @@ public interface ParamHandler
     }
 
     default void setParams(ParamSet param) {
-        throw new UnsupportedOperationException("param setting not supported");
+        throw new UnsupportedOperationException("param setting not supported. make sure you've overriden setParams " +
+                                                    "and getParams!");
     }
 
     default ParamSet getParams() {

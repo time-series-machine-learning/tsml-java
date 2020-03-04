@@ -8,6 +8,10 @@ Contributors: goastler
 */
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.wdtw.WDTW;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.filters.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -32,7 +36,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
 
     private DistanceFunction distanceFunction;
     private Filter transformer;
-    private String name;
+    private String name = getClass().getSimpleName();
 
     protected void setName(String name) {
         if(name == null) throw new NullPointerException();
@@ -83,5 +87,14 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Override public ParamSet getParams() {
+        return super.getParams().add(getTransformerFlag(), getTransformer()).add(DistanceMeasureable.getDistanceFunctionFlag(),
+                                                                  getDistanceFunction());
+    }
+
+    public static String getTransformerFlag() {
+        return "t";
     }
 }
