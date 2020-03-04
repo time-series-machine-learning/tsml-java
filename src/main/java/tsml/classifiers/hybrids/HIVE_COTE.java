@@ -26,7 +26,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.BOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
