@@ -88,7 +88,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
 //Added features
-    double contractHours=Double.MAX_VALUE;    //Defaults to effectively no contract
+    long contractTime=0;
+    double contractHours=0;    //Defaults to no contract
     protected ClassifierResults res;
     double estSingleTree;
     int numTrees=0;
@@ -326,7 +327,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         printLineDebug("Contract time ="+contractHours+" hours ");
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
-        if( (estSingleTree*minNumTrees)<contractHours){
+        if(contractHours==0 || (estSingleTree*minNumTrees)<contractHours){
             if(debug)
                 System.out.println("Think we are able to build at least 50 trees");
             boolean buildFullTree=true;
@@ -336,8 +337,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //            if(debug)
 //                System.out.println("Batch size = "+batchSize);
             long startBuild=System.currentTimeMillis(); 
-            while(timeUsed<contractHours && numTrees<maxNumTrees){
-                long sTime=System.currentTimeMillis();              
+            while((contractHours==0 || timeUsed<contractHours) && numTrees<maxNumTrees){
+                long singleTreeStartTime=System.currentTimeMillis();
                 if(buildFullTree)
                     size=m;
                 else{
@@ -352,12 +353,12 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             //Update time used
                 long newTime=System.currentTimeMillis(); 
                 timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
-                treeTime=(newTime-sTime)/(1000.0*60.0*60.0);
+                treeTime=(newTime-singleTreeStartTime)/(1000.0*60.0*60.0);
                 
             //  Update single tree estimate                
                 estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
            //Taking much longer than we thought!
-                if(estSingleTree*minNumTrees>contractHours)
+                if(contractHours>0 && estSingleTree*minNumTrees>contractHours)
                     buildFullTree=false;
                 else
                     buildFullTree=true;
@@ -1011,7 +1012,15 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     
     }
 
-
+    /**
+     * abstract method from TrainTimeContractable interface
+     * @param amount
+     */
+    @Override
+    public void setTrainTimeLimit(long amount) {
+        contractTime = amount;
+        contractHours=amount/1000000000/60/60;
+    }
   
   /**
    * Main method for testing this class.

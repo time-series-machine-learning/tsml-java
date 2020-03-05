@@ -14,10 +14,7 @@
  */
 package utilities.multivariate_tools;
 
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import tsml.filters.NormalizeCase;
 
 import java.util.ArrayList;
@@ -264,6 +261,8 @@ public class MultivariateInstanceTools {
         
         return output;
     }
+
+
     
     public static Instances[] resampleMultivariateInstances(Instances dataset, long seed, double prop){
         Instances[] data_channels = splitMultivariateInstances(dataset);
@@ -491,6 +490,28 @@ public class MultivariateInstanceTools {
       
       return mergeToMultivariateInstances(channels);
   }
-  
-  
+
+    //function that get a relational instance and return as a set of instances
+    public static Instances splitMultivariateInstanceOnInstances(Instance instance){
+        Instances output = new Instances("instance", new FastVector(numChannels(instance)),0);
+
+        for(int i=0; i< instance.relationalValue(0).numAttributes(); i++){
+            output.insertAttributeAt(new Attribute("attr" + i), 0);
+        }
+        for(int i=0; i< numChannels(instance); i++){
+            output.add(instance.relationalValue(0).get(i));
+        }
+        output.insertAttributeAt(new Attribute("class"), instance.relationalValue(0).numAttributes());
+        output.setClassIndex(output.numAttributes()-1);
+
+        for(int i=0; i< numChannels(instance); i++){
+            output.get(i).setClassValue(0);
+        }
+        return output;
+    }
+
+
+
+
+
 }

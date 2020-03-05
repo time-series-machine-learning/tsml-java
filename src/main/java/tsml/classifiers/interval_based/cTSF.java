@@ -16,9 +16,9 @@ package tsml.classifiers.interval_based;
 
 
 import java.io.*;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 
+import evaluation.tuning.ParameterSpace;
 import tsml.classifiers.*;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -100,7 +100,7 @@ import weka.core.Utils;
  *  set number of intervals to calculate.</pre>
 <!-- options-end -->
 
- * @author ajb
+ * @author Tony Bagnall and Matthew Middlehurst
  * @date 7/10/15
  * @update1 14/2/19
 
@@ -108,7 +108,7 @@ import weka.core.Utils;
 
 public class cTSF extends EnhancedAbstractClassifier
         implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable {
+        TrainTimeContractable, Checkpointable, Tuneable {
 //Static defaults
 
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -160,7 +160,7 @@ public class cTSF extends EnhancedAbstractClassifier
     private long checkpointTimeElapsed= 0;
 
     private boolean trainTimeContract = false;
-    private long contractTime = 0;
+    private long trainContractTimeNanos = 0;
     
     protected static final long serialVersionUID = 32554L;
 
@@ -411,7 +411,7 @@ public class cTSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-t1)+checkpointTimeElapsed < contractTime || classifiersBuilt < numClassifiers)
+        while(((System.nanoTime()-t1)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
             && classifiersBuilt < maxClassifiers){
             //1. Select random intervals for tree i
             int[][] interval =new int[numIntervals][2];  //Start and end
@@ -719,33 +719,15 @@ public class cTSF extends EnhancedAbstractClassifier
             checkpointTime = saved.checkpointTime;
             checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
             trainTimeContract = saved.trainTimeContract;
-            contractTime = saved.contractTime;
+            trainContractTimeNanos = saved.trainContractTimeNanos;
         }catch(Exception ex){
             System.out.println("Unable to assign variables when loading serialised file");
         }
     }
 
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        switch (time){
-            case DAYS:
-                contractTime = (long)(8.64e+13)*amount;
-                break;
-            case HOURS:
-                contractTime = (long)(3.6e+12)*amount;
-                break;
-            case MINUTES:
-                contractTime = (long)(6e+10)*amount;
-                break;
-            case SECONDS:
-                contractTime = (long)(1e+9)*amount;
-                break;
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public void setTrainTimeLimit(long amount) {
+        trainContractTimeNanos =amount;
         trainTimeContract = true;
     }
 
@@ -843,6 +825,26 @@ public class cTSF extends EnhancedAbstractClassifier
             return "mean="+mean+" stdev = "+stDev+" slope ="+slope;
         }
     }
+
+    /**
+     *TUNED TSF Classifiers. Method for interface Tuneable
+     * Valid options are: <p/>
+     * <pre> -T Number of trees.</pre>
+     * <pre> -I Number of intervals to fit.</pre>
+     *
+     *
+             * @return ParameterSpace object
+     */
+    @Override
+    public ParameterSpace getDefaultParameterSearchSpace(){
+       ParameterSpace ps=new ParameterSpace();
+        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
+        ps.addParameter("-T", numTrees);
+        String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
+        ps.addParameter("-I", numInterv);
+        return ps;
+    }
+
 
     public static void main(String[] arg) throws Exception{
 // Basic correctness tests, including setting paras through 

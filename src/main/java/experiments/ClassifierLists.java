@@ -18,18 +18,17 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
-import tsml.classifiers.distance_based.ee.Ee;
-import tsml.classifiers.distance_based.ee.EeConfig;
+import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.hybrids.HIVE_COTE;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.frequency_based.cRISE;
-import tsml.classifiers.hybrids.legacy_cote.FlatCote;
-import tsml.classifiers.hybrids.legacy_cote.HiveCote;
+import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.legacy.COTE.FlatCote;
+import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.cTSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -37,16 +36,11 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.interval_based.LPS;
-import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
 import tsml.classifiers.multivariate.NN_DTW_A;
 import tsml.classifiers.multivariate.NN_DTW_D;
 import tsml.classifiers.multivariate.NN_DTW_I;
 import tsml.classifiers.multivariate.NN_ED_I;
-import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -66,7 +60,6 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -87,7 +80,7 @@ public class ClassifierLists {
 //Interval Based
             "LPS","TSF","cTSF",
 //Frequency Based
-            "RISE","cRISE",
+            "RISE",
 //Shapelet Based
             "FastShapelets","LearnShapelets","ShapeletTransformClassifier",
 //Hybrids
@@ -100,32 +93,28 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID","MSM","TWE","WDTW"
-//        , "CEE", "LEE", "DTWV1", "DTWCVV1"
+        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","NN_CID",
+        "EE",
+        "LEE",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
-        Classifier c;
+        Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "DTW":
-                c=new DTW1NN();
-                ((DTW1NN )c).setWindow(1);
+            case "EE":
+                c = ElasticEnsemble.FACTORY.CEE_V2.build();
                 break;
-            case "DTWCV":
-                c=new DTWCV();
-                ((DTWCV)c).optimiseWindow(true);
+            case "LEE":
+                c = ElasticEnsemble.FACTORY.LEE.build();
                 break;
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;
             case "ProximityForest":
                 c = new ProximityForestWrapper();
-                break;
-            case "ElasticEnsemble":
-                c= EeConfig.buildCeeV2();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -142,15 +131,6 @@ public class ClassifierLists {
                 break;
             case "NN_CID":
                 c = new NN_CID();
-                break;
-            case "MSM":
-                c=new MSM1NN();
-                break;
-            case "TWE":
-                c=new MSM1NN();
-                break;
-            case "WDTW":
-                c=new WDTW1NN();
                 break;
             default:
                 System.out.println("Unknown distance based classifier "+classifier+" should not be able to get here ");
@@ -242,7 +222,7 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE","cRISE"};
+    public static String[] frequency= {"RISE"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -251,10 +231,6 @@ public class ClassifierLists {
         switch(classifier) {
             case "RISE":
                 c=new RISE();
-                ((RISE) c).setTransforms("PS","ACF");
-                break;
-            case "cRISE":
-                c=new cRISE();
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");
@@ -410,7 +386,7 @@ public class ClassifierLists {
                 c = new BayesNet();
                 break;
             case "ED":
-                c=new ED1NN();
+                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();;
                 break;
             case "C45":
                 c=new J48();
