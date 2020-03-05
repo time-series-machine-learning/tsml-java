@@ -14,10 +14,8 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.Copy;
-import tsml.classifiers.distance_based.utils.Debugable;
-import tsml.classifiers.distance_based.utils.LogUtils;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
@@ -81,30 +79,30 @@ ClassifierResults trainResults can also store other information about the traini
  * 
  * @author Tony Bagnall and James Large
  */
-abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements TrainEstimateable, SaveParameterInfo,
-                                                                                       Rebuildable,
-                                                                                       RebuildableTrainEstimateable,
-                                                                                       Debugable, Loggable, Copy,
+abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,
-                                                                                       Randomizable, ParamHandler,
-                                                                                        Buildable {
-        
+                                                                                       Randomizable {
+
+    public ParamSet getParams() {
+        return null;
+    }
+
+    public void setParams(ParamSet params) {
+
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
     protected int seed = 0;
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
-    // rebuild on buildClassifier?
-    private boolean rebuild = true;
-    // regenerate train estimate on buildClassifier?
-    private boolean regenerateTrainEstimate = true;
     protected transient boolean debug=false;
     private transient Logger logger = LogUtils.getLogger(this);
-
-    @Override public boolean isBuilt() {
-        return !rebuild;
-    }
 
     public Random getRandom() {
         return rand;
@@ -112,14 +110,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     public void setRandom(Random rand) {
         this.rand = rand;
-    }
-
-    public boolean isRegenerateTrainEstimate() {
-        return regenerateTrainEstimate;
-    }
-
-    public void setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
-        this.regenerateTrainEstimate = regenerateTrainEstimate;
     }
 
     /**
@@ -171,35 +161,20 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return numClasses;
     }
 
-    @Override public Logger getLogger() {
-        return logger;
-    }
-
-    @Override public boolean isRebuild() {
-        return rebuild;
-    }
-
-    @Override public void setRebuild(final boolean rebuild) {
-        this.rebuild = rebuild;
-    }
-
     protected void setAbleToEstimateOwnPerformance(boolean state) {
         ableToEstimateOwnPerformance = state;
     }
 
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
-        if(rebuild) {
-            logger.fine("fresh build");
-            trainResults = new ClassifierResults();
-            rand.setSeed(seed);
-            numClasses = trainData.numClasses();
-            trainResults.setClassifierName(getClassifierName());
-            trainResults.setParas(getParameters());
-            rebuild = false;
-            if(trainData.classIndex() != trainData.numAttributes() - 1) {
-                throw new IllegalArgumentException("class value not at the end");
-            }
+        logger.fine("fresh build");
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+        numClasses = trainData.numClasses();
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
+        if(trainData.classIndex() != trainData.numAttributes() - 1) {
+            throw new IllegalArgumentException("class value not at the end");
         }
     }
 
@@ -400,7 +375,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         debug=b;
     }
 
-    @Override public boolean isDebug() {
+    public boolean isDebug() {
         return debug;
     }
 
@@ -408,13 +383,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return getClassifierName();
     }
 
-    @Override public String[] getOptions() {
-        return ParamHandler.super.getOptions();
-    }
-
-    @Override public void setOptions(final String[] options) throws Exception {
-        ParamHandler.super.setOptions(options);
-    }
     public void printDebug(String s){
         if(debug)
             System.out.print(s);

@@ -14,10 +14,10 @@
  */
 package utilities;
 
-import tsml.classifiers.GcMemoryWatchable;
-import tsml.classifiers.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
+import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.StrUtils;
 import tsml.classifiers.distance_based.utils.collections.IntListView;
 import weka.core.Instance;

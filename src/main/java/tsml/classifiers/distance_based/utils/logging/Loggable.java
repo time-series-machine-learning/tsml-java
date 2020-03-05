@@ -1,4 +1,4 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils.logging;
 
 import java.util.logging.Logger;
 

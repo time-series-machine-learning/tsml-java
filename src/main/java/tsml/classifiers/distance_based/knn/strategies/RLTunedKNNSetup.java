@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.Utils;
@@ -26,7 +26,7 @@ import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
 
 
-    private RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
+    private RLTunedClassifier rlTunedClassifier = new RLTunedClassifier();
     private ParamSpace paramSpace;
     private Agent agent = null;
     private Iterator<ParamSet> paramSetIterator;
@@ -61,7 +61,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     private Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>> improveableBenchmarkIteratorBuilder = new Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>>() {
         @Override
         public Iterator<EnhancedAbstractClassifier> apply(List<EnhancedAbstractClassifier> benchmarks) {
-            RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(incTunedClassifier.getSeed(), new ArrayList<>(improveableBenchmarks));
+            RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(rlTunedClassifier.getSeed(), new ArrayList<>(improveableBenchmarks));
             iterator.setRemovedOnNext(false);
             return iterator;
         }
@@ -80,9 +80,9 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
             EnhancedAbstractClassifier classifier = super.next();
             if(classifier instanceof KNNLOOCV) {
                 final KNNLOOCV knn = (KNNLOOCV) classifier;
-                incTunedClassifier.getLogger().info(() -> "enabling full train for " + classifier.toString() + " " + classifier.getParams().toString());
+                rlTunedClassifier.getLogger().info(() -> "enabling full train for " + classifier.toString() + " " +
+                    classifier.getParams().toString());
                 knn.setNeighbourLimit(-1);
-                knn.setRegenerateTrainEstimate(true);
                 return knn;
             } else {
                 throw new IllegalArgumentException("expected knn");
@@ -118,7 +118,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
             // randomly pick 1 of the best classifiers
             final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
             final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
-                                                                                            incTunedClassifier.getRandom());
+                                                                                            rlTunedClassifier.getRandom());
             if(selectedBenchmarks.size() > 1) {
                 throw new IllegalStateException("there shouldn't be more than 1");
             }
@@ -128,22 +128,24 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         @Override
         public boolean feedback(EnhancedAbstractClassifier classifier) {
             finalBenchmarks.put(scorer.findScore(classifier), classifier); // add the benchmark back to the final benchmarks under the new score (which may be worse, hence why we have to remove the original benchmark first
-            incTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+            rlTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + classifier.getClassifierName() + " " + classifier.getParams().toString());
             boolean result;
             if(!isImproveable(classifier)) {
-                incTunedClassifier.getLogger().info(() -> "unimproveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+                rlTunedClassifier
+                    .getLogger().info(() -> "unimproveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
                 Utils.put(classifier, unimprovableBenchmarks);
                 result = false;
             } else {
-                incTunedClassifier.getLogger().info(() -> "improveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+                rlTunedClassifier
+                    .getLogger().info(() -> "improveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
                 Utils.put(classifier, nextImproveableBenchmarks);
                 long time = classifier.getTrainResults().getBuildPlusEstimateTime();
                 if(explore) {
                     longestExploreTimeNanos = Math.max(time + decisionTimer.getTimeNanos(), longestExploreTimeNanos);
-                    incTunedClassifier.getLogger().info(() -> "longest explore time: " + longestExploreTimeNanos);
+                    rlTunedClassifier.getLogger().info(() -> "longest explore time: " + longestExploreTimeNanos);
                 } else {
                     longestExploitTimeNanos = Math.max(time + decisionTimer.getTimeNanos(), longestExploitTimeNanos);
-                    incTunedClassifier.getLogger().info(() -> "longest improvement time: " + longestExploitTimeNanos);
+                    rlTunedClassifier.getLogger().info(() -> "longest improvement time: " + longestExploitTimeNanos);
                 }
                 decisionTimer.resetAndDisable();
                 result = true;
@@ -186,7 +188,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
                 } else {
                     if (trainSelectedBenchmarksFully) {
                         if(fullyTrainedIterator == null) {
-                            incTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
+                            rlTunedClassifier.getLogger().info("limited version, therefore training selected benchmark fully");
                             fullyTrainedIterator = new FullTrainer(new ArrayList<>(findFinalClassifiers()));
                             finalBenchmarks.clear();
                         }
@@ -240,8 +242,8 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     // todo param handling
 
     public RLTunedClassifier build() {
-        incTunedClassifier.setTrainSetupFunction(this);
-        return incTunedClassifier;
+        rlTunedClassifier.setTrainSetupFunction(this);
+        return rlTunedClassifier;
     }
 
     private int findLimit(int size, int rawLimit, double percentageLimit) {
@@ -315,11 +317,11 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     }
 
     private boolean hasNextSourceTime() {
-        return !incTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < incTunedClassifier.getRemainingTrainTimeNanos();
+        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
     }
 
     private boolean hasNextImprovementTime() {
-        return !incTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < incTunedClassifier.getRemainingTrainTimeNanos();
+        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
     }
 
     private boolean hasNextSource() {
@@ -344,14 +346,14 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         improveableBenchmarkIterator = improveableBenchmarkIteratorBuilder.apply(new ArrayList<>());
         finalBenchmarks = PrunedMultimap.desc(ArrayList::new);
         finalBenchmarks.setSoftLimit(1);
-        final int seed = incTunedClassifier.getSeed();
+        final int seed = rlTunedClassifier.getSeed();
         paramSpace = paramSpaceFunction.apply(trainData);
         paramSetIterator = new RandomListIterator<>(this.paramSpace, seed).setRemovedOnNext(true);
         fullParamSpaceSize = this.paramSpace.size();
         fullNeighbourhoodSize = trainData.size(); // todo check all seeds set
         maxNeighbourhoodSize = findLimit(fullNeighbourhoodSize, neighbourhoodSizeLimit, neighbourhoodSizeLimitPercentage);
         maxParamSpaceSize = findLimit(fullParamSpaceSize, paramSpaceSizeLimit, paramSpaceSizeLimitPercentage);
-        if(incTunedClassifier.hasTrainTimeLimit() && hasLimits()) {
+        if(rlTunedClassifier.hasTrainTimeLimit() && hasLimits()) {
             throw new IllegalStateException("cannot train under a contract with limits set");
         }
         if(!incrementalMode) {
@@ -364,8 +366,8 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         optimiser = new LeeOptimiser();
         agent = new KnnAgent();
         // set corresponding iterators in the incremental tuned classifier
-        incTunedClassifier.setAgent(agent);
-        incTunedClassifier.setEnsembler(Ensembler.single());
+        rlTunedClassifier.setAgent(agent);
+        rlTunedClassifier.setEnsembler(Ensembler.single());
         // todo make sure the seeds are set for everything
     }
 
@@ -392,7 +394,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         public EnhancedAbstractClassifier next() {
             final int origNeighbourCount = neighbourCount.get();
             final int nextNeighbourCount = origNeighbourCount + 1;
-            incTunedClassifier.getLogger().info(() -> "neighbourhood " + origNeighbourCount + " --> " + nextNeighbourCount);
+            rlTunedClassifier.getLogger().info(() -> "neighbourhood " + origNeighbourCount + " --> " + nextNeighbourCount);
             neighbourCount.set(nextNeighbourCount);
             if(!improveableBenchmarkIterator.hasNext()) {
                 improveableBenchmarks = nextImproveableBenchmarks;
@@ -405,7 +407,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
             final EnhancedAbstractClassifier classifier = improveableBenchmarkIterator.next();
             improveableBenchmarkIterator.remove();
             final KNNLOOCV knn = (KNNLOOCV) classifier; // todo should get rid of this with some generic twisting
-            if(incTunedClassifier.isDebug()) {
+            if(rlTunedClassifier.isDebug()) {
                 final int currentNeighbourLimit = knn.getNeighbourLimit();
                 if(nextNeighbourCount <= currentNeighbourLimit) {
                     throw new IllegalStateException("no improvement to the number of neighbours");
@@ -489,12 +491,12 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         return explore;
     }
 
-    public RLTunedClassifier getIncTunedClassifier() {
-        return incTunedClassifier;
+    public RLTunedClassifier getRlTunedClassifier() {
+        return rlTunedClassifier;
     }
 
-    public RLTunedKNNSetup setIncTunedClassifier(final RLTunedClassifier incTunedClassifier) {
-        this.incTunedClassifier = incTunedClassifier;
+    public RLTunedKNNSetup setRlTunedClassifier(final RLTunedClassifier rlTunedClassifier) {
+        this.rlTunedClassifier = rlTunedClassifier;
         return this;
     }
 

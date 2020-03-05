@@ -1,8 +1,7 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.memory;
 
 import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
-import tsml.classifiers.Loggable;
 import tsml.classifiers.MemoryWatchable;
 
 import javax.management.ListenerNotFoundException;
@@ -19,6 +18,11 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
+import tsml.classifiers.distance_based.utils.stopwatch.Stated;
+import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 
 /**
  * Purpose: watch the memory whilst enabled, tracking the mean, std dev, count, gc time and max mem usage.

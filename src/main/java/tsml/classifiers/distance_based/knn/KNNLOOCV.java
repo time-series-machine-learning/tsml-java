@@ -11,9 +11,8 @@ import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.StopWatch;
-import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
+import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
@@ -227,7 +226,7 @@ public class KNNLOOCV
             RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
             RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
             RLTunedKNNSetup
-                .setIncTunedClassifier(incTunedClassifier)
+                .setRlTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
             incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
@@ -242,7 +241,7 @@ public class KNNLOOCV
             RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
             RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
             RLTunedKNNSetup
-                .setIncTunedClassifier(incTunedClassifier)
+                .setRlTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
                 .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
             incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
@@ -271,7 +270,7 @@ public class KNNLOOCV
     protected NeighbourIteratorBuilder neighbourIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected NeighbourIteratorBuilder cvSearcherIteratorBuilder = new RandomNeighbourIteratorBuilder(this);
     protected boolean customCache = false;
-    private boolean rebuild = true; // shadows super
+    private boolean regenerateTrainEstimate = true;
 
     public KNNLOOCV() {
         setAbleToEstimateOwnPerformance(true);
@@ -325,7 +324,7 @@ public class KNNLOOCV
 
     protected void nextBuildTick() throws Exception {
         final Logger logger = getLogger();
-        setRegenerateTrainEstimate(true);
+        regenerateTrainEstimate = true;
         final long timeStamp = System.nanoTime();
         if(leftOutSearcher == null) {
             leftOutSearcher = leftOutSearcherIterator.next();
@@ -428,17 +427,12 @@ public class KNNLOOCV
         return result;
     }
 
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
         final DistanceFunction distanceFunction = getDistanceFunction();
         final Logger logger = getLogger();
+        final boolean rebuild = getAndDisableRebuild();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
@@ -448,8 +442,8 @@ public class KNNLOOCV
         trainTimer.disable();
         memoryWatcher.disable();
         super.buildClassifier(trainData);
-        setSkipFinalCheckpoint(skip);
         setBuilt(false);
+        setSkipFinalCheckpoint(skip);
         memoryWatcher.enableAnyway();
         trainEstimateTimer.checkDisabled();
         trainTimer.enableAnyway();
@@ -457,7 +451,6 @@ public class KNNLOOCV
             trainTimer.disableAnyway();
             memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
-            rebuild = false;
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointSavingEnabled()) { // was needed for caching
                     HashFilter.hashInstances(trainData);
@@ -477,7 +470,7 @@ public class KNNLOOCV
                     }
                 }
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
-                setRegenerateTrainEstimate(true); // build the first train estimate irrelevant of any progress made
+                regenerateTrainEstimate = true; // build the first train estimate irrelevant of any progress made
                 cvSearcherIterator = cvSearcherIteratorBuilder.build();
                 if(logger.isLoggable(Level.WARNING)) {
                     if(!leftOutSearcherIterator.hasNext()) {
@@ -501,7 +494,7 @@ public class KNNLOOCV
             saveToCheckpoint();
         }
         trainTimer.checkDisabled();
-        if(isRegenerateTrainEstimate()) {
+        if(regenerateTrainEstimate) {
             if(logger.isLoggable(Level.WARNING)
                 && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
@@ -519,15 +512,14 @@ public class KNNLOOCV
             }
         }
         trainEstimateTimer.disable();
-        memoryWatcher.cleanup();
         memoryWatcher.disable();
-        if(isRegenerateTrainEstimate()) {
-            setRegenerateTrainEstimate(false);
+        if(regenerateTrainEstimate) {
             trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
+        regenerateTrainEstimate = false;
         setBuilt(true);
         saveToCheckpoint();
     }
