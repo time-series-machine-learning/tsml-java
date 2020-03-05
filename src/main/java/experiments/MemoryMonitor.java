@@ -32,7 +32,8 @@ import java.util.Map;
  * the garbage collection, then recording the maximum used. This is probably not that reliable, so should be averaged over
  * runs.Could easily be adapted to store the series of memory calls, although would then need to store the time intervals
  *
- * Currently only used in simulation experiments, and only for max memory.
+ *  only used in simulation experiments, and from Feb 2020 in ClassifierResults and Experiments
+ *  only records max memory.
  *
  * adapted from code here http://www.fasterj.com/articles/gcnotifs.shtml
  *
