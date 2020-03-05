@@ -41,7 +41,6 @@ import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.filters.Filter;
 import weka.filters.SimpleFilter;
-import tsml.classifiers.SubSampleTrainer;
 import tsml.classifiers.Tuneable;
 
 import static experiments.data.DatasetLoading.loadDataNullable;

@@ -1,14 +1,14 @@
 /*
  * Sakoe Chiba DTW distance metric
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 /**
  *
  * @author Chris Rimmer
  */
 
-@Deprecated
+
 public class SakoeChibaDTW extends BasicDTW {
 
 //    private int bandSize;

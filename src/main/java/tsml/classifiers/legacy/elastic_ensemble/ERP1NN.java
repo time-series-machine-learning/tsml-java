@@ -19,7 +19,7 @@ import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.CandidateN
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.assessingNN.LazyAssessNN_ERP;
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.lowerBounds.LbErp;
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.classifiers.distance_based.distances.legacy.ERPDistance;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.ERPDistance;
 import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;

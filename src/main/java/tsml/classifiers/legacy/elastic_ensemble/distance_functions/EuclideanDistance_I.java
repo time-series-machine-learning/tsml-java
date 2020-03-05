@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
 import weka.core.EuclideanDistance;
@@ -24,7 +24,7 @@ import weka.core.Instances;
  * @author Aaron
  */
 
-@Deprecated
+
 public class EuclideanDistance_I extends EuclideanDistance{
        
     public EuclideanDistance_I(){}

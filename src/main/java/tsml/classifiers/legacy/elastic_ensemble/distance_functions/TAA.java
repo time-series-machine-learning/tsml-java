@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,7 +13,7 @@ import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
 
-@Deprecated
+
 public class TAA extends NormalizableDistance implements SaveParameterInfo, TechnicalInformationHandler {
 
 // WARNING: NOT DEBUGGED. ADD MORE COMMENTS. odo summary for each measure / relate to paper

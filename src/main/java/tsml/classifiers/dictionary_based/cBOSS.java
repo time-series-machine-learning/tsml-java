@@ -213,26 +213,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount){
-        switch (time){
-            case DAYS:
-                contractTime = (long)(8.64e+13)*amount;
-                break;
-            case HOURS:
-                contractTime = (long)(3.6e+12)*amount;
-                break;
-            case MINUTES:
-                contractTime = (long)(6e+10)*amount;
-                break;
-            case SECONDS:
-                contractTime = (long)(1e+9)*amount;
-                break;
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public void setTrainTimeLimit(long amount){
+        contractTime = amount;
         trainTimeContract = true;
     }
 

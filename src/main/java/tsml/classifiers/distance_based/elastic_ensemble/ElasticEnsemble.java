@@ -203,7 +203,10 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     private transient boolean debugConstituents = false;
     private transient boolean logConstituents = false;
     private boolean regenerateTrainEstimate = true;
-    protected transient long trainTimeLimitNanos = -1;
+    protected transient long trainContractTimeNanos = -1;
+    //TODO George to integrate the boolean into the classifier logic
+    private boolean trainTimeContract = false;
+
     private static final long serialVersionUID = 0;
     protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     protected transient long lastCheckpointTimeStamp = 0;
@@ -303,8 +306,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     }
 
 
-    @Override public void setTrainTimeLimitNanos(final long nanos) {
-        trainTimeLimitNanos = nanos;
+    @Override
+    public void setTrainTimeLimit(final long nanos) {
+        trainContractTimeNanos = nanos;
     }
 
     @Override public long predictNextTrainTimeNanos() {
@@ -318,8 +322,8 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public long getTrainTimeLimitNanos() {
-        return trainTimeLimitNanos;
+    @Override public long getTrainContractTimeNanos() {
+        return trainContractTimeNanos;
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {

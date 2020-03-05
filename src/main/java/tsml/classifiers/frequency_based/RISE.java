@@ -888,8 +888,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         String result = "Total Time Taken," + (System.nanoTime() - timer.forestStartTime)
                 + ", Contract Length (ns), " + timer.forestTimeLimit
                 + ", Build Classifier (ns)," + buildClassifierTime
-                + ", NumAtts," + data.numAttributes()
-                + ", MaxNumTrees," + numClassifiers
+                + ", NumClassifiers," + numClassifiers
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
                 + ", Final Coefficients (time = a * x^2 + b * x + c)"

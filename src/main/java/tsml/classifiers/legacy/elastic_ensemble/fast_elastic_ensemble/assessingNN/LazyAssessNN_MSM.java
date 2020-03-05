@@ -15,7 +15,7 @@
 package tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.assessingNN;
 
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.classifiers.distance_based.distances.legacy.MSMDistance;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.MSMDistance;
 import weka.core.Instance;
 
 /**

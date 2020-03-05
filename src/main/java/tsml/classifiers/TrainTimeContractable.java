@@ -23,14 +23,23 @@ import java.util.concurrent.TimeUnit;
  * Interface that allows the user to impose a train time contract of a classifier that
     implements this interface
 
-known classifiers: ShapeletTransformClassifier, RISE (not tested) HIVE_COTE (partial),
+known classifiers: ShapeletTransformClassifier, RISE, HIVE_COTE (partial),
 * BOSS, TSF , ContractRotationForest
  *
  * ********************************NOTES********************************
  * 1) contract time of <=0 means no contract!
+ *
  */
 public interface TrainTimeContractable
     extends ParamHandler, TrainTimeable {
+
+    /**
+     * This is the single method that must be implemented to store the contract time
+      * @param time in nano seconds
+     */
+    void setTrainTimeLimit(long time);
+
+
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }
@@ -43,9 +52,6 @@ public interface TrainTimeContractable
     
     default void setMinuteLimit(int t){ setTrainTimeLimit(TimeUnit.MINUTES, t); }
 
-    //set any value in nanoseconds you like.
-    // this is the method which should be implemented in sub classes. Other time setting methods wrap around this
-    default void setTrainTimeLimit(long time) { throw new UnsupportedOperationException(); }
 
     //pass in an value from the TimeUnit enum and the amount of said values.
     default void setTrainTimeLimit(TimeUnit time, long amount) {
@@ -56,7 +62,7 @@ public interface TrainTimeContractable
         setTrainTimeLimit(time, amount);
     }
 
-    default long getTrainTimeLimitNanos() {
+    default long getTrainContractTimeNanos() {
         throw new UnsupportedOperationException();
     }
 
@@ -70,7 +76,7 @@ public interface TrainTimeContractable
      * @return
      */
     default boolean hasTrainTimeLimit() {
-        return getTrainTimeLimitNanos() > 0;
+        return getTrainContractTimeNanos() > 0;
     }
 
     default void removeTrainTimeLimit() {
@@ -82,7 +88,7 @@ public interface TrainTimeContractable
      * @return
      */
     default long getRemainingTrainTimeNanos() {
-        long result = getTrainTimeLimitNanos() - getTrainTimeNanos();
+        long result = getTrainContractTimeNanos() - getTrainTimeNanos();
         return result;
     }
 
@@ -136,7 +142,7 @@ public interface TrainTimeContractable
     }
 
     @Override default ParamSet getParams() {
-        return ParamHandler.super.getParams().add(getTrainTimeLimitNanosFlag(), getTrainTimeLimitNanos());
+        return ParamHandler.super.getParams().add(getTrainTimeLimitNanosFlag(), getTrainContractTimeNanos());
     }
 
     @Override default void setParams(ParamSet param) {
