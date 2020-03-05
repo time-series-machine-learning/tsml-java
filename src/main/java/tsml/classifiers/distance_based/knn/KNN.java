@@ -35,15 +35,27 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
 public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
     StopWatchTrainTimeable {
 
-    private static String getKFlag() {
+    /**
+     * flag for k variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getKFlag() {
         return "k";
     }
 
-    private static String getEarlyAbandonFlag() {
+    /**
+     * flag for early abandon variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getEarlyAbandonFlag() {
         return "e";
     }
 
-    private static String getRandomTieBreakFlag() {
+    /**
+     * flag for random tie break variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getRandomTieBreakFlag() {
         return "r";
     }
 
@@ -334,12 +346,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = sampleGunPoint(seed);
-        Instances trainData = data[0];
-        KNN classifier = new KNN(new DTWDistance(trainData.numAttributes() - 1));
-        classifier.setSeed(0);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets/", "GunPoint", new KNN(), 0);
         System.out.println(results.writeSummaryResultsToString());
     }
 

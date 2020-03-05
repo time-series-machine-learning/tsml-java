@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.logging.Debugable;
@@ -19,7 +20,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     Debugable,
     Loggable {
 
-    private final Logger logger = LogUtils.getLogger(this);
+    private final Logger logger = LogUtils.buildLogger(this);
     private boolean built = false;
     private boolean rebuild = true;
     private boolean debug = false;
@@ -49,7 +50,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public ParamSet getParams() {
-        return super.getParams();
+        return ParamHandler.super.getParams();
     }
 
     @Override

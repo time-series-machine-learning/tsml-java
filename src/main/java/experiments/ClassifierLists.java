@@ -18,6 +18,7 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -97,6 +98,7 @@ public class ClassifierLists {
             "DD_DTW","DTD_C","NN_CID",
         "EE",
         "LEE",
+        "TUNED_DTW_1NN_V1"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -104,6 +106,9 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "TUNED_DTW_1NN_V1":
+                c = KNNLOOCV.FACTORY.DTW_1NN_V1.build();
+                break;
             case "EE":
                 c = ElasticEnsemble.FACTORY.CEE_V2.build();
                 break;

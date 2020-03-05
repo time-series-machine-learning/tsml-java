@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
@@ -93,6 +94,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         this.debugBenchmarks = debugBenchmarks;
     }
 
+    public interface TrainSetupFunction extends Consumer<Instances>, Serializable {
+
+    }
+
     protected Agent agent = new Agent() {
         @Override
         public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
@@ -116,7 +121,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     protected transient Set<EnhancedAbstractClassifier> benchmarks = new HashSet<>();
     protected Ensembler ensembler = Ensembler.byScore(benchmark -> benchmark.getTrainResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected Consumer<Instances> trainSetupFunction;
+    protected TrainSetupFunction trainSetupFunction;
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected StopWatch trainEstimateTimer = new StopWatch();
@@ -226,7 +231,8 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     @Override public void setParams(final ParamSet params) {
         TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction, Consumer.class); //
+        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
+                              TrainSetupFunction.class); //
         // todo
         // finish params
     }
@@ -406,10 +412,12 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // and set meta fields
                 classifier.setSeed(seed);
                 classifier.setDebug(isDebugBenchmarks());
-                if(isLogBenchmarks()) {
-                    classifier.getLogger().setLevel(getLogger().getLevel());
-                } else {
-                    classifier.getLogger().setLevel(Level.SEVERE);
+                if(classifier instanceof Loggable) {
+                    if(isLogBenchmarks()) {
+                        ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
+                    } else {
+                        ((Loggable) classifier).getLogger().setLevel(Level.OFF);
+                    }
                 }
                 // setup checkpoint saving
                 if(isCheckpointSavingEnabled() && classifier instanceof Checkpointable) {
@@ -638,14 +646,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
 
-    public Consumer<Instances> getTrainSetupFunction() {
+    public TrainSetupFunction getTrainSetupFunction() {
         return trainSetupFunction;
     }
 
-    public void setTrainSetupFunction(Consumer<Instances> trainSetupFunction) {
-        if((trainSetupFunction instanceof Serializable)) {
-            trainSetupFunction = (Serializable & Consumer<Instances>) trainSetupFunction::accept;
-        }
+    public void setTrainSetupFunction(TrainSetupFunction trainSetupFunction) {
         this.trainSetupFunction = trainSetupFunction;
     }
 

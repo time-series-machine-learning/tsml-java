@@ -135,7 +135,7 @@ public class ClassifierBuilderFactory {
         return ImmutableSet.copyOf(set);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         System.out.println(getGlobalInstance().toString());
     }
 }

@@ -97,7 +97,7 @@ import weka.core.Randomizable;
  */
 public class Experiments  {
 
-    private final static Logger LOGGER = LogUtils.getLogger(Experiments.class);
+    private final static Logger LOGGER = LogUtils.buildLogger(Experiments.class);
 
     public static boolean debug = false;
 
@@ -522,6 +522,8 @@ public class Experiments  {
 
         if(classifier instanceof Debugable) {
             ((Debugable) classifier).setDebug(expSettings.debug);
+        } else if(classifier instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) classifier).setDebug(expSettings.debug);
         }
         if(classifier instanceof Loggable) {
             ((Loggable) classifier).getLogger().setLevel(LOGGER.getLevel());

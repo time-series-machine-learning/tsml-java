@@ -139,22 +139,19 @@ public class KNNLOOCV
         }
 
 
-        public static void main(String[] args) {
-            try {
-                int seed = 0;
-                Instances[] data = DatasetLoading.sampleGunPoint(seed);
-                RLTunedClassifier classifier = buildTunedDtw1nnV1();
-                classifier.setSeed(seed); // set seed
-                classifier.setEstimateOwnPerformance(true);
-                ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-                results.setDetails(classifier, data[1]);
-                ClassifierResults trainResults = classifier.getTrainResults();
-                trainResults.setDetails(classifier, data[0]);
-                System.out.println(trainResults.writeSummaryResultsToString());
-                System.out.println(results.writeSummaryResultsToString());
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
+        public static void main(String[] args) throws Exception {
+            int seed = 0;
+            Instances[] data = DatasetLoading.sampleGunPoint(seed);
+            RLTunedClassifier classifier = buildTunedDtw1nnV1();
+            classifier.setSeed(seed); // set seed
+            classifier.getLogger().setLevel(Level.ALL);
+            classifier.setEstimateOwnPerformance(true);
+            ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+            results.setDetails(classifier, data[1]);
+            ClassifierResults trainResults = classifier.getTrainResults();
+            trainResults.setDetails(classifier, data[0]);
+            System.out.println(trainResults.writeSummaryResultsToString());
+            System.out.println(results.writeSummaryResultsToString());
         }
 
         public static RLTunedClassifier buildTunedDtw1nnV1() {
@@ -222,7 +219,7 @@ public class KNNLOOCV
         }
 
 
-        public static RLTunedClassifier buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
+        public static RLTunedClassifier buildTuned1nnV1(RLTunedKNNSetup.ParamSpaceBuilder paramSpaceFunction) {
             RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
             RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
             RLTunedKNNSetup
@@ -237,7 +234,7 @@ public class KNNLOOCV
             return buildTuned1nnV1(i -> paramSpace);
         }
 
-        public static RLTunedClassifier buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
+        public static RLTunedClassifier buildTuned1nnV2(RLTunedKNNSetup.ParamSpaceBuilder paramSpaceFunction) {
             RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
             RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
             RLTunedKNNSetup

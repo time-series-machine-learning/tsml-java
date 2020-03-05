@@ -3,6 +3,8 @@ package tsml.classifiers.distance_based.elastic_ensemble;
 import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
+
+import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
@@ -14,6 +16,8 @@ import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.Stated;
@@ -25,6 +29,7 @@ import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -32,6 +37,29 @@ import java.util.logging.Logger;
 
 public class ElasticEnsemble extends BaseClassifier implements TrainTimeContractable, Checkpointable,
     GcMemoryWatchable, StopWatchTrainTimeable {
+
+    public static void main(String[] args) throws Exception {
+        int seed = 0;
+        Instances[] data = DatasetLoading.sampleGunPoint(seed);
+        Classifier classifier = FACTORY.LEE.build();
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
+        if(classifier instanceof TrainEstimateable) {
+            ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
+        }
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
+        }
+        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        results.setDetails(classifier, data[1]);
+        if(classifier instanceof TrainEstimateable) {
+            ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
+            trainResults.setDetails(classifier, data[0]);
+            System.out.println(trainResults.writeSummaryResultsToString());
+        }
+        System.out.println(results.writeSummaryResultsToString());
+    }
 
     public static final ClassifierBuilderFactory FACTORY = new ClassifierBuilderFactory();
 
@@ -351,10 +379,12 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 constituent.setDebug(debugConstituents);
                 constituent.setSeed(rand.nextInt());
                 constituent.setEstimateOwnPerformance(true);
-                if(logConstituents) {
-                    constituent.getLogger().setLevel(getLogger().getLevel());
-                } else {
-                    constituent.getLogger().setLevel(Level.OFF);
+                if(constituent instanceof Loggable) {
+                    if(logConstituents) {
+                        ((Loggable) constituent).getLogger().setLevel(getLogger().getLevel());
+                    } else {
+                        ((Loggable) constituent).getLogger().setLevel(Level.OFF);
+                    }
                 }
                 if(constituent instanceof Checkpointable) {
                     if(isCheckpointLoadingEnabled()) {
@@ -513,6 +543,10 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
         return votingScheme.distributionForInstance(modules, instance);
+    }
+
+    @Override public double classifyInstance(final Instance instance) throws Exception {
+        return Utilities.argMax(distributionForInstance(instance), getRandom());
     }
 
     public ModuleVotingScheme getVotingScheme() {

@@ -1,7 +1,6 @@
 package tsml.classifiers.distance_based.knn.strategies;
 
 import evaluation.storage.ClassifierResults;
-import java.util.function.Consumer;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
@@ -21,9 +20,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static tsml.classifiers.distance_based.utils.StrUtils.extractNameAndParams;
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
-public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
+public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction {
 
 
     private RLTunedClassifier rlTunedClassifier = new RLTunedClassifier();
@@ -41,7 +41,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     private long longestExploitTimeNanos; // track max time taken for an addition of
     // neighbours
     private boolean incrementalMode = true;
-    private Function<Instances, ParamSpace> paramSpaceFunction;
+    private ParamSpaceBuilder paramSpaceBuilder;
     private Iterator<EnhancedAbstractClassifier> explorer;
     private Iterator<EnhancedAbstractClassifier> exploiter;
     private Optimiser optimiser;
@@ -58,7 +58,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     private PrunedMultimap<Double, EnhancedAbstractClassifier> finalBenchmarks;
     private boolean explore;
     private int id = 0;
-    private Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>> improveableBenchmarkIteratorBuilder = new Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>>() {
+    private BenchmarkIteratorBuilder improveableBenchmarkIteratorBuilder = new BenchmarkIteratorBuilder() {
         @Override
         public Iterator<EnhancedAbstractClassifier> apply(List<EnhancedAbstractClassifier> benchmarks) {
             RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(rlTunedClassifier.getSeed(), new ArrayList<>(improveableBenchmarks));
@@ -68,6 +68,14 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
     };
     private StopWatch decisionTimer = new StopWatch();
     private Iterator<EnhancedAbstractClassifier> fullyTrainedIterator = null;
+
+    public interface BenchmarkIteratorBuilder extends Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>> {
+
+    }
+
+    public interface ParamSpaceBuilder extends Function<Instances, ParamSpace>, Serializable {
+
+    }
 
     private class FullTrainer extends LinearListIterator<EnhancedAbstractClassifier> {
 
@@ -80,8 +88,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
             EnhancedAbstractClassifier classifier = super.next();
             if(classifier instanceof KNNLOOCV) {
                 final KNNLOOCV knn = (KNNLOOCV) classifier;
-                rlTunedClassifier.getLogger().info(() -> "enabling full train for " + classifier.toString() + " " +
-                    classifier.getParams().toString());
+                rlTunedClassifier.getLogger().info(() -> "enabling full train for " + extractNameAndParams(classifier));
                 knn.setNeighbourLimit(-1);
                 return knn;
             } else {
@@ -128,16 +135,16 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         @Override
         public boolean feedback(EnhancedAbstractClassifier classifier) {
             finalBenchmarks.put(scorer.findScore(classifier), classifier); // add the benchmark back to the final benchmarks under the new score (which may be worse, hence why we have to remove the original benchmark first
-            rlTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+            rlTunedClassifier.getLogger().info(() -> "score of " + scorer.findScore(classifier) + " for " + extractNameAndParams(classifier));
             boolean result;
             if(!isImproveable(classifier)) {
                 rlTunedClassifier
-                    .getLogger().info(() -> "unimproveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+                    .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
                 Utils.put(classifier, unimprovableBenchmarks);
                 result = false;
             } else {
                 rlTunedClassifier
-                    .getLogger().info(() -> "improveable classifier " + classifier.getClassifierName() + " " + classifier.getParams().toString());
+                    .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
                 Utils.put(classifier, nextImproveableBenchmarks);
                 long time = classifier.getTrainResults().getBuildPlusEstimateTime();
                 if(explore) {
@@ -165,6 +172,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
                 result = fullyTrainedIterator.next();
             } else if(explore) {
                 result = explorer.next();
+                rlTunedClassifier.getLogger().info("picked " + result);
             } else {
                 result = exploiter.next();
             }
@@ -347,7 +355,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         finalBenchmarks = PrunedMultimap.desc(ArrayList::new);
         finalBenchmarks.setSoftLimit(1);
         final int seed = rlTunedClassifier.getSeed();
-        paramSpace = paramSpaceFunction.apply(trainData);
+        paramSpace = paramSpaceBuilder.apply(trainData);
         paramSetIterator = new RandomListIterator<>(this.paramSpace, seed).setRemovedOnNext(true);
         fullParamSpaceSize = this.paramSpace.size();
         fullNeighbourhoodSize = trainData.size(); // todo check all seeds set
@@ -405,6 +413,7 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
                 }
             }
             final EnhancedAbstractClassifier classifier = improveableBenchmarkIterator.next();
+            System.out.println(classifier.getClassifierName());
             improveableBenchmarkIterator.remove();
             final KNNLOOCV knn = (KNNLOOCV) classifier; // todo should get rid of this with some generic twisting
             if(rlTunedClassifier.isDebug()) {
@@ -455,11 +464,11 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         }
     }
 
-    public Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>> getImproveableBenchmarkIteratorBuilder() {
+    public BenchmarkIteratorBuilder getImproveableBenchmarkIteratorBuilder() {
         return improveableBenchmarkIteratorBuilder;
     }
 
-    public void setImproveableBenchmarkIteratorBuilder(Function<List<EnhancedAbstractClassifier>, Iterator<EnhancedAbstractClassifier>> improveableBenchmarkIteratorBuilder) {
+    public void setImproveableBenchmarkIteratorBuilder(BenchmarkIteratorBuilder improveableBenchmarkIteratorBuilder) {
         this.improveableBenchmarkIteratorBuilder = improveableBenchmarkIteratorBuilder;
     }
 
@@ -570,13 +579,12 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         return this;
     }
 
-    public Function<Instances, ParamSpace> getParamSpaceFunction() {
-        return paramSpaceFunction;
+    public ParamSpaceBuilder getParamSpaceBuilder() {
+        return paramSpaceBuilder;
     }
 
-    public RLTunedKNNSetup setParamSpaceFunction(
-        final Function<Instances, ParamSpace> paramSpaceFunction) {
-        this.paramSpaceFunction = paramSpaceFunction;
+    public RLTunedKNNSetup setParamSpaceBuilder(final ParamSpaceBuilder paramSpaceBuilder) {
+        this.paramSpaceBuilder = paramSpaceBuilder;
         return this;
     }
 
@@ -598,8 +606,8 @@ public class RLTunedKNNSetup implements Consumer<Instances>, Serializable {
         return this;
     }
 
-    public RLTunedKNNSetup setParamSpace(Function<Instances, ParamSpace> func) {
-        return setParamSpaceFunction(func);
+    public RLTunedKNNSetup setParamSpace(ParamSpaceBuilder func) {
+        return setParamSpaceBuilder(func);
     }
 
     public RLTunedKNNSetup setParamSpaceFunction(Supplier<ParamSpace> supplier) {
