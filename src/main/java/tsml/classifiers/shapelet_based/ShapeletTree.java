@@ -94,6 +94,7 @@ public class ShapeletTree extends EnhancedAbstractClassifier implements Technica
         long t1=System.nanoTime();
         root.initialiseNode(data, minLength, maxLength,0);
         trainResults.setBuildTime(System.nanoTime()-t1);
+        trainResults.setParas(getParameters());
     }
 
     @Override

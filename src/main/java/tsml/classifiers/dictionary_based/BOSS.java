@@ -284,6 +284,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
             double result = findEnsembleTrainAcc(data);
 //            System.out.println("CV acc ="+result);
         }
+        trainResults.setParas(getParameters());
     }
 
     //[0] = index, [1] = acc

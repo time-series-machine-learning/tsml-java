@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
+import tsml.transformers.PCA;
 import utilities.InstanceTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -74,6 +75,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     private ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;//FULL == enumeration, RANDOM =random sampled to train time cotnract
     /** Redundant features in the shapelet space are removed prior to building the classifier **/
     int[] redundantFeatures;
+
+    /** PCA Option: not currently implemented, as it has not been debugged
+    private boolean performPCA=false;
+    private PCA pca;
+    private int numPCAFeatures=100;
+    */
+
+
 
     /****************** CONTRACTING *************************************/
     /*The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
@@ -124,7 +133,20 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         classifier=base;
 */
     }
-
+/* Not debugged, doesnt currently work
+    public void usePCA(){
+        setPCA(true);
+    }
+    public void setPCA(boolean b) {
+        setPCA(b,numPCAFeatures);
+    }
+    public void setPCA(boolean b, int numberEigenvectorsToRetain) {
+        performPCA = b;
+        pca=new PCA();
+        numPCAFeatures=numberEigenvectorsToRetain;
+        pca.setNumAttributesToKeep(numPCAFeatures);
+    }
+*/
     @Override
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
@@ -205,6 +227,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
+//Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
+/*
+        if(performPCA){
+            pca.setNumAttributesToKeep(shapeletData.numAttributes()-1);
+            pca.fit(shapeletData);
+            shapeletData=pca.transform(shapeletData);
+            System.out.println(shapeletData.toString());
+        }
+*/
 //Here get the train estimate directly from classifier using cv for now
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
@@ -217,12 +248,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     @Override
     public double classifyInstance(Instance ins) throws Exception{
         shapeletData.add(ins);
-        
+
         Instances temp  = transform.transform(shapeletData);
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-        
+/*        if(performPCA){
+            temp=pca.transform(temp);
+        }
+*/
         Instance test  = temp.get(0);
         shapeletData.remove(0);
         return classifier.classifyInstance(test);
@@ -235,9 +269,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-        
+/*         if(performPCA){
+             temp=pca.transform(temp);
+         }
+*/
         Instance test  = temp.get(0);
         shapeletData.remove(0);
+
         return classifier.distributionForInstance(test);
     }
 
