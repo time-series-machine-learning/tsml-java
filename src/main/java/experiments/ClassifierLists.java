@@ -95,33 +95,8 @@ public class ClassifierLists {
     public static String[] distance= {
         "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
             "DD_DTW","DTD_C","NN_CID",
-        "EE_V1",
-        "EE_V2",
-        "CEE_V1",
-        "CEE_V2",
+        "EE",
         "LEE",
-        "ED_1NN_V1",
-        "DTW_1NN_V1",
-        "DDTW_1NN_V1",
-        "TUNED_DTW_1NN_V1",
-        "TUNED_DDTW_1NN_V1",
-        "TUNED_WDTW_1NN_V1",
-        "TUNED_WDDTW_1NN_V1",
-        "TUNED_MSM_1NN_V1",
-        "TUNED_TWED_1NN_V1",
-        "TUNED_ERP_1NN_V1",
-        "TUNED_LCSS_1NN_V1",
-        "ED_1NN_V2",
-        "DTW_1NN_V2",
-        "DDTW_1NN_V2",
-        "TUNED_DTW_1NN_V2",
-        "TUNED_DDTW_1NN_V2",
-        "TUNED_WDTW_1NN_V2",
-        "TUNED_WDDTW_1NN_V2",
-        "TUNED_MSM_1NN_V2",
-        "TUNED_TWED_1NN_V2",
-        "TUNED_ERP_1NN_V2",
-        "TUNED_LCSS_1NN_V2",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -129,88 +104,12 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "EE_V1":
-                c = ElasticEnsemble.FACTORY.EE_V1.build();
-                break;
-            case "EE_V2":
-                c = ElasticEnsemble.FACTORY.EE_V2.build();
-                break;
-            case "CEE_V1":
-                c = ElasticEnsemble.FACTORY.CEE_V1.build();
-                break;
-            case "CEE_V2":
+            case "EE":
                 c = ElasticEnsemble.FACTORY.CEE_V2.build();
                 break;
             case "LEE":
                 c = ElasticEnsemble.FACTORY.LEE.build();
                 break;
-            case "ED_1NN_V1":
-                c = KNNLOOCV.FACTORY.ED_1NN_V1.build();
-                break;
-            case "DTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.DTW_1NN_V1.build();
-                break;
-            case "DDTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.DDTW_1NN_V1.build();
-                break;
-            case "ED_1NN_V2":
-                c = KNNLOOCV.FACTORY.ED_1NN_V2.build();
-                break;
-            case "DTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.DTW_1NN_V2.build();
-                break;
-            case "DDTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.DDTW_1NN_V2.build();
-                break;
-            case "TUNED_DTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_DTW_1NN_V1.build();
-                break;
-            case "TUNED_DDTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V1.build();
-                break;
-            case "TUNED_WDTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V1.build();
-                break;
-            case "TUNED_WDDTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V1.build();
-                break;
-            case "TUNED_ERP_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_ERP_1NN_V1.build();
-                break;
-            case "TUNED_MSM_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_MSM_1NN_V1.build();
-                break;
-            case "TUNED_LCSS_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V1.build();
-                break;
-            case "TUNED_TWED_1NN_V1":
-                c = KNNLOOCV.FACTORY.TUNED_TWED_1NN_V1.build();
-                break;
-            case "TUNED_DTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_DTW_1NN_V2.build();
-                break;
-            case "TUNED_DDTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V2.build();
-                break;
-            case "TUNED_WDTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V2.build();
-                break;
-            case "TUNED_WDDTW_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V2.build();
-                break;
-            case "TUNED_ERP_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_ERP_1NN_V2.build();
-                break;
-            case "TUNED_MSM_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_MSM_1NN_V2.build();
-                break;
-            case "TUNED_LCSS_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V2.build();
-                break;
-            case "TUNED_TWED_1NN_V2":
-                c = KNNLOOCV.FACTORY.TUNED_TWED_1NN_V2.build();
-                break;
-
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;

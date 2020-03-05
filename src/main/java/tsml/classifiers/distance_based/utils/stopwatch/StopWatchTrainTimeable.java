@@ -1,6 +1,6 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils.stopwatch;
 
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.TrainTimeable;
 
 /**
  * Purpose: simple interface to defer TrainTimeable to StopWatch implementations.

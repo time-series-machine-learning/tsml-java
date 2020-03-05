@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.logging;
 
 import java.io.OutputStream;
 import java.io.PrintStream;

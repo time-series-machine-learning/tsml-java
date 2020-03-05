@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.stopwatch;
 
 import java.io.Serializable;
 import java.util.HashSet;

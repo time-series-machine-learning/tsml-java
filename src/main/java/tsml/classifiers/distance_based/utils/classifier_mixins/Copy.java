@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import weka.core.SerializedObject;
 

@@ -14,8 +14,8 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.Copy;
+import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;

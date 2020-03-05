@@ -1,4 +1,4 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import evaluation.storage.ClassifierResults;
 

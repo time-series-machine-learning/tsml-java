@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.checkpointing;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -10,6 +10,7 @@ import tsml.classifiers.Checkpointable;
 
 import java.io.*;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
 import utilities.FileUtils.FileLock;
 
 /**
