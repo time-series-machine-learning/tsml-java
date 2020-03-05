@@ -1,4 +1,4 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 /**
  * Purpose: is the classifier fully built yet? This is especially important for contracted / restricted classifiers

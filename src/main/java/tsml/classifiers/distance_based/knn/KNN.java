@@ -4,10 +4,14 @@ import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.utils.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
@@ -28,8 +32,8 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
  * Change history:
  *  27/2/20 - goastler - overhaul to fix test seeding + interfaces
  */
-public class KNN extends EnhancedAbstractClassifier implements Checkpointable, GcMemoryWatchable,
-                                                               StopWatchTrainTimeable  {
+public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
+    StopWatchTrainTimeable {
 
     private static String getKFlag() {
         return "k";
@@ -41,10 +45,6 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
 
     private static String getRandomTieBreakFlag() {
         return "r";
-    }
-
-    protected void setBuilt(final boolean built) {
-        this.built = built;
     }
 
     // serialisation id
@@ -71,10 +71,6 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
     private transient String loadPath = null;
     // whether we should skip the final checkpoint
     private transient boolean skipFinalCheckpoint = false;
-    // whether we're rebuilding the classifier or not
-    private boolean rebuild = true; // shadows super
-    // whether the classifier is built
-    private boolean built = false;
     // whether to random tie break (defaults to true / yes and drawing neighbours are put into a majority vote)
     private boolean randomTieBreak = true;
 
@@ -133,17 +129,16 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), built && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
     }
 
     public boolean loadFromCheckpoint() {
-        trainTimer.suspend();
+        trainTimer.suspend(); // todo interface for this
         memoryWatcher.suspend();
         boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
-        lastCheckpointTimeStamp = System.nanoTime();
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -176,12 +171,6 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
         ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
     }
 
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
@@ -207,16 +196,16 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
         boolean loadedFromCheckpoint = loadFromCheckpoint();
         memoryWatcher.enable();
         trainTimer.enable();
+        final boolean rebuild = getAndDisableRebuild();
         if(rebuild) {
             memoryWatcher.resetAndEnable();
             trainTimer.resetAndEnable();
-            built = false;
-            rebuild = false;
+            super.buildClassifier(trainData);
         }
-        super.buildClassifier(trainData);
+        setBuilt(false);
         distanceFunction.setInstances(trainData);
         this.trainData = trainData;
-        built = true;
+        setBuilt(true);
         trainTimer.disable();
         memoryWatcher.disable();
         if(!loadedFromCheckpoint) {
@@ -224,10 +213,6 @@ public class KNN extends EnhancedAbstractClassifier implements Checkpointable, G
         } else {
             getLogger().info("loaded from checkpoint so not overwriting");
         }
-    }
-
-    @Override public boolean isBuilt() {
-        return built;
     }
 
     public boolean isRandomTieBreak() {

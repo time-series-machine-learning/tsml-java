@@ -1,6 +1,6 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils.memory;
 
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
+import tsml.classifiers.MemoryWatchable;
 
 /**
  * Purpose: Simple interface to defer memory funcs to the memory watcher. The memory watcher is the concrete

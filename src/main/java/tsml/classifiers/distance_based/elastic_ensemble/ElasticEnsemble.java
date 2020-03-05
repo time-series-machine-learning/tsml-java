@@ -1,7 +1,5 @@
 package tsml.classifiers.distance_based.elastic_ensemble;
 
-import static tsml.classifiers.distance_based.knn.KNNLOOCV.FACTORY;
-
 import com.google.common.collect.ImmutableList;
 import evaluation.storage.ClassifierResults;
 import java.util.function.Consumer;
@@ -14,10 +12,13 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
-import tsml.classifiers.distance_based.utils.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.Stated;
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.stopwatch.Stated;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import utilities.*;
@@ -29,10 +30,19 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ElasticEnsemble extends EnhancedAbstractClassifier implements TrainTimeContractable, Checkpointable,
-        GcMemoryWatchable, StopWatchTrainTimeable {
+public class ElasticEnsemble extends BaseClassifier implements TrainTimeContractable, Checkpointable,
+    GcMemoryWatchable, StopWatchTrainTimeable {
 
     public static final ClassifierBuilderFactory FACTORY = new ClassifierBuilderFactory();
+
+    public boolean isRegenerateTrainEstimate() {
+        return regenerateTrainEstimate;
+    }
+
+    protected ElasticEnsemble setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
+        this.regenerateTrainEstimate = regenerateTrainEstimate;
+        return this;
+    }
 
     public static class ClassifierBuilderFactory extends CompileTimeClassifierBuilderFactory {
         public final ClassifierBuilder EE_V1 = add(new SuppliedClassifierBuilder("EE_V1",
@@ -174,29 +184,25 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
         this.limitedVersion = limitedVersion;
     }
 
-    protected boolean limitedVersion = false;
-    protected ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.of();
-    protected List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
+    private boolean limitedVersion = false;
+    private ImmutableList<EnhancedAbstractClassifier> constituents = ImmutableList.of();
+    private List<EnhancedAbstractClassifier> partialConstituentsBatch = new ArrayList<>(); //
     // constituents which still have work remaining
-    protected List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
+    private List<EnhancedAbstractClassifier> nextPartialConstituentsBatch = new ArrayList<>(); //
     // constituents which still have work remaining - tentative version
-    protected List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
-    protected StopWatch trainTimer = new StopWatch();
-    protected StopWatch trainEstimateTimer = new StopWatch();
-    protected ModuleVotingScheme votingScheme = new MajorityVote();
-    protected ModuleWeightingScheme weightingScheme = new TrainAcc();
-    protected AbstractEnsemble.EnsembleModule[] modules;
-    protected long remainingTrainTimeNanosPerConstituent;
-    protected boolean firstBatchDone;
+    private List<EnhancedAbstractClassifier> trainedConstituents = new ArrayList<>(); // fully trained constituents
+    private StopWatch trainTimer = new StopWatch();
+    private StopWatch trainEstimateTimer = new StopWatch();
+    private ModuleVotingScheme votingScheme = new MajorityVote();
+    private ModuleWeightingScheme weightingScheme = new TrainAcc();
+    private AbstractEnsemble.EnsembleModule[] modules;
+    private long remainingTrainTimeNanosPerConstituent;
+    private boolean firstBatchDone;
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private transient Instances trainData;
     private transient boolean debugConstituents = false;
     private transient boolean logConstituents = false;
-    protected boolean built = false;
-
-    // start boiler plate ----------------------------------------------------------------------------------------------
-
-    private boolean rebuild = true; // shadows super
+    private boolean regenerateTrainEstimate = true;
     protected transient long trainTimeLimitNanos = -1;
     private static final long serialVersionUID = 0;
     protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
@@ -260,7 +266,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), built && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -288,12 +294,6 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
         return memoryWatcher;
     }
 
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
@@ -318,29 +318,24 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
         return result;
     }
 
-    @Override public boolean isBuilt() {
-        return built;
-    }
-
     @Override public long getTrainTimeLimitNanos() {
         return trainTimeLimitNanos;
     }
 
-    // end boiler plate ------------------------------------------------------------------------------------------------
-
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        final Logger logger = getLogger();
         loadFromCheckpoint();
         trainTimer.enable();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
+        final Logger logger = getLogger();
+        final boolean rebuild = getAndDisableRebuild();
         if(rebuild) {
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
             trainEstimateTimer.resetAndDisable();
+            super.buildClassifier(trainData);
         }
-        super.buildClassifier(trainData);
-        built = false;
+        setBuilt(false);
         this.trainData = trainData;
         if(rebuild) {
             if(constituents == null || constituents.isEmpty()) {
@@ -379,7 +374,6 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
             } else {
                 remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / partialConstituentsBatch.size();
             }
-            rebuild = false;
         }
         trainTimer.enableAnyway();
         trainEstimateTimer.disableAnyway();
@@ -387,9 +381,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
             nextBuildTick();
             saveToCheckpoint();
         }
-        if(isRegenerateTrainEstimate() && getEstimateOwnPerformance()) {
+        if(rebuild && getEstimateOwnPerformance()) {
             logger.fine("generating train estimate");
-            setRegenerateTrainEstimate(false);
             modules = new AbstractEnsemble.EnsembleModule[constituents.size()];
             int i = 0;
             for(EnhancedAbstractClassifier constituent : constituents) {
@@ -412,12 +405,13 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Train
                 trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTimeNanos(), null);
             }
         }
+        regenerateTrainEstimate = false;
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
         trainResults.setDetails(this, trainData);
         this.trainData = null;
-        built = true;
+        setBuilt(true);
         logger.info("build finished");
     }
 
