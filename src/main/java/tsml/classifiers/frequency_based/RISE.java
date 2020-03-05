@@ -32,6 +32,7 @@ import weka.core.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.TrainTimeContractable;
@@ -89,6 +90,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private int stabilise = 0;
     private final int DEFAULT_MAXLAG = 100;
     private final int DEFAULT_MINLAG = 1;
+    private double perForBag = 0.5;
 
     private Timer timer = null;
 
@@ -113,7 +115,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 /**
  * to do: make it so it can estimate own performance
   */
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         super.setSeed((int)seed);
         timer = new Timer();
     }
@@ -121,7 +123,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     public RISE(){
 // DO THIS INSTEAD
 //      this(0);
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);    
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
         this.seed = 0;
         super.setSeed((int)seed);
         timer = new Timer();
@@ -209,6 +211,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     public void setBaseClassifier(Classifier classifier){
         this.classifier = classifier;
+    }
+
+    public void setPercentageOfContractForBagging(double x){
+        perForBag = x;
     }
 
     /**
@@ -677,6 +683,13 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         //Start forest timer.
         timer.forestStartTime = System.nanoTime();
 
+        if (getEstimateOwnPerformance()) {
+            findTrainAcc(data);
+            initialise();
+            timer.reset();
+            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (timer.forestTimeLimit*2) - timer.forestElapsedTime);
+        }
+
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
 
             //Start tree timer.
@@ -723,10 +736,139 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         if (timer.modelOutPath != null) {
             timer.saveModelToCSV(trainingData.relationName());
         }
+        timer.forestTimeLimit += timer.forestElapsedTime;
+        timer.forestElapsedTime = (System.nanoTime() - timer.forestStartTime);
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        super.trainResults.setBuildTime(System.nanoTime() - timer.forestStartTime);
+        super.trainResults.setBuildTime(timer.forestElapsedTime);
         trainResults.setParas(getParameters());
 
+    }
+
+    private void findTrainAcc(Instances data){
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        int numTrees = 500;
+        int bagProp = 100;
+        int treeCount = 0;
+        Classifier[] classifiers = new Classifier[numTrees];
+        int[] timesInTest = new int[data.size()];
+        double[][][] distributions = new double[numTrees][data.size()][(int)data.numClasses()];
+        double[][] finalDistributions = new double[data.size()][(int)data.numClasses()];
+        int[][] bags;
+        ArrayList[] testIndexs = new ArrayList[numTrees];
+        double[] bagAccuracies = new double[numTrees];
+
+        this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
+        this.timer.forestTimeLimit = (long)((double)timer.forestTimeLimit * perForBag);
+
+        bags = generateBags(numTrees, bagProp, data);
+
+
+        for (; treeCount < numTrees && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
+
+            //Start tree timer.
+            timer.treeStartTime = System.nanoTime();
+
+            //Compute maximum interval length given time remaining.
+            timer.buildModel();
+            maxIntervalLength = (int)timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
+
+            Instances intervalInstances = produceIntervalInstancesUpdate(maxIntervalLength, data);
+
+            intervalInstances = transformInstances(intervalInstances, transformType);
+
+            //Add independent variable to model (length of interval).
+            timer.makePrediciton(intervalInstances.numAttributes() - 1);
+            timer.independantVariables.add(intervalInstances.numAttributes() - 1);
+
+            Instances trainHeader = new Instances(intervalInstances, 0);
+            Instances testHeader = new Instances(intervalInstances, 0);
+
+            ArrayList<Integer> indexs = new ArrayList<>();
+            for (int j = 0; j < bags[treeCount].length; j++) {
+                if(bags[treeCount][j] == 0){
+                    testHeader.add(intervalInstances.get(j));
+                    timesInTest[j]++;
+                    indexs.add(j);
+                }
+                for (int k = 0; k < bags[treeCount][j]; k++) {
+                    trainHeader.add(intervalInstances.get(j));
+                }
+            }
+            testIndexs[treeCount] = indexs;
+            classifiers[treeCount] = new RandomTree();
+            ((RandomTree)classifiers[treeCount]).setKValue(trainHeader.numAttributes() - 1);
+            try {
+                classifiers[treeCount].buildClassifier(trainHeader);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            for (int j = 0; j < testHeader.size(); j++) {
+                try {
+                    distributions[treeCount][indexs.get(j)] = classifiers[treeCount].distributionForInstance(testHeader.get(j));
+                    if (classifiers[treeCount].classifyInstance(testHeader.get(j)) == testHeader.get(j).classValue()){
+                        bagAccuracies[treeCount]++;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            bagAccuracies[treeCount] /= testHeader.size();
+            trainHeader.clear();
+            testHeader.clear();
+            timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
+        }
+
+        for (int i = 0; i < bags.length; i++) {
+            for (int j = 0; j < bags[i].length; j++) {
+                if(bags[i][j] == 0){
+                    for (int k = 0; k < finalDistributions[j].length; k++) {
+                        finalDistributions[j][k] += distributions[i][j][k];
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < finalDistributions.length; i++) {
+            if (timesInTest[i] > 1){
+                for (int j = 0; j < finalDistributions[i].length; j++) {
+                    finalDistributions[i][j] /= timesInTest[i];
+                }
+            }
+        }
+
+        //Add to trainResults.
+        double acc = 0.0;
+        for (int i = 0; i < finalDistributions.length; i++) {
+            double predClass = 0;
+            double predProb = 0.0;
+            for (int j = 0; j < finalDistributions[i].length; j++) {
+                if (finalDistributions[i][j] > predProb){
+                    predProb = finalDistributions[i][j];
+                    predClass = j;
+                }
+            }
+            trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
+            if (predClass == data.get(i).classValue()){
+                acc++;
+            }
+            trainResults.setAcc(acc / data.size());
+        }
+        this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
+    }
+
+    private int[][] generateBags(int numBags, int bagProp, Instances data){
+        int[][] bags = new int[numBags][data.size()];
+
+        Random random = new Random(seed);
+        for (int i = 0; i < numBags; i++) {
+            for (int j = 0; j < data.size() * (bagProp/100.0); j++) {
+                bags[i][random.nextInt(data.size())]++;
+            }
+        }
+        return bags;
     }
 
     private Instances produceIntervalInstancesUpdate(int maxIntervalLength, Instances trainingData) {
@@ -880,15 +1022,12 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     @Override
     public String getParameters() {
 
-        long buildClassifierTime = 0;
-        for (int i = 0; i < timer.independantVariables.size(); i++) {
-            buildClassifierTime += timer.dependantVariables.get(i);
-        }
-
-        String result = "Total Time Taken," + (System.nanoTime() - timer.forestStartTime)
+        String result = "Total Time Taken," + timer.forestElapsedTime
                 + ", Contract Length (ns), " + timer.forestTimeLimit
-                + ", Build Classifier (ns)," + buildClassifierTime
-                + ", NumClassifiers," + numClassifiers
+                + ", Percentage contract for OOB, " + perForBag
+                + ", NumAtts," + data.numAttributes()
+                + ", MaxNumTrees," + numClassifiers
+                + ", NumTrees," + treeCount
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
                 + ", Final Coefficients (time = a * x^2 + b * x + c)"
@@ -1135,15 +1274,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            /*cRISE = new cRISE();
-            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-            cRISE.setTransformType(TransformType.ACF_FFT);
-            cr = sse.evaluate(cRISE, data);
-            System.out.println("MFCC");
-            System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());*/
-
-
             RISE = new RISE();
             RISE.setSavePath("D:/Test/Testing/Serialising/");
             //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
@@ -1156,7 +1286,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             e.printStackTrace();
         }
 
-        RISE = new RISE();
         try {
             ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(RISE);
             temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
