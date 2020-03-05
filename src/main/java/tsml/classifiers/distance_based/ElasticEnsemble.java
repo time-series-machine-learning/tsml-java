@@ -374,7 +374,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
             }
         }
         trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
-        
+        trainResults.setParas(getParameters());
+
     }
     
     /**
@@ -552,7 +553,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         }
         return st.toString();
     }
-    
+
+    @Override
     public String getParameters(){
         StringBuilder params = new StringBuilder();
         params.append(super.getParameters()).append(",");

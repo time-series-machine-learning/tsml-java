@@ -18,6 +18,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 //import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
+import tsml.classifiers.MemoryContractable;
 import utilities.ClassifierTools;
 import utilities.samplers.RandomIndexSampler;
 import utilities.samplers.RandomRoundRobinIndexSampler;
@@ -436,7 +437,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     @Override
-    public void buildClassifier(final Instances data) throws Exception {
+    public void buildClassifier(final Instances data) throws Exception
+    {
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -591,6 +593,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         if (checkpoint && cleanupCheckpointFiles){
             checkpointCleanup();
         }
+        trainResults.setParas(getParameters());
     }
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {

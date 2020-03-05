@@ -418,7 +418,7 @@ public class Experiments  {
             int folds=30;
 
 
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
@@ -439,20 +439,22 @@ public class Experiments  {
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[6];
+                String[] settings=new String[8];
 //Location of data set
-                settings[0]="-dp=C:\\Temp\\";//Where to get data
+                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=BoTSWEnsemble"; //Classifier name
+                settings[3]="-cn=TSF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+"blood"; //Problem file
                 settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+                settings[6]="--force=true";
+                settings[7]="-ctrs=0";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);
                 System.out.println("");
-                String[] probFiles= {"Chinatown"}; //DatasetLists.ReducedUCI;
+                String[] probFiles= {"ElectricDevices"}; //DatasetLists.ReducedUCI;
                 folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;

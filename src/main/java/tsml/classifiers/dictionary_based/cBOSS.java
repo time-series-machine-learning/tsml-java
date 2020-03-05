@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import tsml.classifiers.MemoryContractable;
 import utilities.*;
 import utilities.samplers.*;
 import weka.classifiers.functions.GaussianProcesses;
@@ -587,6 +588,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (checkpoint && cleanupCheckpointFiles){
             checkpointCleanup();
         }
+        trainResults.setParas(getParameters());
+
     }
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {

@@ -5,6 +5,7 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
