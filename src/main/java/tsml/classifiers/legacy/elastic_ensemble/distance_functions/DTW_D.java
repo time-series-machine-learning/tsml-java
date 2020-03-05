@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
 import weka.core.Instance;
@@ -25,8 +25,6 @@ import weka.core.neighboursearch.PerformanceStats;
  * @author ABostrom
  */
 
-
-@Deprecated
 public class DTW_D extends DTW_DistanceBasic{
 
     public DTW_D(){}

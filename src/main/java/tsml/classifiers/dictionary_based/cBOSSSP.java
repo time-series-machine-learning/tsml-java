@@ -108,7 +108,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
-    private long contractTime = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private boolean underContractTime = false;
 
@@ -215,26 +215,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount){
-        switch (time){
-            case DAYS:
-                contractTime = (long)(8.64e+13)*amount;
-                break;
-            case HOURS:
-                contractTime = (long)(3.6e+12)*amount;
-                break;
-            case MINUTES:
-                contractTime = (long)(6e+10)*amount;
-                break;
-            case SECONDS:
-                contractTime = (long)(1e+9)*amount;
-                break;
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public void setTrainTimeLimit(long amount){
+        trainContractTimeNanos = amount;
         trainTimeContract = true;
     }
 
@@ -329,7 +311,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         checkpointTime = saved.checkpointTime;
 //        checkpointTimeDiff = checkpointTimeDiff;
         cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
-        contractTime = saved.contractTime;
+        trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
         memoryLimit = saved.memoryLimit;
@@ -865,7 +847,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         String name = datasetName + seed + "cSBOSS";
 
         if (trainTimeContract){
-            name += ("TTC" + contractTime);
+            name += ("TTC" + trainContractTimeNanos);
         }
         else if (isMultivariate && ensembleSizePerChannel > 0){
             name += ("PC" + (ensembleSizePerChannel*numSeries));
@@ -890,7 +872,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     public void checkContracts(){
-        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime;
+        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
 
@@ -981,7 +963,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
                 GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
-                long remainingTime = contractTime - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
+                long remainingTime = trainContractTimeNanos - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
                 for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));

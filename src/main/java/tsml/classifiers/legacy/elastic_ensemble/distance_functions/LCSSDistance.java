@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import weka.core.EuclideanDistance;
@@ -15,7 +15,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * @author sjx07ngu
  */
 
-@Deprecated
+
 public class LCSSDistance extends EuclideanDistance {
 
     private double epsilon;

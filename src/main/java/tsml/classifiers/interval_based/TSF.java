@@ -745,7 +745,7 @@ public class TSF extends EnhancedAbstractClassifier
      
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
-   //TUNED TSC Classifiers
+   //TUNED TSF Classifiers
   /* Valid options are: <p/>
    * <pre> -T Number of trees.</pre>
    * <pre> -I Number of intervals to fit.</pre>
