@@ -26,7 +26,7 @@ public class CompileTimeClassifierBuilderFactory extends ClassifierBuilderFactor
         } catch(NoSuchFieldException e) {
             throw new IllegalStateException(e);
         }
-        add(builder);
+        super.add(builder);
         return builder;
     }
 
