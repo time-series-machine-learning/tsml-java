@@ -8,9 +8,12 @@ Contributors: goastler
 */
 
 import experiments.data.DatasetLoading;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.filters.Derivative;
 import weka.core.Instances;
 
@@ -53,11 +56,16 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 //        }
 //        System.out.println((double) derSum / repeats);
 
-        DDTWDistance ddtwDistance = new DDTWDistance();
-        ddtwDistance.setInstances(train);
-        double distanceA = ddtwDistance.distance(train.get(0), train.get(1));
-        double distanceB = ddtwDistance.distance(train.get(0), train.get(1));// it should cache the transform here
-        System.out.println();
+//        DDTWDistance ddtwDistance = new DDTWDistance();
+//        ddtwDistance.setInstances(train);
+//        double distanceA = ddtwDistance.distance(train.get(0), train.get(1));
+//        double distanceB = ddtwDistance.distance(train.get(0), train.get(1));// it should cache the transform here
+//        System.out.println();
+
+        ParamSpace space = DistanceMeasureConfigs.buildDdtwSpaceV1(train);
+        System.out.println(space.toString());
+        ParamSet paramSet = space.get(5);
+        System.out.println(paramSet);
     }
 
     @Override
@@ -88,5 +96,13 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
     @Override
     public void cleanDistanceMatrix() {
         dtw.cleanDistanceMatrix();
+    }
+
+    @Override public ParamSet getParams() {
+        return dtw.getParams(); // not including super params as we handle them manually in this class
+    }
+
+    @Override public void setParams(final ParamSet param) {
+        dtw.setParams(param); // not including super params as we handle them manually in this class
     }
 }

@@ -14,10 +14,10 @@
  */
 package tsml.examples;
 
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.WDTW1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.DTW1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.ED1NN;
-import tsml.classifiers.distance_based.legacy.elastic_ensemble.MSM1NN;
+import tsml.classifiers.legacy.elastic_ensemble.WDTW1NN;
+import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
+import tsml.classifiers.legacy.elastic_ensemble.ED1NN;
+import tsml.classifiers.legacy.elastic_ensemble.MSM1NN;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.distance_based.NN_CID;
@@ -25,7 +25,7 @@ import tsml.classifiers.interval_based.TSBF;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.distance_based.DTD_C;
 import tsml.classifiers.dictionary_based.BOSS;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.dictionary_based.SAXVSM;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;

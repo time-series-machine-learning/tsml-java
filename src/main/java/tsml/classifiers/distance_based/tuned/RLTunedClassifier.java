@@ -5,10 +5,15 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.utils.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.StopWatch;
+import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -23,8 +28,8 @@ import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
 
-public class RLTunedClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable, GcMemoryWatchable,
-                                                                    StopWatchTrainTimeable,
+public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable, GcMemoryWatchable,
+    StopWatchTrainTimeable,
                                                                     Checkpointable, Parallelisable {
 
     /*
@@ -123,11 +128,6 @@ public class RLTunedClassifier extends EnhancedAbstractClassifier implements Tra
     private transient boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
     private transient boolean yielded = false;
-
-    // start boiler plate ----------------------------------------------------------------------------------------------
-
-    private boolean rebuild = true; // shadows super
-    private boolean built = false;
     protected transient long trainTimeLimitNanos = -1;
     private static final long serialVersionUID = 0;
     protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
@@ -209,12 +209,6 @@ public class RLTunedClassifier extends EnhancedAbstractClassifier implements Tra
         return memoryWatcher;
     }
 
-    @Override
-    public void setRebuild(boolean rebuild) {
-        this.rebuild = rebuild;
-        super.setRebuild(rebuild);
-    }
-
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
@@ -256,28 +250,26 @@ public class RLTunedClassifier extends EnhancedAbstractClassifier implements Tra
     // end boiler plate ------------------------------------------------------------------------------------------------
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        // setup parent
-        super.buildClassifier(trainData);
         // enable resource monitors
-        memoryWatcher.enableAnyway();
+        memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
-        trainTimer.enableAnyway();
-        // we're not built at the moment
-        built = false;
-        this.trainData = trainData;
+        trainTimer.enable();
+        final boolean rebuild = getAndDisableRebuild();
         lastCheckpointTimeStamp = System.nanoTime();
         // if we're rebuilding
         if(rebuild) {
             // reset resource monitors
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
+            super.buildClassifier(trainData);
             trainSetupFunction.accept(trainData);
-            // reset this switch so we don't reset again next time (unless someone calls the setter)
-            rebuild = false;
             hasSkippedEvaluation = false;
             yielded = false;
             classifierNames = new HashSet<>();
         }
+        this.trainData = trainData;
+        // we're not built at the moment
+        setBuilt(false);
         // going into train estimate phase
         // while we've got more benchmarks to examine
         while(hasNextBuildTick()) {
@@ -327,7 +319,6 @@ public class RLTunedClassifier extends EnhancedAbstractClassifier implements Tra
                     trainEstimateTimer.checkDisabled();
                     trainTimer.disable();
                     memoryWatcher.disable();
-                    memoryWatcher.cleanup();
                     trainResults.setMemory(getMaxMemoryUsageInBytes());
                     trainResults.setBuildTime(trainTimer.getTimeNanos());
                     trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());
@@ -338,7 +329,7 @@ public class RLTunedClassifier extends EnhancedAbstractClassifier implements Tra
                     if(!created) {
                         throw new IllegalStateException("could not create overall done file");
                     }
-                    built = true;
+                    setBuilt(true);
                 } catch (FileUtils.FileLock.LockException e) {
                     getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;

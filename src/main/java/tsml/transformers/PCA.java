@@ -1,43 +1,84 @@
 package tsml.transformers;
 
+import experiments.data.DatasetLoading;
+import weka.attributeSelection.PrincipalComponents;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.unsupervised.attribute.PrincipalComponents;
 
 /**
- * Filter to transform data into principle components. Currently just a wrapper for the Weka Filter PrincipalComponents
- *
+ * Transformer to generate Principal Components. Uses weka attribute selection PrincipalComponents. There is also
+ * a weka Filter PrincipalComponents, but it is confusingly structured, like all Weka Filters.
+ * the down side is that the attibute selection version does not have the capability to set a maximum number of attributes
+ * This implementation i
  */
-public class PCA extends PrincipalComponents implements Transformer {
+public class PCA implements Transformer {
+
 //    PrincipalComponents pc=new weka.filters.unsupervised.attribute.PrincipalComponents();
     int numAttributesToKeep=100;
+    weka.attributeSelection.PrincipalComponents pca=new PrincipalComponents();
+
     @Override
-    public void fit(Instances data) {
+    public void fit(Instances data){
         if(data.numAttributes()-1<numAttributesToKeep)
             numAttributesToKeep=data.numAttributes()-1;
-        setMaximumAttributes(numAttributesToKeep);
-
+        try{
+//Build the evaluator
+            pca.setVarianceCovered(1.0);
+            pca.buildEvaluator(data);
+        }catch(Exception e)
+        {
+            throw new RuntimeException(" Error in Transformers/PCA when fitting the PCA transform");
+        }
     }
 
     @Override
     public Instances transform(Instances data) {
-        return null;
+
+        Instances newData= null;
+        try {
+            newData = pca.transformedData(data);
+            while(newData.numAttributes()-1>numAttributesToKeep)
+                newData.deleteAttributeAt(newData.numAttributes()-2);
+        } catch (Exception e) {
+            throw new RuntimeException(" Error in Transformers/PCA when performing the PCA transform: "+e);
+        }
+        return newData;
     }
 
     @Override
     public Instance transform(Instance inst) {
-        return null;
+        Instance newInst= null;
+        try {
+            newInst = pca.convertInstance(inst);
+            while(newInst.numAttributes()-1>numAttributesToKeep)
+                newInst.deleteAttributeAt(newInst.numAttributes()-2);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return newInst;
     }
 
     @Override
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         if(data.numAttributes()-1<numAttributesToKeep)
             numAttributesToKeep=data.numAttributes()-1;
-        setMaximumAttributes(numAttributesToKeep);
-        try{
-            return super.determineOutputFormat(data);
-        }catch(Exception e){
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        return null;
+    }
+
+
+    public static void main(String[] args) {
+        Instances train= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TRAIN.arff");
+        Instances test= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TEST.arff");
+        PCA pca=new PCA();
+        pca.fit(train);
+        Instances trans=pca.transform(train);
+ //       Instances trans2=pca.transform(test);
+        System.out.println(" Transfrom 1"+trans);
+        System.out.println("Num attribvvutes = "+trans.numAttributes());
+//        System.out.println(" Transfrom 2"+trans2);
+
     }
 }

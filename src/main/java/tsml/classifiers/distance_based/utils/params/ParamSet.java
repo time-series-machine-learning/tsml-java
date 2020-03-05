@@ -106,12 +106,14 @@ public class ParamSet implements ParamHandler {
     @Override
     public List<String> getOptionsList() {
         List<String> list = new ArrayList<>();
-        paramMap.forEach((name, paramValues) -> {
-            paramValues.forEach(paramValue -> {
+        for(Map.Entry<String, List<Object>> entry : paramMap.entrySet()) {
+            String name = entry.getKey();
+            List<Object> paramValues = entry.getValue();
+            for(Object paramValue : paramValues) {
                 list.add(StrUtils.flagify(name));
                 list.add(StrUtils.toOptionValue(paramValue));
-            });
-        });
+            }
+        }
         return list;
     }
 
@@ -168,7 +170,7 @@ public class ParamSet implements ParamHandler {
             //                " \"" +
             StrUtils.join(", ", getOptions()) +
             //                " \""
-            +'}'
+            "}"
             ;
     }
 
