@@ -532,9 +532,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(true).
-            setBuildMatlabDiagrams(true).
-            setUseAccuracyOnly().
-//            setBuildMatlabDiagrams(false).
+//            setBuildMatlabDiagrams(true).
+//            setUseAccuracyOnly().
+            setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
