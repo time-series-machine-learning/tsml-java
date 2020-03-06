@@ -89,7 +89,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
-    private transient Logger logger = LogUtils.buildLogger(this);
 
     public Random getRandom() {
         return rand;
@@ -154,7 +153,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
-        logger.fine("fresh build");
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = trainData.numClasses();
@@ -351,11 +349,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
-        if(classifierName != null) {
-            logger = LogUtils.buildLogger(classifierName);
-        } else {
-            logger = LogUtils.buildLogger(this);
-        }
     }
 
     public void setDebug(boolean b){
