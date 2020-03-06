@@ -820,10 +820,7 @@ public class Experiments  {
                 if (eac.getEstimateOwnPerformance()) {
                     ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
                     res.setBenchmarkTime(benchmarkTime);
-
-                    //set the mem too, if the classifier hasn't recorded it itself
-                    if (res.getMemory() == -1)
-                        res.setMemory(maxMemory);
+                    res.setMemory(maxMemory);
 
                     return res;
                 }
@@ -850,9 +847,7 @@ public class Experiments  {
             }
         }
 
-        //set the mem too, if the classifier hasn't recorded it itself
-        if (trainResults.getMemory() == -1L)
-            trainResults.setMemory(maxMemory);
+        trainResults.setMemory(maxMemory);
 
         return trainResults;
     }
