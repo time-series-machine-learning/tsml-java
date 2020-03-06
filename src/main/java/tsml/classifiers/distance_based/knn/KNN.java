@@ -205,25 +205,35 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        // load from a previous checkpoint
         boolean loadedFromCheckpoint = loadFromCheckpoint();
-        memoryWatcher.enable();
+        // enable resource monitors
+        memoryWatcher.enable(); // todo can we share emitters in mem watcher?
         trainTimer.enable();
-        final boolean rebuild = getAndDisableRebuild();
+        final boolean rebuild = isRebuild();
         if(rebuild) {
+            // if we're rebuilding then reset resource monitors
             memoryWatcher.resetAndEnable();
             trainTimer.resetAndEnable();
-            super.buildClassifier(trainData);
         }
-        setBuilt(false);
+        // build parent
+        super.buildClassifier(trainData);
+        // let the distance function know about the instances
         distanceFunction.setInstances(trainData);
+        // save our model data
         this.trainData = trainData;
+        // we're fully built now
         setBuilt(true);
+        // disable resource monitors
         trainTimer.disable();
         memoryWatcher.disable();
+        // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
             saveToCheckpoint();
         } else {
-            getLogger().info("loaded from checkpoint so not overwriting");
+            // if we've loaded from checkpoint then there's no point in re saving a checkpoint as we haven't done any
+            // further work
+            getLogger().info("loaded from checkpoint so saving checkpoint");
         }
     }
 

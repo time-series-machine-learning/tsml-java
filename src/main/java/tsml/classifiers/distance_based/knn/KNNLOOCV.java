@@ -427,19 +427,20 @@ public class KNNLOOCV
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
-        final DistanceFunction distanceFunction = getDistanceFunction();
-        final Logger logger = getLogger();
-        final boolean rebuild = getAndDisableRebuild();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
+        final DistanceFunction distanceFunction = getDistanceFunction();
+        final Logger logger = getLogger();
+        final boolean rebuild = isRebuild();
+        // stop super knn from checkpointing after its built
         boolean skip = isSkipFinalCheckpoint();
         setSkipFinalCheckpoint(true);
         // must disable train timer and memory watcher as super enables them at start of build
         trainTimer.disable();
         memoryWatcher.disable();
         super.buildClassifier(trainData);
-        setBuilt(false);
+        // re-enable skipping the final checkpoint
         setSkipFinalCheckpoint(skip);
         memoryWatcher.enableAnyway();
         trainEstimateTimer.checkDisabled();
