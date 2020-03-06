@@ -1,4 +1,4 @@
-function [ f ] = timingsLinePlot( filename,evalSet )
+function [ f ] = timingsLinePlot( filename,evalSet,yaxislabel )
 
 %timings file is of form: 
 
@@ -47,7 +47,7 @@ end
 
 set(gca,'FontSize',16)
 xlabel(['Datasets ordered by average ',evalSet,' time, D=',int2str(length(dsets))], 'FontSize', 24);
-ylabel(['Time, ',evalSet,' (ms)'], 'FontSize', 24);
+ylabel(yaxislabel, 'FontSize', 24);
 
 xticks(ticks);
 xtickangle(45);
