@@ -336,8 +336,13 @@ public class Experiments  {
         //we're going to write them out, to store at minimum the build times
         ClassifierResults trainResults = new ClassifierResults();
         ClassifierResults testResults = new ClassifierResults();
+        ClassifierResults[] experimentResults = null; // the combined container, to hold { train, test } on return
 
         long benchmark = findBenchmarkTime(expSettings);
+
+        // Latest point before 'actual' experimental work may start - setting up the memory monitor
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.installMonitor();
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
@@ -359,15 +364,22 @@ public class Experiments  {
             buildTime = System.nanoTime() - buildTime;
             LOGGER.log(Level.FINE, "Training complete");
 
-            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
+            // Training done, collect memory monitor results
+            // Need to wait for an update, otherwise very quick classifiers may not experience gc calls during training,
+            // or the monitor may not update in time before collecting the max
+            GcFinalization.awaitFullGc();
+            long maxMemory = memoryMonitor.getMaxMemoryUsed();
+
+            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation)
+            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
-            LOGGER.log(Level.FINE, "Train estimate written");
+                LOGGER.log(Level.FINE, "Train estimate written");
+            }
 
             if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
                 serialiseClassifier(expSettings, classifier);
@@ -388,27 +400,29 @@ public class Experiments  {
                     testResults.setBenchmarkTime(benchmark);
                     testResults.setBuildTime(trainResults.getBuildTime());
                     testResults.turnOnZeroTimingsErrors();
+                    testResults.setMemory(maxMemory);
 
                     LOGGER.log(Level.FINE, "Testing complete");
 
                     writeResults(expSettings, testResults, resultsPath + testFoldFilename, "test");
-                    LOGGER.log(Level.FINE, "Testing written");
+                    LOGGER.log(Level.FINE, "Test results written");
                 }
                 else {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);
                 }
-                return new ClassifierResults[] { trainResults, testResults };
             }
-            else {
-                return new ClassifierResults[] { trainResults, null }; //not error, but we dont have a test acc. just returning 0 for now
-            }
+
+            experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
+            e.printStackTrace();
             return null; //error state
         }
+
+        return experimentResults;
     }
 
     /**
@@ -431,7 +445,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, long maxMemory) throws Exception {
 
         /*
         if estimateacc { //want full predictions
@@ -463,6 +477,8 @@ public class Experiments  {
                 if (eac.getEstimateOwnPerformance()) {
                     ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
                     res.setBenchmarkTime(benchmarkTime);
+                    res.setMemory(maxMemory);
+
                     return res;
                 }
                 else {
@@ -487,6 +503,8 @@ public class Experiments  {
                 trainResults.setBenchmarkTime(benchmarkTime);
             }
         }
+
+        trainResults.setMemory(maxMemory);
 
         return trainResults;
     }
