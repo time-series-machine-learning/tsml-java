@@ -604,7 +604,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
-        System.out.println((System.nanoTime() - timer.forestStartTime) + " < " + (timer.forestTimeLimit - getTime()));
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
 
             //Start tree timer.
