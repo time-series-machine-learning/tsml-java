@@ -285,7 +285,7 @@ public class ClassifierResultsAnalysis {
         if(buildMatlabDiagrams) {
             MatlabController proxy = MatlabController.getInstance();
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
-            matlab_buildTimingsDias(compMetrics);
+            matlab_buildCompResourcesDias(compMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
             matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput());
         }
@@ -958,7 +958,7 @@ public class ClassifierResultsAnalysis {
     }
 
 
-    protected static void matlab_buildTimingsDias(List<PerformanceMetric> metrics) {
+    protected static void matlab_buildCompResourcesDias(List<PerformanceMetric> metrics) {
         MatlabController proxy = MatlabController.getInstance();
 
         for (PerformanceMetric metric : metrics) {
@@ -971,7 +971,12 @@ public class ClassifierResultsAnalysis {
                     ? testLabel
                     : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
-            proxy.eval("timingsLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "');");
+
+            String ylabel = metric.equals(memoryMaxMetric) ?
+                    "Max Memory (MB)" :
+                    "Time, " + evalSet.toLowerCase() + " (ms)";
+
+            proxy.eval("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
         }
     }
 
