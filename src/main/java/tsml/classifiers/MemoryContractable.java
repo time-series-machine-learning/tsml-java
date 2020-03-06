@@ -14,6 +14,8 @@
  */
 package tsml.classifiers;
 
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
+
 /**
  * Interface that allows the user to impose a memory contract of a classifier that
     implements this interface

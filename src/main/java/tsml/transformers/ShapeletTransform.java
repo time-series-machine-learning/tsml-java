@@ -65,6 +65,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
 
+
     //Im not sure this is used anywhere, should be in Options for condensing data?
     public static final int minimumRepresentation = 25; //If condensing the search set, this is the minimum number of instances per class to search
 
@@ -177,6 +178,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
         this.searchFunction = new ShapeletSearchFactory(sOp).getShapeletSearch();
     }
+
 
 
     protected void initQualityBound(ClassCounts classDist) {

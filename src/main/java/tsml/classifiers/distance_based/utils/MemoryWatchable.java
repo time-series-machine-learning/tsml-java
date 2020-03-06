@@ -1,4 +1,4 @@
-package tsml.classifiers;
+package tsml.classifiers.distance_based.utils;
 
 /**
  * Purpose: get stats related to memory.
