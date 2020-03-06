@@ -171,7 +171,7 @@ public class Experiments  {
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=ShapeletTransformClassifier"; //Classifier name
+                settings[3]="-cn=LEE"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+""; //Problem file, added below
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
@@ -185,8 +185,6 @@ public class Experiments  {
                 folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
-                    if(prob.equals("miniboone"))
-                        continue;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);

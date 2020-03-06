@@ -140,8 +140,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         
         setSeed(seed);
         
-        //defaults to 7 day contract TODO jay/tony review
-        setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
+        if(trainTimeContract)
+            setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
 
     @Override
