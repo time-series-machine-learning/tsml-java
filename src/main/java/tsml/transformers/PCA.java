@@ -8,9 +8,15 @@ import weka.core.Instances;
 
 /**
  * Transformer to generate Principal Components. Uses weka attribute selection PrincipalComponents. There is also
- * a weka Filter PrincipalComponents, but it is confusingly structured, like all Weka Filters.
- * the down side is that the attibute selection version does not have the capability to set a maximum number of attributes
- * This implementation i
+ * a weka Filter PrincipalComponents, but it is confusingly structured, like all Weka Filters, and has protected
+ * methods. The down side of using the ArttributeSelection version is that it does not have the capability to set
+ * a maximum number of attributes. This implementation creates a full transform then deletes attributes. This could
+ * be wasteful in memory for large attribute spaces (although PCA will internally need mxm memory anyway.
+ *
+ * This assumes that the PrincipalComponents sorts the eignevectors so the first has most variance.
+ * I'm 99.9% sure it does
+ *
+ * @author Tony Bagnall (ajb)
  */
 public class PCA implements Transformer {
 
@@ -18,6 +24,9 @@ public class PCA implements Transformer {
     int numAttributesToKeep=100;
     weka.attributeSelection.PrincipalComponents pca=new PrincipalComponents();
 
+    public void setNumAttributesToKeep(int a){
+        numAttributesToKeep=a;
+    }
     @Override
     public void fit(Instances data){
         if(data.numAttributes()-1<numAttributesToKeep)

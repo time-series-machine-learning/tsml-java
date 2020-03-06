@@ -566,7 +566,7 @@ public class cTSF extends EnhancedAbstractClassifier
 */
             }
         }
-
+        trainResults.setParas(getParameters());
     }
     /**
      * Sums either the
