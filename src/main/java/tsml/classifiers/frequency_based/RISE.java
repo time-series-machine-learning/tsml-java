@@ -17,6 +17,7 @@ package tsml.classifiers.frequency_based;
 import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
+import experiments.ClassifierLists;
 import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -600,9 +601,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             findTrainAcc(data);
             initialise();
             timer.reset();
-            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (timer.forestTimeLimit*2) - timer.forestElapsedTime);
+            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
+        System.out.println((System.nanoTime() - timer.forestStartTime) + " < " + (timer.forestTimeLimit - getTime()));
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
 
             //Start tree timer.
@@ -649,7 +651,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         if (timer.modelOutPath != null) {
             timer.saveModelToCSV(trainingData.relationName());
         }
-        timer.forestTimeLimit += timer.forestElapsedTime;
         timer.forestElapsedTime = (System.nanoTime() - timer.forestStartTime);
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(timer.forestElapsedTime);
@@ -941,12 +942,12 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "US");
-        result.setValue(TechnicalInformation.Field.YEAR, "2019?");
-        result.setValue(TechnicalInformation.Field.TITLE, "title");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "Flynn M., Large J., Bagnall A.");
+        result.setValue(TechnicalInformation.Field.YEAR, "2019");
+        result.setValue(TechnicalInformation.Field.TITLE, "The Contract Random Interval Spectral Ensemble (c-RISE): The Effect of Contracting a Classifier on Accuracy.");
         result.setValue(TechnicalInformation.Field.JOURNAL, "LNCS");
-        result.setValue(TechnicalInformation.Field.VOLUME, "XX");
-        result.setValue(TechnicalInformation.Field.PAGES, "XXXXX");
+        result.setValue(TechnicalInformation.Field.VOLUME, "11734");
+        result.setValue(TechnicalInformation.Field.PAGES, "381-392");
         return result;
     }
 
@@ -979,14 +980,63 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      * @throws Exception if an option is not supported
      */
     @Override
-    public void setOptions(String[] options) throws Exception{
-        String numTreesString=Utils.getOption('T', options);
+    public void setOptions(String[] options) throws Exception {
+        String numTreesString = Utils.getOption('T', options);
         if (numTreesString.length() != 0)
-            numClassifiers = Integer.parseInt(numTreesString);
-/**
- * INSERT OTHER OPTIONS HERE
- */
-
+            this.setNumClassifiers(Integer.parseInt(numTreesString));
+        String classifier = Utils.getOption('C', options);
+        if (numTreesString.length() != 0)
+            this.setBaseClassifier(ClassifierLists.setClassifierClassic(classifier, this.seed));
+        String downSample = Utils.getOption('D', options);
+        if (downSample.length() != 0)
+            this.setDownSample(Boolean.parseBoolean(downSample));
+        String minNumTrees = Utils.getOption('M', options);
+        if (minNumTrees.length() != 0)
+            this.setMinNumTrees(Integer.parseInt(minNumTrees));
+        String perForBag = Utils.getOption('P', options);
+        if (perForBag.length() != 0)
+            this.setPercentageOfContractForBagging(Double.parseDouble(perForBag));
+        String serialisePath = Utils.getOption('S', options);
+        if (serialisePath.length() != 0)
+            this.setSavePath(serialisePath);
+        String stabilise = Utils.getOption('N', options);
+        if (stabilise.length() != 0)
+            this.setStabilise(Integer.parseInt(stabilise));
+        String transform = Utils.getOption('R', options);
+        if (transform.length() != 0) {
+            TransformType transformType = null;
+            switch (transform) {
+                case "FFT":
+                    transformType = TransformType.FFT;
+                    break;
+                case "ACF":
+                    transformType = TransformType.ACF;
+                    break;
+                case "COMBO":
+                    transformType = TransformType.ACF_FFT;
+                    break;
+            }
+            this.setTransformType(transformType);
+        }
+        String trainLimit = Utils.getOption('L', options);
+        String trainLimitFormat = Utils.getOption('F', options);
+        if (trainLimit.length() != 0 && trainLimitFormat.length() == 0){
+            this.setTrainTimeLimit(Long.parseLong(trainLimit));
+        }
+        if(trainLimit.length() != 0 && trainLimitFormat.length() != 0){
+            TimeUnit timeUnit = null;
+            switch(trainLimitFormat){
+                case "NANO": timeUnit = TimeUnit.NANOSECONDS;
+                    break;
+                case "SEC": timeUnit = TimeUnit.SECONDS;
+                    break;
+                case "HOUR": timeUnit = TimeUnit.HOURS;
+                    break;
+                case "DAY": timeUnit = TimeUnit.DAYS;
+                    break;
+            }
+            this.setTrainTimeLimit(Long.parseLong(trainLimit), timeUnit);
+        }
     }
 
 
