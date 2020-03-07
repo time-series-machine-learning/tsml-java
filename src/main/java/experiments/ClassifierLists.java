@@ -449,7 +449,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HIVE-COTEV2","HIVE-COTE2","HC-TED2","HC-BcSBOSS","HC-cSBOSS","HIVE-COTE","TunedHIVE-COTE"};
+    public static String[] bespoke= {"HC-V2NoRise","HIVE-COTEV2","HIVE-COTE2","HC-TED2","HC-BcSBOSS","HC-cSBOSS","HIVE-COTE","TunedHIVE-COTE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -463,6 +463,20 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
+            case "HC-V2NoRise":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","TED","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
             case "HIVE-COTEV2":
                 if(canLoadFromFile){
                     String[] cls={"CIF","TED","RISE","STC","PF"};//RotF for ST
