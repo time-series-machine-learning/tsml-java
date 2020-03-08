@@ -179,11 +179,11 @@ public class KNNLOOCV
         }
 
         public static RLTunedClassifier buildTunedWdtw1nnV2() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV2());
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildWdtwSpaceV2());
         }
 
         public static RLTunedClassifier buildTunedWddtw1nnV2() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV2());
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildWddtwSpaceV2());
         }
 
         public static RLTunedClassifier buildTunedMsm1nnV1() {
