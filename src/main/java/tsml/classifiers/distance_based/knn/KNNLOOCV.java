@@ -142,7 +142,7 @@ public class KNNLOOCV
         public static void main(String[] args) throws Exception {
             int seed = 0;
             Instances[] data = DatasetLoading.sampleGunPoint(seed);
-            RLTunedClassifier classifier = buildTunedDtw1nnV1();
+            RLTunedClassifier classifier = buildTunedWdtw1nnV2();
             classifier.setSeed(seed); // set seed
             classifier.getLogger().setLevel(Level.ALL);
             classifier.setEstimateOwnPerformance(true);
