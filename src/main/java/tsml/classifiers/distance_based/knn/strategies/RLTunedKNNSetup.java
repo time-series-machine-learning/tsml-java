@@ -2,18 +2,15 @@ package tsml.classifiers.distance_based.knn.strategies;
 
 import com.google.common.collect.ImmutableSet;
 import evaluation.storage.ClassifierResults;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.Utils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
-import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -43,6 +40,14 @@ import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
  * randomly sampling parameters therefore we may choose to improve the neighbours of the same classifier twice or
  * more otherwise!)
  *
+ * At the moment, the current stategy is:
+ * 1) sample 10% of params
+ * 2) train those params to 10% neighbourhood
+ * 3) sample another 40% of params (50% overall), training each new param to 10% neighbourhood
+ * 4) train params to 50% neighbourhood
+ * 5) sample another 50% of params (100% overall), training each new param to 50% neighbourhood
+ * 6) train params to full neighbourhood
+ *
  * Contributors: goastler
  */
 public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Loggable {
@@ -67,8 +72,11 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
     private int maxNeighbourhoodSize = -1; // max number of neighbours
     private Box<Integer> neighbourCount; // current number of neighbours
     private Box<Integer> paramCount; // current number of params
-    private long longestExploreTimeNanos; // track maximum time taken for a param to run
-    private long longestExploitTimeNanos; // track max time taken for an addition of neighbours
+    // track maximum time taken for another param to run
+    private long longestExploreTimeNanos;
+    // track max time taken for an addition of neighbours. Note this is addition of 1 neighbour to 1 of the current
+    // benchmarks
+    private long longestExploitTimeNanos;
     // limits in percentage rather than raw value
     private double neighbourhoodSizeLimitPercentage = -1;
     private double paramSpaceSizeLimitPercentage = -1;
@@ -84,7 +92,7 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
     private Iterator<EnhancedAbstractClassifier> explorer;
     // iterator over the seen space
     private Iterator<EnhancedAbstractClassifier> exploiter;
-    // if we can both explore and exploit, the optimiser should tell us which to do
+    // if we can both explore and exploit, the Strategy should tell us which to do
     private Stategy stategy;
     // supplier for a classifier to apply params to
     private Supplier<KNNLOOCV> knnSupplier;
@@ -97,7 +105,13 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
     // iterator to explore improveable benchmarks
     private Iterator<EnhancedAbstractClassifier> improveableBenchmarkIterator;
     // whether to train the final benchmarks up to full neighbourhood or leave as is
-    private boolean trainSelectedBenchmarksFully = false;
+    private boolean trainSelectedBenchmarksFully = true;
+    // whether we're in full training selected benchmarks mode. If this is true then the iterators will be training
+    // neighbourhoods to full. This is just a simple flag to indicate when we've examined as much of the space as we
+    // would like and want to fully train the resultant benchmarks from that investigation - i.e. we've explored some
+    // parameters, added some neighbours and found a final benchmark which is the best. We now want to fully train
+    // that selected benchmark to indicate its quality.
+    private boolean trainSelectedBenchmarksFullyHasBeenSetup = false;
     // the set of best benchmarks
     private PrunedMultimap<Double, EnhancedAbstractClassifier> finalBenchmarks;
     // whether we're exploring (true) or exploiting (false)
@@ -108,17 +122,13 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         @Override
         public Iterator<EnhancedAbstractClassifier> apply(List<EnhancedAbstractClassifier> benchmarks) {
             // use a random iterator to explore the improveable benchmarks
-            getLogger().info("building new improveable benchmark iterator for " + benchmarks.size() + " benchmarks");
+            getLogger().info(() -> "building new improveable benchmark iterator for " + benchmarks.size() + " benchmarks");
             RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(
                 rlTunedClassifier.getSeed(), new ArrayList<>(
                 RLTunedKNNSetup.this.improveableBenchmarks));
             return iterator;
         }
     };
-    // track the time taken to make a decision between explore / exploit - the overhead
-    private StopWatch decisionTimer = new StopWatch(); // todo might be overkill, surely the caller should track this?
-    // iterate over the fully trained benchmarks
-    private Iterator<EnhancedAbstractClassifier> fullyTrainedIterator = null;
 
     /**
      * Builds a benchmark iterator given a list of benchmarks
@@ -132,29 +142,6 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
      */
     public interface ParamSpaceBuilder extends Function<Instances, ParamSpace>, Serializable {
 
-    }
-
-    /**
-     * full trains a list of classifiers
-     */
-    private class FullTrainer extends LinearListIterator<EnhancedAbstractClassifier> {
-
-        public FullTrainer(List<EnhancedAbstractClassifier> list) {
-            super(list);
-        }
-
-        @Override
-        public EnhancedAbstractClassifier next() {
-            EnhancedAbstractClassifier classifier = super.next();
-            if(classifier instanceof KNNLOOCV) {
-                final KNNLOOCV knn = (KNNLOOCV) classifier;
-                getLogger().info(() -> "enabling full train for " + extractNameAndParams(classifier));
-                knn.setNeighbourLimit(-1);
-                return knn;
-            } else {
-                throw new IllegalArgumentException("expected knn");
-            }
-        }
     }
 
     public boolean isIncrementalMode() {
@@ -173,20 +160,26 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         // simple checks and balances fields
         private boolean hasNextCalled = false;
         private boolean hasNext = false;
+        private Set<EnhancedAbstractClassifier> finalClassifiers = null;
 
         @Override
         public long predictNextTimeNanos() {
             long time;
-            hasNext(); // todo required?
-            // if we're going to explore then report the longest exploration time we've seen (examining another
-            // parameter)
-            if(exploreState) {
-                time = longestExploreTimeNanos;
+            final boolean hasNext = hasNext();
+            if(hasNext) {
+                // if we're going to explore then report the longest exploration time we've seen (examining another
+                // parameter)
+                if(exploreState) {
+                    time = longestExploreTimeNanos;
+                } else {
+                    // otherwise the longest exploitation time we've seen (adding more neighbours)
+                    time = longestExploitTimeNanos;
+                }
             } else {
-                // otherwise the longest exploitation time we've seen (adding more neighbours)
-                time = longestExploitTimeNanos;
+                // we're not doing anymore work
+                time = 0;
             }
-            getLogger().info("predicted next time to be: " + time);
+            getLogger().info(() -> "predicted next time to be: " + time);
             return time;
         }
 
@@ -195,17 +188,22 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
          * @return set of the 1 best benchmark
          */
         @Override
-        public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
-            getLogger().info("finding final classifiers");
-            // randomly pick 1 of the best classifiers
-            final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
-            final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
-                                                                                            rlTunedClassifier.getRandom());
-            if(selectedBenchmarks.size() > 1) {
-                throw new IllegalStateException("there shouldn't be more than 1");
+        public Set<EnhancedAbstractClassifier> getFinalClassifiers() {
+            if(finalClassifiers == null) {
+                getLogger().info(() -> "finding final classifiers");
+                // randomly pick 1 of the best classifiers
+                final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
+                final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
+                    rlTunedClassifier.getRandom());
+                if(selectedBenchmarks.size() > 1) {
+                    throw new IllegalStateException("there shouldn't be more than 1");
+                }
+                getLogger().info(() -> "picked final classifier to be: " + selectedBenchmarks.get(0));
+                return new HashSet<>(selectedBenchmarks);
+            } else {
+                getLogger().info(() -> "final classifiers already found");
+                return finalClassifiers;
             }
-            getLogger().info("picked final classifier to be: " + selectedBenchmarks.get(0));
-            return new HashSet<>(selectedBenchmarks);
         }
 
         /**
@@ -227,48 +225,49 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 rlTunedClassifier
                     .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
                 Utils.put(classifier, unimproveableBenchmarks);
+                // we won't be using that benchmark again
                 result = false;
             } else {
                 // else the classifier can be improved, so put it in the improveable pile
                 rlTunedClassifier
                     .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
                 Utils.put(classifier, nextImproveableBenchmarks);
+                // we will be using that benchmark again
                 result = true;
             }
             // update timings depending on our action
             long time = classifier.getTrainResults().getBuildPlusEstimateTime();
-            if(exploreState) {
-                longestExploreTimeNanos = Math.max(time + decisionTimer.getTimeNanos(), longestExploreTimeNanos);
-                getLogger().info(() -> "longest explore time: " + longestExploreTimeNanos);
-            } else {
-                longestExploitTimeNanos = Math.max(time + decisionTimer.getTimeNanos(), longestExploitTimeNanos);
-                getLogger().info(() -> "longest improvement time: " + longestExploitTimeNanos);
+            if(!exploreState) {
+                // we've done some exploiting so update the exploit time (i.e. time taken to add a neighbour to a
+                // benchmark)
+                longestExploitTimeNanos = Math.max(time, longestExploitTimeNanos);
+                getLogger().info(() -> "longest exploit time: " + longestExploitTimeNanos);
             }
-            decisionTimer.resetAndDisable();
+            // we've either seen another benchmark OR update a current benchmark so update the explore time, which
+            // would be the time if we were to explore another benchmark next time round. We do this because we have
+            // either just explored a new parameter or just added another neighbour to a parameter. If we've just
+            // added another neighbour, the neighbour count may have risen which would also raise the time taken to
+            // explore a new parameter next time (as the new parameter is trained to the neighbour count)
+            longestExploreTimeNanos = Math.max(time, longestExploreTimeNanos);
+            getLogger().info(() -> "longest explore time: " + longestExploreTimeNanos);
             return result;
         }
 
         @Override
         public EnhancedAbstractClassifier next() {
-            decisionTimer.enable();
             if(!hasNext) {
                 throw new IllegalStateException("next() called but hasNext() returned false");
             }
             hasNextCalled = false;
             EnhancedAbstractClassifier result;
-            // if we're in full training phase
-            if(fullyTrainedIterator != null) {
-                // use the specific iterator for that
-                result = fullyTrainedIterator.next();
-            } else if(exploreState) {
+            if(exploreState) {
                 // explore next classifier
                 result = explorer.next();
-                getLogger().info("picked " + result);
+                getLogger().info(() -> "picked " + result);
             } else {
                 // improve a current classifier
                 result = exploiter.next();
             }
-            decisionTimer.disable();
             return result;
         }
 
@@ -276,35 +275,50 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         public boolean hasNext() {
             // if not already called
             if(!hasNextCalled) {
-                decisionTimer.enable();
                 hasNextCalled = true;
+                boolean hasNext;
                 // can we explore and / or exploit
-                boolean explore = hasNextExploreTime() && hasNextExplore();
-                boolean exploit = hasNextExploitTime() && hasNextExploit();
-                getLogger().info("can explore: " + explore);
-                getLogger().info("can exploit: " + exploit);
+                boolean explore = hasNextExplore();
+                boolean exploit = hasNextExploit();
+                getLogger().info(() -> "can explore: " + explore);
+                getLogger().info(() -> "can exploit: " + exploit);
                 exploreState = false;
-                boolean result = true;
                 if(!exploit && explore) {
                     exploreState = true;
+                    hasNext = true;
                 } else if(exploit && explore) {
                     // if both then let optimiser decide
                     exploreState = stategy.shouldExplore();
-                } else {
-                    // we've exploited and explored everything, now need to fully train the selected benchmarks
-                    if (trainSelectedBenchmarksFully) {
-                        if(fullyTrainedIterator == null) {
-                            getLogger().info("training selected benchmark fully");
-                            fullyTrainedIterator = new FullTrainer(new ArrayList<>(findFinalClassifiers()));
-                            finalBenchmarks.clear();
+                    hasNext = true;
+                } else if(trainSelectedBenchmarksFully && finalClassifiers == null) {
+                    getLogger().info(() -> "switching over improveable benchmarks to enable full training");
+                    // this should only be hit once
+                    // we're training the final benchmarks fully
+                    // we need to find the final benchmarks
+                    finalClassifiers = getFinalClassifiers();
+                    // then make the final classifiers the only improveable benchmarks
+                    improveableBenchmarks.clear();
+                    nextImproveableBenchmarks.clear();
+                    for(EnhancedAbstractClassifier classifier : finalClassifiers) {
+                        if(isImproveable(classifier)) {
+                            // we can improve the neighbourhood so add the classifier to the improvers
+                            nextImproveableBenchmarks.add(classifier);
                         }
-                        result = fullyTrainedIterator.hasNext();
-                    } else {
-                        result = false;
                     }
+                    // switch the next improvements over to the current and build iterator
+                    switchImproveableBenchmarks();
+                    // make the neighbour count full neighbourhood
+                    neighbourCount.set(fullNeighbourhoodSize);
+                    // now the final classifiers are the only thing to be improved. They will be improved up to
+                    // the full neighbourhood
+                    // hasNext true if the final classifiers can be improved (i.e. aren't at full neighbourhood
+                    // already)
+                    hasNext = hasNextExploit();
+                } else {
+                    // fully explored, fully exploited, fully trained (if enabled)
+                    hasNext = false;
                 }
-                hasNext = result;
-                decisionTimer.disable();
+                this.hasNext = hasNext;
             }
             return hasNext;
         }
@@ -401,14 +415,6 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         return neighbourhoodSizeLimit >= 0 || NumUtils.isPercentage(neighbourhoodSizeLimitPercentage);
     }
 
-    private boolean withinParamSpaceSizeLimit() {
-        return paramCount.get() < maxParamSpaceSize;
-    }
-
-    private boolean withinNeighbourhoodSizeLimit() {
-        return neighbourCount.get() < maxNeighbourhoodSize;
-    }
-
     public double getParamSpaceSizeLimitPercentage() {
         return paramSpaceSizeLimitPercentage;
     }
@@ -459,12 +465,20 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
     }
 
-    private boolean hasNextExplore() {
+    private boolean hasNextExploreTick() {
         return explorer.hasNext();
     }
 
-    private boolean hasNextExploit() {
+    private boolean hasNextExploitTick() {
         return exploiter.hasNext();
+    }
+
+    private boolean hasNextExplore() {
+        return hasNextExploreTime() && hasNextExploreTick();
+    }
+
+    public boolean hasNextExploit() {
+        return hasNextExploitTime() && hasNextExploitTick();
     }
 
     @Override
@@ -474,11 +488,10 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         longestExploreTimeNanos = 0;
         id = 0;
         longestExploitTimeNanos = 0;
-        fullyTrainedIterator = null;
         nextImproveableBenchmarks = new HashSet<>();
         improveableBenchmarks = new HashSet<>();
         unimproveableBenchmarks = new HashSet<>();
-        improveableBenchmarkIterator = improveableBenchmarkIteratorBuilder.apply(new ArrayList<>());
+        switchImproveableBenchmarks();
         finalBenchmarks = PrunedMultimap.desc(ArrayList::new);
         finalBenchmarks.setSoftLimit(1);
         final int seed = rlTunedClassifier.getSeed();
@@ -512,13 +525,24 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
             final String name = knn.getClassifierName() + "_" + (id++);
             knn.setClassifierName(name);
             knn.setNeighbourLimit(neighbourCount.get());
-            getLogger().info("exploring: " + extractNameAndParams(knn));
+            getLogger().info(() -> "exploring: " + extractNameAndParams(knn));
             return knn;
         }
 
         @Override public boolean hasNext() {
             return paramSetIterator.hasNext() && withinParamSpaceSizeLimit();
         }
+
+        private boolean withinParamSpaceSizeLimit() {
+            return paramCount.get() < maxParamSpaceSize;
+        }
+    }
+
+    private void switchImproveableBenchmarks() {
+        improveableBenchmarks = nextImproveableBenchmarks;
+        nextImproveableBenchmarks = new HashSet<>();
+        improveableBenchmarkIterator = improveableBenchmarkIteratorBuilder.apply(new ArrayList<>(
+            improveableBenchmarks));
     }
 
     private class NeighbourExploiter implements Iterator<EnhancedAbstractClassifier> {
@@ -530,10 +554,7 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 final int nextNeighbourCount = origNeighbourCount + 1;
                 getLogger().info(() -> "neighbourhood " + origNeighbourCount + " --> " + nextNeighbourCount);
                 neighbourCount.set(nextNeighbourCount);
-                improveableBenchmarks = nextImproveableBenchmarks;
-                nextImproveableBenchmarks = new HashSet<>();
-                improveableBenchmarkIterator = improveableBenchmarkIteratorBuilder.apply(new ArrayList<>(
-                    improveableBenchmarks));
+                switchImproveableBenchmarks();
                 if(!improveableBenchmarkIterator.hasNext()) {
                     throw new IllegalStateException("this shouldn't happen, if we get to this point we should always "
                         + "have improveable neighbours");
@@ -555,7 +576,8 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
 
         @Override
         public boolean hasNext() {
-            return improveableBenchmarkIterator.hasNext() || !nextImproveableBenchmarks.isEmpty();
+            boolean result = improveableBenchmarkIterator.hasNext() || !nextImproveableBenchmarks.isEmpty();
+            return result;
         }
     }
 
@@ -588,7 +610,7 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 // all as only improvements will remain, if any.
                 throw new IllegalStateException("invalid source / improvement state");
             }
-            getLogger().info("strategy has chosen to explore: " + result);
+            getLogger().info(() -> "strategy has chosen to explore: " + result);
             return result;
         }
     }

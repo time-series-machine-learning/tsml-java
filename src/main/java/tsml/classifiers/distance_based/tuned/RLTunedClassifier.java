@@ -24,7 +24,6 @@ import weka.core.Instances;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
@@ -100,7 +99,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 
     protected Agent agent = new Agent() {
         @Override
-        public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
+        public Set<EnhancedAbstractClassifier> getFinalClassifiers() {
             throw new UnsupportedOperationException();
         }
 
@@ -256,6 +255,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     // end boiler plate ------------------------------------------------------------------------------------------------
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        getLogger().setLevel(Level.ALL); // todo remove
         // enable resource monitors
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
@@ -325,7 +325,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 
                     // then continue with regular bits
                     // find the final benchmarks
-                    benchmarks = agent.findFinalClassifiers();
+                    benchmarks = agent.getFinalClassifiers();
                     // sanity check and ensemble
                     if(benchmarks.isEmpty()) {
                         getLogger().info(() -> "no benchmarks collected");

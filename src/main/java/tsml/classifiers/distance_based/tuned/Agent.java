@@ -14,7 +14,7 @@ public interface Agent extends DefaultIterator<EnhancedAbstractClassifier> {
     default long predictNextTimeNanos() {
         return -1;
     }
-    Set<EnhancedAbstractClassifier> findFinalClassifiers();
+    Set<EnhancedAbstractClassifier> getFinalClassifiers();
 
     boolean feedback(EnhancedAbstractClassifier classifier); // true == can be exploited (again)
 
