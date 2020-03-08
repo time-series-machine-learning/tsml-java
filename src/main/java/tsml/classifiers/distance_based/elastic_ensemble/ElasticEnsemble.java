@@ -17,7 +17,6 @@ import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
-import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.Stated;
@@ -29,7 +28,6 @@ import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Randomizable;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -43,27 +41,19 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     public static void main(String[] args) throws Exception {
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        Classifier classifier = FACTORY.LEE.build();
-        if(classifier instanceof Randomizable) {
-            ((Randomizable) classifier).setSeed(seed);
-        }
-        if(classifier instanceof TrainEstimateable) {
-            ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
-        }
-        if(classifier instanceof Loggable) {
-            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
-        }
+        ElasticEnsemble classifier = FACTORY.LEE.build();
+        classifier.setEstimateOwnPerformance(true);
+        classifier.setSeed(0);
+        classifier.getLogger().setLevel(Level.ALL);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
         results.setDetails(classifier, data[1]);
-        if(classifier instanceof TrainEstimateable) {
-            ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-            trainResults.setDetails(classifier, data[0]);
-            System.out.println(trainResults.writeSummaryResultsToString());
-        }
+        ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
+        trainResults.setDetails(classifier, data[0]);
+        System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
 
-    public static final ClassifierBuilderFactory FACTORY = new ClassifierBuilderFactory();
+    public static final Factory FACTORY = new Factory();
 
     /**
      * get whether the train estimate will be regenerated
@@ -83,17 +73,17 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return this;
     }
 
-    public static class ClassifierBuilderFactory extends CompileTimeClassifierBuilderFactory {
-        public final ClassifierBuilder EE_V1 = add(new SuppliedClassifierBuilder("EE_V1",
-            ClassifierBuilderFactory::buildEeV1));
-        public final ClassifierBuilder EE_V2 = add(new SuppliedClassifierBuilder("EE_V2",
-            ClassifierBuilderFactory::buildEeV2));
-        public final ClassifierBuilder CEE_V1 = add(new SuppliedClassifierBuilder("CEE_V1",
-            ClassifierBuilderFactory::buildCeeV1));
-        public final ClassifierBuilder CEE_V2 = add(new SuppliedClassifierBuilder("CEE_V2",
-            ClassifierBuilderFactory::buildCeeV2));
-        public final ClassifierBuilder LEE = add(new SuppliedClassifierBuilder("LEE",
-            ClassifierBuilderFactory::buildLee));
+    public static class Factory extends CompileTimeClassifierBuilderFactory<ElasticEnsemble> {
+        public final ClassifierBuilder<? extends ElasticEnsemble> EE_V1 = add(new SuppliedClassifierBuilder<>("EE_V1",
+            Factory::buildEeV1));
+        public final ClassifierBuilder<? extends ElasticEnsemble> EE_V2 = add(new SuppliedClassifierBuilder<>("EE_V2",
+            Factory::buildEeV2));
+        public final ClassifierBuilder<? extends ElasticEnsemble> CEE_V1 = add(new SuppliedClassifierBuilder<>("CEE_V1",
+            Factory::buildCeeV1));
+        public final ClassifierBuilder<? extends ElasticEnsemble> CEE_V2 = add(new SuppliedClassifierBuilder<>("CEE_V2",
+            Factory::buildCeeV2));
+        public final ClassifierBuilder<? extends ElasticEnsemble> LEE = add(new SuppliedClassifierBuilder<>("LEE",
+            Factory::buildLee));
 
 
         public static ImmutableList<Classifier> buildV1Constituents() {
@@ -223,7 +213,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
      */
     public ElasticEnsemble() {
         super(true);
-        setConstituents(ClassifierBuilderFactory.buildV1Constituents());
+        setConstituents(Factory.buildV1Constituents());
     }
 
     // the constituents

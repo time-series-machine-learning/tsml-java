@@ -18,7 +18,7 @@ import weka.core.Instances;
  * Contributors: goastler
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy,
-    Debugable,
+    Debugable, TrainEstimateable,
     Loggable {
 
     private Logger logger = LogUtils.buildLogger(this);
