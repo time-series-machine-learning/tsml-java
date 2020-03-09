@@ -157,7 +157,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
     {
         try {
-            Copy.setFieldValue(this, "logger", LogUtils.getLogger(this)); // because it was transient
+            Copy.setFieldValue(this, "logger", LogUtils.buildLogger(this)); // because it was transient
         } catch(NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalArgumentException(e.toString()); // should never happen
         }
@@ -370,7 +370,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
     }
 
-    private transient final Logger logger = LogUtils.getLogger(this);
+    private transient final Logger logger = LogUtils.buildLogger(this);
 
     @Override public Logger getLogger() {
         return logger;

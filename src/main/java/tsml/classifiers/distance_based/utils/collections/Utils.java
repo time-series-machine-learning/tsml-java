@@ -53,7 +53,7 @@ public class Utils {
     public static <A> void put(A item, Set<A> set) {
         boolean result = set.add(item);
         if(!result) {
-            throw new IllegalStateException("already contains item");
+            throw new IllegalStateException("already contains item " + item.toString());
         }
     }
 }

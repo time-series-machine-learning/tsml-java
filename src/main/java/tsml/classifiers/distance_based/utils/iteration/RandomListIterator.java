@@ -1,7 +1,10 @@
 package tsml.classifiers.distance_based.utils.iteration;
 
+import java.util.function.Function;
+import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import utilities.ArrayUtilities;
 import tsml.classifiers.distance_based.utils.StrUtils;
+import weka.core.Debug;
 import weka.core.OptionHandler;
 import weka.core.Randomizable;
 
@@ -31,7 +34,7 @@ public class RandomListIterator<A>
         indices = ArrayUtilities.sequence(list.size()); // todo remove dependency on indices list
     }
 
-    protected Random random = null;
+    protected Random random = new Random();
     protected Integer seed = null;
     protected List<A> list = new ArrayList<>();
     protected List<Integer> indices;
@@ -52,19 +55,14 @@ public class RandomListIterator<A>
 
     protected void setRandomIndex() {
         if(!nextIndexSetup) {
-            if(random == null) {
-                if(seed == null) {
-                    throw new IllegalStateException("seed not set");
-                }
-                random = new Random(seed);
+            if(seed == null) {
+                throw new IllegalStateException("seed not set");
             }
-            seed = random.nextInt();
             if(indices.isEmpty()) {
                 index = -1;
             } else {
-                index = random.nextInt(indices.size());
+                index = RandomUtils.getRandAndSwitchSeed(random, random -> random.nextInt(indices.size())).getResult();
             }
-            random.setSeed(seed);
             nextIndexSetup = true;
         }
     }
@@ -95,6 +93,7 @@ public class RandomListIterator<A>
 
     public void setSeed(int seed) {
         this.seed = seed;
+        random.setSeed(seed);
     }
 
     @Override

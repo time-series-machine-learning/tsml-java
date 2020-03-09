@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.dtw;
 /*
 
-Purpose: // todo - docs - type the purpose of the code here
+Purpose: interface for DTW behaviour
 
 Contributors: goastler
     

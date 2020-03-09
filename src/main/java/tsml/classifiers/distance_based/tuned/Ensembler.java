@@ -13,7 +13,11 @@ import java.util.function.Function;
 public interface Ensembler extends Serializable {
     List<Double> weightVotes(Iterable<EnhancedAbstractClassifier> benchmarks);
 
-    static Ensembler byScore(Function<EnhancedAbstractClassifier, Double> scorer) {
+    interface Scorer extends Function<EnhancedAbstractClassifier, Double>, Serializable {
+
+    }
+
+    static Ensembler byScore(Scorer scorer) {
         return (benchmarks) -> {
             List<Double> weights = new ArrayList<>();
             for(EnhancedAbstractClassifier benchmark : benchmarks) {
