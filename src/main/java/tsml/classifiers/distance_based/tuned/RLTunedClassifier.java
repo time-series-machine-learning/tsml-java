@@ -255,7 +255,6 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     // end boiler plate ------------------------------------------------------------------------------------------------
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
-        getLogger().setLevel(Level.ALL); // todo remove
         // enable resource monitors
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
