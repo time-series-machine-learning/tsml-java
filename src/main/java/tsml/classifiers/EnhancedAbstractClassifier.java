@@ -15,7 +15,6 @@
 package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
@@ -83,18 +82,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
                                                                                        Serializable,
                                                                                        Randomizable {
 
-    public ParamSet getParams() {
-        return null;
-    }
-
-    public void setParams(ParamSet params) {
-
-    }
-
-    public Logger getLogger() {
-        return logger;
-    }
-
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
     protected int seed = 0;
@@ -102,7 +89,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
-    private transient Logger logger = LogUtils.getLogger(this);
 
     public Random getRandom() {
         return rand;
@@ -167,7 +153,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
-        logger.fine("fresh build");
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = trainData.numClasses();
@@ -364,11 +349,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public void setClassifierName(String classifierName) {
         this.classifierName = classifierName;
-        if(classifierName != null) {
-            logger = LogUtils.getLogger(classifierName);
-        } else {
-            logger = LogUtils.getLogger(this);
-        }
     }
 
     public void setDebug(boolean b){

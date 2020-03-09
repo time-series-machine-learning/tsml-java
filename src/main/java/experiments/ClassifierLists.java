@@ -96,6 +96,7 @@ public class ClassifierLists {
             "DD_DTW","DTD_C","NN_CID",
         "EE",
         "LEE",
+        "TUNED_DTW_1NN_V1"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -104,7 +105,7 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "EE":
-                c = ElasticEnsemble.FACTORY.CEE_V2.build();
+                c = ElasticEnsemble.FACTORY.EE_V2.build();
                 break;
             case "LEE":
                 c = ElasticEnsemble.FACTORY.LEE.build();

@@ -55,6 +55,7 @@ public class CachedFilter extends HashFilter {
      * @throws Exception
      */
     public boolean setInputFormat(Instances instanceInfo) throws Exception {
+        HashFilter.hashInstances(instanceInfo);
         super.setInputFormat(instanceInfo);
         boolean outputFormatHasBeenSetup = filter.setInputFormat(instanceInfo);
         if(outputFormatHasBeenSetup) {
@@ -115,7 +116,7 @@ public class CachedFilter extends HashFilter {
     @Override
     public boolean input(Instance instance) throws Exception {
         if(!(instance instanceof HashFilter.HashedDenseInstance)) {
-            throw new IllegalArgumentException("can only handle hashed instances for reliable hashing");
+            HashFilter.hashInstanceAndDataset(instance);
         }
         Instance transformed = cache.get(instance);
         if(transformed == null) {

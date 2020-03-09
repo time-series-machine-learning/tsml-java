@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.logging;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.logging.*;
 
 /**
@@ -12,16 +13,20 @@ import java.util.logging.*;
 public class LogUtils {
     private LogUtils() {}
 
-    public static Logger getLogger(Object object) {
+    public static Logger buildLogger(Object object) {
         String name;
         if(object instanceof Class) {
             name = ((Class) object).getSimpleName();
         } else if(object instanceof String) {
             name = (String) object;
         } else {
-            name = object.getClass().getSimpleName() + "-" + object.hashCode();
+            name = object.getClass().getSimpleName() + "_" + object.hashCode();
         }
         Logger logger = Logger.getLogger(name);
+        Handler[] handlers = logger.getHandlers();
+        for(Handler handler : handlers) {
+            logger.removeHandler(handler);
+        }
         logger.setLevel(Level.SEVERE); // disable all but severe error logs by default
         logger.addHandler(buildStdOutStreamHandler(new CustomLogFormat()));
         logger.addHandler(buildStdErrStreamHandler(new CustomLogFormat()));
@@ -36,7 +41,7 @@ public class LogUtils {
             return logRecord.getSequenceNumber() + separator +
                 logRecord.getLevel() + separator +
                 logRecord.getLoggerName() + separator +
-//                logRecord.getSourceClassName() + separator +
+                logRecord.getSourceClassName() + separator +
                 logRecord.getSourceMethodName() + separator +
                 logRecord.getMessage() + System.lineSeparator();
         }

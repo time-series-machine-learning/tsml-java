@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.ddtw;
 /*
 
-Purpose: // todo - docs - type the purpose of the code here
+Purpose: derivative version of DTW.
 
 Contributors: goastler
     
