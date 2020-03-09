@@ -163,7 +163,8 @@ public class ClassifierLists {
             "HI-LimitFCNN-BcS-BOSS","HI-SLimitFCNN-BcS-BOSS","HI-CompFCNN-BcS-BOSS",
             "IGB-BcS-BOSS","Anova-BcS-BOSS","MFT-BcS-BOSS","DFT-BcS-BOSS","AnovaMFT-BcS-BOSS","AnovaIGB-BcS-BOSS",
             "pIGB-BcS-BOSS","pAnova-BcS-BOSS","pAnovaIGB-BcS-BOSS","HI-SLimitFCNN-pIGB-BcS-BOSS","HI-pIGB-BcS-BOSS",
-            "HI-100pIGB-BcS-BOSS","HI-100pAnovaIGB-BcS-BOSS","HI-Bigram-pIGB-BcS-BOSS","HI-TuneWeight-pIGB-BcS-BOSS"};
+            "HI-100pIGB-BcS-BOSS","HI-100pAnovaIGB-BcS-BOSS","HI-Bigram-pIGB-BcS-BOSS","HI-TuneWeight-pIGB-BcS-BOSS",
+            "HI-nrBigram-pIGB-BcS-BOSS","HI-nr-pIGB-BcS-BOSS","HI-pIGB-cS-BOSS","HI-pIGB-750cS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -412,12 +413,43 @@ public class ClassifierLists {
                 ((cBOSSSP) c).histogramIntersection = true;
                 ((cBOSSSP) c).bigrams = true;
                 break;
+            case "HI-nrBigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).numerosityReduction = false;
+                break;
+            case "HI-nr-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).numerosityReduction = false;
+                break;
             case "HI-TuneWeight-pIGB-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
                 ((cBOSSSP) c).useIGB = new boolean[]{true, false};
                 ((cBOSSSP) c).histogramIntersection = true;
                 ((cBOSSSP) c).tuneWeight = true;
+                break;
+
+            case "HI-pIGB-cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                break;
+            case "HI-pIGB-750cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).setEnsembleSize(750);
                 break;
 
 

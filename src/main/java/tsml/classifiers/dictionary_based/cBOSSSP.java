@@ -67,6 +67,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public boolean histogramIntersection = false;
     public int limitVal = 100000;
     public int limitOp = 0;
+    public boolean numerosityReduction = true;
 
     public boolean FCNN = false;
     public boolean FCNNcomp = false;
@@ -663,6 +664,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.anova = parameters[6] == 1;
             boss.newDFT = newDFT;
             boss.newMFT = newMFT;
+            boss.numerosityReduction = numerosityReduction;
 
             if (FCNNlimit < FCNNsoftlimit){
                 FCNNlimit = FCNNsoftlimit;
