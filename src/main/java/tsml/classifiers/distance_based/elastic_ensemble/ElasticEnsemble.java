@@ -14,6 +14,7 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
@@ -238,6 +239,10 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     // train time limit
     private transient long trainTimeLimitNanos = -1;
     // version id for serialisation
+    protected transient long trainContractTimeNanos = -1;
+    //TODO George to integrate the boolean into the classifier logic
+    private boolean trainTimeContract = false;
+
     private static final long serialVersionUID = 0;
     // minimum checkpoint interval
     private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
@@ -366,8 +371,8 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public long getTrainTimeLimitNanos() {
-        return trainTimeLimitNanos;
+    @Override public long getTrainContractTimeNanos() {
+        return trainContractTimeNanos;
     }
 
     private void setRemainingTrainTimeNanosPerConstituent() {

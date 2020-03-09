@@ -5,6 +5,7 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
@@ -132,7 +133,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     private transient boolean hasSkippedEvaluation = false;
     private Set<String> classifierNames;
     private transient boolean yielded = false;
-    protected transient long trainTimeLimitNanos = -1;
+    protected transient long trainContractTimeNanos = -1;
+    //TODO George to integrate the boolean into the classifier logic
+    private boolean trainTimeContract = false;
+
     private static final long serialVersionUID = 0;
     protected transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     protected transient long lastCheckpointTimeStamp = 0;
@@ -236,8 +240,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         // finish params
     }
 
-    @Override public void setTrainTimeLimitNanos(final long nanos) {
-        trainTimeLimitNanos = nanos;
+    @Override public void setTrainTimeLimit(final long nanos) {
+        trainContractTimeNanos = nanos;
+        trainTimeContract=true;
     }
 
     @Override public long predictNextTrainTimeNanos() {
@@ -248,8 +253,8 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return !agent.hasNext();
     }
 
-    @Override public long getTrainTimeLimitNanos() {
-        return trainTimeLimitNanos;
+    @Override public long getTrainContractTimeNanos() {
+        return trainContractTimeNanos;
     }
 
     // end boiler plate ------------------------------------------------------------------------------------------------

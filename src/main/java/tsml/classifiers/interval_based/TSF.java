@@ -190,7 +190,6 @@ public class TSF extends EnhancedAbstractClassifier
     }
      
 /**
- * Perhaps make this coherent with setOptions(String[] ar)?
  * @return String written to results files
  */
     @Override
@@ -519,6 +518,8 @@ public class TSF extends EnhancedAbstractClassifier
             }
         }
         trainResults.setBuildTime(t2-t1);
+        trainResults.setParas(getParameters());
+
     }
      
     private void copyParameters(TSF other){
@@ -745,7 +746,7 @@ public class TSF extends EnhancedAbstractClassifier
      
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
-   //TUNED TSC Classifiers
+   //TUNED TSF Classifiers
   /* Valid options are: <p/>
    * <pre> -T Number of trees.</pre>
    * <pre> -I Number of intervals to fit.</pre>

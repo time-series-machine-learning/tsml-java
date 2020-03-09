@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 /*
  * Move Split Merge distance measure from
@@ -22,7 +22,6 @@ import weka.core.neighboursearch.PerformanceStats;
  * @author Chris Rimmer
  */
 
-@Deprecated
 public class MSMDistance extends EuclideanDistance{
 
     // c - cost of Split/Merge operation. Change this value to what is more

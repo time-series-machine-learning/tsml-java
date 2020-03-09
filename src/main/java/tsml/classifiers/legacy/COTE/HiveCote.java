@@ -37,13 +37,7 @@ import weka.core.*;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 /**
- * NOTE: consider this code experimental. This is a first pass and may not be final; 
- * it has been informally tested but awaiting rigorous testing before being signed off.
- * Also note that file writing/reading from file is not currently supported (will be added soon)
- */
-
-/**
- *
+ * Note this is here for legacy reasons only, it has been replaced by tsml.classifiers.hybrids.HIVE_COTE
  * @author Jason Lines (j.lines@uea.ac.uk)
  * 
  * Basic use case
@@ -88,10 +82,12 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
     private String fileOutputDir;
     private String fileOutputDataset;
     private String fileOutputResampleId;
-    private boolean contractTime=true;
+
     private static int MAXCONTRACTHOURS=7*24;
     private int contractHours=MAXCONTRACTHOURS;  //Default to maximum 7 days run time
-    
+    private long contractTimeNanos = 0;
+    private boolean trainTimeContract =false;
+
     public HiveCote(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.setDefaultEnsembles();
@@ -102,7 +98,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         setClassifiers(classifiers,classifierNames);
         this.classifiers = classifiers;
         this.names = classifierNames;
-        if(contractTime){
+        if(trainTimeContract){
             setTrainTimeLimit(TimeUnit.HOURS,contractHours);
         }
 
@@ -130,12 +126,14 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         return result;
     }    
     public void setContract(boolean b){
-        contractTime=b;
+        trainTimeContract =b;
         contractHours=MAXCONTRACTHOURS;
+        setHourLimit(contractHours);
     }
     public void setContract(int hours){
-        contractTime=true;
+        trainTimeContract =true;
         contractHours=hours;
+        setHourLimit(contractHours);
     }
     @Override
     public void setSeed(int seed) { 
@@ -161,7 +159,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
 //        CAWPE h = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st= new DefaultShapeletTransformPlaceholder();
-        if(contractTime){
+        if(trainTimeContract){
             stc.setHourLimit(contractHours);
         }
         
@@ -628,16 +626,15 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
             str+=","+m.ensembleCvAcc;
         return str;
     }
-    
-
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
+    public void setTrainTimeLimit(long amount) {
 //Split the time up equally if contracted, if not we have no control    
-        contractTime=true;
+        trainTimeContract =true;
+        contractTimeNanos=amount;
         long used=0;
         for(Classifier c:classifiers){
             if(c instanceof TrainTimeContractable)
-                ((TrainTimeContractable) c).setTrainTimeLimit(time, amount/classifiers.size());
+                ((TrainTimeContractable) c).setTrainTimeLimit(amount/classifiers.size());
             used+=amount/classifiers.size();    
         }
         long remaining = amount-used;
@@ -646,7 +643,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         if(remaining>0){
             for(Classifier c:classifiers){
                 if(c instanceof TrainTimeContractable){
-                    ((TrainTimeContractable) c).setTrainTimeLimit(time, amount/classifiers.size()+remaining);
+                    ((TrainTimeContractable) c).setTrainTimeLimit(amount/classifiers.size()+remaining);
                     break;
                 }
             }

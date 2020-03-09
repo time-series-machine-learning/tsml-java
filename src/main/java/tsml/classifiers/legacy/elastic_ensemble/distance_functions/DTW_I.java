@@ -12,32 +12,48 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
-import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.neighboursearch.PerformanceStats;
 
 /**
  *
- * @author Aaron
+ * @author ABostrom
  */
 
-@Deprecated
-public class EuclideanDistance_D extends EuclideanDistance{
+
+
+public class DTW_I extends DTW_DistanceBasic{
+   
     
+    public DTW_I(){}
     
-    public EuclideanDistance_D(){}
-    
-    public EuclideanDistance_D(Instances train){
+    public DTW_I(Instances train){
         super(train);
         
-        m_Data = null;
-        m_Validated = true;
+         m_Data = null;
+         m_Validated = true;
     }
     
-
+    //DIRTY HACK TO MAKE IT WORK WITH kNN. because of relational attribute stuff.
+    @Override
+    protected void validate() {}
+    
+    @Override
+    public void update(Instance ins) {}
+    
+    @Override
+    public double distance(Instance first, Instance second, double cutOffValue, PerformanceStats stats){
+        return distance(first,second,cutOffValue);
+    }
+    @Override    
+    public double distance(Instance first, Instance second) {
+        return distance(first, second, Double.POSITIVE_INFINITY);
+    }
+    
     @Override
     public double distance(Instance multiSeries1, Instance multiseries2, double cutoff){
         
@@ -46,31 +62,14 @@ public class EuclideanDistance_D extends EuclideanDistance{
         Instance[] multi2 = splitMultivariateInstance(multiseries2);
 
         //TODO: might need to normalise here.
-        double[][] data1 = utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToTransposedArrays(multi1);
-        double[][] data2 = utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToTransposedArrays(multi2);
-        return Math.sqrt(distance(data1, data2, cutoff));
-    }
-    
-    public double distance(double[][] a, double[][] b, double cutoff){
-        //assume a and b are the same length.
-        double sum =0;
-        for(int i=0; i<a.length; i++){
-            sum += sqMultiDist(a[i],b[i]);
+        
+        //pairwise compare and sum dtw measures.
+        double cumulative_distance = 0;
+        for(int i=0; i< multi1.length; i++){
+            cumulative_distance += Math.sqrt(super.distance(multi1[i], multi2[i], cutoff));
         }
-        return sum;
+        
+        return cumulative_distance;
     }
-    
-    double sqDist(double a, double b){
-        return (a-b)*(a-b);
-    }
-    
-    //given each aligned value in the channel.
-    double sqMultiDist(double[] a, double[] b){
-        double sum = 0;
-        for(int i=0; i<a.length; i++){
-            sum += sqDist(a[i], b[i]);
-        }
-        return sum;
-    }
-    
+
 }

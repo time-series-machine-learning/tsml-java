@@ -98,7 +98,7 @@ public class PerformanceMetric {
     public static PerformanceMetric additionalTimeForEstimateBenchmarked = new PerformanceMetric("AdditionalTimesForEstimatesBenchmarked", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillisBenchmarked, median, min, slower);
 
     public static PerformanceMetric benchmarkTime = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower);
-    public static PerformanceMetric memory          = new PerformanceMetric("AvgMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse);
+    public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 

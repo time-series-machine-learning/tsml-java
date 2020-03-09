@@ -1,7 +1,7 @@
 /*
 DTW with early abandon
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils.GenericTools;
@@ -10,7 +10,6 @@ import weka.core.Instance;
 /**
  * @author ajb
  */
-@Deprecated
 public final class DTW extends DTW_DistanceBasic {
 
 

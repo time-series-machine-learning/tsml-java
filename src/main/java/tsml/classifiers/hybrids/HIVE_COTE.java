@@ -50,8 +50,8 @@ import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
 
     //TrainTimeContractable
-    protected boolean contractingTrainTime = false;
-    protected long contractTrainTime = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
+    protected boolean trainTimeContract = false;
+    protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
     protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     
     
@@ -111,8 +111,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
 //        st_classifier.setTransform(st_transform);
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
-        if (contractingTrainTime)
-            stc.setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        if (trainTimeContract)
+            stc.setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
         stc.setEstimateOwnPerformance(true);
         classifiers[1] = stc;
         classifierNames[1] = "STC";
@@ -141,12 +141,12 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         setSeed(seed);
         
         //defaults to 7 day contract TODO jay/tony review
-        setTrainTimeLimit(contractTrainTimeUnit, contractTrainTime);
+        setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
 
     @Override
     public void buildClassifier(Instances data) throws Exception {        
-        if (contractingTrainTime) 
+        if (trainTimeContract)
             setupContracting();
 
         if(debug) {
@@ -181,10 +181,10 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      *      this will still naively set the contract per classifier as amount/numClassifiers
      */
     @Override //TrainTimeContractable
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        contractingTrainTime = true;
-        contractTrainTime = amount;
-        contractTrainTimeUnit = time;
+    public void setTrainTimeLimit(long amount) {
+        trainTimeContract = true;
+        trainContractTimeNanos = amount;
+        contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     }
     
     /**
@@ -215,7 +215,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         
         //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
-        long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(contractTrainTime, contractTrainTimeUnit));
+        long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
         long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
         
         for (EnsembleModule module : modules)

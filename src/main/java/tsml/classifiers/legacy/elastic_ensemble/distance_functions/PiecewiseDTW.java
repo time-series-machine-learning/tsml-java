@@ -1,14 +1,14 @@
 /* 
  * Piecewise DTW distance metric 
  */
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 /**
  *
  * @author Chris Rimmer
  */
 
-@Deprecated
+
 public class PiecewiseDTW extends BasicDTW {
     
     private int frameSize;

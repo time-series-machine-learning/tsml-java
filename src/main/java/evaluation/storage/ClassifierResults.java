@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.TrainTimeable;
 import tsml.classifiers.distance_based.utils.StrUtils;

@@ -36,7 +36,7 @@ Matching},
 */
 
 
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -59,7 +59,6 @@ lambda is selected from 0; .25; .5; .75; 1.0.
 
 
 
-@Deprecated
 public class TWEDistance extends EuclideanDistance{
 
     double nu=1;

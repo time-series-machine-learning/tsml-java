@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 /**
 
 Basic DTW implementation for Weka. /Each instance is assumed to be a time series. Basically we
@@ -11,9 +11,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import weka.core.neighboursearch.PerformanceStats;
-
-
-@Deprecated
 public class DTW_DistanceBasic extends EuclideanDistance{
 
     private static final long serialVersionUID = 1L;

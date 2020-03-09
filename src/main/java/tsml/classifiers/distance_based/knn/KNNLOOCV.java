@@ -533,7 +533,7 @@ public class KNNLOOCV
         return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
     }
 
-    public long getTrainTimeLimitNanos() {
+    public long getTrainContractTimeNanos() {
         return trainTimeLimitNanos;
     }
 

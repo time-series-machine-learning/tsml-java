@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.distances.legacy;
+package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 /*
 
@@ -34,7 +34,7 @@ import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
 
-@Deprecated
+
 public class ERPDistance extends EuclideanDistance {
 
     private double g;
