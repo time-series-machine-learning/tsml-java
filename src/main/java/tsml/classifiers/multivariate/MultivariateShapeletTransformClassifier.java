@@ -70,7 +70,11 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
     private SearchType searchType = SearchType.IMPROVED_RANDOM;
     private long numShapelets = 0;
+
     private long timeLimit = Long.MAX_VALUE;
+    private boolean trainTimeContract = false;
+
+
     private String checkpointFullPath; //location to check point 
     private boolean checkpoint=false;
     enum TransformType{INDEP,MULTI_D,MULTI_I};
@@ -146,29 +150,14 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
             return transform.process(data);
         return null;
     }
-    
-    //pass in an enum of hour, minut, day, and the amount of them. 
+
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount){
-        //min,hour,day in longs.
-        switch(time){
-            case NANOSECONDS:
-                timeLimit = amount;
-                break;
-            case MINUTES:
-                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
-                break;
-            case HOURS:
-                timeLimit = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
-                break;
-            case DAYS:
-                timeLimit = ShapeletTransformTimingUtilities.dayNano * amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public void setTrainTimeLimit(long amount) {
+        timeLimit=amount;
+        trainTimeContract = false;
+
     }
-    
+
     public void setNumberOfShapelets(long numS){
         numShapelets = numS;
     }

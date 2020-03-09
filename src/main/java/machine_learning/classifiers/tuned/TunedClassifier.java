@@ -26,7 +26,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.TrainTimeContractable;
@@ -74,8 +74,8 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     String SEP_CP_PS_paraWritePath; //SaveEachParameter //CheckpointClassifier //ParameterSplittable
     boolean SEP_CP_savingAllParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long CC_contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean CC_contracting = false; //TrainTimeContractClassifier
+    long trainContractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean trainTimeContract = false; //TrainTimeContractClassifier
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
@@ -338,26 +338,12 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //TrainTimeContractClassifier
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        CC_contracting = true;
-        long secToNano = 1000000000L;
-        
-        switch(time){
-            case NANOSECONDS:
-                CC_contractTimeNanos = amount;
-                break;
-            case MINUTES:
-                CC_contractTimeNanos = amount*60*secToNano;
-                break;
-            case HOURS: default:
-                CC_contractTimeNanos= amount*60*60*secToNano;
-                break;
-            case DAYS:
-                CC_contractTimeNanos= amount*24*60*60*secToNano; 
-                break;
-        }
+    @Override
+    public void setTrainTimeLimit(long amount) {
+        trainContractTimeNanos =amount;
+        trainTimeContract = true;
     }
+
     
     /**
      * To be called at start of buildClassifier
@@ -370,7 +356,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         if (SEP_CP_savingAllParameters || PS_parameterSplitting)
             tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
         
-        if (CC_contracting)
-            tuner.setTrainTimeLimit(this.CC_contractTimeNanos);
+        if (trainTimeContract)
+            tuner.setTrainTimeLimit(this.trainContractTimeNanos);
     }
 }
