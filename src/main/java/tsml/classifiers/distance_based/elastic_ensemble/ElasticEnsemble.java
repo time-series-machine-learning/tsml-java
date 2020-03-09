@@ -353,7 +353,8 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return trainEstimateTimer;
     }
 
-    @Override public void setTrainTimeLimitNanos(final long nanos) {
+    @Override
+    public void setTrainTimeLimit(long nanos) {
         trainTimeLimitNanos = nanos;
     }
 
