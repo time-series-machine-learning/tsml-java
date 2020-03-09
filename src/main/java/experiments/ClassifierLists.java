@@ -30,7 +30,6 @@ import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
-import tsml.classifiers.interval_based.cTSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
@@ -206,9 +205,6 @@ public class ClassifierLists {
                 break;
             case "TSF":
                 c=new TSF();
-                break;
-            case "cTSF":
-                c=new cTSF();
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
