@@ -206,9 +206,6 @@ public class ClassifierLists {
             case "TSF":
                 c=new TSF();
                 break;
-            case "cTSF":
-                c=new TSF();
-                break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -594,18 +591,18 @@ public class ClassifierLists {
     }
 
     /**
-     * 
-     * setClassifier, which takes the experimental 
-     * arguments themselves and therefore the classifiers can take from them whatever they 
-     * need, e.g the dataset name, the fold id, separate checkpoint paths, etc. 
-     * 
+     *
+     * setClassifier, which takes the experimental
+     * arguments themselves and therefore the classifiers can take from them whatever they
+     * need, e.g the dataset name, the fold id, separate checkpoint paths, etc.
+     *
      * To take this idea further, to be honest each of the TSC-specific classifiers
      * could/should have a constructor and/or factory that builds the classifier
      * from the experimental args.
-     * 
+     *
      * previous usage was setClassifier(String classifier name, int fold).
-     * this can be reproduced with setClassifierClassic below. 
-     * 
+     * this can be reproduced with setClassifierClassic below.
+     *
      */
     public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -634,18 +631,18 @@ public class ClassifierLists {
         }
         if(c instanceof Randomizable)
             ((Randomizable)c).setSeed(exp.foldId);
-        return c;    
+        return c;
     }
 
     /**
-     * This method redproduces the old usage exactly as it was in old experiments.java. 
-     * If you try build any classifier that uses any experimental info other than  
+     * This method redproduces the old usage exactly as it was in old experiments.java.
+     * If you try build any classifier that uses any experimental info other than
      * exp.classifierName or exp.foldID, an exception will be thrown.
      * In particular, any classifier that needs access to the results from others
      * e.g. CAWPEFROMFILE, will throw an UnsupportedOperationException if you try use it like this.
      *      * @param classifier
      * @param fold
-     * @return 
+     * @return
      */
     public static Classifier setClassifierClassic(String classifier, int fold){
         Experiments.ExperimentalArguments exp=new ExperimentalArguments();
@@ -654,11 +651,11 @@ public class ClassifierLists {
         return setClassifier(exp);
     }
 
-    
 
 
 
-    
+
+
     public static void main(String[] args) throws Exception {
         System.out.println("Testing set classifier by running through the list in ClassifierLists.allUnivariate and " +
                 "ClassifierLists.allMultivariate");
