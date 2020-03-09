@@ -78,10 +78,6 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             Factory::buildEeV1));
         public final ClassifierBuilder<? extends ElasticEnsemble> EE_V2 = add(new SuppliedClassifierBuilder<>("EE_V2",
             Factory::buildEeV2));
-        public final ClassifierBuilder<? extends ElasticEnsemble> CEE_V1 = add(new SuppliedClassifierBuilder<>("CEE_V1",
-            Factory::buildCeeV1));
-        public final ClassifierBuilder<? extends ElasticEnsemble> CEE_V2 = add(new SuppliedClassifierBuilder<>("CEE_V2",
-            Factory::buildCeeV2));
         public final ClassifierBuilder<? extends ElasticEnsemble> LEE = add(new SuppliedClassifierBuilder<>("LEE",
             Factory::buildLee));
 
@@ -91,14 +87,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 KNNLOOCV.FACTORY.ED_1NN_V1.build(),
                 KNNLOOCV.FACTORY.DTW_1NN_V1.build(),
                 KNNLOOCV.FACTORY.DDTW_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_DTW_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_ERP_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_MSM_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V1.build(),
-                KNNLOOCV.FACTORY.TUNED_TWED_1NN_V1.build()
+                KNNLOOCV.TUNED_FACTORY.TUNED_DTW_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_DDTW_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_WDTW_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_WDDTW_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_ERP_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_MSM_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_LCSS_1NN_V1.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_TWED_1NN_V1.build()
             );
         }
 
@@ -107,14 +103,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 KNNLOOCV.FACTORY.ED_1NN_V2.build(),
                 KNNLOOCV.FACTORY.DTW_1NN_V2.build(),
                 KNNLOOCV.FACTORY.DDTW_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_DTW_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_DDTW_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_WDTW_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_WDDTW_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_ERP_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_MSM_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_LCSS_1NN_V2.build(),
-                KNNLOOCV.FACTORY.TUNED_TWED_1NN_V2.build()
+                KNNLOOCV.TUNED_FACTORY.TUNED_DTW_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_DDTW_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_WDTW_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_WDDTW_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_ERP_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_MSM_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_LCSS_1NN_V2.build(),
+                KNNLOOCV.TUNED_FACTORY.TUNED_TWED_1NN_V2.build()
             );
         }
 
@@ -122,22 +118,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             ElasticEnsemble elasticEnsemble = new ElasticEnsemble();
             elasticEnsemble.setConstituents(buildV1Constituents());
             setTrainSelectedBenchmarksFully(elasticEnsemble,false);
-            return elasticEnsemble; // todo set full ee?
+            return elasticEnsemble;
         }
 
         public static ElasticEnsemble buildEeV2() {
             ElasticEnsemble elasticEnsemble = new ElasticEnsemble();
             elasticEnsemble.setConstituents(buildV2Constituents());
             setTrainSelectedBenchmarksFully(elasticEnsemble,false);
-            return elasticEnsemble; // todo set full ee?
-        }
-
-        public static ElasticEnsemble buildCeeV1() {
-            return buildEeV1(); // todo turn off full ee?
-        }
-
-        public static ElasticEnsemble buildCeeV2() {
-            return buildEeV2(); // todo turn off full ee?
+            return elasticEnsemble;
         }
 
         private static ElasticEnsemble forEachTunedConstituent(ElasticEnsemble elasticEnsemble, Consumer<RLTunedKNNSetup> consumer) {

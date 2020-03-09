@@ -105,11 +105,8 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "TUNED_DTW_1NN_V1":
-                c = KNNLOOCV.FACTORY.DTW_1NN_V1.build();
-                break;
             case "EE":
-                c = ElasticEnsemble.FACTORY.CEE_V2.build();
+                c = ElasticEnsemble.FACTORY.EE_V2.build();
                 break;
             case "LEE":
                 c = ElasticEnsemble.FACTORY.LEE.build();
