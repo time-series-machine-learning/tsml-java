@@ -7,6 +7,7 @@ import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
@@ -192,14 +193,16 @@ public class KNNLOOCV
             classifier.setEarlyAbandon(true);
             classifier.setK(1);
             classifier.setNeighbourLimit(-1);
-            classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
-            classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+            classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
+            classifier.setCvSearcherIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
             classifier.setRandomTieBreak(false);
             return classifier;
         }
 
         public static KNNLOOCV build1nnV2() {
             KNNLOOCV classifier = build1nnV1();
+            classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+            classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
             classifier.setRandomTieBreak(true);
             return classifier;
         }
