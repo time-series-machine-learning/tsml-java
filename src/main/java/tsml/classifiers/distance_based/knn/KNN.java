@@ -29,8 +29,7 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
 /**
  * k-nearest-neighbour classifier.
  *
- * Change history:
- *  27/2/20 - goastler - overhaul to fix test seeding + interfaces
+ * Contributors: goastler
  */
 public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
     StopWatchTrainTimeable {

@@ -25,6 +25,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     private boolean built = false;
     private boolean rebuild = true;
     private boolean debug = false;
+    private boolean seedSet = false;
 
     public BaseClassifier() {
 
@@ -37,6 +38,10 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         if(isRebuild()) {
+            // check the seed has been set
+            if(!seedSet) {
+                throw new IllegalStateException("seed not set");
+            }
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(trainData);
             setRebuild(false);
@@ -95,5 +100,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     protected void setBuilt(boolean built) {
         this.built = built;
+    }
+
+    @Override
+    public void setSeed(int seed) {
+        super.setSeed(seed);
+        seedSet = true;
     }
 }

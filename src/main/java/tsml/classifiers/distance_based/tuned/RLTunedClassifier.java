@@ -430,6 +430,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // if we're exploring then load classifier from checkpoint (if enabled)
                 classifier = loadClassifier(classifier);
                 // and set meta fields
+                // set seed of the classifier the same as our seed - more reproducible that way
                 classifier.setSeed(seed);
                 classifier.setDebug(isDebugBenchmarks());
                 if(classifier instanceof Loggable) {

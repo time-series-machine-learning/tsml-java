@@ -412,7 +412,8 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             trainedConstituents = new ArrayList<>();
             // for each constituent
             for(EnhancedAbstractClassifier constituent : constituents) {
-                // set their seed to match ours
+                // set their seed to match ours - better reproducibility if we run a constituent individually with
+                // same seed
                 constituent.setSeed(seed);
                 // tell them to find a train estimate for weighting
                 constituent.setEstimateOwnPerformance(true);
