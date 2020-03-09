@@ -36,9 +36,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
@@ -46,8 +44,9 @@ import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 import fileIO.OutFile;
 import statistics.distributions.NormalDistribution;
 import machine_learning.classifiers.kNN;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
+
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPath;
 
 /**
  * @author ajb
@@ -751,5 +750,13 @@ public class ClassifierTools {
             results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
         }
         return results;
+    }
+
+    public static ClassifierResults trainAndTest(String path, String name, Classifier classifier, int seed) throws Exception {
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
+        Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
+        return trainAndTest(data, classifier);
     }
 }

@@ -86,7 +86,15 @@ public interface ParamHandler
             return;
         }
         for(Object value : paramSets) {
-            setter.accept((clazz.cast(value)));
+            try {
+                setter.accept((clazz.cast(value)));
+            } catch(ClassCastException e) {
+                IllegalStateException exception = new IllegalStateException(
+                    "Cannot cast {" + value + "} to class {" + clazz.getSimpleName() + "} for"
+                        + " parameter {" + name + "}");
+                exception.addSuppressed(e);
+                throw exception;
+            }
         }
     }
 

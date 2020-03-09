@@ -2,12 +2,12 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import java.util.function.Function;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
@@ -37,67 +37,172 @@ public class KNNLOOCV
     extends KNN implements TrainTimeContractable {
 
     public static final Factory FACTORY = new Factory();
+    public static final TunedFactory TUNED_FACTORY = new TunedFactory();
 
-    public static class Factory extends CompileTimeClassifierBuilderFactory {
+    public static class TunedFactory extends CompileTimeClassifierBuilderFactory<RLTunedClassifier> {
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_MSM_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_MSM_1NN_V1",
+            TunedFactory::buildTunedMsm1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_ERP_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_ERP_1NN_V1",
+            TunedFactory::buildTunedErp1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_LCSS_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_LCSS_1NN_V1",
+            TunedFactory::buildTunedLcss1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_TWED_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_TWED_1NN_V1",
+            TunedFactory::buildTunedTwed1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_DTW_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_DTW_1NN_V1",
+            TunedFactory::buildTunedDtw1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_DDTW_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_DDTW_1NN_V1",
+            TunedFactory::buildTunedDdtw1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_WDTW_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_WDTW_1NN_V1",
+            TunedFactory::buildTunedWdtw1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_WDDTW_1NN_V1 = add(new SuppliedClassifierBuilder<>("TUNED_WDDTW_1NN_V1",
+            TunedFactory::buildTunedWddtw1nnV1));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_MSM_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_MSM_1NN_V2",
+            TunedFactory::buildTunedMsm1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_ERP_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_ERP_1NN_V2",
+            TunedFactory::buildTunedErp1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_LCSS_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_LCSS_1NN_V2",
+            TunedFactory::buildTunedLcss1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_TWED_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_TWED_1NN_V2",
+            TunedFactory::buildTunedTwed1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_DTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_DTW_1NN_V2",
+            TunedFactory::buildTunedDtw1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_DDTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_DDTW_1NN_V2",
+            TunedFactory::buildTunedDdtw1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_WDTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_WDTW_1NN_V2",
+            TunedFactory::buildTunedWdtw1nnV2));
+        public final ClassifierBuilder<? extends RLTunedClassifier> TUNED_WDDTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("TUNED_WDDTW_1NN_V2",
+            TunedFactory::buildTunedWddtw1nnV2));
 
-        public final ClassifierBuilder ED_1NN_V1 = add(new SuppliedClassifierBuilder("ED_1NN_V1",
+
+        public static RLTunedClassifier buildTunedDtw1nnV1() {
+            return buildTuned1nnV1(DistanceMeasureConfigs::buildDtwSpaceV1);
+        }
+
+        public static RLTunedClassifier buildTunedDdtw1nnV1() {
+            return buildTuned1nnV1(DistanceMeasureConfigs::buildDdtwSpaceV1);
+        }
+
+        public static RLTunedClassifier buildTunedWdtw1nnV1() {
+            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV1());
+        }
+
+        public static RLTunedClassifier buildTunedWddtw1nnV1() {
+            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV1());
+        }
+
+        public static RLTunedClassifier buildTunedDtw1nnV2() {
+            return buildTuned1nnV2(DistanceMeasureConfigs::buildDtwSpaceV2);
+        }
+
+        public static RLTunedClassifier buildTunedDdtw1nnV2() {
+            return buildTuned1nnV2(DistanceMeasureConfigs::buildDdtwSpaceV2);
+        }
+
+        public static RLTunedClassifier buildTunedWdtw1nnV2() {
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildWdtwSpaceV2());
+        }
+
+        public static RLTunedClassifier buildTunedWddtw1nnV2() {
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildWddtwSpaceV2());
+        }
+
+        public static RLTunedClassifier buildTunedMsm1nnV1() {
+            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildMsmSpace());
+        }
+
+        public static RLTunedClassifier buildTunedTwed1nnV1() {
+            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildTwedSpace());
+        }
+
+        public static RLTunedClassifier buildTunedErp1nnV1() {
+            return buildTuned1nnV1(DistanceMeasureConfigs::buildErpSpace);
+        }
+
+        public static RLTunedClassifier buildTunedLcss1nnV1() {
+            return buildTuned1nnV1(DistanceMeasureConfigs::buildLcssSpace);
+        }
+
+        public static RLTunedClassifier buildTunedMsm1nnV2() {
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildMsmSpace());
+        }
+
+        public static RLTunedClassifier buildTunedTwed1nnV2() {
+            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildTwedSpace());
+        }
+
+        public static RLTunedClassifier buildTunedErp1nnV2() {
+            return buildTuned1nnV2(DistanceMeasureConfigs::buildErpSpace);
+        }
+
+        public static RLTunedClassifier buildTunedLcss1nnV2() {
+            return buildTuned1nnV2(DistanceMeasureConfigs::buildLcssSpace);
+        }
+
+
+        public static RLTunedClassifier buildTuned1nnV1(RLTunedKNNSetup.ParamSpaceBuilder paramSpaceFunction) {
+            RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
+            RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
+            RLTunedKNNSetup
+                .setRlTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
+            incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
+            return incTunedClassifier;
+        }
+
+        public static RLTunedClassifier buildTuned1nnV1(ParamSpace paramSpace) {
+            return buildTuned1nnV1(i -> paramSpace);
+        }
+
+        public static RLTunedClassifier buildTuned1nnV2(RLTunedKNNSetup.ParamSpaceBuilder paramSpaceFunction) {
+            RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
+            RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
+            RLTunedKNNSetup
+                .setRlTunedClassifier(incTunedClassifier)
+                .setParamSpace(paramSpaceFunction)
+                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
+            incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
+            return incTunedClassifier;
+        }
+
+        public static RLTunedClassifier buildTuned1nnV2(ParamSpace paramSpace) {
+            return buildTuned1nnV2(i -> paramSpace);
+        }
+    }
+
+    public static class Factory extends CompileTimeClassifierBuilderFactory<KNNLOOCV> {
+
+        public final ClassifierBuilder<? extends KNNLOOCV> ED_1NN_V1 = add(new SuppliedClassifierBuilder<>(
+            "ED_1NN_V1",
             Factory::buildEd1nnV1));
-        public final ClassifierBuilder DTW_1NN_V1 = add(new SuppliedClassifierBuilder("DTW_1NN_V1",
+        public final ClassifierBuilder<? extends KNNLOOCV> DTW_1NN_V1 = add(new SuppliedClassifierBuilder<>("DTW_1NN_V1",
             Factory::buildDtw1nnV1));
-        public final ClassifierBuilder DDTW_1NN_V1 = add(new SuppliedClassifierBuilder("DDTW_1NN_V1",
+        public final ClassifierBuilder<? extends KNNLOOCV> DDTW_1NN_V1 = add(new SuppliedClassifierBuilder<>(
+            "DDTW_1NN_V1",
             Factory::buildDdtw1nnV1));
-        public final ClassifierBuilder TUNED_MSM_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_MSM_1NN_V1",
-            Factory::buildTunedMsm1nnV1));
-        public final ClassifierBuilder TUNED_ERP_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_ERP_1NN_V1",
-            Factory::buildTunedErp1nnV1));
-        public final ClassifierBuilder TUNED_LCSS_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_LCSS_1NN_V1",
-            Factory::buildTunedLcss1nnV1));
-        public final ClassifierBuilder TUNED_TWED_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_TWED_1NN_V1",
-            Factory::buildTunedTwed1nnV1));
-        public final ClassifierBuilder TUNED_DTW_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_DTW_1NN_V1",
-            Factory::buildTunedDtw1nnV1));
-        public final ClassifierBuilder TUNED_DDTW_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_DDTW_1NN_V1",
-            Factory::buildTunedDdtw1nnV1));
-        public final ClassifierBuilder TUNED_WDTW_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_WDTW_1NN_V1",
-            Factory::buildTunedWdtw1nnV1));
-        public final ClassifierBuilder TUNED_WDDTW_1NN_V1 = add(new SuppliedClassifierBuilder("TUNED_WDDTW_1NN_V1",
-            Factory::buildTunedWddtw1nnV1));
-        public final ClassifierBuilder ED_1NN_V2 = add(new SuppliedClassifierBuilder("ED_1NN_V2",
+        public final ClassifierBuilder<? extends KNNLOOCV> ED_1NN_V2 = add(new SuppliedClassifierBuilder<>("ED_1NN_V2",
             Factory::buildEd1nnV2));
-        public final ClassifierBuilder DTW_1NN_V2 = add(new SuppliedClassifierBuilder("DTW_1NN_V2",
+        public final ClassifierBuilder<? extends KNNLOOCV> DTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("DTW_1NN_V2",
             Factory::buildDtw1nnV2));
-        public final ClassifierBuilder DDTW_1NN_V2 = add(new SuppliedClassifierBuilder("DDTW_1NN_V2",
+        public final ClassifierBuilder<? extends KNNLOOCV> DDTW_1NN_V2 = add(new SuppliedClassifierBuilder<>("DDTW_1NN_V2",
             Factory::buildDdtw1nnV2));
-        public final ClassifierBuilder TUNED_MSM_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_MSM_1NN_V2",
-            Factory::buildTunedMsm1nnV2));
-        public final ClassifierBuilder TUNED_ERP_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_ERP_1NN_V2",
-            Factory::buildTunedErp1nnV2));
-        public final ClassifierBuilder TUNED_LCSS_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_LCSS_1NN_V2",
-            Factory::buildTunedLcss1nnV2));
-        public final ClassifierBuilder TUNED_TWED_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_TWED_1NN_V2",
-            Factory::buildTunedTwed1nnV2));
-        public final ClassifierBuilder TUNED_DTW_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_DTW_1NN_V2",
-            Factory::buildTunedDtw1nnV2));
-        public final ClassifierBuilder TUNED_DDTW_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_DDTW_1NN_V2",
-            Factory::buildTunedDdtw1nnV2));
-        public final ClassifierBuilder TUNED_WDTW_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_WDTW_1NN_V2",
-            Factory::buildTunedWdtw1nnV2));
-        public final ClassifierBuilder TUNED_WDDTW_1NN_V2 = add(new SuppliedClassifierBuilder("TUNED_WDDTW_1NN_V2",
-            Factory::buildTunedWddtw1nnV2));
+
 
         public static KNNLOOCV build1nnV1() {
             KNNLOOCV classifier = new KNNLOOCV();
             classifier.setEarlyAbandon(true);
             classifier.setK(1);
             classifier.setNeighbourLimit(-1);
-            classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
-            classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+            classifier.setNeighbourIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
+            classifier.setCvSearcherIteratorBuilder(new LinearNeighbourIteratorBuilder(classifier));
             classifier.setRandomTieBreak(false);
             return classifier;
         }
 
         public static KNNLOOCV build1nnV2() {
             KNNLOOCV classifier = build1nnV1();
+            classifier.setNeighbourIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
+            classifier.setCvSearcherIteratorBuilder(new RandomNeighbourIteratorBuilder(classifier));
             classifier.setRandomTieBreak(true);
             return classifier;
         }
@@ -137,120 +242,22 @@ public class KNNLOOCV
             knn.setDistanceFunction(new DDTWDistance(-1));
             return knn;
         }
-
-
-        public static void main(String[] args) {
-            try {
-                int seed = 0;
-                Instances[] data = DatasetLoading.sampleGunPoint(seed);
-                RLTunedClassifier classifier = buildTunedDtw1nnV1();
-                classifier.setSeed(seed); // set seed
-                classifier.setEstimateOwnPerformance(true);
-                ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-                results.setDetails(classifier, data[1]);
-                ClassifierResults trainResults = classifier.getTrainResults();
-                trainResults.setDetails(classifier, data[0]);
-                System.out.println(trainResults.writeSummaryResultsToString());
-                System.out.println(results.writeSummaryResultsToString());
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
+        
+        public static void main(String[] args) throws Exception {
+            int seed = 0;
+            Instances[] data = DatasetLoading.sampleGunPoint(seed);
+            RLTunedClassifier classifier = TunedFactory.buildTunedWdtw1nnV2();
+            classifier.setSeed(seed); // set seed
+            classifier.getLogger().setLevel(Level.ALL);
+            classifier.setEstimateOwnPerformance(true);
+            ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+            results.setDetails(classifier, data[1]);
+            ClassifierResults trainResults = classifier.getTrainResults();
+            trainResults.setDetails(classifier, data[0]);
+            System.out.println(trainResults.writeSummaryResultsToString());
+            System.out.println(results.writeSummaryResultsToString());
         }
 
-        public static RLTunedClassifier buildTunedDtw1nnV1() {
-            return buildTuned1nnV1(DistanceMeasureConfigs::buildDtwSpaceV1);
-        }
-
-        public static RLTunedClassifier buildTunedDdtw1nnV1() {
-            return buildTuned1nnV1(DistanceMeasureConfigs::buildDdtwSpaceV1);
-        }
-
-        public static RLTunedClassifier buildTunedWdtw1nnV1() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV1());
-        }
-
-        public static RLTunedClassifier buildTunedWddtw1nnV1() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV1());
-        }
-
-        public static RLTunedClassifier buildTunedDtw1nnV2() {
-            return buildTuned1nnV2(DistanceMeasureConfigs::buildDtwSpaceV2);
-        }
-
-        public static RLTunedClassifier buildTunedDdtw1nnV2() {
-            return buildTuned1nnV2(DistanceMeasureConfigs::buildDdtwSpaceV2);
-        }
-
-        public static RLTunedClassifier buildTunedWdtw1nnV2() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWdtwSpaceV2());
-        }
-
-        public static RLTunedClassifier buildTunedWddtw1nnV2() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildWddtwSpaceV2());
-        }
-
-        public static RLTunedClassifier buildTunedMsm1nnV1() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildMsmSpace());
-        }
-
-        public static RLTunedClassifier buildTunedTwed1nnV1() {
-            return buildTuned1nnV1(i -> DistanceMeasureConfigs.buildTwedSpace());
-        }
-
-        public static RLTunedClassifier buildTunedErp1nnV1() {
-            return buildTuned1nnV1(DistanceMeasureConfigs::buildErpSpace);
-        }
-
-        public static RLTunedClassifier buildTunedLcss1nnV1() {
-            return buildTuned1nnV1(DistanceMeasureConfigs::buildLcssSpace);
-        }
-
-        public static RLTunedClassifier buildTunedMsm1nnV2() {
-            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildMsmSpace());
-        }
-
-        public static RLTunedClassifier buildTunedTwed1nnV2() {
-            return buildTuned1nnV2(i -> DistanceMeasureConfigs.buildTwedSpace());
-        }
-
-        public static RLTunedClassifier buildTunedErp1nnV2() {
-            return buildTuned1nnV2(DistanceMeasureConfigs::buildErpSpace);
-        }
-
-        public static RLTunedClassifier buildTunedLcss1nnV2() {
-            return buildTuned1nnV2(DistanceMeasureConfigs::buildLcssSpace);
-        }
-
-
-        public static RLTunedClassifier buildTuned1nnV1(Function<Instances, ParamSpace> paramSpaceFunction) {
-            RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
-            RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
-            RLTunedKNNSetup
-                .setRlTunedClassifier(incTunedClassifier)
-                .setParamSpace(paramSpaceFunction)
-                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(LinearListIterator::new);
-            incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
-            return incTunedClassifier;
-        }
-
-        public static RLTunedClassifier buildTuned1nnV1(ParamSpace paramSpace) {
-            return buildTuned1nnV1(i -> paramSpace);
-        }
-
-        public static RLTunedClassifier buildTuned1nnV2(Function<Instances, ParamSpace> paramSpaceFunction) {
-            RLTunedClassifier incTunedClassifier = new RLTunedClassifier();
-            RLTunedKNNSetup RLTunedKNNSetup = new RLTunedKNNSetup();
-            RLTunedKNNSetup
-                .setRlTunedClassifier(incTunedClassifier)
-                .setParamSpace(paramSpaceFunction)
-                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
-            incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
-            return incTunedClassifier;
-        }
-
-        public static RLTunedClassifier buildTuned1nnV2(ParamSpace paramSpace) {
-            return buildTuned1nnV2(i -> paramSpace);
-        }
     }
 
     private static final long serialVersionUID = 0;
@@ -430,19 +437,20 @@ public class KNNLOOCV
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
-        final DistanceFunction distanceFunction = getDistanceFunction();
-        final Logger logger = getLogger();
-        final boolean rebuild = getAndDisableRebuild();
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
+        final DistanceFunction distanceFunction = getDistanceFunction();
+        final Logger logger = getLogger();
+        final boolean rebuild = isRebuild();
+        // stop super knn from checkpointing after its built
         boolean skip = isSkipFinalCheckpoint();
         setSkipFinalCheckpoint(true);
         // must disable train timer and memory watcher as super enables them at start of build
         trainTimer.disable();
         memoryWatcher.disable();
         super.buildClassifier(trainData);
-        setBuilt(false);
+        // re-enable skipping the final checkpoint
         setSkipFinalCheckpoint(skip);
         memoryWatcher.enableAnyway();
         trainEstimateTimer.checkDisabled();
