@@ -41,7 +41,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     public static void main(String[] args) throws Exception {
         int seed = 0;
         Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        ElasticEnsemble classifier = FACTORY.EE_V1.build();
+        ElasticEnsemble classifier = FACTORY.EE_V2.build();
         classifier.setEstimateOwnPerformance(true);
         classifier.setSeed(0);
         classifier.getLogger().setLevel(Level.ALL);
