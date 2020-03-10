@@ -75,25 +75,4 @@ public class ProxTree extends BaseClassifier {
         }
     }
 
-    // todo why are these implemented here?! should be in base classifier
-
-    @Override
-    public String getParameters() {
-        return null;
-    }
-
-    @Override
-    public ClassifierResults getTrainResults() {
-        return null;
-    }
-
-    @Override
-    public boolean getEstimateOwnPerformance() {
-        return false;
-    }
-
-    @Override
-    public void setEstimateOwnPerformance(boolean estimateOwnPerformance) {
-
-    }
 }
