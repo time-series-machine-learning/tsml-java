@@ -106,7 +106,12 @@ import tsml.classifiers.Tuneable;
 * update1 14/2/19 Tony Bagnall
 * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
 * update3 06/03/20 contracting and checkpointing Matthew Middlehurst
-
+ * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
+ *
+ *  results for this classifier on 112 UCR data sets (30 resamples of each) can be found at
+ *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv
+ *  individual results on each fold are
+ *  timeseriesclassification.com/Results/ResultsByClassifier/TSF/Predictions
 **/
  
 public class TSF extends EnhancedAbstractClassifier 
@@ -160,9 +165,6 @@ public class TSF extends EnhancedAbstractClassifier
 //    boolean findTrainPredictions=false;
     enum EstimatorMethod{CV,OOB}
     private EstimatorMethod estimator=EstimatorMethod.CV;
-    private String trainFoldPath="";
-/* If trainFoldPath is set, train results are overwritten with
- each call to buildClassifier.*/
 
     private boolean checkpoint = false;
     private String checkpointPath;
@@ -213,6 +215,9 @@ public class TSF extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
+        temp+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance())
+            temp+=",EstimateMethod,"+estimator;
         if(base instanceof RandomTree)
            temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
         return temp;
@@ -509,7 +514,6 @@ public class TSF extends EnhancedAbstractClassifier
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception {
-        System.out.println("Estimating own performance");
         if(bagging){
             // Use bag data, counts normalised to probabilities
             long est1=System.nanoTime();
@@ -576,9 +580,7 @@ public class TSF extends EnhancedAbstractClassifier
         }
 
         printLineDebug("Build time ="+trainResults.getBuildTime());
-        if(!trainFoldPath.equals("")){
-            trainResults.writeFullResultsToFile(trainFoldPath);
-        }
+
 
     }
      
@@ -738,7 +740,6 @@ public class TSF extends EnhancedAbstractClassifier
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
             estimator = saved.estimator;
-            trainFoldPath = saved.trainFoldPath;
             //checkpoint = saved.checkpoint;
             //checkpointPath = saved.checkpointPath
             checkpointTime = saved.checkpointTime;

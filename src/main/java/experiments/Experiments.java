@@ -170,8 +170,8 @@ public class Experiments  {
 //Location of data set
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
-                settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=LEE"; //Classifier name
+                settings[2]="-gtf=true"; //Whether to generate train files or not
+                settings[3]="-cn=TSF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+""; //Problem file, added below
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
@@ -207,7 +207,7 @@ public class Experiments  {
      * 5) Samples the dataset.
      * 6) If we're good to go, runs the experiment.
      */
-    public static ClassifierResults[] setupAndRunExperiment(Experiments.ExperimentalArguments expSettings) throws Exception {
+    public static ClassifierResults[] setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
         //todo: when we convert to e.g argparse4j for parameter passing, add a para
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there.
@@ -367,7 +367,6 @@ public class Experiments  {
             // or the monitor may not update in time before collecting the max
             GcFinalization.awaitFullGc();
             long maxMemory = memoryMonitor.getMaxMemoryUsed();
-
             trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either
