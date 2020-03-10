@@ -77,6 +77,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @author Michael Flynn and Tony Bagnall
  * @date 19/02/19
  * updated 4/3/20 to conform to tsml standards
+ * updated 10/3/20 to allow for internal CV estimate of train acc, same structure as TSF
  **/
 
 public class RISE extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {

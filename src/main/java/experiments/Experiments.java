@@ -345,7 +345,7 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -374,7 +374,7 @@ public class Experiments  {
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
                 LOGGER.log(Level.FINE, "Train estimate written");
             }

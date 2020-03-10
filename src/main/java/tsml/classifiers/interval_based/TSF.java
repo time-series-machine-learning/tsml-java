@@ -177,8 +177,7 @@ public class TSF extends EnhancedAbstractClassifier
     private int seriesLength;
 
     public TSF(){
-//TSF Has the capability to form train estimates
-//In order to do this,
+        //TSF Has the capability to form train estimates
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public TSF(int s){
@@ -510,6 +509,7 @@ public class TSF extends EnhancedAbstractClassifier
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception {
+        System.out.println("Estimating own performance");
         if(bagging){
             // Use bag data, counts normalised to probabilities
             long est1=System.nanoTime();
