@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.pf.tree;
+package tsml.classifiers.distance_based.proximity.tree;
 /*
 
 purpose: // todo - docs - type the purpose of the code here
@@ -13,25 +13,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-public class Tree<A> {
+public class BaseTree<A> {
 
-    public Tree() {
+    public BaseTree() {
 
     }
 
-    public Tree(Tree<? extends A> other) {
-        setRoot(other.getRoot());
-    }
+    private TreeNode<? extends A> root = null;
 
-    private Node<? extends A> root = null;
-
-    public Node<? extends A> getRoot() {
+    public TreeNode<? extends A> getRoot() {
         return root;
     }
 
-    public void setRoot(Node<? extends A> root) {
+    public void setRoot(TreeNode<? extends A> root) {
         this.root = root;
-        root.setLevel(0);
     }
 
     @Override
@@ -40,8 +35,8 @@ public class Tree<A> {
     }
 
     public int size() {
-        List<Node<? extends A>> backlog = new LinkedList<>();
-        ListIterator<Node<? extends A>> iterator = backlog.listIterator();
+        List<TreeNode<? extends A>> backlog = new LinkedList<>();
+        ListIterator<TreeNode<? extends A>> iterator = backlog.listIterator();
         iterator.add(root);
         return Utilities.sum(iterator, node -> {
             node.getChildren().forEach(iterator::add);
