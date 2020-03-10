@@ -166,7 +166,7 @@ public class Experiments  {
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[8];
+                String[] settings=new String[9];
 //Location of data set
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
@@ -177,6 +177,7 @@ public class Experiments  {
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 settings[6]="--force=true";
                 settings[7]="-ctrs=0";
+                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);

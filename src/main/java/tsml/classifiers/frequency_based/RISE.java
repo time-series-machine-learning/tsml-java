@@ -122,6 +122,25 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     //Updated work
     private ArrayList<int[]> startEndPoints = null;
 
+    /** If trainAccuracy is required, there are two mechanisms to obtain it:
+     * 2. estimator=CV: do a 10x CV on the train set with a clone
+     * of this classifier
+     * 3. estimator=OOB: build an OOB model just to get the OOB
+     * accuracy estimate
+     */
+    enum EstimatorMethod{CV,OOB}
+    private EstimatorMethod estimator=EstimatorMethod.CV;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
+    }
+
+
     /**
      * Constructor
      * @param seed
@@ -569,6 +588,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
+        // can classifier handle the data?
+        getCapabilities().testWithFail(data);
+        long t1=System.nanoTime();
 
         if(serialisePath != null){
             RISE temp = this.readSerialise(seed);
