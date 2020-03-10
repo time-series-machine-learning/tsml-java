@@ -14,6 +14,8 @@
  */
 package machine_learning.classifiers.tuned;
 
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.InternalEstimateEvaluator;
 import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -80,14 +82,25 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
     ////////// end interface variables
-    
-    
+
+    /**
+     * Creates an empty TunedClassifier. Tuner has a default value, however at minimum the classifier and parameter space
+     * shall need to be provided later via set...() methods
+     */
     public TunedClassifier() { 
-        this(null, null, new Tuner()); 
+        this(null, null, new Tuner());
     }
-    
-    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
-        this(classifier, space, new Tuner());
+
+    /**
+     * If the classifier is able to estimate its own performance while building, the tuner shall default to using that
+     * as the evaluation method. Otherwise defaults to an external 10fold cv
+     */
+    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) {
+        this(classifier, space,
+            EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ?
+                    new Tuner(new InternalEstimateEvaluator()) :
+                    new Tuner(new CrossValidationEvaluator())
+            );
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space, Tuner tuner) { 
