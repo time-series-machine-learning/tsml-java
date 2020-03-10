@@ -14,14 +14,18 @@
  */
 package tsml.classifiers;
 
-import utilities.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
 
 /**
  * Interface that allows the user to impose a memory contract of a classifier that
     implements this interface
 
     known classifiers: None
- * @author pfm15hbu
+ *
+ * Provide default implementation of the memory stats getters which classifiers should track. It's most easily
+ * tracked through the GcMemoryWatchable interface so you don't have to track the stats yourself!
+ *
+ * @author pfm15hbu, goastler
  */
 public interface MemoryContractable extends MemoryWatchable {
     enum DataUnit {BYTES, MEGABYTE, GIGABYTE}
@@ -37,6 +41,7 @@ public interface MemoryContractable extends MemoryWatchable {
 
     //pass in an value from the DataUnit enum and the amount of said values.
     void setMemoryLimit(DataUnit unit, long amount);
+
 
     default long getMaxMemoryUsageInBytes() {
         return -1;

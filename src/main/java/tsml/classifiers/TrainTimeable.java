@@ -1,11 +1,10 @@
 package tsml.classifiers;
 
-import utilities.StopWatch;
-
+/**
+ * Purpose: track the time taken to train a classifier.
+ *
+ * Contributors: goastler
+ */
 public interface TrainTimeable {
     default long getTrainTimeNanos() { return -1; }
-    default long getTrainEstimateTimeNanos() { return 0; }
-    default long getTrainPlusEstimateTimeNanos() {
-        return getTrainEstimateTimeNanos() + getTrainTimeNanos();
-    }
 }

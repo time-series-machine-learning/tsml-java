@@ -14,9 +14,8 @@
  */
 package tsml.classifiers;
 
-import utilities.StopWatch;
-import utilities.params.ParamHandler;
-import utilities.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,11 +23,23 @@ import java.util.concurrent.TimeUnit;
  * Interface that allows the user to impose a train time contract of a classifier that
     implements this interface
 
-known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (partial),
-* BOSS (check), TSF (check)
+known classifiers: ShapeletTransformClassifier, RISE, HIVE_COTE (partial),
+* BOSS, TSF , ContractRotationForest
+ *
+ * ********************************NOTES********************************
+ * 1) contract time of <=0 means no contract!
+ *
  */
 public interface TrainTimeContractable
     extends ParamHandler, TrainTimeable {
+
+    /**
+     * This is the single method that must be implemented to store the contract time
+      * @param time in nano seconds
+     */
+    void setTrainTimeLimit(long time);
+
+
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
     default void setOneHourLimit(){ setTrainTimeLimit(TimeUnit.HOURS, 1); }
@@ -41,8 +52,6 @@ public interface TrainTimeContractable
     
     default void setMinuteLimit(int t){ setTrainTimeLimit(TimeUnit.MINUTES, t); }
 
-    //set any value in nanoseconds you like.
-    default void setTrainTimeLimit(long time) { throw new UnsupportedOperationException(); }
 
     //pass in an value from the TimeUnit enum and the amount of said values.
     default void setTrainTimeLimit(TimeUnit time, long amount) {
@@ -53,7 +62,7 @@ public interface TrainTimeContractable
         setTrainTimeLimit(time, amount);
     }
 
-    default long getTrainTimeLimitNanos() {
+    default long getTrainContractTimeNanos() {
         throw new UnsupportedOperationException();
     }
 
@@ -61,15 +70,33 @@ public interface TrainTimeContractable
         setTrainTimeLimit(nanos);
     }
 
+    /**
+     * whether there's a train time limit set. Train time limit must be >0, otherwise <=0 is assumed to be no train
+     * time limit.
+     * @return
+     */
     default boolean hasTrainTimeLimit() {
-        return getTrainTimeLimitNanos() >= 0;
+        return getTrainContractTimeNanos() > 0;
     }
 
+    default void removeTrainTimeLimit() {
+        setTrainTimeLimit(-1);
+    }
+
+    /**
+     * get the remaining train time in nanoseconds
+     * @return
+     */
     default long getRemainingTrainTimeNanos() {
-        long result = getTrainTimeLimitNanos() - getTrainTimeNanos();
+        long result = getTrainContractTimeNanos() - getTrainTimeNanos();
         return result;
     }
 
+    /**
+     * checks whether there is remaining train time. If there is no train time limit then there is always remaining
+     * time.
+     * @return
+     */
     default boolean hasRemainingTrainTime() {
         if(!hasTrainTimeLimit()) {
             return true; // if there's no train time limit then there's always remaining train time
@@ -78,26 +105,48 @@ public interface TrainTimeContractable
         return getRemainingTrainTimeNanos() > prediction;
     }
 
+    /**
+     * predicts the time required for the next stage of training. This is used in calculating whether there's
+     * remaining train time. Defaults to return 0 as we do not know how long the next step will take, therefore we
+     * assume we can train further as long as there is >0 nanoseconds remaining.
+     * @return
+     */
     default long predictNextTrainTimeNanos() {
         return 0;
     }
 
+    /**
+     * Method of knowing whether the classifier is fully built and will do no more work. This is required as setting
+     * a 5 min contract may lead to the classifier only using 4.5mins, say. We need to know when it is done so we can
+     * use the remaining .5 mins appropriately for other work rather than spinning on this classifier until 5 mins is
+     * reached. The earlier the classifier abandons the more of a problem this becomes.
+     * @return
+     */
     default boolean isBuilt() {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Whether there is remaining training work to be done. This comes down to two things: a) whether the classifier
+     * has work to do and b) whether there's time remaining to get that work done.
+     * @return
+     */
     default boolean hasRemainingTraining() {
         return !isBuilt() && hasRemainingTrainTime();
     }
 
-    String TRAIN_TIME_LIMIT_NANOS_FLAG = "trtl";
+    // helper methods for setting / getting params of the contract
+
+    static String getTrainTimeLimitNanosFlag() {
+        return "trtl";
+    }
 
     @Override default ParamSet getParams() {
-        return ParamHandler.super.getParams().add(TRAIN_TIME_LIMIT_NANOS_FLAG, getTrainTimeLimitNanos());
+        return ParamHandler.super.getParams().add(getTrainTimeLimitNanosFlag(), getTrainContractTimeNanos());
     }
 
     @Override default void setParams(ParamSet param) {
-        ParamHandler.setParam(param, TRAIN_TIME_LIMIT_NANOS_FLAG, this::setTrainTimeLimitNanos, Long.class);
+        ParamHandler.setParam(param, getTrainTimeLimitNanosFlag(), this::setTrainTimeLimitNanos, Long.class);
     }
 
 }

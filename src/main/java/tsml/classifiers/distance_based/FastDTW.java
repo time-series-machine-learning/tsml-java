@@ -10,8 +10,8 @@ package tsml.classifiers.distance_based;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.elastic_ensemble.fast_window_search.windowSearcher.FastWWSByPercent;
-import tsml.classifiers.distance_based.elastic_ensemble.fast_window_search.windowSearcher.WindowSearcher;
+import tsml.classifiers.legacy.elastic_ensemble.fast_window_search.windowSearcher.FastWWSByPercent;
+import tsml.classifiers.legacy.elastic_ensemble.fast_window_search.windowSearcher.WindowSearcher;
 import weka.core.*;
 
 /**

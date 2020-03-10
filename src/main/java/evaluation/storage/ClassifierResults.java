@@ -28,8 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.MemoryWatchable;
+import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.TrainTimeable;
+import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.SysUtils;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -137,7 +140,8 @@ import weka.core.Randomizable;
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
  */
-public class ClassifierResults implements DebugPrinting, Serializable, MemoryWatchable, TrainTimeable {
+public class ClassifierResults implements DebugPrinting, Serializable, MemoryWatchable, TrainTimeable,
+                                          TrainEstimateTimeable {
 
     @Override public long getMaxMemoryUsageInBytes() {
         return getMemory();
@@ -207,14 +211,20 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     }
 
     public void setTimeDetails(final Object obj) {
-        if(obj instanceof TrainTimeable) {
+        if(obj instanceof TrainEstimateTimeable) {
+            setTimeDetails((TrainEstimateTimeable) obj);
+        } else if(obj instanceof TrainTimeable) {
             setTimeDetails((TrainTimeable) obj);
         }
     }
 
     public void setTimeDetails(final TrainTimeable trainTimeable) {
         setBuildTime(trainTimeable.getTrainTimeNanos());
-        setBuildPlusEstimateTime(trainTimeable.getTrainTimeNanos() + trainTimeable.getTrainEstimateTimeNanos());
+    }
+
+    public void setTimeDetails(final TrainEstimateTimeable trainTimeable) {
+        setTimeDetails((TrainTimeable) trainTimeable);
+        setBuildPlusEstimateTime(trainTimeable.getTrainPlusEstimateTimeNanos());
     }
 
     public void setMemoryDetails(final Object obj) {

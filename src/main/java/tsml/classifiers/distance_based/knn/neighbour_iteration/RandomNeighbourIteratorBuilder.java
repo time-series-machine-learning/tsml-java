@@ -1,9 +1,9 @@
 package tsml.classifiers.distance_based.knn.neighbour_iteration;
 
 
-import tsml.classifiers.distance_based.knn.Knn;
-import tsml.classifiers.distance_based.knn.KnnLoocv;
-import utilities.iteration.RandomListIterator;
+import tsml.classifiers.distance_based.knn.KNN;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 
 import java.util.Iterator;
 
@@ -12,14 +12,15 @@ public class RandomNeighbourIteratorBuilder
 
     public RandomNeighbourIteratorBuilder() {}
 
-    public RandomNeighbourIteratorBuilder(KnnLoocv knn) {
+    public RandomNeighbourIteratorBuilder(KNNLOOCV knn) {
         super(knn);
     }
 
     @Override
-    public Iterator<Knn.NeighbourSearcher> build() {
+    public Iterator<KNN.NeighbourSearcher> build() {
         if(knn == null) throw new IllegalStateException("knn not set");
-        return new RandomListIterator<>(knn.getSeed(), knn.getSearchers());
+        // set this to a random seed sourced from the knn's rng
+        return new RandomListIterator<>(knn.getRandom().nextInt(), knn.getSearchers());
     }
 
 
