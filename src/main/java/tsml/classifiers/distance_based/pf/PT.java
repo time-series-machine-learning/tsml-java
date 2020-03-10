@@ -13,8 +13,6 @@ import tsml.classifiers.StopWatchTrainTimeable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.pf.partition.Partitioner;
 import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
-import tsml.classifiers.distance_based.proximity.tree.BaseTree;
-import tsml.classifiers.distance_based.proximity.tree.TreeNode;
 import utilities.MemoryWatcher;
 import utilities.StopWatch;
 import utilities.iteration.RandomListIterator;
@@ -40,7 +38,7 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
     private boolean rebuild = true;
     private StopWatch trainTimer = new StopWatch();
     private MemoryWatcher memoryWatcher = new MemoryWatcher();
-    private BaseTree<Split> tree;
+    private Tree<Split> tree;
     private Supplier<Partitioner> partitionerBuilder; // todo
     private Supplier<ListIterator<TreeNode<Split>>> nodeIteratorBuilder = () -> new RandomListIterator<>(rand);
     private ListIterator<TreeNode<Split>> nodeIterator;
@@ -111,7 +109,7 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
         super.buildClassifier(trainData);
         if(rebuild) {
             rebuild = false;
-            tree = new BaseTree<>();
+            tree = new Tree<>();
             nodeIterator = nodeIteratorBuilder.get();
             addNode(trainData);
         }

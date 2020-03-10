@@ -3,8 +3,6 @@ package tsml.classifiers.distance_based.pf;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.pf.partition.Partitioner;
 import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
-import tsml.classifiers.distance_based.proximity.tree.BaseTree;
-import tsml.classifiers.distance_based.proximity.tree.TreeNode;
 import utilities.*;
 import utilities.serialisation.SerConsumer;
 import utilities.serialisation.SerFunction;
@@ -20,7 +18,7 @@ import java.util.function.Function;
 public class ProximityTree extends EnhancedAbstractClassifier implements Rand, StopWatchTrainTimeable, TrainTimeContractable, GcMemoryWatchable {
     // todo estimate train const / actually do it
 
-    private BaseTree<Partitioner> tree;
+    private Tree<Partitioner> tree;
     private boolean rebuild = true;
     private SerConsumer<Instances> trainSetupFunction = instances -> {};
     private List<TreeNode<Partitioner>> backlog;
@@ -71,7 +69,7 @@ public class ProximityTree extends EnhancedAbstractClassifier implements Rand, S
         if(rebuild) {
             rebuild = false;
             trainSetupFunction.accept(trainData);
-            tree = new BaseTree<>();
+            tree = new Tree<>();
             backlog = new ArrayList<>();
             Partitioner partitioner = buildPartitioner(trainData);
             partitioner.buildClassifier(trainData);

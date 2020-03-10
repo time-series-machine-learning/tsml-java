@@ -1,11 +1,10 @@
 package tsml.classifiers.distance_based.proximity.tree;
-/*
 
-purpose: // todo - docs - type the purpose of the code here
-
-created edited by goastler on 17/02/2020
-    
-*/
+/**
+ * Purpose: a tree data structure.
+ *
+ * Contributors: goastler
+ */
 
 import utilities.Utilities;
 
@@ -13,9 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-public class BaseTree<A> {
+public class Tree<A> {
 
-    public BaseTree() {
+    public Tree() {
 
     }
 
@@ -34,17 +33,23 @@ public class BaseTree<A> {
         return getClass().getSimpleName();
     }
 
+    /**
+     * total number of nodes in the tree
+     * @return
+     */
     public int size() {
-        List<TreeNode<? extends A>> backlog = new LinkedList<>();
-        ListIterator<TreeNode<? extends A>> iterator = backlog.listIterator();
-        iterator.add(root);
-        return Utilities.sum(iterator, node -> {
-            node.getChildren().forEach(iterator::add);
-            return node.getChildren().size();
-        });
+        if(root == null) {
+            return 0;
+        } else {
+            return root.size();
+        }
     }
 
     public int height() {
-        return root.height();
+        if(root == null) {
+            return 0;
+        } else {
+            return root.height();
+        }
     }
 }
