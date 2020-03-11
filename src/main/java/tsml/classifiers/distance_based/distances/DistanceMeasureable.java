@@ -18,6 +18,11 @@ public interface DistanceMeasureable extends Serializable, DistanceFunction, Deb
         return Double.POSITIVE_INFINITY;
     }
 
+    // the maximum distance the distance measure could produce
+    static double getMaxDistance() {
+        return Double.POSITIVE_INFINITY;
+    }
+
     // whether the distance measure is symmetric (i.e. dist from inst A to inst B == dist from inst B to inst A
     default boolean isSymmetric() {
         return true;

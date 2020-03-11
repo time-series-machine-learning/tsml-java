@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import java.util.function.Supplier;
+
 import utilities.Utilities;
 
 /**
@@ -16,11 +16,23 @@ import utilities.Utilities;
  * Contributors: goastler
  */
 public class TreeNode<A> {
-    private Supplier<Set<TreeNode<A>>> supplier = HashSet::new;
-    private Set<TreeNode<A>> children = supplier.get();
+    public interface SetBuilder<A> {
+        Set<TreeNode<A>> build();
+    }
+
+    private SetBuilder<A> setBuilder = HashSet::new;
+    private Set<TreeNode<A>> children = setBuilder.build();
     private A element;
     private int level = 0;
     private TreeNode<A> parent;
+
+    protected SetBuilder<A> getSetBuilder() {
+        return setBuilder;
+    }
+
+    protected void setSetBuilder(final SetBuilder<A> setBuilder) {
+        this.setBuilder = setBuilder;
+    }
 
     public TreeNode() {}
 
@@ -46,7 +58,7 @@ public class TreeNode<A> {
 
     protected void setChildren(Set<TreeNode<A>> children) {
         if(children == null) {
-            children = supplier.get();
+            children = setBuilder.build();
         }
         this.children = children;
     }

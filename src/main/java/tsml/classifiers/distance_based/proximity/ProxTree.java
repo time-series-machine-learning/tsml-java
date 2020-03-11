@@ -1,13 +1,10 @@
 package tsml.classifiers.distance_based.proximity;
 
-import evaluation.storage.ClassifierResults;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import tsml.classifiers.distance_based.pf.Scorer;
+
 import tsml.classifiers.distance_based.proximity.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import weka.core.Instances;
 
 /**
@@ -21,39 +18,23 @@ public class ProxTree extends BaseClassifier {
 
     }
 
-    private static class Split {
-        private Instances data;
-        private List<Instances> split;
-
-        public Split(Instances data) {
-            this.data = data;
-        }
-
-        public Instances getData() {
-            return data;
-        }
-
-        public List<Instances> split() {
-            if(split == null) {
-                split = new ArrayList<>(); // todo
-            }
-            return split;
-        }
-    }
-
-    private int r = 1;
-    private Scorer scorer = Scorer.giniScore;
     private TreeNode<Split> root;
     private ListIterator<TreeNode<Split>> nodeIterator;
-    private NodeIteratorBuilder nodeIteratorBuilder = LinearListIterator::new;
-    private NodeBuilder nodeBuilder = data -> new TreeNode<>(new Split(data));
+    private NodeIteratorBuilder nodeIteratorBuilder = null; // todo
+    private SplitBuilder splitBuilder = null; // todo
+    private StoppingCondition stoppingCondition = null; // todo
+
+    public interface StoppingCondition {
+        boolean shouldStop(TreeNode<Split> node);
+        // todo some way to set this as the tree ref
+    }
 
     public interface NodeIteratorBuilder {
         ListIterator<TreeNode<Split>> build();
     }
 
-    public interface NodeBuilder {
-        TreeNode<Split> build(Instances data);
+    public interface SplitBuilder {
+        Split build(Instances data);
     }
 
     @Override
@@ -62,17 +43,47 @@ public class ProxTree extends BaseClassifier {
         super.buildClassifier(trainData);
         if(rebuild) {
             nodeIterator = nodeIteratorBuilder.build();
-            root = nodeBuilder.build(trainData);
+            final Split split = splitBuilder.build(trainData);
+            root = new TreeNode<>(split);
             nodeIterator.add(root);
         }
         while(nodeIterator.hasNext()) {
             final TreeNode<Split> node = nodeIterator.next();
-            final List<Instances> split = node.getElement().split();
+            final Instances data = node.getElement().getData();
+            final List<Instances> split = node.getElement().split(data);
             for(Instances childData : split) {
-                final TreeNode<Split> child = nodeBuilder.build(childData);
-                nodeIterator.add(child);
+                final Split subSplit = splitBuilder.build(childData);
+                final TreeNode<Split> child = new TreeNode<>(subSplit);
+                final boolean shouldAdd = stoppingCondition.shouldStop(node);
+                if(shouldAdd) {
+                    nodeIterator.add(child);
+                }
             }
         }
     }
 
+    public NodeIteratorBuilder getNodeIteratorBuilder() {
+        return nodeIteratorBuilder;
+    }
+
+    public void setNodeIteratorBuilder(
+            final NodeIteratorBuilder nodeIteratorBuilder) {
+        this.nodeIteratorBuilder = nodeIteratorBuilder;
+    }
+
+    public SplitBuilder getSplitBuilder() {
+        return splitBuilder;
+    }
+
+    public void setSplitBuilder(final SplitBuilder splitBuilder) {
+        this.splitBuilder = splitBuilder;
+    }
+
+    public StoppingCondition getStoppingCondition() {
+        return stoppingCondition;
+    }
+
+    public void setStoppingCondition(final StoppingCondition stoppingCondition) {
+        this.stoppingCondition = stoppingCondition;
+    }
 }
