@@ -222,6 +222,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         bestOptions = Arrays.copyOf(options, options.length);
         classifier.setOptions(options);
         classifier.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
  
     @Override
@@ -302,9 +303,13 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
     
-    @Override //SaveParameterInfo
+    @Override
     public String getParameters() {
-        return getParas(); 
+        String str=classifierName;
+        str+=","+getParas();
+        if(classifier instanceof EnhancedAbstractClassifier)
+            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return str;
     }
 
     @Override //SaveEachParameter
