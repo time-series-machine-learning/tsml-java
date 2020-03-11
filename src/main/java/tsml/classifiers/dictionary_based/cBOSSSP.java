@@ -62,7 +62,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public boolean tuneK = false;
     public boolean tuneWeight = false;
     public boolean featureSelection = false;
-    public boolean bigrams = false;
+    public boolean[] bigrams = { false };
     public boolean useLogistic = false;
     public boolean histogramIntersection = false;
     public int limitVal = 100000;
@@ -656,7 +656,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.tuningK = tuneK;
             boss.featureSelection = featureSelection;
             boss.fsLimit = limit;
-            boss.bigrams = bigrams;
+            boss.bigrams = parameters[8] == 1;
             boss.wekaClassifier = useLogistic;
             boss.histogramIntersection = histogramIntersection;
             boss.numClasses = data.numClasses();
@@ -982,8 +982,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                             for (Double chi: chiLimits) {
                                 for (Boolean anova: useAnova) {
                                     for (Boolean igb: useIGB) {
-                                        double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi, anova ? 1 : 0, igb ? 1 : 0};
-                                        possibleParameters.add(parameters);
+                                        for (Boolean bi: bigrams) {
+                                            double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi, anova ? 1 : 0, igb ? 1 : 0, bi ? 1 : 0};
+                                            possibleParameters.add(parameters);
+                                        }
                                     }
                                 }
                             }

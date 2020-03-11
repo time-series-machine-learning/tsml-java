@@ -164,7 +164,10 @@ public class ClassifierLists {
             "IGB-BcS-BOSS","Anova-BcS-BOSS","MFT-BcS-BOSS","DFT-BcS-BOSS","AnovaMFT-BcS-BOSS","AnovaIGB-BcS-BOSS",
             "pIGB-BcS-BOSS","pAnova-BcS-BOSS","pAnovaIGB-BcS-BOSS","HI-SLimitFCNN-pIGB-BcS-BOSS","HI-pIGB-BcS-BOSS",
             "HI-100pIGB-BcS-BOSS","HI-100pAnovaIGB-BcS-BOSS","HI-Bigram-pIGB-BcS-BOSS","HI-TuneWeight-pIGB-BcS-BOSS",
-            "HI-nrBigram-pIGB-BcS-BOSS","HI-nr-pIGB-BcS-BOSS","HI-pIGB-cS-BOSS","HI-pIGB-750cS-BOSS"};
+            "HI-nrBigram-pIGB-BcS-BOSS","HI-nr-pIGB-BcS-BOSS","HI-pIGB-cS-BOSS","HI-pIGB-750cS-BOSS",
+            "HI-BIpIGB-cS-BOSS","HI-BIpIGB-750cS-BOSS","HI-Bigram-pIGB-Bc-BOSS","Bigram-pIGB-BcS-BOSS",
+    "HI-Cutoff-Bigram-pIGB-BcS-BOSS","HI-tp80-Bigram-pIGB-BcS-BOSS","HI-tp60-Bigram-pIGB-BcS-BOSS","HI-tp50-Bigram-pIGB-BcS-BOSS","HI-l4-Bigram-pIGB-BcS-BOSS",
+            "HI-pBigram-pIGB-BcS-BOSS"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -225,18 +228,18 @@ public class ClassifierLists {
             case "Bigram-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 break;
             case "Bigram-BcBOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
                 ((cBOSSSP) c).levels = new Integer[]{1};
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 break;
             case "HI-Bigram-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).histogramIntersection = true;
                 break;
             case "HI-BcS-BOSS":
@@ -252,40 +255,40 @@ public class ClassifierLists {
                 break;
             case "FBcS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 break;
             case "WinLenScale-FBcS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).chiLimits = new double[]{0.3};
                 ((cBOSSSP) c).limitOp = 1;
                 break;
             case "HI-FBcS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).histogramIntersection = true;
                 break;
             case "Wise-FBcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).limitVal = 200000;
                 break;
             case "Wise2-FBcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).setSeed(fold);
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).chiLimits = new double[]{0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
                 ((cBOSSSP) c).limitVal = 200000;
                 break;
             case "Logistic-FBcS-BOSS":
                 c = new cBOSSSP();
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).useLogistic = true;
                 break;
@@ -411,14 +414,14 @@ public class ClassifierLists {
                 ((cBOSSSP) c).chiLimits = new double[]{0};
                 ((cBOSSSP) c).useIGB = new boolean[]{true, false};
                 ((cBOSSSP) c).histogramIntersection = true;
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 break;
             case "HI-nrBigram-pIGB-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
                 ((cBOSSSP) c).useIGB = new boolean[]{true, false};
                 ((cBOSSSP) c).histogramIntersection = true;
-                ((cBOSSSP) c).bigrams = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).numerosityReduction = false;
                 break;
             case "HI-nr-pIGB-BcS-BOSS":
@@ -451,7 +454,86 @@ public class ClassifierLists {
                 ((cBOSSSP) c).setBayesianParameterSelection(false);
                 ((cBOSSSP) c).setEnsembleSize(750);
                 break;
+            case "HI-BIpIGB-cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                break;
+            case "HI-BIpIGB-750cS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).setEnsembleSize(750);
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                break;
 
+            case "HI-Bigram-pIGB-Bc-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).levels = new Integer[]{1};
+                break;
+            case "Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                break;
+
+            case "HI-Cutoff-Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setCutoff(true);
+                break;
+            case "HI-tp80-Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setTrainProportion(0.8);
+                break;
+            case "HI-tp60-Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setTrainProportion(0.6);
+                break;
+            case "HI-tp50-Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setTrainProportion(0.5);
+                break;
+            case "HI-l4-Bigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).levels = new Integer[]{1,2,3,4};
+                break;
+            case "HI-pBigram-pIGB-BcS-BOSS":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true, false};
+                break;
 
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
