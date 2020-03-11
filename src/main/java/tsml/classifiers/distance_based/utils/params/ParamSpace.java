@@ -41,8 +41,8 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
             new ParamValues(Arrays.asList(new DTWDistance(), new DDTWDistance()),
                 Arrays.asList(wParams)));
         ParamSpace lParams = new ParamSpace();
-        lParams.add(WDTW.getGFlag(), new ParamValues(Arrays.asList(1, 2, 3)));
-        lParams.add(LCSSDistance.getEpsilonFlag(), new ParamValues(Arrays.asList(1, 2, 3, 4)));
+        lParams.add(WDTW.getGFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D)));
+        lParams.add(LCSSDistance.getEpsilonFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D, 4D)));
         params.add(DistanceMeasureable.getDistanceFunctionFlag(),
             new ParamValues(Arrays.asList(new WDTWDistance(), new WDDTWDistance()),
                 Arrays.asList(lParams)));

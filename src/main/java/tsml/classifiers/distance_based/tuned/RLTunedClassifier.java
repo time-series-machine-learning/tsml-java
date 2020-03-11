@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
@@ -24,7 +25,6 @@ import weka.core.Instances;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
@@ -94,9 +94,13 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         this.debugBenchmarks = debugBenchmarks;
     }
 
+    public interface TrainSetupFunction extends Consumer<Instances>, Serializable {
+
+    }
+
     protected Agent agent = new Agent() {
         @Override
-        public Set<EnhancedAbstractClassifier> findFinalClassifiers() {
+        public Set<EnhancedAbstractClassifier> getFinalClassifiers() {
             throw new UnsupportedOperationException();
         }
 
@@ -117,7 +121,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     protected transient Set<EnhancedAbstractClassifier> benchmarks = new HashSet<>();
     protected Ensembler ensembler = Ensembler.byScore(benchmark -> benchmark.getTrainResults().getAcc());
     protected List<Double> ensembleWeights = new ArrayList<>();
-    protected Consumer<Instances> trainSetupFunction;
+    protected TrainSetupFunction trainSetupFunction;
     protected MemoryWatcher memoryWatcher = new MemoryWatcher();
     protected StopWatch trainTimer = new StopWatch();
     protected StopWatch trainEstimateTimer = new StopWatch();
@@ -230,7 +234,8 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     @Override public void setParams(final ParamSet params) {
         TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction, Consumer.class); //
+        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
+                              TrainSetupFunction.class); //
         // todo
         // finish params
     }
@@ -259,23 +264,25 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         memoryWatcher.enable();
         trainEstimateTimer.checkDisabled();
         trainTimer.enable();
-        final boolean rebuild = getAndDisableRebuild();
+        final boolean rebuild = isRebuild();
         lastCheckpointTimeStamp = System.nanoTime();
         // if we're rebuilding
         if(rebuild) {
             // reset resource monitors
             trainTimer.resetAndEnable();
             memoryWatcher.resetAndEnable();
-            super.buildClassifier(trainData);
+            trainEstimateTimer.resetAndDisable();
+            // setup agent, etc, based on train data
             trainSetupFunction.accept(trainData);
+            // reset switches
             hasSkippedEvaluation = false;
             yielded = false;
+            // clear classifier names
             classifierNames = new HashSet<>();
         }
+        // build super
+        super.buildClassifier(trainData);
         this.trainData = trainData;
-        // we're not built at the moment
-        setBuilt(false);
-        // going into train estimate phase
         // while we've got more benchmarks to examine
         while(hasNextBuildTick()) {
             // get those benchmarks
@@ -287,25 +294,42 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         memoryWatcher.checkEnabled();
         // check whether we've skipped any work due to parallelisation / locking
         if(hasSkippedEvaluation) {
+            // checkpointing should be enabled if we've skipped
             if(!isCheckpointSavingEnabled()) {
                 throw new IllegalStateException("skipped evaluation but checkpointing not enabled");
             }
         } else {
             // if we haven't skipped any evaluation then we can have a go at finding all the done files and creating the
             // overall done file
-            boolean waitingForOthers = false;
+            // the overall done file is contentious between the various parallel processes. First one to create the
+            // overall done file gets to proceed with consolidation of the various benchmarks and finish the build.
+            // Other processes must abandon their work and yield to the successful process.
+            // whether we're waiting for other processes (i.e. we are not the last process)
+            // if we are not the last process then we can give that last process precedence and quit here
+            boolean otherBenchmarksActive = false;
             for(String name : classifierNames) {
+                // if any other classifier is already built then we assume they will attempt consolidation rather
+                // than us waiting for them to finish
                 if(classifierAlreadyFullyBuilt(name)) {
-                    waitingForOthers = true;
+                    otherBenchmarksActive = true;
                     break;
                 }
             }
-            if(!waitingForOthers) {
+            if(otherBenchmarksActive) {
+                getLogger().info("other work is still processing, yielding");
+                yielded = true;
+            } else {
+                // if there are no other processes active (i.e. all benchmarks / classifiers may be complete, but those
+                // processes may be executing non-benchmarking code during this time so may still be active)
                 // try and create the overall done file
+                // try locking the overall done file
                 try (FileUtils.FileLock lock = new FileUtils.FileLock(savePath + "overall.done")) {
+                    // if we can lock the overall done file then we're the only process collating benchmarks and are
+                    // sure we're proceeding without parallel counterparts
+
                     // then continue with regular bits
                     // find the final benchmarks
-                    benchmarks = agent.findFinalClassifiers();
+                    benchmarks = agent.getFinalClassifiers();
                     // sanity check and ensemble
                     if(benchmarks.isEmpty()) {
                         getLogger().info(() -> "no benchmarks collected");
@@ -323,26 +347,28 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                     // cleanup
                     trainEstimateTimer.checkDisabled();
                     trainTimer.disable();
+                    trainEstimateTimer.checkDisabled();
                     memoryWatcher.disable();
-                    trainResults.setMemory(getMaxMemoryUsageInBytes());
-                    trainResults.setBuildTime(trainTimer.getTimeNanos());
-                    trainResults.setBuildPlusEstimateTime(getTrainTimeNanos());
-                    trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-                    trainResults.setFoldID(seed);
                     trainResults.setDetails(this, trainData);
+                    // try to create the overall done file
                     boolean created = createDoneFile("overall");
                     if(!created) {
+                        // we couldn't for whatever reason, this should not happen
                         throw new IllegalStateException("could not create overall done file");
                     }
+                    // we're done
                     setBuilt(true);
                 } catch (FileUtils.FileLock.LockException e) {
                     getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;
-                    // quit as another process is going to finish up the build
+                    // quit as another process is going to finish up the build and that other process has locked the
+                    // done file to indicate so
                 }
             }
         }
+        // clear train data
         this.trainData = null;
+        // disable resource monitors for sanity
         memoryWatcher.disableAnyway();
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
@@ -409,12 +435,15 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // if we're exploring then load classifier from checkpoint (if enabled)
                 classifier = loadClassifier(classifier);
                 // and set meta fields
+                // set seed of the classifier the same as our seed - more reproducible that way
                 classifier.setSeed(seed);
                 classifier.setDebug(isDebugBenchmarks());
-                if(isLogBenchmarks()) {
-                    classifier.getLogger().setLevel(getLogger().getLevel());
-                } else {
-                    classifier.getLogger().setLevel(Level.SEVERE);
+                if(classifier instanceof Loggable) {
+                    if(isLogBenchmarks()) {
+                        ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
+                    } else {
+                        ((Loggable) classifier).getLogger().setLevel(Level.OFF);
+                    }
                 }
                 // setup checkpoint saving
                 if(isCheckpointSavingEnabled() && classifier instanceof Checkpointable) {
@@ -643,14 +672,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
     }
 
-    public Consumer<Instances> getTrainSetupFunction() {
+    public TrainSetupFunction getTrainSetupFunction() {
         return trainSetupFunction;
     }
 
-    public void setTrainSetupFunction(Consumer<Instances> trainSetupFunction) {
-        if((trainSetupFunction instanceof Serializable)) {
-            trainSetupFunction = (Serializable & Consumer<Instances>) trainSetupFunction::accept;
-        }
+    public void setTrainSetupFunction(TrainSetupFunction trainSetupFunction) {
         this.trainSetupFunction = trainSetupFunction;
     }
 

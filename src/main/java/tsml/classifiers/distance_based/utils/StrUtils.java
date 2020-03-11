@@ -4,6 +4,7 @@ import experiments.ClassifierLists;
 import experiments.Experiments;
 import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.filters.Derivative;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -17,6 +18,18 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class StrUtils {
+
+    public static String extractNameAndParams(Classifier classifier) {
+        String params;
+        if(classifier instanceof ParamHandler) {
+            params = ((ParamHandler) classifier).getParams().toString();
+        } else if(classifier instanceof EnhancedAbstractClassifier) {
+            params = ((EnhancedAbstractClassifier) classifier).getParameters();
+        } else {
+            return classifier.toString();
+        }
+        return classifier.toString() + " " + params;
+    }
 
     public static String joinOptions(List<String> options) {
         // todo use view
