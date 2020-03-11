@@ -12,8 +12,7 @@ import tsml.classifiers.GcMemoryWatchable;
 import tsml.classifiers.StopWatchTrainTimeable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.pf.partition.Partitioner;
-import tsml.classifiers.distance_based.pf.tree.Node;
-import tsml.classifiers.distance_based.pf.tree.Tree;
+import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
 import utilities.MemoryWatcher;
 import utilities.StopWatch;
 import utilities.iteration.RandomListIterator;
@@ -41,13 +40,13 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
     private MemoryWatcher memoryWatcher = new MemoryWatcher();
     private Tree<Split> tree;
     private Supplier<Partitioner> partitionerBuilder; // todo
-    private Supplier<ListIterator<Node<Split>>> nodeIteratorBuilder = () -> new RandomListIterator<>(rand);
-    private ListIterator<Node<Split>> nodeIterator;
+    private Supplier<ListIterator<TreeNode<Split>>> nodeIteratorBuilder = () -> new RandomListIterator<>(rand);
+    private ListIterator<TreeNode<Split>> nodeIterator;
     private Scorer scorer = Scorer.giniScore;
     private StoppingCondition stoppingCondition = (node, pt) -> node.getElement().getScore() == 1;
 
     public interface StoppingCondition extends Serializable {
-        boolean stop(Node<Split> node, PT pt);
+        boolean stop(TreeNode<Split> node, PT pt);
     }
 
     public static class Split {
@@ -91,10 +90,10 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
         super.setRebuild(rebuild);
     }
 
-    private Node<Split> addNode(Instances data) {
+    private TreeNode<Split> addNode(Instances data) {
         Partitioner partitioner = partitionerBuilder.get();
         Split split = new Split(partitioner, data);
-        Node<Split> node = new Node<>(split);
+        TreeNode<Split> node = new BaseTreeNode<>(split);
         if(!stoppingCondition.stop(node, this)) {
             nodeIterator.add(node);
         }
@@ -116,7 +115,7 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
         }
         trainTimer.lap();
         while (hasNext() && hasRemainingTrainTime()) {
-            Node<Split> node = nodeIterator.next();
+            BaseTreeNode<Split> node = nodeIterator.next();
             Split split = node.getElement();
             Partitioner partitioner = split.getPartitioner();
             Instances data = split.getData();
@@ -125,7 +124,7 @@ public class PT extends EnhancedAbstractClassifier implements TrainTimeContracta
             double score = scorer.findScore(data, partitioner.getPartitions());
             split.setScore(score);
             for(Instances partition : partitioner.getPartitions()) {
-                Node<Split> subNode = addNode(partition);
+                TreeNode<Split> subNode = addNode(partition);
                 node.addChild(subNode);
             }
             partitioner.clean();

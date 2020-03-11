@@ -2,8 +2,7 @@ package tsml.classifiers.distance_based.pf;
 
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.pf.partition.Partitioner;
-import tsml.classifiers.distance_based.pf.tree.Node;
-import tsml.classifiers.distance_based.pf.tree.Tree;
+import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
 import utilities.*;
 import utilities.serialisation.SerConsumer;
 import utilities.serialisation.SerFunction;
@@ -22,7 +21,7 @@ public class ProximityTree extends EnhancedAbstractClassifier implements Rand, S
     private Tree<Partitioner> tree;
     private boolean rebuild = true;
     private SerConsumer<Instances> trainSetupFunction = instances -> {};
-    private List<Node<Partitioner>> backlog;
+    private List<TreeNode<Partitioner>> backlog;
     private SerFunction<Instances, Partitioner> partitionerBuilder;
     private long trainTimeLimitNanos = -1;
     private StopWatch trainTimer = new StopWatch();
@@ -74,7 +73,7 @@ public class ProximityTree extends EnhancedAbstractClassifier implements Rand, S
             backlog = new ArrayList<>();
             Partitioner partitioner = buildPartitioner(trainData);
             partitioner.buildClassifier(trainData);
-            Node<Partitioner> node = new Node<>(partitioner);
+            TreeNode<Partitioner> node = new BaseTreeNode<>(partitioner);
             backlog.add(node);
             tree.setRoot(node);
         }
@@ -86,7 +85,7 @@ public class ProximityTree extends EnhancedAbstractClassifier implements Rand, S
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        Node<? extends Partitioner> node = tree.getRoot();
+        TreeNode<? extends Partitioner> node = tree.getRoot();
         boolean stop = false;
         double[] distribution = new double[numClasses];
         while (!stop) {
@@ -118,14 +117,14 @@ public class ProximityTree extends EnhancedAbstractClassifier implements Rand, S
     }
 
     public ProximityTree next() {
-        Node<Partitioner> node = backlog.remove(0);
+        TreeNode<Partitioner> node = backlog.remove(0);
         Partitioner partitioner = node.getElement();
         partitioner.buildClassifier();
         List<Instances> parts = partitioner.getPartitions();
         for(Instances part : parts) {
             Partitioner sub = buildPartitioner(part);
             sub.setData(part);
-            Node<Partitioner> child = new Node<>(sub);
+            TreeNode<Partitioner> child = new BaseTreeNode<>(sub);
             node.getChildren().add(child);
             backlog.add(child);
             partitioner.cleanUp();
