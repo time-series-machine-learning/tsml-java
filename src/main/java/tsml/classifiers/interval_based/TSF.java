@@ -45,6 +45,8 @@ import tsml.classifiers.Tuneable;
 /** 
   <!-- globalinfo-start -->
 * Implementation of Time Series Forest
+ * This classifier is Tunable, Contractable, Checkpointable and can estimate performance from the train data internally.
+ *
  Time Series Forest (TimeSeriesForest) Deng 2013: 
 * buildClassifier
  * Overview: Input n series length m
@@ -102,11 +104,20 @@ import tsml.classifiers.Tuneable;
  <!-- options-end -->
  
 * author ajb
-* date 7/10/15
-* update1 14/2/19
-* update2 13/9/19: Adjust to allow three methods for estimating test accuracy
-* update3 06/03/20 contracting and checkpointing -mm
-
+* date 7/10/15  Tony Bagnall
+* update1 14/2/19 Tony Bagnall
+* update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
+* update3 06/03/20 contracting and checkpointing Matthew Middlehurst
+ * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
+ *
+ *  results for this classifier on 112 UCR data sets (30 resamples of each) can be found at
+ *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv
+ *  individual results on each fold are
+ *  timeseriesclassification.com/Results/ResultsByClassifier/TSF/Predictions
+ *
+ *
+ *  A note on timings. buildTime does not include time taken to estimate error from the train data, unless bagging is
+ *  true, in which case it does. This is a minor bug.
 **/
  
 public class TSF extends EnhancedAbstractClassifier 
@@ -143,8 +154,8 @@ public class TSF extends EnhancedAbstractClassifier
 /** voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting */
     private boolean voteEnsemble=true;
-     
- /** Flags and data required if Bagging **/  
+
+    /** Flags and data required if Bagging **/
     private boolean bagging=false; //Use if we want an OOB estimate
     private ArrayList<boolean[]> inBag;
     private int[] oobCounts;
@@ -157,12 +168,8 @@ public class TSF extends EnhancedAbstractClassifier
     * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB
     * accuracy estimate
     */
-//    boolean findTrainPredictions=false;
     enum EstimatorMethod{CV,OOB}
     private EstimatorMethod estimator=EstimatorMethod.CV;
-    private String trainFoldPath="";
-/* If trainFoldPath is set, train results are overwritten with
- each call to buildClassifier.*/
 
     private boolean checkpoint = false;
     private String checkpointPath;
@@ -177,8 +184,7 @@ public class TSF extends EnhancedAbstractClassifier
     private int seriesLength;
 
     public TSF(){
-//TSF Has the capability to form train estimates
-//In order to do this,
+        //TSF Has the capability to form train estimates
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public TSF(int s){
@@ -214,6 +220,9 @@ public class TSF extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
+        temp+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance())
+            temp+=",EstimateMethod,"+estimator;
         if(base instanceof RandomTree)
            temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
         return temp;
@@ -355,7 +364,7 @@ public class TSF extends EnhancedAbstractClassifier
  */       
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
-        long t1=System.nanoTime();
+        long startTime=System.nanoTime();
         File file = new File(checkpointPath + "TSF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
@@ -373,7 +382,7 @@ public class TSF extends EnhancedAbstractClassifier
 //Set up instances size and format.
             trees = new ArrayList(numClassifiers);
 
-            /** Set up for train rstimate **/
+            /** Set up for train estimates **/
             if(getEstimateOwnPerformance()) {
                 trainDistributions= new double[data.numInstances()][data.numClasses()];
             }
@@ -430,7 +439,7 @@ public class TSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-t1)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
+        while(((System.nanoTime()-startTime)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
                 && classifiersBuilt < maxClassifiers){
 
             if(classifiersBuilt%100==0)
@@ -449,7 +458,7 @@ public class TSF extends EnhancedAbstractClassifier
                 interval[j][1] = interval[j][0] + length;
             }
 
-        //2. Generate and store attributes            
+            //2. Generate and store attributes
             for(int j=0;j<numIntervals;j++){
                 //For each instance
                 for(int k=0;k<data.numInstances();k++){
@@ -462,7 +471,7 @@ public class TSF extends EnhancedAbstractClassifier
                     result.instance(k).setValue(j*3+2, f.slope);
                 }
             }
-            //3. Create and build tree using all the features. Feature selection
+            //3. Create and build tree using all the features.
             Classifier tree = AbstractClassifier.makeCopy(base);
             if(seedClassifier && tree instanceof Randomizable)
                 ((Randomizable)tree).setSeed(seed*(classifiersBuilt+1));
@@ -492,89 +501,95 @@ public class TSF extends EnhancedAbstractClassifier
             classifiersBuilt++;
 
             if (checkpoint){
-                checkpoint(t1);
+                checkpoint(startTime);
             }
         }
-        long t2=System.nanoTime();
-/** Estimate accuracy stage: Three scenarios
- * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
-*  If we built on all data (bagging ==false) we estimate either 
-*  2. with a 10xCV or (if 
-*  3. Build a bagged model simply to get the estimate. 
- */       
-        if(getEstimateOwnPerformance()){
-             if(bagging){
-            // Use bag data. Normalise probs
-                long est1=System.nanoTime();
-                double[] preds=new double[data.numInstances()];
-                double[] actuals=new double[data.numInstances()];
-                 long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-                for(int j=0;j<data.numInstances();j++){
-                    long predTime = System.nanoTime();
-                    for(int k=0;k<trainDistributions[j].length;k++)
-                        trainDistributions[j][k]/=oobCounts[j];
-                    preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
-                    actuals[j]=data.instance(j).classValue();
-                    predTimes[j]=System.nanoTime()-predTime;
-                }
-                trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
-                trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-                trainResults.setClassifierName("TSFBagging");
-                trainResults.setDatasetName(data.relationName());
-                trainResults.setSplit("train");
-                trainResults.setFoldID(seed);
-                trainResults.setParas(getParameters());
-                trainResults.finaliseResults(actuals);
-                long est2=System.nanoTime();
-                trainResults.setErrorEstimateTime(est2-est1);
-            }
-//Either do a CV, or bag and get the estimates 
-            else if(estimator==EstimatorMethod.CV){
-                /** Defaults to 10 or numInstances, whichever is smaller. 
-                 * Interface TrainAccuracyEstimate
-                 * Could this be handled better? */
-                long est1=System.nanoTime();
-                int numFolds=setNumberOfFolds(data);
-                CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                if (seedClassifier)
-                  cv.setSeed(seed*5);
-                cv.setNumFolds(numFolds);
-                TSF tsf=new TSF();
-                tsf.copyParameters(this);
-                if (seedClassifier)
-                   tsf.setSeed(seed*100);
-                tsf.setEstimateOwnPerformance(false);
-                trainResults=cv.evaluate(tsf,data);
-                long est2=System.nanoTime();
-                trainResults.setErrorEstimateTime(est2-est1);
-                trainResults.setClassifierName("TSFCV");
-                trainResults.setParas(getParameters());
-                 
-            }
-            else if(estimator==EstimatorMethod.OOB){
-               /** Build a single new TSF using Bagging, and extract the estimate from this
-                */
-                long est1=System.nanoTime();
-                TSF tsf=new TSF();
-                tsf.copyParameters(this);
-                tsf.setSeed(seed);
-                tsf.setEstimateOwnPerformance(true);
-                tsf.bagging=true;
-                tsf.buildClassifier(data);
-                trainResults=tsf.trainResults;
-                long est2=System.nanoTime();
-                trainResults.setErrorEstimateTime(est2-est1);
-                trainResults.setClassifierName("TSFOOB");
-                trainResults.setParas(getParameters());
-            }
-              
-            System.out.println("Build time ="+trainResults.getBuildTime());
-            if(!trainFoldPath.equals("")){
-                trainResults.writeFullResultsToFile(trainFoldPath);
-            }
-        }
-        trainResults.setBuildTime(t2-t1);
+        long endTime=System.nanoTime();
+        trainResults.setBuildTime(endTime-startTime);
+    /** Estimate accuracy stage: Three scenarios
+     * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
+    *  If we built on all data (bagging ==false) we estimate either
+    *  2. with a 10xCV if estimator==EstimatorMethod.CV
+    *  3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
+     */
+        if(getEstimateOwnPerformance())
+            estimateOwnPerformance(data);
         trainResults.setParas(getParameters());
+
+    }
+
+    private void estimateOwnPerformance(Instances data) throws Exception {
+        if(bagging){
+            // Use bag data, counts normalised to probabilities
+            long est1=System.nanoTime();
+            double[] preds=new double[data.numInstances()];
+            double[] actuals=new double[data.numInstances()];
+            long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
+            for(int j=0;j<data.numInstances();j++){
+                long predTime = System.nanoTime();
+                for(int k=0;k<trainDistributions[j].length;k++)
+                    trainDistributions[j][k]/=oobCounts[j];
+                preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
+                actuals[j]=data.instance(j).classValue();
+                predTimes[j]=System.nanoTime()-predTime;
+            }
+            trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            trainResults.setClassifierName("TSFBagging");
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setSplit("train");
+            trainResults.setFoldID(seed);
+            trainResults.setParas(getParameters());
+            trainResults.finaliseResults(actuals);
+            long est2=System.nanoTime();
+            trainResults.setErrorEstimateTime(est2-est1);
+            trainResults.setErrorEstimateMethod("OOB");
+        }
+        //Either do a CV, or bag and get the estimates
+        else if(estimator==EstimatorMethod.CV){
+            /** Defaults to 10 or numInstances, whichever is smaller.
+             * Interface TrainAccuracyEstimate
+             * Could this be handled better? */
+            long est1=System.nanoTime();
+            int numFolds=setNumberOfFolds(data);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            if (seedClassifier)
+                cv.setSeed(seed*5);
+            cv.setNumFolds(numFolds);
+            TSF tsf=new TSF();
+            tsf.copyParameters(this);
+            if (seedClassifier)
+                tsf.setSeed(seed*100);
+            tsf.setEstimateOwnPerformance(false);
+            trainResults=cv.evaluate(tsf,data);
+            long est2=System.nanoTime();
+            trainResults.setErrorEstimateTime(est2-est1);
+            trainResults.setClassifierName("TSFCV");
+            trainResults.setParas(getParameters());
+            trainResults.setErrorEstimateMethod("CV_"+numFolds);
+
+        }
+        else if(estimator==EstimatorMethod.OOB){
+            /** Build a single new TSF using Bagging, and extract the estimate from this
+             */
+            long est1=System.nanoTime();
+            TSF tsf=new TSF();
+            tsf.copyParameters(this);
+            tsf.setSeed(seed);
+            tsf.setEstimateOwnPerformance(true);
+            tsf.bagging=true;
+            tsf.buildClassifier(data);
+            trainResults=tsf.trainResults;
+            long est2=System.nanoTime();
+            trainResults.setErrorEstimateTime(est2-est1);
+            trainResults.setClassifierName("TSFOOB");
+            trainResults.setParas(getParameters());
+            trainResults.setErrorEstimateMethod("OOB");
+
+        }
+
+        printLineDebug("Build time ="+trainResults.getBuildTime());
+
 
     }
      
@@ -592,7 +607,7 @@ public class TSF extends EnhancedAbstractClassifier
         else if(s.equals("OOB"))
             estimator=EstimatorMethod.OOB;
         else
-            throw new UnsupportedOperationException("Unknown estimator methof in TSF = "+str);
+            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
     }
 /**
  * @param ins to classifier
@@ -675,7 +690,7 @@ public class TSF extends EnhancedAbstractClassifier
         String numFeaturesString=Utils.getOption('I', options);
 //Options here are a double between 0 and 1 (proportion of features), a text 
 //string sqrt or log, or an integer number 
-        if (numTreesString.length() != 0){
+        if (numFeaturesString.length() != 0){
             try{
                 if(numFeaturesString.equals("sqrt"))
                     numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
@@ -698,7 +713,7 @@ public class TSF extends EnhancedAbstractClassifier
             }
         }
         else
-            throw new Exception("in setOptions Unable to read number of intervals, -T flag is not set");
+            numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
     }
 
     @Override //Checkpointable
@@ -734,7 +749,6 @@ public class TSF extends EnhancedAbstractClassifier
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
             estimator = saved.estimator;
-            trainFoldPath = saved.trainFoldPath;
             //checkpoint = saved.checkpoint;
             //checkpointPath = saved.checkpointPath
             checkpointTime = saved.checkpointTime;
