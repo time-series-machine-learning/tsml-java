@@ -1,55 +1,18 @@
 package tsml.classifiers.distance_based.proximity.tree;
 
 /**
- * Purpose: a tree data structure.
- *
+ * Purpose: // todo - docs - type the purpose of the code here
+ * <p>
  * Contributors: goastler
  */
 
-import utilities.Utilities;
+public interface Tree<A> {
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+    TreeNode<? extends A> getRoot();
 
-public class Tree<A> {
+    void setRoot(TreeNode<? extends A> root);
 
-    public Tree() {
+    int size();
 
-    }
-
-    private TreeNode<? extends A> root = null;
-
-    public TreeNode<? extends A> getRoot() {
-        return root;
-    }
-
-    public void setRoot(TreeNode<? extends A> root) {
-        this.root = root;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
-    }
-
-    /**
-     * total number of nodes in the tree
-     * @return
-     */
-    public int size() {
-        if(root == null) {
-            return 0;
-        } else {
-            return root.size();
-        }
-    }
-
-    public int height() {
-        if(root == null) {
-            return 0;
-        } else {
-            return root.height();
-        }
-    }
+    int height();
 }

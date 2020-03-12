@@ -2,12 +2,15 @@ package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import java.util.Objects;
 import java.util.logging.Logger;
+import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.logging.Debugable;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Debug.Random;
 import weka.core.Instances;
 
 /**
@@ -19,7 +22,7 @@ import weka.core.Instances;
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy,
     Debugable, TrainEstimateable,
-    Loggable {
+    Loggable, RandomSource {
 
     private Logger logger = LogUtils.buildLogger(this);
     private boolean built = false;
@@ -38,6 +41,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         if(isRebuild()) {
+            Assert.assertNotNull(trainData);
             // check the seed has been set
             if(!seedSet) {
                 throw new IllegalStateException("seed not set");
@@ -53,12 +57,9 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void setClassifierName(String classifierName) {
+        Assert.assertNotNull(classifierName);
         super.setClassifierName(classifierName);
-        if(classifierName != null) {
-            logger = LogUtils.buildLogger(classifierName);
-        } else {
-            logger = LogUtils.buildLogger(this);
-        }
+        logger = LogUtils.buildLogger(classifierName);
     }
 
     @Override
@@ -83,7 +84,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void setParams(ParamSet params) {
-
+        Assert.assertNotNull(params);
     }
 
     public boolean isRebuild() {
@@ -106,5 +107,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void setSeed(int seed) {
         super.setSeed(seed);
         seedSet = true;
+    }
+
+    @Override
+    public void setRandom(Random random) {
+        Assert.assertNotNull(random);
+        rand = random;
     }
 }

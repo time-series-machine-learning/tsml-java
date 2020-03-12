@@ -274,6 +274,10 @@ public class ArrayUtilities {
         return output;
     }
 
+    public static <A extends Comparable<A>> List<A> unique(Collection<A> values) {
+        return unique(new ArrayList<>(values), Comparator.naturalOrder());
+    }
+
     public static <A extends Comparable<A>> List<A> unique(List<A> values) {
         return unique(values, Comparator.naturalOrder());
     }
