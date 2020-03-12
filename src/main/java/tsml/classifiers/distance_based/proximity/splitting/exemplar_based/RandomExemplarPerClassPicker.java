@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.RandomSource;
+import tsml.classifiers.distance_based.proximity.ReadOnlyRandomSource;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -13,9 +13,9 @@ import java.util.Random;
 
 public class RandomExemplarPerClassPicker extends ExemplarPicker {
 
-    private RandomSource random;
+    private ReadOnlyRandomSource random;
 
-    public RandomExemplarPerClassPicker(RandomSource random) {
+    public RandomExemplarPerClassPicker(ReadOnlyRandomSource random) {
         setRandomSource(random);
     }
 
@@ -31,11 +31,11 @@ public class RandomExemplarPerClassPicker extends ExemplarPicker {
         return exemplars;
     }
 
-    public RandomSource getRandomSource() {
+    public ReadOnlyRandomSource getRandomSource() {
         return random;
     }
 
-    public RandomExemplarPerClassPicker setRandomSource(RandomSource random) {
+    public RandomExemplarPerClassPicker setRandomSource(ReadOnlyRandomSource random) {
         Assert.assertNotNull(random);
         this.random = random;
         return this;

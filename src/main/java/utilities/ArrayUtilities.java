@@ -9,6 +9,13 @@ import java.util.stream.Collectors;
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static <A> A extractSingleValueList(List<A> list) {
+        if(list.size() != 1) {
+            throw new IllegalArgumentException("expected a list with only 1 element");
+        }
+        return list.get(0);
+    }
+
     public static void addInPlace(double[] a, double[] b) {
         if(a.length < b.length) {
             throw new IllegalArgumentException();

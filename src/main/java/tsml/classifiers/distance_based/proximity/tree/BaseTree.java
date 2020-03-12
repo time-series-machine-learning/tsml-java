@@ -12,15 +12,15 @@ public class BaseTree<A> implements Tree<A> {
 
     }
 
-    private TreeNode<? extends A> root = null;
+    private TreeNode<A> root = null;
 
     @Override
-    public TreeNode<? extends A> getRoot() {
+    public TreeNode<A> getRoot() {
         return root;
     }
 
     @Override
-    public void setRoot(TreeNode<? extends A> root) {
+    public void setRoot(TreeNode<A> root) {
         this.root = root;
     }
 

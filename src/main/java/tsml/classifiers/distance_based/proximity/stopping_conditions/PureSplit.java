@@ -1,7 +1,6 @@
 package tsml.classifiers.distance_based.proximity.stopping_conditions;
 
 import tsml.classifiers.distance_based.proximity.ProxTree;
-import tsml.classifiers.distance_based.proximity.Split;
 import tsml.classifiers.distance_based.proximity.tree.TreeNode;
 
 public class PureSplit implements ProxTree.StoppingCondition {

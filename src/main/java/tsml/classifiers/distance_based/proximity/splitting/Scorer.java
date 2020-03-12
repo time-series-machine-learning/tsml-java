@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.pf;
+package tsml.classifiers.distance_based.proximity.splitting;
 
 import utilities.Utilities;
 import weka.core.Instances;

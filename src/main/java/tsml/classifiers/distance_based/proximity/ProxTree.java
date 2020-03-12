@@ -5,9 +5,12 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.ListIterator;
 
-import tsml.classifiers.distance_based.proximity.Split.Builder;
+import org.junit.Assert;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ExemplarPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplit;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
+import tsml.classifiers.distance_based.proximity.splitting.Split;
+import tsml.classifiers.distance_based.proximity.splitting.Splitter;
 import tsml.classifiers.distance_based.proximity.stopping_conditions.PureSplit;
 import tsml.classifiers.distance_based.proximity.tree.BaseTree;
 import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
@@ -15,6 +18,7 @@ import tsml.classifiers.distance_based.proximity.tree.Tree;
 import tsml.classifiers.distance_based.proximity.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import utilities.ClassifierTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -29,11 +33,16 @@ public class ProxTree extends BaseClassifier {
     public static void main(String[] args) throws Exception {
         ProxTree pt = new ProxTree();
         pt.setNodeIteratorBuilder(LinearListIterator::new);
-        RandomExemplarSimilaritySplit.Builder builder = new RandomExemplarSimilaritySplit.Builder();
-        builder.setExemplarPicker(new RandomExemplarPerClassPicker(pt));
-        builder.setUseEarlyAbandon(true);
-        builder.setParamSpaces();
-        pt.setSplitterBuilder(builder);
+        SplitterBuilder splitterBuilder = new SplitterBuilder() {
+            @Override
+            public Splitter build() {
+                final Instances data = getData();
+                final List<ParamSpace> paramSpaces = null;
+                final ExemplarPicker exemplarPicker = new RandomExemplarPerClassPicker(pt);
+                return new RandomExemplarSimilaritySplitter(paramSpaces, pt, exemplarPicker);
+            }
+        };
+        pt.setSplitterBuilder(splitterBuilder);
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
         System.out.println(results.writeSummaryResultsToString());
     }
@@ -45,8 +54,45 @@ public class ProxTree extends BaseClassifier {
     private Tree<Split> tree;
     private ListIterator<TreeNode<Split>> nodeIterator;
     private NodeIteratorBuilder nodeIteratorBuilder = LinearListIterator::new;
-    private Split.Builder splitterBuilder = new RandomExemplarSimilaritySplit.Builder();
+    private Splitter splitter;
+    private SplitterBuilder splitterBuilder = new SplitterBuilder() {
+
+        @Override
+        public Splitter build() {
+            final Instances data = getData();
+            final ReadOnlyRandomSource randomSource = getRandomSource();
+            Assert.assertNotNull(data);
+            Assert.assertNotNull(randomSource);
+            final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(randomSource);
+            final List<ParamSpace> paramSpaces = null; // todo find param space ranges
+            return new RandomExemplarSimilaritySplitter(paramSpaces, randomSource, exemplarPicker);
+        }
+    };
     private StoppingCondition stoppingCondition = new PureSplit();
+
+    public abstract static class SplitterBuilder implements Serializable {
+        private Instances data;
+        private ReadOnlyRandomSource randomSource;
+
+        public SplitterBuilder setRandomSource(ReadOnlyRandomSource randomSource) {
+            return null;
+        }
+
+        public SplitterBuilder setData(Instances data) {
+            this.data = data;
+            return this;
+        }
+
+        public abstract Splitter build();
+
+        public Instances getData() {
+            return data;
+        }
+
+        public ReadOnlyRandomSource getRandomSource() {
+            return randomSource;
+        }
+    }
 
     public interface StoppingCondition extends Serializable {
         boolean shouldStop(TreeNode<Split> node);
@@ -64,21 +110,23 @@ public class ProxTree extends BaseClassifier {
         if(rebuild) {
             tree = new BaseTree<>();
             nodeIterator = nodeIteratorBuilder.build();
-            splitterBuilder.setData(trainData);
-            final Split split = splitterBuilder.build();
+            final SplitterBuilder splitterBuilder = getSplitterBuilder();
+            this.splitterBuilder.setData(trainData);
+            this.splitterBuilder.setRandomSource(this);
+            final Splitter splitter = this.splitterBuilder.build();
+            setSplitter(splitter);
+            final Split split = splitter.buildSplit(trainData);
             BaseTreeNode<Split> root = new BaseTreeNode<>(split);
             tree.setRoot(root);
             nodeIterator.add(root);
         }
         while(nodeIterator.hasNext()) {
             final TreeNode<Split> node = nodeIterator.next();
-            final Instances data = node.getElement().getData();
-            final List<Instances> split = node.getElement().split(data);
+            final List<Instances> split = node.getElement().getPartitions();
             for(Instances childData : split) {
-                splitterBuilder.setData(childData);
-                final Split subSplit = splitterBuilder.build();
-                final TreeNode<Split> child = new BaseTreeNode<>(subSplit);
-                final boolean shouldAdd = stoppingCondition.shouldStop(node);
+                final Split childSplit = splitter.buildSplit(childData);
+                final TreeNode<Split> child = new BaseTreeNode<>(childSplit);
+                final boolean shouldAdd = !stoppingCondition.shouldStop(node);
                 if(shouldAdd) {
                     nodeIterator.add(child);
                 }
@@ -89,7 +137,21 @@ public class ProxTree extends BaseClassifier {
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
         double[] distribution = new double[getNumClasses()];
-
+        TreeNode<Split> node = tree.getRoot();
+        int index = -1;
+        while(!node.isLeaf()) {
+            final Split split = node.getElement();
+            index = split.getPartitionIndexOf(instance);
+            final List<TreeNode<Split>> children = node.getChildren();
+            node = children.get(index);
+        }
+        if(index < 0) {
+            // todo log warning that we haven't done any tree traversal
+            // todo perhaps rand pick result?
+        } else {
+            distribution[index]++;
+        }
+        return distribution;
     }
 
     public NodeIteratorBuilder getNodeIteratorBuilder() {
@@ -98,16 +160,26 @@ public class ProxTree extends BaseClassifier {
 
     public ProxTree setNodeIteratorBuilder(
         NodeIteratorBuilder nodeIteratorBuilder) {
+        Assert.assertNotNull(nodeIteratorBuilder);
         this.nodeIteratorBuilder = nodeIteratorBuilder;
         return this;
     }
 
-    public Builder getSplitterBuilder() {
+    public SplitterBuilder getSplitterBuilder() {
         return splitterBuilder;
     }
 
-    public ProxTree setSplitterBuilder(Builder splitterBuilder) {
+    public ProxTree setSplitterBuilder(SplitterBuilder splitterBuilder) {
         this.splitterBuilder = splitterBuilder;
+        return this;
+    }
+
+    private Splitter getSplitter() {
+        return splitter;
+    }
+
+    private ProxTree setSplitter(Splitter splitter) {
+        this.splitter = splitter;
         return this;
     }
 }

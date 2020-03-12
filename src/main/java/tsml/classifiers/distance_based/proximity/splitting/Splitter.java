@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.proximity.tmp;
+package tsml.classifiers.distance_based.proximity.splitting;
 
 import weka.core.Instances;
 
@@ -9,5 +9,5 @@ import weka.core.Instances;
  */
 public abstract class Splitter {
 
-    abstract Split split(Instances data);
+    public abstract Split buildSplit(Instances data);
 }

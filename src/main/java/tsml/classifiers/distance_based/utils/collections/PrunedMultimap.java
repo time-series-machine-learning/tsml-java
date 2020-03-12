@@ -16,8 +16,16 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private Random random = new Random(seed);
     private final TreeMap<K, Collection<V>> backingMap;
 
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc() {
+        return asc(ArrayList::new);
+    }
+
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<? extends Collection<V>> supplier) {
         return new PrunedMultimap<K, V>(Comparator.naturalOrder(), supplier);
+    }
+
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc() {
+        return desc(ArrayList::new);
     }
 
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc(Supplier<? extends Collection<V>> supplier) {

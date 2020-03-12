@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.proximity.tree;
 
-import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -16,23 +16,11 @@ import utilities.Utilities;
  * Contributors: goastler
  */
 public class BaseTreeNode<A> implements TreeNode<A> {
-    public interface SetBuilder<A> {
-        Set<TreeNode<A>> build();
-    }
 
-    private SetBuilder<A> setBuilder = HashSet::new;
-    private Set<TreeNode<A>> children = setBuilder.build();
+    private List<TreeNode<A>> children = new ArrayList<>();
     private A element;
     private int level = 0;
     private TreeNode<A> parent;
-
-    protected SetBuilder<A> getSetBuilder() {
-        return setBuilder;
-    }
-
-    protected void setSetBuilder(final SetBuilder<A> setBuilder) {
-        this.setBuilder = setBuilder;
-    }
 
     public BaseTreeNode() {}
 
@@ -46,22 +34,22 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     }
 
     @Override
-    public void setParent(BaseTreeNode<A> parent) {
-        if(!this.parent.equals(parent)){
-            this.parent = parent;
-            parent.addChild(this);
-            setLevel(parent.getLevel());
+    public void setParent(TreeNode<A> parent) {
+        if(parent != null && !this.parent.equals(parent)) {
+            parent.getChildren().add(this);
+            setLevel(parent.getLevel() + 1);
         }
+        this.parent = parent;
     }
 
     @Override
-    public ImmutableSet<TreeNode<A>> getChildren() {
-        return ImmutableSet.copyOf(children);
+    public List<TreeNode<A>> getChildren() {
+        return children;
     }
 
-    protected void setChildren(Set<TreeNode<A>> children) {
+    protected void setChildren(List<TreeNode<A>> children) {
         if(children == null) {
-            children = setBuilder.build();
+            children = new ArrayList<>();
         }
         this.children = children;
     }
@@ -168,16 +156,13 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     }
 
     @Override
-    public boolean addChild(BaseTreeNode<A> child) {
-        boolean result = children.add(child);
-        if(result) {
-            child.setParent(this);
-        }
-        return result;
+    public boolean addChild(TreeNode<A> child) {
+        child.setParent(this);
+        return true;
     }
 
     @Override
-    public boolean removeChild(BaseTreeNode<A> child) {
+    public boolean removeChild(TreeNode<A> child) {
         boolean result = children.remove(child);
         if(result) {
             if(child.getParent().equals(this)) {

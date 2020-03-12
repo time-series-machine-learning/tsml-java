@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.proximity.tree;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -12,9 +13,9 @@ public interface TreeNode<A> {
 
     TreeNode<A> getParent();
 
-    void setParent(BaseTreeNode<A> parent);
+    void setParent(TreeNode<A> parent);
 
-    ImmutableSet<TreeNode<A>> getChildren();
+    List<TreeNode<A>> getChildren();
 
     A getElement();
 
@@ -32,7 +33,7 @@ public interface TreeNode<A> {
 
     int getLevel();
 
-    boolean addChild(BaseTreeNode<A> child);
+    boolean addChild(TreeNode<A> child);
 
-    boolean removeChild(BaseTreeNode<A> child);
+    boolean removeChild(TreeNode<A> child);
 }

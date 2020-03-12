@@ -8,9 +8,9 @@ package tsml.classifiers.distance_based.proximity.tree;
 
 public interface Tree<A> {
 
-    TreeNode<? extends A> getRoot();
+    TreeNode<A> getRoot();
 
-    void setRoot(TreeNode<? extends A> root);
+    void setRoot(TreeNode<A> root);
 
     int size();
 

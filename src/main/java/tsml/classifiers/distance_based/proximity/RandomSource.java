@@ -9,7 +9,6 @@ import java.util.Random;
  * Contributors: goastler
  */
 
-public interface RandomSource {
+public interface RandomSource extends ReadOnlyRandomSource {
     void setRandom(Random random);
-    Random getRandom();
 }
