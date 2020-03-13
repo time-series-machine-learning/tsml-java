@@ -981,7 +981,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("-T", numTrees);
+        ps.addParameter("T", numTrees);
 //Add others here
         return ps;
     }

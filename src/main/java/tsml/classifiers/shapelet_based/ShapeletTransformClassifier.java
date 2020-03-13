@@ -672,7 +672,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
      */
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
-        return null;
+        ParameterSpace ps=new ParameterSpace();
+        String[] maxNumShapelets={"100","200","300","400","500","600","700","800","900","1000"};
+        ps.addParameter("T", maxNumShapelets);
+
+        return ps;
     }
     /**
      * Parses a given list of options to set the parameters of the classifier.

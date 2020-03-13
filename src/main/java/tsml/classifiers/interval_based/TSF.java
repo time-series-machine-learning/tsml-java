@@ -676,17 +676,17 @@ public class TSF extends EnhancedAbstractClassifier
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-//        System.out.print("TSF para sets ");
-//        for (String str:options)
-//            System.out.print(","+str);
-//        System.out.print("\n");
-
+/*        System.out.print("TSF para sets ");
+        for (String str:options)
+            System.out.print(","+str);
+        System.out.print("\n");
+*/
         String numTreesString=Utils.getOption('T', options);
-        if (numTreesString.length() != 0)
+
+        if (numTreesString.length() != 0) {
             numClassifiers = Integer.parseInt(numTreesString);
-        else
-            numClassifiers = DEFAULT_NUM_CLASSIFIERS;
-         
+        }
+
         String numFeaturesString=Utils.getOption('I', options);
 //Options here are a double between 0 and 1 (proportion of features), a text 
 //string sqrt or log, or an integer number 
@@ -881,9 +881,9 @@ public class TSF extends EnhancedAbstractClassifier
     public ParameterSpace getDefaultParameterSearchSpace(){
        ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("-T", numTrees);
+        ps.addParameter("T", numTrees);
         String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
-        ps.addParameter("-I", numInterv);
+        ps.addParameter("I", numInterv);
         return ps;
     }
      
