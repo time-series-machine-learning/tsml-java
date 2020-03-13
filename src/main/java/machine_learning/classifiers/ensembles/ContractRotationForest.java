@@ -90,7 +90,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //Added features
     long contractTime=0;
     double contractHours=0;    //Defaults to no contract
-    protected ClassifierResults res;
     double estSingleTree;
     int numTrees=0;
     int minNumTrees=50;
@@ -115,7 +114,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     baseClassifier = new weka.classifiers.trees.J48();
     projectionFilter = defaultFilter();
     tm=new TimingModel();
-    res=new ClassifierResults();
     checkpointPath=null;
     timeUsed=0;
     
@@ -477,8 +475,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 }
             }
         }
-        res.setBuildTime(System.nanoTime()-startTime);
-        res.setParas(getParameters());
+        trainResults.setBuildTime(System.nanoTime()-startTime);
+        trainResults.setParas(getParameters());
         printLineDebug("Finished build");
 
     }
@@ -1377,7 +1375,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
+        String result="BuildTime,"+trainResults.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
         result+=",numTrees,"+numTrees;
         return result;
     }
@@ -1433,7 +1431,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
   
 //Copy ContractRotationForest attributes. Not su
         this.contractHours=saved.contractHours;
-        res=saved.res;
+        trainResults=saved.trainResults;
         minNumTrees=saved.minNumTrees;
         maxNumTrees=saved.maxNumTrees;
         maxNumAttributes=saved.maxNumAttributes;
