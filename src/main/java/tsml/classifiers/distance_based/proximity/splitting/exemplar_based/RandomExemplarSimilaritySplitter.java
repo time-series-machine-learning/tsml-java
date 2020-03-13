@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.proximity.ReadOnlyRandomSource;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
@@ -29,6 +30,9 @@ public class RandomExemplarSimilaritySplitter extends Splitter {
 
     @Override
     public RandomExemplarSimilaritySplit buildSplit(Instances data) {
+        final ExemplarPicker exemplarPicker = getExemplarPicker();
+        final Random random = getRandomSource().getRandom();
+        final List<ParamSpace> paramSpaces = getParamSpaces();
         // pick exemplars
         // pick distance measure via param space
         // todo

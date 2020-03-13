@@ -1,5 +1,7 @@
 package tsml.classifiers.distance_based.utils.params;
 
+import com.google.common.collect.Range;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,6 +9,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
@@ -15,6 +19,7 @@ import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
+import tsml.classifiers.distance_based.proximity.RandomSource;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import tsml.classifiers.distance_based.utils.collections.DefaultList;
@@ -41,6 +46,7 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
             new ParamValues(Arrays.asList(new DTWDistance(), new DDTWDistance()),
                 Arrays.asList(wParams)));
         ParamSpace lParams = new ParamSpace();
+        lParams.add(WDTW.getGFlag(), new ParamValues(Range.closed(1D, 5D)));
         lParams.add(WDTW.getGFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D)));
         lParams.add(LCSSDistance.getEpsilonFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D, 4D)));
         params.add(DistanceMeasureable.getDistanceFunctionFlag(),
@@ -182,6 +188,176 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
             ;
     }
 
+    private static class DiscreteDistribution {
+
+        public Discretiser getDiscretiser() {
+            return discretiser;
+        }
+
+        public DiscreteDistribution setDiscretiser(
+            final Discretiser discretiser) {
+            Assert.assertNotNull(discretiser); // todo do asserts work in production? There's no <if running in test
+            // mode>, right?!
+            this.discretiser = discretiser;
+            return this;
+        }
+
+        public interface Discretiser extends Serializable {
+            double discretise(double value);
+        }
+
+        private Distribution distribution = new UniformDistribution();
+        private Random random = null;
+        private Discretiser discretiser = Math::round;
+
+        public DiscreteDistribution() {
+
+        }
+
+        public DiscreteDistribution(Distribution distribution, Discretiser discretiser) {
+            setDiscretiser(discretiser);
+            setDistribution(distribution);
+        }
+
+        public DiscreteDistribution(Distribution distribution, Discretiser discretiser, Random random) {
+            this(distribution, discretiser);
+            setRandom(random);
+        }
+
+        public int sample() {
+            final Distribution distribution = getDistribution();
+            final Random origRandom = distribution.getRandom();
+            distribution.setRandom(getRandom());
+            final double value = distribution.sample();
+            distribution.setRandom(origRandom);
+            double discretisedValue = getDiscretiser().discretise(value);
+            return (int) discretisedValue;
+        }
+
+        public Distribution getDistribution() {
+            return distribution;
+        }
+
+        public void setDistribution(
+            final Distribution distribution) {
+            Assert.assertNotNull(distribution);
+            this.distribution = distribution;
+        }
+
+        public Random getRandom() {
+            return random;
+        }
+
+        public void setRandom(final Random random) {
+            this.random = random;
+        }
+    }
+
+    private static class RangedDistribution extends Distribution {
+        private Range<Double> range = null;
+        private Distribution distribution = new UniformDistribution();
+
+        public RangedDistribution() {
+
+        }
+
+        public RangedDistribution(Distribution distribution) {
+            setDistribution(distribution);
+        }
+
+        public RangedDistribution(Distribution distribution, Range<Double> range) {
+            this(distribution);
+            setRange(range);
+        }
+
+        public RangedDistribution(Distribution distribution, Random random) {
+            this(distribution);
+            setRandom(random);
+        }
+
+        public RangedDistribution(Distribution distribution, Range<Double> range, Random random) {
+            this(distribution, range);
+            setRandom(random);
+        }
+
+        public Distribution getDistribution() {
+            return distribution;
+        }
+
+        public RangedDistribution setDistribution(
+            final Distribution distribution) {
+            Assert.assertNotNull(distribution);
+            distribution.setRandom(getRandom());
+            this.distribution = distribution;
+            return this;
+        }
+
+        /**
+         * produce a sample from the distribution
+         * @return a double in the range of 0 to 1.
+         */
+        public final double sample() {
+            final Distribution distribution = getDistribution();
+            final Random origRandom = distribution.getRandom();
+            distribution.setRandom(getRandom());
+            double value = distribution.sample();
+            distribution.setRandom(origRandom);
+            if(isPdf()) {
+                return value;
+            } else {
+                final Range<Double> range = getRange();
+                return range.lowerEndpoint() + value * (range.upperEndpoint() - range.lowerEndpoint());
+            }
+        }
+
+        public boolean isPdf() {
+            return getRange() == null;
+        }
+
+        public Range<Double> getRange() {
+            return range;
+        }
+
+        public Distribution setRange(final Range<Double> range) {
+            this.range = range;
+            return this;
+        }
+    }
+
+    private static class UniformDistribution extends Distribution {
+
+        @Override
+        public double sample() {
+            return getRandom().nextDouble();
+        }
+    }
+
+    private static abstract class Distribution implements RandomSource {
+
+        private Random random = null;
+
+        public Distribution() {
+
+        }
+
+        public Distribution(Random random) {
+            setRandom(random);
+        }
+
+        public abstract double sample();
+
+        @Override
+        public Random getRandom() {
+            return random;
+        }
+
+        @Override
+        public void setRandom(Random random) {
+            this.random = random;
+        }
+
+    }
+
     /**
      * holds a set of values (e.g. DTW and DDTW) and a set of corresponding params for those values (e.g. a set of
      * warping windows). I.e. many values can map to many sub spaces.
@@ -192,6 +368,7 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
         private List<ParamSpace> paramsList = new ArrayList<>(); // sub spaces
 
         public ParamValues() {
+
         }
 
         public ParamValues(List<?> values, List<ParamSpace> params) {
@@ -209,6 +386,7 @@ public class ParamSpace implements DefaultList<ParamSet> { // todo don't extend 
          */
         public List<Integer> getBins() {
             List<Integer> bins = new ArrayList<>();
+
             for(ParamSpace paramSets : paramsList) {
                 bins.add(paramSets.size());
             }
