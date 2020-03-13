@@ -588,9 +588,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
-        // can classifier handle the data?
-        getCapabilities().testWithFail(data);
-        long t1=System.nanoTime();
+        //Start forest timer.
+        timer.forestStartTime = System.nanoTime();
 
         if(serialisePath != null){
             RISE temp = this.readSerialise(seed);
@@ -604,6 +603,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         if (!loadedFromFile) {
             //Just used for getParameters.
             data = trainingData;
+            // Can classifier handle the data?
+            getCapabilities().testWithFail(data);
             //(re)Initialise all variables to account for multiple calls of buildClassifier.
             initialise();
 
@@ -616,9 +617,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
         }
-
-        //Start forest timer.
-        timer.forestStartTime = System.nanoTime();
 
         if (getEstimateOwnPerformance()) {
             findTrainAcc(data);
@@ -1216,8 +1214,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     public static void main(String[] args){
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
@@ -1234,11 +1232,16 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         System.out.println("\n");
         try {
             RISE = new RISE();
-            RISE.setSavePath("D:/Test/Testing/Serialising/");
-            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+            RISE.setTransformType(TransformType.MFCC);
+            cr = sse.evaluate(RISE, data);
+            System.out.println("MFCC");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            RISE = new RISE();
             RISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(RISE, data);
-            System.out.println("FFT");
+            System.out.println("ACF_FFT");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
