@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -83,7 +84,11 @@ public class ParamSet implements ParamHandler {
     }
 
     public ParamSet addAll(ParamSet paramSet) {
-        paramSet.paramMap.forEach(this::add);
+        for(Entry<String, List<Object>> entry : paramSet.paramMap.entrySet()) {
+            String key = entry.getKey();
+            List<Object> value = entry.getValue();
+            add(key, value);
+        }
         return this;
     }
 
@@ -159,7 +164,11 @@ public class ParamSet implements ParamHandler {
 
     @Override
     public void setParams(final ParamSet param) {
-        param.paramMap.forEach(this::add);
+        for(Entry<String, List<Object>> entry : param.paramMap.entrySet()) {
+            String key = entry.getKey();
+            List<Object> value = entry.getValue();
+            add(key, value);
+        }
     }
 
     @Override

@@ -70,6 +70,11 @@ public class ClassifierResultsAnalysis {
     public static boolean buildMatlabDiagrams = false;
     public static boolean testResultsOnly = false;
 
+
+
+    public static PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
+    public static PerformanceMetric benchmarkedTrainTimeMetric = PerformanceMetric.buildTimeBenchmarked;
+
 //        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
 //        PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
     public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
@@ -80,6 +85,12 @@ public class ClassifierResultsAnalysis {
     public static PerformanceMetric estimateTimeMetric = PerformanceMetric.fromScratchEstimateTime;
     public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.fromScratchEstimateTimeBenchmarked;
 
+    public static PerformanceMetric memoryMaxMetric = PerformanceMetric.memory;
+
+    public static List<PerformanceMetric> allComputationalMetrics = Arrays.asList(trainTimeMetric, benchmarkedTrainTimeMetric, testTimeMetric,
+            benchmarkedTestTimeMetric, memoryMaxMetric, estimateTimeMetric, benchmarkedEstimateTimeMetric);
+
+
     //final id's and path suffixes
     protected static final String matlabFilePath = "src/main/matlab/";
     protected static final String pairwiseScatterDiaPath = "dias_PairwiseScatter/";
@@ -89,9 +100,9 @@ public class ClassifierResultsAnalysis {
 
     //todo being used for both raw and benchmarked 2019/10/21
     //eval_timings... editing folder name before own ana, then resetting. fix.
-    protected static String timingDiaFolderName = "dias_Timings";
-    protected static String timingDiaFolderName_raw = "dias_TimingsRAW";
-    protected static String timingDiaFolderName_benchmark = "dias_TimingsBENCHMARKED";
+    protected static String computationalDiaFolderName = "dias_Timings";
+    protected static String computationalDiaFolderName_raw = "dias_ComputationalResourcesRAW";
+    protected static String computationalDiaFolderName_benchmark = "dias_ComputationalResourcesBENCHMARKED";
 
     public static final double FRIEDMANCDDIA_PVAL = 0.05;
     public static final String testLabel = "TEST";
@@ -186,12 +197,10 @@ public class ClassifierResultsAnalysis {
         // START TIMINGS 
         //timings will attempt to always be summarised if they are present, so handle them here as a special case
         //and add them onto the list of metrics
-        String[][] trainTestTimingSummaries = new String[4][];
+        ArrayList<String[]> compResourceSummaries = new ArrayList<>();
         try {
-            String[][] trainTestTimingSummaryRaw = eval_timingsRAW(outPath, expname, results, null); //dont bother with groupings for timings
-
-            trainTestTimingSummaries[0] = trainTestTimingSummaryRaw[0];
-            trainTestTimingSummaries[1] = trainTestTimingSummaryRaw[1];
+            String[][] compResourcesSummaryRaw = eval_CompResourcesRAW(outPath, expname, results, null); //dont bother with groupings for timings
+            compResourceSummaries.addAll(Arrays.asList(compResourcesSummaryRaw));
 
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing RAW timing files, likely "
@@ -210,10 +219,8 @@ public class ClassifierResultsAnalysis {
         // TODO proper support for benchmarked timings, link up to the diagram creation code, global summary files, etc
         // currently standalone
         try {
-            String[][] trainTestTimingSummaryBenchmarked = eval_timingsBENCHMARKED(outPath, expname, results, null); //dont bother with groupings for timings
-
-            trainTestTimingSummaries[2] = trainTestTimingSummaryBenchmarked[0];
-            trainTestTimingSummaries[3] = trainTestTimingSummaryBenchmarked[1];
+            String[][] compResourcesSummaryBenchmarked = eval_CompResourcesBENCHMARKED(outPath, expname, results, null); //dont bother with groupings for timings
+            compResourceSummaries.addAll(Arrays.asList(compResourcesSummaryBenchmarked));
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing BENCHMARKED timing files, likely "
                     + "later stages of analysis could not find files that should have been made"
@@ -234,32 +241,33 @@ public class ClassifierResultsAnalysis {
         //does ANYTHING not have timings? do NONE of the timing analysis
 
         //using the presence of summaries for train and test timings as an indicator that they are present
-        List<PerformanceMetric> timeMetrics = new ArrayList<>();
+        List<PerformanceMetric> compMetrics = new ArrayList<>();
 
-        if (trainTestTimingSummaries != null) {
-            timeMetrics.add(PerformanceMetric.buildTime);
-            timeMetrics.add(testTimeMetric);
-            timeMetrics.add(PerformanceMetric.buildTimeBenchmarked);
-            timeMetrics.add(benchmarkedTestTimeMetric);
-//            timeMetrics.add(estimateTimeMetric);
-            for (int j = trainTestTimingSummaries.length-1; j >= 0; j--) {
-                String label = timeMetrics.get(j).name;
-                if (trainTestTimingSummaries[j] != null) {
+        if (compResourceSummaries != null) {
+            compMetrics.add(PerformanceMetric.buildTime);
+            compMetrics.add(testTimeMetric);
+            compMetrics.add(memoryMaxMetric);
+            compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
+            compMetrics.add(benchmarkedTestTimeMetric);
+//            compMetrics.add(estimateTimeMetric);
+            for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
+                String label = compMetrics.get(j).name;
+                if (compResourceSummaries.get(j) != null) {
                     //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
-                    metrics.add(timeMetrics.get(j));
+                    metrics.add(compMetrics.get(j));
 
                     bigSummary.writeString(label + ":");
-                    bigSummary.writeLine(trainTestTimingSummaries[j][0]);
+                    bigSummary.writeLine(compResourceSummaries.get(j)[0]);
 
                     smallSummary.writeString(label + ":");
-                    smallSummary.writeLine(trainTestTimingSummaries[j][1]);
+                    smallSummary.writeLine(compResourceSummaries.get(j)[1]);
 
-                    statCliquesForCDDias.add(trainTestTimingSummaries[j][2]);
+                    statCliquesForCDDias.add(compResourceSummaries.get(j)[2]);
                 }
                 else {
                     //not present, ignore, and remove from list of time-specific metrics
                     //to be passed to the timing dia creator
-                    timeMetrics.remove(j);
+                    compMetrics.remove(j);
 
                     bigSummary.writeString(label + ":  MISSING\n\n");
                     smallSummary.writeString(label + ": MISSING\n\n");
@@ -277,7 +285,7 @@ public class ClassifierResultsAnalysis {
         if(buildMatlabDiagrams) {
             MatlabController proxy = MatlabController.getInstance();
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
-            matlab_buildTimingsDias(timeMetrics);
+            matlab_buildCompResourcesDias(compMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
             matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput());
         }
@@ -469,7 +477,7 @@ public class ClassifierResultsAnalysis {
         dsetVals = util_order(dsetVals, ordering);
         stddevsFoldVals = util_order(stddevsFoldVals, ordering);
 
-        if (evalSet.equalsIgnoreCase("TEST") || metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.buildTimeBenchmarked)) {
+        if (evalSet.equalsIgnoreCase("TEST") || allComputationalMetrics.contains(metric)) {
             //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
             String cdFolder = expRootDirectory + cdDiaFolderName;
             (new File(cdFolder)).mkdirs();
@@ -504,11 +512,10 @@ public class ClassifierResultsAnalysis {
             //end pairwisescatter qol
 
             //qol for timing dia creation, make a copy of the avgs files with headers
-            if (metric.equals(PerformanceMetric.buildTime) || metric.equals(PerformanceMetric.totalTestTime) || metric.equals(PerformanceMetric.avgTestPredTime) ||
-                    metric.equals(PerformanceMetric.buildTimeBenchmarked) || metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(PerformanceMetric.avgTestPredTimeBenchmarked)) {
-                String timingDir = expRootDirectory+ timingDiaFolderName + "/";
-                (new File(timingDir)).mkdirs();
-                String fname = timingDir+fileNameBuild_avgsFile(evalSet,metric);
+            if (allComputationalMetrics.contains(metric)) {
+                String compDir = expRootDirectory+ computationalDiaFolderName + "/";
+                (new File(compDir)).mkdirs();
+                String fname = compDir+fileNameBuild_avgsFile(evalSet,metric);
                 writeTableFile_ClassifierDataset(fname, evalSet+metric, dsetVals, cnames, dsets);
             }
             //end timing dia qol
@@ -842,16 +849,16 @@ public class ClassifierResultsAnalysis {
         return eval_metricOnSplit(outPath, filename, null, testLabel, metric, testFolds, cnames, dsets, dsetGroupings);
     }
 
-    protected static String[/*{train,test}*/][] eval_timingsRAW(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
+    protected static String[/*{train,test}*/][] eval_CompResourcesRAW(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
         String[] cnames = results.getClassifierNamesInOutput();
         String[] dsets = results.getDatasetNamesInOutput();
 
-        timingDiaFolderName = timingDiaFolderName_raw;
+        computationalDiaFolderName = computationalDiaFolderName_raw;
 
-        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
+        PerformanceMetric trainTimeMetric = ClassifierResultsAnalysis.trainTimeMetric;
 
-        outPath += "TimingsRAW/"; //special case for timings
-        new File(outPath).mkdirs();
+        String timingsOutPath = outPath + "TimingsRAW/"; //special case for timings
+        new File(timingsOutPath).mkdirs();
 
         // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
         // train files in comparison set up. build times should be same in both trainFoldX and testFoldX file anyway
@@ -859,29 +866,42 @@ public class ClassifierResultsAnalysis {
         double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
         if (trainTimes != null)
-            trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings);
+            trainResStr = eval_metricOnSplit(timingsOutPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings);
 
         double[][][] testTimes = results.sliceSplit("test").retrieveDoubles(testTimeMetric.getter)[0];
         String[] testResStr = null;
         if (testTimes != null)
-            testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
+            testResStr = eval_metricOnSplit(timingsOutPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
 
 //        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
 //        String[] estimateResStr = null;
 //        if (estimateTimes != null)
 //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
-        return new String[][] { trainResStr, testResStr };
+
+        String memoryOutPath = outPath + "MaxMemory/"; //special case for timings
+        new File(memoryOutPath).mkdirs();
+
+        // NOTE: same as before, just getting the memory from the test files
+
+        double[][][] memoryMax = results.sliceSplit("test").retrieveDoubles(memoryMaxMetric.getter)[0];
+        String[] memoryResStr = null;
+        if (memoryMax != null)
+            memoryResStr = eval_metricOnSplit(memoryOutPath, filename, null, testLabel, memoryMaxMetric, memoryMax, cnames, dsets, dsetGroupings);
+
+
+
+        return new String[][] { trainResStr, testResStr, memoryResStr };
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
-    protected static String[/*{train,test}*/][] eval_timingsBENCHMARKED(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
+    protected static String[/*{train,test}*/][] eval_CompResourcesBENCHMARKED(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
         String[] cnames = results.getClassifierNamesInOutput();
         String[] dsets = results.getDatasetNamesInOutput();
 
-        timingDiaFolderName = timingDiaFolderName_benchmark;
+        computationalDiaFolderName = computationalDiaFolderName_benchmark;
 
-        PerformanceMetric trainTimeMetric = PerformanceMetric.buildTimeBenchmarked;
+        PerformanceMetric trainTimeMetric = benchmarkedTrainTimeMetric;
 
         outPath += "TimingsBENCHMARKED/"; //special case for timings
         new File(outPath).mkdirs();
@@ -938,19 +958,25 @@ public class ClassifierResultsAnalysis {
     }
 
 
-    protected static void matlab_buildTimingsDias(List<PerformanceMetric> metrics) {
+    protected static void matlab_buildCompResourcesDias(List<PerformanceMetric> metrics) {
         MatlabController proxy = MatlabController.getInstance();
 
         for (PerformanceMetric metric : metrics) {
 
-            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? timingDiaFolderName_benchmark : timingDiaFolderName_raw) + "/";
+            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? computationalDiaFolderName_benchmark : computationalDiaFolderName_raw) + "/";
 
             String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ||
                             metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(benchmarkedTestTimeMetric)
+                            || metric.equals(memoryMaxMetric)
                     ? testLabel
                     : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
-            proxy.eval("timingsLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "');");
+
+            String ylabel = metric.equals(memoryMaxMetric) ?
+                    "Max Memory (MB)" :
+                    "Time, " + evalSet.toLowerCase() + " (ms)";
+
+            proxy.eval("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
         }
     }
 

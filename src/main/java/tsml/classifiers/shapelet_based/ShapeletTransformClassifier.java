@@ -25,8 +25,10 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
+import tsml.classifiers.Tuneable;
 import tsml.transformers.PCA;
 import utilities.InstanceTools;
 import weka.core.Instance;
@@ -46,8 +48,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
-
-
+import weka.core.Utils;
 
 
 /**
@@ -62,7 +63,8 @@ import fileIO.OutFile;
  *
  * 
  */
-public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
+public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
+        implements TrainTimeContractable, Tuneable {
     //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;    //Configurable ST
     private Instances shapeletData;         //Transformed shapelets header info stored here
@@ -662,6 +664,36 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         result.setValue(TechnicalInformation.Field.PAGES, "pages");
 
         return result;
+    }
+
+    /**
+     * From the interface Tuneable
+     * @return the range of parameters to tune over
+     */
+    @Override
+    public ParameterSpace getDefaultParameterSearchSpace(){
+        return null;
+    }
+    /**
+     * Parses a given list of options to set the parameters of the classifier.
+     * We use this for the tuning mechanism, setting parameters through setOptions
+     <!-- options-start -->
+     * Valid options are: <p/>
+     * <pre> -S
+     * Number of shapelets kept in the transform.</pre>
+     * More to follow
+     <!-- options-end -->
+     *
+     * @param options the list of options as an array of strings
+     * @throws Exception if an option is not supported
+     */
+    @Override
+    public void setOptions(String[] options) throws Exception{
+        String numShapeletsString= Utils.getOption('S', options);
+        if (numShapeletsString.length() != 0)
+            numShapeletsInTransform = Integer.parseInt(numShapeletsString);
+        else
+            throw new Exception("in setOptions Unable to read number of intervals, -T flag is not set");
     }
 
 
