@@ -109,7 +109,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
    * Constructor.
    */
   public ContractRotationForest() {
-    super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
       
     baseClassifier = new weka.classifiers.trees.J48();
     projectionFilter = defaultFilter();
@@ -291,6 +291,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
+            numTrees = 0;
         }
 
         if (getEstimateOwnPerformance()) {
