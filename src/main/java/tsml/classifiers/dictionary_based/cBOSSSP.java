@@ -1499,7 +1499,11 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         c = new cBOSSSP();
         c.useRecommendedSettings();
         c.setSeed(fold);
-        c.newDFT = true;
+        c.featureSelection = true;
+        c.chiLimits = new double[]{0.9};
+        c.useIGB = new boolean[]{true, false};
+        c.histogramIntersection = true;
+        c.bigrams = new boolean[]{true};
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 

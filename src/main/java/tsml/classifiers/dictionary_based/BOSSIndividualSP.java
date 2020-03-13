@@ -1174,7 +1174,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
         // limit number of features avoid excessive features
         int limit = fsLimit;
 
-        //System.out.println(values.size() + " " + limit + " " + levels + " " + windowSize + " " + wordLength + " " + norm);
+        System.out.println(featureCount.size() + " " + values.size() + " " + levels + " " + windowSize + " " + wordLength + " " + norm + " " + IGB);
 
         if (values.size() > limit) {
             // sort by p_value-squared value
@@ -1187,6 +1187,8 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
+        ArrayList<SPBag> newBags = new ArrayList<>(bags.size());
+
         // remove values
         for (int j = 0; j < bags.size(); j++) {
             SPBag oldBag = bags.get(j);
@@ -1196,8 +1198,10 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
                     newBag.put(entry.getKey(), entry.getValue());
                 }
             }
-            bags.set(j, newBag);
+            newBags.add(newBag);
         }
+
+        bags = newBags;
     }
 
     @Override
@@ -1240,7 +1244,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             }
         }
 
-        if (featureSelection && chiLimit < 1) chiSquared();
+        if (featureSelection) chiSquared();
 
         if (wekaClassifier) {
             words = new HashMap();
@@ -1333,17 +1337,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);
-
-        if (featureSelection && chiLimit < 1) {
-            SPBag oldBag = testBag;
-            testBag = new SPBag(oldBag.classVal);
-            for (Map.Entry<ComparablePair<BitWordLong, Byte>, Integer> entry : oldBag.entrySet()) {
-                if (chiSquare.contains(entry.getKey())) {
-                    testBag.put(entry.getKey(), entry.getValue());
-                }
-            }
-        }
+        BOSSIndividualSP.SPBag testBag = BOSSSpatialPyramidsTransform(instance);;
 
         if (wekaClassifier){
             double[] values = new double[words.size() + 1];
@@ -1413,7 +1407,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        BOSSIndividualSP.SPBag testBag = bags.get(testIndex);
+        BOSSIndividualSP.SPBag testBag = bags.get(testIndex);;
 
         if (tuningK){
             //kNN BOSS distance
