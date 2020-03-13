@@ -107,11 +107,11 @@ import tsml.classifiers.Tuneable;
 * date 7/10/15  Tony Bagnall
 * update1 14/2/19 Tony Bagnall
 * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
-* update3 06/03/20 contracting and checkpointing Matthew Middlehurst
+* @version2.0 13/03/20 contracting, checkpointing and tuneable, Matthew Middlehurst
  * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
- *
- *  results for this classifier on 112 UCR data sets (30 resamples of each) can be found at
- *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv
+ *  results for this classifier on 112 UCR data sets can be found at
+ *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv. The first column of results  are on the default
+ *  train/terst split. The others are found through stratified resampling of the combined train/test
  *  individual results on each fold are
  *  timeseriesclassification.com/Results/ResultsByClassifier/TSF/Predictions
  *
@@ -884,6 +884,7 @@ public class TSF extends EnhancedAbstractClassifier
         ps.addParameter("T", numTrees);
         String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
         ps.addParameter("I", numInterv);
+
         return ps;
     }
      
