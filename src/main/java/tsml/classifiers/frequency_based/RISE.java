@@ -589,7 +589,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
         // can classifier handle the data?
-        getCapabilities().testWithFail(data);
+        Capabilities c=getCapabilities();
+        c.testWithFail(trainingData);
         long t1=System.nanoTime();
 
         if(serialisePath != null){
@@ -720,7 +721,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
             Instances trainHeader = new Instances(intervalInstances, 0);
             Instances testHeader = new Instances(intervalInstances, 0);
-
             ArrayList<Integer> indexs = new ArrayList<>();
             for (int j = 0; j < bags[treeCount].length; j++) {
                 if(bags[treeCount][j] == 0){
@@ -786,11 +786,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 }
             }
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
-            if (predClass == data.get(i).classValue()){
+/*            if (predClass == data.get(i).classValue()){
                 acc++;
             }
             trainResults.setAcc(acc / data.size());
-        }
+ */       }
         this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
     }
 
@@ -904,27 +904,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     }
 
     /**
-     * Returns default capabilities of the classifier. These are that the
-     * data must be numeric, with no missing and a nominal class
-     * @return the capabilities of this classifier
-     **/
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        // instances
-        result.setMinimumNumberInstances(1);
-        return result;
-
-
-    }
-
-    /**
      * Method returning all classifier parameters as a string.
      * for EnhancedAbstractClassifier
      * @return
@@ -973,16 +952,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         return result;
     }
 
-    /**
-     * for interface Tuneable
-     * @return
-     */
-    @Override
+    @Override //Tuneable
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
-        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("T", numTrees);
-//Add others here
+        String[] numTrees={"100","200","300","400","500","600"};
+        ps.addParameter("K", numTrees);
+        String[] minInterv={"4","8","16","32","64","128"};
+        ps.addParameter("I", minInterv);
+        String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
+        ps.addParameter("T", transforms);
         return ps;
     }
     /**

@@ -68,18 +68,7 @@ import tsml.classifiers.Tuneable;
 * for simplicity of implementation, and for the fact when we did try it and it made 
 * no difference, we have not used this. Note also, the original R implementation 
 * may do some sampling of cases
- 
-* Update 1:
-* * A few changes made to enable testing refinements. 
-*1. general baseClassifier rather than a hard coded RandomTree. We tested a few 
-*  alternatives, the summary results NEED WRITING UP
-*  Summary:
-*  Base Classifier: 
-*       a) C.45 (J48) significantly worse than random tree.  
-*       b) CAWPE tbc
-*       c) CART tbc
-* 2. Added setOptions to allow parameter tuning. Tuning on parameters
-*       #trees, #features 
+
  <!-- globalinfo-end -->
  <!-- technical-bibtex-start -->
 * Bibtex
@@ -106,14 +95,19 @@ import tsml.classifiers.Tuneable;
 * author ajb
 * date 7/10/15  Tony Bagnall
 * update1 14/2/19 Tony Bagnall
-* update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
+ * * A few changes made to enable testing refinements.
+ *1. general baseClassifier rather than a hard coded RandomTree. We tested a few
+ *  alternatives, they did not improve things
+ * 2. Added setOptions to allow parameter tuning. Tuning on parameters
+ *       #trees, #features
+ * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
 * @version2.0 13/03/20 contracting, checkpointing and tuneable, Matthew Middlehurst
  * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
  *  results for this classifier on 112 UCR data sets can be found at
- *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv. The first column of results  are on the default
+ *  www.timeseriesclassification.com/results/ResultsByClassifier/TSF.csv. The first column of results  are on the default
  *  train/terst split. The others are found through stratified resampling of the combined train/test
  *  individual results on each fold are
- *  timeseriesclassification.com/Results/ResultsByClassifier/TSF/Predictions
+ *  timeseriesclassification.com/results/ResultsByClassifier/TSF/Predictions
  *
  *
  *  A note on timings. buildTime does not include time taken to estimate error from the train data, unless bagging is
