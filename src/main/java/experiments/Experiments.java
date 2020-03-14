@@ -14,7 +14,8 @@
  */
 package experiments;
 
-import de.bwaldvogel.liblinear.Train;
+import com.google.common.testing.GcFinalization;
+//import de.bwaldvogel.liblinear.Train;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -31,10 +32,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import tsml.classifiers.ParameterSplittable;
+
+import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.distance_based.utils.logging.Debugable;
+import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
+import tsml.classifiers.distance_based.utils.StrUtils;
+import utilities.FileUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -49,9 +56,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.EnhancedAbstractClassifier;
+
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -104,236 +112,6 @@ public class Experiments  {
     //A few 'should be final but leaving them not final just in case' public static settings
     public static int numCVFolds = 10;
 
-    @Parameters(separators = "=")
-    public static class ExperimentalArguments implements Runnable {
-
-        //REQUIRED PARAMETERS
-        @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
-                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
-        public String dataReadLocation = null;
-
-        @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
-                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
-        public String resultsWriteLocation = null;
-
-        @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
-        public String classifierName = null;
-
-        @Parameter(names={"-dn","--datasetName"}, required=true, order=3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
-                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
-        public String datasetName = null;
-
-        @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
-                + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
-        public int foldId = 0;
-
-        //OPTIONAL PARAMETERS
-        @Parameter(names={"--help"}, hidden=true) //hidden from usage() printout
-        private boolean help = false;
-
-        //todo separate verbosity into it own thing
-        @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
-        public boolean debug = false;
-
-        @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
-                + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
-        public boolean generateErrorEstimateOnTrainSet = false;
-
-        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
-                + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
-        public boolean checkpointing = false;
-
-        @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
-                + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
-                + "the --resultsPath. If a path is supplied via this parameter however, the files shall be written to that precisely that directory, as opposed to e.g. [-sp]/[--classifierName]/Predictions... "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
-        public String supportingFilePath = null;
-
-        @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(Integer) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
-                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
-        public Integer singleParameterID = null;
-
-        @Parameter(names={"-tb","--timingBenchmark"}, arity=1, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
-                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
-                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
-                + "any processing noise may make any benchmark normalisation process unreliable anyway.")
-        public boolean performTimingBenchmark = false;
-
-        //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge
-        //of here, the ifs will call the wrong things. decide on the design of this
-        @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 lines of meta information "
-                + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
-                + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
-        public int classifierResultsFileFormat = 0;
-
-        @Parameter(names={"-ctrs","--contractTrainSecs"}, description = "(long) Defines a time limit, in seconds, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
-                + "no contract time. Only one of --contractTrainSecs, and --contractTrainHours should be supplied. If both are supplied, seconds takes preference over hours. "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
-        public long contractTrainTimeSeconds = 0;
-
-        @Parameter(names={"-ctrh","--contractTrainHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
-                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If both are supplied, seconds hours takes preference over hours."
-                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
-        public long contractTrainTimeHours = 0;
-
-        @Parameter(names={"-ctem","--contractTestMillis"}, description = "(long) Defines a time limit, in miliseconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
-                + "Defaults to 0, which sets no contract time. Only one of --contractTestMillis and --contractTestSecs should be supplied. If both are supplied, milis takes preference over seconds. "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
-        public long contractPredTimeMillis = 0;
-
-        @Parameter(names={"-ctes","--contractTestSecs"}, description = "(long) Defines a time limit, in seconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
-                + "Defaults to 0, which sets no contract time. Only one of --contractTestMillis and --contractTestSecs should be supplied. If both are supplied, milis takes preference over seconds. "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
-        public long contractPredTimeSeconds= 0;
-
-        @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
-        public boolean serialiseTrainedClassifier = false;
-
-        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
-        public boolean forceEvaluation = false;
-
-        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
-                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
-        public String trainEstimateMethod = "cv_10";
-
-        public ExperimentalArguments() {
-
-        }
-
-        public ExperimentalArguments(String[] args) throws Exception {
-            parseArguments(args);
-        }
-
-        @Override //Runnable
-        public void run() {
-            try {
-                setupAndRunExperiment(this);
-            } catch (Exception ex) {
-                System.out.println("Threaded Experiment Failed: " + ex);
-            }
-        }
-
-        /**
-         * This is a bit of a bolt-on method for now. It assumes that the object on which
-         * this method is being called has all the other parameters not passed to it set already
-         * (e.g data location, results location) and these will be replicated across all experiments.
-         * The current value of this.classifierName, this.datasetName, and this.foldId are ignored within
-         * this method.
-         *
-         *
-         * @param minFold inclusive
-         * @param maxFold exclusive, i.e will make folds [ for (int f = minFold; f < maxFold; ++f) ]
-         * @return a list of unique experimental arguments, covering all combinations of classifier, datasets, and folds passed, with the same meta info as 'this' currently stores
-         */
-        public List<ExperimentalArguments> generateExperiments(String[] classifierNames, String[] datasetNames, int minFold, int maxFold) {
-
-            if (minFold > maxFold) {
-                int t = minFold;
-                minFold = maxFold;
-                maxFold = t;
-            }
-
-            ArrayList<ExperimentalArguments> exps = new ArrayList<>(classifierNames.length * datasetNames.length * (maxFold - minFold));
-
-            for (String classifier : classifierNames) {
-                for (String dataset : datasetNames) {
-                    for (int fold = minFold; fold < maxFold; fold++) {
-                        ExperimentalArguments exp = new ExperimentalArguments();
-                        exp.classifierName = classifier;
-                        exp.datasetName = dataset;
-                        exp.foldId = fold;
-
-                        exp.dataReadLocation = this.dataReadLocation;
-                        exp.resultsWriteLocation = this.resultsWriteLocation;
-                        exp.generateErrorEstimateOnTrainSet = this.generateErrorEstimateOnTrainSet;
-                        exp.checkpointing = this.checkpointing;
-                        exp.singleParameterID = this.singleParameterID;
-                        exp.contractTrainTimeSeconds = this.contractTrainTimeSeconds;
-                        exp.contractTrainTimeHours = this.contractTrainTimeHours;
-                        exp.contractPredTimeMillis = this.contractPredTimeMillis;
-                        exp.contractPredTimeSeconds = this.contractPredTimeSeconds;
-                        exp.performTimingBenchmark = this.performTimingBenchmark;
-                        exp.supportingFilePath = this.supportingFilePath;
-                        exp.debug = this.debug;
-                        exp.classifierResultsFileFormat = this.classifierResultsFileFormat;
-                        exp.serialiseTrainedClassifier = this.serialiseTrainedClassifier;
-
-                        exps.add(exp);
-                    }
-                }
-            }
-
-            return exps;
-        }
-
-        private void parseArguments(String[] args) throws Exception {
-            Builder b = JCommander.newBuilder();
-            b.addObject(this);
-            JCommander jc = b.build();
-            jc.setProgramName("Experiments.java");  //todo maybe add copyright etcetc
-            try {
-                jc.parse(args);
-            } catch (Exception e) {
-                if (!help) {
-                    //we actually errored, instead of the program simply being called with the --help flag
-                    System.err.println("Parsing of arguments failed, parameter information follows after the error. Parameters that require values should have the flag and value separated by '='.");
-                    System.err.println("For example: java -jar TimeSeriesClassification.jar -dp=data/path/ -rp=results/path/ -cn=someClassifier -dn=someDataset -f=0");
-                    System.err.println("Parameters prefixed by a * are REQUIRED. These are the first five parameters, which are needed to run a basic experiment.");
-                    System.err.println("Error: \n\t"+e+"\n\n");
-                }
-                jc.usage();
-//                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
-//                System.exit(1);
-            }
-
-            foldId -= 1; //go from one-indexed to zero-indexed
-            Experiments.debug = this.debug;
-
-            //populating the contract times if present
-            //todo refactor to timeunits
-            if (contractTrainTimeSeconds > 0)
-                contractTrainTimeHours = contractTrainTimeSeconds / 60 / 60;
-            else if (contractTrainTimeHours > 0)
-                contractTrainTimeSeconds = contractTrainTimeHours * 60 * 60;
-
-            if (contractPredTimeMillis > 0)
-                contractPredTimeSeconds = contractPredTimeMillis / 1000;
-            else if (contractPredTimeSeconds > 0)
-                contractPredTimeMillis = contractPredTimeSeconds * 1000;
-
-            //supporting file path generated in setupAndRunExperiment(...), if not explicitly passed
-        }
-
-        public String toShortString() {
-            return "["+classifierName+","+datasetName+","+foldId+"]";
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append("EXPERIMENT SETTINGS "+ this.toShortString());
-            sb.append("\ndataReadLocation: ").append(dataReadLocation);
-            sb.append("\nresultsWriteLocation: ").append(resultsWriteLocation);
-            sb.append("\nclassifierName: ").append(classifierName);
-            sb.append("\ndatasetName: ").append(datasetName);
-            sb.append("\nfoldId: ").append(foldId);
-            sb.append("\ngenerateErrorEstimateOnTrainSet: ").append(generateErrorEstimateOnTrainSet);
-            sb.append("\ncheckpoint: ").append(checkpointing);
-            sb.append("\nsingleParameterID: ").append(singleParameterID);
-            sb.append("\ncheckpointPath: ").append(supportingFilePath);
-            sb.append("\ncontractTrainTimeSeconds: ").append(contractTrainTimeSeconds);
-            sb.append("\ncontractPredTimeMillis: ").append(contractPredTimeMillis);
-            sb.append("\nclassifierResultsFileFormat: ").append(classifierResultsFileFormat);
-            sb.append("\nperformTimingBenchmark: ").append(performTimingBenchmark);
-            sb.append("\nserialiseTrainedClassifier: ").append(serialiseTrainedClassifier);
-            sb.append("\ndebug: ").append(debug);
-
-            return sb.toString();
-        }
-    }
-
     /**
      * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
      * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
@@ -365,35 +143,41 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }else{
             int folds=30;
-            boolean threaded=true;
+
+
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
 //                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
                 settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-Catch22TSF"; //Classifier name
+                settings[3]="-cn=RISE"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 folds=30;
-                String classifier="HC-Catch22TSF";
+                String classifier="TunedHIVE-COTE";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
+//                String[] probFiles= {"Chinatown"};
                 String[] probFiles= DatasetLists.tscProblems112;
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[6];
+                String[] settings=new String[9];
 //Location of data set
-                settings[0]="-dp=C:\\Temp\\";//Where to get data
+                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
-                settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=BoTSWEnsemble"; //Classifier name
+                settings[2]="-gtf=true"; //Whether to generate train files or not
+                settings[3]="-cn=TSF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
-                settings[4]="-dn="+"blood"; //Problem file
-                settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+                settings[4]="-dn="+""; //Problem file, added below
+                settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
+                settings[6]="--force=true";
+                settings[7]="-ctrs=0";
+                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);
@@ -402,8 +186,6 @@ public class Experiments  {
                 folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
-                    if(prob.equals("miniboone"))
-                        continue;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
@@ -470,8 +252,8 @@ public class Experiments  {
 
         String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
         String targetFileNameTrain = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
-        testFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileName);
-        trainFoldExists = experiments.CollateResults.validateSingleFoldFile(targetFileNameTrain);
+        testFoldExists = CollateResults.validateSingleFoldFile(targetFileName);
+        trainFoldExists = CollateResults.validateSingleFoldFile(targetFileNameTrain);
 
         //Check whether fold already exists, if so, dont do it, just quit
         if (!expSettings.forceEvaluation &&
@@ -502,7 +284,7 @@ public class Experiments  {
                 expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
 
                 targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
+                if (CollateResults.validateSingleFoldFile(targetFileName)) {
                     LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
                     return null;
                 }
@@ -553,13 +335,18 @@ public class Experiments  {
         //we're going to write them out, to store at minimum the build times
         ClassifierResults trainResults = new ClassifierResults();
         ClassifierResults testResults = new ClassifierResults();
+        ClassifierResults[] experimentResults = null; // the combined container, to hold { train, test } on return
 
         long benchmark = findBenchmarkTime(expSettings);
+
+        // Latest point before 'actual' experimental work may start - setting up the memory monitor
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.installMonitor();
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -576,15 +363,21 @@ public class Experiments  {
             buildTime = System.nanoTime() - buildTime;
             LOGGER.log(Level.FINE, "Training complete");
 
-            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark);
+            // Training done, collect memory monitor results
+            // Need to wait for an update, otherwise very quick classifiers may not experience gc calls during training,
+            // or the monitor may not update in time before collecting the max
+            GcFinalization.awaitFullGc();
+            long maxMemory = memoryMonitor.getMaxMemoryUsed();
+            trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation)
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
-            LOGGER.log(Level.FINE, "Train estimate written");
+                LOGGER.log(Level.FINE, "Train estimate written");
+            }
 
             if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
                 serialiseClassifier(expSettings, classifier);
@@ -605,27 +398,29 @@ public class Experiments  {
                     testResults.setBenchmarkTime(benchmark);
                     testResults.setBuildTime(trainResults.getBuildTime());
                     testResults.turnOnZeroTimingsErrors();
+                    testResults.setMemory(maxMemory);
 
                     LOGGER.log(Level.FINE, "Testing complete");
 
                     writeResults(expSettings, testResults, resultsPath + testFoldFilename, "test");
-                    LOGGER.log(Level.FINE, "Testing written");
+                    LOGGER.log(Level.FINE, "Test results written");
                 }
                 else {
                     LOGGER.log(Level.INFO, "Test file already found, written by another process.");
                     testResults = new ClassifierResults(resultsPath + testFoldFilename);
                 }
-                return new ClassifierResults[] { trainResults, testResults };
             }
-            else {
-                return new ClassifierResults[] { trainResults, null }; //not error, but we dont have a test acc. just returning 0 for now
-            }
+
+            experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
+            e.printStackTrace();
             return null; //error state
         }
+
+        return experimentResults;
     }
 
     /**
@@ -648,7 +443,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime) throws Exception {
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, long maxMemory) throws Exception {
 
         /*
         if estimateacc { //want full predictions
@@ -680,6 +475,8 @@ public class Experiments  {
                 if (eac.getEstimateOwnPerformance()) {
                     ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
                     res.setBenchmarkTime(benchmarkTime);
+                    res.setMemory(maxMemory);
+
                     return res;
                 }
                 else {
@@ -704,6 +501,8 @@ public class Experiments  {
                 trainResults.setBenchmarkTime(benchmarkTime);
             }
         }
+
+        trainResults.setMemory(maxMemory);
 
         return trainResults;
     }
@@ -967,4 +766,282 @@ public class Experiments  {
         }
         System.out.println("Finished all threads");
     }
+
+    @Parameters(separators = "=")
+    public static class ExperimentalArguments implements Runnable {
+
+        //REQUIRED PARAMETERS
+        @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
+                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
+        public String dataReadLocation = null;
+
+        @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
+                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
+        public String resultsWriteLocation = null;
+
+        @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
+        public String classifierName = null;
+
+        @Parameter(names={"-dn","--datasetName"}, required=true, order=3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
+                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
+        public String datasetName = null;
+
+        @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
+                + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
+        public int foldId = 0;
+
+        //OPTIONAL PARAMETERS
+        @Parameter(names={"--help"}, hidden=true) //hidden from usage() printout
+        private boolean help = false;
+
+        //todo separate verbosity into it own thing
+        @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
+        public boolean debug = false;
+
+        @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
+                + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
+        public boolean generateErrorEstimateOnTrainSet = false;
+
+        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
+                + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
+        public boolean checkpointing = false;
+
+        @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
+                + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
+                + "the --resultsPath. If a path is supplied via this parameter however, the files shall be written to that precisely that directory, as opposed to e.g. [-sp]/[--classifierName]/Predictions... "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+        public String supportingFilePath = null;
+
+        @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(Integer) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
+                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
+        public Integer singleParameterID = null;
+
+        @Parameter(names={"-tb","--timingBenchmark"}, arity=1, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
+                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
+                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
+                + "any processing noise may make any benchmark normalisation process unreliable anyway.")
+        public boolean performTimingBenchmark = false;
+
+        //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge
+        //of here, the ifs will call the wrong things. decide on the design of this
+        @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 lines of meta information "
+                + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
+                + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
+        public int classifierResultsFileFormat = 0;
+
+        @Parameter(names={"-ctrs","--contractTrainSecs"}, description = "(long) Defines a time limit, in seconds, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
+                + "no contract time. Only one of --contractTrainSecs, and --contractTrainHours should be supplied. If both are supplied, seconds takes preference over hours. "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+        public long contractTrainTimeSeconds = 0;
+
+        @Parameter(names={"-ctrh","--contractTrainHours"}, description = "(long) Defines a time limit, in hours, for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to 0, which sets "
+                + "no contract time. Only one of --contractTimeNanos, --contractTimeMinutes, or --contractTimeHours should be supplied. If both are supplied, seconds hours takes preference over hours."
+                + "\n\n THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+        public long contractTrainTimeHours = 0;
+
+        @Parameter(names={"-ctem","--contractTestMillis"}, description = "(long) Defines a time limit, in miliseconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
+                + "Defaults to 0, which sets no contract time. Only one of --contractTestMillis and --contractTestSecs should be supplied. If both are supplied, milis takes preference over seconds. "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+        public long contractPredTimeMillis = 0;
+
+        @Parameter(names={"-ctes","--contractTestSecs"}, description = "(long) Defines a time limit, in seconds, for the time given to the classifier to make each test prediction if it implements the ContractablePredictions interface. "
+                + "Defaults to 0, which sets no contract time. Only one of --contractTestMillis and --contractTestSecs should be supplied. If both are supplied, milis takes preference over seconds. "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+        public long contractPredTimeSeconds= 0;
+
+        @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
+        public boolean serialiseTrainedClassifier = false;
+
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluation = false;
+
+        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
+        public String trainEstimateMethod = "cv_10";
+
+        @Parameter(names={"--conTrain"}, arity = 2, description = "todo")
+        private List<String> trainContracts = new ArrayList<>();
+
+        @Parameter(names={"--contractInName"}, arity = 1, description = "todo")
+        private boolean appendTrainContractToClassifierName = true;
+
+        @Parameter(names={"-l", "--logLevel"}, description = "log level")
+        private String logLevelStr = null;
+
+        private Level logLevel = null;
+
+        public boolean hasTrainContracts() {
+            return trainContracts.size() > 0;
+        }
+
+        public ExperimentalArguments() {
+
+        }
+
+        public ExperimentalArguments(String[] args) throws Exception {
+            parseArguments(args);
+        }
+
+        @Override //Runnable
+        public void run() {
+            try {
+                setupAndRunExperiment(this);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        /**
+         * This is a bit of a bolt-on method for now. It assumes that the object on which
+         * this method is being called has all the other parameters not passed to it set already
+         * (e.g data location, results location) and these will be replicated across all experiments.
+         * The current value of this.classifierName, this.datasetName, and this.foldId are ignored within
+         * this method.
+         *
+         *
+         * @param minFold inclusive
+         * @param maxFold exclusive, i.e will make folds [ for (int f = minFold; f < maxFold; ++f) ]
+         * @return a list of unique experimental arguments, covering all combinations of classifier, datasets, and folds passed, with the same meta info as 'this' currently stores
+         */
+        public List<ExperimentalArguments> generateExperiments(String[] classifierNames, String[] datasetNames, int minFold, int maxFold) {
+
+            if (minFold > maxFold) {
+                int t = minFold;
+                minFold = maxFold;
+                maxFold = t;
+            }
+
+            ArrayList<ExperimentalArguments> exps = new ArrayList<>(classifierNames.length * datasetNames.length * (maxFold - minFold));
+
+            for (String classifier : classifierNames) {
+                for (String dataset : datasetNames) {
+                    for (int fold = minFold; fold < maxFold; fold++) {
+                        ExperimentalArguments exp = new ExperimentalArguments();
+                        exp.classifierName = classifier;
+                        exp.datasetName = dataset;
+                        exp.foldId = fold;
+
+                        exp.dataReadLocation = this.dataReadLocation;
+                        exp.resultsWriteLocation = this.resultsWriteLocation;
+                        exp.generateErrorEstimateOnTrainSet = this.generateErrorEstimateOnTrainSet;
+                        exp.checkpointing = this.checkpointing;
+                        exp.singleParameterID = this.singleParameterID;
+                        exp.contractTrainTimeSeconds = this.contractTrainTimeSeconds;
+                        exp.contractTrainTimeHours = this.contractTrainTimeHours;
+                        exp.contractPredTimeMillis = this.contractPredTimeMillis;
+                        exp.contractPredTimeSeconds = this.contractPredTimeSeconds;
+                        exp.performTimingBenchmark = this.performTimingBenchmark;
+                        exp.supportingFilePath = this.supportingFilePath;
+                        exp.debug = this.debug;
+                        exp.classifierResultsFileFormat = this.classifierResultsFileFormat;
+                        exp.serialiseTrainedClassifier = this.serialiseTrainedClassifier;
+
+                        exps.add(exp);
+                    }
+                }
+            }
+
+            return exps;
+        }
+
+        private void parseArguments(String[] args) throws Exception {
+            Builder b = JCommander.newBuilder();
+            b.addObject(this);
+            JCommander jc = b.build();
+            jc.setProgramName("Experiments.java");  //todo maybe add copyright etcetc
+            try {
+                jc.parse(args);
+            } catch (Exception e) {
+                if (!help) {
+                    //we actually errored, instead of the program simply being called with the --help flag
+                    System.err.println("Parsing of arguments failed, parameter information follows after the error. Parameters that require values should have the flag and value separated by '='.");
+                    System.err.println("For example: java -jar TimeSeriesClassification.jar -dp=data/path/ -rp=results/path/ -cn=someClassifier -dn=someDataset -f=0");
+                    System.err.println("Parameters prefixed by a * are REQUIRED. These are the first five parameters, which are needed to run a basic experiment.");
+                    System.err.println("Error: \n\t"+e+"\n\n");
+                }
+                jc.usage();
+//                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
+//                System.exit(1);
+            }
+
+            foldId -= 1; //go from one-indexed to zero-indexed
+            Experiments.debug = this.debug;
+
+            //populating the contract times if present
+            //todo refactor to timeunits
+            if (contractTrainTimeSeconds > 0)
+                contractTrainTimeHours = contractTrainTimeSeconds / 60 / 60;
+            else if (contractTrainTimeHours > 0)
+                contractTrainTimeSeconds = contractTrainTimeHours * 60 * 60;
+
+            if (contractPredTimeMillis > 0)
+                contractPredTimeSeconds = contractPredTimeMillis / 1000;
+            else if (contractPredTimeSeconds > 0)
+                contractPredTimeMillis = contractPredTimeSeconds * 1000;
+
+            resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
+            dataReadLocation = StrUtils.asDirPath(dataReadLocation);
+
+            if(contractTrainTimeHours > 0) {
+                trainContracts.add(String.valueOf(contractTrainTimeHours));
+                trainContracts.add(TimeUnit.HOURS.toString());
+            } else if(contractTrainTimeSeconds > 0) {
+                trainContracts.add(String.valueOf(contractTrainTimeSeconds));
+                trainContracts.add(TimeUnit.SECONDS.toString());
+            }
+
+            // check the contracts are in ascending order // todo sort them
+            for(int i = 1; i < trainContracts.size(); i += 2) {
+                trainContracts.set(i, trainContracts.get(i).toUpperCase());
+            }
+            long prev = -1;
+            for(int i = 0; i < trainContracts.size(); i += 2) {
+                long nanos = TimeUnit.NANOSECONDS.convert(Long.parseLong(trainContracts.get(i)),
+                        TimeUnit.valueOf(trainContracts.get(i + 1)));
+                if(prev > nanos) {
+                    throw new IllegalArgumentException("contracts not in asc order");
+                }
+                prev = nanos;
+            }
+
+            if(trainContracts.size() % 2 != 0) {
+                throw new IllegalStateException("illegal number of args for time");
+            }
+
+            if(logLevelStr != null) {
+                logLevel = Level.parse(logLevelStr);
+            }
+        }
+
+        public String toShortString() {
+            return "["+classifierName+","+datasetName+","+foldId+"]";
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("EXPERIMENT SETTINGS "+ this.toShortString());
+            sb.append("\ndataReadLocation: ").append(dataReadLocation);
+            sb.append("\nresultsWriteLocation: ").append(resultsWriteLocation);
+            sb.append("\nclassifierName: ").append(classifierName);
+            sb.append("\ndatasetName: ").append(datasetName);
+            sb.append("\nfoldId: ").append(foldId);
+            sb.append("\ngenerateErrorEstimateOnTrainSet: ").append(generateErrorEstimateOnTrainSet);
+            sb.append("\ncheckpoint: ").append(checkpointing);
+            sb.append("\nsingleParameterID: ").append(singleParameterID);
+            sb.append("\ncheckpointPath: ").append(supportingFilePath);
+            sb.append("\ncontractTrainTimeSeconds: ").append(contractTrainTimeSeconds);
+            sb.append("\ncontractPredTimeMillis: ").append(contractPredTimeMillis);
+            sb.append("\nclassifierResultsFileFormat: ").append(classifierResultsFileFormat);
+            sb.append("\nperformTimingBenchmark: ").append(performTimingBenchmark);
+            sb.append("\nserialiseTrainedClassifier: ").append(serialiseTrainedClassifier);
+            sb.append("\ndebug: ").append(debug);
+
+            return sb.toString();
+        }
+    }
+
+
 }

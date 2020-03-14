@@ -65,6 +65,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
 
+
     //Im not sure this is used anywhere, should be in Options for condensing data?
     public static final int minimumRepresentation = 25; //If condensing the search set, this is the minimum number of instances per class to search
 
@@ -177,6 +178,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
         this.searchFunction = new ShapeletSearchFactory(sOp).getShapeletSearch();
     }
+
 
 
     protected void initQualityBound(ClassCounts classDist) {
@@ -396,7 +398,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
 
         //continue processing series until we run out of time (if contracted)
         while(casesSoFar < numSeriesToUse && keepGoing) {
-            outputPrint("BALANCED: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
+//            outputPrint("BALANCED: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
             //get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
             //we only want to pass in the worstKShapelet if we've found K shapelets. but we only care about
@@ -459,8 +461,8 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
 
         if (recordShapelets)
             recordShapelets(kShapelets, this.ouputFileLocation);
-        if (!supressOutput)
-            writeShapelets(kShapelets, new OutputStreamWriter(System.out));
+//        if (!supressOutput)
+//            writeShapelets(kShapelets, new OutputStreamWriter(System.out));
 
         return kShapelets;
     }
@@ -511,7 +513,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         long prevEarlyAbandons=0;
         int passes=0;
         while(casesSoFar < numSeriesToUse && keepGoing) {
-            System.out.println("ORIGINAL: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" search type = "+searchFunction.getSearchType());
+//            outputPrint("ORIGINAL: "+casesSoFar +" Cumulative time (secs) = "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" search type = "+searchFunction.getSearchType());
             //set the worst Shapelet so far, as long as the shapelet set is full.
             worstShapelet = kShapelets.size() == numShapelets ? kShapelets.get(numShapelets - 1) : null;
 
@@ -529,12 +531,12 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
                 long tempEA=numEarlyAbandons-prevEarlyAbandons;
                 prevEarlyAbandons=numEarlyAbandons;
                 double newTimePerShapelet=(double)(t2-t1)/(seriesShapelets.size()+tempEA);
-                System.out.println(" time for case "+casesSoFar+" evaluate  "+seriesShapelets.size()+" but what about early ones?");
-                System.out.println(" Est time per shapelet  "+timePerShapelet/1000000000+" actual "+newTimePerShapelet/1000000000);
+                outputPrint(" time for case "+casesSoFar+" evaluate  "+seriesShapelets.size()+" but what about early ones?");
+                outputPrint(" Est time per shapelet  "+timePerShapelet/1000000000+" actual "+newTimePerShapelet/1000000000);
                 shapeletsSearchedPerSeries=adjustNumberPerSeries(contractTime-usedTime,numSeriesToUse-casesSoFar,newTimePerShapelet);
-                System.out.println("Changing number of shapelets sampled from "+searchFunction.getNumShapeletsPerSeries()+" to "+shapeletsSearchedPerSeries);
+                outputPrint("Changing number of shapelets sampled from "+searchFunction.getNumShapeletsPerSeries()+" to "+shapeletsSearchedPerSeries);
                 searchFunction.setNumShapeletsPerSeries(shapeletsSearchedPerSeries);
-                System.out.println("data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons+" worst so far ="+worstShapelet+" evaluated this series = "+(seriesShapelets.size()+tempEA));
+                outputPrint("data : " + casesSoFar+" has "+seriesShapelets.size()+" candidates"+ " cumulative early abandons "+numEarlyAbandons+" worst so far ="+worstShapelet+" evaluated this series = "+(seriesShapelets.size()+tempEA));
             }
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
@@ -561,8 +563,8 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
 
         if (recordShapelets)
             recordShapelets(kShapelets, this.ouputFileLocation);
-        if (!supressOutput)
-            writeShapelets(kShapelets, new OutputStreamWriter(System.out));
+//        if (!supressOutput)
+//            writeShapelets(kShapelets, new OutputStreamWriter(System.out));
 
         return kShapelets;
     }
@@ -1051,7 +1053,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         System.out.println(sc.nextLine());
         
         boolean readHeader = true;
-        
+
         double quality = 0, classVal = 0;
         int series = 0, position = 0, dimension = 0, numDimensions = 1;
         ShapeletCandidate cand = null;

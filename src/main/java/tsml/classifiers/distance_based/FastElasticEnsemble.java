@@ -15,8 +15,8 @@
 package tsml.classifiers.distance_based;
 
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
-import tsml.classifiers.distance_based.elastic_ensemble.Efficient1NN;
+import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils.SequenceStatsCache;
+import tsml.classifiers.legacy.elastic_ensemble.Efficient1NN;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;

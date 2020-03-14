@@ -18,7 +18,7 @@ Installation
 ------------
 We are looking into deploying this project on Maven or Gradle in the future. For now there are two options:
 
-* download the `jar file <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
+* download the `jar file <http://timeseriesclassification.com/Downloads/tsml11_3_2020.jar>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
 * fork or download the source files and include in a project in your favourite IDE you can then construct your own experiments (see our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/java/examples>`__) and implement your own classifiers.
 
 Overview
@@ -55,14 +55,14 @@ The lists of implemented TSC algorithms shall continue to grow over time. These 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 
 ===============  ================  ==============  =================  ==============  =========
-Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Ensembles         
+Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Hybrids
 ===============  ================  ==============  =================  ==============  =========
-DD_DTW           BOSS              RISE            LearnShapelets     TSF             FlatCote
-DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            HiveCote
+DD_DTW           BOSS              RISE            LearnShapelets     TSF             HIVE-COTE
+DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            TS-CHIEF
 ElasticEnsemble  BOP                               FastShapelets      LPS
 NN_CID           WEASEL        
 SAX_1NN          SAXVSM
-ProximityForest              
+ProximityForest  SpatialBOSS
 ===============  ================  ==============  =================  ==============  =========
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
@@ -83,11 +83,11 @@ Currently quite limited, aside from those already shipped with Weka.
 UnsupervisedShapelets
 =====================  =======
 
-Filters/Transformations
+Filters
 ```````````````````````
 
 SimpleBatchFilters that take an Instances (the set of time series), transforms them
-and returns a new Instances object
+and returns a new Instances object.
 
 ===================  ===================  ===================
 ACF                  ACF_PACF             ARMA
@@ -99,6 +99,11 @@ PAA                  PACF                 PowerCepstrum
 PowerSepstrum        RankOrder            RunLength
 SAX                  Sine                 SummaryStats
 ===================  ===================  ===================
+
+Transformers
+We will be shifting over to a bespoke Transformer interface
+===================
+ShapeletTransorm
 
 Paper-Supporting Branches
 -------------------------
@@ -121,7 +126,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * George Oastler (@goastler), 
 * Matthew Middlehurst (@MatthewMiddlehurst), 
 * Michael Flynn (@Michael Flynn), 
-* Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), 
+* Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@nua.ac.uk), 
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
 

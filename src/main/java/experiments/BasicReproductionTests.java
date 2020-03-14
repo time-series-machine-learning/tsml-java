@@ -74,13 +74,14 @@ public class BasicReproductionTests {
         tsClassifiers + "distance_based.ProximityForestWrapper",
         tsClassifiers + "distance_based.SlowDTW_1NN",
         
-        tsClassifiers + "frequency_based.cRISE",
-        
+//        tsClassifiers + "frequency_based.cRISE",
+//        tsClassifiers + "hybrids.HIVE_COTE",
+
 //        tsClassifiers + "hybrids.FlatCote", 
 //        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
         
         tsClassifiers + "interval_based.LPS",
-        tsClassifiers + "interval_based.cTSF",
+        tsClassifiers + "interval_based.TSF",
         
         tsClassifiers + "shapelet_based.FastShapelets",
         tsClassifiers + "shapelet_based.LearnShapelets",        
@@ -89,8 +90,6 @@ public class BasicReproductionTests {
         extraClassifiers + "kNN",
         
         extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.HIVE_COTE",
-        extraClassifiers + "ensembles.cRotationForest",
         extraClassifiers + "ensembles.stackers.SMLR",
         
     };

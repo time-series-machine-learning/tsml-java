@@ -415,6 +415,8 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
         if (getEstimateOwnPerformance())
             findEnsembleTrainAcc(data);
+        trainResults.setParas(getParameters());
+
     }
     
     //[0] = index, [1] = acc

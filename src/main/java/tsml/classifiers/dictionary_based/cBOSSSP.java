@@ -16,8 +16,9 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import net.sourceforge.sizeof.SizeOf;
+//import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
+import tsml.classifiers.MemoryContractable;
 import utilities.ClassifierTools;
 import utilities.samplers.RandomIndexSampler;
 import utilities.samplers.RandomRoundRobinIndexSampler;
@@ -129,7 +130,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
-    private long contractTime = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private boolean underContractTime = false;
 
@@ -236,45 +237,28 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount){
-        switch (time){
-            case DAYS:
-                contractTime = (long)(8.64e+13)*amount;
-                break;
-            case HOURS:
-                contractTime = (long)(3.6e+12)*amount;
-                break;
-            case MINUTES:
-                contractTime = (long)(6e+10)*amount;
-                break;
-            case SECONDS:
-                contractTime = (long)(1e+9)*amount;
-                break;
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public void setTrainTimeLimit(long amount){
+        trainContractTimeNanos = amount;
         trainTimeContract = true;
     }
 
     @Override
     public void setMemoryLimit(DataUnit unit, long amount){
-        switch (unit){
-            case GIGABYTE:
-                memoryLimit = amount*1073741824;
-                break;
-            case MEGABYTE:
-                memoryLimit = amount*1048576;
-                break;
-            case BYTES:
-                memoryLimit = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid data unit");
-        }
-        memoryContract = true;
+//        switch (unit){
+//            case GIGABYTE:
+//                memoryLimit = amount*1073741824;
+//                break;
+//            case MEGABYTE:
+//                memoryLimit = amount*1048576;
+//                break;
+//            case BYTES:
+//                memoryLimit = amount;
+//                break;
+//            default:
+//                throw new InvalidParameterException("Invalid data unit");
+//        }
+//        memoryContract = true;
+        System.out.println("Memory contracting currently unavailable");
     }
 
     @Override
@@ -350,7 +334,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         checkpointTime = saved.checkpointTime;
 //        checkpointTimeDiff = checkpointTimeDiff;
         cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
-        contractTime = saved.contractTime;
+        trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
         memoryLimit = saved.memoryLimit;
@@ -474,7 +458,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     @Override
-    public void buildClassifier(final Instances data) throws Exception {
+    public void buildClassifier(final Instances data) throws Exception
+    {
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -558,7 +543,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 }
             }
         }
-
+/*
         if (memoryContract) {
             try {
                 SizeOf.deepSizeOf("test");
@@ -567,7 +552,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                             "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
             }
         }
-
+*/
         train = data;
 
         if (getEstimateOwnPerformance() || tuneWeight){
@@ -629,6 +614,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         if (checkpoint && cleanupCheckpointFiles){
             checkpointCleanup();
         }
+        trainResults.setParas(getParameters());
     }
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {
@@ -682,7 +668,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+//            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (numClassifiers[currentSeries] < maxEnsembleSize){
                 if (boss.accuracy < lowestAcc[currentSeries]){
@@ -828,7 +814,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+  //          if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (getEstimateOwnPerformance() || tuneWeight){
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
@@ -926,7 +912,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         String name = datasetName + seed + "BOSS";
 
         if (trainTimeContract){
-            name += ("TTC" + contractTime);
+            name += ("TTC" + trainContractTimeNanos);
         }
         else if (isMultivariate && ensembleSizePerChannel > 0){
             name += ("PC" + (ensembleSizePerChannel*numSeries));
@@ -951,7 +937,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     public void checkContracts(){
-        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime;
+        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
 
@@ -1042,7 +1028,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private double[] selectParameters() throws Exception {
         Instance params;
 
-        if (trainTimeContract && System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff > contractTime/2) {
+        if (trainTimeContract && System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff > trainContractTimeNanos/2) {
             if (prevParameters[currentSeries].size() > 0) {
                 for (int i = 0; i < paramTime[currentSeries].size(); i++) {
                     prevParameters[currentSeries].get(i).setClassValue(paramTime[currentSeries].get(i));
@@ -1050,7 +1036,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
                 GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
-                long remainingTime = contractTime - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
+                long remainingTime = trainContractTimeNanos - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
                 for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));

@@ -14,10 +14,9 @@
  */
 package tsml.classifiers.multivariate;
 
-import tsml.classifiers.distance_based.distances.old.EuclideanDistance_I;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.EuclideanDistance_I;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;
-import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -25,7 +24,7 @@ import weka.core.Instances;
  *
  * @author Aaron
  */
-public class NN_ED_I extends AbstractClassifier{
+public class NN_ED_I extends MultivariateAbstractClassifier{
     
     Instances train;
     EuclideanDistance_I I;
@@ -33,13 +32,17 @@ public class NN_ED_I extends AbstractClassifier{
         I = new EuclideanDistance_I();
     }
 
+
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
+        testWithFailRelationalInstances(data);
         train = data;
     }
     
     @Override
     public double classifyInstance(Instance instance) throws Exception{
+        testWithFailRelationalInstance(instance);
         Pair<Instance, Double> minD = findMinDistance(train, instance, I);
         return minD.var1.classValue();
     }

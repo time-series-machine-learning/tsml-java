@@ -375,6 +375,8 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
     trainResults.setClassifierName(getClassifierName());
     trainResults.setParas(classifierName);
     trainResults.setBuildTime(t2-t1);
+    trainResults.setParas(getParameters());
+
   }
 
   private WEASELTransform.BagOfBigrams[] fitOneWindow(
