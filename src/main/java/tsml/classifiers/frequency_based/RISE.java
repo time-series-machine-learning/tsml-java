@@ -908,9 +908,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     @Override
     public String getParameters() {
 
-        String result = "Total Time Taken," + timer.forestElapsedTime
-                + ", Contract Length (ns), " + timer.forestTimeLimit
-                + ", Percentage contract for OOB, " + perForBag
+        String result = "Contract Length (ns), " + timer.forestTimeLimit
                 + ", NumAtts," + data.numAttributes()
                 + ", MaxNumTrees," + numClassifiers
                 + ", NumTrees," + treeCount
@@ -919,7 +917,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 + ", Final Coefficients (time = a * x^2 + b * x + c)"
                 + ", a, " + timer.a
                 + ", b, " + timer.b
-                + ", c, " + timer.c;
+                + ", c, " + timer.c
+                +",trainEstimateMethod,"+estimator;
+                if(estimator==EstimatorMethod.OOB)
+                   result+=", Percentage contract for OOB, " + perForBag;
+
         return result;
     }
 

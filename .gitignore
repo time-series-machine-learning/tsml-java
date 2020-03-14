@@ -56,3 +56,4 @@ distribution/tsml.jar
 distribution/tsml.jar
 distribution/tsml.jar
 distribution/tsml.jar
+src/main/java/tsml/classifiers/frequency_based/RISE.java
