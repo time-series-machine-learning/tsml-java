@@ -714,7 +714,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
                 checkpointChange = true;
             }
-
+            
             classifiersBuilt[currentSeries]++;
 
             int prev = currentSeries;
@@ -1042,7 +1042,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private double[] selectParameters() throws Exception {
         Instance params;
 
-        if (trainTimeContract) {
+        if (trainTimeContract && System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff > contractTime/2) {
             if (prevParameters[currentSeries].size() > 0) {
                 for (int i = 0; i < paramTime[currentSeries].size(); i++) {
                     prevParameters[currentSeries].get(i).setClassValue(paramTime[currentSeries].get(i));
@@ -1488,26 +1488,29 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         cBOSSSP c;
         double accuracy;
 
+        long t1 = System.nanoTime();
         c = new cBOSSSP();
         c.useRecommendedSettings();
         c.setSeed(fold);
+        c.setTrainTimeLimit(TimeUnit.MINUTES, 5);
         c.buildClassifier(train);
+        System.out.println(System.nanoTime()-t1);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
-        c = new cBOSSSP();
-        c.useRecommendedSettings();
-        c.setSeed(fold);
-        c.featureSelection = true;
-        c.chiLimits = new double[]{0.9};
-        c.useIGB = new boolean[]{true, false};
-        c.histogramIntersection = true;
-        c.bigrams = new boolean[]{true};
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("CVAcc CAWPE BOSS 2 accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//        c = new cBOSSSP();
+//        c.useRecommendedSettings();
+//        c.setSeed(fold);
+//        c.featureSelection = true;
+//        c.chiLimits = new double[]{0.9};
+//        c.useIGB = new boolean[]{true, false};
+//        c.histogramIntersection = true;
+//        c.bigrams = new boolean[]{true};
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("CVAcc CAWPE BOSS 2 accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
 //        c = new cBOSSSP();
 //        c.useRecommendedSettings();
