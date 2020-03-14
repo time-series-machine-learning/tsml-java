@@ -15,6 +15,7 @@
 package utilities;
 
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.params.tmp.ParameterSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
@@ -379,11 +380,11 @@ public class Utilities {
             if(binSize > 1) {
                 result.add(permutation % binSize);
                 permutation /= binSize;
+            } else if(binSize == 1) {
+                result.add(0);
             } else {
-                if(binSize < 0) {
-                    throw new IllegalArgumentException();
-                }
-                result.add(binSize - 1);
+                // binSize is 0 or less (i.e. no index as that bin cannot be indexed as size <=0)
+                result.add(-1);
             }
         }
         return result;
@@ -598,4 +599,5 @@ public class Utilities {
         }
         return sum;
     }
+
 }
