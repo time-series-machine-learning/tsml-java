@@ -14,6 +14,7 @@
  */   
 package tsml.transformers;
 
+import tsml.classifiers.TrainTimeContractable;
 import tsml.transformers.shapelet_tools.OrderLineObj;
 import tsml.transformers.shapelet_tools.Shapelet;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
@@ -59,7 +60,7 @@ import java.util.logging.Logger;
  *
  * Refactored version for
  */
-public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer{
+public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer {
 //Global defaults. Max should be a lambda set to series length
     public final static int MAXTRANSFORMSIZE = 1000;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;

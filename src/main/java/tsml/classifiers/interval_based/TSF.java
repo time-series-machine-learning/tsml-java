@@ -218,7 +218,7 @@ public class TSF extends EnhancedAbstractClassifier
             result+="AttsConsideredPerNode,"+((RandomTree) classifier).getKValue();
 
         if(trainTimeContract)
-            result+= ",TimeContract(ns), " +trainContractTimeNanos;
+            result+= ",trainContractTimeNanos," +trainContractTimeNanos;
         else
             result+=",NoContract";
 //Any other contract information here

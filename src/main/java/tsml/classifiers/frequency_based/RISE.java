@@ -922,7 +922,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             result+=",AttsConsideredPerNode,"+((RandomTree)classifier).getKValue();
 
         if(trainTimeContract)
-            result+= ",TimeContract(ns), " +trainContractTimeNanos;
+            result+= ",trainContractTimeNanos," +trainContractTimeNanos;
         else
             result+=",NoContract";
 
