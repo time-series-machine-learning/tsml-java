@@ -135,7 +135,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    private Classifier base= new RandomTree();
+    private Classifier classifier = new RandomTree();
  
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
      ends  at  intervals[i][j][1] */
@@ -190,7 +190,7 @@ public class TSF extends EnhancedAbstractClassifier
  * @param c a base classifier constructed elsewhere and cloned into ensemble
  */   
     public void setBaseClassifier(Classifier c){
-        base=c;
+        classifier =c;
     }
     public void setBagging(boolean b){
         bagging=b;
@@ -213,13 +213,20 @@ public class TSF extends EnhancedAbstractClassifier
      */
     @Override
     public String getParameters() {
-        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
-        temp+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        String result=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
+        if(classifier instanceof RandomTree)
+            result+="AttsConsideredPerNode,"+((RandomTree) classifier).getKValue();
+
+        if(trainTimeContract)
+            result+= ",TimeContract(ns), " +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+//Any other contract information here
+
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance())
-            temp+=",EstimateMethod,"+estimator;
-        if(base instanceof RandomTree)
-           temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
-        return temp;
+            result+=",EstimateMethod,"+estimator;
+        return result;
  
     }
     public void setNumTrees(int t){
@@ -421,8 +428,8 @@ public class TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(base instanceof RandomTree){
-            ((RandomTree) base).setKValue(result.numAttributes()-1);
+        if(classifier instanceof RandomTree){
+            ((RandomTree) classifier).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
         }
 
@@ -466,7 +473,7 @@ public class TSF extends EnhancedAbstractClassifier
                 }
             }
             //3. Create and build tree using all the features.
-            Classifier tree = AbstractClassifier.makeCopy(base);
+            Classifier tree = AbstractClassifier.makeCopy(classifier);
             if(seedClassifier && tree instanceof Randomizable)
                 ((Randomizable)tree).setSeed(seed*(classifiersBuilt+1));
 
@@ -734,7 +741,7 @@ public class TSF extends EnhancedAbstractClassifier
             //numIntervalsFinder = saved.numIntervalsFinder;
             minIntervalLength = saved.minIntervalLength;
             trees = saved.trees;
-            base = saved.base;
+            classifier = saved.classifier;
             intervals = saved.intervals;
             //testHolder = saved.testHolder;
             voteEnsemble = saved.voteEnsemble;

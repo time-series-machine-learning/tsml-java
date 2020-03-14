@@ -106,6 +106,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private double perForBag = 0.5;
 
     private Timer timer = null;
+    private boolean trainTimeContract = false;
+    private long trainContractTimeNanos = 0;
 
     private Classifier classifier = new RandomTree();
     private ArrayList<Classifier> baseClassifiers = null;
@@ -622,7 +624,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             findTrainAcc(data);
             initialise();
             timer.reset();
-            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
+            if(trainTimeContract)
+                this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
@@ -692,10 +695,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         int[][] bags;
         ArrayList[] testIndexs = new ArrayList[numTrees];
         double[] bagAccuracies = new double[numTrees];
-
-        this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
-        this.timer.forestTimeLimit = (long)((double)timer.forestTimeLimit * perForBag);
-
+        if(trainTimeContract) {
+            this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
+            this.timer.forestTimeLimit = (long) ((double) timer.forestTimeLimit * perForBag);
+        }
         bags = generateBags(numTrees, bagProp, data);
 
 
@@ -902,26 +905,40 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     /**
      * Method returning all classifier parameters as a string.
-     * for EnhancedAbstractClassifier
+     * for EnhancedAbstractClassifier. General format:
+     * super.getParameters()+classifier parameters+contract information (if contracted)+train estimate information (if generated)
      * @return
      */
     @Override
     public String getParameters() {
 
-        String result = "Contract Length (ns), " + timer.forestTimeLimit
-                + ", NumAtts," + data.numAttributes()
-                + ", MaxNumTrees," + numClassifiers
+        String result=super.getParameters();
+        result+=", MaxNumTrees," + numClassifiers
                 + ", NumTrees," + treeCount
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
-                + ", Final Coefficients (time = a * x^2 + b * x + c)"
-                + ", a, " + timer.a
-                + ", b, " + timer.b
-                + ", c, " + timer.c
-                +",trainEstimateMethod,"+estimator;
-                if(estimator==EstimatorMethod.OOB)
-                   result+=", Percentage contract for OOB, " + perForBag;
+                + ",BaseClassifier, "+classifier.getClass().getSimpleName();
+        if(classifier instanceof RandomTree)
+            result+=",AttsConsideredPerNode,"+((RandomTree)classifier).getKValue();
 
+        if(trainTimeContract)
+            result+= ",TimeContract(ns), " +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+
+
+        if(trainTimeContract) {
+            result += ", TimeModelCoefficients(time = a * x^2 + b * x + c)"
+                    + ", a, " + timer.a
+                    + ", b, " + timer.b
+                    + ", c, " + timer.c;
+        }
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance()) {
+            result += ",trainEstimateMethod," + estimator;
+            if (estimator == EstimatorMethod.OOB && trainTimeContract)
+                result += ", Percentage contract for OOB, " + perForBag;
+        }
         return result;
     }
 
@@ -931,6 +948,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void setTrainTimeLimit(long amount) {
+        if(amount>0) {
+            trainTimeContract = true;
+            trainContractTimeNanos = amount;
+        }
+
         timer.setTimeLimit(amount);
     }
 
@@ -1162,7 +1184,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
          * @param timeLimit in nano seconds
          */
         protected void setTimeLimit(long timeLimit){
-            this.forestTimeLimit = timeLimit;
+            if(timeLimit>0)
+                this.forestTimeLimit = timeLimit;
+            else
+                this.forestTimeLimit = Long.MAX_VALUE;
         }
 
         protected void printModel(){
