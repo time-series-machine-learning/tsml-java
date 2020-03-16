@@ -85,6 +85,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
     protected double accuracy = -1;
     protected double weight = 1;
     protected ArrayList<Integer> subsampleIndices;
+    protected ArrayList<Integer> trainPreds;
 
     protected boolean multiThread = false;
     protected int numThreads = 1;

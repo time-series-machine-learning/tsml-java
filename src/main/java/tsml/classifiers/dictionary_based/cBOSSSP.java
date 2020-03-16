@@ -29,10 +29,7 @@ import weka.core.*;
 
 import java.io.*;
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -62,8 +59,9 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public int maxWindow;
     public boolean tuneK = false;
     public boolean tuneWeight = false;
+    public boolean tuneEnsembleSize = false;
     public boolean featureSelection = false;
-    public boolean[] bigrams = { false };
+    public boolean[] bigrams = {false};
     public boolean useLogistic = false;
     public boolean histogramIntersection = false;
     public int limitVal = 100000;
@@ -74,8 +72,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     public boolean FCNNcomp = false;
     public int FCNNlimit = 1;
     public int FCNNsoftlimit = 1;
-    public boolean[] useIGB = { false };
-    public boolean[] useAnova = { false };
+    public boolean[] useIGB = {false};
+    public boolean[] useAnova = {false};
     public boolean newDFT = false;
     public boolean newMFT = false;
 
@@ -109,12 +107,12 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private int currentSeries = 0;
     private boolean isMultivariate = false;
 
-    private final int[] wordLengths = { 16, 14, 12, 10, 8 };
-    private final int[] alphabetSize = { 4 };
-    private final boolean[] normOptions = { true, false };
-    public Integer[] levels = { 1, 2, 3 };
+    private final int[] wordLengths = {16, 14, 12, 10, 8};
+    private final int[] alphabetSize = {4};
+    private final boolean[] normOptions = {true, false};
+    public Integer[] levels = {1, 2, 3};
     private final double correctThreshold = 0.92;
-    public double[] chiLimits = { 0.2, 0.4, 0.6, 0.8 };
+    public double[] chiLimits = {0.2, 0.4, 0.6, 0.8};
     private int maxEnsembleSize = 500;
 
     private boolean bayesianParameterSelection = false;
@@ -147,10 +145,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private boolean fullTrainCVEstimate = false;
     private double[][] trainDistributions;
     private int[] idxSubsampleCount;
-    private ArrayList<Integer> latestTrainPreds;
-    private ArrayList<Integer> latestTrainIdx;
-    private ArrayList<ArrayList>[] filterTrainPreds;
-    private ArrayList<ArrayList>[] filterTrainIdx;
+    //    private ArrayList<Integer> latestTrainPreds;
+//    private ArrayList<Integer> latestTrainIdx;
+//    private ArrayList<ArrayList>[] filterTrainPreds;
+//    private ArrayList<ArrayList>[] filterTrainIdx;
     private Instances seriesHeader;
 
     private transient Instances train;
@@ -163,12 +161,12 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     protected static final long serialVersionUID = 22554L;
 
-    public cBOSSSP(){
+    public cBOSSSP() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         useRecommendedSettings();
     }
 
-    public cBOSSSP(boolean useRecommendedSettings){
+    public cBOSSSP(boolean useRecommendedSettings) {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         if (useRecommendedSettings) useRecommendedSettings();
     }
@@ -182,14 +180,14 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
         result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
         result.setValue(TechnicalInformation.Field.VOLUME, "29");
-        result.setValue(TechnicalInformation.Field.NUMBER,"6");
+        result.setValue(TechnicalInformation.Field.NUMBER, "6");
         result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
         result.setValue(TechnicalInformation.Field.YEAR, "2015");
         return result;
     }
 
     @Override
-    public Capabilities getCapabilities(){
+    public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
 
@@ -225,7 +223,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         return sb.toString();
     }
 
-    private void useRecommendedSettings(){
+    private void useRecommendedSettings() {
         ensembleSize = 250;
         maxEnsembleSize = 50;
         randomCVAccEnsemble = true;
@@ -237,13 +235,13 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(long amount){
+    public void setTrainTimeLimit(long amount) {
         trainContractTimeNanos = amount;
         trainTimeContract = true;
     }
 
     @Override
-    public void setMemoryLimit(DataUnit unit, long amount){
+    public void setMemoryLimit(DataUnit unit, long amount) {
 //        switch (unit){
 //            case GIGABYTE:
 //                memoryLimit = amount*1073741824;
@@ -266,8 +264,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;
-        }
-        else{
+        } else {
             this.numThreads = 1;
             multiThread = false;
         }
@@ -276,8 +273,8 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     //Set the path where checkpointed versions will be stored
     @Override //Checkpointable
     public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
-        if(validPath){
+        boolean validPath = Checkpointable.super.setSavePath(path);
+        if (validPath) {
             checkpointPath = path;
             checkpoint = true;
         }
@@ -286,10 +283,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     //Define how to copy from a loaded object to this object
     @Override
-    public void copyFromSerObject(Object obj) throws Exception{
-        if(!(obj instanceof cBOSSSP))
+    public void copyFromSerObject(Object obj) throws Exception {
+        if (!(obj instanceof cBOSSSP))
             throw new Exception("The SER file is not an instance of BOSS");
-        cBOSSSP saved = ((cBOSSSP)obj);
+        cBOSSSP saved = ((cBOSSSP) obj);
         System.out.println("Loading BOSS.ser");
 
         //copy over variables from serialised object
@@ -347,10 +344,10 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         fullTrainCVEstimate = saved.fullTrainCVEstimate;
         trainDistributions = saved.trainDistributions;
         idxSubsampleCount = saved.idxSubsampleCount;
-        latestTrainPreds = saved.latestTrainPreds;
-        latestTrainIdx = saved.latestTrainIdx;
-        filterTrainPreds = saved.filterTrainPreds;
-        filterTrainIdx = saved.filterTrainIdx;
+//        latestTrainPreds = saved.latestTrainPreds;
+//        latestTrainIdx = saved.latestTrainIdx;
+//        filterTrainPreds = saved.filterTrainPreds;
+//        filterTrainIdx = saved.filterTrainIdx;
         seriesHeader = saved.seriesHeader;
         trainResults = saved.trainResults;
         ensembleCvAcc = saved.ensembleCvAcc;
@@ -381,7 +378,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     @Override
-    public ClassifierResults getTrainResults(){
+    public ClassifierResults getTrainResults() {
         return trainResults;
     }
 
@@ -393,7 +390,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         maxEnsembleSize = size;
     }
 
-    public void setRandomCVAccEnsemble(boolean b){
+    public void setRandomCVAccEnsemble(boolean b) {
         randomCVAccEnsemble = b;
     }
 
@@ -401,7 +398,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         useWeights = b;
     }
 
-    public void setFastTrainEstimate(boolean b){
+    public void setFastTrainEstimate(boolean b) {
         useFastTrainEstimate = b;
     }
 
@@ -413,15 +410,15 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         maxEvalPerClass = i;
     }
 
-    public void setReduceTrainInstances(boolean b){
+    public void setReduceTrainInstances(boolean b) {
         reduceTrainInstances = b;
     }
 
-    public void setTrainProportion(double d){
+    public void setTrainProportion(double d) {
         trainProportion = d;
     }
 
-    public void setMaxTrainInstances(int i){
+    public void setMaxTrainInstances(int i) {
         maxTrainInstances = i;
     }
 
@@ -429,7 +426,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         cleanupCheckpointFiles = b;
     }
 
-    public void setFullTrainCVEstimate(boolean b){
+    public void setFullTrainCVEstimate(boolean b) {
         fullTrainCVEstimate = b;
     }
 
@@ -437,7 +434,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         cutoff = b;
     }
 
-    public void cleanupCheckpointFiles(boolean b){
+    public void cleanupCheckpointFiles(boolean b) {
         cleanupCheckpointFiles = b;
     }
 
@@ -445,11 +442,11 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         loadAndFinish = b;
     }
 
-    public void setMaxWinLenProportion(double d){
+    public void setMaxWinLenProportion(double d) {
         maxWinLenProportion = d;
     }
 
-    public void setMaxWinSearchProportion(double d){
+    public void setMaxWinSearchProportion(double d) {
         maxWinSearchProportion = d;
     }
 
@@ -458,8 +455,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     @Override
-    public void buildClassifier(final Instances data) throws Exception
-    {
+    public void buildClassifier(final Instances data) throws Exception {
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -484,11 +480,11 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
         //if checkpointing and serialised files exist load said files
         if (checkpoint && f.exists()) {
-            if(debug)
+            if (debug)
                 System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "BOSS.ser");
-            if(debug)
+            if (debug)
                 System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading ser files");
         }
         //initialise variables
@@ -527,20 +523,20 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
 
-            if (randomCVAccEnsemble){
+            if (randomCVAccEnsemble) {
                 classifiersBuilt = new int[numSeries];
                 lowestAccIdx = new int[numSeries];
                 lowestAcc = new double[numSeries];
                 for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
 
-                if (getEstimateOwnPerformance() || tuneWeight){
-                    filterTrainPreds = new ArrayList[numSeries];
-                    filterTrainIdx  = new ArrayList[numSeries];
-                    for (int n = 0; n < numSeries; n++){
-                        filterTrainPreds[n] = new ArrayList();
-                        filterTrainIdx[n] = new ArrayList();
-                    }
-                }
+//                if (getEstimateOwnPerformance() || tuneWeight){
+//                    filterTrainPreds = new ArrayList[numSeries];
+//                    filterTrainIdx  = new ArrayList[numSeries];
+//                    for (int n = 0; n < numSeries; n++){
+//                        filterTrainPreds[n] = new ArrayList();
+//                        filterTrainIdx[n] = new ArrayList();
+//                    }
+//                }
             }
         }
 /*
@@ -555,12 +551,12 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 */
         train = data;
 
-        if (getEstimateOwnPerformance() || tuneWeight){
+        if (getEstimateOwnPerformance() || tuneWeight || tuneEnsembleSize) {
             trainDistributions = new double[data.numInstances()][data.numClasses()];
             idxSubsampleCount = new int[data.numInstances()];
         }
 
-        if (multiThread){
+        if (multiThread) {
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
         }
@@ -574,21 +570,21 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             seriesHeader = new Instances(series[0], 0);
         }
         //Univariate
-        else{
+        else {
             series = new Instances[1];
             series[0] = data;
         }
 
         //Contracting
-        if (trainTimeContract){
+        if (trainTimeContract) {
             ensembleSize = 0;
             underContractTime = true;
         }
 
         //If checkpointing and flag is set stop building.
-        if (!(checkpoint && loadAndFinish)){
+        if (!(checkpoint && loadAndFinish)) {
             //Randomly selected ensemble with accuracy filter
-            if (randomCVAccEnsemble){
+            if (randomCVAccEnsemble) {
                 buildRandomCVAccBOSS(series);
             }
             //Randomly selected ensemble
@@ -611,7 +607,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         }
 
         //delete any serialised files and holding folder for checkpointing on completion
-        if (checkpoint && cleanupCheckpointFiles){
+        if (checkpoint && cleanupCheckpointFiles) {
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
@@ -619,24 +615,23 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {
         //build classifiers up to a set size
-        while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
+        while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries - 1].size() > 0) {
             long indivBuildTime = System.nanoTime();
             boolean checkpointChange = false;
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int) parameters[0], (int) parameters[1], (int) parameters[2], parameters[3] == 1, (int) parameters[4], parameters[5], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
 
             int limit;
             // limit number of features avoid excessive features
-            if (limitOp == 1){
-                limit = (int)(10 * (maxWindow-parameters[2]+10) * parameters[4]);
-            }
-            else{
-                limit = (int)(parameters[5] * limitVal);
+            if (limitOp == 1) {
+                limit = (int) (10 * (maxWindow - parameters[2] + 10) * parameters[4]);
+            } else {
+                limit = (int) (parameters[5] * limitVal);
             }
 
             boss.tuningK = tuneK;
@@ -652,55 +647,55 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             boss.newMFT = newMFT;
             boss.numerosityReduction = numerosityReduction;
 
-            if (FCNNlimit < FCNNsoftlimit){
+            if (FCNNlimit < FCNNsoftlimit) {
                 FCNNlimit = FCNNsoftlimit;
             }
 
             boss.buildClassifier(data);
             if (useLogistic) boss.accuracy = boss.trainAcc();
             else if (FCNN && data.numInstances() >= FCNNlimit) boss.accuracy = boss.FCNN(FCNNcomp, FCNNsoftlimit);
-            else boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
+            else
+                boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
 
-            if (useWeights){
+            if (useWeights) {
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
-            if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
+            if (trainTimeContract) paramTime[currentSeries].add((double) (System.nanoTime() - indivBuildTime));
 //            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (numClassifiers[currentSeries] < maxEnsembleSize){
-                if (boss.accuracy < lowestAcc[currentSeries]){
+            if (numClassifiers[currentSeries] < maxEnsembleSize) {
+                if (boss.accuracy < lowestAcc[currentSeries]) {
                     lowestAccIdx[currentSeries] = classifiersBuilt[currentSeries];
                     lowestAcc[currentSeries] = boss.accuracy;
                 }
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (getEstimateOwnPerformance() || tuneWeight){
-                    filterTrainPreds[currentSeries].add(latestTrainPreds);
-                    filterTrainIdx[currentSeries].add(latestTrainIdx);
-                }
-            }
-            else if (boss.accuracy > lowestAcc[currentSeries]) {
+//                if (getEstimateOwnPerformance() || tuneWeight){
+//                    filterTrainPreds[currentSeries].add(latestTrainPreds);
+//                    filterTrainIdx[currentSeries].add(latestTrainIdx);
+//                }
+            } else if (boss.accuracy > lowestAcc[currentSeries]) {
                 double[] newLowestAcc = findMinEnsembleAcc();
-                lowestAccIdx[currentSeries] = (int)newLowestAcc[0];
+                lowestAccIdx[currentSeries] = (int) newLowestAcc[0];
                 lowestAcc[currentSeries] = newLowestAcc[1];
 
                 classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
                 classifiers[currentSeries].add(lowestAccIdx[currentSeries], boss);
 
-                if (getEstimateOwnPerformance() || tuneWeight){
-                    filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
-                    filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
-                    filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
-                    filterTrainIdx[currentSeries].add(lowestAccIdx[currentSeries], latestTrainIdx);
-                }
+//                if (getEstimateOwnPerformance() || tuneWeight){
+//                    filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
+//                    filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
+//                    filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
+//                    filterTrainIdx[currentSeries].add(lowestAccIdx[currentSeries], latestTrainIdx);
+//                }
 
                 checkpointChange = true;
             }
-            
+
             classifiersBuilt[currentSeries]++;
 
             int prev = currentSeries;
@@ -711,8 +706,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             if (checkpoint) {
                 if (classifiersBuilt[currentSeries] <= maxEnsembleSize) {
                     checkpoint(prev, -1, true);
-                }
-                else{
+                } else {
                     checkpoint(prev, lowestAccIdx[prev], checkpointChange);
                 }
             }
@@ -720,36 +714,40 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             checkContracts();
         }
 
-        if (tuneK){
-            for (LinkedList<BOSSIndividualSP> channel: classifiers){
-                for (BOSSIndividualSP cls: channel){
+        if (tuneK) {
+            for (LinkedList<BOSSIndividualSP> channel : classifiers) {
+                for (BOSSIndividualSP cls : channel) {
                     cls.tuneK();
                 }
             }
         }
 
-        if (tuneWeight){
+        if (tuneWeight) {
             tuneWeight();
         }
 
-        if (cutoff){
+        if (tuneEnsembleSize){
+            tuneEnsembleSize();
+        }
+
+        if (cutoff) {
             for (int n = 0; n < numSeries; n++) {
                 double maxAcc = 0;
-                for (int i = 0; i < classifiers[n].size(); i++){
-                    if (classifiers[n].get(i).accuracy > maxAcc){
+                for (int i = 0; i < classifiers[n].size(); i++) {
+                    if (classifiers[n].get(i).accuracy > maxAcc) {
                         maxAcc = classifiers[n].get(i).accuracy;
                     }
                 }
 
-                for (int i = 0; i < classifiers[n].size(); i++){
+                for (int i = 0; i < classifiers[n].size(); i++) {
                     BOSSIndividualSP b = classifiers[n].get(i);
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
 
-                        if (getEstimateOwnPerformance() || tuneWeight){
-                            filterTrainPreds[n].remove(i);
-                            filterTrainIdx[n].remove(i);
-                        }
+//                        if (getEstimateOwnPerformance() || tuneWeight){
+//                            filterTrainPreds[n].remove(i);
+//                            filterTrainIdx[n].remove(i);
+//                        }
 
                         numClassifiers[n]--;
                         i--;
@@ -758,44 +756,44 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             }
         }
 
-        if (getEstimateOwnPerformance() || tuneWeight){
-            for (int n = 0; n < numSeries; n++) {
-                for (int i = 0; i < filterTrainIdx[n].size(); i++) {
-                    ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
-                    ArrayList<Integer> trainPreds = filterTrainPreds[n].get(i);
-                    double weight = classifiers[n].get(i).weight;
-                    for (int g = 0; g < trainIdx.size(); g++) {
-                        idxSubsampleCount[trainIdx.get(g)] += weight;
-                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
-                    }
-                }
-            }
-
-            filterTrainPreds = null;
-            filterTrainIdx = null;
-            latestTrainPreds = null;
-            latestTrainIdx = null;
-
-            for (int i = 0; i < trainDistributions.length; i++){
-                if (idxSubsampleCount[i] > 0) {
-                    for (int n = 0; n < trainDistributions[i].length; n++) {
-                        trainDistributions[i][n] /= idxSubsampleCount[i];
-                    }
-                    //System.out.println(Arrays.toString(trainDistributions[i]));
-                }
-            }
-        }
+//        if (getEstimateOwnPerformance() || tuneWeight){
+//            for (int n = 0; n < numSeries; n++) {
+//                for (int i = 0; i < filterTrainIdx[n].size(); i++) {
+//                    ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
+//                    ArrayList<Integer> trainPreds = filterTrainPreds[n].get(i);
+//                    double weight = classifiers[n].get(i).weight;
+//                    for (int g = 0; g < trainIdx.size(); g++) {
+//                        idxSubsampleCount[trainIdx.get(g)] += weight;
+//                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
+//                    }
+//                }
+//            }
+//
+//            filterTrainPreds = null;
+//            filterTrainIdx = null;
+//            latestTrainPreds = null;
+//            latestTrainIdx = null;
+//
+//            for (int i = 0; i < trainDistributions.length; i++){
+//                if (idxSubsampleCount[i] > 0) {
+//                    for (int n = 0; n < trainDistributions[i].length; n++) {
+//                        trainDistributions[i][n] /= idxSubsampleCount[i];
+//                    }
+//                    //System.out.println(Arrays.toString(trainDistributions[i]));
+//                }
+//            }
+//        }
     }
 
     private void buildRandomBOSS(Instances[] series) throws Exception {
         //build classifiers up to a set size
-        while ((((underContractTime && numClassifiers[numSeries-1] < maxEnsembleSize)
-                || sum(numClassifiers) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
+        while ((((underContractTime && numClassifiers[numSeries - 1] < maxEnsembleSize)
+                || sum(numClassifiers) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries - 1].size() > 0) {
             long indivBuildTime = System.nanoTime();
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            BOSSIndividualSP boss = new BOSSIndividualSP((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, (int)parameters[4], parameters[5], multiThread, numThreads, ex);
+            BOSSIndividualSP boss = new BOSSIndividualSP((int) parameters[0], (int) parameters[1], (int) parameters[2], parameters[3] == 1, (int) parameters[4], parameters[5], multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -803,7 +801,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             classifiers[currentSeries].add(boss);
             numClassifiers[currentSeries]++;
 
-            if (useWeights){
+            if (useWeights) {
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
@@ -813,19 +811,19 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
-            if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-  //          if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+            if (trainTimeContract) paramTime[currentSeries].add((double) (System.nanoTime() - indivBuildTime));
+            //          if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (getEstimateOwnPerformance() || tuneWeight){
+            if (getEstimateOwnPerformance() || tuneWeight) {
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
-                for (int i = 0; i < latestTrainIdx.size(); i++){
-                    idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
-                    trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
-                }
+//                for (int i = 0; i < latestTrainIdx.size(); i++){
+//                    idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
+//                    trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
+//                }
             }
 
             int prev = currentSeries;
-            if (isMultivariate){
+            if (isMultivariate) {
                 nextSeries();
             }
 
@@ -836,25 +834,25 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             checkContracts();
         }
 
-        if (getEstimateOwnPerformance() || tuneWeight){
-            latestTrainPreds = null;
-            latestTrainIdx = null;
-
-            for (int i = 0; i < trainDistributions.length; i++){
-                if (idxSubsampleCount[i] > 0) {
-                    for (int n = 0; n < trainDistributions[i].length; n++) {
-                        trainDistributions[i][n] /= idxSubsampleCount[i];
-                    }
-                }
-            }
-        }
+//        if (getEstimateOwnPerformance() || tuneWeight){
+//            latestTrainPreds = null;
+//            latestTrainIdx = null;
+//
+//            for (int i = 0; i < trainDistributions.length; i++){
+//                if (idxSubsampleCount[i] > 0) {
+//                    for (int n = 0; n < trainDistributions[i].length; n++) {
+//                        trainDistributions[i][n] /= idxSubsampleCount[i];
+//                    }
+//                }
+//            }
+//        }
     }
 
-    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv){
-        if(checkpointPath!=null){
-            try{
+    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv) {
+        if (checkpointPath != null) {
+            try {
                 File f = new File(checkpointPath);
-                if(!f.isDirectory())
+                if (!f.isDirectory())
                     f.mkdirs();
                 //time the checkpoint occured
                 checkpointTime = System.nanoTime();
@@ -888,19 +886,18 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 file.renameTo(file2);
 
                 checkpointTimeDiff += System.nanoTime() - checkpointTime;
-            }
-            catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+" FAILED");
+                System.out.println("Serialisation to " + checkpointPath + " FAILED");
             }
         }
     }
 
-    private void checkpointCleanup(){
+    private void checkpointCleanup() {
         File f = new File(checkpointPath);
         String[] files = f.list();
 
-        for (String file: files){
+        for (String file : files) {
             File f2 = new File(f.getPath() + "\\" + file);
             boolean b = f2.delete();
         }
@@ -908,20 +905,18 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         f.delete();
     }
 
-    private String checkpointName(String datasetName){
+    private String checkpointName(String datasetName) {
         String name = datasetName + seed + "BOSS";
 
-        if (trainTimeContract){
+        if (trainTimeContract) {
             name += ("TTC" + trainContractTimeNanos);
-        }
-        else if (isMultivariate && ensembleSizePerChannel > 0){
-            name += ("PC" + (ensembleSizePerChannel*numSeries));
-        }
-        else{
+        } else if (isMultivariate && ensembleSizePerChannel > 0) {
+            name += ("PC" + (ensembleSizePerChannel * numSeries));
+        } else {
             name += ("S" + ensembleSize);
         }
 
-        if (memoryContract){
+        if (memoryContract) {
             name += ("MC" + memoryLimit);
         }
 
@@ -929,14 +924,14 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             name += ("M" + maxEnsembleSize);
         }
 
-        if (useWeights){
+        if (useWeights) {
             name += "W";
         }
 
         return name;
     }
 
-    public void checkContracts(){
+    public void checkContracts() {
         underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
@@ -953,22 +948,22 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             }
         }
 
-        return new double[] { minAccInd, minAcc };
+        return new double[]{minAccInd, minAcc};
     }
 
-    private Instances[] uniqueParameters(int minWindow, int maxWindow, int winInc){
+    private Instances[] uniqueParameters(int minWindow, int maxWindow, int winInc) {
         Instances[] parameterPool = new Instances[numSeries];
         ArrayList<double[]> possibleParameters = new ArrayList();
 
-        for (Boolean normalise: normOptions) {
+        for (Boolean normalise : normOptions) {
             for (Integer alphSize : alphabetSize) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
                     for (Integer wordLen : wordLengths) {
                         for (Integer level : levels) {
-                            for (Double chi: chiLimits) {
-                                for (Boolean anova: useAnova) {
-                                    for (Boolean igb: useIGB) {
-                                        for (Boolean bi: bigrams) {
+                            for (Double chi : chiLimits) {
+                                for (Boolean anova : useAnova) {
+                                    for (Boolean igb : useIGB) {
+                                        for (Boolean bi : bigrams) {
                                             double[] parameters = {wordLen, alphSize, winSize, normalise ? 1 : 0, level, chi, anova ? 1 : 0, igb ? 1 : 0, bi ? 1 : 0};
                                             possibleParameters.add(parameters);
                                         }
@@ -981,9 +976,9 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             }
         }
 
-        int numAtts = possibleParameters.get(0).length+1;
+        int numAtts = possibleParameters.get(0).length + 1;
         ArrayList<Attribute> atts = new ArrayList<>(numAtts);
-        for (int i = 0; i < numAtts; i++){
+        for (int i = 0; i < numAtts; i++) {
             atts.add(new Attribute("att" + i));
         }
 
@@ -992,32 +987,32 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
         for (int n = 0; n < numSeries; n++) {
             parameterPool[n] = new Instances("params", atts, possibleParameters.size());
-            parameterPool[n].setClassIndex(numAtts-1);
+            parameterPool[n].setClassIndex(numAtts - 1);
             prevParameters[n] = new Instances(parameterPool[n], 0);
-            prevParameters[n].setClassIndex(numAtts-1);
+            prevParameters[n].setClassIndex(numAtts - 1);
 
             for (int i = 0; i < possibleParameters.size(); i++) {
                 DenseInstance inst = new DenseInstance(1, possibleParameters.get(i));
-                inst.insertAttributeAt(numAtts-1);
+                inst.insertAttributeAt(numAtts - 1);
                 parameterPool[n].add(inst);
             }
         }
 
-        if (bayesianParameterSelection){
+        if (bayesianParameterSelection) {
             paramAccuracy = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
+            for (int i = 0; i < numSeries; i++) {
                 paramAccuracy[i] = new ArrayList<>();
             }
         }
-        if (trainTimeContract){
+        if (trainTimeContract) {
             paramTime = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
+            for (int i = 0; i < numSeries; i++) {
                 paramTime[i] = new ArrayList<>();
             }
         }
-        if (memoryContract){
+        if (memoryContract) {
             paramMemory = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
+            for (int i = 0; i < numSeries; i++) {
                 paramMemory[i] = new ArrayList<>();
             }
         }
@@ -1028,7 +1023,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private double[] selectParameters() throws Exception {
         Instance params;
 
-        if (trainTimeContract && System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff > trainContractTimeNanos/2) {
+        if (trainTimeContract && System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff > trainContractTimeNanos / 2) {
             if (prevParameters[currentSeries].size() > 0) {
                 for (int i = 0; i < paramTime[currentSeries].size(); i++) {
                     prevParameters[currentSeries].get(i).setClassValue(paramTime[currentSeries].get(i));
@@ -1068,7 +1063,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             }
         }
 
-        if (parameterPool[currentSeries].size() == 0){
+        if (parameterPool[currentSeries].size() == 0) {
             return null;
         }
 
@@ -1077,7 +1072,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 initialParameterCount[currentSeries]++;
                 params = parameterPool[currentSeries].remove(rand.nextInt(parameterPool[currentSeries].size()));
             } else {
-                for (int i = 0; i < paramAccuracy[currentSeries].size(); i++){
+                for (int i = 0; i < paramAccuracy[currentSeries].size(); i++) {
                     prevParameters[currentSeries].get(i).setClassValue(paramAccuracy[currentSeries].get(i));
                 }
 
@@ -1089,7 +1084,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 for (int i = 0; i < parameterPool[currentSeries].numInstances(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
 
-                    if (pred > bestAcc){
+                    if (pred > bestAcc) {
                         bestIndex = i;
                         bestAcc = pred;
                     }
@@ -1097,8 +1092,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
                 params = parameterPool[currentSeries].remove(bestIndex);
             }
-        }
-        else {
+        } else {
             params = parameterPool[currentSeries].remove(rand.nextInt(parameterPool[currentSeries].size()));
         }
 
@@ -1106,24 +1100,22 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         return params.toDoubleArray();
     }
 
-    private Instances resampleData(Instances series, BOSSIndividualSP boss){
+    private Instances resampleData(Instances series, BOSSIndividualSP boss) {
         Instances data;
         int newSize;
 
-        if (trainProportion > 0){
-            newSize = (int)(series.numInstances()*trainProportion);
-        }
-        else{
+        if (trainProportion > 0) {
+            newSize = (int) (series.numInstances() * trainProportion);
+        } else {
             newSize = maxTrainInstances;
         }
 
-        if (reduceTrainInstances && series.numInstances() > newSize){
+        if (reduceTrainInstances && series.numInstances() > newSize) {
             Sampler sampler;
 
-            if (stratifiedSubsample){
+            if (stratifiedSubsample) {
                 sampler = new RandomStratifiedIndexSampler(rand);
-            }
-            else{
+            } else {
                 sampler = new RandomIndexSampler(rand);
             }
 
@@ -1131,13 +1123,12 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
             data = new Instances(series, newSize);
             boss.subsampleIndices = new ArrayList<>(newSize);
 
-            for (int i = 0; i < newSize; i++){
-                int n = (Integer)sampler.next();
+            for (int i = 0; i < newSize; i++) {
+                int n = (Integer) sampler.next();
                 data.add(series.get(n));
                 boss.subsampleIndices.add(n);
             }
-        }
-        else{
+        } else {
             data = series;
         }
 
@@ -1147,12 +1138,13 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private double individualTrainAcc(BOSSIndividualSP boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
-        if (getEstimateOwnPerformance() || tuneWeight){
-            latestTrainPreds = new ArrayList();
-            latestTrainIdx = new ArrayList();
+        if (getEstimateOwnPerformance() || tuneWeight || tuneEnsembleSize) {
+            boss.trainPreds = new ArrayList<>();
+//            latestTrainPreds = new ArrayList();
+//            latestTrainIdx = new ArrayList();
         }
 
-        if (useFastTrainEstimate && maxEval < series.numInstances()){
+        if (useFastTrainEstimate && maxEval < series.numInstances()) {
             RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
             sampler.setInstances(series);
             indicies = new int[maxEval];
@@ -1161,8 +1153,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                 int subsampleIndex = sampler.next();
                 indicies[i] = subsampleIndex;
             }
-        }
-        else {
+        } else {
             indicies = new int[series.numInstances()];
 
             for (int i = 0; i < series.numInstances(); ++i) {
@@ -1172,23 +1163,22 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
         int correct = 0;
         int numInst = indicies.length;
-        int requiredCorrect = (int)(lowestAcc*numInst);
+        int requiredCorrect = (int) (lowestAcc * numInst);
 
-        if (multiThread){
+        if (multiThread) {
             ArrayList<Future<Double>> futures = new ArrayList<>(numInst);
 
             for (int i = 0; i < numInst; ++i)
                 futures.add(ex.submit(boss.new TrainNearestNeighbourThread(i)));
 
             int idx = 0;
-            for (Future<Double> f: futures){
+            for (Future<Double> f : futures) {
                 if (f.get() == series.get(idx).classValue()) {
                     ++correct;
                 }
                 idx++;
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < numInst; ++i) {
                 if (correct + numInst - i < requiredCorrect) {
                     return -1;
@@ -1199,14 +1189,15 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
                     ++correct;
                 }
 
-                if (getEstimateOwnPerformance() || tuneWeight){
-                    latestTrainPreds.add((int)c);
-                    if (boss.subsampleIndices != null) {
-                        latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
-                    }
-                    else {
-                        latestTrainIdx.add(indicies[i]);
-                    }
+                if (getEstimateOwnPerformance() || tuneWeight || tuneEnsembleSize) {
+                    boss.trainPreds.add((int) c);
+//                    latestTrainPreds.add((int)c);
+//                    if (boss.subsampleIndices != null) {
+//                        latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
+//                    }
+//                    else {
+//                        latestTrainIdx.add(indicies[i]);
+//                    }
                 }
             }
         }
@@ -1214,16 +1205,39 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         return (double) correct / (double) numInst;
     }
 
-    public void nextSeries(){
-        if (currentSeries == numSeries-1){
+    public void nextSeries() {
+        if (currentSeries == numSeries - 1) {
             currentSeries = 0;
-        }
-        else{
+        } else {
             currentSeries++;
         }
     }
 
     private double findEnsembleTrainAcc(Instances data) throws Exception {
+        System.out.println("finding train acc");
+        trainDistributions = new double[data.numInstances()][data.numClasses()];
+
+        for (int n = 0; n < numSeries; n++) {
+            for (int i = 0; i < numClassifiers[n]; i++) {
+                ArrayList<Integer> trainIdx = classifiers[n].get(i).subsampleIndices;
+                ArrayList<Integer> trainPreds = classifiers[n].get(i).trainPreds;
+                double weight = classifiers[n].get(i).weight;
+                for (int g = 0; g < trainIdx.size(); g++) {
+                    idxSubsampleCount[trainIdx.get(g)] += weight;
+                    trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
+                }
+            }
+        }
+
+        for (int i = 0; i < trainDistributions.length; i++) {
+            if (idxSubsampleCount[i] > 0) {
+                for (int n = 0; n < trainDistributions[i].length; n++) {
+                    trainDistributions[i][n] /= idxSubsampleCount[i];
+                }
+                //System.out.println(Arrays.toString(trainDistributions[i]));
+            }
+        }
+
         this.ensembleCvPreds = new double[data.numInstances()];
         int totalClassifers = sum(numClassifiers);
         double correct = 0;
@@ -1453,8 +1467,41 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         }
     }
 
+    public void tuneEnsembleSize() throws Exception {
+        double maxAcc = -1;
+        LinkedList<BOSSIndividualSP>[] bestClassifiers = new LinkedList[numSeries];
+        int[] bestNumClassifiers = null;
+
+        for (LinkedList<BOSSIndividualSP> channel: classifiers){
+            Collections.sort(channel);
+        }
+
+        for (int i = maxEnsembleSize; i >= 10; i-=10){
+            for (int n = 0; n < numSeries; n++){
+                while (classifiers[n].size() > i){
+                    classifiers[n].removeFirst();
+                    numClassifiers[n]--;
+                }
+            }
+
+            ensembleCvAcc = findEnsembleTrainAcc(train);
+
+            if (ensembleCvAcc > maxAcc){
+                maxAcc = ensembleCvAcc;
+                for (int n = 0; n < numSeries; n++){
+                    bestClassifiers[n] = new LinkedList<>(classifiers[n]);
+                }
+                bestNumClassifiers = Arrays.copyOf(numClassifiers, numClassifiers.length);
+            }
+        }
+
+        classifiers = bestClassifiers;
+        numClassifiers = bestNumClassifiers;
+        System.out.println(Arrays.toString(bestNumClassifiers));
+    }
+
     public static void main(String[] args) throws Exception{
-        int fold =1;
+        int fold =0;
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
@@ -1471,17 +1518,34 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
         train2 = data2[0];
         test2 = data2[1];
 
-        cBOSSSP c;
-        double accuracy;
+        cBOSSSP c = null;
+        double accuracy = 0;
+
+        //0.9387755102040817
+
+        double trainAcc = 0;
 
         long t1 = System.nanoTime();
-        c = new cBOSSSP();
-        c.useRecommendedSettings();
-        c.setSeed(fold);
-        c.setTrainTimeLimit(TimeUnit.MINUTES, 5);
-        c.buildClassifier(train);
+        for (int i = 0; i < 30; i++) {
+            c = new cBOSSSP();
+            c.useRecommendedSettings();
+            c.setSeed(fold + i);
+            ((cBOSSSP) c).chiLimits = new double[]{0};
+            ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+            ((cBOSSSP) c).histogramIntersection = true;
+            ((cBOSSSP) c).bigrams = new boolean[]{true};
+            c.setMaxEnsembleSize(100);
+            c.setEstimateOwnPerformance(true);
+            //c.tuneEnsembleSize = true;
+            c.buildClassifier(train);
+
+            trainAcc += c.ensembleCvAcc;
+            System.out.println(c.ensembleCvAcc);
+            accuracy += ClassifierTools.accuracy(test, c);
+        }
         System.out.println(System.nanoTime()-t1);
-        accuracy = ClassifierTools.accuracy(test, c);
+        System.out.println(trainAcc/30.0);
+        System.out.println(accuracy/30.0);
 
         System.out.println("CVAcc CAWPE BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
