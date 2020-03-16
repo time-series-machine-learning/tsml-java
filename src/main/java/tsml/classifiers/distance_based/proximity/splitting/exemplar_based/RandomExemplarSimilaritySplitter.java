@@ -40,8 +40,9 @@ public class RandomExemplarSimilaritySplitter extends Splitter {
         double score = -2;
         List<Instances> partitions = null;
         List<Instance> distanceFunction = null;
-        RandomExemplarSimilaritySplit split = new RandomExemplarSimilaritySplit(score, data, partitions,
-            distanceFunction, exemplars);
+        RandomExemplarSimilaritySplit split = null;
+//        new RandomExemplarSimilaritySplit(score, data, partitions,
+//            distanceFunction, exemplars);
         return split;
     }
 

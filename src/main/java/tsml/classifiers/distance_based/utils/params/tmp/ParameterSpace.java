@@ -1,228 +1,123 @@
 package tsml.classifiers.distance_based.utils.params.tmp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.params.Distribution;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import java.util.Random;
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
+import tsml.classifiers.distance_based.utils.collections.DefaultList;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
-public class ParameterSpace {
+public class ParameterSpace implements DefaultList<ParamSet> {
 
     // 1 to many mapping of param name to list of param dimensions
     private Map<String, List<ParameterDimension<?>>> paramsMap = new LinkedHashMap<>();
 
-    /**
-     * hold the parameter dimension. In here should be a method of retreiving values for the given parameter along
-     * with sub parameter spaces to explore
-     * @param <A>
-     */
-    public abstract static class ParameterDimension<A> {
+    public static void main(String[] args) {
+        int seed = 0;
+        Random random = new Random(0);
+        // build dtw / ddtw params
+        ParameterSpace wParams = new ParameterSpace();
+        wParams.add(DTW.getWarpingWindowFlag(), new DiscreteParameterDimension<>(Arrays.asList(1, 2, 3, 4, 5)));
+        System.out.println(wParams);
+        System.out.println(wParams.size());
+        // build lcss params
+        ParameterSpace lParams = new ParameterSpace();
+        UniformDistribution eDist = new UniformDistribution();
+        eDist.setRandom(random);
+        eDist.setMinAndMax(0, 0.25);
+        lParams.add(LCSSDistance.getDeltaFlag(), new ContinuousParameterDimension<>(eDist));
+        UniformDistribution dDist = new UniformDistribution();
+        dDist.setRandom(random);
+        dDist.setMinAndMax(0.5, 1);
+        lParams.add(LCSSDistance.getEpsilonFlag(), new ContinuousParameterDimension<>(dDist));
+        System.out.println(lParams);
+        System.out.println(lParams.size());
+        // build dtw / ddtw space
+        DiscreteParameterDimension<? extends BaseDistanceMeasure> wDmParams = new DiscreteParameterDimension<>(
+            Arrays.asList(new DTWDistance(), new DDTWDistance()));
+        wDmParams.addSubSpace(wParams);
+        System.out.println(wDmParams);
+        System.out.println(wDmParams.size());
+        // build lcss space
+        DiscreteParameterDimension<? extends BaseDistanceMeasure> lDmParams = new DiscreteParameterDimension<>(
+            Arrays.asList(new LCSSDistance()));
+        lDmParams.addSubSpace(lParams); // todo can we shrink this into one func?
+        System.out.println(lDmParams);
+        System.out.println(lDmParams.size());
+        // build overall space including ddtw, dtw and lcss WITH corresponding param spaces
+        ParameterSpace params = new ParameterSpace();
+        params.add(DistanceMeasureable.getDistanceFunctionFlag(), lDmParams);
+        params.add(DistanceMeasureable.getDistanceFunctionFlag(), wDmParams);
+        System.out.println(params);
+        System.out.println(params.size());
+        // check every combination of the overall space
+        for(int i = 0; i < params.size(); i++) {
 
-        // list of subspaces to explore
-        private List<ParameterSpace> subSpaces = new ArrayList<>();
-
-        /**
-         * some method of retreiving a parameter value (given an index, which may or may not be used as is context
-         * dependent)
-         * @param index
-         * @return
-         */
-        public abstract A getParameterValue(int index);
-
-        /**
-         * get the number of possible values for this parameter NOT including the sub spaces!
-         * @return <0 means an infinite number of values, >=0 is the finite size. An infinite size indicates the
-         * parameter is continuous, finite indicates it is an enumerated set of values.
-         */
-        public abstract int getParameterDimensionSize();
-
-        public List<ParameterSpace> getSubSpaces() {
-            return subSpaces;
         }
 
-        public void setSubSpaces(final List<ParameterSpace> subSpaces) {
-            Assert.assertNotNull(subSpaces);
-            this.subSpaces = subSpaces;
-        }
-
-        public boolean containsContinuousDimension() {
-            if(getParameterDimensionSize() < 0) {
-                return true;
-            }
-            List<Integer> sizes = getSubDimensionSizes();
-            for(Integer size : sizes) {
-                if(size < 0) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /**
-         * the size of the parameter dimension. Note this is only the FINITE size! If the parameter is continuous
-         * then there is no concept of size. A continuous parameter may have subspaces which are discrete and finite
-         * however. For example, I may have a discrete parameter set of [dtw, ddtw]. I may then have a subspace which
-         * is continuous, say [warpingWindow{0 : 1}]. This method would return 2, reflecting the two discrete options
-         * (dtw and ddtw). It does not take into account the infinite range of the subspace parameter warpingWindow.
-         * @return
-         */
-        public int size() { // todo make sure all of this works with index / size <0 or =0
-            final List<Integer> sizes = getSubDimensionSizes();
-            // put this parameter's dimension size on the front of the sub sizes
-            sizes.add(0, getParameterDimensionSize());
-            return Utilities.numPermutations(sizes);
-        }
-
-        public List<Integer> getSubDimensionSizes() {
-            return Utilities.convert(getSubSpaces(), ParameterSpace::size);
-        }
-
-        /**
-         * get a ParamSet using a given index. The index is only used to index the finite permutations of parameters
-         * where their values have been enumerated. Infinite / continuous parameters are sampled using a pdf and have
-         * no bearing on the index variable. If you are only using pdf parameters then the index variable is ignored.
-         * @param index
-         * @return
-         */
-        public A get(int index) {
-            final List<Integer> sizes = getSubDimensionSizes();
-            // find the indices of the dimension and each sub space using the permutation index
-            final List<Integer> indices = Utilities.fromPermutation(index, sizes);
-            // get this parameter's value index, leaving only sub space indices
-            final int valueIndex = indices.remove(0);
-            final A value = getParameterValue(valueIndex);
-            final List<ParameterSpace> subSpaces = getSubSpaces();
-            Assert.assertEquals(subSpaces.size(), indices.size());
-            // if we've got any sub spaces
-            if(!sizes.isEmpty()) {
-                // check if we can set params
-                if(!(value instanceof ParamHandler)) {
-                    throw new IllegalStateException("value not param settable");
-                } else {
-                    // set parameter for each sub space using the indices
-                    ParamHandler paramHandler = (ParamHandler) value;
-                    for(int i = 0; i < subSpaces.size(); i++) {
-                        int subSpaceValueIndex = indices.get(i);
-                        ParameterSpace subSpace = subSpaces.get(i);
-                        if(subSpaceValueIndex >= 0 || subSpace.containsContinuousDimension()) {
-                            ParamSet param = subSpace.get(subSpaceValueIndex);
-                            paramHandler.setParams(param);
-                        }
-                    }
-                }
-            }
-            return value;
-        }
+        //        params.add(DistanceMeasureable.getDistanceFunctionFlag(),
+        //            new ParamValues(Arrays.asList(new DTWDistance(), new DDTWDistance()),
+        //                Arrays.asList(wParams)));
+        //        ParamSpace lParams = new ParamSpace();
+        //        lParams.add(WDTW.getGFlag(), new ParamValues(/*Range.closed(1D, 5D)*/));
+        //        lParams.add(WDTW.getGFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D)));
+        //        lParams.add(LCSSDistance.getEpsilonFlag(), new ParamValues(Arrays.asList(1D, 2D, 3D, 4D)));
+        //        params.add(DistanceMeasureable.getDistanceFunctionFlag(),
+        //            new ParamValues(Arrays.asList(new WDTWDistance(), new WDDTWDistance()),
+        //                Arrays.asList(lParams)));
+        //        int size;
+        //        size = wParams.size();
+        //        size = lParams.size();
+        //        size = params.size();
+        //        for(int i = 0; i < size; i++) {
+        //            //            System.out.println(i);
+        //            ParamSet param = params.get(i);
+        //            System.out.println(param);
+        //        }
 
     }
 
-    /**
-     * class to hold a finite set of values for a parameter
-     * @param <A>
-     */
-    public static class DiscreteParameterDimension<A> extends ParameterDimension<A> {
-
-        private List<? extends A> values;
-
-        public DiscreteParameterDimension() {
-            this(new ArrayList<>());
-        }
-
-        public DiscreteParameterDimension(List<? extends A> values) {
-            this(values, new ArrayList<>());
-        }
-
-        public DiscreteParameterDimension(List<? extends A> values, List<ParameterSpace> subSpaces) {
-            setValues(values);
-            setSubSpaces(subSpaces);
-        }
-
-        @Override
-        public A getParameterValue(final int index) {
-            // simply grab the value at the given index
-            return values.get(index);
-        }
-
-        @Override
-        public int getParameterDimensionSize() {
-            return values.size();
-        }
-
-        public List<? extends A> getValues() {
-            return values;
-        }
-
-        public void setValues(final List<? extends A> values) {
-            Assert.assertNotNull(values);
-            this.values = values;
-        }
+    @Override
+    public String toString() {
+        return String.valueOf(paramsMap);
     }
 
-    /**
-     * class to represent a continuous set of parameter values, i.e. a range of doubles between 0 and 1, say. The
-     * range is sampled randomly and the probability density function should be controlled using the distribution
-     * class functions (e.g. setting the range and type of pdf).
-     * @param <A>
-     */
-    public static class ContinuousParameterDimension<A> extends ParameterDimension<A> {
-
-        private Distribution<A> distribution;
-
-        public ContinuousParameterDimension(Distribution<A> distribution, List<ParameterSpace> subSpaces) {
-            setDistribution(distribution);
-            setSubSpaces(subSpaces);
-        }
-
-        public ContinuousParameterDimension(Distribution<A> distribution) {
-            this(distribution, new ArrayList<>());
-        }
-
-        @Override
-        public A getParameterValue(final int index) {
-            return distribution.sample();
-        }
-
-        @Override
-        public int getParameterDimensionSize() {
-            // -1 because there's an infinite amount of values in the distribution
-            return -1;
-        }
-
-        public Distribution<A> getDistribution() {
-            return distribution;
-        }
-
-        public void setDistribution(final Distribution<A> distribution) {
-            Assert.assertNotNull(distribution);
-            this.distribution = distribution;
-        }
+    public void add(String name, ParameterDimension<?> dimension) {
+        paramsMap.computeIfAbsent(name, s -> new ArrayList<>()).add(dimension);
     }
 
     public int size() {
         final List<Integer> sizes = getDimensionSizes();
-        return Utilities.numPermutations(sizes);
+        return Permutations.numPermutations(sizes);
     }
 
     // todo move current size methods to another name, make size return int maxVal if continuous, else finite size
 
     /**
      * gets a ParamSet for the corresponding index in the ParamSpace.
+     *
      * @param index
      * @return
      */
     public ParamSet get(int index) {
         List<Integer> indices = ArrayUtilities.fromPermutation(index, getDimensionSizes());
-        int i = 0;
         ParamSet param = new ParamSet();
+        int i = 0;
         for(Map.Entry<String, List<ParameterDimension<?>>> entry : paramsMap.entrySet()) {
-            index = indices.get(i);
-            List<ParameterDimension<?>> paramValuesList = entry.getValue();
-            for(ParameterDimension<?> paramValues : paramValuesList) {
+            index = indices.get(i++);
+            List<ParameterDimension<?>> parameterDimensions = entry.getValue();
+            for(ParameterDimension<?> paramValues : parameterDimensions) {
                 int size = paramValues.size();
                 index -= size;
                 if(index < 0) {
@@ -240,14 +135,14 @@ public class ParameterSpace {
             if(index >= 0) {
                 throw new IndexOutOfBoundsException();
             }
-            i++;
         }
         return param;
     }
 
     /**
-     * gets a list of the sizes of each parameter. Remember, this is only the finite size, so if there's any
-     * continuous infinite dimensions in this space they are not counted!
+     * gets a list of the sizes of each parameter. Remember, this is only the finite size, so if there's any continuous
+     * infinite dimensions in this space they are not counted!
+     *
      * @return
      */
     public List<Integer> getDimensionSizes() {
@@ -266,13 +161,23 @@ public class ParameterSpace {
         return sizes;
     }
 
+    /**
+     * Does this space contain a continuous dimension?
+     *
+     * @return
+     */
     public boolean containsContinuousDimension() {
-        List<Integer> sizes = getDimensionSizes();
-        for(Integer size : sizes) {
-            if(size < 0) {
-                return true;
+        for(Map.Entry<String, List<ParameterDimension<?>>> entry : paramsMap.entrySet()) {
+            for(ParameterDimension<?> parameterDimension : entry.getValue()) {
+                final int dimensionSize = parameterDimension.size();
+                // ignore it if the dimension is continuous
+                if(dimensionSize < 0) {
+                    return true;
+                }
             }
         }
         return false;
     }
+
+
 }
