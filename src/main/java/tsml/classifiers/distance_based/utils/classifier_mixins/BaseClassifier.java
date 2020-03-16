@@ -109,7 +109,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         seedSet = true;
     }
 
-    @Override
     public void setRandom(Random random) {
         Assert.assertNotNull(random);
         rand = random;

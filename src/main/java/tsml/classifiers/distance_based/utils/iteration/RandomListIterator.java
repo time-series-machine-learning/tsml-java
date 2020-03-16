@@ -22,7 +22,6 @@ import java.util.*;
 public class RandomListIterator<A>
     implements DefaultListIterator<A>,
                OptionHandler,
-               Rand,
                Serializable {
 
     public List<A> getList() {

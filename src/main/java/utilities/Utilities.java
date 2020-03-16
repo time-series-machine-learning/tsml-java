@@ -590,14 +590,14 @@ public class Utilities {
         return removed;
     }
 
-    public static <A> int sum(Iterator<? extends A> iterator, Function<A, Integer> func) {
-        int sum = 0;
-        while (iterator.hasNext()) {
-            A next = iterator.next();
-            Integer integer = func.apply(next);
-            sum += integer;
-        }
-        return sum;
-    }
+//    public static <A> int sum(Iterator<? extends A> iterator, Function<A, Integer> func) {
+//        int sum = 0;
+//        while (iterator.hasNext()) {
+//            A next = iterator.next();
+//            Integer integer = func.apply(next);
+//            sum += integer;
+//        }
+//        return sum;
+//    }
 
 }

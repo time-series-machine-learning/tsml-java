@@ -13,10 +13,10 @@ public interface DistanceMeasureable extends Serializable, DistanceFunction, Deb
         return "d";
     }
 
-    // the maximum distance the distance measure could produce
-    default double getMaxDistance() {
-        return Double.POSITIVE_INFINITY;
-    }
+//    // the maximum distance the distance measure could produce
+//    default double getMaxDistance() {
+//        return Double.POSITIVE_INFINITY;
+//    }
 
     // the maximum distance the distance measure could produce
     static double getMaxDistance() {
