@@ -664,11 +664,11 @@ public class RISE extends EnhancedAbstractClassifier implements SubSampleTrainer
    * </pre>   */
         ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600"};
-        ps.addParameter("-K", numTrees);
+        ps.addParameter("K", numTrees);
         String[] minInterv={"4","8","16","32","64","128"};
-        ps.addParameter("-I", minInterv);
+        ps.addParameter("I", minInterv);
         String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
-        ps.addParameter("-T", transforms);
+        ps.addParameter("T", transforms);
         return ps;
     }
 

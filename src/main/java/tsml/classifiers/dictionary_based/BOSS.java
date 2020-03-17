@@ -41,12 +41,14 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  * @author James Large, updated by Matthew Middlehurst
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
+ *
+ * It is not contractable on tuneable. See cBOSS
  */
 public class BOSS extends EnhancedAbstractClassifier implements
         TechnicalInformationHandler, MultiThreadable {
 
     private transient LinkedList<BOSSIndividual>[] classifiers;
-    private int numSeries;
+    private int numDimensions;
     private int[] numClassifiers;
     private int currentSeries = 0;
     private boolean isMultivariate = false;
@@ -107,9 +109,9 @@ public class BOSS extends EnhancedAbstractClassifier implements
         StringBuilder sb = new StringBuilder();
         sb.append(super.getParameters());
 
-        sb.append(",numSeries,").append(numSeries);
+        sb.append(",numSeries,").append(numDimensions);
 
-        for (int n = 0; n < numSeries; n++) {
+        for (int n = 0; n < numDimensions; n++) {
             sb.append(",numclassifiers,").append(n).append(",").append(numClassifiers[n]);
 
             for (int i = 0; i < numClassifiers[n]; ++i) {
@@ -174,18 +176,18 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
         //Multivariate
         if (isMultivariate) {
-            numSeries = numChannels(data);
-            classifiers = new LinkedList[numSeries];
+            numDimensions = numDimensions(data);
+            classifiers = new LinkedList[numDimensions];
 
-            for (int n = 0; n < numSeries; n++){
+            for (int n = 0; n < numDimensions; n++){
                 classifiers[n] = new LinkedList<>();
             }
 
-            numClassifiers = new int[numSeries];
+            numClassifiers = new int[numDimensions];
         }
         //Univariate
         else{
-            numSeries = 1;
+            numDimensions = 1;
             classifiers = new LinkedList[1];
             classifiers[0] = new LinkedList<>();
             numClassifiers = new int[1];
@@ -213,7 +215,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
             series[0] = data;
         }
 
-        for (int n = 0; n < numSeries; n++) {
+        for (int n = 0; n < numDimensions; n++) {
             currentSeries = n;
             double maxAcc = -1.0;
 
@@ -422,7 +424,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
         //get sum of all channels, votes from each are weighted the same.
         double sum = 0;
 
-        for (int n = 0; n < numSeries; n++) {
+        for (int n = 0; n < numDimensions; n++) {
             for (BOSSIndividual classifier : classifiers[n]) {
                 double classification = classifier.classifyInstance(test);
 
@@ -435,7 +437,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
         if (sum != 0) {
             for (int i = 0; i < classHist.length; ++i)
-                distributions[i] += (classHist[i] / sum) / numSeries;
+                distributions[i] += (classHist[i] / sum) / numDimensions;
         }
         else{
             for (int i = 0; i < classHist.length; ++i)
@@ -485,16 +487,16 @@ public class BOSS extends EnhancedAbstractClassifier implements
         }
 
         if (multiThread){
-            ArrayList<Future<Double>>[] futures = new ArrayList[numSeries];
+            ArrayList<Future<Double>>[] futures = new ArrayList[numDimensions];
 
-            for (int n = 0; n < numSeries; n++) {
+            for (int n = 0; n < numDimensions; n++) {
                 futures[n] = new ArrayList<>(numClassifiers[n]);
                 for (BOSSIndividual classifier : classifiers[n]) {
                     futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(series[n])));
                 }
             }
 
-            for (int n = 0; n < numSeries; n++) {
+            for (int n = 0; n < numDimensions; n++) {
                 int idx = 0;
                 for (Future<Double> f : futures[n]) {
                     double weight = classifiers[n].get(idx).weight;
@@ -505,7 +507,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
             }
         }
         else {
-            for (int n = 0; n < numSeries; n++) {
+            for (int n = 0; n < numDimensions; n++) {
                 for (BOSSIndividual classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
                     classHist[(int) classification] += classifier.weight;

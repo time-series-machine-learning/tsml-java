@@ -218,7 +218,7 @@ public class MultivariateInstanceTools {
     
     //function which returns the separate channels of a multivariate problem as Instances[].
     public static Instances[] splitMultivariateInstances(Instances multiInstances){
-        Instances[] output = new Instances[numChannels(multiInstances)];
+        Instances[] output = new Instances[numDimensions(multiInstances)];
         
         int length = channelLength(multiInstances); //all the values + a class value.
 
@@ -311,7 +311,7 @@ public class MultivariateInstanceTools {
         
         int index = instance.dataset().indexOf(instance);
         
-        Instance[] output = new Instance[numChannels(instance)];
+        Instance[] output = new Instance[numDimensions(instance)];
         for(int i=0; i< output.length; i++){
             output[i] = split[i].get(index);
         }  
@@ -319,7 +319,7 @@ public class MultivariateInstanceTools {
     }
     
     public static Instance[] splitMultivariateInstance(Instance instance){
-        Instance[] output = new Instance[numChannels(instance)];
+        Instance[] output = new Instance[numDimensions(instance)];
         for(int i=0; i< output.length; i++){
             output[i] = instance.relationalValue(0).get(i);
         }    
@@ -363,23 +363,24 @@ public class MultivariateInstanceTools {
         return index;
     }
     
-    public static int numChannels(Instance multiInstance){
+    public static int numDimensions(Instance multiInstance){
         return multiInstance.relationalValue(0).numInstances();
     }
-    
-    public static int channelLength(Instance multiInstance){
-        return multiInstance.relationalValue(0).numAttributes();
-    }
-    
-    public static int numChannels(Instances multiInstances){
+
+
+    public static int numDimensions(Instances multiInstances){
         //get the first attribute which we know is 
-        return numChannels(multiInstances.firstInstance());
+        return numDimensions(multiInstances.firstInstance());
     }
-    
+
     public static int channelLength(Instances multiInstances){
         return channelLength(multiInstances.firstInstance());
     }
-//Tony Added:
+    public static int channelLength(Instance multiInstance){
+        return multiInstance.relationalValue(0).numAttributes();
+    }
+
+ //Tony Added:
 /**
  Converts a standard Instances into a multivariate Instances. Assumes each dimension
  * is simply concatenated, so the first dimension is in positions 0 to length-1,
@@ -493,18 +494,18 @@ public class MultivariateInstanceTools {
 
     //function that get a relational instance and return as a set of instances
     public static Instances splitMultivariateInstanceOnInstances(Instance instance){
-        Instances output = new Instances("instance", new FastVector(numChannels(instance)),0);
+        Instances output = new Instances("instance", new FastVector(numDimensions(instance)),0);
 
         for(int i=0; i< instance.relationalValue(0).numAttributes(); i++){
             output.insertAttributeAt(new Attribute("attr" + i), 0);
         }
-        for(int i=0; i< numChannels(instance); i++){
+        for(int i = 0; i< numDimensions(instance); i++){
             output.add(instance.relationalValue(0).get(i));
         }
         output.insertAttributeAt(new Attribute("class"), instance.relationalValue(0).numAttributes());
         output.setClassIndex(output.numAttributes()-1);
 
-        for(int i=0; i< numChannels(instance); i++){
+        for(int i = 0; i< numDimensions(instance); i++){
             output.get(i).setClassValue(0);
         }
         return output;

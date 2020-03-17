@@ -109,7 +109,21 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.space = space;
         this.tuner = tuner;
     }
-    
+
+    /**
+     * PRE: Classifier must be set, if not, noothing happens
+     * @return true if successful in turning on internal estimate
+     */
+
+    public boolean useInternalEstimates(){
+            if(classifier==null)
+                return false;
+           if(EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ){
+               tuner=new Tuner(new InternalEstimateEvaluator());
+               return true;
+           }
+           return false;
+    }
     public void setSeed(int seed) { 
         super.setSeed(seed);
         tuner.setSeed(seed);
@@ -222,6 +236,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         bestOptions = Arrays.copyOf(options, options.length);
         classifier.setOptions(options);
         classifier.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
  
     @Override
@@ -300,11 +315,15 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     
     
-    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
+    // METHODS FOR:    TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
     
-    @Override //SaveParameterInfo
+    @Override
     public String getParameters() {
-        return getParas(); 
+        String str=classifier.getClass().getSimpleName();
+        str+=","+getParas();
+        if(classifier instanceof EnhancedAbstractClassifier)
+            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return str;
     }
 
     @Override //SaveEachParameter
