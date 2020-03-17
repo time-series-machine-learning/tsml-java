@@ -25,7 +25,7 @@ public class ParameterSpace implements DefaultList<ParamSet> {
 
     public static void main(String[] args) {
         int seed = 0;
-        Random random = new Random(0);
+        Random random = new Random(seed);
         // build dtw / ddtw params
         ParameterSpace wParams = new ParameterSpace();
         wParams.add(DTW.getWarpingWindowFlag(), new DiscreteParameterDimension<>(Arrays.asList(1, 2, 3, 4, 5)));
@@ -62,7 +62,7 @@ public class ParameterSpace implements DefaultList<ParamSet> {
         System.out.println(params);
         System.out.println(params.size());
         // check every combination of the overall space
-        for(int i = 0; i < params.size(); i++) {
+        for(int i = 0; i < 10; i++) {
 
         }
 
