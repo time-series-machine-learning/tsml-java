@@ -90,7 +90,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //Added features
     long contractTime=0;
     double contractHours=0;    //Defaults to no contract
-    protected ClassifierResults res;
     double estSingleTree;
     int numTrees=0;
     int minNumTrees=50;
@@ -102,6 +101,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     double timeUsed;
     double alpha=0.2;//Learning rate for timing update
 
+    double perForBag = 0.5;
+    double[][][] distributions;
+    double[] bagAccuracies;
+
   /**
    * Constructor.
    */
@@ -111,7 +114,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     baseClassifier = new weka.classifiers.trees.J48();
     projectionFilter = defaultFilter();
     tm=new TimingModel();
-    res=new ClassifierResults();
     checkpointPath=null;
     timeUsed=0;
     
@@ -289,7 +291,23 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
+            numTrees = 0;
         }
+
+        if (getEstimateOwnPerformance()) {
+            findTrainAcc(data);
+            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((contractTime * (1.0 / perForBag))));
+            numTrees = 0;
+
+            groups=new ArrayList<>();
+            // These arrays keep the information of the transformed data set
+            headers =new ArrayList<>();
+            //Store the PCA transforms
+            projectionFilters =new ArrayList<>();
+            reducedHeaders = new ArrayList<>();
+            classifiers=new ArrayList<>();
+        }
+
         rand = new Random(seed);
 
 //This is from the RotationForest: remove zero variance and normalise attributes. 
@@ -458,11 +476,12 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 }
             }
         }
-        res.setBuildTime(System.nanoTime()-startTime);
-        res.setParas(getParameters());
+        trainResults.setBuildTime(System.nanoTime()-startTime);
+        trainResults.setParas(getParameters());
         printLineDebug("Finished build");
 
     }
+
     double updateTreeTime(double estSingleTree,double obsTreeTime,double alpha,int numAtts,int m){
         double t=(1-alpha)*estSingleTree;
         t+=alpha*(m/(double)numAtts)*obsTreeTime;
@@ -471,6 +490,419 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         return t;
     }
 
+    private int[][] generateBags(int numBags, int bagProp, Instances data){
+        int[][] bags = new int[numBags][data.size()];
+
+        Random random = new Random(seed);
+        for (int i = 0; i < numBags; i++) {
+            for (int j = 0; j < data.size() * (bagProp/100.0); j++) {
+                bags[i][random.nextInt(data.size())]++;
+            }
+        }
+        return bags;
+    }
+
+    private void findTrainAcc(Instances data) throws Exception {
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setDatasetName(data.relationName());
+        trainResults.setFoldID(seed);
+        //int numTrees = 200;
+        int bagProp = 100;
+        int treeCount = 0;
+        Classifier[] classifiers = new Classifier[maxNumTrees];
+        int[] timesInTest = new int[data.size()];
+        double[][][] distributions = new double[maxNumTrees][data.size()][(int) data.numClasses()];
+        double[][] finalDistributions = new double[data.size()][(int) data.numClasses()];
+        int[][] bags;
+        ArrayList[] testIndexs = new ArrayList[maxNumTrees];
+        double[] bagAccuracies = new double[maxNumTrees];
+
+        this.contractTime = (long) ((double) contractTime * perForBag);
+
+        //Grimness starts here.
+        rand = new Random(seed);
+
+//This is from the RotationForest: remove zero variance and normalise attributes.
+//Do this before loading from file, so we can perform checks of dataset?
+        removeUseless = new RemoveUseless();
+        removeUseless.setInputFormat(data);
+        data = Filter.useFilter(data, removeUseless);
+        normalize = new Normalize();
+        normalize.setInputFormat(data);
+        data = Filter.useFilter(data, normalize);
+
+        int numClasses = data.numClasses();
+        bags = generateBags(maxNumTrees, bagProp, data);
+        // Split the instances according to their class.
+        // Does not handle regression for clarity
+        /*Instances [] instancesOfClass;
+        instancesOfClass = new Instances[numClasses];
+        for( int i = 0; i < instancesOfClass.length; i++ ) {
+            instancesOfClass[ i ] = new Instances( data, 0 );
+        }
+        for(Instance instance:data) {
+            if( instance.classIsMissing() )
+                continue; //Ignore instances with missing class value
+            else{
+                int c = (int)instance.classValue();
+                instancesOfClass[c].add( instance );
+            }
+        }*/
+        int n = data.numInstances();
+        int m = data.numAttributes() - 1;
+        double treeTime;
+//Re-estimate even if loading serialised, may be different hardware ....
+        estSingleTree = tm.estimateSingleTreeHours(n, m);
+        printLineDebug("n =" + n + " m = " + m + " estSingleTree = " + estSingleTree);
+        printLineDebug("Contract time =" + contractHours + " hours ");
+        int maxAtts = m;
+//CASE 1: think we can build the minimum number of trees with full data.
+        if (contractHours == 0 || (estSingleTree * minNumTrees) < contractHours) {
+            if (debug)
+                System.out.println("Think we are able to build at least 50 trees");
+            boolean buildFullTree = true;
+            int size;
+//Option to build in batches for smaller data, but not used at the moment
+            int batchSize = 1;//setBatchSize(estSingleTree);    //Set larger for smaller data
+//            if(debug)
+//                System.out.println("Batch size = "+batchSize);
+            long startBuild = System.currentTimeMillis();
+            while ((contractHours == 0 || timeUsed < contractHours) && numTrees < maxNumTrees) {
+                long singleTreeStartTime = System.currentTimeMillis();
+
+                Instances trainHeader = new Instances(data, 0);
+                Instances testHeader = new Instances(data, 0);
+
+                ArrayList<Integer> indexs = new ArrayList<>();
+                for (int j = 0; j < bags[numTrees].length; j++) {
+                    if (bags[numTrees][j] == 0) {
+                        testHeader.add(data.get(j));
+                        timesInTest[j]++;
+                        indexs.add(j);
+                    }
+                    for (int k = 0; k < bags[numTrees][j]; k++) {
+                        trainHeader.add(data.get(j));
+                    }
+                }
+                testIndexs[numTrees] = indexs;
+
+                Instances[] instancesOfClass;
+                instancesOfClass = new Instances[numClasses];
+                for (int i = 0; i < instancesOfClass.length; i++) {
+                    instancesOfClass[i] = new Instances(trainHeader, 0);
+                }
+                for (Instance instance : trainHeader) {
+                    if (instance.classIsMissing())
+                        continue; //Ignore instances with missing class value
+                    else {
+                        int c = (int) instance.classValue();
+                        instancesOfClass[c].add(instance);
+                    }
+                }
+
+                if (buildFullTree)
+                    size = trainHeader.size();
+                else {
+                    maxAtts = tm.estimateMaxAttributes(trainHeader.size(), minNumTrees - numTrees, estSingleTree, contractHours);
+                    size = rand.nextInt(maxAtts / 2) + maxAtts / 2;
+                }
+
+                if (batchSize + numTrees > maxNumTrees)
+                    batchSize = maxNumTrees - numTrees;
+                for (int i = 0; i < batchSize; i++)
+                    buildTreeAttSample(trainHeader, instancesOfClass, numTrees++, m);
+
+                //test
+                testing(testHeader, distributions, numTrees, bagAccuracies, indexs);
+                trainHeader.clear();
+                testHeader.clear();
+                //Update time used
+                long newTime = System.currentTimeMillis();
+                timeUsed = (newTime - startBuild) / (1000.0 * 60.0 * 60.0);
+                treeTime = (newTime - singleTreeStartTime) / (1000.0 * 60.0 * 60.0);
+
+                //  Update single tree estimate
+                estSingleTree = updateTreeTime(estSingleTree, treeTime, alpha, size, m);
+                //Taking much longer than we thought!
+                if (contractHours > 0 && estSingleTree * minNumTrees > contractHours)
+                    buildFullTree = false;
+                else
+                    buildFullTree = true;
+                //Checkpoint here
+                if (debug)
+                    System.out.println("Built tree number " + numTrees + " in " + timeUsed + " hours ");
+            }
+        }
+//CASE 2 and 3: dont think we can build min number of trees
+        else {
+            if (debug)
+                System.out.println("Dont think we can build 50 trees in the time allowed ");
+//If m > n: SAMPLE ATTRIBUTES
+            if (m > n) {
+//estimate maximum number of attributes allowed, x, to get minNumberOfTrees.
+                maxAtts = m;
+                long startBuild = System.currentTimeMillis();
+                while (timeUsed < contractHours && numTrees < minNumTrees) {
+
+                    Instances trainHeader = new Instances(data, 0);
+                    Instances testHeader = new Instances(data, 0);
+
+                    ArrayList<Integer> indexs = new ArrayList<>();
+                    for (int j = 0; j < bags[numTrees].length; j++) {
+                        if (bags[numTrees][j] == 0) {
+                            testHeader.add(data.get(j));
+                            timesInTest[j]++;
+                            indexs.add(j);
+                        }
+                        for (int k = 0; k < bags[numTrees][j]; k++) {
+                            trainHeader.add(data.get(j));
+                        }
+                    }
+                    testIndexs[numTrees] = indexs;
+
+                    Instances[] instancesOfClass;
+                    instancesOfClass = new Instances[numClasses];
+                    for (int i = 0; i < instancesOfClass.length; i++) {
+                        instancesOfClass[i] = new Instances(trainHeader, 0);
+                    }
+                    for (Instance instance : trainHeader) {
+                        if (instance.classIsMissing())
+                            continue; //Ignore instances with missing class value
+                        else {
+                            int c = (int) instance.classValue();
+                            instancesOfClass[c].add(instance);
+                        }
+                    }
+
+                    maxAtts = tm.estimateMaxAttributes(trainHeader.size(), minNumTrees - numTrees, estSingleTree, contractHours);
+                    int size = rand.nextInt(maxAtts / 2) + maxAtts / 2;
+                    if (debug) {
+                        System.out.print("Max estimated attributes =" + maxAtts);
+                        System.out.println("    using " + size + " attributes, building single tree at a time. Total time used =" + timeUsed);
+                    }
+                    long sTime = System.currentTimeMillis();
+                    buildTreeAttSample(trainHeader, instancesOfClass, numTrees++, size);
+                    //test
+                    testing(testHeader, distributions, numTrees, bagAccuracies, indexs);
+                    trainHeader.clear();
+                    testHeader.clear();
+                    //Update time used
+                    long newTime = System.currentTimeMillis();
+                    timeUsed = (newTime - startBuild) / (1000.0 * 60.0 * 60.0);
+                    treeTime = (newTime - sTime) / (1000.0 * 60.0 * 60.0);
+                    estSingleTree = updateTreeTime(estSingleTree, treeTime, alpha, size, m);
+//                    (1-alpha)*estSingleTree+alpha*treeTime;
+                    if (debug)
+                        System.out.println(" actual time used =" + timeUsed + " new est single tree = " + estSingleTree);
+
+                    //Checkpoint here
+                }
+//Use up any time left here on randomised trees
+                while (timeUsed < contractHours && numTrees < maxNumTrees) {
+
+                    Instances trainHeader = new Instances(data, 0);
+                    Instances testHeader = new Instances(data, 0);
+
+                    ArrayList<Integer> indexs = new ArrayList<>();
+                    for (int j = 0; j < bags[numTrees].length; j++) {
+                        if (bags[numTrees][j] == 0) {
+                            testHeader.add(data.get(j));
+                            timesInTest[j]++;
+                            indexs.add(j);
+                        }
+                        for (int k = 0; k < bags[numTrees][j]; k++) {
+                            trainHeader.add(data.get(j));
+                        }
+                    }
+                    testIndexs[numTrees] = indexs;
+
+                    Instances[] instancesOfClass;
+                    instancesOfClass = new Instances[numClasses];
+                    for (int i = 0; i < instancesOfClass.length; i++) {
+                        instancesOfClass[i] = new Instances(trainHeader, 0);
+                    }
+                    for (Instance instance : trainHeader) {
+                        if (instance.classIsMissing())
+                            continue; //Ignore instances with missing class value
+                        else {
+                            int c = (int) instance.classValue();
+                            instancesOfClass[c].add(instance);
+                        }
+                    }
+
+                    int size = tm.estimateMaxAttributes(trainHeader.size(), 1, estSingleTree, contractHours - timeUsed);
+                    //                 if(estSingleTree<timeUsed-contractHours || size>m)//Build a whole treee
+                    //                     size=m;
+                    maxAtts *= 2;
+                    if (maxAtts > size)
+                        maxAtts = size;
+                    if (debug)
+                        System.out.println("OVERTIME: using " + size + " attributes, building single tree at a time. Time used -" + timeUsed);
+                    buildTreeAttSample(trainHeader, instancesOfClass, numTrees++, maxAtts);
+                    //test
+                    testing(testHeader, distributions, numTrees, bagAccuracies, indexs);
+                    trainHeader.clear();
+                    testHeader.clear();
+                    //Update time used
+                    long newTime = System.currentTimeMillis();
+                    timeUsed = (newTime - startBuild) / (1000.0 * 60.0 * 60.0);
+                    //Checkpoint here
+                    if (debug)
+                        System.out.println("Built tree number " + numTrees + " in " + timeUsed + " hours ");
+
+                }
+            } else { //n>m
+//estimate maximum number of cases we can use
+                int maxCases = tm.estimateMaxCases(n, minNumTrees, estSingleTree, contractHours);
+                if (debug)
+                    System.out.println("using max " + maxCases + " case, building single tree at a time");
+                long startBuild = System.currentTimeMillis();
+                while (timeUsed < contractHours && numTrees < minNumTrees) {
+
+                    Instances trainHeader = new Instances(data, 0);
+                    Instances testHeader = new Instances(data, 0);
+
+                    ArrayList<Integer> indexs = new ArrayList<>();
+                    for (int j = 0; j < bags[numTrees].length; j++) {
+                        if (bags[numTrees][j] == 0) {
+                            testHeader.add(data.get(j));
+                            timesInTest[j]++;
+                            indexs.add(j);
+                        }
+                        for (int k = 0; k < bags[numTrees][j]; k++) {
+                            trainHeader.add(data.get(j));
+                        }
+                    }
+                    testIndexs[numTrees] = indexs;
+
+                    Instances[] instancesOfClass;
+                    instancesOfClass = new Instances[numClasses];
+                    for (int i = 0; i < instancesOfClass.length; i++) {
+                        instancesOfClass[i] = new Instances(trainHeader, 0);
+                    }
+                    for (Instance instance : trainHeader) {
+                        if (instance.classIsMissing())
+                            continue; //Ignore instances with missing class value
+                        else {
+                            int c = (int) instance.classValue();
+                            instancesOfClass[c].add(instance);
+                        }
+                    }
+
+                    int size = rand.nextInt(maxCases / 2) + maxCases / 2;
+                    buildTreeCaseSample(trainHeader, instancesOfClass, numTrees++, size);
+                    //test
+                    testing(testHeader, distributions, numTrees, bagAccuracies, indexs);
+                    trainHeader.clear();
+                    testHeader.clear();
+                    //Update time used
+                    long newTime = System.currentTimeMillis();
+                    timeUsed = (newTime - startBuild) / (1000.0 * 60.0 * 60.0);
+                    //Checkpoint here
+                }
+//Use up any time left here on randomised trees
+                while (timeUsed < contractHours && numTrees < maxNumTrees) {
+
+                    Instances trainHeader = new Instances(data, 0);
+                    Instances testHeader = new Instances(data, 0);
+
+                    ArrayList<Integer> indexs = new ArrayList<>();
+                    for (int j = 0; j < bags[numTrees].length; j++) {
+                        if (bags[numTrees][j] == 0) {
+                            testHeader.add(data.get(j));
+                            timesInTest[j]++;
+                            indexs.add(j);
+                        }
+                        for (int k = 0; k < bags[numTrees][j]; k++) {
+                            trainHeader.add(data.get(j));
+                        }
+                    }
+                    testIndexs[numTrees] = indexs;
+
+                    Instances[] instancesOfClass;
+                    instancesOfClass = new Instances[numClasses];
+                    for (int i = 0; i < instancesOfClass.length; i++) {
+                        instancesOfClass[i] = new Instances(trainHeader, 0);
+                    }
+                    for (Instance instance : trainHeader) {
+                        if (instance.classIsMissing())
+                            continue; //Ignore instances with missing class value
+                        else {
+                            int c = (int) instance.classValue();
+                            instancesOfClass[c].add(instance);
+                        }
+                    }
+
+                    int size = tm.estimateMaxCases(n, 1, estSingleTree, contractHours - timeUsed);
+                    buildTreeCaseSample(trainHeader, instancesOfClass, numTrees++, size);
+                    //test
+                    testing(testHeader, distributions, numTrees, bagAccuracies, indexs);
+                    trainHeader.clear();
+                    testHeader.clear();
+                    //Update time used
+                    long newTime = System.currentTimeMillis();
+                    timeUsed = (newTime - startBuild) / (1000.0 * 60.0 * 60.0);
+                    //Checkpoint here
+                    if (debug)
+                        System.out.println("Built tree number " + numTrees + " in " + timeUsed + " hours ");
+
+                }
+            }
+        }
+
+        for (int i = 0; i < bags.length; i++) {
+            for (int j = 0; j < bags[i].length; j++) {
+                if (bags[i][j] == 0) {
+                    for (int k = 0; k < finalDistributions[j].length; k++) {
+                        finalDistributions[j][k] += distributions[i][j][k];
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < finalDistributions.length; i++) {
+            if (timesInTest[i] > 1) {
+                for (int j = 0; j < finalDistributions[i].length; j++) {
+                    finalDistributions[i][j] /= timesInTest[i];
+                }
+            }
+        }
+
+        //Add to trainResults.
+        double acc = 0.0;
+        for (int i = 0; i < finalDistributions.length; i++) {
+            double predClass = 0;
+            double predProb = 0.0;
+            for (int j = 0; j < finalDistributions[i].length; j++) {
+                if (finalDistributions[i][j] > predProb) {
+                    predProb = finalDistributions[i][j];
+                    predClass = j;
+                }
+            }
+            trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
+            if (predClass == data.get(i).classValue()) {
+                acc++;
+            }
+            trainResults.setAcc(acc / data.size());
+        }
+    }
+
+    private void testing (Instances testHeader, double[][][] distributions, int treeCount, double[] bagAccuracies, ArrayList<Integer> indexs) throws Exception {
+        treeCount -= 1;
+        for (int j = 0; j < testHeader.size(); j++) {
+            Instance test = convertInstance(testHeader.get(j), treeCount);
+            try {
+                distributions[treeCount][indexs.get(j)] = classifiers.get(treeCount).distributionForInstance(test);
+                if (classifiers.get(treeCount).classifyInstance(test) == testHeader.get(j).classValue()) {
+                    bagAccuracies[treeCount]++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        bagAccuracies[treeCount] /= testHeader.size();
+    }
     
 /** Build a rotation forest tree on a random subsample of the attributes
  * 
@@ -944,7 +1376,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+res.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
+        String result="BuildTime,"+trainResults.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
         result+=",numTrees,"+numTrees;
         return result;
     }
@@ -1000,7 +1432,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
   
 //Copy ContractRotationForest attributes. Not su
         this.contractHours=saved.contractHours;
-        res=saved.res;
+        trainResults=saved.trainResults;
         minNumTrees=saved.minNumTrees;
         maxNumTrees=saved.maxNumTrees;
         maxNumAttributes=saved.maxNumAttributes;
