@@ -31,7 +31,7 @@ public class RandomUtils {
      * @return
      */
     public static <A> RandomResult<A> getRandAndSwitchSeed(Random random,  Function<Random, A> func) {
-        int seed = random.nextInt();
+        int seed = random.nextInt(); // todo go through code and replace with this call?
         random.setSeed(seed);
         A result = func.apply(random);
         return new RandomResult<A>(result, seed);

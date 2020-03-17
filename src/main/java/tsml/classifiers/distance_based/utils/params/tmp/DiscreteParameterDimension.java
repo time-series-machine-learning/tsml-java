@@ -1,52 +1,51 @@
 package tsml.classifiers.distance_based.utils.params.tmp;
 
-import java.util.ArrayList;
 import java.util.List;
-import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
 
 /**
- * class to hold a finite set of values for a parameter
- * @param <A>
+ * Purpose: // todo - docs - type the purpose of the code here
+ * <p>
+ * Contributors: goastler
  */
-public class DiscreteParameterDimension<A> extends ParameterDimension<A> {
+public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> implements IndexedCollection<Object> {
 
-    private List<? extends A> values;
-
-    public DiscreteParameterDimension() {
-        this(new ArrayList<>());
+    public DiscreteParameterDimension(final List<A> values) {
+        super(values);
     }
 
-    public DiscreteParameterDimension(List<? extends A> values) {
-        this(values, new ArrayList<>());
+    public DiscreteParameterDimension(final List<A> values,
+        final List<ParameterSpace> subSpaces) {
+        super(values, subSpaces);
     }
 
-    public DiscreteParameterDimension(List<? extends A> values, List<ParameterSpace> subSpaces) {
-        setValues(values);
-        setSubSpaces(subSpaces);
-    }
-
-    @Override
-    public A getParameterValue(final int index) {
-        // simply grab the value at the given index
-        return values.get(index);
+    public int getValuesSize() {
+        return getValues().size();
     }
 
     @Override
-    public int getParameterDimensionSize() {
-        return values.size();
-    }
-
-    public List<? extends A> getValues() {
-        return values;
-    }
-
-    public void setValues(final List<? extends A> values) {
-        Assert.assertNotNull(values);
-        this.values = values;
+    public Object get(final int index) {
+        return IndexedParameterSpace.get(this, index);
     }
 
     @Override
-    public String toString() {
-        return "{values=" + values + super.buildSubSpacesString() + "}";
+    public int size() {
+        return Permutations.numPermutations(getAllSizes());
     }
+
+    public List<Integer> getAllSizes() {
+        final List<Integer> sizes = getSubSpaceSizes();
+        // put values size on the front
+        sizes.add(0, getValuesSize());
+        return sizes;
+    }
+
+    public List<Integer> getSubSpaceSizes() {
+        return IndexedParameterSpace.sizesParameterSpace(getSubSpaces());
+    }
+
+    public A getValue(int index) {
+        return getValues().get(index);
+    }
+
 }

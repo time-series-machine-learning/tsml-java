@@ -60,7 +60,7 @@ public class ParamSet implements ParamHandler {
         return this;
     }
 
-    public ParamSet add(String name, ParamHandler value, List<ParamSet> params) {
+    public ParamSet add(String name, Object value, List<ParamSet> params) {
         for(ParamSet paramSet : params) {
             add(name, value, paramSet);
         }
@@ -78,8 +78,15 @@ public class ParamSet implements ParamHandler {
      * @param param
      * @return
      */
-    public ParamSet add(String name, ParamHandler value, ParamSet param) {
-        value.setParams(param);
+    public ParamSet add(String name, Object value, ParamSet param) {
+        if(value instanceof ParamHandler) {
+            ((ParamHandler) value).setParams(param);
+        } else {
+            throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
+                + "cannot "
+                + "set the "
+                + "parameters {" + param.toString() + "}");
+        }
         return add(name, value);
     }
 
