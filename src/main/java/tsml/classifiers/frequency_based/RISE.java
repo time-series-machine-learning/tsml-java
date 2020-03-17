@@ -437,13 +437,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    Instances temptemp;
-                    temptemp = MFCC.process(instances);
-                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
-                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
-                    for (int i = 0; i < instances.size(); i++) {
-                        temp.add(temptemptemp[i]);
-                    }
+                    temp = MFCC.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
