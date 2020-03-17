@@ -158,7 +158,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         this(0);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC, MFCC_FFT, MFCC_ACF}
 
     /**
      * Function used to reset internal state of classifier.
@@ -437,18 +437,25 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    Instances temptemp;
-                    temptemp = MFCC.process(instances);
-                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
-                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
-                    for (int i = 0; i < instances.size(); i++) {
-                        temp.add(temptemptemp[i]);
-                    }
+                    temp = MFCC.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
-
+            case MFCC_FFT:
+                temp = transformInstances(instances, TransformType.MFCC);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case MFCC_ACF:
+                temp = transformInstances(instances, TransformType.MFCC);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
             case ACF_PS:
                 temp = transformInstances(instances, TransformType.PS);
                 temp.setClassIndex(-1);
@@ -1243,18 +1250,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
             RISE = new RISE();
-            RISE.setTransformType(TransformType.ACF_FFT);
+            RISE.setTransformType(TransformType.MFCC_ACF);
             cr = sse.evaluate(RISE, data);
-            System.out.println("ACF_FFT");
+            System.out.println("MFCC_ACF");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(RISE);
-            temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
         } catch (Exception e) {
             e.printStackTrace();
         }
