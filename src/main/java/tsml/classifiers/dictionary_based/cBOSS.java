@@ -472,7 +472,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
             //Multivariate
             if (isMultivariate) {
-                numSeries = numChannels(data);
+                numSeries = numDimensions(data);
                 classifiers = new LinkedList[numSeries];
 
                 for (int n = 0; n < numSeries; n++) {

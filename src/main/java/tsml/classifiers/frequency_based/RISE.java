@@ -106,6 +106,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private double perForBag = 0.5;
 
     private Timer timer = null;
+    private boolean trainTimeContract = false;
+    private long trainContractTimeNanos = 0;
 
     private Classifier classifier = new RandomTree();
     private ArrayList<Classifier> baseClassifiers = null;
@@ -622,7 +624,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             findTrainAcc(data);
             initialise();
             timer.reset();
-            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
+            if(trainTimeContract)
+                this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
@@ -692,10 +695,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         int[][] bags;
         ArrayList[] testIndexs = new ArrayList[numTrees];
         double[] bagAccuracies = new double[numTrees];
-
-        this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
-        this.timer.forestTimeLimit = (long)((double)timer.forestTimeLimit * perForBag);
-
+        if(trainTimeContract) {
+            this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
+            this.timer.forestTimeLimit = (long) ((double) timer.forestTimeLimit * perForBag);
+        }
         bags = generateBags(numTrees, bagProp, data);
 
 
@@ -718,7 +721,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
             Instances trainHeader = new Instances(intervalInstances, 0);
             Instances testHeader = new Instances(intervalInstances, 0);
-
             ArrayList<Integer> indexs = new ArrayList<>();
             for (int j = 0; j < bags[treeCount].length; j++) {
                 if(bags[treeCount][j] == 0){
@@ -784,11 +786,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 }
             }
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
-            if (predClass == data.get(i).classValue()){
+/*            if (predClass == data.get(i).classValue()){
                 acc++;
             }
             trainResults.setAcc(acc / data.size());
-        }
+ */       }
         this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
     }
 
@@ -902,46 +904,41 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     }
 
     /**
-     * Returns default capabilities of the classifier. These are that the
-     * data must be numeric, with no missing and a nominal class
-     * @return the capabilities of this classifier
-     **/
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        // instances
-        result.setMinimumNumberInstances(1);
-        return result;
-
-
-    }
-
-    /**
      * Method returning all classifier parameters as a string.
-     * for EnhancedAbstractClassifier
+     * for EnhancedAbstractClassifier. General format:
+     * super.getParameters()+classifier parameters+contract information (if contracted)+train estimate information (if generated)
      * @return
      */
     @Override
     public String getParameters() {
 
-        String result = "Total Time Taken," + timer.forestElapsedTime
-                + ", Contract Length (ns), " + timer.forestTimeLimit
-                + ", Percentage contract for OOB, " + perForBag
-                + ", NumAtts," + data.numAttributes()
-                + ", MaxNumTrees," + numClassifiers
+        String result=super.getParameters();
+        result+=", MaxNumTrees," + numClassifiers
                 + ", NumTrees," + treeCount
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
-                + ", Final Coefficients (time = a * x^2 + b * x + c)"
-                + ", a, " + timer.a
-                + ", b, " + timer.b
-                + ", c, " + timer.c;
+                + ",BaseClassifier, "+classifier.getClass().getSimpleName();
+        if(classifier instanceof RandomTree)
+            result+=",AttsConsideredPerNode,"+((RandomTree)classifier).getKValue();
+
+        if(trainTimeContract)
+            result+= ",trainContractTimeNanos," +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+
+
+        if(trainTimeContract) {
+            result += ", TimeModelCoefficients(time = a * x^2 + b * x + c)"
+                    + ", a, " + timer.a
+                    + ", b, " + timer.b
+                    + ", c, " + timer.c;
+        }
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance()) {
+            result += ",trainEstimateMethod," + estimator;
+            if (estimator == EstimatorMethod.OOB && trainTimeContract)
+                result += ", Percentage contract for OOB, " + perForBag;
+        }
         return result;
     }
 
@@ -951,6 +948,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void setTrainTimeLimit(long amount) {
+        if(amount>0) {
+            trainTimeContract = true;
+            trainContractTimeNanos = amount;
+        }
+
         timer.setTimeLimit(amount);
     }
 
@@ -971,16 +973,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         return result;
     }
 
-    /**
-     * for interface Tuneable
-     * @return
-     */
-    @Override
+    @Override //Tuneable
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
-        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("-T", numTrees);
-//Add others here
+        String[] numTrees={"100","200","300","400","500","600"};
+        ps.addParameter("K", numTrees);
+        String[] minInterv={"4","8","16","32","64","128"};
+        ps.addParameter("I", minInterv);
+        String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
+        ps.addParameter("T", transforms);
         return ps;
     }
     /**
@@ -1183,7 +1184,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
          * @param timeLimit in nano seconds
          */
         protected void setTimeLimit(long timeLimit){
-            this.forestTimeLimit = timeLimit;
+            if(timeLimit>0)
+                this.forestTimeLimit = timeLimit;
+            else
+                this.forestTimeLimit = Long.MAX_VALUE;
         }
 
         protected void printModel(){

@@ -323,7 +323,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         // class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         // instances
-        result.setMinimumNumberInstances(0);   
+        result.setMinimumNumberInstances(1);
         return result;
     }
     

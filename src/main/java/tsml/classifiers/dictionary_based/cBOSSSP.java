@@ -477,7 +477,7 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
 
             //Multivariate
             if (isMultivariate) {
-                numSeries = numChannels(data);
+                numSeries = numDimensions(data);
                 classifiers = new LinkedList[numSeries];
 
                 for (int n = 0; n < numSeries; n++) {
