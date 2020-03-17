@@ -32,7 +32,6 @@ public class MFCC extends SimpleBatchFilter{
 
     public int interval = 0;
 
-
     public MFCC(){
         spectrogram = new Spectrogram(windowLength, overlapLength, nfft);
     }
@@ -48,7 +47,7 @@ public class MFCC extends SimpleBatchFilter{
         Instances instances = null;
         FastVector attributes = new FastVector(melFreqCepsCo.length);
         for (int i = 0; i < (melFreqCepsCo.length); i++) {
-            attributes.addElement(new Attribute("MFCC_att" + i + String.valueOf(i + 1)));
+            attributes.addElement(new Attribute("MFCC_att" + interval + String.valueOf(i + 1)));
         }
 
         FastVector classValues = new FastVector(inputFormat.classAttribute().numValues());
