@@ -166,17 +166,18 @@ public class Experiments  {
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[8];
+                String[] settings=new String[9];
 //Location of data set
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
                 settings[1]="-rp=C:\\Temp\\";//Where to write results
-                settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=ShapeletTransformClassifier"; //Classifier name
+                settings[2]="-gtf=true"; //Whether to generate train files or not
+                settings[3]="-cn=TSF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+""; //Problem file, added below
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
                 settings[6]="--force=true";
                 settings[7]="-ctrs=0";
+                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);
@@ -185,8 +186,6 @@ public class Experiments  {
                 folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
-                    if(prob.equals("miniboone"))
-                        continue;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
@@ -209,7 +208,7 @@ public class Experiments  {
      * 5) Samples the dataset.
      * 6) If we're good to go, runs the experiment.
      */
-    public static ClassifierResults[] setupAndRunExperiment(Experiments.ExperimentalArguments expSettings) throws Exception {
+    public static ClassifierResults[] setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
         //todo: when we convert to e.g argparse4j for parameter passing, add a para
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there.
@@ -347,7 +346,7 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -369,14 +368,13 @@ public class Experiments  {
             // or the monitor may not update in time before collecting the max
             GcFinalization.awaitFullGc();
             long maxMemory = memoryMonitor.getMaxMemoryUsed();
-
             trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
             //At this stage, regardless of whether the classifier is able to estimate it's
             //own accuracy or not, train results should contain either
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
                 LOGGER.log(Level.FINE, "Train estimate written");
             }

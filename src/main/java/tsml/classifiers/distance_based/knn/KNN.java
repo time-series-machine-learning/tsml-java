@@ -29,21 +29,32 @@ import static experiments.data.DatasetLoading.sampleGunPoint;
 /**
  * k-nearest-neighbour classifier.
  *
- * Change history:
- *  27/2/20 - goastler - overhaul to fix test seeding + interfaces
+ * Contributors: goastler
  */
 public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
     StopWatchTrainTimeable {
 
-    private static String getKFlag() {
+    /**
+     * flag for k variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getKFlag() {
         return "k";
     }
 
-    private static String getEarlyAbandonFlag() {
+    /**
+     * flag for early abandon variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getEarlyAbandonFlag() {
         return "e";
     }
 
-    private static String getRandomTieBreakFlag() {
+    /**
+     * flag for random tie break variable. This is used in representing parameters in the form of a string.
+     * @return
+     */
+    public static String getRandomTieBreakFlag() {
         return "r";
     }
 
@@ -193,25 +204,35 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
+        // load from a previous checkpoint
         boolean loadedFromCheckpoint = loadFromCheckpoint();
-        memoryWatcher.enable();
+        // enable resource monitors
+        memoryWatcher.enable(); // todo can we share emitters in mem watcher?
         trainTimer.enable();
-        final boolean rebuild = getAndDisableRebuild();
+        final boolean rebuild = isRebuild();
         if(rebuild) {
+            // if we're rebuilding then reset resource monitors
             memoryWatcher.resetAndEnable();
             trainTimer.resetAndEnable();
-            super.buildClassifier(trainData);
         }
-        setBuilt(false);
+        // build parent
+        super.buildClassifier(trainData);
+        // let the distance function know about the instances
         distanceFunction.setInstances(trainData);
+        // save our model data
         this.trainData = trainData;
+        // we're fully built now
         setBuilt(true);
+        // disable resource monitors
         trainTimer.disable();
         memoryWatcher.disable();
+        // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
             saveToCheckpoint();
         } else {
-            getLogger().info("loaded from checkpoint so not overwriting");
+            // if we've loaded from checkpoint then there's no point in re saving a checkpoint as we haven't done any
+            // further work
+            getLogger().info("loaded from checkpoint so saving checkpoint");
         }
     }
 
@@ -334,12 +355,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = sampleGunPoint(seed);
-        Instances trainData = data[0];
-        KNN classifier = new KNN(new DTWDistance(trainData.numAttributes() - 1));
-        classifier.setSeed(0);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
+        ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets/", "GunPoint", new KNN(), 0);
         System.out.println(results.writeSummaryResultsToString());
     }
 

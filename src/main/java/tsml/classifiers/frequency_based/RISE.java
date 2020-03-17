@@ -78,6 +78,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * @author Michael Flynn and Tony Bagnall
  * @date 19/02/19
  * updated 4/3/20 to conform to tsml standards
+ * updated 10/3/20 to allow for internal CV estimate of train acc, same structure as TSF
  **/
 
 public class RISE extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
@@ -121,6 +122,25 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     //Updated work
     private ArrayList<int[]> startEndPoints = null;
+
+    /** If trainAccuracy is required, there are two mechanisms to obtain it:
+     * 2. estimator=CV: do a 10x CV on the train set with a clone
+     * of this classifier
+     * 3. estimator=OOB: build an OOB model just to get the OOB
+     * accuracy estimate
+     */
+    enum EstimatorMethod{CV,OOB}
+    private EstimatorMethod estimator=EstimatorMethod.CV;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
+    }
+
 
     /**
      * Constructor
@@ -597,6 +617,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
+        //Start forest timer.
+        timer.forestStartTime = System.nanoTime();
 
         if(serialisePath != null){
             RISE temp = this.readSerialise(seed);
@@ -610,6 +632,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         if (!loadedFromFile) {
             //Just used for getParameters.
             data = trainingData;
+            // Can classifier handle the data?
+            getCapabilities().testWithFail(data);
             //(re)Initialise all variables to account for multiple calls of buildClassifier.
             initialise();
 
@@ -622,9 +646,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
         }
-
-        //Start forest timer.
-        timer.forestStartTime = System.nanoTime();
 
         if (getEstimateOwnPerformance()) {
             findTrainAcc(data);
@@ -1222,8 +1243,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     public static void main(String[] args){
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.newProblems27[2] + "/" + DatasetLists.newProblems27[2] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
