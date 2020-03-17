@@ -164,7 +164,7 @@ public class MFCC extends SimpleBatchFilter{
             }
         }
 
-        return MultivariateInstanceTools.mergeToMultivariateInstances(MFCCs);
+        return MultivariateInstanceTools.concatinateInstances(temp);
     }
 
     private double[][] createFilterBanks(){
