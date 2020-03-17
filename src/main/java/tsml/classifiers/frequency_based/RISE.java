@@ -14,6 +14,7 @@
  */
 package tsml.classifiers.frequency_based;
 
+import Michael.classifiers.AFClassifier;
 import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
@@ -129,14 +130,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         super.setSeed((int)seed);
         timer = new Timer();
-        this.setTransformType(TransformType.ACF_FFT);
+        this.setTransformType(TransformType.MFCC);
     }
 
     public RISE(){
         this(0);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC, ACF_MFCC, FFT_MFCC, AF, AF_MFCC, AF_MFCC_FFT}
 
     /**
      * Function used to reset internal state of classifier.
@@ -415,18 +416,46 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    Instances temptemp;
-                    temptemp = MFCC.process(instances);
-                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
-                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
-                    for (int i = 0; i < instances.size(); i++) {
-                        temp.add(temptemptemp[i]);
-                    }
+                    temp = MFCC.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
-
+            case AF:
+                AFClassifier af = new AFClassifier();
+                temp = af.audioTransformInstances(instances, 0);
+                break;
+            case AF_MFCC:
+                temp = transformInstances(instances, TransformType.AF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.MFCC));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case AF_MFCC_FFT:
+                temp = transformInstances(instances, TransformType.AF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.MFCC));
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case ACF_MFCC:
+                temp = transformInstances(instances, TransformType.ACF);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.MFCC));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case FFT_MFCC:
+                temp = transformInstances(instances, TransformType.FFT);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.MFCC));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
             case ACF_PS:
                 temp = transformInstances(instances, TransformType.PS);
                 temp.setClassIndex(-1);
@@ -1211,23 +1240,35 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         System.out.println("\n");
         try {
             RISE = new RISE();
-            RISE.setSavePath("D:/Test/Testing/Serialising/");
-            //cRISE.setTrainTimeLimit(TimeUnit.MINUTES, 5);
             RISE.setTransformType(TransformType.ACF_FFT);
             cr = sse.evaluate(RISE, data);
-            System.out.println("FFT");
+            System.out.println("ACF_FFT");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            RISE = new RISE();
+            RISE.setTransformType(TransformType.FFT_MFCC);
+            cr = sse.evaluate(RISE, data);
+            System.out.println("FFT_MFCC");
+            System.out.println("Accuracy: " + cr.getAcc());
+            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
+
+            RISE = new RISE();
+            RISE.setTransformType(TransformType.AF_MFCC_FFT);
+            cr = sse.evaluate(RISE, data);
+            System.out.println("AF_MFCC_FFT");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        try {
+        /*try {
             ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(RISE);
             temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
     }
 }
 
