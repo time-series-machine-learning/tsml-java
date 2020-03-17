@@ -21,7 +21,11 @@ import utilities.Utilities;
 public class ParameterSpace implements DefaultList<ParamSet> {
 
     // 1 to many mapping of param name to list of param dimensions
-    private Map<String, List<ParameterDimension<?>>> paramsMap = new LinkedHashMap<>();
+    private Map<String, List<ParameterDimension<?>>> dimensionMap = new LinkedHashMap<>();
+
+    protected Map<String, List<ParameterDimension<?>>> getDimensionMap() {
+        return dimensionMap;
+    }
 
     public static void main(String[] args) {
         int seed = 0;
@@ -90,11 +94,11 @@ public class ParameterSpace implements DefaultList<ParamSet> {
 
     @Override
     public String toString() {
-        return String.valueOf(paramsMap);
+        return String.valueOf(dimensionMap);
     }
 
     public void add(String name, ParameterDimension<?> dimension) {
-        paramsMap.computeIfAbsent(name, s -> new ArrayList<>()).add(dimension);
+        dimensionMap.computeIfAbsent(name, s -> new ArrayList<>()).add(dimension);
     }
 
     public int size() {
@@ -114,7 +118,7 @@ public class ParameterSpace implements DefaultList<ParamSet> {
         List<Integer> indices = ArrayUtilities.fromPermutation(index, getDimensionSizes());
         ParamSet param = new ParamSet();
         int i = 0;
-        for(Map.Entry<String, List<ParameterDimension<?>>> entry : paramsMap.entrySet()) {
+        for(Map.Entry<String, List<ParameterDimension<?>>> entry : dimensionMap.entrySet()) {
             index = indices.get(i++);
             List<ParameterDimension<?>> parameterDimensions = entry.getValue();
             for(ParameterDimension<?> paramValues : parameterDimensions) {
@@ -147,7 +151,7 @@ public class ParameterSpace implements DefaultList<ParamSet> {
      */
     public List<Integer> getDimensionSizes() {
         List<Integer> sizes = new ArrayList<>();
-        for(Map.Entry<String, List<ParameterDimension<?>>> entry : paramsMap.entrySet()) {
+        for(Map.Entry<String, List<ParameterDimension<?>>> entry : dimensionMap.entrySet()) {
             int size = 0;
             for(ParameterDimension<?> parameterDimension : entry.getValue()) {
                 final int dimensionSize = parameterDimension.size();
@@ -167,7 +171,7 @@ public class ParameterSpace implements DefaultList<ParamSet> {
      * @return
      */
     public boolean containsContinuousDimension() {
-        for(Map.Entry<String, List<ParameterDimension<?>>> entry : paramsMap.entrySet()) {
+        for(Map.Entry<String, List<ParameterDimension<?>>> entry : dimensionMap.entrySet()) {
             for(ParameterDimension<?> parameterDimension : entry.getValue()) {
                 final int dimensionSize = parameterDimension.size();
                 // ignore it if the dimension is continuous

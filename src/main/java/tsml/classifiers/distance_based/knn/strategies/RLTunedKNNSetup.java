@@ -9,7 +9,7 @@ import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.collections.Utils;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -22,7 +22,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static tsml.classifiers.distance_based.utils.StrUtils.extractNameAndParams;
-import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
 /**
  * Purpose: reinforce-learn a knn. This explores two dimensions: parameters and number of neighbours. In this case,
@@ -224,14 +224,14 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 // put it in the unimproveable pile
                 rlTunedClassifier
                     .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
-                Utils.put(classifier, unimproveableBenchmarks);
+                CollectionUtils.put(classifier, unimproveableBenchmarks);
                 // we won't be using that benchmark again
                 result = false;
             } else {
                 // else the classifier can be improved, so put it in the improveable pile
                 rlTunedClassifier
                     .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
-                Utils.put(classifier, nextImproveableBenchmarks);
+                CollectionUtils.put(classifier, nextImproveableBenchmarks);
                 // we will be using that benchmark again
                 result = true;
             }

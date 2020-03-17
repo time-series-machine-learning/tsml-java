@@ -1,7 +1,11 @@
 package tsml.classifiers.distance_based.utils.random;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
+import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -49,5 +53,40 @@ public class RandomUtils {
         public int getSeed() {
             return seed;
         }
+    }
+
+    /**
+     * randomly choose n elements from a list
+     * @param list
+     * @param random
+     * @param numChoices
+     * @param <A>
+     * @return
+     */
+    public static <A> List<A> choice(List<A> list, Random random, int numChoices) {
+        Assert.assertNotNull(random);
+        Assert.assertNotNull(list);
+        Assert.assertTrue(numChoices > 0);
+        final List<A> choices = new ArrayList<>();
+        final List<Integer> indices = CollectionUtils.sequence(list.size());
+        for(int i = 0; i < numChoices; i++) {
+            final int index = indices.remove(random.nextInt(indices.size()));
+            final A value = list.get(index);
+            choices.add(value);
+        }
+        return choices;
+    }
+
+    /**
+     * randomly choose 1 element from  a list
+     * @param list
+     * @param random
+     * @param <A>
+     * @return
+     */
+    public static <A> A choice(List<A> list, Random random) {
+        Assert.assertNotNull(random);
+        Assert.assertNotNull(list);
+        return list.get(random.nextInt(list.size()));
     }
 }

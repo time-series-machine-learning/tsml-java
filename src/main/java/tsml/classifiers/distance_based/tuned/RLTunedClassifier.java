@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 
-import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
 public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable, GcMemoryWatchable,
     StopWatchTrainTimeable,

@@ -1,11 +1,13 @@
 package tsml.classifiers.distance_based.utils.collections;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
-public class Utils {
-    private Utils() {}
+public class CollectionUtils {
+    private CollectionUtils() {}
 
     public static <A> A get(Iterator<A> iterator, int index) {
         if(index < 0) {
@@ -55,5 +57,18 @@ public class Utils {
         if(!result) {
             throw new IllegalStateException("already contains item " + item.toString());
         }
+    }
+
+    /**
+     * produce a list of ints from 0 to limit - 1 (inclusively)
+     * @param limit
+     * @return
+     */
+    public static List<Integer> sequence(int limit) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < limit; i++) {
+            list.add(i);
+        }
+        return list;
     }
 }
