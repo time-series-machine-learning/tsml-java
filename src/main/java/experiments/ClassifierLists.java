@@ -61,6 +61,7 @@ import weka.classifiers.trees.RandomForest;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -158,7 +159,7 @@ public class ClassifierLists {
             "HI-BIpIGB-cS-BOSS","HI-BIpIGB-750cS-BOSS","HI-Bigram-pIGB-Bc-BOSS","Bigram-pIGB-BcS-BOSS",
     "HI-Cutoff-Bigram-pIGB-BcS-BOSS","HI-tp80-Bigram-pIGB-BcS-BOSS","HI-tp60-Bigram-pIGB-BcS-BOSS","HI-tp50-Bigram-pIGB-BcS-BOSS","HI-l4-Bigram-pIGB-BcS-BOSS",
             "HI-pBigram-pIGB-BcS-BOSS","HI-fs-pIGB-BcS-BOSS","HI-500s-pIGB-BcS-BOSS","HI-100m-pIGB-BcS-BOSS",
-            "HI-tp100-Bigram-pIGB-BcS-BOSS"};
+            "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -192,6 +193,12 @@ public class ClassifierLists {
                 break;
             case "WEASEL":
                 c = new WEASEL();
+                break;
+
+
+            case "cBOSS-Max100":
+                c = new cBOSS();
+                ((cBOSS)c).setMaxEnsembleSize(100);
                 break;
 
 
@@ -558,6 +565,34 @@ public class ClassifierLists {
                 ((cBOSSSP) c).histogramIntersection = true;
                 ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).setReduceTrainInstances(false);
+                break;
+
+            case "TDE-1H":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setTrainTimeLimit(TimeUnit.HOURS, 1);
+                break;
+            case "TDE-4H":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setTrainTimeLimit(TimeUnit.HOURS, 4);
+                break;
+            case "TDE-12H":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setTrainTimeLimit(TimeUnit.HOURS, 12);
                 break;
 
             default:
