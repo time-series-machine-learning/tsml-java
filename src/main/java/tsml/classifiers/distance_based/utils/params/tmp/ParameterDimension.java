@@ -32,9 +32,13 @@ public class ParameterDimension<A> {
 
     @Override
     public String toString() {
+        String subSpacesString = "";
+        if(!getSubSpaces().isEmpty()) {
+            subSpacesString = ", subSpaces=" + subSpaces;
+        }
         return "{" +
             "values=" + values +
-            ", subSpaces=" + subSpaces +
+            subSpacesString +
             '}';
     }
 
