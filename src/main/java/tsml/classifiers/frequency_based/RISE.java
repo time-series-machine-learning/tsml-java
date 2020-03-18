@@ -106,6 +106,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private double perForBag = 0.5;
 
     private Timer timer = null;
+    private boolean trainTimeContract = false;
+    private long trainContractTimeNanos = 0;
 
     private Classifier classifier = new RandomTree();
     private ArrayList<Classifier> baseClassifiers = null;
@@ -156,7 +158,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         this(0);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC}
+    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC, MFCC_FFT, MFCC_ACF}
 
     /**
      * Function used to reset internal state of classifier.
@@ -435,18 +437,25 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    Instances temptemp;
-                    temptemp = MFCC.process(instances);
-                    temp = MFCC.determineOutputFormatForFirstChannel(instances);
-                    Instance[] temptemptemp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(temptemp.get(0));
-                    for (int i = 0; i < instances.size(); i++) {
-                        temp.add(temptemptemp[i]);
-                    }
+                    temp = MFCC.process(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
-
+            case MFCC_FFT:
+                temp = transformInstances(instances, TransformType.MFCC);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case MFCC_ACF:
+                temp = transformInstances(instances, TransformType.MFCC);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
             case ACF_PS:
                 temp = transformInstances(instances, TransformType.PS);
                 temp.setClassIndex(-1);
@@ -622,7 +631,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             findTrainAcc(data);
             initialise();
             timer.reset();
-            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
+            if(trainTimeContract)
+                this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
         for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
@@ -692,10 +702,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         int[][] bags;
         ArrayList[] testIndexs = new ArrayList[numTrees];
         double[] bagAccuracies = new double[numTrees];
-
-        this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
-        this.timer.forestTimeLimit = (long)((double)timer.forestTimeLimit * perForBag);
-
+        if(trainTimeContract) {
+            this.setTrainTimeLimit(timer.forestTimeLimit, TimeUnit.NANOSECONDS);
+            this.timer.forestTimeLimit = (long) ((double) timer.forestTimeLimit * perForBag);
+        }
         bags = generateBags(numTrees, bagProp, data);
 
 
@@ -718,7 +728,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
             Instances trainHeader = new Instances(intervalInstances, 0);
             Instances testHeader = new Instances(intervalInstances, 0);
-
             ArrayList<Integer> indexs = new ArrayList<>();
             for (int j = 0; j < bags[treeCount].length; j++) {
                 if(bags[treeCount][j] == 0){
@@ -784,11 +793,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 }
             }
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
-            if (predClass == data.get(i).classValue()){
+/*            if (predClass == data.get(i).classValue()){
                 acc++;
             }
             trainResults.setAcc(acc / data.size());
-        }
+ */       }
         this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;
     }
 
@@ -902,46 +911,41 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     }
 
     /**
-     * Returns default capabilities of the classifier. These are that the
-     * data must be numeric, with no missing and a nominal class
-     * @return the capabilities of this classifier
-     **/
-    @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = super.getCapabilities();
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        // instances
-        result.setMinimumNumberInstances(1);
-        return result;
-
-
-    }
-
-    /**
      * Method returning all classifier parameters as a string.
-     * for EnhancedAbstractClassifier
+     * for EnhancedAbstractClassifier. General format:
+     * super.getParameters()+classifier parameters+contract information (if contracted)+train estimate information (if generated)
      * @return
      */
     @Override
     public String getParameters() {
 
-        String result = "Total Time Taken," + timer.forestElapsedTime
-                + ", Contract Length (ns), " + timer.forestTimeLimit
-                + ", Percentage contract for OOB, " + perForBag
-                + ", NumAtts," + data.numAttributes()
-                + ", MaxNumTrees," + numClassifiers
+        String result=super.getParameters();
+        result+=", MaxNumTrees," + numClassifiers
                 + ", NumTrees," + treeCount
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
-                + ", Final Coefficients (time = a * x^2 + b * x + c)"
-                + ", a, " + timer.a
-                + ", b, " + timer.b
-                + ", c, " + timer.c;
+                + ",BaseClassifier, "+classifier.getClass().getSimpleName();
+        if(classifier instanceof RandomTree)
+            result+=",AttsConsideredPerNode,"+((RandomTree)classifier).getKValue();
+
+        if(trainTimeContract)
+            result+= ",trainContractTimeNanos," +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+
+
+        if(trainTimeContract) {
+            result += ", TimeModelCoefficients(time = a * x^2 + b * x + c)"
+                    + ", a, " + timer.a
+                    + ", b, " + timer.b
+                    + ", c, " + timer.c;
+        }
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance()) {
+            result += ",trainEstimateMethod," + estimator;
+            if (estimator == EstimatorMethod.OOB && trainTimeContract)
+                result += ", Percentage contract for OOB, " + perForBag;
+        }
         return result;
     }
 
@@ -951,6 +955,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void setTrainTimeLimit(long amount) {
+        if(amount>0) {
+            trainTimeContract = true;
+            trainContractTimeNanos = amount;
+        }
+
         timer.setTimeLimit(amount);
     }
 
@@ -971,16 +980,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         return result;
     }
 
-    /**
-     * for interface Tuneable
-     * @return
-     */
-    @Override
+    @Override //Tuneable
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
-        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("-T", numTrees);
-//Add others here
+        String[] numTrees={"100","200","300","400","500","600"};
+        ps.addParameter("K", numTrees);
+        String[] minInterv={"4","8","16","32","64","128"};
+        ps.addParameter("I", minInterv);
+        String[] transforms={"ACF","PS","ACF PS","ACF AR PS"};
+        ps.addParameter("T", transforms);
         return ps;
     }
     /**
@@ -1183,7 +1191,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
          * @param timeLimit in nano seconds
          */
         protected void setTimeLimit(long timeLimit){
-            this.forestTimeLimit = timeLimit;
+            if(timeLimit>0)
+                this.forestTimeLimit = timeLimit;
+            else
+                this.forestTimeLimit = Long.MAX_VALUE;
         }
 
         protected void printModel(){
@@ -1239,18 +1250,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
 
             RISE = new RISE();
-            RISE.setTransformType(TransformType.ACF_FFT);
+            RISE.setTransformType(TransformType.MFCC_ACF);
             cr = sse.evaluate(RISE, data);
-            System.out.println("ACF_FFT");
+            System.out.println("MFCC_ACF");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            ClassifierResults temp = ClassifierTools.testUtils_evalOnIPD(RISE);
-            temp.writeFullResultsToFile("D:\\Test\\Testing\\TestyStuff\\cRISE.csv");
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -84,7 +84,7 @@ public class DefaultShapeletOptions {
         searchBuilder.setMin(3);
         searchBuilder.setMax(m);
         searchBuilder.setSearchType(FULL); //default to FULL, if we need to sample will get overwrote.
-        searchBuilder.setNumDimensions(utilities.multivariate_tools.MultivariateInstanceTools.numChannels(train));
+        searchBuilder.setNumDimensions(utilities.multivariate_tools.MultivariateInstanceTools.numDimensions(train));
         
         //clamp K to 2000.
         int K = n > 2000 ? 2000 : n;   
@@ -143,7 +143,7 @@ public class DefaultShapeletOptions {
         BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
         BigInteger opCount = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
         //multiple the total opCount by K becauise for each comparison we do across dimensions.
-        opCount = opCount.multiply(BigInteger.valueOf(utilities.multivariate_tools.MultivariateInstanceTools.numChannels(train)));
+        opCount = opCount.multiply(BigInteger.valueOf(utilities.multivariate_tools.MultivariateInstanceTools.numDimensions(train)));
         if(opCount.compareTo(opCountTarget) == 1){
             BigDecimal oct = new BigDecimal(opCountTarget);
             BigDecimal oc = new BigDecimal(opCount);
@@ -190,7 +190,7 @@ public class DefaultShapeletOptions {
         //how much time do we have vs. how long our algorithm will take.
         BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
         BigInteger opCount = ShapeletTransformTimingUtilities.calculateOps(n, m, 1, 1);
-        opCount = opCount.multiply(BigInteger.valueOf(utilities.multivariate_tools.MultivariateInstanceTools.numChannels(train)));
+        opCount = opCount.multiply(BigInteger.valueOf(utilities.multivariate_tools.MultivariateInstanceTools.numDimensions(train)));
         //multiple the total opCount by K becauise for each comparison we do across dimensions.
         if(opCount.compareTo(opCountTarget) == 1){
             BigDecimal oct = new BigDecimal(opCountTarget);
@@ -410,7 +410,7 @@ public class DefaultShapeletOptions {
                                     .setMin(3)
                                     .setMax(utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train))
                                     .setSearchType(ShapeletSearch.SearchType.FULL)
-                                    .setNumDimensions(utilities.multivariate_tools.MultivariateInstanceTools.numChannels(train))
+                                    .setNumDimensions(utilities.multivariate_tools.MultivariateInstanceTools.numDimensions(train))
                                     .build();
 
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()

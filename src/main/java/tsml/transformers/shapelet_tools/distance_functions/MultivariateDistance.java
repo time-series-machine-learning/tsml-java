@@ -33,7 +33,7 @@ public class MultivariateDistance extends ShapeletDistance implements Serializab
     public void init(Instances data)
     {
         count =0;
-        numChannels = utilities.multivariate_tools.MultivariateInstanceTools.numChannels(data);
+        numChannels = utilities.multivariate_tools.MultivariateInstanceTools.numDimensions(data);
         seriesLength = utilities.multivariate_tools.MultivariateInstanceTools.channelLength(data);
         
     }
