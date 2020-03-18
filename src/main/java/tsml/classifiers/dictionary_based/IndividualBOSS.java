@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
-public class BOSSIndividual extends AbstractClassifier implements Serializable, Comparable<BOSSIndividual>, MultiThreadable {
+public class IndividualBOSS extends AbstractClassifier implements Serializable, Comparable<IndividualBOSS>, MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     protected BitWordInt[/*instance*/][/*windowindex*/] SFAwords;
@@ -58,7 +58,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
     protected static final long serialVersionUID = 22551L;
 
-    public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise, boolean multiThread, int numThreads, ExecutorService ex) {
+    public IndividualBOSS(int wordLength, int alphabetSize, int windowSize, boolean normalise, boolean multiThread, int numThreads, ExecutorService ex) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
@@ -69,7 +69,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         this.ex = ex;
     }
 
-    public BOSSIndividual(int wordLength, int alphabetSize, int windowSize, boolean normalise) {
+    public IndividualBOSS(int wordLength, int alphabetSize, int windowSize, boolean normalise) {
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
@@ -81,7 +81,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      * Used when shortening histograms, copies 'meta' data over, but with shorter
      * word length, actual shortening happens separately
      */
-    public BOSSIndividual(BOSSIndividual boss, int wordLength) {
+    public IndividualBOSS(IndividualBOSS boss, int wordLength) {
         this.wordLength = wordLength;
 
         this.windowSize = boss.windowSize;
@@ -104,7 +104,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
     }
 
     @Override
-    public int compareTo(BOSSIndividual o) {
+    public int compareTo(IndividualBOSS o) {
         return Double.compare(this.accuracy, o.accuracy);
     }
 
@@ -447,7 +447,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      * @param newWordLength wordLength to shorten it to
      * @return new boss classifier with newWordLength, or passed in classifier if wordlengths are same
      */
-    public BOSSIndividual buildShortenedBags(int newWordLength) throws Exception {
+    public IndividualBOSS buildShortenedBags(int newWordLength) throws Exception {
         if (newWordLength == wordLength) //case of first iteration of word length search in ensemble
             return this;
         if (newWordLength > wordLength)
@@ -455,7 +455,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
         if (newWordLength < 2)
             throw new Exception("Invalid wordlength requested, current:"+wordLength+", requested:"+newWordLength);
 
-        BOSSIndividual newBoss = new BOSSIndividual(this, newWordLength);
+        IndividualBOSS newBoss = new IndividualBOSS(this, newWordLength);
 
         //build hists with new word length from SFA words, and copy over the class values of original insts
         for (int i = 0; i < bags.size(); ++i) {
@@ -572,7 +572,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        BOSSIndividual.Bag testBag = BOSSTransform(instance);
+        IndividualBOSS.Bag testBag = BOSSTransform(instance);
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
@@ -599,7 +599,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        BOSSIndividual.Bag testBag = bags.get(testIndex);
+        IndividualBOSS.Bag testBag = bags.get(testIndex);
 
         //1NN BOSS distance
         double bestDist = Double.MAX_VALUE;
@@ -629,7 +629,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         @Override
         public Double call() {
-            BOSSIndividual.Bag testBag = BOSSTransform(inst);
+            IndividualBOSS.Bag testBag = BOSSTransform(inst);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;
@@ -657,7 +657,7 @@ public class BOSSIndividual extends AbstractClassifier implements Serializable, 
 
         @Override
         public Double call() {
-            BOSSIndividual.Bag testBag = bags.get(testIndex);
+            IndividualBOSS.Bag testBag = bags.get(testIndex);
 
             //1NN BOSS distance
             double bestDist = Double.MAX_VALUE;

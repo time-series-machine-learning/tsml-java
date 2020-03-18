@@ -174,7 +174,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
         final Instances dataset = cloneData ? new Instances(data) : data;
        
         if (cloneClassifiers)
-            cloneClassifiers(null);
+            cloneClassifiers(classifiers);
         
         resultsPerFold = new ClassifierResults[classifiers.length][numFolds];
         ClassifierResults[] allConcatenatedClassifierRes = new ClassifierResults[classifiers.length];

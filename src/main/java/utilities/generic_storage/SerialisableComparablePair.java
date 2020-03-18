@@ -17,14 +17,15 @@ package utilities.generic_storage;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class SerializableComparablePair<T1 extends Comparable<T1>, T2 extends Comparable<T2>>
-implements Comparable<SerializableComparablePair<T1, T2>>, Serializable{
+public class SerialisableComparablePair<T1 extends Comparable<T1>, T2 extends Comparable<T2>>
+    implements Comparable<SerialisableComparablePair<T1, T2>>, Serializable{
+
     public final T1 var1;
     public final T2 var2;
 
     protected static final long serialVersionUID = 389546738L;
 
-    public SerializableComparablePair(T1 t1, T2 t2){
+    public SerialisableComparablePair(T1 t1, T2 t2){
         var1 = t1;
         var2 = t2;
     }
@@ -35,7 +36,7 @@ implements Comparable<SerializableComparablePair<T1, T2>>, Serializable{
     }
 
     @Override
-    public int compareTo(SerializableComparablePair<T1, T2> other) {
+    public int compareTo(SerialisableComparablePair<T1, T2> other) {
         int c1 = var1.compareTo(other.var1);
         if (c1 != 0)
             return c1;
@@ -45,9 +46,9 @@ implements Comparable<SerializableComparablePair<T1, T2>>, Serializable{
     
     @Override
     public boolean equals(Object other) {
-        if (other instanceof SerializableComparablePair<?,?>)
-            return var1.equals(((SerializableComparablePair<?,?>)other).var1)
-                    && var2.equals(((SerializableComparablePair<?,?>)other).var2) ;
+        if (other instanceof SerialisableComparablePair<?,?>)
+            return var1.equals(((SerialisableComparablePair<?,?>)other).var1)
+                    && var2.equals(((SerialisableComparablePair<?,?>)other).var2) ;
         return false;
     }
 

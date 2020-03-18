@@ -30,7 +30,7 @@ public class SakoeChibaDTW extends BasicDTW {
     /**
      * sets up the distance metric
      * 
-     * //@param bandSize
+     * @param bandSize
      * @throws IllegalArgumentException 
      */
 //    private void setup(int bandSize) throws IllegalArgumentException {

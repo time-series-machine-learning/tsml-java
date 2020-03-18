@@ -23,7 +23,6 @@ import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
-
 import trees.ProximityForest;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;

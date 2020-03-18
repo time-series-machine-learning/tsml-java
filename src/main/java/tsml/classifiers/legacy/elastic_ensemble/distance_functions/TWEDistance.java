@@ -147,8 +147,8 @@ public class TWEDistance extends EuclideanDistance{
      * Altered c code from the authors downloaded from
      *
      * http://www-irisa.univ-ubs.fr/Pierre-Francois.Marteau/TWED/code-twed.c
-     * @param a instance 1 as array
-     * @param b instance 2 as array
+     * @param first instance 1 as array
+     * @param second instance 2 as array
      *
      * @return distance between instances
      */
