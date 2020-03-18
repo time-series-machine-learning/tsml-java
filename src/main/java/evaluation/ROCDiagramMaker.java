@@ -133,7 +133,7 @@ public class ROCDiagramMaker {
         
         String baseReadPath = "C:/JamesLPHD/Alcohol/JOURNALPAPER/Results/";
         String dset = "JWRorJWB_BlackBottle";
-        String[] cnames = { "CAWPE", "resnet", "XGBoost" }; 
+        String[] cnames = { "CAWPE", "resnet", "XGBoost" };
         int numFolds = 10;
         
         ClassifierResults[][] res = new ClassifierResults[cnames.length][numFolds];

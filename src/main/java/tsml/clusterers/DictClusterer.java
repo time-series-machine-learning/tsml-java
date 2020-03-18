@@ -1,7 +1,7 @@
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
-import tsml.classifiers.dictionary_based.BOSSIndividual;
+import tsml.classifiers.dictionary_based.IndividualBOSS;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import weka.core.Instances;
 import machine_learning.clusterers.PAM;
@@ -49,7 +49,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
 
         int[][] parameters = getParameters(data.numAttributes());
         int curWordLen = 0;
-        BOSSIndividual boss = null;
+        IndividualBOSS boss = null;
 
         int[][] paramClusters = new int[ensembleSize][];
         double minRandIndex = 1;
@@ -58,7 +58,7 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
         //Create a matrix of BOSS distances using varying parameter sets, use the clusters with the best rand index.
         for (int i = 0; i < ensembleSize; i++){
             if (curWordLen == 0) {
-                boss = new BOSSIndividual(parameters[i][0], parameters[i][1], parameters[i][2], norm[parameters[i][3]]);
+                boss = new IndividualBOSS(parameters[i][0], parameters[i][1], parameters[i][2], norm[parameters[i][3]]);
                 boss.buildClassifier(data);
             }
             else{
@@ -141,16 +141,16 @@ public class DictClusterer extends AbstractTimeSeriesClusterer {
     }
 
     //Turns the bags attribute from BOSS into a 2d double array of BOSS distances
-    private double[][] matrixFromBags(Instances data, BOSSIndividual boss){
+    private double[][] matrixFromBags(Instances data, IndividualBOSS boss){
         double[][] distMatrix = new double[data.numInstances()][];
-        ArrayList<BOSSIndividual.Bag> bags = boss.getBags();
+        ArrayList<IndividualBOSS.Bag> bags = boss.getBags();
 
         for (int i = 0; i < data.numInstances(); i++){
             distMatrix[i] = new double[i+1];
-            BOSSIndividual.Bag first = bags.get(i);
+            IndividualBOSS.Bag first = bags.get(i);
 
             for (int n = 0; n < i; n++){
-                BOSSIndividual.Bag second = bags.get(n);
+                IndividualBOSS.Bag second = bags.get(n);
                 double dist = 0;
 
                 ArrayList<Integer> secondSet = new ArrayList();

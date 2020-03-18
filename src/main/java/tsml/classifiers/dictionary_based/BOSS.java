@@ -34,7 +34,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 /**
  * BOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
- * If parameters are known, use the class BOSSIndividual and directly provide them.
+ * If parameters are known, use the class IndividualBOSS and directly provide them.
  *
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *
@@ -47,7 +47,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 public class BOSS extends EnhancedAbstractClassifier implements
         TechnicalInformationHandler, MultiThreadable {
 
-    private transient LinkedList<BOSSIndividual>[] classifiers;
+    private transient LinkedList<IndividualBOSS>[] classifiers;
     private int numDimensions;
     private int[] numClassifiers;
     private int currentSeries = 0;
@@ -115,7 +115,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
             sb.append(",numclassifiers,").append(n).append(",").append(numClassifiers[n]);
 
             for (int i = 0; i < numClassifiers[n]; ++i) {
-                BOSSIndividual boss = classifiers[n].get(i);
+                IndividualBOSS boss = classifiers[n].get(i);
                 sb.append(",windowSize,").append(boss.getWindowSize()).append(",wordLength,").append(boss.getWordLength());
                 sb.append(",alphabetSize,").append(boss.getAlphabetSize()).append(",norm,").append(boss.isNorm());
             }
@@ -224,11 +224,11 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
             for (boolean normalise : normOptions) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
-                    BOSSIndividual boss = new BOSSIndividual(wordLengths[0], alphabetSize[0], winSize, normalise, multiThread, numThreads, ex);
+                    IndividualBOSS boss = new IndividualBOSS(wordLengths[0], alphabetSize[0], winSize, normalise, multiThread, numThreads, ex);
                     boss.seed = seed;
                     boss.buildClassifier(series[n]); //initial setup for this windowsize, with max word length
 
-                    BOSSIndividual bestClassifierForWinSize = null;
+                    IndividualBOSS bestClassifierForWinSize = null;
                     double bestAccForWinSize = -1.0;
 
                     //find best word length for this window size
@@ -253,9 +253,9 @@ public class BOSS extends EnhancedAbstractClassifier implements
                         if (bestAccForWinSize > maxAcc) {
                             maxAcc = bestAccForWinSize;
                             //get rid of any extras that dont fall within the new max threshold
-                            Iterator<BOSSIndividual> it = classifiers[n].iterator();
+                            Iterator<IndividualBOSS> it = classifiers[n].iterator();
                             while (it.hasNext()) {
-                                BOSSIndividual b = it.next();
+                                IndividualBOSS b = it.next();
                                 if (b.accuracy < maxAcc * correctThreshold) {
                                     it.remove();
                                 }
@@ -304,7 +304,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
         return new double[] { minAccInd, minAcc };
     }
 
-    private double individualTrainAcc(BOSSIndividual boss, Instances series, double lowestAcc) throws Exception {
+    private double individualTrainAcc(IndividualBOSS boss, Instances series, double lowestAcc) throws Exception {
         int correct = 0;
         int numInst = series.numInstances();
         int requiredCorrect = (int)(lowestAcc*numInst);
@@ -425,7 +425,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
         double sum = 0;
 
         for (int n = 0; n < numDimensions; n++) {
-            for (BOSSIndividual classifier : classifiers[n]) {
+            for (IndividualBOSS classifier : classifiers[n]) {
                 double classification = classifier.classifyInstance(test);
 
                 classHist[(int) classification] += classifier.weight;
@@ -491,7 +491,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
 
             for (int n = 0; n < numDimensions; n++) {
                 futures[n] = new ArrayList<>(numClassifiers[n]);
-                for (BOSSIndividual classifier : classifiers[n]) {
+                for (IndividualBOSS classifier : classifiers[n]) {
                     futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(series[n])));
                 }
             }
@@ -508,7 +508,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
         }
         else {
             for (int n = 0; n < numDimensions; n++) {
-                for (BOSSIndividual classifier : classifiers[n]) {
+                for (IndividualBOSS classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
                     classHist[(int) classification] += classifier.weight;
                     sum += classifier.weight;
