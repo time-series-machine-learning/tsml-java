@@ -31,7 +31,7 @@ public class Permutations {
         }
 
         @Parameterized.Parameters
-        public static Collection<Object> permutations() {
+        public static Collection permutations() {
             return Arrays.asList(new Object[][]{
                 {Arrays.asList(2, 3, 4), 24},
                 {Arrays.asList(0, 0, 0), 0},

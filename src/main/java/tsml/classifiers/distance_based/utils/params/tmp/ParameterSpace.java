@@ -162,6 +162,25 @@ public class ParameterSpace {
             Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance], subSpaces=[{e=[{values=UniformDistribution{min=0.0, max=0.25}}], d=[{values=UniformDistribution{min=0.5, max=1.0}}]}]}");
         }
 
+        @Test
+        public void testEquals() {
+            ParameterSpace a = wParams;
+            ParameterSpace b = wParams;
+            ParameterSpace c = lParams;
+            ParameterSpace d = lParams;
+            Assert.assertEquals(a, b);
+            Assert.assertEquals(a.hashCode(), b.hashCode());
+            Assert.assertEquals(c, d);
+            Assert.assertEquals(c.hashCode(), c.hashCode());
+            Assert.assertNotEquals(a, c);
+            Assert.assertNotEquals(a.hashCode(), c.hashCode());
+            Assert.assertNotEquals(b, c);
+            Assert.assertNotEquals(b.hashCode(), c.hashCode());
+            Assert.assertNotEquals(a, d);
+            Assert.assertNotEquals(a.hashCode(), d.hashCode());
+            Assert.assertNotEquals(b, d);
+            Assert.assertNotEquals(b.hashCode(), d.hashCode());
+        }
     }
 
 }

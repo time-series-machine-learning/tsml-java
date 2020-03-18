@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -37,7 +38,43 @@ import weka.core.Utils;
  */
 public class ParamSet implements ParamHandler {
 
+    @Override
+    public boolean equals(final Object o) {
+        if(this == o) {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final ParamSet paramSet = (ParamSet) o;
+        return paramMap.equals(paramSet.paramMap);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(paramMap);
+    }
+
     private Map<String, List<Object>> paramMap = new HashMap<>();
+
+    public int size() {
+        int size = 0;
+        for(Map.Entry<String, List<Object>> entry : paramMap.entrySet()) {
+            List<Object> values = entry.getValue();
+            for(Object value : values) {
+                if(value instanceof ParamSet) {
+                    size += ((ParamSet) value).size();
+                } else {
+                    size++;
+                }
+            }
+        }
+        return size;
+    }
+
+    public boolean isEmpty() {
+        return paramMap.isEmpty();
+    }
 
     public static void main(String[] args) {
         ParamSet oParamSet = new ParamSet();
