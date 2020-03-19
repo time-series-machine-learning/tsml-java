@@ -57,4 +57,8 @@ public class GridSearchIterator implements Iterator<ParamSet> {
         Assert.assertTrue(numIterations >= 0);
         this.numIterations = numIterations;
     }
+
+    public static class UnitTests {
+
+    }
 }
