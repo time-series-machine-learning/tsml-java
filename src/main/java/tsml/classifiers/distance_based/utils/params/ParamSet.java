@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.utils.params;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,10 +99,8 @@ public class ParamSet implements ParamHandler {
         return this;
     }
 
-    public ParamSet add(String name, Object value, List<ParamSet> params) {
-        for(ParamSet paramSet : params) {
-            add(name, value, paramSet);
-        }
+    public ParamSet add(String name, Object value, ParamSet params) {
+        add(name, value, Collections.singletonList(params));
         return this;
     }
 
@@ -110,21 +110,34 @@ public class ParamSet implements ParamHandler {
      * . The DTW instance accepts the dtwParams object which sets, say, the warping window. Back here, the "DTW"
      * string is mapped to the DTW instance. All parameters / configuration are therefore housed in a map using
      * containment.
+     *  If multiple ParamSets are specified, each one is applied to the value in turn
      * @param name
      * @param value
-     * @param param
+     * @param params
      * @return
      */
-    public ParamSet add(String name, Object value, ParamSet param) {
-        if(value instanceof ParamHandler) {
-            ((ParamHandler) value).setParams(param);
-        } else {
-            throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
-                + "cannot "
-                + "set the "
-                + "parameters {" + param.toString() + "}");
-        }
+    public ParamSet add(String name, Object value, List<ParamSet> params) {
+        setParams(value, params);
         return add(name, value);
+    }
+
+    public static void setParams(Object value, ParamSet param) {
+        setParams(value, Collections.singletonList(param));
+    }
+
+    public static void setParams(Object value, List<ParamSet> params) {
+        if(!params.isEmpty()) {
+            if(value instanceof ParamHandler) {
+                for(ParamSet param : params) {
+                    ((ParamHandler) value).setParams(param);
+                }
+            } else {
+                throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
+                    + "cannot "
+                    + "set the "
+                    + "parameters {" + params.toString() + "}");
+            }
+        }
     }
 
     public ParamSet addAll(ParamSet paramSet) {
