@@ -22,6 +22,7 @@ import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
+import tsml.classifiers.distance_based.utils.params.tmp.ParameterSpace.UnitTests;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
@@ -99,14 +100,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
                 throw new IllegalStateException("cannot copy value");
             }
             ParamSet subParamSet = get(dimension.getSubSpaces(), indices);
-            if(!subParamSet.isEmpty()) {
-                if(value instanceof ParamHandler) {
-                    ((ParamHandler) value).setParams(subParamSet);
-                } else {
-                    throw new IllegalStateException("{" + value.toString() + "} isn't an instance of ParamHandler, cannot "
-                        + "set params");
-                }
-            }
+            ParamSet.setParams(value, subParamSet);
             return value;
         } else {
             throw new IllegalArgumentException();
@@ -217,58 +211,9 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
     public static class UnitTests {
 
-        public static void main(String[] args) {
-
-        }
-
-        private static int seed = 0;
-        private static Random random = new Random();
-        private static ParameterSpace wParams;
-        private static List<Integer> wParamValues;
-        private static ParameterSpace lParams;
-        private static UniformDistribution eDist;
-        private static UniformDistribution dDist;
-        private static DiscreteParameterDimension<? extends BaseDistanceMeasure> wDmParams;
-        private static DiscreteParameterDimension<? extends BaseDistanceMeasure> lDmParams;
-        private static ParameterSpace params;
-
-        @BeforeClass
-        public static void setupOnce() {
-            // build dtw / ddtw params
-            wParams = new ParameterSpace();
-            wParamValues = Arrays.asList(1, 2, 3, 4, 5);
-            wParams.add(DTW.getWarpingWindowFlag(), wParamValues);
-            lParams = new ParameterSpace();
-            eDist = new UniformDistribution();
-            eDist.setRandom(random);
-            eDist.setMinAndMax(0, 0.25);
-            lParams.add(LCSSDistance.getEpsilonFlag(), eDist);
-            dDist = new UniformDistribution();
-            dDist.setRandom(random);
-            dDist.setMinAndMax(0.5, 1);
-            lParams.add(LCSSDistance.getDeltaFlag(), dDist);
-            // build dtw / ddtw space
-            wDmParams = new DiscreteParameterDimension<>(
-                Arrays.asList(new DTWDistance(), new DDTWDistance()));
-            wDmParams.addSubSpace(wParams);
-            // build lcss space
-            lDmParams = new DiscreteParameterDimension<>(
-                Arrays.asList(new LCSSDistance()));
-            lDmParams.addSubSpace(lParams);
-            // build overall space including ddtw, dtw and lcss WITH corresponding param spaces
-            params = new ParameterSpace();
-            params.add(DistanceMeasureable.getDistanceFunctionFlag(), lDmParams);
-            params.add(DistanceMeasureable.getDistanceFunctionFlag(), wDmParams);
-        }
-
-        @Before
-        public void setup() {
-            random.setSeed(seed);
-        }
-
         @Test(expected = IllegalArgumentException.class)
         public void testNonDiscreteParameterDimensionException() {
-            IndexedParameterSpace space = new IndexedParameterSpace(lParams);
+            IndexedParameterSpace space = new IndexedParameterSpace(ParameterSpace.UnitTests.buildLParams());
             for(int i = 0; i < space.size(); i++) {
                 space.get(i);
             }
@@ -276,7 +221,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
         @Test
         public void testUniquePermutations() {
-            IndexedParameterSpace space = new IndexedParameterSpace(wParams);
+            IndexedParameterSpace space = new IndexedParameterSpace(ParameterSpace.UnitTests.buildWParams());
             int size = space.size();
             Set<ParamSet> paramSets = new HashSet<>();
             for(int i = 0; i < size; i++) {
@@ -290,6 +235,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
         @Test
         public void testEquals() {
+            ParameterSpace wParams = ParameterSpace.UnitTests.buildWParams();
             IndexedParameterSpace a = new IndexedParameterSpace(wParams);
             IndexedParameterSpace b = new IndexedParameterSpace(wParams);
             ParameterSpace alt = new ParameterSpace();

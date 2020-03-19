@@ -9,15 +9,14 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
+import weka.core.DistanceFunction;
 
 public class ParameterSpace {
 
@@ -56,64 +55,111 @@ public class ParameterSpace {
 
     public static class UnitTests {
 
-        public static void main(String[] args) {
-            printToStrings();
+        private static int seed = 0;
+        private static Random random = buildRandom();
+        private static ParameterSpace wParams = buildWParams();
+        private static List<Integer> wParamValues = buildWParamValues();
+        private static ParameterSpace lParams = buildLParams();
+        private static UniformDistribution eDist = buildEDist();
+        private static UniformDistribution dDist = buildDDist();
+        private static DiscreteParameterDimension<DistanceFunction> wDmParams = buildWDmParams();
+        private static DiscreteParameterDimension<DistanceFunction> lDmParams = buildLDmParams();
+        private static ParameterSpace params = buildParams();
+
+        public static Random buildRandom() {
+            return new Random(seed);
         }
 
-        private static int seed = 0;
-        private static Random random = new Random();
-        private static ParameterSpace wParams;
-        private static List<Integer> wParamValues;
-        private static ParameterSpace lParams;
-        private static UniformDistribution eDist;
-        private static UniformDistribution dDist;
-        private static DiscreteParameterDimension<? extends BaseDistanceMeasure> wDmParams;
-        private static DiscreteParameterDimension<? extends BaseDistanceMeasure> lDmParams;
-        private static ParameterSpace params;
+        public static List<Integer> buildWParamValues() {
+            return Arrays.asList(1, 2, 3, 4, 5);
+        }
 
-        @BeforeClass
-        public static void setupOnce() {
-            // build dtw / ddtw params
-            wParams = new ParameterSpace();
-            wParamValues = Arrays.asList(1, 2, 3, 4, 5);
+        public static ParameterSpace buildWParams() {
+            ParameterSpace wParams = new ParameterSpace();
+            List<Integer> wParamValues = buildWParamValues();
             wParams.add(DTW.getWarpingWindowFlag(), wParamValues);
-            lParams = new ParameterSpace();
-            eDist = new UniformDistribution();
+            return wParams;
+        }
+
+        public static List<Integer> buildDummyValuesA() {
+            return Arrays.asList(1,2,3,4,5);
+        }
+
+        public static List<Integer> buildDummyValuesB() {
+            return Arrays.asList(6,7,8,9,10);
+        }
+
+        public static ParameterSpace build2DDiscreteSpace() {
+            ParameterSpace space = new ParameterSpace();
+            List<Integer> a = buildDummyValuesA();
+            List<Integer> b = buildDummyValuesB();
+            space.add("a", a);
+            space.add("b", b);
+            return space;
+        }
+
+        public static UniformDistribution buildDummyDistributionA() {
+            return new UniformDistribution(0, 0.5, random);
+        }
+
+        public static UniformDistribution buildDummyDistributionB() {
+            return new UniformDistribution(0.5, 1, random);
+        }
+
+        public static ParameterSpace build2DContinuousSpace() {
+            ParameterSpace space = new ParameterSpace();
+            UniformDistribution a = buildDummyDistributionA();
+            UniformDistribution b = buildDummyDistributionB();
+            space.add("a", a);
+            space.add("b", b);
+            return space;
+        }
+
+        public static UniformDistribution buildEDist() {
+            UniformDistribution eDist = new UniformDistribution();
             eDist.setRandom(random);
             eDist.setMinAndMax(0, 0.25);
-            lParams.add(LCSSDistance.getEpsilonFlag(), eDist);
-            dDist = new UniformDistribution();
-            dDist.setRandom(random);
-            dDist.setMinAndMax(0.5, 1);
-            lParams.add(LCSSDistance.getDeltaFlag(), dDist);
-            // build dtw / ddtw space
-            wDmParams = new DiscreteParameterDimension<>(
+            return eDist;
+        }
+
+        public static UniformDistribution buildDDist() {
+            UniformDistribution eDist = new UniformDistribution();
+            eDist.setRandom(random);
+            eDist.setMinAndMax(0.5, 1);
+            return eDist;
+        }
+
+        public static ParameterSpace buildLParams() {
+            ParameterSpace lParams = new ParameterSpace();
+            lParams.add(LCSSDistance.getEpsilonFlag(), buildEDist());
+            lParams.add(LCSSDistance.getDeltaFlag(), buildDDist());
+            return lParams;
+        }
+
+        public static DiscreteParameterDimension<DistanceFunction> buildWDmParams() {
+            DiscreteParameterDimension<DistanceFunction> wDmParams = new DiscreteParameterDimension<>(
                 Arrays.asList(new DTWDistance(), new DDTWDistance()));
-            wDmParams.addSubSpace(wParams);
-            // build lcss space
-            lDmParams = new DiscreteParameterDimension<>(
+            wDmParams.addSubSpace(buildWParams());
+            return wDmParams;
+        }
+
+        public static DiscreteParameterDimension<DistanceFunction> buildLDmParams() {
+            DiscreteParameterDimension<DistanceFunction> lDmParams = new DiscreteParameterDimension<>(
                 Arrays.asList(new LCSSDistance()));
-            lDmParams.addSubSpace(lParams);
-            // build overall space including ddtw, dtw and lcss WITH corresponding param spaces
-            params = new ParameterSpace();
+            lDmParams.addSubSpace(buildLParams());
+            return lDmParams;
+        }
+
+        public static ParameterSpace buildParams() {
+            ParameterSpace params = new ParameterSpace();
             params.add(DistanceMeasureable.getDistanceFunctionFlag(), lDmParams);
             params.add(DistanceMeasureable.getDistanceFunctionFlag(), wDmParams);
+            return params;
         }
 
         @Before
         public void setup() {
             random.setSeed(seed);
-        }
-
-        public static void printToStrings() {
-            UnitTests unitTests = new UnitTests();
-            setupOnce();
-            unitTests.setup();
-            System.out.println(wParams);
-            System.out.println(lParams);
-            System.out.println(wDmParams);
-            System.out.println(lDmParams);
-            System.out.println(params);
         }
 
         @Test
@@ -139,26 +185,31 @@ public class ParameterSpace {
 
         @Test
         public void testParamsToString() {
+            System.out.println(params.toString());
             Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance], subSpaces=[{e=[{values=UniformDistribution{min=0.0, max=0.25}}], d=[{values=UniformDistribution{min=0.5, max=1.0}}]}]}, {values=[DTWDistance, DDTWDistance], subSpaces=[{w=[{values=[1, 2, 3, 4, 5]}]}]}]}");
         }
 
         @Test
         public void testWParamsToString() {
+            System.out.println(wParams.toString());
             Assert.assertEquals(wParams.toString(), "{w=[{values=[1, 2, 3, 4, 5]}]}");
         }
 
         @Test
         public void testLParamsToString() {
+            System.out.println(lParams.toString());
             Assert.assertEquals(lParams.toString(), "{e=[{values=UniformDistribution{min=0.0, max=0.25}}], d=[{values=UniformDistribution{min=0.5, max=1.0}}]}");
         }
 
         @Test
         public void testWDmParamsToString() {
+            System.out.println(wDmParams.toString());
             Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance, DDTWDistance], subSpaces=[{w=[{values=[1, 2, 3, 4, 5]}]}]}");
         }
 
         @Test
         public void testLDmParamsToString() {
+            System.out.println(lDmParams.toString());
             Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance], subSpaces=[{e=[{values=UniformDistribution{min=0.0, max=0.25}}], d=[{values=UniformDistribution{min=0.5, max=1.0}}]}]}");
         }
 
