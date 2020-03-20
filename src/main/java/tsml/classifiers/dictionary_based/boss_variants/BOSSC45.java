@@ -25,7 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import tsml.classifiers.dictionary_based.BOSSIndividual;
+import tsml.classifiers.dictionary_based.IndividualBOSS;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
 import weka.core.Capabilities;
@@ -638,7 +638,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
      * 
      * @author James Large
      */
-    public static class BOSSC45Individual extends BOSSIndividual {
+    public static class BOSSC45Individual extends IndividualBOSS {
 
         public boolean buildBags = true;
         public boolean buildForest = true;

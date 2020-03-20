@@ -161,7 +161,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
 //        }
         
         ClassifierResults res = stratifiedResampleWithStats(classifier, dataset);
-        if (!REGRESSION_HACK) res.findAllStatsOnce();
+        res.findAllStatsOnce();
         return res;
     }
     
