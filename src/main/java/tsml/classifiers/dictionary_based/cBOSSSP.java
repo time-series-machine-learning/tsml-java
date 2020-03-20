@@ -107,11 +107,11 @@ public class cBOSSSP extends EnhancedAbstractClassifier implements TrainTimeCont
     private int currentSeries = 0;
     private boolean isMultivariate = false;
 
-    private final int[] wordLengths = {16, 14, 12, 10, 8};
+    public int[] wordLengths = {16, 14, 12, 10, 8};
     private final int[] alphabetSize = {4};
     private final boolean[] normOptions = {true, false};
     public Integer[] levels = {1, 2, 3};
-    private final double correctThreshold = 0.92;
+    public double correctThreshold = 0.92;
     public double[] chiLimits = {0.2, 0.4, 0.6, 0.8};
     private int maxEnsembleSize = 500;
 
