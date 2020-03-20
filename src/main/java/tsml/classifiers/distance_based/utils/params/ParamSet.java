@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.params;
 
+import com.beust.jcommander.internal.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import org.junit.Assert;
+import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.StrUtils;
 import weka.core.Utils;
 
@@ -39,6 +43,26 @@ import weka.core.Utils;
  * Contributors: goastler
  */
 public class ParamSet implements ParamHandler {
+
+    public ParamSet() {
+
+    }
+
+    public ParamSet(String name, Object value, List<ParamSet> paramSets) {
+        add(name, value, paramSets);
+    }
+
+    public ParamSet(String name, Object value, ParamSet paramSet) {
+        this(name, value, Arrays.asList(paramSet));
+    }
+
+    public ParamSet(String name, Object value) {
+        add(name, value);
+    }
+
+    public ParamSet(ParamSet paramSet) {
+        addAll(paramSet);
+    }
 
     @Override
     public boolean equals(final Object o) {
@@ -76,18 +100,6 @@ public class ParamSet implements ParamHandler {
 
     public boolean isEmpty() {
         return paramMap.isEmpty();
-    }
-
-    public static void main(String[] args) {
-        ParamSet oParamSet = new ParamSet();
-        oParamSet.add(DTW.getWarpingWindowFlag(), 3);
-        ParamSet paramSet = new ParamSet();
-        paramSet.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), oParamSet);
-        String[] options;
-        options = oParamSet.getOptions();
-        System.out.println(Utils.joinOptions(options));
-        options = paramSet.getOptions();
-        System.out.println(Utils.joinOptions(options));
     }
 
     public List<Object> get(String name) {
@@ -230,15 +242,100 @@ public class ParamSet implements ParamHandler {
 
     @Override
     public String toString() {
-        return "ParamSet" +
-            "{" +
-            //            "paramMap=" +
-            //                " \"" +
-            StrUtils.join(", ", getOptions()) +
-            //                " \""
-            "}"
-            ;
+        return StrUtils.join(", ", getOptions());
     }
 
     // todo handle lists as the value of param value --> i.e. split list into separate param values
+    // this should probably be done in the client, i.e. handle 1 flag corresponding to multiple values
+
+    public static class UnitTests {
+
+        // todo test to / from options str array
+
+        @Test
+        public void testEmptyToString() {
+            ParamSet paramSet;
+            paramSet = new ParamSet();
+            System.out.println(paramSet);
+            Assert.assertEquals(paramSet.toString(), "");
+        }
+
+        @Test
+        public void testHashcodeAndEquals() {
+            String aFlag = "a";
+            int aValue = 1;
+            ParamSet paramSet = new ParamSet(aFlag, aValue);
+            String bFlag = "a";
+            int bValue = 1;
+            ParamSet otherParamSet = new ParamSet(bFlag, bValue);
+            String cFlag = "c";
+            int cValue = 111;
+            ParamSet unequalParamSet = new ParamSet(cFlag, cValue);
+            Assert.assertNotEquals(paramSet, unequalParamSet);
+            Assert.assertEquals(paramSet, otherParamSet);
+            Assert.assertEquals(paramSet.hashCode(), otherParamSet.hashCode());
+            Assert.assertNotEquals(otherParamSet, unequalParamSet);
+        }
+
+        @Test
+        public void testAddNameAndValue() {
+            String aFlag = "a";
+            int aValue = 1;
+            ParamSet paramSet = new ParamSet(aFlag, aValue);
+            System.out.println(paramSet);
+            Assert.assertEquals(paramSet.toString(), "-a, \"1\"");
+            Assert.assertFalse(paramSet.isEmpty());
+            Assert.assertEquals(paramSet.size(), 1);
+            List<Object> list = paramSet.get(aFlag);
+            Assert.assertEquals(list.size(), 1);
+            Assert.assertEquals(list.get(0), aValue);
+        }
+
+        @Test
+        public void testAddNameAndMultipleValues() {
+            String aFlag = "a";
+            int aValue = 1;
+            double anotherAValue = 3.3;
+            String yetAnotherAValue = "not another!";
+            ParamSet paramSet = new ParamSet(aFlag, aValue);
+            paramSet.add(aFlag, anotherAValue);
+            paramSet.add(aFlag, yetAnotherAValue);
+            System.out.println(paramSet);
+            Assert.assertEquals(paramSet.toString(), "-a, \"1\", -a, \"3.3\", -a, \"not another!\"");
+            Assert.assertFalse(paramSet.isEmpty());
+            Assert.assertEquals(paramSet.size(), 3);
+            List<Object> list = paramSet.get(aFlag);
+            Assert.assertEquals(list.size(), 3);
+            Assert.assertEquals(list.get(0), aValue);
+            Assert.assertEquals(list.get(1), anotherAValue);
+            Assert.assertEquals(list.get(2), yetAnotherAValue);
+        }
+
+        @Test
+        public void testAddNameAndValueAndParamSet() {
+            String aFlag = "a";
+            LCSSDistance aValue = new LCSSDistance();
+            String bFlag = LCSSDistance.getDeltaFlag();
+            int bValue = 5;
+            String cFlag = LCSSDistance.getEpsilonFlag();
+            double cValue = 0.2;
+            ParamSet subParamSetB = new ParamSet(bFlag, bValue);
+            ParamSet subParamSetC = new ParamSet(cFlag, cValue);
+            ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
+            System.out.println(paramSet);
+            Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance -d \"5\" -e \"0.2\"\"");
+            Assert.assertFalse(paramSet.isEmpty());
+            Assert.assertEquals(paramSet.size(), 1);
+            List<Object> list = paramSet.get(aFlag);
+            Object aValueOut = list.get(0);
+            Assert.assertEquals(list.size(), 1);
+            Assert.assertEquals(aValueOut, aValue);
+            list = ((ParamHandler) aValueOut).getParams().get(bFlag);
+            Assert.assertEquals(list.size(), 1);
+            Assert.assertEquals(list.get(0), bValue);
+            list = ((ParamHandler) aValueOut).getParams().get(cFlag);
+            Assert.assertEquals(list.size(), 1);
+            Assert.assertEquals(list.get(0), cValue);
+        }
+    }
 }

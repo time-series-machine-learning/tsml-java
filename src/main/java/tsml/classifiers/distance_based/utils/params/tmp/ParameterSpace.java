@@ -220,9 +220,7 @@ public class ParameterSpace {
             ParameterSpace c = lParams;
             ParameterSpace d = lParams;
             Assert.assertEquals(a, b);
-            Assert.assertEquals(a.hashCode(), b.hashCode());
             Assert.assertEquals(c, d);
-            Assert.assertEquals(c.hashCode(), c.hashCode());
             Assert.assertNotEquals(a, c);
             Assert.assertNotEquals(a.hashCode(), c.hashCode());
             Assert.assertNotEquals(b, c);
