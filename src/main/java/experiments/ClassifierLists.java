@@ -159,7 +159,8 @@ public class ClassifierLists {
             "HI-BIpIGB-cS-BOSS","HI-BIpIGB-750cS-BOSS","HI-Bigram-pIGB-Bc-BOSS","Bigram-pIGB-BcS-BOSS",
     "HI-Cutoff-Bigram-pIGB-BcS-BOSS","HI-tp80-Bigram-pIGB-BcS-BOSS","HI-tp60-Bigram-pIGB-BcS-BOSS","HI-tp50-Bigram-pIGB-BcS-BOSS","HI-l4-Bigram-pIGB-BcS-BOSS",
             "HI-pBigram-pIGB-BcS-BOSS","HI-fs-pIGB-BcS-BOSS","HI-500s-pIGB-BcS-BOSS","HI-100m-pIGB-BcS-BOSS",
-            "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H", "TDE-Cutoff70", "TDE-WordLength"};
+            "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H", "TDE-Cutoff70", "TDE-WordLength",
+            "TDE-GP","TDE-GP750"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -613,6 +614,26 @@ public class ClassifierLists {
                 ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).setMaxEnsembleSize(100);
                 ((cBOSSSP) c).wordLengths = new int[]{16, 14, 12, 10, 8, 6, 4};
+                break;
+
+            case "TDE-GP":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                break;
+            case "TDE-GP750":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setBayesianParameterSelection(false);
+                ((cBOSSSP) c).setEnsembleSize(750);
                 break;
 
             default:
