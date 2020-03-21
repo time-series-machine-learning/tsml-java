@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
@@ -12,11 +13,11 @@ import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIt
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.filters.HashFilter;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.cache.Cache;
@@ -160,7 +161,8 @@ public class KNNLOOCV
             RLTunedKNNSetup
                 .setRlTunedClassifier(incTunedClassifier)
                 .setParamSpace(paramSpaceFunction)
-                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(benchmarks, incTunedClassifier.getSeed()));
+                .setKnnSupplier(Factory::build1nnV1).setImproveableBenchmarkIteratorBuilder(benchmarks -> new RandomListIterator<>(
+                incTunedClassifier.getSeed(), benchmarks));
             incTunedClassifier.setTrainSetupFunction(RLTunedKNNSetup);
             return incTunedClassifier;
         }

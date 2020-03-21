@@ -15,7 +15,6 @@
 package utilities;
 
 import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.params.tmp.ParameterSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;

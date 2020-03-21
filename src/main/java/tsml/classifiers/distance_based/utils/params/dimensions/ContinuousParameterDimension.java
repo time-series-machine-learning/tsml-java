@@ -1,6 +1,7 @@
-package tsml.classifiers.distance_based.utils.params.tmp;
+package tsml.classifiers.distance_based.utils.params.dimensions;
 
 import java.util.List;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.distribution.Distribution;
 
 /**
@@ -15,7 +16,7 @@ public class ContinuousParameterDimension<A> extends ParameterDimension<Distribu
     }
 
     public ContinuousParameterDimension(final Distribution<A> values,
-        final List<ParameterSpace> subSpaces) {
+        final List<ParamSpace> subSpaces) {
         super(values, subSpaces);
     }
 }

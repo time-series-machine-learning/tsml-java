@@ -17,8 +17,6 @@ import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.filters.Derivative;
 import weka.core.Instances;
 
-import java.util.Arrays;
-
 public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 
     private final DTW dtw;
@@ -62,10 +60,10 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 //        double distanceB = ddtwDistance.distance(train.get(0), train.get(1));// it should cache the transform here
 //        System.out.println();
 
-        ParamSpace space = DistanceMeasureConfigs.buildDdtwSpaceV1(train);
-        System.out.println(space.toString());
-        ParamSet paramSet = space.get(5);
-        System.out.println(paramSet);
+//        ParamSpace space = DistanceMeasureConfigs.buildDdtwSpaceV1(train);
+//        System.out.println(space.toString());
+//        ParamSet paramSet = space.get(5);
+//        System.out.println(paramSet);
     }
 
     @Override

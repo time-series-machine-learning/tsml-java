@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.random;
 
 import java.util.Random;
 import org.junit.Assert;
@@ -13,8 +13,8 @@ public class BaseRandom implements RandomSource {
 
     private Random random = new Random();
 
-    public BaseRandom() {
-
+    public BaseRandom(int seed) {
+        this(new Random(seed));
     }
 
     public BaseRandom(final Random random) {

@@ -1,7 +1,9 @@
-package tsml.classifiers.distance_based.utils.params.tmp;
+package tsml.classifiers.distance_based.utils.params.dimensions;
 
 import java.util.List;
 import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.Permutations;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -15,7 +17,7 @@ public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> i
     }
 
     public DiscreteParameterDimension(final List<A> values,
-        final List<ParameterSpace> subSpaces) {
+        final List<ParamSpace> subSpaces) {
         super(values, subSpaces);
     }
 

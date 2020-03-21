@@ -1,9 +1,11 @@
-package tsml.classifiers.distance_based.utils.params.tmp;
+package tsml.classifiers.distance_based.utils.params.iteration;
 
 import java.util.Iterator;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.dimensions.IndexedParameterSpace;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -16,12 +18,12 @@ public class GridSearchIterator implements Iterator<ParamSet> {
     private int iterationCount = 0;
     private int numIterations = -1;
 
-    public GridSearchIterator(final ParameterSpace parameterSpace) {
-        setParameterSpace(parameterSpace);
+    public GridSearchIterator(final ParamSpace paramSpace) {
+        setParameterSpace(paramSpace);
     }
 
-    public ParameterSpace getParameterSpace() {
-        return indexedParameterSpace.getParameterSpace();
+    public ParamSpace getParameterSpace() {
+        return indexedParameterSpace.getParamSpace();
     }
 
     public IndexedParameterSpace getIndexedParameterSpace() {
@@ -29,14 +31,14 @@ public class GridSearchIterator implements Iterator<ParamSet> {
     }
 
     protected void setParameterSpace(
-        final ParameterSpace parameterSpace) {
-        indexedParameterSpace = new IndexedParameterSpace(parameterSpace);
+        final ParamSpace paramSpace) {
+        indexedParameterSpace = new IndexedParameterSpace(paramSpace);
         numIterations = indexedParameterSpace.size();
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{iterationCount=" + iterationCount + ", parameterSpace=" + indexedParameterSpace.getParameterSpace().toString() + "}";
+        return getClass().getSimpleName() + "{iterationCount=" + iterationCount + ", parameterSpace=" + indexedParameterSpace.getParamSpace().toString() + "}";
     }
 
     @Override
@@ -64,7 +66,7 @@ public class GridSearchIterator implements Iterator<ParamSet> {
 
         @Test
         public void testIteration() {
-            ParameterSpace space = ParameterSpace.UnitTests.build2DDiscreteSpace();
+            ParamSpace space = ParamSpace.UnitTests.build2DDiscreteSpace();
             GridSearchIterator iterator = new GridSearchIterator(space);
             StringBuilder stringBuilder = new StringBuilder();
             while(iterator.hasNext()) {

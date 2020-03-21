@@ -1,13 +1,9 @@
-package tsml.classifiers.distance_based.utils.params.tmp;
+package tsml.classifiers.distance_based.utils.params.dimensions;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
-import jdk.nashorn.internal.ir.LiteralNode.ArrayLiteralNode;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import utilities.Utilities;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
 
 /**
  * hold the parameter dimension. In here should be a method of retreiving values for the given parameter along
@@ -17,7 +13,7 @@ import utilities.Utilities;
 public class ParameterDimension<A> {
 
     // list of subspaces to explore
-    private List<ParameterSpace> subSpaces;
+    private List<ParamSpace> subSpaces;
     // some type holding the values for this dimension. This would usually be a list.
     private A values;
 
@@ -25,7 +21,7 @@ public class ParameterDimension<A> {
         this(values, new ArrayList<>());
     }
 
-    public ParameterDimension(A values, List<ParameterSpace> subSpaces) {
+    public ParameterDimension(A values, List<ParamSpace> subSpaces) {
         setValues(values);
         setSubSpaces(subSpaces);
     }
@@ -42,11 +38,11 @@ public class ParameterDimension<A> {
             '}';
     }
 
-    public List<ParameterSpace> getSubSpaces() {
+    public List<ParamSpace> getSubSpaces() {
         return subSpaces;
     }
 
-    public void setSubSpaces(final List<ParameterSpace> subSpaces) {
+    public void setSubSpaces(final List<ParamSpace> subSpaces) {
         Assert.assertNotNull(subSpaces);
         this.subSpaces = subSpaces;
     }
@@ -62,7 +58,7 @@ public class ParameterDimension<A> {
         return this;
     }
 
-    public void addSubSpace(ParameterSpace subSpace) {
+    public void addSubSpace(ParamSpace subSpace) {
         getSubSpaces().add(subSpace);
     }
 

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.params.tmp;
+package tsml.classifiers.distance_based.utils.params.dimensions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,23 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
-import tsml.classifiers.distance_based.utils.params.tmp.ParameterSpace.UnitTests;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.Permutations;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
@@ -33,21 +23,21 @@ import utilities.Utilities;
  */
 public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
-    private ParameterSpace parameterSpace;
+    private ParamSpace paramSpace;
 
     public IndexedParameterSpace(
-        final ParameterSpace parameterSpace) {
-        setParameterSpace(parameterSpace);
+        final ParamSpace paramSpace) {
+        setParamSpace(paramSpace);
     }
 
-    public ParameterSpace getParameterSpace() {
-        return parameterSpace;
+    public ParamSpace getParamSpace() {
+        return paramSpace;
     }
 
-    public IndexedParameterSpace setParameterSpace(
-        final ParameterSpace parameterSpace) {
-        Assert.assertNotNull(parameterSpace);
-        this.parameterSpace = parameterSpace;
+    public IndexedParameterSpace setParamSpace(
+        final ParamSpace paramSpace) {
+        Assert.assertNotNull(paramSpace);
+        this.paramSpace = paramSpace;
         return this;
     }
 
@@ -60,22 +50,22 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
             return false;
         }
         final IndexedParameterSpace space = (IndexedParameterSpace) o;
-        return getParameterSpace().equals(space.getParameterSpace());
+        return getParamSpace().equals(space.getParamSpace());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getParameterSpace());
+        return Objects.hash(getParamSpace());
     }
 
     @Override
     public ParamSet get(final int index) {
-        return get(getParameterSpace(), index);
+        return get(getParamSpace(), index);
     }
 
     @Override
     public int size() {
-        return size(getParameterSpace());
+        return size(getParamSpace());
     }
 
 
@@ -113,7 +103,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
      * @param indices
      * @return
      */
-    public static ParamSet get(final List<ParameterSpace> spaces, final List<Integer> indices) {
+    public static ParamSet get(final List<ParamSpace> spaces, final List<Integer> indices) {
         Assert.assertEquals(spaces.size(), indices.size());
         final ParamSet overallParamSet = new ParamSet();
         for(int i = 0; i < spaces.size(); i++) {
@@ -129,7 +119,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
      * @param index
      * @return
      */
-    public static ParamSet get(ParameterSpace space, int index) {
+    public static ParamSet get(ParamSpace space, int index) {
         final List<Integer> sizes = sizes(space);
         final List<Integer> indices = ArrayUtilities.fromPermutation(index, sizes);
         int i = 0;
@@ -162,7 +152,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
         throw new IndexOutOfBoundsException();
     }
 
-    public static int size(ParameterSpace space) {
+    public static int size(ParamSpace space) {
         final List<Integer> sizes = sizes(space);
         return Permutations.numPermutations(sizes);
     }
@@ -171,7 +161,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
         return Permutations.numPermutations(sizes(dimension));
     }
 
-    public static List<Integer> sizesParameterSpace(List<ParameterSpace> spaces) {
+    public static List<Integer> sizesParameterSpace(List<ParamSpace> spaces) {
         return Utilities.convert(spaces, IndexedParameterSpace::size);
     }
 
@@ -183,7 +173,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
         return Utilities.convert(dimensions, IndexedParameterSpace::size);
     }
 
-    public static List<Integer> sizes(ParameterSpace space) {
+    public static List<Integer> sizes(ParamSpace space) {
         final Map<String, List<ParameterDimension<?>>> dimensionMap = space.getDimensionMap();
         final List<Integer> sizes = new ArrayList<>();
         for(final Map.Entry<String, List<ParameterDimension<?>>> entry : dimensionMap.entrySet()) {
@@ -213,7 +203,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
         @Test(expected = IllegalArgumentException.class)
         public void testNonDiscreteParameterDimensionException() {
-            IndexedParameterSpace space = new IndexedParameterSpace(ParameterSpace.UnitTests.buildLParams());
+            IndexedParameterSpace space = new IndexedParameterSpace(ParamSpace.UnitTests.buildLParams());
             for(int i = 0; i < space.size(); i++) {
                 space.get(i);
             }
@@ -221,7 +211,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
         @Test
         public void testUniquePermutations() {
-            IndexedParameterSpace space = new IndexedParameterSpace(ParameterSpace.UnitTests.buildWParams());
+            IndexedParameterSpace space = new IndexedParameterSpace(ParamSpace.UnitTests.buildWParams());
             int size = space.size();
             Set<ParamSet> paramSets = new HashSet<>();
             for(int i = 0; i < size; i++) {
@@ -235,10 +225,10 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
         @Test
         public void testEquals() {
-            ParameterSpace wParams = ParameterSpace.UnitTests.buildWParams();
+            ParamSpace wParams = ParamSpace.UnitTests.buildWParams();
             IndexedParameterSpace a = new IndexedParameterSpace(wParams);
             IndexedParameterSpace b = new IndexedParameterSpace(wParams);
-            ParameterSpace alt = new ParameterSpace();
+            ParamSpace alt = new ParamSpace();
             alt.add("letters", new DiscreteParameterDimension<>(Arrays.asList("a", "b", "c")));
             IndexedParameterSpace c = new IndexedParameterSpace(alt);
             IndexedParameterSpace d = new IndexedParameterSpace(alt);

@@ -7,13 +7,15 @@ import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.dimensions.IndexedParameterSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -496,8 +498,8 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         finalBenchmarks.setSoftLimit(1);
         final int seed = rlTunedClassifier.getSeed();
         paramSpace = paramSpaceBuilder.apply(trainData);
-        paramSetIterator = new RandomListIterator<>(this.paramSpace, seed).setRemovedOnNext(true);
-        fullParamSpaceSize = this.paramSpace.size();
+        paramSetIterator = new RandomSearchIterator(seed, this.paramSpace, seed).setReplacement(true);
+        fullParamSpaceSize = new IndexedParameterSpace(this.paramSpace).size();
         fullNeighbourhoodSize = trainData.size(); // todo check all seeds set
         maxNeighbourhoodSize = findLimit(fullNeighbourhoodSize, neighbourhoodSizeLimit, neighbourhoodSizeLimitPercentage);
         maxParamSpaceSize = findLimit(fullParamSpaceSize, paramSpaceSizeLimit, paramSpaceSizeLimitPercentage);

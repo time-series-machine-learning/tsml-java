@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.utils.params.distribution;
 
 import java.util.Random;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.BaseRandom;
+import tsml.classifiers.distance_based.utils.random.BaseRandom;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -12,22 +12,34 @@ import tsml.classifiers.distance_based.utils.BaseRandom;
 public abstract class RangedDistribution extends BaseRandom implements Distribution<Double> {
     private double min;
     private double max;
+    private final static double DEFAULT_MIN = 0;
+    private final static double DEFAULT_MAX = 1;
 
     public RangedDistribution() {
-        this(0, 1);
+        this(BaseDistribution.getDefaultRandom());
+    }
+
+    public RangedDistribution(int seed) {
+        this(DEFAULT_MIN, DEFAULT_MAX, seed);
     }
 
     public RangedDistribution(final Random random) {
-        this(0, 1, random);
+        this(DEFAULT_MIN, DEFAULT_MAX, random);
     }
 
-    public RangedDistribution(double min, double max) {
+    public RangedDistribution(double min, double max, int seed) {
+        super(seed);
         setMinAndMax(min, max);
     }
 
     public RangedDistribution(double min, double max, Random random) {
-        this(min, max);
-        setRandom(random);
+        super(random);
+        setMinAndMax(min, max);
+    }
+
+    public RangedDistribution(final double min, final double max) {
+        this();
+        setMinAndMax(min, max);
     }
 
     public double getMin() {

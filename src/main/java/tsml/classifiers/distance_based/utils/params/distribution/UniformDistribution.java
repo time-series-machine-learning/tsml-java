@@ -10,6 +10,11 @@ import java.util.Random;
 public class UniformDistribution extends RangedDistribution {
 
     public UniformDistribution() {
+        super();
+    }
+
+    public UniformDistribution(int seed) {
+        super(seed);
     }
 
     public UniformDistribution(final Random random) {
@@ -18,6 +23,10 @@ public class UniformDistribution extends RangedDistribution {
 
     public UniformDistribution(final double min, final double max) {
         super(min, max);
+    }
+
+    public UniformDistribution(final double min, final double max, int seed) {
+        super(min, max, seed);
     }
 
     public UniformDistribution(final double min, final double max, final Random random) {
