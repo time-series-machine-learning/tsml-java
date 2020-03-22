@@ -21,9 +21,11 @@ import evaluation.evaluators.CrossValidationEvaluator;
 
 import java.util.concurrent.TimeUnit;
 
+import evaluation.tuning.ParameterSpace;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.Tuneable;
 import tsml.classifiers.dictionary_based.BOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.legacy.RISE;
@@ -45,9 +47,11 @@ import machine_learning.classifiers.ensembles.weightings.TrainAcc;
  *
  * The original classifier used in [1] has  been moved to legacy_cote. This new one
  *
- * 1. Threadable Contractable
+ * 1. Threadable
+ * 2. Contractable
+ * 3. Tuneable
  */
-public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable {
+public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable, Tuneable {
 
     //TrainTimeContractable
     protected boolean trainTimeContract = false;
@@ -223,7 +227,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                 ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
     }
     
-    @Override
+    @Override   //EnhancedAbstractClassifier
     public void setSeed(int seed) { 
         super.setSeed(seed);
         for (EnsembleModule module : modules)
@@ -231,16 +235,34 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                 ((Randomizable)module.getClassifier()).setSeed(seed);
     }
 
-    @Override
+    @Override //AbstractClassifier
     public void setOptions(String[] options) throws Exception {
 //        System.out.print("TSF para sets ");
 //        for (String str:options)
 //             System.out.print(","+str);
 //        System.out.print("\n");
-        String alpha = Utils.getOption('a', options);
+        String alpha = Utils.getOption('A', options);
         this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
 
     }
+    /**
+     *TUNED TSF Classifiers. Method for interface Tuneable
+     * Valid options are: <p/>
+     * <pre> -T Number of trees.</pre>
+     * <pre> -I Number of intervals to fit.</pre>
+     *
+     *
+     * @return ParameterSpace object
+     */
+    @Override //Tuneable
+    public ParameterSpace getDefaultParameterSearchSpace(){
+        ParameterSpace ps=new ParameterSpace();
+        String[] alpha={"1","2","3","4","5","6","7","8","9","10"};
+        ps.addParameter("A", alpha);
+
+        return ps;
+    }
+
     @Override
     public String getParameters() {
         String str="";

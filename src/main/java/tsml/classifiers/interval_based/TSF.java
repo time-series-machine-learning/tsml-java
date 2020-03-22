@@ -68,18 +68,7 @@ import tsml.classifiers.Tuneable;
 * for simplicity of implementation, and for the fact when we did try it and it made 
 * no difference, we have not used this. Note also, the original R implementation 
 * may do some sampling of cases
- 
-* Update 1:
-* * A few changes made to enable testing refinements. 
-*1. general baseClassifier rather than a hard coded RandomTree. We tested a few 
-*  alternatives, the summary results NEED WRITING UP
-*  Summary:
-*  Base Classifier: 
-*       a) C.45 (J48) significantly worse than random tree.  
-*       b) CAWPE tbc
-*       c) CART tbc
-* 2. Added setOptions to allow parameter tuning. Tuning on parameters
-*       #trees, #features 
+
  <!-- globalinfo-end -->
  <!-- technical-bibtex-start -->
 * Bibtex
@@ -106,14 +95,19 @@ import tsml.classifiers.Tuneable;
 * author ajb
 * date 7/10/15  Tony Bagnall
 * update1 14/2/19 Tony Bagnall
-* update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
-* update3 06/03/20 contracting and checkpointing Matthew Middlehurst
+ * * A few changes made to enable testing refinements.
+ *1. general baseClassifier rather than a hard coded RandomTree. We tested a few
+ *  alternatives, they did not improve things
+ * 2. Added setOptions to allow parameter tuning. Tuning on parameters
+ *       #trees, #features
+ * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
+* @version2.0 13/03/20 contracting, checkpointing and tuneable, Matthew Middlehurst
  * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
- *
- *  results for this classifier on 112 UCR data sets (30 resamples of each) can be found at
- *  timeseriesclassification.com/Results/ResultsByClassifier/tsf.csv
+ *  results for this classifier on 112 UCR data sets can be found at
+ *  www.timeseriesclassification.com/results/ResultsByClassifier/TSF.csv. The first column of results  are on the default
+ *  train/terst split. The others are found through stratified resampling of the combined train/test
  *  individual results on each fold are
- *  timeseriesclassification.com/Results/ResultsByClassifier/TSF/Predictions
+ *  timeseriesclassification.com/results/ResultsByClassifier/TSF/Predictions
  *
  *
  *  A note on timings. buildTime does not include time taken to estimate error from the train data, unless bagging is
@@ -141,7 +135,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    private Classifier base= new RandomTree();
+    private Classifier classifier = new RandomTree();
  
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
      ends  at  intervals[i][j][1] */
@@ -196,7 +190,7 @@ public class TSF extends EnhancedAbstractClassifier
  * @param c a base classifier constructed elsewhere and cloned into ensemble
  */   
     public void setBaseClassifier(Classifier c){
-        base=c;
+        classifier =c;
     }
     public void setBagging(boolean b){
         bagging=b;
@@ -219,13 +213,20 @@ public class TSF extends EnhancedAbstractClassifier
      */
     @Override
     public String getParameters() {
-        String temp=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+base.getClass().getSimpleName()+",Bagging,"+bagging;
-        temp+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        String result=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
+        if(classifier instanceof RandomTree)
+            result+="AttsConsideredPerNode,"+((RandomTree) classifier).getKValue();
+
+        if(trainTimeContract)
+            result+= ",trainContractTimeNanos," +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+//Any other contract information here
+
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance())
-            temp+=",EstimateMethod,"+estimator;
-        if(base instanceof RandomTree)
-           temp+=",AttsConsideredPerNode,"+((RandomTree)base).getKValue();
-        return temp;
+            result+=",EstimateMethod,"+estimator;
+        return result;
  
     }
     public void setNumTrees(int t){
@@ -427,8 +428,8 @@ public class TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(base instanceof RandomTree){
-            ((RandomTree) base).setKValue(result.numAttributes()-1);
+        if(classifier instanceof RandomTree){
+            ((RandomTree) classifier).setKValue(result.numAttributes()-1);
 //            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
         }
 
@@ -472,7 +473,7 @@ public class TSF extends EnhancedAbstractClassifier
                 }
             }
             //3. Create and build tree using all the features.
-            Classifier tree = AbstractClassifier.makeCopy(base);
+            Classifier tree = AbstractClassifier.makeCopy(classifier);
             if(seedClassifier && tree instanceof Randomizable)
                 ((Randomizable)tree).setSeed(seed*(classifiersBuilt+1));
 
@@ -514,6 +515,8 @@ public class TSF extends EnhancedAbstractClassifier
      */
         if(getEstimateOwnPerformance())
             estimateOwnPerformance(data);
+
+
         trainResults.setParas(getParameters());
 
     }
@@ -539,7 +542,6 @@ public class TSF extends EnhancedAbstractClassifier
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
-            trainResults.setParas(getParameters());
             trainResults.finaliseResults(actuals);
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
@@ -565,7 +567,6 @@ public class TSF extends EnhancedAbstractClassifier
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
             trainResults.setClassifierName("TSFCV");
-            trainResults.setParas(getParameters());
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
 
         }
@@ -583,7 +584,6 @@ public class TSF extends EnhancedAbstractClassifier
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
             trainResults.setClassifierName("TSFOOB");
-            trainResults.setParas(getParameters());
             trainResults.setErrorEstimateMethod("OOB");
 
         }
@@ -676,17 +676,17 @@ public class TSF extends EnhancedAbstractClassifier
    */
     @Override
     public void setOptions(String[] options) throws Exception{
-//        System.out.print("TSF para sets ");
-//        for (String str:options)
-//            System.out.print(","+str);
-//        System.out.print("\n");
-
+/*        System.out.print("TSF para sets ");
+        for (String str:options)
+            System.out.print(","+str);
+        System.out.print("\n");
+*/
         String numTreesString=Utils.getOption('T', options);
-        if (numTreesString.length() != 0)
+
+        if (numTreesString.length() != 0) {
             numClassifiers = Integer.parseInt(numTreesString);
-        else
-            numClassifiers = DEFAULT_NUM_CLASSIFIERS;
-         
+        }
+
         String numFeaturesString=Utils.getOption('I', options);
 //Options here are a double between 0 and 1 (proportion of features), a text 
 //string sqrt or log, or an integer number 
@@ -740,7 +740,7 @@ public class TSF extends EnhancedAbstractClassifier
             //numIntervalsFinder = saved.numIntervalsFinder;
             minIntervalLength = saved.minIntervalLength;
             trees = saved.trees;
-            base = saved.base;
+            classifier = saved.classifier;
             intervals = saved.intervals;
             //testHolder = saved.testHolder;
             voteEnsemble = saved.voteEnsemble;
@@ -881,9 +881,10 @@ public class TSF extends EnhancedAbstractClassifier
     public ParameterSpace getDefaultParameterSearchSpace(){
        ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("-T", numTrees);
+        ps.addParameter("T", numTrees);
         String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
-        ps.addParameter("-I", numInterv);
+        ps.addParameter("I", numInterv);
+
         return ps;
     }
      

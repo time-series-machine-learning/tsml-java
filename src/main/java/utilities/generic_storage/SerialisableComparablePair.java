@@ -14,13 +14,18 @@
  */
 package utilities.generic_storage;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class SingleComparablePair<T1 extends Comparable<T1>, T2 extends Comparable<T2> >
-implements Comparable<SingleComparablePair<T1, T2>>{
+public class SerialisableComparablePair<T1 extends Comparable<T1>, T2 extends Comparable<T2>>
+    implements Comparable<SerialisableComparablePair<T1, T2>>, Serializable{
+
     public final T1 var1;
     public final T2 var2;
-    public SingleComparablePair(T1 t1, T2 t2){
+
+    protected static final long serialVersionUID = 389546738L;
+
+    public SerialisableComparablePair(T1 t1, T2 t2){
         var1 = t1;
         var2 = t2;
     }
@@ -31,19 +36,24 @@ implements Comparable<SingleComparablePair<T1, T2>>{
     }
 
     @Override
-    public int compareTo(SingleComparablePair<T1, T2> other) {
-        return var1.compareTo(other.var1);
+    public int compareTo(SerialisableComparablePair<T1, T2> other) {
+        int c1 = var1.compareTo(other.var1);
+        if (c1 != 0)
+            return c1;
+        else 
+            return var2.compareTo(other.var2);
     }
     
     @Override
     public boolean equals(Object other) {
-        if (other instanceof SingleComparablePair<?,?>)
-            return var1.equals(((SingleComparablePair<?,?>)other).var1);
+        if (other instanceof SerialisableComparablePair<?,?>)
+            return var1.equals(((SerialisableComparablePair<?,?>)other).var1)
+                    && var2.equals(((SerialisableComparablePair<?,?>)other).var2) ;
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(var1);
+        return Objects.hash(var1, var2);
     }
 }

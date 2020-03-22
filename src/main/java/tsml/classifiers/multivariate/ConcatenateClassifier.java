@@ -20,7 +20,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.concatinateInstances;
-import static utilities.multivariate_tools.MultivariateInstanceTools.numChannels;
+import static utilities.multivariate_tools.MultivariateInstanceTools.numDimensions;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstances;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.Instance;
