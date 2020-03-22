@@ -161,7 +161,7 @@ public class ClassifierResultsAnalysis {
         OutFile bigSummary = new OutFile(outPath + expname + "_BIGglobalSummary.csv");
         OutFile smallSummary = new OutFile(outPath + expname + "_SMALLglobalSummary.csv");
 
-        //this will collect the clique arrays for each metric as foudn by pairwise stats,
+        //this will collect the clique arrays for each metric as found by pairwise stats,
         //so that they can later be passed to the cd dia maker 
         ArrayList<String> statCliquesForCDDias = new ArrayList<>();
 
