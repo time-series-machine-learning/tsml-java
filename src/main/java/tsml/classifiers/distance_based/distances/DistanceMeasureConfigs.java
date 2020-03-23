@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.distances;
 
 import static utilities.ArrayUtilities.incrementalRange;
 
+import com.beust.jcommander.internal.Lists;
 import java.util.Arrays;
 import java.util.List;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
@@ -22,6 +23,28 @@ import weka.core.Instances;
 public class DistanceMeasureConfigs {
 
     private DistanceMeasureConfigs() {
+    }
+
+    public static ParamSpace buildEdParams() {
+        ParamSpace params = new ParamSpace();
+        params.add(DTW.getWarpingWindowFlag(), Lists.newArrayList(0));
+        return params;
+    }
+
+    public static ParamSpace buildEdSpace() {
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DTWDistance()),
+            buildEdParams());
+    }
+
+    public static ParamSpace buildFullDtwParams() {
+        ParamSpace params = new ParamSpace();
+        params.add(DTW.getWarpingWindowFlag(), Lists.newArrayList(-1));
+        return params;
+    }
+
+    public static ParamSpace buildFullDtwSpace() {
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DTWDistance()),
+            buildFullDtwParams());
     }
 
     public static ParamSpace buildDtwParamsV1(Instances instances) {
