@@ -30,58 +30,70 @@ public class ContinuousDistanceFunctionConfigs {
 
     }
 
-    public static ParamSpace buildDtwSpace(Instances data) {
-        final ParamSpace space = new ParamSpace();
+    public static ParamSpace buildDtwParams(Instances data) {
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0,
             (int) (((double) data.numAttributes() + 1) / 4)));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), subSpace);
+        return subSpace;
+    }
+
+    public static ParamSpace buildDtwSpace(Instances data) {
+        final ParamSpace space = new ParamSpace();
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), buildDtwSpace(data));
         return space;
     }
 
     public static ParamSpace buildDdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, (int) (((double) data.numAttributes() + 1) / 4)));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DDTWDistance(), subSpace);
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DDTWDistance(), buildDtwParams(data));
         return space;
     }
 
-    public static ParamSpace buildErpSpace(Instances data) {
-        double std = StatisticalUtilities.pStdDev(data);
-        final ParamSpace space = new ParamSpace();
+    public static ParamSpace buildErpParams(Instances data) {
+        final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(ERPDistance.getBandSizeFlag(), new UniformDistribution(0, (int) (((double) data.numAttributes() + 1) / 4)));
         subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDistribution(0.2 * std, std));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DDTWDistance(), subSpace);
+        return subSpace;
+    }
+
+    public static ParamSpace buildErpSpace(Instances data) {
+        final ParamSpace space = new ParamSpace();
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new ERPDistance(), buildErpParams(data));
         return space;
     }
 
-    public static ParamSpace buildLcssSpace(Instances data) {
-        double std = StatisticalUtilities.pStdDev(data);
-        final ParamSpace space = new ParamSpace();
+    public static ParamSpace buildLcssParams(Instances data) {
+        final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(LCSSDistance.getDeltaFlag(), new UniformDistribution(0,
             (int) (((double) data.numAttributes() + 1) / 4)));
         subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDistribution(0.2 * std, std));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DDTWDistance(), subSpace);
+        return subSpace;
+    }
+
+    public static ParamSpace buildLcssSpace(Instances data) {
+        final ParamSpace space = new ParamSpace();
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new LCSSDistance(), buildLcssParams(data));
         return space;
+    }
+
+    public static ParamSpace buildWdtwParams(Instances data) {
+        final ParamSpace subSpace = new ParamSpace();
+        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, 1));
+        return subSpace;
     }
 
     public static ParamSpace buildWdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, 1));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDTWDistance(), subSpace);
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDTWDistance(), buildWdtwSpace(data));
         return space;
     }
 
 
     public static ParamSpace buildWddtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, 1));
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDDTWDistance(), subSpace);
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDDTWDistance(), buildWdtwParams(data));
         return space;
     }
 }
