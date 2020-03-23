@@ -1,11 +1,14 @@
 package tsml.classifiers.distance_based.proximity;
 
+import com.beust.jcommander.internal.Lists;
 import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.List;
 import java.util.ListIterator;
 
 import org.junit.Assert;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ExemplarPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
@@ -64,7 +67,18 @@ public class ProxTree extends BaseClassifier {
             Assert.assertNotNull(data);
             Assert.assertNotNull(randomSource);
             final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(randomSource);
-            final List<ParamSpace> paramSpaces = null; // todo find param space ranges
+            final List<ParamSpace> paramSpaces = Lists.newArrayList(
+                DistanceMeasureConfigs.buildEdSpace(),
+                DistanceMeasureConfigs.buildFullDtwSpace(),
+                ContinuousDistanceFunctionConfigs.buildDtwSpace(data),
+                ContinuousDistanceFunctionConfigs.buildDdtwSpace(data),
+                ContinuousDistanceFunctionConfigs.buildWdtwSpace(data),
+                ContinuousDistanceFunctionConfigs.buildWddtwSpace(data),
+                ContinuousDistanceFunctionConfigs.buildErpSpace(data),
+                ContinuousDistanceFunctionConfigs.buildLcssSpace(data),
+                DistanceMeasureConfigs.buildMsmSpace(),
+                DistanceMeasureConfigs.buildTwedSpace()
+            );
             return new RandomExemplarSimilaritySplitter(paramSpaces, randomSource, exemplarPicker);
         }
     };
