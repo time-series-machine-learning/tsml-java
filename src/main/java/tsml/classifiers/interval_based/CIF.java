@@ -16,10 +16,9 @@ package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.*;
 import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -27,8 +26,9 @@ import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.security.InvalidParameterException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +37,8 @@ import java.util.function.Function;
 /**
  * Implementation of the catch22 Interval Forest algorithm
  **/
-public class CIF extends EnhancedAbstractClassifier
-        implements TechnicalInformationHandler, TrainTimeContractable, Checkpointable {
+public class CIF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
+        Checkpointable, Visualisable, Interpretable {
 
     /** Primary parameters potentially tunable */
     private int numClassifiers = 500;
@@ -108,6 +108,9 @@ public class CIF extends EnhancedAbstractClassifier
     private boolean trainTimeContract = false;
     private long contractTime = 0;
     private int maxClassifiers = 500;
+
+    //temp vis/int
+    private String visSavePath;
 
     /** Stored for temporal importance curves **/
     private int seriesLength;
@@ -773,6 +776,90 @@ public class CIF extends EnhancedAbstractClassifier
         }
     }
 
+    @Override
+    public String outputInterpretabilitySummary() {
+        return null;
+    }
+
+    @Override
+    public boolean setVisualisationSavePath(String path) {
+        boolean validPath = Visualisable.super.setVisualisationSavePath(path);
+        if(validPath){
+            visSavePath = path;
+        }
+        return validPath;
+    }
+
+    @Override
+    public void createVisualisation() throws Exception {
+        if (!(base instanceof TimeSeriesTree)) {
+            System.err.println("Temporal importance curve only available for time series tree.");
+            return;
+        }
+
+        if (visSavePath == null){
+            System.err.println("CIF visualisation save path not set.");
+            return;
+        }
+
+        double[][] curves = new double[startNumAttributes][seriesLength];
+        for (int i = 0; i < trees.size(); i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/numAttributes);
+                int att = (int)(split%numAttributes);
+                att = subsampleAtts.get(i).get(att);
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        OutFile of = new OutFile(visSavePath + "/temporalImportanceCurves" + seed + ".txt");
+        for (int i = 0 ; i < startNumAttributes; i++){
+            switch(i){
+                case 22:
+                    of.writeLine("mean");
+                    break;
+                case 23:
+                    of.writeLine("stdev");
+                    break;
+                case 24:
+                    of.writeLine("slope");
+                    break;
+                default:
+                    of.writeLine(Catch22.getSummaryStatNameByIndex(i));
+            }
+            of.writeLine(Arrays.toString(curves[i]));
+        }
+        of.closeFile();
+
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes);
+
+        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+        System.out.println("output : ");
+        String outLine = out.readLine();
+        while (outLine != null){
+            System.out.println(outLine);
+            outLine = out.readLine();
+        }
+
+        System.out.println("error : ");
+        String errLine = err.readLine();
+        while (errLine != null){
+            System.out.println(errLine);
+            errLine = err.readLine();
+        }
+    }
+
     //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
         double mean;
@@ -802,39 +889,11 @@ public class CIF extends EnhancedAbstractClassifier
             stDev/=length;
             if(stDev==0)    //Flat line
                 slope=0;
-//            else //Why not doing this? Because not needed?
-//                stDev=Math.sqrt(stDev);
             if(slope==0)
                 stDev=0;
 
             calculatedFeatures = true;
         }
-    }
-
-    public double[][] temporalImportanceCurve() throws Exception{
-        if (!(base instanceof TimeSeriesTree))
-            throw new Exception("Temporal importance curve only available for time series tree");
-
-        double[][] curves = new double[startNumAttributes][seriesLength];
-
-        for (int i = 0; i < trees.size(); i++){
-            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
-            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
-
-            for (int n = 0; n < sg[0].size(); n++){
-                double split = sg[0].get(n);
-                double gain = sg[1].get(n);
-                int interval = (int)(split/numAttributes);
-                int att = (int)(split%numAttributes);
-                att = subsampleAtts.get(i).get(att);
-
-                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
-                    curves[att][j] += gain;
-                }
-            }
-        }
-
-        return curves;
     }
 
     public static void main(String[] arg) throws Exception{
