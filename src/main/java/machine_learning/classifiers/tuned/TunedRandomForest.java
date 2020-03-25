@@ -129,11 +129,6 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     public void setSaveEachParaAcc(boolean b){
         saveEachParaAcc=b;
     }
-//MEthods from ParameterSplittable    
-    @Override
-    public String getParas() { //This is redundant really.
-        return getParameters();
-    }
     @Override
     public void setParametersFromIndex(int x) {
         tuneParameters=false;

@@ -320,7 +320,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String str=classifier.getClass().getSimpleName();
-        str+=","+getParas();
+        str+=","+getParameters();
         if(classifier instanceof EnhancedAbstractClassifier)
             str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
         return str;
@@ -350,10 +350,10 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.PS_parameterSplitting = true;
     }
 
-    @Override //ParameterSplittable
-    public String getParas() {
-        return bestParas.toClassifierResultsParaLine(true);
-    }
+ //   @Override //ParameterSplittable
+ //   public String getParas() {
+ //       return bestParas.toClassifierResultsParaLine(true);
+ //   }
 
     @Override //Checkpointable
     public boolean setSavePath(String path) {

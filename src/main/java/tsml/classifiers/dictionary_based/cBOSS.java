@@ -55,6 +55,8 @@ import static weka.core.Utils.sum;
  * @author Matthew Middlehurst
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
+
+
  */
 public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {

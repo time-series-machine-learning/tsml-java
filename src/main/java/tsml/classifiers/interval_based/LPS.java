@@ -305,7 +305,6 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override
     public String getParas() {
         return ratioLevel+","+treeDepth;
     }

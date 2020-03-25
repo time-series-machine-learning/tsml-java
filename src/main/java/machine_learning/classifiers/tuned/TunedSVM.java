@@ -215,10 +215,6 @@ public class TunedSVM extends SMO implements SaveParameterInfo,SaveEachParameter
          }
     }
 
-    @Override
-    public String getParas() { //This is redundant really.
-        return getParameters();
-    }
 
     public enum KernelType {LINEAR,QUADRATIC,POLYNOMIAL,RBF};
     KernelType kernel;
