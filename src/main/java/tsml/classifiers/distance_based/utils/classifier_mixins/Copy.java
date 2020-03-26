@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
+import java.lang.reflect.Constructor;
 import weka.core.SerializedObject;
 
 import java.io.Serializable;
@@ -30,7 +31,17 @@ public interface Copy extends Serializable {
     }
 
     default Object shallowCopy(Collection<Field> fields) throws Exception {
-        Copy copy = getClass().newInstance();
+        // get the default constructor
+        Constructor<? extends Copy> noArgsConstructor = getClass().getDeclaredConstructor();
+        // find out whether it's accessible from here (no matter if it's not)
+        boolean origAccessible = noArgsConstructor.isAccessible();
+        // force it to be accessible if not already
+        noArgsConstructor.setAccessible(true);
+        // use the constructor to build a default instance
+        Copy copy = noArgsConstructor.newInstance();
+        // set the constructor's accessibility back to what it was
+        noArgsConstructor.setAccessible(origAccessible);
+        // copy over the fields from the current object to the new instance
         copy.shallowCopyFrom(this, fields);
         return copy;
     }
