@@ -42,6 +42,16 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
     private String loadPath;
     private Logger logger = LogUtils.buildLogger(this);
 
+    public void resetTrain() {
+        trained = false;
+        trainResults = null;
+    }
+
+    public void resetTest() {
+        tested = false;
+        testResults = null;
+    }
+
     @Override
     public boolean setSavePath(final String path) {
         if(Checkpointable.super.setSavePath(path)) {
@@ -190,6 +200,10 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         if(classifier instanceof Randomizable) {
             ((Randomizable) classifier).setSeed(seed);
         }
+    }
+
+    private Experiment() {
+
     }
 
     public Experiment(final Instances trainData, final Instances testData, final Classifier classifier, int seed,
