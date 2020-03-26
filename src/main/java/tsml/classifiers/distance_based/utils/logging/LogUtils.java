@@ -42,7 +42,7 @@ public class LogUtils {
                 logRecord.getLevel() + separator +
                 logRecord.getLoggerName() + separator +
                 logRecord.getSourceClassName() + separator +
-                logRecord.getSourceMethodName() + separator +
+                logRecord.getSourceMethodName() + System.lineSeparator() +
                 logRecord.getMessage() + System.lineSeparator();
         }
     }
