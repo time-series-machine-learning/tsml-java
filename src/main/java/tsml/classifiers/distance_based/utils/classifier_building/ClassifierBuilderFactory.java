@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -19,7 +20,7 @@ import weka.classifiers.Classifier;
 public class ClassifierBuilderFactory<B extends Classifier> {
 
     private static ClassifierBuilderFactory<Classifier> INSTANCE;
-    private final Map<String, ClassifierBuilder<? extends B>> classifierBuildersByName = new HashMap<>();
+    private final Map<String, ClassifierBuilder<? extends B>> classifierBuildersByName = new TreeMap<>();
     private final Set<ClassifierBuilder<? extends B>> classifierBuilders = new HashSet<>();
     private String name = "";
 
