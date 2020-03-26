@@ -109,13 +109,11 @@ public class BlockingExecutor implements ExecutorService {
 
     @Override
     public <T> Future<T> submit(final Callable<T> callable) {
-        acquire();
         return service.submit(acquireThenReleaseWrap(callable));
     }
 
     @Override
     public <T> Future<T> submit(final Runnable runnable, final T t) {
-        acquire();
         return service.submit(acquireThenReleaseWrap(() -> {
             runnable.run();
             return t;
@@ -124,7 +122,6 @@ public class BlockingExecutor implements ExecutorService {
 
     @Override
     public Future<?> submit(final Runnable runnable) {
-        acquire();
         return service.submit(acquireThenReleaseWrap(() -> {
             runnable.run();
             return null;
