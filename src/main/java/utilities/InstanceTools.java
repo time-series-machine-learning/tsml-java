@@ -36,6 +36,12 @@ import static utilities.Utilities.normalise;
  */
 public class InstanceTools {
 
+    public static void setClassMissing(Instances data) {
+        for(Instance instance : data) {
+            instance.setClassMissing();
+        }
+    }
+
     public static Pair<Instance, Double> findMinDistance(Instances data, Instance inst, DistanceFunction dist){
         double min = dist.distance(data.get(0), inst);
         Instance minI = data.get(0);
