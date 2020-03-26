@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
-import java.util.Objects;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -15,8 +14,8 @@ import weka.core.Instances;
 
 /**
  * Purpose: base classifier implementing all common interfaces. Note, this is only for implementation ubiquitous to
- * *every single classifier*. Don't add any optional / unused interface implementation, that should be done via
- * mixins in your concrete class.
+ * *every single classifier*. Don't add any optional / unused interface implementation, that should be done via mixins
+ * in your concrete class.
  * <p>
  * Contributors: goastler
  */
