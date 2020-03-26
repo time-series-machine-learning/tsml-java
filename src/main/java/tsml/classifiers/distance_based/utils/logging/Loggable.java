@@ -11,4 +11,8 @@ import java.util.logging.Logger;
  */
 public interface Loggable {
     Logger getLogger();
+    default void setLogger(Logger logger) {
+        throw new UnsupportedOperationException();
+        // todo enforce every class has this
+    }
 }
