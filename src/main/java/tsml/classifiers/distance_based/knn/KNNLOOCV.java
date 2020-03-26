@@ -504,9 +504,8 @@ public class KNNLOOCV
             saveToCheckpoint();
         }
         trainTimer.checkDisabled();
-        if(regenerateTrainEstimate) {
-            if(logger.isLoggable(Level.WARNING)
-                && !hasTrainTimeLimit()
+        if(estimateOwnPerformance && regenerateTrainEstimate) {
+            if(!hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
                         (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
                 throw new IllegalStateException("not fully built");
