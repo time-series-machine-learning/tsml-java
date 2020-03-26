@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.utils.StrUtils;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -207,6 +208,7 @@ public class DatasetLoading {
      * @return new Instances[] { trainSet, testSet };
      */
     public static Instances[] sampleDataset(String parentFolder, String problem, int fold) throws Exception {
+        parentFolder = StrUtils.asDirPath(parentFolder);
         Instances[] data = new Instances[2];
         File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");
         File testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.arff");
