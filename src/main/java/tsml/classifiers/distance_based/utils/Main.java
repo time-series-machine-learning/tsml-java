@@ -30,6 +30,8 @@ import weka.core.Instances;
  */
 
 public class Main {
+    // todo use getters and setters internally
+
     @Parameter(names = {"-c", "--classifier"}, description = "todo", required = true)
     private List<String> classifierNames = new ArrayList<>();
 
@@ -64,7 +66,7 @@ public class Main {
     private boolean estimateTrainError = false;
 
     @Parameter(names = {"-l", "--logLevel"}, description = "todo")
-    private String logLevel = null;
+    private String logLevel = Level.ALL.toString();
 
     private final Logger logger = LogUtils.buildLogger(this);
 
@@ -72,9 +74,7 @@ public class Main {
         ClassifierBuilderFactory.getGlobalInstance(); // todo get this by string, i.e. factory
 
     public static void main(String ... args) {
-//        new Main(args).runExperiments();
-        System.out.println(
-            ClassifierBuilderFactory.getGlobalInstance().getClassifierNames());
+        new Main(args).runExperiments();
     }
 
     public static class Runner {
@@ -84,7 +84,7 @@ public class Main {
                 "--threads", "1",
                 "-r", "results",
                 "-s", "0",
-                "-c", "ED_1NN",
+                "-c", "DTW_1NN_V1",
                 "--estimateTrainError",
                 "-d", "GunPoint",
                 "-p", "/bench/datasets"
@@ -252,6 +252,112 @@ public class Main {
         }
     }
 
+    public List<String> getClassifierNames() {
+        return classifierNames;
+    }
 
+    public void setClassifierNames(final List<String> classifierNames) {
+        this.classifierNames = classifierNames;
+    }
 
+    public List<String> getDatasetDirPaths() {
+        return datasetDirPaths;
+    }
+
+    public void setDatasetDirPaths(final List<String> datasetDirPaths) {
+        this.datasetDirPaths = datasetDirPaths;
+    }
+
+    public List<String> getDatasetNames() {
+        return datasetNames;
+    }
+
+    public void setDatasetNames(final List<String> datasetNames) {
+        this.datasetNames = datasetNames;
+    }
+
+    public List<Integer> getSeeds() {
+        return seeds;
+    }
+
+    public void setSeeds(final List<Integer> seeds) {
+        this.seeds = seeds;
+    }
+
+    public String getResultsDirPath() {
+        return resultsDirPath;
+    }
+
+    public void setResultsDirPath(final String resultsDirPath) {
+        this.resultsDirPath = resultsDirPath;
+    }
+
+    public List<String> getTrainContractStrs() {
+        return trainContractStrs;
+    }
+
+    public void setTrainContractStrs(final List<String> trainContractStrs) {
+        this.trainContractStrs = trainContractStrs;
+    }
+
+    public List<TimeAmount> getTrainContracts() {
+        return trainContracts;
+    }
+
+    public void setTrainContracts(final List<TimeAmount> trainContracts) {
+        this.trainContracts = trainContracts;
+    }
+
+    public boolean isCheckpoint() {
+        return checkpoint;
+    }
+
+    public void setCheckpoint(final boolean checkpoint) {
+        this.checkpoint = checkpoint;
+    }
+
+    public int getNumThreads() {
+        return numThreads;
+    }
+
+    public void setNumThreads(final int numThreads) {
+        this.numThreads = numThreads;
+    }
+
+    public boolean isAppendTrainContractToClassifierName() {
+        return appendTrainContractToClassifierName;
+    }
+
+    public void setAppendTrainContractToClassifierName(final boolean appendTrainContractToClassifierName) {
+        this.appendTrainContractToClassifierName = appendTrainContractToClassifierName;
+    }
+
+    public boolean isEstimateTrainError() {
+        return estimateTrainError;
+    }
+
+    public void setEstimateTrainError(final boolean estimateTrainError) {
+        this.estimateTrainError = estimateTrainError;
+    }
+
+    public String getLogLevel() {
+        return logLevel;
+    }
+
+    public void setLogLevel(final String logLevel) {
+        this.logLevel = logLevel;
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public ClassifierBuilderFactory<Classifier> getClassifierBuilderFactory() {
+        return classifierBuilderFactory;
+    }
+
+    public void setClassifierBuilderFactory(
+        final ClassifierBuilderFactory<Classifier> classifierBuilderFactory) {
+        this.classifierBuilderFactory = classifierBuilderFactory;
+    }
 }
