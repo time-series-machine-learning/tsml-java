@@ -198,31 +198,51 @@ public class ParamSet implements ParamHandler {
      */
     @Override
     public void setOptionsList(final List<String> options) throws
-        Exception {
+        Exception { // todo fix this; it's got a horrible type floor for handling str -> whatever raw param type value
+        // should be :(
+        // todo solution :we can assume that strings can be put directly into the paramset from cmdline. It's then the
+        //  job
+        //  of
+        //  the paramhandler to handle objects of different types. E.g. DTW's warping window (-w). It is integer type
+        //  . If we were to pass "-w \"5\"" then it must be able to handle it. Similarly, if we programmatically set
+        //  "-w" to 5 (int not str) then it must also be able to handle it. This can probably be sorted with a change
+        //  to setParams / setOptions util method
         for(int i = 0; i < options.size(); i++) {
-            String option = options.get(i);
-            String flag = StrUtils.unflagify(option);
-            // if the flag is an option (i.e. key value pair, not just a flag, see above comment)
-            if(StrUtils.isOption(option, options)) {
-                String[] subOptions = Utils.splitOptions(option);
-                String optionValue = subOptions[0];
-                subOptions[0] = "";
-                // get the value
-                Object value = StrUtils.fromOptionValue(optionValue);
-                if(value instanceof ParamHandler) {
-                    // handle sub parameters
-                    ParamSet paramSet = new ParamSet();
-                    paramSet.setOptions(subOptions);
-                    add(flag, (ParamHandler) value, paramSet);
-                } else {
-                    add(flag, value);
-                }
-                options.set(i, "");
-                i++;
-            } else {
-                add(flag, true);
-            }
-            options.set(i, "");
+//            String option = options.get(i);
+//            String flag = StrUtils.unflagify(option);
+//            // if the flag is an option (i.e. key value pair, not just a flag)
+//            if(StrUtils.isOption(option, options)) {
+//                // for example, "-d "DTW -w 5""
+//                // get the next value as the option value and split it into sub options
+//                // the example would be split into ["DTW", "-w", "5"]
+//                String[] subOptions = Utils.splitOptions(options.get(++i));
+//                options.set(i, "");
+//                options.set(i - 1, "");
+//                // the 0th element is the main option value
+//                // in the example this is "DTW"
+//                String optionValue = subOptions[0];
+//                subOptions[0] = "";
+//                // get the value from str form
+//                Object value = StrUtils.fromOptionValue(optionValue);
+//                if(value instanceof ParamHandler) {
+//                    // handle sub parameters
+//                    ParamSet paramSet = new ParamSet();
+//                    // subOptions contains only the parameters for the option value
+//                    // in the example this is ["-w", "5"]
+//                    // set these suboptions for the parameter value
+//                    paramSet.setOptions(subOptions);
+//                    // add the parameter to this paramSet with correspond value (example "DTW") and corresponding
+//                    // sub options / parameters for that value (example "-w 5")
+//                    add(flag, value, paramSet);
+//                } else {
+//                    // the parameter is raw, i.e. "-a 6" <-- 6 has no parameters, therefore is raw
+//                    add(flag, value);
+//                }
+//            } else {
+//                // assume all flags are represented using boolean values
+//                add(flag, true);
+//            }
+//            options.set(i, "");
         }
     }
 
@@ -251,6 +271,22 @@ public class ParamSet implements ParamHandler {
     public static class UnitTests {
 
         // todo test to / from options str array
+
+        @Test
+        public void testSetAndGetOptions() {
+            String aFlag = "a";
+            int aValue = 1;
+            ParamSet paramSet = new ParamSet(aFlag, aValue);
+            String[] options = paramSet.getOptions();
+            Assert.assertArrayEquals(options, new String[] {"-" + aFlag, String.valueOf(aValue)});
+            ParamSet other = new ParamSet();
+            try {
+                other.setOptions(options);
+            } catch(Exception e) {
+                Assert.fail(e.getMessage());
+            }
+            Assert.assertEquals(other.get(aFlag), aValue);
+        }
 
         @Test
         public void testEmptyToString() {
