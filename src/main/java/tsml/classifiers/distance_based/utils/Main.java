@@ -1,17 +1,17 @@
 package tsml.classifiers.distance_based.utils;
 
-import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.SubParameter;
 import com.beust.jcommander.internal.Lists;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -23,6 +23,7 @@ import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuild
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.memory.MemoryAmount;
 import tsml.classifiers.distance_based.utils.parallel.BlockingExecutor;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount;
 import utilities.FileUtils;
 import weka.classifiers.Classifier;
@@ -40,55 +41,33 @@ public class Main {
     @Parameter(names = {"-c", "--classifier"}, description = "todo", required = true)
     private List<String> classifierNames = new ArrayList<>();
 
-    @Parameter(names = {"--datasetsDir", "-dd"}, description = "todo", required = true)
+    @Parameter(names = {"--dd", "--datasetsDir"}, description = "todo", required = true)
     private List<String> datasetDirPaths = new ArrayList<>();
 
-    @Parameter(names = {"--dataset", "-d"}, description = "todo", required = true)
+    @Parameter(names = {"-d", "--dataset"}, description = "todo", required = true)
     private List<String> datasetNames = new ArrayList<>();
 
-    @Parameter(names = {"--seed", "-s"}, description = "todo", required = true)
+    @Parameter(names = {"-s", "--seed"}, description = "todo", required = true)
     private List<Integer> seeds = Lists.newArrayList(0);
 
-    @Parameter(names = {"-rd", "--resultsDir"}, description = "todo", required = true)
+    @Parameter(names = {"-r", "--resultsDir"}, description = "todo", required = true)
     private String resultsDirPath = null;
 
-    private static class ClassifierParameters {
-        @SubParameter(order = 0)
-        private String classifierName;
+    @Parameter(names = {"-p", "--parameters"}, description = "todo", variableArity = true)
+    private List<String> classifierParameterStrs = new ArrayList<>(); // todo apply these to the
+    // classifier
+    private Map<String, ParamSet> classifierNameToParametersMap = new HashMap<>();
+    private ParamSet classifierParametersForAll = new ParamSet();
 
-        @SubParameter(order = 1)
-        private String parameters;
-
-        public String getClassifierName() {
-            return classifierName;
-        }
-
-        public void setClassifierName(final String classifierName) {
-            this.classifierName = classifierName;
-        }
-
-        public String getParameters() {
-            return parameters;
-        }
-
-        public void setParameters(final String parameters) {
-            this.parameters = parameters;
-        }
-    }
-
-    @DynamicParameter(assignment = " ", names = {"-p", "--parameters"}, description = "todo")
-    private List<ClassifierParameters> classifierParameters = new ArrayList<>(); // todo apply these to the classifier
-    private Map<String, String> classifierNameToParametersMap;
-
-    @Parameter(names = {"-ttc", "--trainTimeContract"}, arity = 2, description = "todo")
+    @Parameter(names = {"--ttc", "--trainTimeContract"}, arity = 2, description = "todo")
     private List<String> trainTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> trainTimeContracts = new ArrayList<>();
 
-    @Parameter(names = {"-tmc", "--trainMemoryContract"}, arity = 2, description = "todo")
+    @Parameter(names = {"--tmc", "--trainMemoryContract"}, arity = 2, description = "todo")
     private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
 
-    @Parameter(names = {"-ptc", "--predictTimeContract"}, arity = 2, description = "todo")
+    @Parameter(names = {"--ptc", "--predictTimeContract"}, arity = 2, description = "todo")
     private List<String> predictTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> predictTimeContracts = new ArrayList<>();
 
@@ -98,25 +77,25 @@ public class Main {
     @Parameter(names = {"-t", "--threads"}, description = "todo")
     private int numThreads = 1; // <=0 for all available threads
 
-    @Parameter(names = {"-attc", "--appendTrainTimeContract"}, description = "todo")
+    @Parameter(names = {"--attc", "--appendTrainTimeContract"}, description = "todo")
     private boolean appendTrainTimeContract = false;
 
-    @Parameter(names = {"-atmc", "--appendTrainMemoryContract"}, description = "todo")
+    @Parameter(names = {"--atmc", "--appendTrainMemoryContract"}, description = "todo")
     private boolean appendTrainMemoryContract = false;
 
-    @Parameter(names = {"-aptc", "--appendPredictTimeContract"}, description = "todo")
+    @Parameter(names = {"--aptc", "--appendPredictTimeContract"}, description = "todo")
     private boolean appendPredictTimeContract = false;
 
-    @Parameter(names = {"-ete", "--estimateTrainError"}, description = "todo")
+    @Parameter(names = {"-e", "--estimateTrainError"}, description = "todo")
     private boolean estimateTrainError = false;
 
     @Parameter(names = {"-l", "--logLevel"}, description = "todo")
     private String logLevel = Level.ALL.toString(); // todo set log level in classifier / experiment
 
-    @Parameter(names = {"-of", "--overwriteTrain"}, description = "todo")
+    @Parameter(names = {"--of", "--overwriteTrain"}, description = "todo")
     private boolean overwriteTrain = false;
 
-    @Parameter(names = {"-op", "--overwriteTest"}, description = "todo")
+    @Parameter(names = {"--op", "--overwriteTest"}, description = "todo")
     private boolean overwritePredict = false;
 
     private final Logger logger = LogUtils.buildLogger(this);
@@ -124,21 +103,23 @@ public class Main {
     private ClassifierBuilderFactory<Classifier> classifierBuilderFactory =
         ClassifierBuilderFactory.getGlobalInstance(); // todo get this by string, i.e. factory
 
-    public static void main(String ... args) {
+    public static void main(String ... args) throws Exception {
         new Main(args).runExperiments();
     }
 
     public static class Runner {
 
-        public static void main(String[] args) {
+        public static void main(String[] args) throws Exception { // todo abide by unix cmdline convertion
             Main.main(
-                "--threads", "1",
-                "-r", "results",
-                "-s", "0",
-                "-c", "DTW_1NN_V1",
-                "--estimateTrainError",
-                "-d", "GunPoint",
-                "-p", "/bench/datasets"
+                "--threads", "1"
+                , "-r", "results"
+                , "-s", "0"
+                , "-c", "DTW_1NN_V1"
+                , "-e"
+                , "-d", "GunPoint"
+                , "--dd", "/bench/datasets"
+                , "-p", "DTW_1NN_V1","-k","3"
+//                , "-p", "DTW_1NN_V1","-e","false"
             );
         }
     }
@@ -168,7 +149,7 @@ public class Main {
         return times;
     }
 
-    public void parse(String... args) {
+    public void parse(String... args) throws Exception {
         JCommander.newBuilder()
             .addObject(this)
             .build()
@@ -189,14 +170,35 @@ public class Main {
         trainTimeContracts = convertStringPairsToTimeAmounts(trainTimeContractStrs);
         predictTimeContracts = convertStringPairsToTimeAmounts(predictTimeContractStrs);
         trainMemoryContracts = convertStringPairsToMemoryAmounts(trainMemoryContractStrs);
+        parseClassifierParameters();
+    }
+
+    private void parseClassifierParameters() throws Exception {
         classifierNameToParametersMap = new HashMap<>();
-        for(ClassifierParameters classifierParameter : classifierParameters) {
-            classifierNameToParametersMap.put(classifierParameter.getClassifierName(),
-                classifierParameter.getParameters());
+        classifierParametersForAll = new ParamSet();
+        Set<String> classifierNamesLookup  = new HashSet<>(classifierNames);
+        for(int i = 0; i < classifierParameterStrs.size();) {
+            String str = classifierParameterStrs.get(i++);
+            String parameterName;
+            String parameterValue;
+            ParamSet paramSet;
+            if(classifierNamesLookup.contains(str)) {
+                // we're in a 3 arity situation, i.e. <classifier name> <parameter name> <parameter value>
+                String classifierName = str;
+                parameterName = classifierParameterStrs.get(i++);
+                parameterValue = classifierParameterStrs.get(i++);
+                paramSet = classifierNameToParametersMap.computeIfAbsent(classifierName, k -> new ParamSet());
+            } else {
+                // we're in a 2 arity situation, i.e. <parameter name> <parameter value>
+                parameterName = str;
+                parameterValue = classifierParameterStrs.get(i++);
+                paramSet = classifierParametersForAll;
+            }
+            paramSet.setOptions(parameterName, parameterValue);
         }
     }
 
-    public Main(String... args) {
+    public Main(String... args) throws Exception {
         parse(args);
     }
 
@@ -462,23 +464,6 @@ public class Main {
 
     public void setOverwritePredict(final boolean overwritePredict) {
         this.overwritePredict = overwritePredict;
-    }
-
-    public List<ClassifierParameters> getClassifierParameters() {
-        return classifierParameters;
-    }
-
-    public void setClassifierParameters(
-        final List<ClassifierParameters> classifierParameters) {
-        this.classifierParameters = classifierParameters;
-    }
-
-    public Map<String, String> getClassifierNameToParametersMap() {
-        return classifierNameToParametersMap;
-    }
-
-    public void setClassifierNameToParametersMap(final Map<String, String> classifierNameToParametersMap) {
-        this.classifierNameToParametersMap = classifierNameToParametersMap;
     }
 
     public List<String> getTrainMemoryContractStrs() {
