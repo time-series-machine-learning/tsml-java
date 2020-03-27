@@ -577,7 +577,7 @@ public class ClassifierLists {
 
             case "TunedHIVE-COTE":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    String[] cls={"TSF","BOSS","RISE","STC"};//RotF for ST
                     HIVE_COTE hc=new HIVE_COTE();
                     hc.setFillMissingDistsWithOneHotVectors(true);
                     hc.setSeed(fold);

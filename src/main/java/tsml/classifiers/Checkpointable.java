@@ -36,8 +36,17 @@ number
  */
 public interface Checkpointable extends Serializable, Copy {
 
-    //Set the path where checkpointed versions will be stored
-    default boolean setSavePath(String path){
+    /**
+     * Store the path to write checkpoint files,
+     * @param path
+     * @return
+     */
+    boolean setSavePath(String path);
+
+        /**
+         Utility function to set the file structure up if required
+         */
+    default boolean createDirectories(String path){
         File f = new File(path);
         boolean success=true;
         if(!f.isDirectory())
@@ -56,6 +65,8 @@ public interface Checkpointable extends Serializable, Copy {
     default void copyFromSerObject(Object obj) throws Exception {
         shallowCopyFrom(obj, CheckpointUtils.findSerFields(obj));
     }
+
+
 
     /**
      * set path to load checkpoints from
