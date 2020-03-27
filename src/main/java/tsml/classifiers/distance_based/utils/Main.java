@@ -1,22 +1,27 @@
 package tsml.classifiers.distance_based.utils;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.SubParameter;
 import com.beust.jcommander.internal.Lists;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory.ClassifierBuilder;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.memory.MemoryAmount;
 import tsml.classifiers.distance_based.utils.parallel.BlockingExecutor;
 import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount;
 import utilities.FileUtils;
@@ -35,38 +40,84 @@ public class Main {
     @Parameter(names = {"-c", "--classifier"}, description = "todo", required = true)
     private List<String> classifierNames = new ArrayList<>();
 
-    @Parameter(names = {"--datasetsDir", "-p"}, description = "todo", required = true)
+    @Parameter(names = {"--datasetsDir", "-dd"}, description = "todo", required = true)
     private List<String> datasetDirPaths = new ArrayList<>();
 
-    @Parameter(names = {"--datasetName", "-d"}, description = "todo", required = true)
+    @Parameter(names = {"--dataset", "-d"}, description = "todo", required = true)
     private List<String> datasetNames = new ArrayList<>();
 
     @Parameter(names = {"--seed", "-s"}, description = "todo", required = true)
     private List<Integer> seeds = Lists.newArrayList(0);
 
-    @Parameter(names = {"-r", "--resultsDir"}, description = "todo", required = true)
+    @Parameter(names = {"-rd", "--resultsDir"}, description = "todo", required = true)
     private String resultsDirPath = null;
 
-    // todo classifier params
+    private static class ClassifierParameters {
+        @SubParameter(order = 0)
+        private String classifierName;
 
-    @Parameter(names = "--trainContract", arity = 2, description = "todo")
-    private List<String> trainContractStrs = new ArrayList<>();
-    private List<TimeAmount> trainContracts = new ArrayList<>();
+        @SubParameter(order = 1)
+        private String parameters;
+
+        public String getClassifierName() {
+            return classifierName;
+        }
+
+        public void setClassifierName(final String classifierName) {
+            this.classifierName = classifierName;
+        }
+
+        public String getParameters() {
+            return parameters;
+        }
+
+        public void setParameters(final String parameters) {
+            this.parameters = parameters;
+        }
+    }
+
+    @DynamicParameter(assignment = " ", names = {"-p", "--parameters"}, description = "todo")
+    private List<ClassifierParameters> classifierParameters = new ArrayList<>(); // todo apply these to the classifier
+    private Map<String, String> classifierNameToParametersMap;
+
+    @Parameter(names = {"-ttc", "--trainTimeContract"}, arity = 2, description = "todo")
+    private List<String> trainTimeContractStrs = new ArrayList<>();
+    private List<TimeAmount> trainTimeContracts = new ArrayList<>();
+
+    @Parameter(names = {"-tmc", "--trainMemoryContract"}, arity = 2, description = "todo")
+    private List<String> trainMemoryContractStrs = new ArrayList<>();
+    private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
+
+    @Parameter(names = {"-ptc", "--testTimeContract"}, arity = 2, description = "todo")
+    private List<String> predictTimeContractStrs = new ArrayList<>();
+    private List<TimeAmount> predictTimeContracts = new ArrayList<>();
 
     @Parameter(names = "--checkpoint", description = "todo")
-    private boolean checkpoint = false;
+    private boolean checkpoint = false; // todo swap train contract save / load path over
 
-    @Parameter(names = "--threads", description = "todo")
+    @Parameter(names = {"-t", "--threads"}, description = "todo")
     private int numThreads = 1; // <=0 for all available threads
 
-    @Parameter(names = "--trainContractInName", description = "todo")
-    private boolean appendTrainContractToClassifierName = false;
+    @Parameter(names = {"-attc", "--appendTrainTimeContract"}, description = "todo")
+    private boolean appendTrainTimeContract = false;
 
-    @Parameter(names = {"--estimateTrainError"}, description = "todo")
-    private boolean estimateTrainError = false;
+    @Parameter(names = {"-atmc", "--appendTrainMemoryContract"}, description = "todo")
+    private boolean appendTrainMemoryContract = false;
+
+    @Parameter(names = {"-aptc", "--appendTestTimeContract"}, description = "todo")
+    private boolean appendPredictTimeContract = false;
+
+    @Parameter(names = {"-ete", "--estimateTrainError"}, description = "todo")
+    private boolean estimateFitError = false;
 
     @Parameter(names = {"-l", "--logLevel"}, description = "todo")
-    private String logLevel = Level.ALL.toString();
+    private String logLevel = Level.ALL.toString(); // todo set log level in classifier / experiment
+
+    @Parameter(names = {"-of", "--overwriteTrain"}, description = "todo")
+    private boolean overwriteFit = false;
+
+    @Parameter(names = {"-op", "--overwriteTest"}, description = "todo")
+    private boolean overwritePredict = false;
 
     private final Logger logger = LogUtils.buildLogger(this);
 
@@ -92,6 +143,31 @@ public class Main {
         }
     }
 
+
+
+    public static <A> List<A> convertStringPairs(List<String> strs, BiFunction<String, String, A> func) {
+        List<A> objs = new ArrayList<>();
+        for(int i = 0; i < strs.size(); i += 2) {
+            final String trainContractAmountStr = strs.get(i);
+            final String trainContractUnitStr = strs.get(i + 1);
+            final A obj = func.apply(trainContractAmountStr, trainContractUnitStr);
+            objs.add(obj);
+        }
+        return objs;
+    }
+
+    public static List<TimeAmount> convertStringPairsToTimeAmounts(List<String> strs) {
+        List<TimeAmount> times = convertStringPairs(strs, TimeAmount::parse);
+        Collections.sort(times);
+        return times;
+    }
+
+    public static List<MemoryAmount> convertStringPairsToMemoryAmounts(List<String> strs) {
+        List<MemoryAmount> times = convertStringPairs(strs, MemoryAmount::parse);
+        Collections.sort(times);
+        return times;
+    }
+
     public void parse(String... args) {
         JCommander.newBuilder()
             .addObject(this)
@@ -101,17 +177,23 @@ public class Main {
         if(logLevel != null) {
             logger.setLevel(Level.parse(logLevel));
         }
-        if(trainContractStrs.size() % 2 != 0) {
+        if(trainTimeContractStrs.size() % 2 != 0) {
             throw new IllegalStateException("train contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
         }
-        trainContracts = new ArrayList<>();
-        for(int i = 0; i < trainContractStrs.size(); i += 2) {
-            final String trainContractAmountStr = trainContractStrs.get(i);
-            final String trainContractUnitStr = trainContractStrs.get(i + 1);
-            final TimeAmount trainContract = new TimeAmount(Long.parseLong(trainContractAmountStr), TimeUnit.valueOf(trainContractUnitStr));
-            trainContracts.add(trainContract);
+        if(predictTimeContractStrs.size() % 2 != 0) {
+            throw new IllegalStateException("test contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
         }
-        Collections.sort(trainContracts);
+        if(trainMemoryContractStrs.size() % 2 != 0) {
+            throw new IllegalStateException("test contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
+        }
+        trainTimeContracts = convertStringPairsToTimeAmounts(trainTimeContractStrs);
+        predictTimeContracts = convertStringPairsToTimeAmounts(predictTimeContractStrs);
+        trainMemoryContracts = convertStringPairsToMemoryAmounts(trainMemoryContractStrs);
+        classifierNameToParametersMap = new HashMap<>();
+        for(ClassifierParameters classifierParameter : classifierParameters) {
+            classifierNameToParametersMap.put(classifierParameter.getClassifierName(),
+                classifierParameter.getParameters());
+        }
     }
 
     public Main(String... args) {
@@ -141,7 +223,7 @@ public class Main {
             ", datasetNames=" + datasetNames +
             ", seeds=" + seeds +
             ", resultsDirPath='" + resultsDirPath + '\'' +
-            ", trainContracts=" + trainContractStrs +
+            ", trainContracts=" + trainTimeContractStrs +
             ", checkpoint=" + checkpoint +
             ", classifierBuilderFactory=" + classifierBuilderFactory
             ;
@@ -209,12 +291,12 @@ public class Main {
     private void runExperimentBatch(Experiment experiment) throws Exception {
         // if there's no train contract we'll put nulls in place. This causes the loop to fire and we'll handle nulls
         // as no contract inside the loop
-        if(trainContracts.isEmpty()) {
-            trainContracts.add(null);
+        if(trainTimeContracts.isEmpty()) {
+            trainTimeContracts.add(null);
         }
         final String origClassifierName = experiment.getClassifierName();
         // for each train contract (pair of strs, one for the amount, one for the unit)
-        for(TimeAmount trainContract : trainContracts) {
+        for(TimeAmount trainContract : trainTimeContracts) {
             // setup the next train contract
             if(trainContract == null) {
                 // no train contract
@@ -225,16 +307,20 @@ public class Main {
                 logger.info("train contract of {" + trainContract + "} for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
                 experiment.setTrainTimeLimit(trainContract.getAmount(), trainContract.getUnit()); // todo add this to
                 // the interface, overload
-                if(appendTrainContractToClassifierName) {
+                if(appendTrainTimeContract) {
                     experiment.setClassifierName(origClassifierName + "_" + trainContract.toString().replaceAll(" ", "_"));
                 }
+            }
+            if(isOverwriteFit() && isOverwritePredict()) {
+                getLogger().info("results exist");
+                continue;
             }
             // train classifier
             experiment.train();
             // write train results if enabled
             final String classifierResultsDirPath =
                 resultsDirPath + "/" + experiment.getClassifierName() + "/" + experiment.getDatasetName() + "/";
-            if(experiment.isEstimateTrain()) {
+            if(experiment.isEstimateTrain() && !isOverwriteFit()) {
                 final String trainResultsFilePath = classifierResultsDirPath + "trainFold" + experiment.getSeed() +
                     ".csv";
                 final ClassifierResults trainResults = experiment.getTrainResults();
@@ -243,10 +329,11 @@ public class Main {
             // test classifier
             experiment.test();
             // write test results
-            final String testResultsFilePath = classifierResultsDirPath + "trainFold" + experiment.getSeed() +
-                ".csv";
-            final ClassifierResults testResults = experiment.getTestResults();
-            FileUtils.writeToFile(testResults.writeFullResultsToString(), testResultsFilePath);
+            if(!isOverwritePredict()) {
+                final String testResultsFilePath = classifierResultsDirPath + "trainFold" + experiment.getSeed() + ".csv";
+                final ClassifierResults testResults = experiment.getTestResults();
+                FileUtils.writeToFile(testResults.writeFullResultsToString(), testResultsFilePath);
+            }
             // shallow copy experiment so we can reuse the configuration under the next train contract
             experiment = (Experiment) experiment.shallowCopy();
         }
@@ -292,20 +379,20 @@ public class Main {
         this.resultsDirPath = resultsDirPath;
     }
 
-    public List<String> getTrainContractStrs() {
-        return trainContractStrs;
+    public List<String> getTrainTimeContractStrs() {
+        return trainTimeContractStrs;
     }
 
-    public void setTrainContractStrs(final List<String> trainContractStrs) {
-        this.trainContractStrs = trainContractStrs;
+    public void setTrainTimeContractStrs(final List<String> trainTimeContractStrs) {
+        this.trainTimeContractStrs = trainTimeContractStrs;
     }
 
-    public List<TimeAmount> getTrainContracts() {
-        return trainContracts;
+    public List<TimeAmount> getTrainTimeContracts() {
+        return trainTimeContracts;
     }
 
-    public void setTrainContracts(final List<TimeAmount> trainContracts) {
-        this.trainContracts = trainContracts;
+    public void setTrainTimeContracts(final List<TimeAmount> trainTimeContracts) {
+        this.trainTimeContracts = trainTimeContracts;
     }
 
     public boolean isCheckpoint() {
@@ -324,20 +411,20 @@ public class Main {
         this.numThreads = numThreads;
     }
 
-    public boolean isAppendTrainContractToClassifierName() {
-        return appendTrainContractToClassifierName;
+    public boolean isAppendTrainTimeContract() {
+        return appendTrainTimeContract;
     }
 
-    public void setAppendTrainContractToClassifierName(final boolean appendTrainContractToClassifierName) {
-        this.appendTrainContractToClassifierName = appendTrainContractToClassifierName;
+    public void setAppendTrainTimeContract(final boolean appendTrainTimeContract) {
+        this.appendTrainTimeContract = appendTrainTimeContract;
     }
 
-    public boolean isEstimateTrainError() {
-        return estimateTrainError;
+    public boolean isEstimateFitError() {
+        return estimateFitError;
     }
 
-    public void setEstimateTrainError(final boolean estimateTrainError) {
-        this.estimateTrainError = estimateTrainError;
+    public void setEstimateFitError(final boolean estimateFitError) {
+        this.estimateFitError = estimateFitError;
     }
 
     public String getLogLevel() {
@@ -359,5 +446,88 @@ public class Main {
     public void setClassifierBuilderFactory(
         final ClassifierBuilderFactory<Classifier> classifierBuilderFactory) {
         this.classifierBuilderFactory = classifierBuilderFactory;
+    }
+
+    public boolean isOverwriteFit() {
+        return overwriteFit;
+    }
+
+    public void setOverwriteFit(final boolean overwriteFit) {
+        this.overwriteFit = overwriteFit;
+    }
+
+    public boolean isOverwritePredict() {
+        return overwritePredict;
+    }
+
+    public void setOverwritePredict(final boolean overwritePredict) {
+        this.overwritePredict = overwritePredict;
+    }
+
+    public List<ClassifierParameters> getClassifierParameters() {
+        return classifierParameters;
+    }
+
+    public void setClassifierParameters(
+        final List<ClassifierParameters> classifierParameters) {
+        this.classifierParameters = classifierParameters;
+    }
+
+    public Map<String, String> getClassifierNameToParametersMap() {
+        return classifierNameToParametersMap;
+    }
+
+    public void setClassifierNameToParametersMap(final Map<String, String> classifierNameToParametersMap) {
+        this.classifierNameToParametersMap = classifierNameToParametersMap;
+    }
+
+    public List<String> getTrainMemoryContractStrs() {
+        return trainMemoryContractStrs;
+    }
+
+    public void setTrainMemoryContractStrs(final List<String> trainMemoryContractStrs) {
+        this.trainMemoryContractStrs = trainMemoryContractStrs;
+    }
+
+    public List<MemoryAmount> getTrainMemoryContracts() {
+        return trainMemoryContracts;
+    }
+
+    public void setTrainMemoryContracts(
+        final List<MemoryAmount> trainMemoryContracts) {
+        this.trainMemoryContracts = trainMemoryContracts;
+    }
+
+    public List<String> getPredictTimeContractStrs() {
+        return predictTimeContractStrs;
+    }
+
+    public void setPredictTimeContractStrs(final List<String> predictTimeContractStrs) {
+        this.predictTimeContractStrs = predictTimeContractStrs;
+    }
+
+    public List<TimeAmount> getPredictTimeContracts() {
+        return predictTimeContracts;
+    }
+
+    public void setPredictTimeContracts(
+        final List<TimeAmount> predictTimeContracts) {
+        this.predictTimeContracts = predictTimeContracts;
+    }
+
+    public boolean isAppendTrainMemoryContract() {
+        return appendTrainMemoryContract;
+    }
+
+    public void setAppendTrainMemoryContract(final boolean appendTrainMemoryContract) {
+        this.appendTrainMemoryContract = appendTrainMemoryContract;
+    }
+
+    public boolean isAppendPredictTimeContract() {
+        return appendPredictTimeContract;
+    }
+
+    public void setAppendPredictTimeContract(final boolean appendPredictTimeContract) {
+        this.appendPredictTimeContract = appendPredictTimeContract;
     }
 }
