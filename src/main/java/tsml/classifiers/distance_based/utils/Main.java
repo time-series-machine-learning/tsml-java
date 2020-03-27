@@ -88,7 +88,7 @@ public class Main {
     private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
 
-    @Parameter(names = {"-ptc", "--testTimeContract"}, arity = 2, description = "todo")
+    @Parameter(names = {"-ptc", "--predictTimeContract"}, arity = 2, description = "todo")
     private List<String> predictTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> predictTimeContracts = new ArrayList<>();
 
@@ -104,17 +104,17 @@ public class Main {
     @Parameter(names = {"-atmc", "--appendTrainMemoryContract"}, description = "todo")
     private boolean appendTrainMemoryContract = false;
 
-    @Parameter(names = {"-aptc", "--appendTestTimeContract"}, description = "todo")
+    @Parameter(names = {"-aptc", "--appendPredictTimeContract"}, description = "todo")
     private boolean appendPredictTimeContract = false;
 
     @Parameter(names = {"-ete", "--estimateTrainError"}, description = "todo")
-    private boolean estimateFitError = false;
+    private boolean estimateTrainError = false;
 
     @Parameter(names = {"-l", "--logLevel"}, description = "todo")
     private String logLevel = Level.ALL.toString(); // todo set log level in classifier / experiment
 
     @Parameter(names = {"-of", "--overwriteTrain"}, description = "todo")
-    private boolean overwriteFit = false;
+    private boolean overwriteTrain = false;
 
     @Parameter(names = {"-op", "--overwriteTest"}, description = "todo")
     private boolean overwritePredict = false;
@@ -311,7 +311,7 @@ public class Main {
                     experiment.setClassifierName(origClassifierName + "_" + trainContract.toString().replaceAll(" ", "_"));
                 }
             }
-            if(isOverwriteFit() && isOverwritePredict()) {
+            if(isOverwriteTrain() && isOverwritePredict()) {
                 getLogger().info("results exist");
                 continue;
             }
@@ -320,7 +320,7 @@ public class Main {
             // write train results if enabled
             final String classifierResultsDirPath =
                 resultsDirPath + "/" + experiment.getClassifierName() + "/" + experiment.getDatasetName() + "/";
-            if(experiment.isEstimateTrain() && !isOverwriteFit()) {
+            if(experiment.isEstimateTrain() && !isOverwriteTrain()) {
                 final String trainResultsFilePath = classifierResultsDirPath + "trainFold" + experiment.getSeed() +
                     ".csv";
                 final ClassifierResults trainResults = experiment.getTrainResults();
@@ -419,12 +419,12 @@ public class Main {
         this.appendTrainTimeContract = appendTrainTimeContract;
     }
 
-    public boolean isEstimateFitError() {
-        return estimateFitError;
+    public boolean isEstimateTrainError() {
+        return estimateTrainError;
     }
 
-    public void setEstimateFitError(final boolean estimateFitError) {
-        this.estimateFitError = estimateFitError;
+    public void setEstimateTrainError(final boolean estimateTrainError) {
+        this.estimateTrainError = estimateTrainError;
     }
 
     public String getLogLevel() {
@@ -448,12 +448,12 @@ public class Main {
         this.classifierBuilderFactory = classifierBuilderFactory;
     }
 
-    public boolean isOverwriteFit() {
-        return overwriteFit;
+    public boolean isOverwriteTrain() {
+        return overwriteTrain;
     }
 
-    public void setOverwriteFit(final boolean overwriteFit) {
-        this.overwriteFit = overwriteFit;
+    public void setOverwriteTrain(final boolean overwriteTrain) {
+        this.overwriteTrain = overwriteTrain;
     }
 
     public boolean isOverwritePredict() {
