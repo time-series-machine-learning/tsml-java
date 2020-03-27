@@ -112,6 +112,9 @@ public class Experiments  {
     //A few 'should be final but leaving them not final just in case' public static settings
     public static int numCVFolds = 10;
 
+    private static String WORKSPACE_DIR = "Workspace";
+    private static String PREDICTIONS_DIR = "Predictions";
+
     /**
      * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
      * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
@@ -245,7 +248,8 @@ public class Experiments  {
         }
 
         //Build/make the directory to write the train and/or testFold files to
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
+        // [writeLoc]/[classifier]/Predictions/[dataset]/
+        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
         File f = new File(fullWriteLocation);
         if (!f.exists())
             f.mkdirs();
@@ -265,21 +269,17 @@ public class Experiments  {
         else {
             Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
-            //If needed, build/make the directory to write the train and/or testFold files to
+            // If needed, build/make the directory to write any supporting files to, e.g. checkpointing files
+            // [writeLoc]/[classifier]/Workspace/[dataset]/[fold]/
+
+            // todo foreseeable problems with threaded experiments:
+            // user sets a supporting path for the 'master' exp, each generated exp to be run threaded inherits that path,
+            // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
+            // going to be the case; supply a path and everything will be written there
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation;
+                expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/" + expSettings.foldId + "/";;
 
-            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
-            // default builds a foldx/ dir in normal write dir
-//            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-//                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
-//            if (classifier instanceof FileProducer) {
-//                f = new File(expSettings.supportingFilePath);
-//                if (!f.exists())
-//                    f.mkdirs();
-//            }
-
-            //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
+            // If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
             if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
                 expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
 
@@ -325,7 +325,7 @@ public class Experiments  {
 
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
-        String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);
+        String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet);
         if (trainFoldFilename == null)
             //otherwise, defined by this as default
             trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
@@ -507,7 +507,7 @@ public class Experiments  {
         return trainResults;
     }
 
-    private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train, String resultsPath) {
+    private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
         String parameterFileName = null;
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
         {
@@ -523,10 +523,10 @@ public class Experiments  {
             //Only do all this if not an internal _single parameter_ experiment
             // Save internal info for ensembles
             if (classifier instanceof SaveableEnsemble) {
-                ((SaveableEnsemble) classifier).saveResults(resultsPath + "internalCV_" + expSettings.foldId + ".csv", resultsPath + "internalTestPreds_" + expSettings.foldId + ".csv");
+                ((SaveableEnsemble) classifier).saveResults(expSettings.supportingFilePath + "internalCV_" + expSettings.foldId + ".csv", expSettings.supportingFilePath + "internalTestPreds_" + expSettings.foldId + ".csv");
             }
             if (expSettings.checkpointing && classifier instanceof SaveEachParameter) {
-                ((SaveEachParameter) classifier).setPathToSaveParameters(resultsPath + "fold" + expSettings.foldId + "_");
+                ((SaveEachParameter) classifier).setPathToSaveParameters(expSettings.supportingFilePath + "fold" + expSettings.foldId + "_");
             }
         }
 
