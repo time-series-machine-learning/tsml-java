@@ -266,7 +266,6 @@ public class Experiments  {
 
             // If needed, build/make the directory to write any supporting files to, e.g. checkpointing files
             // [writeLoc]/[classifier]/Workspace/[dataset]/[fold]/
-
             // todo foreseeable problems with threaded experiments:
             // user sets a supporting path for the 'master' exp, each generated exp to be run threaded inherits that path,
             // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
@@ -824,6 +823,7 @@ public class Experiments  {
         @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean or String) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. "
                 + "Default is false/0, for no checkpointing. if -cp = true, checkpointing is turned on and checkpointing frequency is determined by the classifier. if -cp is a timing of the form [int][char], e.g. 1h, "
                 + "checkpoints shall be made at that frequency (as close as possible according to the atomic unit of learning for the classifier). Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days)."
+                + "Lastly, if -cp is of the the [int] only, it is assumed to be a timing in hours."
                 + "The classifier by default will write its checkpointing files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         private String checkpointingStr = null;
         public boolean checkpointing = false;
@@ -853,19 +853,18 @@ public class Experiments  {
         public int classifierResultsFileFormat = 0;
 
         @Parameter(names={"-ctr","--contractTrain"}, description = "(String) Defines a time limit for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to "
-                + "no contract time. If an integral value is given, it is assumed to be in nanoseconds. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
+                + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
                 + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
         private String contractTrainTimeString = null;
         public long contractTrainTimeNanos = 0;
 
         @Parameter(names={"-cte","--contractTest"}, description = "(String) Defines a time limit for the testing of the classifier if it implements the TestTimeContractable interface. Defaults to "
-                + "no contract time. If an integral value is given, it is assumed to be in nanoseconds. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
+                + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
                 + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
         private String contractTestTimeString = null;
         public long contractTestTimeNanos = 0;
 
-        @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
-                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
+        @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.")
         public boolean serialiseTrainedClassifier = false;
 
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
@@ -1043,7 +1042,7 @@ public class Experiments  {
          *
          * todo Alternatively, string can be of form [int][TimeUnit.toString()], e.g. 10SECONDS
          *
-         * If just a number is given without a time unit character, nanoseconds is assumed
+         * If just a number is given without a time unit character, HOURS is assumed to be the time unit
          *
          * Possible time unit chars:
          * n - nanoseconds
@@ -1061,9 +1060,9 @@ public class Experiments  {
          */
         private long parseTiming(String timeStr) throws IllegalArgumentException{
             try {
-                // check if it's just a number, in which case just return it under assumption that its in nanos
+                // check if it's just a number, in which case return it under assumption that it's in hours
                 int val = Integer.parseInt(timeStr);
-                return val;
+                return TimeUnit.NANOSECONDS.convert(val, TimeUnit.HOURS);
             } catch (Exception e) {
                 //pass
             }
