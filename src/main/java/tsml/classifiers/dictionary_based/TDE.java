@@ -83,8 +83,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     private String checkpointPath;
     private boolean checkpoint = false;
-    private long checkpointTime = 0;
+    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
+    private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
     private long checkpointTimeDiff = 0;
+    private boolean internalContractCheckpointHandling = true;
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
@@ -190,13 +192,30 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     //Set the path where checkpointed versions will be stored
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath = Checkpointable.super.setSavePath(path);
-        if (validPath) {
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
+        if(validPath){
             checkpointPath = path;
             checkpoint = true;
         }
         return validPath;
+    }
+
+    @Override //Checkpointable
+    public boolean setCheckpointTimeHours(int t){
+        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
+        checkpoint = true;
+        return true;
+    }
+
+    @Override //Checkpointable
+    public void saveToFile(String filename) throws Exception{
+        checkpoint(-1, -1, false);
+    }
+
+    @Override //Checkpointable
+    public void loadFromFile(String filename) throws Exception{
+        copyFromSerObject(filename+"/"+checkpointName(train.relationName())+"/");
     }
 
     //Define how to copy from a loaded object to this object
@@ -226,7 +245,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         currentSeries = saved.currentSeries;
         isMultivariate = saved.isMultivariate;
         seriesHeader = saved.seriesHeader;
-        trainContractTimeNanos = saved.trainContractTimeNanos;
+        if (internalContractCheckpointHandling) trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
         paramAccuracy = saved.paramAccuracy;
@@ -242,6 +261,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         lowestAcc = saved.lowestAcc;
 
         trainResults = saved.trainResults;
+        if (!internalContractCheckpointHandling) trainResults.setBuildTime(System.nanoTime());
+        seedClassifier = saved.seedClassifier;
         seed = saved.seed;
         rand = saved.rand;
         estimateOwnPerformance = saved.estimateOwnPerformance;
@@ -265,8 +286,12 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
 
-        checkpointTime = saved.checkpointTime;
-        checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        //checkpoint = saved.checkpoint;
+        //checkpointPath = saved.checkpointPath
+        //checkpointTime = saved.checkpointTime;
+        lastCheckpointTime = saved.lastCheckpointTime;
+        if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
+                + (System.nanoTime() - lastCheckpointTime);
     }
 
     @Override
@@ -518,28 +543,26 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 if (!f.isDirectory())
                     f.mkdirs();
                 //time the checkpoint occured
-                checkpointTime = System.nanoTime();
+                lastCheckpointTime = System.nanoTime();
 
-                if (saveIndiv) {
-                    if (seriesNo >= 0) {
-                        if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
+                if (saveIndiv && seriesNo >= 0) {
+                    if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
 
-                        //save the last build individual classifier
-                        IndividualTDE indiv = classifiers[seriesNo].get(classifierNo);
+                    //save the last build individual classifier
+                    IndividualTDE indiv = classifiers[seriesNo].get(classifierNo);
 
-                        FileOutputStream fos = new FileOutputStream(checkpointPath + "IndividualTDE"
-                                + seriesNo + "-" + classifierNo + ".ser");
-                        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
-                            out.writeObject(indiv);
-                            out.close();
-                            fos.close();
-                        }
+                    FileOutputStream fos = new FileOutputStream(checkpointPath + "IndividualTDE"
+                            + seriesNo + "-" + classifierNo + ".ser");
+                    try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                        out.writeObject(indiv);
+                        out.close();
+                        fos.close();
                     }
                 }
 
                 //dont take into account time spent serialising into build time
-                checkpointTimeDiff += System.nanoTime() - checkpointTime;
-                checkpointTime = System.nanoTime();
+                if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime() - lastCheckpointTime;
+                lastCheckpointTime = System.nanoTime();
 
                 //save this, classifiers and train data not included
                 saveToFile(checkpointPath + "TDEtemp.ser");
@@ -549,7 +572,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 file2.delete();
                 file.renameTo(file2);
 
-                checkpointTimeDiff += System.nanoTime() - checkpointTime;
+                if (internalContractCheckpointHandling)checkpointTimeDiff += System.nanoTime() - lastCheckpointTime;
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Serialisation to " + checkpointPath + " FAILED");
@@ -1034,7 +1057,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         c.setSeed(fold);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
@@ -1048,7 +1071,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         c.setSeed(fold);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 

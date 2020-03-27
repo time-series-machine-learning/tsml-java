@@ -55,6 +55,8 @@ import static weka.core.Utils.sum;
  * @author Matthew Middlehurst
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
+
+
  */
 public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContractable,
         MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
@@ -251,8 +253,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     //Set the path where checkpointed versions will be stored
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
@@ -1467,7 +1469,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         long startTime = System.nanoTime();
@@ -1480,7 +1482,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         long startTime2 = System.nanoTime();

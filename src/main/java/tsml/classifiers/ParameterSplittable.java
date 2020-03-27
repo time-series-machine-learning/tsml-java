@@ -26,5 +26,5 @@ public interface ParameterSplittable extends Serializable{
   is just a key to maintain different parameter sets. The range starts at 1
     */
     public void setParametersFromIndex(int x);
-    public String getParas();
+//    public String getParas();
 }

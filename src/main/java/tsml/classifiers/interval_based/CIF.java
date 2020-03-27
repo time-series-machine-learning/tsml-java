@@ -101,8 +101,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /** Flags and data required if Checkpointing **/
     private boolean checkpoint = false;
     private String checkpointPath;
-    private long checkpointTime = 0;
+    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
+    private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
     private long checkpointTimeDiff = 0;
+    private boolean internalContractCheckpointHandling = true;
 
     /** Flags and data required if Contracting **/
     private boolean trainTimeContract = false;
@@ -496,8 +498,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trees.add(tree);
             intervals.add(interval);
 
-            if (checkpoint){
-                checkpoint();
+            //Timed checkpointing if enabled, else checkpoint every 100 trees
+            if(checkpoint && ((checkpointTime>0 && System.nanoTime()-lastCheckpointTime>checkpointTime)
+                    || numClassifiers%100 == 0)) {
+                saveToFile(checkpointPath);
             }
         }
 
@@ -528,11 +532,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 }
                 trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
                 trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-                trainResults.setClassifierName("TSFBagging");
+                trainResults.setClassifierName("CIFBagging");
                 trainResults.setDatasetName(data.relationName());
                 trainResults.setSplit("train");
                 trainResults.setFoldID(seed);
-                trainResults.setParas(getParameters());
                 trainResults.finaliseResults(actuals);
 
                 trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + (System.nanoTime()-t1)
@@ -556,8 +559,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 tsf.setEstimateOwnPerformance(false);
                 long tt = trainResults.getBuildTime();
                 trainResults=cv.evaluate(tsf,data);
-                trainResults.setClassifierName("TSFCV");
-                trainResults.setParas(getParameters());
+                trainResults.setClassifierName("CIFCV");
 
                 trainResults.setBuildTime(tt);
                 trainResults.setErrorEstimateTime(System.nanoTime()-t1);
@@ -574,8 +576,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 tsf.buildClassifier(data);
                 long tt = trainResults.getBuildTime();
                 trainResults=tsf.trainResults;
-                trainResults.setClassifierName("TSFOOB");
-                trainResults.setParas(getParameters());
+                trainResults.setClassifierName("CIFOOB");
 
                 trainResults.setBuildTime(tt);
                 trainResults.setErrorEstimateTime(System.nanoTime()-t1);
@@ -680,8 +681,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
@@ -689,12 +690,19 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return validPath;
     }
 
+    @Override //Checkpointable
+    public boolean setCheckpointTimeHours(int t){
+        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
+        checkpoint = true;
+        return true;
+    }
+
     @Override
     public void copyFromSerObject(Object obj) throws Exception {
         if(!(obj instanceof CIF))
             throw new Exception("The SER file is not an instance of TSF");
         CIF saved = ((CIF)obj);
-        System.out.println("Loading TSF" + seed + ".ser");
+        System.out.println("Loading CIF" + seed + ".ser");
 
         try{
             numClassifiers = saved.numClassifiers;
@@ -722,21 +730,24 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             estimator = saved.estimator;
             //checkpoint = saved.checkpoint;
             //checkpointPath = saved.checkpointPath
-            checkpointTime = saved.checkpointTime;
+            //checkpointTime = saved.checkpointTime;
+            lastCheckpointTime = saved.lastCheckpointTime;
             //checkpointTimeDiff = saved.checkpointTimeDiff;
             trainTimeContract = saved.trainTimeContract;
-            contractTime = saved.contractTime;
+            if (internalContractCheckpointHandling) contractTime = saved.contractTime;
             maxClassifiers = saved.maxClassifiers;
             seriesLength = saved.seriesLength;
             c22 = saved.c22;
 
             trainResults = saved.trainResults;
+            if (!internalContractCheckpointHandling) trainResults.setBuildTime(System.nanoTime());
             rand = saved.rand;
             seedClassifier = saved.seedClassifier;
             seed = saved.seed;
             classifierName = saved.classifierName;
 
-            checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+            if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
+                    + (System.nanoTime() - checkpointTime);
         }catch(Exception ex){
             System.out.println("Unable to assign variables when loading serialised file");
         }
@@ -748,32 +759,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         trainTimeContract = true;
     }
 
-    private void checkpoint(){
-        if(checkpointPath!=null){
-            try{
-                long t1 = System.nanoTime();
-                File f = new File(checkpointPath);
-                if(!f.isDirectory())
-                    f.mkdirs();
-
-                //time spent building so far.
-                checkpointTime = System.nanoTime();
-
-                //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "C22IF" + seed + "temp.ser");
-
-                File file = new File(checkpointPath + "C22IF" + seed + "temp.ser");
-                File file2 = new File(checkpointPath + "C22IF" + seed + ".ser");
-                file2.delete();
-                file.renameTo(file2);
-
-                checkpointTimeDiff += System.nanoTime()-t1;
-            }
-            catch(Exception e){
-                e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+"C22IF" + seed + ".ser FAILED");
-            }
-        }
+    @Override //Checkpointable
+    public void saveToFile(String filename) throws Exception{
+        lastCheckpointTime = System.nanoTime();
+        Checkpointable.super.saveToFile(checkpointPath + "CIF" + seed + "temp.ser");
+        File file = new File(checkpointPath + "CIF" + seed + "temp.ser");
+        File file2 = new File(checkpointPath + "CIF" + seed + ".ser");
+        file2.delete();
+        file.renameTo(file2);
+        if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime()-lastCheckpointTime;
     }
 
     @Override
