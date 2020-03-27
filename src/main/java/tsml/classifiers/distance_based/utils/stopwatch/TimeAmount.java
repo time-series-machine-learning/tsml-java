@@ -21,6 +21,11 @@ public class TimeAmount implements Comparable<TimeAmount> {
         setUnit(unit);
     }
 
+    public static TimeAmount parse(String amount, String unit) {
+        unit = unit.toUpperCase();
+        return new TimeAmount(Long.parseLong(amount), TimeUnit.valueOf(unit));
+    }
+
     @Override
     public String toString() {
         return getAmount() + " " + getUnit();
