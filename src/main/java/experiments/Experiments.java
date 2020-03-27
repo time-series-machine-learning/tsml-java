@@ -16,6 +16,7 @@ package experiments;
 
 import com.google.common.testing.GcFinalization;
 //import de.bwaldvogel.liblinear.Train;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -528,6 +529,14 @@ public class Experiments  {
             // Main thing to set:
             if (expSettings.checkpointing && classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setCheckpointPath(expSettings.supportingFilePath);
+
+                if (expSettings.checkpointInterval > 0) {
+                    // want to checkpoint at regular timings
+                    // todo setCheckpointTimeHours expects int hours, review
+                    ((Checkpointable) classifier).setCheckpointTimeHours((int) TimeUnit.HOURS.convert(expSettings.checkpointInterval, TimeUnit.NANOSECONDS));
+                }
+                //else, as default
+                    // want to checkpoint at classifier's discretion
             }
         }
 
@@ -814,13 +823,13 @@ public class Experiments  {
                 + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
 
-        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
-                + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
+        @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean or String) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. "
+                + "Default is false/0, for no checkpointing. if -cp = true, checkpointing is turned on and checkpointing frequency is determined by the classifier. if -cp is a timing of the form [int][char], e.g. 1h, "
+                + "checkpoints shall be made at that frequency (as close as possible according to the atomic unit of learning for the classifier). Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days)."
+                + "The classifier by default will write its checkpointing files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+        private String checkpointingStr = null;
         public boolean checkpointing = false;
-
-//        @Parameter(names={"-cph","--checkpointing"}, arity=1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
-//                + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
-//        public double checkpointing = false;
+        public long checkpointInterval = 0;
 
         @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
                 + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
@@ -856,7 +865,7 @@ public class Experiments  {
                 + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
         private String contractTestTimeString = null;
         public long contractTestTimeNanos = 0;
-        
+
         @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.  "
                 + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED")
         public boolean serialiseTrainedClassifier = false;
@@ -980,14 +989,27 @@ public class Experiments  {
             foldId -= 1; //go from one-indexed to zero-indexed
             Experiments.debug = this.debug;
 
+            resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
+            dataReadLocation = StrUtils.asDirPath(dataReadLocation);
+
+            if (checkpointingStr != null) {
+                //some kind of checkpointing is wanted
+
+                // is it simply "true" or "false"?
+                try {
+                    checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
+                } catch (Exception e) {
+                    //it's not. must be a timing string
+                    checkpointing = true;
+                    checkpointInterval = parseTiming(checkpointingStr);
+                }
+            }
+
             //populating the contract times if present
             if (contractTrainTimeString != null)
                 contractTrainTimeNanos = parseTiming(contractTrainTimeString);
             if (contractTestTimeString != null)
                 contractTestTimeNanos = parseTiming(contractTestTimeString);
-
-            resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
-            dataReadLocation = StrUtils.asDirPath(dataReadLocation);
 
             if(contractTrainTimeNanos > 0) {
                 trainContracts.add(String.valueOf(contractTrainTimeNanos));
