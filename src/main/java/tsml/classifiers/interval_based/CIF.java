@@ -312,7 +312,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
          *      do the transfrorms
          *      build the classifier
          * */
-        while((System.nanoTime()-trainResults.getBuildTime()- checkpointTimeDiff < contractTime
+        while((System.nanoTime()-trainResults.getBuildTime()-checkpointTimeDiff < contractTime
                 || trees.size() < numClassifiers) && trees.size() < maxClassifiers){
 
             int i = trees.size();

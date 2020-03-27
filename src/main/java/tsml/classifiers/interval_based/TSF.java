@@ -168,7 +168,7 @@ public class TSF extends EnhancedAbstractClassifier
     private boolean checkpoint = false;
     private String checkpointPath;
     private long checkpointTime = 0;
-    private long checkpointTimeElapsed= 0;
+    private long checkpointTimeDiff= 0;
 
     private boolean trainTimeContract = false;
     private long trainContractTimeNanos = 0;
@@ -440,7 +440,7 @@ public class TSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-startTime)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
+        while(((System.nanoTime()-startTime)-checkpointTimeDiff < trainContractTimeNanos || classifiersBuilt < numClassifiers)
                 && classifiersBuilt < maxClassifiers){
 
             if(classifiersBuilt%100==0)
@@ -753,7 +753,7 @@ public class TSF extends EnhancedAbstractClassifier
             //checkpoint = saved.checkpoint;
             //checkpointPath = saved.checkpointPath
             checkpointTime = saved.checkpointTime;
-            checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
+            //checkpointTimeDiff = saved.checkpointTimeDiff;
             trainTimeContract = saved.trainTimeContract;
             trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
@@ -763,6 +763,8 @@ public class TSF extends EnhancedAbstractClassifier
             seed = saved.seed;
             trainResults = saved.trainResults;
             estimateOwnPerformance = saved.estimateOwnPerformance;
+
+            checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
         }catch(Exception ex){
             System.out.println("Unable to assign variables when loading serialised file");
         }
@@ -783,7 +785,7 @@ public class TSF extends EnhancedAbstractClassifier
                     f.mkdirs();
 
                 //time spent building so far.
-                checkpointTime = ((System.nanoTime() - startTime) + checkpointTimeElapsed);
+                checkpointTime = System.nanoTime();
 
                 //save this, classifiers and train data not included
                 saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
@@ -793,7 +795,7 @@ public class TSF extends EnhancedAbstractClassifier
                 file2.delete();
                 file.renameTo(file2);
 
-                checkpointTimeElapsed -= System.nanoTime()-t1;
+                checkpointTimeDiff += System.nanoTime()-t1;
             }
             catch(Exception e){
                 e.printStackTrace();
