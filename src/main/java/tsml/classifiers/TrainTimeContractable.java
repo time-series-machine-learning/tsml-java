@@ -27,7 +27,7 @@ known classifiers: ShapeletTransformClassifier, RISE, HIVE_COTE (partial),
 * BOSS, TSF , ContractRotationForest
  *
  * ********************************NOTES********************************
- * 1) contract time of <=0 means no contract!
+ * 1) contract time of <=0 means no contract has been set, even if this is potentially contractable
  *
  */
 public interface TrainTimeContractable
@@ -39,6 +39,12 @@ public interface TrainTimeContractable
      */
     void setTrainTimeLimit(long time);
 
+    /**
+     * Are we still within contract? Remove default when fully implemented
+     * @param start
+     * @return
+     */
+    default public boolean withinTrainContract(long start){ return false;}
 
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     
