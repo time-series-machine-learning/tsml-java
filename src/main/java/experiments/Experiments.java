@@ -520,13 +520,18 @@ public class Experiments  {
             expSettings.generateErrorEstimateOnTrainSet = true;
         }
         else {
-            //Only do all this if not an internal _single parameter_ experiment
+            // Only do all this if not an internal _single parameter_ experiment
             // Save internal info for ensembles
-            if (classifier instanceof SaveableEnsemble) {
+            if (classifier instanceof SaveableEnsemble) { // mostly legacy, original hivecote code afaik
                 ((SaveableEnsemble) classifier).saveResults(expSettings.supportingFilePath + "internalCV_" + expSettings.foldId + ".csv", expSettings.supportingFilePath + "internalTestPreds_" + expSettings.foldId + ".csv");
             }
-            if (expSettings.checkpointing && classifier instanceof SaveEachParameter) {
+            if (expSettings.checkpointing && classifier instanceof SaveEachParameter) { // for legacy things. mostly tuned classifiers
                 ((SaveEachParameter) classifier).setPathToSaveParameters(expSettings.supportingFilePath + "fold" + expSettings.foldId + "_");
+            }
+
+            // Main thing to set:
+            if (expSettings.checkpointing && classifier instanceof Checkpointable) {
+                ((Checkpointable) classifier).setSavePath(expSettings.supportingFilePath);
             }
         }
 
