@@ -245,7 +245,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override //Checkpointable
     public boolean setSavePath(String serialisePath) {
-        boolean validPath=Checkpointable.super.setSavePath(serialisePath);
+        boolean validPath=Checkpointable.super.createDirectories(serialisePath);
         if(validPath){
             this.serialisePath = serialisePath;
         }

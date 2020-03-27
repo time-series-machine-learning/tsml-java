@@ -1401,7 +1401,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     @Override //Checkpointable
     public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
