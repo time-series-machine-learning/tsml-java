@@ -16,9 +16,12 @@ package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
+import utilities.FileUtils;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Interface that allows the user to allow a classifier to checkpoint, i.e. 
@@ -38,22 +41,55 @@ public interface Checkpointable extends Serializable, Copy {
 
     /**
      * Store the path to write checkpoint files,
-     * @param path
-     * @return
+     * @param path string for full path for the directory to store checkpointed files
+     * @return true if successful (i.e. the directory now exist
      */
     boolean setSavePath(String path);
 
-        /**
-         Utility function to set the file structure up if required
-         */
+    /**
+     * DEFAULT FOR NOW: make abstract when fully implemented
+     * @param t number of hours between checkpoints
+     * @return true if set correctly.
+     */
+    default boolean setCheckpointTimeHours(int t){ return false;};
+
+    //Override both if not using Java serialisation
+    default void saveToFile(String filename) throws Exception {
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+             FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
+             GZIPOutputStream gos = new GZIPOutputStream(fos);
+             ObjectOutputStream out = new ObjectOutputStream(gos)) {
+            out.writeObject(this);
+        }
+    }
+    default void loadFromFile(String filename) throws Exception{
+        Object obj = null;
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+             FileInputStream fis = new FileInputStream(fileLocker.getFile());
+             GZIPInputStream gis = new GZIPInputStream(fis);
+             ObjectInputStream in = new ObjectInputStream(gis)) {
+            obj = in.readObject();
+        }
+        if(obj != null) {
+            copyFromSerObject(obj);
+        }
+    }
+
+
+
+    /**
+     * Utility function to set the file structure up if required. Call this in setSavePath if you wish
+     * */
     default boolean createDirectories(String path){
         File f = new File(path);
         boolean success=true;
         if(!f.isDirectory())
             success=f.mkdirs();
+/* This is I think  redundant
         if(!isCheckpointLoadingEnabled()) {
             setLoadPath(path); // load path will be the same as the save path if not explicitly set
         }
+ */
         return success;
     }
 
@@ -89,16 +125,6 @@ public interface Checkpointable extends Serializable, Copy {
         return null;
     }
 
-    //Override both if not using Java serialisation
-    default void saveToFile(String filename) throws Exception {
-        CheckpointUtils.serialise(this, filename);
-    }
-    default void loadFromFile(String filename) throws Exception{
-        Object obj = CheckpointUtils.deserialise(filename);
-        if(obj != null) {
-            copyFromSerObject(obj);
-        }
-    }
 
     /**
      * save to checkpoint function. Useful for if the classifier can be saved from an external call. This would most

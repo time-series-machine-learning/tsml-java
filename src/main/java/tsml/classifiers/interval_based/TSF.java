@@ -167,7 +167,10 @@ public class TSF extends EnhancedAbstractClassifier
 
     private boolean checkpoint = false;
     private String checkpointPath;
-    private long checkpointTime = 0;
+    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
+    private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
+
+
     private long checkpointTimeElapsed= 0;
 
     private boolean trainTimeContract = false;
@@ -360,9 +363,6 @@ public class TSF extends EnhancedAbstractClassifier
  */     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-/** Build Stage: 
- *  Builds the final classifier with or without bagging.  
- */       
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
@@ -370,8 +370,7 @@ public class TSF extends EnhancedAbstractClassifier
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
             //path checkpoint files will be saved to
-            if(debug)
-                System.out.println("Loading from checkpoint file");
+            printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
             //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
@@ -399,8 +398,8 @@ public class TSF extends EnhancedAbstractClassifier
             if (trainTimeContract){
                 numClassifiers = 0;
             }
-
-            intervals = new ArrayList();
+           intervals = new ArrayList();
+           lastCheckpointTime=startTime;
         }
 
         ArrayList<Attribute> atts=new ArrayList<>();
@@ -440,8 +439,7 @@ public class TSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-startTime)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
-                && classifiersBuilt < maxClassifiers){
+        while(withinTrainContract(startTime) && classifiersBuilt < numClassifiers){
 
             if(classifiersBuilt%100==0)
                 printLineDebug("\t\t\t\t\tBuilding TSF tree "+classifiersBuilt);
@@ -502,7 +500,19 @@ public class TSF extends EnhancedAbstractClassifier
             classifiersBuilt++;
 
             if (checkpoint){
-                checkpoint(startTime);
+                if(checkpointTime>0)    //Timed checkpointing
+                {
+                    if(System.nanoTime()-lastCheckpointTime>checkpointTime){
+                        saveToFile(checkpointPath);
+//                        checkpoint(startTime);
+                        lastCheckpointTime=System.nanoTime();
+                    }
+                }
+                else {    //Default checkpoint every 100 trees
+                    if(numClassifiers%100 == 0)
+                        saveToFile(checkpointPath);
+//                        checkpoint(startTime);
+                }
             }
         }
         long endTime=System.nanoTime();
@@ -725,8 +735,13 @@ public class TSF extends EnhancedAbstractClassifier
         }
         return validPath;
     }
-
-    @Override
+    @Override //Checkpointable
+    public boolean setCheckpointTimeHours(int t){
+        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
+        checkpoint = true;
+        return true;
+    }
+    @Override //Checkpointable
     public void copyFromSerObject(Object obj) throws Exception {
         if(!(obj instanceof TSF))
             throw new Exception("The SER file is not an instance of TSF");
@@ -749,8 +764,8 @@ public class TSF extends EnhancedAbstractClassifier
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
             estimator = saved.estimator;
-            //checkpoint = saved.checkpoint;
-            //checkpointPath = saved.checkpointPath
+            checkpoint = saved.checkpoint;
+            checkpointPath = saved.checkpointPath;
             checkpointTime = saved.checkpointTime;
             checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
             trainTimeContract = saved.trainTimeContract;
@@ -767,38 +782,25 @@ public class TSF extends EnhancedAbstractClassifier
         }
     }
 
-    @Override
+
+    @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
         trainContractTimeNanos =amount;
         trainTimeContract = true;
     }
+    @Override//TrainTimeContractable
+    public boolean withinTrainContract(long start){
+        if(trainContractTimeNanos<=0) return true; //Not contracted
+        return System.nanoTime()-start < trainContractTimeNanos;
+    }
 
-    private void checkpoint(long startTime){
-        if(checkpointPath!=null){
-            try{
-                long t1 = System.nanoTime();
-                File f = new File(checkpointPath);
-                if(!f.isDirectory())
-                    f.mkdirs();
-
-                //time spent building so far.
-                checkpointTime = ((System.nanoTime() - startTime) + checkpointTimeElapsed);
-
-                //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
-
-                File file = new File(checkpointPath + "TSF" + seed + "temp.ser");
-                File file2 = new File(checkpointPath + "TSF" + seed + ".ser");
-                file2.delete();
-                file.renameTo(file2);
-
-                checkpointTimeElapsed -= System.nanoTime()-t1;
-            }
-            catch(Exception e){
-                e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+"TSF" + seed + ".ser FAILED");
-            }
-        }
+    @Override // C
+    public void saveToFile(String filename) throws Exception{
+        Checkpointable.super.saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
+        File file = new File(checkpointPath + "TSF" + seed + "temp.ser");
+        File file2 = new File(checkpointPath + "TSF" + seed + ".ser");
+        file2.delete();
+        file.renameTo(file2);
     }
  
 //Nested class to store three simple summary features used to construct train data
