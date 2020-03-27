@@ -515,6 +515,8 @@ public class TSF extends EnhancedAbstractClassifier
      */
         if(getEstimateOwnPerformance())
             estimateOwnPerformance(data);
+
+
         trainResults.setParas(getParameters());
 
     }
@@ -540,7 +542,6 @@ public class TSF extends EnhancedAbstractClassifier
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
-            trainResults.setParas(getParameters());
             trainResults.finaliseResults(actuals);
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
@@ -566,7 +567,6 @@ public class TSF extends EnhancedAbstractClassifier
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
             trainResults.setClassifierName("TSFCV");
-            trainResults.setParas(getParameters());
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
 
         }
@@ -584,7 +584,6 @@ public class TSF extends EnhancedAbstractClassifier
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
             trainResults.setClassifierName("TSFOOB");
-            trainResults.setParas(getParameters());
             trainResults.setErrorEstimateMethod("OOB");
 
         }
@@ -719,7 +718,7 @@ public class TSF extends EnhancedAbstractClassifier
 
     @Override //Checkpointable
     public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;

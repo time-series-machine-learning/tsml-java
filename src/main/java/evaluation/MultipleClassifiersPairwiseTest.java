@@ -127,11 +127,29 @@ public class MultipleClassifiersPairwiseTest {
             outf.writeString("\n");
         }
     }
+
+    /**
+     *
+     * @param alpha
+     * @param printPVals
+     */
     public static void findDifferences(double alpha,boolean printPVals){
+
         noDifference=new boolean[nosClassifiers][nosClassifiers];
         for(int i=0;i<nosClassifiers;i++)
         {
             noDifference[i][i]=true;
+/*            for(int j=nosClassifiers-1;j>i;j--) {
+                int numComparisons = nosClassifiers - i;
+                noDifference[i][j] = true;
+                noDifference[j][i] = true;
+                double criticalValue = alpha / (numComparisons - (j - nosClassifiers - 1));
+//                System.out.println(" Critical value = "+criticalValue);
+                if (pValsSignRankTest[i][j] < criticalValue) {
+                    noDifference[i][j] = false;
+                }
+            }
+*/
             for(int j=i+1;j<nosClassifiers;j++){
                 noDifference[i][j]=true;
                 noDifference[j][i]=true;
@@ -143,27 +161,14 @@ public class MultipleClassifiersPairwiseTest {
             }
         }
         DecimalFormat df = new DecimalFormat("##.#####");
-/*        System.out.println(" alpha ="+alpha);
-        System.out.print("\t");
-        for(int i=0;i<nosClassifiers;i++)
-            System.out.print(names[i]+"\t");
-        System.out.print("\n");
-        for(int i=0;i<nosClassifiers;i++){
-            System.out.print(names[i]+"\t");
-            for(int j=0;j<nosClassifiers;j++){
-                if(j<=i)
-                    System.out.print("\t");
-                else
-                    if(printPVals)
-                        System.out.print(df.format(pValsSignRankTest[i][j])+"\t");
-                else
-                    System.out.print(noDifference[i][j]+"\t");
-            }
-            System.out.print("\n");
-        }
-*/        
-    } 
-    
+
+    }
+
+    /**
+     * This has a built in Holm correction
+      * @param input
+     * @param output
+     */
     public static void runTests(String input, String output){
          loadData(input);
 //        loadData("C:\\Research\\Papers\\2016\\JMLR HIVE-COTE Jason\\RiseTestWithNames.csv");
@@ -278,19 +283,22 @@ public class MultipleClassifiersPairwiseTest {
         }
         return results;
     }
-    
-    
+
+    /**
+     *
+      * @param input
+     * @return
+     */
    
     public static StringBuilder runTests(String input){
          loadData(input);
-//        loadData("C:\\Research\\Papers\\2016\\JMLR HIVE-COTE Jason\\RiseTestWithNames.csv");
         findPVals();
-        double alpha=0.1;
+        double alpha=0.05;
 //printPVals=false;
 //Bonferonni adjusted        
 //        alpha/=nosClassifiers*(nosClassifiers-1)/2;
 //Control adjusted 
-        alpha/=nosClassifiers-1;
+//        alpha/=nosClassifiers-1;
         findDifferences(alpha,true);
         
         StringBuilder cliques=new StringBuilder();

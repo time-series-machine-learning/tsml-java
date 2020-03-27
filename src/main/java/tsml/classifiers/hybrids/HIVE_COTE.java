@@ -45,11 +45,14 @@ import machine_learning.classifiers.ensembles.weightings.TrainAcc;
  * This classifier is the latest version of the Hierarchical Vote Ensemble Collective of Transformation-based
  * Ensembles (HIVE-COTE).
  *
- * The original classifier used in [1] has  been moved to legacy_cote. This new one
+ * The original classifier, now called HiveCote 0.1, described in [1] has  been moved to legacy_cote.
+ * This new one
  *
  * 1. Threadable
  * 2. Contractable
  * 3. Tuneable
+ *
+ * Version 1.0:
  */
 public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationHandler, TrainTimeContractable, Tuneable {
 
