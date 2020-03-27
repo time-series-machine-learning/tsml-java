@@ -951,9 +951,9 @@ public class ClassifierResultsAnalysis {
      */
     protected static void matlab_buildCDDias(String expname, String[] cliques) {
         MatlabController proxy = MatlabController.getInstance();
-        proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+")"); //friedman 
+        proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+");"); //friedman
         proxy.eval("clear");
-        proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+pairwiseCDDiaDirName+"', 1)");  //pairwise
+        proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+pairwiseCDDiaDirName+"', 1);");  //pairwise
         proxy.eval("clear");
     }
 
@@ -1661,6 +1661,10 @@ public class ClassifierResultsAnalysis {
 
         for (PerformanceMetric metric : metrics) {
             try {
+                boolean compStat = allComputationalMetrics.contains(metric);
+                boolean originIsZero = !compStat; // if not a computational stat, probably in the range 0..1, keep that instead of min..max
+                boolean drawFitLine = compStat;
+
                 Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
                 String[] classifierNames = asd.var1;
                 double[][] allResults = asd.var2;
@@ -1706,11 +1710,8 @@ public class ClassifierResultsAnalysis {
                         concat.append("'");
                         proxy.eval("labels = {" + concat.toString() + "};");
 //
-//                        System.out.println(sb.toString() + "];");
-//                        System.out.println("labels = {" + concat.toString() + "}");
-//                        System.out.println("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"')");
-
-                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"')");
+                        proxy.eval("'" + fileNameBuild_pwsInd(c1name, c2name, metric.name) + "'"); //just print the filename in the matlab window, for log of progress. no longer printing fig details
+                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"',"+drawFitLine+","+originIsZero+");");
                         proxy.eval("clear");
                     }
                 }
