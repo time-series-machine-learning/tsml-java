@@ -20,6 +20,7 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.filters.shapelet_filters.ShapeletFilter;
@@ -78,10 +79,11 @@ public class TransformExperiments {
         else 
             LOGGER.setLevel(Level.INFO);
         LOGGER.log(Level.FINE, expSettings.toString());
-        
+
+        long hrs = TimeUnit.HOURS.convert(expSettings.contractTrainTimeNanos, TimeUnit.NANOSECONDS);
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + expSettings.contractTrainTimeHours + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + hrs + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -151,8 +153,8 @@ public class TransformExperiments {
                 int numShapeletsInTransform=st.getNumberOfShapelets();
                 
                 long numShapeletsToSearchFor = 0;
-                if(expSettings.contractTrainTimeHours > 0){
-                    long time  = expSettings.contractTrainTimeHours *  (dayNano/24); //time in nanoseconds for the number of hours we want to run for.
+                if(expSettings.contractTrainTimeNanos > 0){
+                    long time  = expSettings.contractTrainTimeNanos; //time in nanoseconds for the number of hours we want to run for.
                     
                     //proportion of operations we can perform in time frame.
                     BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
