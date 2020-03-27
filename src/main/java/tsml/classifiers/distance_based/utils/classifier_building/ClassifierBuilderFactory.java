@@ -66,7 +66,6 @@ public class ClassifierBuilderFactory<B extends Classifier> {
         for(Map.Entry<String, ClassifierBuilder<? extends B>> entry : classifierBuildersByName.entrySet()) {
             stringBuilder.append("\t");
             stringBuilder.append(entry.getKey());
-            stringBuilder.append(": ");
             stringBuilder.append(System.lineSeparator());
         }
         stringBuilder.append("}");
