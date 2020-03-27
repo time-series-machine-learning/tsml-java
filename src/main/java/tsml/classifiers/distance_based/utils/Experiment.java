@@ -2,21 +2,27 @@ package tsml.classifiers.distance_based.utils;
 
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.MemoryContractable;
+import tsml.classifiers.TestTimeContractable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
 import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import utilities.ArrayUtilities;
 import utilities.InstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.OptionHandler;
 import weka.core.Randomizable;
 
 /**
@@ -24,7 +30,18 @@ import weka.core.Randomizable;
  * <p>
  * Contributors: goastler
  */
-public class Experiment implements Copy, TrainTimeContractable, Checkpointable, Loggable {
+public class Experiment implements Copy, TrainTimeContractable, Checkpointable, Loggable, MemoryContractable,
+    TestTimeContractable {
+
+
+    public ParamSet getParamSet() {
+        return paramSet;
+    }
+
+    public Experiment setParamSet(final ParamSet paramSet) {
+        this.paramSet = paramSet;
+        return this;
+    }
 
     private Instances trainData;
     private Instances testData;
@@ -37,10 +54,13 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
     private boolean estimateTrain = false;
     private boolean trained = false;
     private boolean tested = false;
-    private Long trainContractNanos;
+    private Long trainTimeContractNanos;
+    private Long trainMemoryContractBytes;
+    private Long testTimeContractNanos;
     private String savePath;
     private String loadPath;
     private Logger logger = LogUtils.buildLogger(this);
+    private ParamSet paramSet = new ParamSet();
 
     public void resetTrain() {
         trained = false;
@@ -112,39 +132,55 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         final Instances trainData = new Instances(getTrainData());
         // build the classifier
         final Classifier classifier = getClassifier();
+        // set params
+        if(!paramSet.isEmpty()) {
+            if(classifier instanceof ParamHandler) {
+                ((ParamHandler) classifier).setParams(paramSet);
+            } else if(classifier instanceof OptionHandler) {
+                ((OptionHandler) classifier).setOptions(paramSet.getOptions());
+            } else {
+                throw new IllegalStateException("{" + classifierName + "} cannot handle parameters");
+            }
+        }
         // enable train estimate if set
         if(isEstimateTrain()) {
             if(classifier instanceof TrainEstimateable) {
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
             } else {
-                throw new IllegalStateException("classifier does not estimate train error");
+                throw new IllegalStateException("{" + classifierName + "} does not estimate train error");
             }
         }
         if(isCheckpointLoadingEnabled()) {
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setLoadPath(getLoadPath());
             } else {
-                throw new IllegalStateException("classifier is not checkpointable");
+                throw new IllegalStateException("{" + classifierName + "} is not checkpointable");
             }
         }
         if(isCheckpointSavingEnabled()) {
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setSavePath(getSavePath());
             } else {
-                throw new IllegalStateException("classifier is not checkpointable");
+                throw new IllegalStateException("{" + classifierName + "} is not checkpointable");
             }
         }
-        if(trainContractNanos != null) {
+        if(trainTimeContractNanos != null) {
             if(classifier instanceof TrainTimeContractable) {
-                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainContractNanos);
+                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainTimeContractNanos);
             } else {
-                throw new IllegalStateException("classifier not train contractable");
+                throw new IllegalStateException("{" + classifierName + "} not train contractable");
             }
         }
         if(classifier instanceof Randomizable) {
             ((Randomizable) classifier).setSeed(getSeed());
         } else {
             logger.warning("cannot set seed for {" + classifier.toString() + "}");
+        }
+        if(classifier instanceof Loggable) {
+            // todo set to this experiment's logger instead
+            ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
+        } else {
+            logger.warning("cannot set logger for {" + classifierName + "}");
         }
         classifier.buildClassifier(trainData);
         if(isEstimateTrain()) {
@@ -296,12 +332,23 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
 
     @Override
     public void setTrainTimeLimit(final long time) {
-        trainContractNanos = time;
+        trainTimeContractNanos = time;
     }
 
     @Override
     public Logger getLogger() {
         return logger;
+    }
+
+    @Override
+    public void setTestTimeLimit(final TimeUnit time, final long amount) {
+        // todo change this to just nanos, adjust interface
+        testTimeContractNanos = TimeUnit.NANOSECONDS.convert(amount, time);
+    }
+
+    @Override
+    public void setMemoryLimit(final DataUnit unit, final long amount) {
+        getLogger().warning("need to implement memory limiting");
     }
 
     // todo tostring
