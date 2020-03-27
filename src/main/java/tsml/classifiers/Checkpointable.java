@@ -44,7 +44,7 @@ public interface Checkpointable extends Serializable, Copy {
      * @param path string for full path for the directory to store checkpointed files
      * @return true if successful (i.e. the directory now exist
      */
-    boolean setSavePath(String path);
+    boolean setCheckpointPath(String path);
 
     /**
      * DEFAULT FOR NOW: make abstract when fully implemented

@@ -244,7 +244,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      * @param serialisePath Path to folder in which to save serialisation files.
      */
     @Override //Checkpointable
-    public boolean setSavePath(String serialisePath) {
+    public boolean setCheckpointPath(String serialisePath) {
         boolean validPath=Checkpointable.super.createDirectories(serialisePath);
         if(validPath){
             this.serialisePath = serialisePath;
@@ -1048,7 +1048,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             this.setPercentageOfContractForBagging(Double.parseDouble(perForBag));
         String serialisePath = Utils.getOption('S', options);
         if (serialisePath.length() != 0)
-            this.setSavePath(serialisePath);
+            this.setCheckpointPath(serialisePath);
         String stabilise = Utils.getOption('N', options);
         if (stabilise.length() != 0)
             this.setStabilise(Integer.parseInt(stabilise));

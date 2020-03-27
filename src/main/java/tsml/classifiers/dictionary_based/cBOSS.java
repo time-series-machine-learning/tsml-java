@@ -253,7 +253,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     //Set the path where checkpointed versions will be stored
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
@@ -1469,7 +1469,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         long startTime = System.nanoTime();
@@ -1482,7 +1482,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
-        c.setSavePath("D:\\");
+        c.setCheckpointPath("D:\\");
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
         long startTime2 = System.nanoTime();

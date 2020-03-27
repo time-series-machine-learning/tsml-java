@@ -477,7 +477,7 @@ public class Tuner
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.parameterSavingPath = path;

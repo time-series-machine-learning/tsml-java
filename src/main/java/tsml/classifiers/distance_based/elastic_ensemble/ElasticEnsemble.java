@@ -271,7 +271,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     }
 
     @Override
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean result = Checkpointable.super.createDirectories(path);
         if(result) {
             savePath = StrUtils.asDirPath(path);
@@ -430,7 +430,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                         ((Checkpointable) constituent).setLoadPath(loadPath);
                     }
                     if(isCheckpointSavingEnabled()) {
-                        ((Checkpointable) constituent).setSavePath(savePath);
+                        ((Checkpointable) constituent).setCheckpointPath(savePath);
                     }
                     ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
                     ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);

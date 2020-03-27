@@ -509,7 +509,7 @@ public class TSF extends EnhancedAbstractClassifier
                     }
                 }
                 else {    //Default checkpoint every 100 trees
-                    if(numClassifiers%100 == 0)
+                    if(numClassifiers%10 == 0)
                         saveToFile(checkpointPath);
 //                        checkpoint(startTime);
                 }
@@ -727,7 +727,7 @@ public class TSF extends EnhancedAbstractClassifier
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
