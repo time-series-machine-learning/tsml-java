@@ -52,7 +52,7 @@ public interface ParamHandler
      * @throws Exception
      */
     @Override
-    default void setOptions(String[] options) throws
+    default void setOptions(String... options) throws
                                       Exception {
         setOptionsList(new ArrayList<>(Arrays.asList(options))); // todo replace with view
     }
