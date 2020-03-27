@@ -318,10 +318,13 @@ public class StrUtils {
             }
             str = classValue.getName();
             if(value instanceof OptionHandler) {
-                str += " " + Utils.joinOptions(((OptionHandler) value).getOptions());
+                String options = Utils.joinOptions(((OptionHandler) value).getOptions());
+                if(!options.isEmpty()) {
+                    str = "\"" + str + " " + options + "\"";
+                }
             }
         }
-        return "\"" + str + "\"";
+        return str;
     }
 
     public static void addOption(final String flag, final Collection<String> options, final Object value) {
