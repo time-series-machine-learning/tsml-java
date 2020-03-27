@@ -124,6 +124,7 @@ public class TSF extends EnhancedAbstractClassifier
     /** Primary parameters potentially tunable*/   
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
+    //Not required
     private int maxClassifiers = 1000;
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
@@ -174,7 +175,7 @@ public class TSF extends EnhancedAbstractClassifier
     private long checkpointTimeElapsed= 0;
 
     private boolean trainTimeContract = false;
-    private long trainContractTimeNanos = 0;
+    transient private long trainContractTimeNanos = 0;
 
     protected static final long serialVersionUID = 32554L;
 
@@ -394,11 +395,11 @@ public class TSF extends EnhancedAbstractClassifier
                 printLineDebug("TSF is using Bagging");
             }
 
-            //cancel loop using time instead of number built.
+/*            //cancel loop using time instead of number built.
             if (trainTimeContract){
                 numClassifiers = 0;
             }
-           intervals = new ArrayList();
+ */        intervals = new ArrayList();
            lastCheckpointTime=startTime;
         }
 
@@ -606,8 +607,8 @@ public class TSF extends EnhancedAbstractClassifier
     private void copyParameters(TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
-        this.trainTimeContract=other.trainTimeContract;
-        this.trainContractTimeNanos=other.trainContractTimeNanos;
+//        this.trainTimeContract=other.trainTimeContract;
+//        this.trainContractTimeNanos=other.trainContractTimeNanos;
     }
 
     public void setEstimatorMethod(String str){
@@ -768,8 +769,8 @@ public class TSF extends EnhancedAbstractClassifier
             checkpointPath = saved.checkpointPath;
             checkpointTime = saved.checkpointTime;
             checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
-            trainTimeContract = saved.trainTimeContract;
-            trainContractTimeNanos = saved.trainContractTimeNanos;
+//            trainTimeContract = saved.trainTimeContract;
+//            trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
 
             rand = saved.rand;

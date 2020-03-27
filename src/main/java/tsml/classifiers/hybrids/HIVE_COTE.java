@@ -268,7 +268,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public String getParameters() {
-        String str="";
+        String str="WeightingScheme,"+weightingScheme;//+alpha;
         for (EnsembleModule module : modules)
             str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
         for (EnsembleModule module : modules) {
