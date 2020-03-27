@@ -161,7 +161,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     @Override
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean result = Checkpointable.super.createDirectories(path);
         if(result) {
             savePath = StrUtils.asDirPath(path);
@@ -412,7 +412,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             // otherwise no done file, so let's try and lock the classifier's checkpoint dir to claim it
             classifierSavePath = buildClassifierSavePath(classifier);
             if(classifier instanceof Checkpointable) {
-                ((Checkpointable) classifier).setSavePath(classifierSavePath);
+                ((Checkpointable) classifier).setCheckpointPath(classifierSavePath);
             }
             lock = new FileUtils.FileLock(classifierSavePath);
             // if we're claimed the lock then we can evaluate the classifier
@@ -448,7 +448,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // setup checkpoint saving
                 if(isCheckpointSavingEnabled() && classifier instanceof Checkpointable) {
                     ((Checkpointable) classifier).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
-                    ((Checkpointable) classifier).setSavePath(buildClassifierSavePath(classifier));
+                    ((Checkpointable) classifier).setCheckpointPath(buildClassifierSavePath(classifier));
                 }
             }
             StopWatch classifierTrainTimer = new StopWatch();
@@ -617,7 +617,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         if(isCheckpointSavingEnabled()) {
             final String classifierSavePath = buildClassifierSavePath(classifier);
             if(classifier instanceof Checkpointable) {
-                ((Checkpointable) classifier).setSavePath(classifierSavePath);
+                ((Checkpointable) classifier).setCheckpointPath(classifierSavePath);
                 ((Checkpointable) classifier).setSkipFinalCheckpoint(false);
                 ((Checkpointable) classifier).saveToCheckpoint();
             } else {

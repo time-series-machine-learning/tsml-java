@@ -356,7 +356,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
  //   }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
+    public boolean setCheckpointPath(String path) {
         boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.SEP_CP_PS_paraWritePath = path;
