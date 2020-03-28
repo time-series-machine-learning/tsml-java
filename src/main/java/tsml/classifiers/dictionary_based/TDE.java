@@ -83,7 +83,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     private String checkpointPath;
     private boolean checkpoint = false;
-    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
     private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
     private long checkpointTimeDiff = 0;
     private boolean internalContractCheckpointHandling = true;
@@ -199,13 +198,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             checkpoint = true;
         }
         return validPath;
-    }
-
-    @Override //Checkpointable
-    public boolean setCheckpointTimeHours(int t){
-        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
-        checkpoint = true;
-        return true;
     }
 
     @Override //Checkpointable

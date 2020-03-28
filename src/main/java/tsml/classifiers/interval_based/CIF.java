@@ -777,7 +777,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     @Override
     public boolean setVisualisationSavePath(String path) {
-        boolean validPath = Visualisable.super.setVisualisationSavePath(path);
+        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
         if(validPath){
             visSavePath = path;
         }

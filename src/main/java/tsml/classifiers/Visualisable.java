@@ -3,15 +3,18 @@ package tsml.classifiers;
 import java.io.File;
 
 public interface Visualisable {
-    default boolean setVisualisationSavePath(String path){
+
+    boolean setVisualisationSavePath(String path);
+
+    void createVisualisation() throws Exception;
+
+    default boolean createVisualisationDirectories(String path){
         File f = new File(path);
         boolean success=true;
         if(!f.isDirectory())
             success=f.mkdirs();
         return success;
     }
-
-    void createVisualisation() throws Exception;
 
 
     //Python debug code:
