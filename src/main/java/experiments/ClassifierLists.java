@@ -160,7 +160,7 @@ public class ClassifierLists {
     "HI-Cutoff-Bigram-pIGB-BcS-BOSS","HI-tp80-Bigram-pIGB-BcS-BOSS","HI-tp60-Bigram-pIGB-BcS-BOSS","HI-tp50-Bigram-pIGB-BcS-BOSS","HI-l4-Bigram-pIGB-BcS-BOSS",
             "HI-pBigram-pIGB-BcS-BOSS","HI-fs-pIGB-BcS-BOSS","HI-500s-pIGB-BcS-BOSS","HI-100m-pIGB-BcS-BOSS",
             "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H", "TDE-Cutoff70", "TDE-WordLength",
-            "TDE-GP","TDE-GP750"};
+            "TDE-GP","TDE-GP750","TDE-Bigrams","TDE-IGB","TDE-HI","TDE-Spatial"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -634,6 +634,38 @@ public class ClassifierLists {
                 ((cBOSSSP) c).setMaxEnsembleSize(100);
                 ((cBOSSSP) c).setBayesianParameterSelection(false);
                 ((cBOSSSP) c).setEnsembleSize(750);
+                break;
+            case "TDE-Bigrams":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{false};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-IGB":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-HI":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{false};
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-Spatial":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).levels = new Integer[]{1};
                 break;
 
             default:
