@@ -376,6 +376,11 @@ public class Experiments  {
             if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
                 serialiseClassifier(expSettings, classifier);
 
+            if (expSettings.visualise && classifier instanceof Visualisable) {
+                ((Visualisable) classifier).setVisualisationSavePath(expSettings.supportingFilePath);
+                ((Visualisable) classifier).createVisualisation();
+            }
+
             //And now evaluate on the test set, if this wasn't a single parameter fold
             if (expSettings.singleParameterID == null) {
                 //This is checked before the buildClassifier also, but
@@ -828,6 +833,11 @@ public class Experiments  {
         private String checkpointingStr = null;
         public boolean checkpointing = false;
         public long checkpointInterval = 0;
+
+        @Parameter(names={"-vis","--visualisation"}, description = "(boolean) Turns on the production of visualisation files, if the classifier implements the Visualisable interface. "
+                + "Figures are created using Python. Exact requirements are to be determined, but a a Python 3.7 installation is the current recommendation with the numpy and matplotlib packages installed on the global environment. "
+                + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+        public boolean visualise = false;
 
         @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
                 + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
