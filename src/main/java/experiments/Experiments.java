@@ -988,7 +988,6 @@ public class Experiments  {
 
             resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
             dataReadLocation = StrUtils.asDirPath(dataReadLocation);
-            System.out.println(" Checkpoint string =***********"+checkpointingStr+"*********");
             if (checkpointingStr != null) {
                 //some kind of checkpointing is wanted
 
