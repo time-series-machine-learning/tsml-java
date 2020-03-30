@@ -20,13 +20,14 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Randomizable;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
 import static utilities.ArrayUtilities.normalise;
 import static utilities.ArrayUtilities.sum;
 
-public class TimeSeriesTree extends AbstractClassifier implements Randomizable {
+public class TimeSeriesTree extends AbstractClassifier implements Randomizable, Serializable {
 
     private static double log2 = Math.log(2);
 
@@ -40,6 +41,8 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable {
     private TreeNode root;
     private double[] mean;
     private double[] stdev;
+
+    protected static final long serialVersionUID = 1L;
 
     public TimeSeriesTree(){}
 
@@ -187,13 +190,15 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable {
         }
     }
 
-    private class TreeNode {
+    private class TreeNode implements Serializable {
         int bestSplit = -1;
         double bestThreshold = 0;
         double bestGain = 0;
         double bestMargin = 0;
         TreeNode[] children;
         double[] leafDistribution;
+
+        protected static final long serialVersionUID = 1L;
 
         TreeNode(){}
 

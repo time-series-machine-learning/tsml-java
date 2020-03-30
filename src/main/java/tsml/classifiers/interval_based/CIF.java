@@ -58,14 +58,14 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /** IntervalsFinders sets parameter values in buildClassifier if -1. */
     /** Num intervals selected per tree built */
     private int numIntervals = -1;
-    private Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+    private transient Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
 
     /** Secondary parameters */
     /** Mainly there to avoid single item intervals, which have no slope or std dev*/
     private int minIntervalLength = 3;
-    private Function<Integer,Integer> minIntervalLengthFinder;
+    private transient Function<Integer,Integer> minIntervalLengthFinder;
     private int maxIntervalLength = -1;
-    private Function<Integer,Integer> maxIntervalLengthFinder = (numAtts) -> numAtts;
+    private transient Function<Integer,Integer> maxIntervalLengthFinder = (numAtts) -> numAtts;
 
     /** Ensemble members of base classifier, default to TimeSeriesTree */
     private ArrayList<Classifier> trees;
@@ -109,7 +109,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /** Flags and data required if Contracting **/
     private boolean trainTimeContract = false;
     private long contractTime = 0;
-    private int maxClassifiers = 500;
 
     //temp vis/int
     private String visSavePath;
@@ -118,9 +117,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private int seriesLength;
 
     /** Transformer used to obtain catch22 features **/
-    private Catch22 c22;
+    private transient Catch22 c22;
 
-    protected static final long serialVersionUID = 222556L;
+    protected static final long serialVersionUID = 1L;
 
     public CIF(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -209,13 +208,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
 
-        File file = new File(checkpointPath + "C22IF" + seed + ".ser");
+        File file = new File(checkpointPath + "CIF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
             //path checkpoint files will be saved to
             if(debug)
                 System.out.println("Loading from checkpoint file");
-            loadFromFile(checkpointPath + "C22IF" + seed + ".ser");
+            loadFromFile(checkpointPath + "CIF" + seed + ".ser");
         }
         //initialise variables
         else {
@@ -241,9 +240,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength);
             }
 
-            c22 = new Catch22();
-            c22.setOutlierNormalise(outlierNorm);
-
             if (!useSummaryStats){
                 numAttributes = 22;
             }
@@ -265,19 +261,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 }
             }
 
-            //cancel loop using time instead of number built.
-            if (trainTimeContract){
-                numClassifiers = -1;
-                trees = new ArrayList<>();
-                intervals = new ArrayList<>();
-            }
-            else{
-                trees = new ArrayList<>(numClassifiers);
-                intervals = new ArrayList<>(numClassifiers);
-            }
+            trees = new ArrayList<>(numClassifiers);
+            intervals = new ArrayList<>(numClassifiers);
         }
 
-        //result can potentially be added as a field for checkpointing
+        c22 = new Catch22();
+        c22.setOutlierNormalise(outlierNorm);
 
         //Set up instances size and format.
         ArrayList<Attribute> atts=new ArrayList<>();
@@ -314,8 +303,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
          *      do the transfrorms
          *      build the classifier
          * */
-        while((System.nanoTime()-trainResults.getBuildTime()-checkpointTimeDiff < contractTime
-                || trees.size() < numClassifiers) && trees.size() < maxClassifiers){
+        while(withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers){
 
             int i = trees.size();
 
@@ -733,11 +721,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             //checkpointTime = saved.checkpointTime;
             lastCheckpointTime = saved.lastCheckpointTime;
             //checkpointTimeDiff = saved.checkpointTimeDiff;
+            //internalContractCheckpointHandling = saved.internalContractCheckpointHandling;
             trainTimeContract = saved.trainTimeContract;
             if (internalContractCheckpointHandling) contractTime = saved.contractTime;
-            maxClassifiers = saved.maxClassifiers;
+            visSavePath = saved.visSavePath;
             seriesLength = saved.seriesLength;
-            c22 = saved.c22;
+            //c22 = saved.c22;
 
             trainResults = saved.trainResults;
             if (!internalContractCheckpointHandling) trainResults.setBuildTime(System.nanoTime());
@@ -757,6 +746,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     public void setTrainTimeLimit(long amount) {
         contractTime = amount;
         trainTimeContract = true;
+    }
+
+    @Override//TrainTimeContractable
+    public boolean withinTrainContract(long start){
+        if(contractTime<=0) return true; //Not contracted
+        return System.nanoTime()-start < contractTime;
     }
 
     @Override //Checkpointable

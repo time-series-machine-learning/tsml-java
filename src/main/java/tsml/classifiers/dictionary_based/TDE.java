@@ -111,7 +111,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private int[] lowestAccIdx;
     private double[] lowestAcc;
 
-    protected static final long serialVersionUID = 22555L;
+    protected static final long serialVersionUID = 1L;
 
     public TDE() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);

@@ -76,7 +76,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     private int seed = 0;
     private Random rand;
 
-    private static final long serialVersionUID = 22551L;
+    private static final long serialVersionUID = 1L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
                          boolean multiThread, int numThreads, ExecutorService ex) {

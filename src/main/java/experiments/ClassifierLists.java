@@ -27,6 +27,7 @@ import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
@@ -145,7 +146,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble"};
+        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble", "TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -178,7 +179,9 @@ public class ClassifierLists {
                 break;
             case "WEASEL":
                 c = new WEASEL();
-
+                break;
+            case "TDE":
+                c = new TDE();
                 break;
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
@@ -193,7 +196,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF"};
+    public static String[] interval= {"LPS","TSF","CIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -205,6 +208,9 @@ public class ClassifierLists {
                 break;
             case "TSF":
                 c=new TSF();
+                break;
+            case "CIF":
+                c=new CIF();
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");

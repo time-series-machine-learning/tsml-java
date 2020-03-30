@@ -15,16 +15,19 @@
  */
 package tsml.classifiers.interval_based;
  
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.TrainTimeContractable;
+import fileIO.OutFile;
+import machine_learning.classifiers.TimeSeriesTree;
+import tsml.classifiers.*;
+import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -33,15 +36,15 @@ import weka.core.TechnicalInformation;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import tsml.classifiers.EnhancedAbstractClassifier;
+
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import tsml.classifiers.Tuneable;
- 
+
 /** 
   <!-- globalinfo-start -->
 * Implementation of Time Series Forest
@@ -114,9 +117,8 @@ import tsml.classifiers.Tuneable;
  *  true, in which case it does. This is a minor bug.
 **/
  
-public class TSF extends EnhancedAbstractClassifier 
-        implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable, Tuneable{
+public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
+        TrainTimeContractable, Checkpointable, Tuneable , Visualisable, Interpretable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -135,7 +137,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    private Classifier classifier = new RandomTree();
+    private Classifier classifier = new TimeSeriesTree();
  
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
      ends  at  intervals[i][j][1] */
@@ -180,6 +182,8 @@ public class TSF extends EnhancedAbstractClassifier
 
     private int seriesLength;
 
+    private String visSavePath;
+
     public TSF(){
         //TSF Has the capability to form train estimates
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -217,8 +221,6 @@ public class TSF extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String result=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
-        if(classifier instanceof RandomTree)
-            result+="AttsConsideredPerNode,"+((RandomTree) classifier).getKValue();
 
         if(trainTimeContract)
             result+= ",trainContractTimeNanos," +trainContractTimeNanos;
@@ -430,10 +432,6 @@ public class TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(classifier instanceof RandomTree){
-            ((RandomTree) classifier).setKValue(result.numAttributes()-1);
-//            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-        }
 
         int classifiersBuilt = trees.size();
 
@@ -512,7 +510,7 @@ public class TSF extends EnhancedAbstractClassifier
                     }
                 }
                 else {    //Default checkpoint every 100 trees
-                    if(numClassifiers%10 == 0)
+                    if(numClassifiers%100 == 0)
                         saveToFile(checkpointPath);
 //                        checkpoint(startTime);
                 }
@@ -891,6 +889,78 @@ public class TSF extends EnhancedAbstractClassifier
         ps.addParameter("I", numInterv);
 
         return ps;
+    }
+
+    @Override
+    public String outputInterpretabilitySummary() {
+        return null;
+    }
+
+    @Override
+    public boolean setVisualisationSavePath(String path) {
+        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
+        if(validPath){
+            visSavePath = path;
+        }
+        return validPath;
+    }
+
+    @Override
+    public void createVisualisation() throws Exception {
+        if (!(classifier instanceof TimeSeriesTree)) {
+            System.err.println("Temporal importance curve only available for time series tree.");
+            return;
+        }
+
+        if (visSavePath == null){
+            System.err.println("CIF visualisation save path not set.");
+            return;
+        }
+
+        double[][] curves = new double[3][seriesLength];
+        for (int i = 0; i < trees.size(); i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/3);
+                int att = (int)(split%3);
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        OutFile of = new OutFile(visSavePath + "/temporalImportanceCurves" + seed + ".txt");
+        String[] atts = new String[]{"mean","stdev","slope"};
+        for (int i = 0 ; i < 3; i++){
+            of.writeLine(atts[i]);
+            of.writeLine(Arrays.toString(curves[i]));
+        }
+        of.closeFile();
+
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
+
+        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+        System.out.println("output : ");
+        String outLine = out.readLine();
+        while (outLine != null){
+            System.out.println(outLine);
+            outLine = out.readLine();
+        }
+
+        System.out.println("error : ");
+        String errLine = err.readLine();
+        while (errLine != null){
+            System.out.println(errLine);
+            errLine = err.readLine();
+        }
     }
      
     public static void main(String[] arg) throws Exception{
