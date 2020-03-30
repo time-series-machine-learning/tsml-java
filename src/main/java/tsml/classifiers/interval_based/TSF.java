@@ -752,9 +752,9 @@ public class TSF extends EnhancedAbstractClassifier
         if(!(obj instanceof TSF))
             throw new Exception("The SER file is not an instance of TSF");
         TSF saved = ((TSF)obj);
-        System.out.println("Loading TSF" + seed + ".ser");
 
-        try{
+        try{        printLineDebug("Loading TSF" + seed + ".ser");
+
             numClassifiers = saved.numClassifiers;
             maxClassifiers = saved.maxClassifiers;
             numIntervals = saved.numIntervals;
