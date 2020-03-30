@@ -126,6 +126,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /** Primary parameters potentially tunable*/   
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
+    //Not required
     private int maxClassifiers = 1000;
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
@@ -176,7 +177,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private long checkpointTimeElapsed= 0;
 
     private boolean trainTimeContract = false;
-    private long trainContractTimeNanos = 0;
+    transient private long trainContractTimeNanos = 0;
 
     protected static final long serialVersionUID = 32554L;
 
@@ -220,7 +221,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public String getParameters() {
-        String result=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
+        String result=super.getParameters()+",numTrees,"+trees.size()+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
 
         if(trainTimeContract)
             result+= ",trainContractTimeNanos," +trainContractTimeNanos;
@@ -365,9 +366,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
  */     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-/** Build Stage: 
- *  Builds the final classifier with or without bagging.  
- */       
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
@@ -383,7 +381,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         else {
             seriesLength = data.numAttributes() - 1;
             numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
-            printDebug("Building TSF: number of intervals = " + numIntervals);
+            printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers);
 //Set up instances size and format.
             trees = new ArrayList(numClassifiers);
 
@@ -399,11 +397,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 printLineDebug("TSF is using Bagging");
             }
 
-            //cancel loop using time instead of number built.
+/*            //cancel loop using time instead of number built.
             if (trainTimeContract){
                 numClassifiers = 0;
             }
-           intervals = new ArrayList();
+ */        intervals = new ArrayList();
            lastCheckpointTime=startTime;
         }
 
@@ -440,8 +438,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
          *      do the transfrorms
          *      build the classifier
          * */
-        while(withinTrainContract(startTime) && classifiersBuilt < numClassifiers){
-
+        while(withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)){
+            printLineDebug("Building tree "+classifiersBuilt);
             if(classifiersBuilt%100==0)
                 printLineDebug("\t\t\t\t\tBuilding TSF tree "+classifiersBuilt);
 
@@ -515,6 +513,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //                        checkpoint(startTime);
                 }
             }
+        }
+        if(classifiersBuilt==0){//Not enough time to build a single classifier
+            throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
         }
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
@@ -607,8 +608,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private void copyParameters(TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
-        this.trainTimeContract=other.trainTimeContract;
-        this.trainContractTimeNanos=other.trainContractTimeNanos;
+//        this.trainTimeContract=other.trainTimeContract;
+//        this.trainContractTimeNanos=other.trainContractTimeNanos;
     }
 
     public void setEstimatorMethod(String str){
@@ -651,8 +652,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         double sum=0;
         for(double x:d)
             sum+=x;
-        for(int i=0;i<d.length;i++)
-            d[i]=d[i]/sum;
+        if(sum>0)
+            for(int i=0;i<d.length;i++)
+                d[i]=d[i]/sum;
         return d;
     }
 /**
@@ -730,6 +732,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
         boolean validPath=Checkpointable.super.createDirectories(path);
+        printLineDebug(" Writing checkpoint to "+path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
@@ -769,8 +772,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             checkpointPath = saved.checkpointPath;
             checkpointTime = saved.checkpointTime;
             checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
-            trainTimeContract = saved.trainTimeContract;
-            trainContractTimeNanos = saved.trainContractTimeNanos;
+//            trainTimeContract = saved.trainTimeContract;
+//            trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
 
             rand = saved.rand;
@@ -791,6 +794,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
     @Override//TrainTimeContractable
     public boolean withinTrainContract(long start){
+        printLineDebug(" In withinTrainContract: "+trainContractTimeNanos+"  "+(System.nanoTime()-start));
         if(trainContractTimeNanos<=0) return true; //Not contracted
         return System.nanoTime()-start < trainContractTimeNanos;
     }
@@ -962,7 +966,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             errLine = err.readLine();
         }
     }
-     
+
     public static void main(String[] arg) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
