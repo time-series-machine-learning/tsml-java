@@ -271,7 +271,7 @@ public class Experiments  {
             // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
             // going to be the case; supply a path and everything will be written there
             if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/" + expSettings.foldId + "/";;
+                expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
 
             // If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
             if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
@@ -1001,7 +1001,7 @@ public class Experiments  {
             if (checkpointingStr != null) {
                 //some kind of checkpointing is wanted
 
-                // is it simply "true" or "false"?
+                // is it simply "true"?
                 checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
                 if(!checkpointing){
                     //it's not. must be a timing string
@@ -1009,15 +1009,7 @@ public class Experiments  {
                     checkpointInterval = parseTiming(checkpointingStr);
 
                 }
-/*                try {
-                    System.out.println("checkpointing = "+checkpointing);
-                } catch (Exception e) {
-                    //it's not. must be a timing string
-                    System.out.println("Exception caught, ");
-                    checkpointing = true;
-                    checkpointInterval = parseTiming(checkpointingStr);
-                }
-  */          }
+          }
 
             //populating the contract times if present
             if (contractTrainTimeString != null)
