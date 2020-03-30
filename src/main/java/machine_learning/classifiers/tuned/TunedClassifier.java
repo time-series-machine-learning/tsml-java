@@ -320,7 +320,6 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     @Override
     public String getParameters() {
         String str=classifier.getClass().getSimpleName();
-        str+=","+getParameters();
         if(classifier instanceof EnhancedAbstractClassifier)
             str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
         return str;

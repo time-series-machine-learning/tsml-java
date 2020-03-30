@@ -988,19 +988,26 @@ public class Experiments  {
 
             resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
             dataReadLocation = StrUtils.asDirPath(dataReadLocation);
-
             if (checkpointingStr != null) {
                 //some kind of checkpointing is wanted
 
                 // is it simply "true" or "false"?
-                try {
-                    checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
-                } catch (Exception e) {
+                checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
+                if(!checkpointing){
                     //it's not. must be a timing string
                     checkpointing = true;
                     checkpointInterval = parseTiming(checkpointingStr);
+
                 }
-            }
+/*                try {
+                    System.out.println("checkpointing = "+checkpointing);
+                } catch (Exception e) {
+                    //it's not. must be a timing string
+                    System.out.println("Exception caught, ");
+                    checkpointing = true;
+                    checkpointInterval = parseTiming(checkpointingStr);
+                }
+  */          }
 
             //populating the contract times if present
             if (contractTrainTimeString != null)
