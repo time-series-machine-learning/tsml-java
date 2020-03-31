@@ -44,51 +44,92 @@ public class ExperimentBatch {
     // abide by unix cmdline args convention! single char --> single hyphen, multiple chars --> double hyphen
     // todo getter sna setters
     private final Logger logger = LogUtils.buildLogger(this);
-    @Parameter(names = {"-c", "--classifier"}, description = "todo",
+    public static final String SHORT_CLASSIFIER_NAME_FLAG = "-c";
+    public static final String LONG_CLASSIFIER_NAME_FLAG = "--classifier";
+    @Parameter(names = {SHORT_CLASSIFIER_NAME_FLAG, LONG_CLASSIFIER_NAME_FLAG}, description = "todo",
         required = true)
     private List<String> classifierNames = new ArrayList<>();
-    @Parameter(names = {"--dd", "--datasetsDir"}, description = "todo", required = true)
+    public static final String SHORT_DATASET_DIR_FLAG = "--dd";
+    public static final String LONG_DATASET_DIR_FLAG = "--datasetsDir";
+    @Parameter(names = {SHORT_DATASET_DIR_FLAG, LONG_DATASET_DIR_FLAG}, description = "todo", required = true)
     private List<String> datasetDirPaths = new ArrayList<>();
-    @Parameter(names = {"-d", "--dataset"}, description = "todo", required = true)
+    public static final String SHORT_DATASET_NAME_FLAG = "-d";
+    public static final String LONG_DATASET_NAME_FLAG = "--dataset";
+    @Parameter(names = {SHORT_DATASET_NAME_FLAG, LONG_DATASET_NAME_FLAG}, description = "todo", required = true)
     private List<String> datasetNames = new ArrayList<>();
-    @Parameter(names = {"-s", "--seed"}, description = "todo", required = true)
+    public static final String SHORT_SEED_FLAG = "-s";
+    public static final String LONG_SEED_FLAG = "--seed";
+    @Parameter(names = {SHORT_SEED_FLAG, LONG_SEED_FLAG}, description = "todo", required = true)
     private List<Integer> seeds = Lists.newArrayList(0);
-    @Parameter(names = {"-r", "--resultsDir"}, description = "todo", required = true)
+    public static final String SHORT_RESULTS_DIR_FLAG = "-r";
+    public static final String LONG_RESULTS_DIR_FLAG = "--resultsDir";
+    @Parameter(names = {SHORT_RESULTS_DIR_FLAG, LONG_RESULTS_DIR_FLAG}, description = "todo", required = true)
     private String resultsDirPath = null;
-    @Parameter(names = {"-p", "--parameters"}, description = "todo", variableArity = true)
+    public static final String SHORT_PARAMETERS_FLAG = "-p";
+    public static final String LONG_PARAMETERS_FLAG = "--parameters";
+    @Parameter(names = {SHORT_PARAMETERS_FLAG, LONG_PARAMETERS_FLAG}, description = "todo", variableArity = true)
     private List<String> classifierParameterStrs = new ArrayList<>();
     private Map<String, ParamSet> bespokeClassifierParametersMap = new HashMap<>();
     private ParamSet universalClassifierParameters = new ParamSet();
-    @Parameter(names = {"--acp", "--appendClassifierParameters"}, description = "todo")
+    public static final String SHORT_APPEND_CLASSIFIER_PARAMETERS_FLAG = "--acp";
+    public static final String LONG_APPEND_CLASSIFIER_PARAMETERS_FLAG = "--appendClassifierParameters";
+    @Parameter(names = {SHORT_APPEND_CLASSIFIER_PARAMETERS_FLAG, LONG_APPEND_CLASSIFIER_PARAMETERS_FLAG}, description = "todo")
     private boolean appendClassifierParameters = false;
-    @Parameter(names = {"--ttc", "--trainTimeContract"}, arity = 2, description = "todo")
+    public static final String SHORT_TRAIN_TIME_CONTRACT_FLAG = "--ttc";
+    public static final String LONG_TRAIN_TIME_CONTRACT_FLAG = "--trainTimeContract";
+    @Parameter(names = {SHORT_TRAIN_TIME_CONTRACT_FLAG, LONG_TRAIN_TIME_CONTRACT_FLAG}, arity = 2, description = "todo")
     private List<String> trainTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> trainTimeContracts = new ArrayList<>();
-    @Parameter(names = {"--tmc", "--trainMemoryContract"}, arity = 2, description = "todo")
+    public static final String SHORT_TRAIN_MEMORY_CONTRACT_FLAG = "--tmc";
+    public static final String LONG_TRAIN_MEMORY_CONTRACT_FLAG = "--trainMemoryContract";
+    @Parameter(names = {SHORT_TRAIN_MEMORY_CONTRACT_FLAG, LONG_TRAIN_MEMORY_CONTRACT_FLAG}, arity = 2, description = "todo")
     private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
-    @Parameter(names = {"--ptc", "--predictTimeContract"}, arity = 2, description = "todo")
+    public static final String SHORT_TEST_TIME_CONTRACT_FLAG = "--ptc";
+    public static final String LONG_TEST_TIME_CONTRACT_FLAG = "--testTimeContract";
+    @Parameter(names = {SHORT_TEST_TIME_CONTRACT_FLAG, LONG_TEST_TIME_CONTRACT_FLAG}, arity = 2, description = "todo")
     private List<String> testTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> testTimeContracts = new ArrayList<>();
-    @Parameter(names = "--checkpoint", description = "todo")
-    private boolean checkpoint = false; // todo swap train contract save / load path over
-    @Parameter(names = {"-t", "--threads"}, description = "todo")
+    public static final String SHORT_CHECKPOINT_FLAG = "--cp";
+    public static final String LONG_CHECKPOINT_FLAG = "--checkpoint";
+    @Parameter(names = {SHORT_CHECKPOINT_FLAG, LONG_CHECKPOINT_FLAG}, description = "todo")
+    private boolean checkpoint = false; // todo swap train contract save / load path over for checkpointing
+    public static final String SHORT_THREADS_FLAG = "-t";
+    public static final String LONG_THREADS_FLAG = "--threads";
+    @Parameter(names = {SHORT_THREADS_FLAG, LONG_THREADS_FLAG}, description = "todo")
     private int numThreads = 1; // <=0 for all available threads
-    @Parameter(names = {"--attc", "--appendTrainTimeContract"}, description = "todo")
+    public static final String SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--attc";
+    public static final String LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--appendTrainTimeContract";
+    @Parameter(names = {SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG, LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG}, description = "todo")
     private boolean appendTrainTimeContract = false;
-    @Parameter(names = {"--atmc", "--appendTrainMemoryContract"}, description = "todo")
+    public static final String SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--atmc";
+    public static final String LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--appendTrainMemoryContract";
+    @Parameter(names = {SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG, LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG}, description = "todo")
     private boolean appendTrainMemoryContract = false;
-    @Parameter(names = {"--aptc", "--appendPredictTimeContract"}, description = "todo")
+    public static final String SHORT_APPEND_TEST_TIME_CONTRACT_FLAG = "--aptc";
+    public static final String LONG_APPEND_TEST_TIME_CONTRACT_FLAG = "--appendTestTimeContract";
+    @Parameter(names = {SHORT_APPEND_TEST_TIME_CONTRACT_FLAG, LONG_APPEND_TEST_TIME_CONTRACT_FLAG}, description =
+        "todo")
     private boolean appendTestTimeContract = false;
-    @Parameter(names = {"-e", "--estimateTrainError"}, description = "todo")
+    public static final String SHORT_ESTIMATE_TRAIN_ERROR_FLAG = "-e";
+    public static final String LONG_ESTIMATE_TRAIN_ERROR_FLAG = "--estimateTrainError";
+    @Parameter(names = {SHORT_ESTIMATE_TRAIN_ERROR_FLAG, LONG_ESTIMATE_TRAIN_ERROR_FLAG}, description = "todo")
     private boolean estimateTrainError = false;
-    @Parameter(names = {"-l", "--logLevel"}, description = "todo")
+    public static final String SHORT_LOG_LEVEL_CLASSIFIER_FLAG = "-l";
+    public static final String LONG_LOG_LEVEL_CLASSIFIER_FLAG = "--logLevel";
+    @Parameter(names = {SHORT_LOG_LEVEL_CLASSIFIER_FLAG, LONG_LOG_LEVEL_CLASSIFIER_FLAG}, description = "todo")
     private String logLevelClassifier = Level.SEVERE.toString(); // todo better name for these two
-    @Parameter(names = {"--el", "--experimentLogLevel"}, description = "todo")
+    public static final String SHORT_LOG_LEVEL_EXPERIMENT_FLAG = "-el";
+    public static final String LONG_LOG_LEVEL_EXPERIMENT_FLAG = "--experimentLogLevel";
+    @Parameter(names = {SHORT_LOG_LEVEL_EXPERIMENT_FLAG, LONG_LOG_LEVEL_EXPERIMENT_FLAG}, description = "todo")
     private String logLevelExperiment = Level.ALL.toString();
-    @Parameter(names = {"--of", "--overwriteTrain"}, description = "todo")
+    public static final String SHORT_OVERWRITE_TRAIN_FLAG = "--ot";
+    public static final String LONG_OVERWRITE_TRAIN_FLAG = "--overwriteTrain";
+    @Parameter(names = {SHORT_OVERWRITE_TRAIN_FLAG, LONG_OVERWRITE_TRAIN_FLAG}, description = "todo")
     private boolean overwriteTrain = false;
-    @Parameter(names = {"--op", "--overwriteTest"}, description = "todo")
+    public static final String SHORT_OVERWRITE_TEST_FLAG = "--op";
+    public static final String LONG_OVERWRITE_TEST_FLAG = "--overwriteTest";
+    @Parameter(names = {SHORT_OVERWRITE_TEST_FLAG, LONG_OVERWRITE_TEST_FLAG}, description = "todo")
     private boolean overwriteTest = false;
     private ClassifierBuilderFactory<Classifier> classifierBuilderFactory =
         ClassifierBuilderFactory.getGlobalInstance(); // todo get this by string, i.e. factory
