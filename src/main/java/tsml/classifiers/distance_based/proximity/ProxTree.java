@@ -15,10 +15,10 @@ import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.Random
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
 import tsml.classifiers.distance_based.proximity.stopping_conditions.PureSplit;
-import tsml.classifiers.distance_based.proximity.tree.BaseTree;
-import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
-import tsml.classifiers.distance_based.proximity.tree.Tree;
-import tsml.classifiers.distance_based.proximity.tree.TreeNode;
+import tsml.classifiers.distance_based.utils.tree.BaseTree;
+import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
+import tsml.classifiers.distance_based.utils.tree.Tree;
+import tsml.classifiers.distance_based.utils.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
