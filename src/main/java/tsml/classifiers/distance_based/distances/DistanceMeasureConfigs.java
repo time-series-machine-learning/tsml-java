@@ -47,6 +47,12 @@ public class DistanceMeasureConfigs {
             buildFullDtwParams());
     }
 
+    public static ParamSpace buildFullDdtwSpace() {
+        return new ParamSpace().add(DistanceMeasureable.getDistanceFunctionFlag(),
+            Lists.newArrayList(new DDTWDistance()),
+            buildFullDtwParams());
+    }
+
     public static ParamSpace buildDtwParamsV1(Instances instances) {
         ParamSpace params = new ParamSpace();
         params.add(DTW.getWarpingWindowFlag(),
