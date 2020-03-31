@@ -39,7 +39,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), buildDtwSpace(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), buildDtwParams(data));
         return space;
     }
 
@@ -78,22 +78,22 @@ public class ContinuousDistanceFunctionConfigs {
         return space;
     }
 
-    public static ParamSpace buildWdtwParams(Instances data) {
+    public static ParamSpace buildWdtwParams() {
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, 1));
         return subSpace;
     }
 
-    public static ParamSpace buildWdtwSpace(Instances data) {
+    public static ParamSpace buildWdtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDTWDistance(), buildWdtwSpace(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDTWDistance(), buildWdtwSpace());
         return space;
     }
 
 
-    public static ParamSpace buildWddtwSpace(Instances data) {
+    public static ParamSpace buildWddtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDDTWDistance(), buildWdtwParams(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDDTWDistance(), buildWdtwParams());
         return space;
     }
 }
