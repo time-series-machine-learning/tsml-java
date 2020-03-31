@@ -19,6 +19,7 @@ import tsml.classifiers.distance_based.proximity.tree.BaseTree;
 import tsml.classifiers.distance_based.proximity.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.proximity.tree.Tree;
 import tsml.classifiers.distance_based.proximity.tree.TreeNode;
+import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -33,6 +34,17 @@ import weka.core.Instances;
  */
 public class ProxTree extends BaseClassifier {
 
+    public static final Factory FACTORY = new Factory();
+
+    public static class Factory extends CompileTimeClassifierBuilderFactory<ProxTree> {
+        public final ClassifierBuilder<? extends ProxTree> PROXIMITY_TREE =
+            add(new SuppliedClassifierBuilder<>("PROXIMITY_TREE", Factory::buildProximityTree));
+
+        public static ProxTree buildProximityTree() {
+            return new ProxTree();
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         ProxTree pt = new ProxTree();
         pt.setNodeIteratorBuilder(LinearListIterator::new);
@@ -40,7 +52,7 @@ public class ProxTree extends BaseClassifier {
             @Override
             public Splitter build() {
                 final Instances data = getData();
-                final List<ParamSpace> paramSpaces = null;
+                final List<ParamSpace> paramSpaces = null; // todo
                 final ExemplarPicker exemplarPicker = new RandomExemplarPerClassPicker(pt);
                 return new RandomExemplarSimilaritySplitter(paramSpaces, pt, exemplarPicker);
             }

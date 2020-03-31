@@ -2,8 +2,9 @@ package tsml.classifiers.distance_based.proximity;
 
 import java.util.ArrayList;
 import java.util.List;
+import tsml.classifiers.distance_based.proximity.ProxTree.Factory;
+import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.filters.Utilities;
 import utilities.ArrayUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -15,6 +16,17 @@ import weka.core.Instances;
  * Contributors: goastler
  */
 public class ProxForest extends BaseClassifier {
+
+    public static final ProxTree.Factory FACTORY = new ProxTree.Factory();
+
+    public static class Factory extends CompileTimeClassifierBuilderFactory<ProxForest> {
+        public final ClassifierBuilder<? extends ProxForest> PROXIMITY_FOREST =
+            add(new SuppliedClassifierBuilder<>("PROXIMITY_FOREST", Factory::buildProximityForest));
+
+        public static ProxForest buildProximityForest() {
+            return new ProxForest();
+        }
+    }
 
     public interface ConstituentBuilder {
         Classifier build(Instances data);

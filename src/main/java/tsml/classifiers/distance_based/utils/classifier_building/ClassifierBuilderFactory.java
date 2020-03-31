@@ -15,6 +15,8 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.proximity.ProxForest;
+import tsml.classifiers.distance_based.proximity.ProxTree;
 import weka.classifiers.Classifier;
 
 public class ClassifierBuilderFactory<B extends Classifier> {
@@ -37,6 +39,8 @@ public class ClassifierBuilderFactory<B extends Classifier> {
             INSTANCE = new ClassifierBuilderFactory<>("global");
             INSTANCE.addAll(KNNLOOCV.FACTORY);
             INSTANCE.addAll(ElasticEnsemble.FACTORY);
+            INSTANCE.addAll(ProxTree.FACTORY);
+            INSTANCE.addAll(ProxForest.FACTORY);
         }
         INSTANCE.addAll(new CompileTimeClassifierBuilderFactory<KNN>());
         return INSTANCE;
