@@ -5,9 +5,21 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public class CollectionUtils {
     private CollectionUtils() {}
+
+    public static <B, A> List<A> convertPairs(List<B> pairs, BiFunction<B, B, A> func) {
+        List<A> objs = new ArrayList<>();
+        for(int i = 0; i < pairs.size(); i += 2) {
+            final B trainContractAmountStr = pairs.get(i);
+            final B trainContractUnitStr = pairs.get(i + 1);
+            final A obj = func.apply(trainContractAmountStr, trainContractUnitStr);
+            objs.add(obj);
+        }
+        return objs;
+    }
 
     public static <A> A get(Iterator<A> iterator, int index) {
         if(index < 0) {

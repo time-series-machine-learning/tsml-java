@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils;
 
+import com.beust.jcommander.Parameter;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +34,6 @@ import weka.core.Randomizable;
 public class Experiment implements Copy, TrainTimeContractable, Checkpointable, Loggable, MemoryContractable,
     TestTimeContractable {
 
-
     public ParamSet getParamSet() {
         return paramSet;
     }
@@ -51,7 +51,7 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
     private int seed;
     private String classifierName;
     private String datasetName;
-    private boolean estimateTrain = false;
+    private boolean estimateTrainError = false;
     private boolean trained = false;
     private boolean tested = false;
     private Long trainTimeContractNanos;
@@ -104,6 +104,19 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         }
     }
 
+
+    /**
+     *
+     switch to control whether we need to switch out the random source for testing. For example, if we train a
+     classifier for 5 mins, then test, then train for another 5 mins (to 10 mins), then test, the results are
+     different to training for 10 minutes alone then testing. This is because the classifier sources random
+     numbers during testing and training, therefore the extra testing in the first version causes different
+     random numbers. Obviously this only matters if the classifier uses the random source during testing, but
+     for safety it is best to assume all classifiers do and switch the source to an alternate source for each
+     test batch.
+     * @param random
+     * @return
+     */
     private Random switchRandom(Random random) {
         Random prevRandom;
         final Classifier classifier = getClassifier();
@@ -143,7 +156,7 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
             }
         }
         // enable train estimate if set
-        if(isEstimateTrain()) {
+        if(isEstimateTrainError()) {
             if(classifier instanceof TrainEstimateable) {
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
             } else {
@@ -183,7 +196,7 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
             logger.warning("cannot set logger for {" + classifierName + "}");
         }
         classifier.buildClassifier(trainData);
-        if(isEstimateTrain()) {
+        if(isEstimateTrainError()) {
             if(classifier instanceof TrainEstimateable) {
                 ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
                 setTrainResults(trainResults);
@@ -312,12 +325,12 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         return this;
     }
 
-    public boolean isEstimateTrain() {
-        return estimateTrain;
+    public boolean isEstimateTrainError() {
+        return estimateTrainError;
     }
 
-    public Experiment setEstimateTrain(final boolean estimateTrain) {
-        this.estimateTrain = estimateTrain;
+    public Experiment setEstimateTrainError(final boolean estimateTrainError) {
+        this.estimateTrainError = estimateTrainError;
         return this;
     }
 

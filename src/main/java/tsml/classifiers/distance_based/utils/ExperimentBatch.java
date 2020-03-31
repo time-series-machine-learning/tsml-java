@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,11 +16,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory.ClassifierBuilder;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
+import tsml.classifiers.distance_based.utils.collections.box.Box;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.MemoryAmount;
@@ -31,18 +34,19 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: class to run a batch of experiments
  * <p>
  * Contributors: goastler
  */
 
-public class Main {
+public class ExperimentBatch {
     // todo use getters and setters internally
 
     // abide by unix cmdline args convention! single char --> single hyphen, multiple chars --> double hyphen
     // todo getter sna setters
     private final Logger logger = LogUtils.buildLogger(this);
-    @Parameter(names = {"-c", "--classifier"}, description = "todo", required = true)
+    @Parameter(names = {"-c", "--classifier"}, description = "todo",
+        required = true)
     private List<String> classifierNames = new ArrayList<>();
     @Parameter(names = {"--dd", "--datasetsDir"}, description = "todo", required = true)
     private List<String> datasetDirPaths = new ArrayList<>();
@@ -84,37 +88,57 @@ public class Main {
     @Parameter(names = {"--of", "--overwriteTrain"}, description = "todo")
     private boolean overwriteTrain = false;
     @Parameter(names = {"--op", "--overwriteTest"}, description = "todo")
-    private boolean overwritePredict = false;
+    private boolean overwriteTest = false;
     private ClassifierBuilderFactory<Classifier> classifierBuilderFactory =
         ClassifierBuilderFactory.getGlobalInstance(); // todo get this by string, i.e. factory
 
-    public Main(String... args) throws Exception {
+    public ExperimentBatch(String... args) throws Exception {
         parse(args);
     }
 
     public static void main(String... args) throws Exception {
-        new Main(args).runExperiments();
+        new ExperimentBatch(args).runExperiments();
     }
 
-    public static <A> List<A> convertStringPairs(List<String> strs, BiFunction<String, String, A> func) {
-        List<A> objs = new ArrayList<>();
-        for(int i = 0; i < strs.size(); i += 2) {
-            final String trainContractAmountStr = strs.get(i);
-            final String trainContractUnitStr = strs.get(i + 1);
-            final A obj = func.apply(trainContractAmountStr, trainContractUnitStr);
-            objs.add(obj);
-        }
-        return objs;
+    @Override
+    public String toString() {
+        return "ExperimentBatch{" +
+            "classifierNames=" + classifierNames +
+            ", datasetDirPaths=" + datasetDirPaths +
+            ", datasetNames=" + datasetNames +
+            ", seeds=" + seeds +
+            ", resultsDirPath='" + resultsDirPath + '\'' +
+            ", classifierParameterStrs=" + classifierParameterStrs +
+            ", bespokeClassifierParametersMap=" + bespokeClassifierParametersMap +
+            ", universalClassifierParameters=" + universalClassifierParameters +
+            ", appendClassifierParameters=" + appendClassifierParameters +
+            ", trainTimeContractStrs=" + trainTimeContractStrs +
+            ", trainTimeContracts=" + trainTimeContracts +
+            ", trainMemoryContractStrs=" + trainMemoryContractStrs +
+            ", trainMemoryContracts=" + trainMemoryContracts +
+            ", testTimeContractStrs=" + testTimeContractStrs +
+            ", testTimeContracts=" + testTimeContracts +
+            ", checkpoint=" + checkpoint +
+            ", numThreads=" + numThreads +
+            ", appendTrainTimeContract=" + appendTrainTimeContract +
+            ", appendTrainMemoryContract=" + appendTrainMemoryContract +
+            ", appendTestTimeContract=" + appendTestTimeContract +
+            ", estimateTrainError=" + estimateTrainError +
+            ", logLevel='" + logLevel + '\'' +
+            ", overwriteTrain=" + overwriteTrain +
+            ", overwriteTest=" + overwriteTest +
+            ", classifierBuilderFactory=" + classifierBuilderFactory +
+            '}';
     }
 
     public static List<TimeAmount> convertStringPairsToTimeAmounts(List<String> strs) {
-        List<TimeAmount> times = convertStringPairs(strs, TimeAmount::parse);
+        List<TimeAmount> times = CollectionUtils.convertPairs(strs, TimeAmount::parse);
         Collections.sort(times);
         return times;
     }
 
     public static List<MemoryAmount> convertStringPairsToMemoryAmounts(List<String> strs) {
-        List<MemoryAmount> times = convertStringPairs(strs, MemoryAmount::parse);
+        List<MemoryAmount> times = CollectionUtils.convertPairs(strs, MemoryAmount::parse);
         Collections.sort(times);
         return times;
     }
@@ -209,20 +233,6 @@ public class Main {
         throw new IllegalArgumentException("couldn't load data");
     }
 
-    @Override
-    public String toString() {
-        return
-            "classifierNames=" + classifierNames +
-                ", datasetDirPaths=" + datasetDirPaths +
-                ", datasetNames=" + datasetNames +
-                ", seeds=" + seeds +
-                ", resultsDirPath='" + resultsDirPath + '\'' +
-                ", trainContracts=" + trainTimeContractStrs +
-                ", checkpoint=" + checkpoint +
-                ", classifierBuilderFactory=" + classifierBuilderFactory
-            ;
-    }
-
     private ExecutorService buildExecutor() {
         int numThreads = this.numThreads;
         if(numThreads < 1) {
@@ -241,15 +251,46 @@ public class Main {
         return paramSet;
     }
 
-    /**
-     * // todo break this into a method of splitting, i.e. resamples / cv - what about using an evaluator? //  Just set
-     * it from factory methods in params above. This currently has a problem as seed 0 doesn't //  resample to the same
-     * as the offline file split
-     */
+    private boolean runExperimentTest(Experiment experiment) {
+        try {
+            testExperiment(experiment);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    private void runExperimentTrain(Experiment experiment) {
+        forEachExperimentTrain(experiment, experimentToTrain -> {
+            if(shouldTrain(experimentToTrain)) {
+                try {
+                    trainExperiment(experiment);
+                    if(shouldTest(experiment)) {
+                        forEachExperimentTest(experiment, this::runExperimentTest);
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            // shallow copy experiment so we can reuse the configuration under the next train contract
+            //                experiment = (Experiment) experiment.shallowCopy(); // todo is this needed?
+            return true;
+        });
+    }
+
+    private Runnable buildExperimentTask(Experiment experiment) {
+        return () -> {
+            try {
+                runExperimentTrain(experiment);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        };
+    }
+
     public void runExperiments() {
         logger.info("experiments config: " + this);
         ExecutorService executor = buildExecutor();
-        List<Exception> exceptions = new ArrayList<>();
         for(final int seed : seeds) {
             for(final String datasetName : datasetNames) {
                 Instances[] data = null;
@@ -274,15 +315,8 @@ public class Main {
                         if(classifier instanceof Loggable) {
                             ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
                         }
-                        final Experiment experiment = new Experiment(trainData, testData, classifier, seed,
-                            classifierName, datasetName);
-                        executor.submit(() -> {
-                            try {
-                                runMultipleTrainAndTestExperimentBatch(experiment);
-                            } catch(Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
+                        final Experiment experiment = new Experiment(trainData, testData, classifier, seed, classifierName, datasetName);
+                        executor.submit(buildExperimentTask(experiment));
                     } catch(Exception e) {
                         e.printStackTrace();
                     }
@@ -370,53 +404,76 @@ public class Main {
         experiment.setClassifierName(workingClassifierName);
     }
 
-    // todo build experiment batch class
+    private String buildTrainResultsFilePath(Experiment experiment) {
+        return buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() +
+            ".csv";
+    }
 
-    // switch to control whether we need to switch out the random source for testing. For example, if we train a
-    // classifier for 5 mins, then test, then train for another 5 mins (to 10 mins), then test, the results are
-    // different to training for 10 minutes alone then testing. This is because the classifier sources random
-    // numbers during testing and training, therefore the extra testing in the first version causes different
-    // random numbers. Obviously this only matters if the classifier uses the random source during testing, but
-    // for safety it is best to assume all classifiers do and switch the source to an alternate source for each
-    // test batch.
+    private String buildTestResultsFilePath(Experiment experiment) {
+        return buildClassifierResultsDirPath(experiment) + "testFold" + experiment.getSeed() +
+            ".csv";
+    }
+
+    private boolean shouldTest(Experiment experiment) {
+        if(isOverwriteTest()) {
+            return true;
+        }
+        String path = buildTestResultsFilePath(experiment);
+        return !new File(path).exists();
+    }
+
+    private boolean shouldTrain(Experiment experiment) {
+        Box<Boolean> box = new Box<>(false);
+        forEachExperimentTest(experiment, experiment1 -> {
+            boolean shouldTest = shouldTest(experiment);
+            box.set(shouldTest);
+            return !shouldTest; // if we've found a test which needs to be performed then stop
+        });
+        // if there are tests to be performed then we must train
+        if(box.get()) {
+            return true;
+        }
+        if(isOverwriteTrain()) {
+            return true;
+        }
+        String path = buildTestResultsFilePath(experiment);
+        return !new File(path).exists();
+    }
 
     private void trainExperiment(Experiment experiment) throws Exception {
-        if(isOverwriteTrain() && isOverwritePredict()) {
-            // todo
-            //                getLogger().info("results exist");
-            //                continue;
-        }
         // train classifier
         experiment.train();
         // write train results if enabled
-        if(experiment.isEstimateTrain() && !isOverwriteTrain()) {
-            final String trainResultsFilePath =
-                buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() +
-                    ".csv";
+        if(experiment.isEstimateTrainError()) {
+            final String trainResultsFilePath = buildTrainResultsFilePath(experiment);
             final ClassifierResults trainResults = experiment.getTrainResults();
             FileUtils.writeToFile(trainResults.writeFullResultsToString(), trainResultsFilePath);
         }
     }
 
-    private void runMultipleTrainAndTestExperimentBatch(Experiment experiment) throws Exception {
-        appendParametersToClassifierName(experiment); // todo move to experiment?
+    private void forEachExperimentTrain(Experiment experiment, Function<Experiment, Boolean> function) {
+        appendParametersToClassifierName(experiment);
         // for each train contract (pair of strs, one for the amount, one for the unit)
         for(MemoryAmount trainMemoryContract : trainMemoryContracts) {
             applyTrainMemoryContract(experiment, trainMemoryContract);
             for(TimeAmount trainTimeContract : trainTimeContracts) {
                 applyTrainTimeContract(experiment, trainTimeContract);
-                trainExperiment(experiment);
-                runMultipleTestExperimentBatch(experiment);
-                // shallow copy experiment so we can reuse the configuration under the next train contract
-                experiment = (Experiment) experiment.shallowCopy();
+                if(!function.apply(experiment)) {
+                    return;
+                }
             }
         }
     }
 
-    private void runMultipleTestExperimentBatch(Experiment experiment) throws Exception {
+    private void forEachExperimentTest(Experiment experiment, Function<Experiment, Boolean> function) {
         for(TimeAmount testTimeContract : testTimeContracts) {
             applyTestTimeContract(experiment, testTimeContract);
-            testExperiment(experiment);
+            if(shouldTest(experiment)) {
+                boolean proceed = function.apply(experiment);
+                if(!proceed) {
+                    return;
+                }
+            }
         }
     }
 
@@ -424,12 +481,10 @@ public class Main {
         // test classifier
         experiment.test();
         // write test results
-        if(!isOverwritePredict()) { // todo check if file is there
-            final String testResultsFilePath =
-                buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() + ".csv";
-            final ClassifierResults testResults = experiment.getTestResults();
-            FileUtils.writeToFile(testResults.writeFullResultsToString(), testResultsFilePath);
-        }
+        final String testResultsFilePath =
+            buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() + ".csv";
+        final ClassifierResults testResults = experiment.getTestResults();
+        FileUtils.writeToFile(testResults.writeFullResultsToString(), testResultsFilePath);
     }
 
     private String buildClassifierResultsDirPath(Experiment experiment) {
@@ -555,12 +610,12 @@ public class Main {
         this.overwriteTrain = overwriteTrain;
     }
 
-    public boolean isOverwritePredict() {
-        return overwritePredict;
+    public boolean isOverwriteTest() {
+        return overwriteTest;
     }
 
-    public void setOverwritePredict(final boolean overwritePredict) {
-        this.overwritePredict = overwritePredict;
+    public void setOverwriteTest(final boolean overwriteTest) {
+        this.overwriteTest = overwriteTest;
     }
 
     public List<String> getTrainMemoryContractStrs() {
@@ -616,7 +671,7 @@ public class Main {
     public static class Runner {
 
         public static void main(String[] args) throws Exception { // todo abide by unix cmdline convertion
-            Main.main(
+            ExperimentBatch.main(
                 "--threads", "1"
                 , "-r", "results"
                 , "-s", "0"
