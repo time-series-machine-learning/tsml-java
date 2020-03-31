@@ -24,7 +24,6 @@ import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuild
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.memory.MemoryAmount;
 import tsml.classifiers.distance_based.utils.parallel.BlockingExecutor;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -84,7 +83,9 @@ public class ExperimentBatch {
     @Parameter(names = {"-e", "--estimateTrainError"}, description = "todo")
     private boolean estimateTrainError = false;
     @Parameter(names = {"-l", "--logLevel"}, description = "todo")
-    private String logLevel = Level.ALL.toString(); // todo set log level in classifier / experiment
+    private String logLevelClassifier = Level.SEVERE.toString(); // todo better name for these two
+    @Parameter(names = {"--el", "--experimentLogLevel"}, description = "todo")
+    private String logLevelExperiment = Level.ALL.toString();
     @Parameter(names = {"--of", "--overwriteTrain"}, description = "todo")
     private boolean overwriteTrain = false;
     @Parameter(names = {"--op", "--overwriteTest"}, description = "todo")
@@ -124,7 +125,8 @@ public class ExperimentBatch {
             ", appendTrainMemoryContract=" + appendTrainMemoryContract +
             ", appendTestTimeContract=" + appendTestTimeContract +
             ", estimateTrainError=" + estimateTrainError +
-            ", logLevel='" + logLevel + '\'' +
+            ", logLevelClassifier='" + logLevelClassifier + '\'' +
+            ", logLevelExperiment='" + logLevelExperiment + '\'' +
             ", overwriteTrain=" + overwriteTrain +
             ", overwriteTest=" + overwriteTest +
             ", classifierBuilderFactory=" + classifierBuilderFactory +
@@ -157,8 +159,9 @@ public class ExperimentBatch {
     }
 
     private void parseLogLevel() {
-        if(logLevel != null) {
-            logger.setLevel(Level.parse(logLevel));
+        logger.finest("parsing {" + logLevelExperiment + "} as logLevel");
+        if(logLevelExperiment != null) {
+            logger.setLevel(Level.parse(logLevelExperiment));
         }
     }
 
@@ -172,6 +175,7 @@ public class ExperimentBatch {
         if(trainTimeContracts.isEmpty()) {
             trainTimeContracts.add(null);
         }
+        logger.finest("parsed trainTimeContracts as {" + trainTimeContracts + "}");
     }
 
     private void parseTestTimeContracts() {
@@ -182,6 +186,7 @@ public class ExperimentBatch {
         if(testTimeContracts.isEmpty()) {
             testTimeContracts.add(null);
         }
+        logger.finest("parsed testTimeContracts as {" + testTimeContracts + "}");
     }
 
     private void parseTrainMemoryContracts() {
@@ -192,6 +197,7 @@ public class ExperimentBatch {
         if(trainMemoryContracts.isEmpty()) {
             trainMemoryContracts.add(null);
         }
+        logger.finest("parsed trainMemoryContracts as {" + trainMemoryContracts + "}");
     }
 
     private void parseClassifierParameters() throws Exception {
@@ -216,21 +222,29 @@ public class ExperimentBatch {
             }
             paramSet.setOptions(parameterName, parameterValue);
         }
+        logger.finest("parsed bespokeClassifierParametersMap as {" + bespokeClassifierParametersMap + "}");
+        logger.finest("parsed universalClassifierParametersMap as {" + universalClassifierParameters + "}");
     }
 
     private Instances[] loadData(String name, int seed) {
+        List<Exception> exceptions = new ArrayList<>();
         for(final String path : datasetDirPaths) {
             try {
                 Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
                 if(data == null) {
                     throw new Exception();
                 }
+                logger.finest("loaded {" + name + "} from {" + path + "}");
                 return data;
             } catch(Exception ignored) {
-
+                exceptions.add(ignored);
             }
         }
-        throw new IllegalArgumentException("couldn't load data");
+        IllegalArgumentException overallException = new IllegalArgumentException("couldn't load data");
+        for(Exception exception : exceptions) {
+            overallException.addSuppressed(exception);
+        }
+        throw overallException;
     }
 
     private ExecutorService buildExecutor() {
@@ -239,15 +253,19 @@ public class ExperimentBatch {
             numThreads = Runtime.getRuntime().availableProcessors();
         }
         ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+        logger.finest("built BlockingExecutor containing {" + numThreads + "} threads");
         return new BlockingExecutor(threadPool);
     }
 
-    private ParamSet buildParamSetForClassifier(String classifierName) throws Exception {
+    private ParamSet buildParamSetForClassifier(String classifierName) throws Exception { // todo apply
         ParamSet bespokeClassifierParameters = bespokeClassifierParametersMap
             .getOrDefault(classifierName, new ParamSet());
         ParamSet paramSet = new ParamSet();
         paramSet.addAll(bespokeClassifierParameters);
         paramSet.addAll(universalClassifierParameters);
+        if(!paramSet.isEmpty()) {
+            logger.finest("built ParamSet {" + paramSet + "}");
+        }
         return paramSet;
     }
 
@@ -311,11 +329,9 @@ public class ExperimentBatch {
                             continue;
                         }
                         final Classifier classifier = classifierBuilder.build();
-
-                        if(classifier instanceof Loggable) {
-                            ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
-                        }
                         final Experiment experiment = new Experiment(trainData, testData, classifier, seed, classifierName, datasetName);
+                        experiment.getLogger().setLevel(Level.parse(logLevelClassifier));
+                        experiment.setEstimateTrainError(estimateTrainError);
                         executor.submit(buildExperimentTask(experiment));
                     } catch(Exception e) {
                         e.printStackTrace();
@@ -329,14 +345,7 @@ public class ExperimentBatch {
     private void applyTrainTimeContract(Experiment experiment, TimeAmount trainTimeContract) {
         // setup the next train contract
         String classifierName = experiment.getClassifierName();
-        if(trainTimeContract == null) {
-            // no train contract
-            logger.info(
-                "no train time contract for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName()
-                    + "}");
-            // todo set train contract disabled somehow? Tony set some boolean in the api somewhere, see if
-            //  that'll do
-        } else {
+        if(trainTimeContract != null) {
             logger.info(
                 "train time contract of {" + trainTimeContract + "} for {" + experiment.getClassifierName() + "} on {"
                     + experiment.getDatasetName() + "}");
@@ -346,18 +355,17 @@ public class ExperimentBatch {
                 experiment
                     .setClassifierName(classifierName + "_" + trainTimeContract.toString().replaceAll(" ", "_"));
             }
+        } else {
+            // no train contract
+            // todo set train contract disabled somehow? Tony set some boolean in the api somewhere, see if
+            //  that'll do
         }
     }
 
     private void applyTrainMemoryContract(Experiment experiment, MemoryAmount trainMemoryContract) {
         // setup the next train contract
         String classifierName = experiment.getClassifierName();
-        if(trainMemoryContract == null) {
-            // no train contract
-            logger.info(
-                "no train memory contract for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName()
-                    + "}");
-        } else {
+        if(trainMemoryContract != null) {
             logger.info(
                 "train memory contract of {" + trainMemoryContract + "} for {" + experiment.getClassifierName() + "} "
                     + "on {"
@@ -368,18 +376,15 @@ public class ExperimentBatch {
                 experiment
                     .setClassifierName(classifierName + "_" + trainMemoryContract.toString().replaceAll(" ", "_"));
             }
+        } else {
+            // no train contract
         }
     }
 
     private void applyTestTimeContract(Experiment experiment, TimeAmount testTimeContract) {
         // setup the next train contract
         String classifierName = experiment.getClassifierName();
-        if(testTimeContract == null) {
-            // no train contract
-            logger.info(
-                "no test time contract for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName()
-                    + "}");
-        } else {
+        if(testTimeContract != null) {
             logger.info(
                 "test time contract of {" + testTimeContract + "} for {" + experiment.getClassifierName() + "} "
                     + "on {"
@@ -391,17 +396,21 @@ public class ExperimentBatch {
                 experiment
                     .setClassifierName(classifierName + "_" + testTimeContract.toString().replaceAll(" ", "_"));
             }
+        } else {
+            // no train contract
         }
     }
 
     private void appendParametersToClassifierName(Experiment experiment) {
-        String workingClassifierName = experiment.getClassifierName();
         if(appendClassifierParameters) {
+            String origClassifierName = experiment.getClassifierName();
+            String workingClassifierName = origClassifierName;
             ParamSet paramSet = experiment.getParamSet();
             String paramSetStr = "_" + paramSet.toString().replaceAll(" ", "_").replaceAll("\"", "#");
             workingClassifierName += paramSetStr;
+            experiment.setClassifierName(workingClassifierName);
+            logger.info("changing {" + origClassifierName + "} to {" + workingClassifierName + "}");
         }
-        experiment.setClassifierName(workingClassifierName);
     }
 
     private String buildTrainResultsFilePath(Experiment experiment) {
@@ -415,38 +424,65 @@ public class ExperimentBatch {
     }
 
     private boolean shouldTest(Experiment experiment) {
+        return shouldTest(experiment, true);
+    }
+
+    private boolean shouldTest(Experiment experiment, boolean log) {
         if(isOverwriteTest()) {
+            if(log) logger.finest("overwriting test results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
             return true;
         }
         String path = buildTestResultsFilePath(experiment);
-        return !new File(path).exists();
+        boolean result = !new File(path).exists();
+        if(result) {
+            if(log) logger.finest("non-existent test results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+        } else {
+            if(log) logger.info("existing test results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+        }
+        return result;
     }
 
     private boolean shouldTrain(Experiment experiment) {
         Box<Boolean> box = new Box<>(false);
         forEachExperimentTest(experiment, experiment1 -> {
-            boolean shouldTest = shouldTest(experiment);
+            boolean shouldTest = shouldTest(experiment, false);
             box.set(shouldTest);
             return !shouldTest; // if we've found a test which needs to be performed then stop
         });
         // if there are tests to be performed then we must train
         if(box.get()) {
+            logger.finest("testing required so overwriting train results for {" + experiment.getClassifierName() + "} "
+                + "on {" + experiment.getDatasetName() + "}");
             return true;
+        }
+        if(!isEstimateTrainError()) {
+            logger.finest("not estimating train error for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+            return false;
         }
         if(isOverwriteTrain()) {
+            logger.finest("overwriting train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
             return true;
         }
-        String path = buildTestResultsFilePath(experiment);
-        return !new File(path).exists();
+        String path = buildTrainResultsFilePath(experiment);
+        boolean exists = new File(path).exists();
+        if(exists) {
+            logger.finest("existing train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+        } else {
+            logger.finest("non-existent train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+        }
+        return !exists;
     }
 
     private void trainExperiment(Experiment experiment) throws Exception {
         // train classifier
+        logger.info("training {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
         experiment.train();
         // write train results if enabled
         if(experiment.isEstimateTrainError()) {
+            logger.info("finding train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
             final String trainResultsFilePath = buildTrainResultsFilePath(experiment);
             final ClassifierResults trainResults = experiment.getTrainResults();
+            logger.info("writing train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "} to {" + trainResultsFilePath + "}");
             FileUtils.writeToFile(trainResults.writeFullResultsToString(), trainResultsFilePath);
         }
     }
@@ -469,8 +505,7 @@ public class ExperimentBatch {
         for(TimeAmount testTimeContract : testTimeContracts) {
             applyTestTimeContract(experiment, testTimeContract);
             if(shouldTest(experiment)) {
-                boolean proceed = function.apply(experiment);
-                if(!proceed) {
+                if(!function.apply(experiment)) {
                     return;
                 }
             }
@@ -479,18 +514,18 @@ public class ExperimentBatch {
 
     private void testExperiment(Experiment experiment) throws Exception {
         // test classifier
+        logger.info("testing {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
         experiment.test();
         // write test results
-        final String testResultsFilePath =
-            buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() + ".csv";
+        final String testResultsFilePath = buildTestResultsFilePath(experiment);
         final ClassifierResults testResults = experiment.getTestResults();
+        logger.info("writing test results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "} to {" + testResultsFilePath + "}");
         FileUtils.writeToFile(testResults.writeFullResultsToString(), testResultsFilePath);
     }
 
     private String buildClassifierResultsDirPath(Experiment experiment) {
-        final String classifierResultsDirPath =
-            resultsDirPath + "/" + experiment.getClassifierName() + "/" + experiment.getDatasetName() + "/";
-        return classifierResultsDirPath;
+        return resultsDirPath + "/" + experiment.getClassifierName() + "/Predictions/" + experiment.getDatasetName() +
+            "/";
     }
 
     public List<String> getClassifierNames() {
@@ -581,12 +616,12 @@ public class ExperimentBatch {
         this.estimateTrainError = estimateTrainError;
     }
 
-    public String getLogLevel() {
-        return logLevel;
+    public String getLogLevelClassifier() {
+        return logLevelClassifier;
     }
 
-    public void setLogLevel(final String logLevel) {
-        this.logLevel = logLevel;
+    public void setLogLevelClassifier(final String logLevelClassifier) {
+        this.logLevelClassifier = logLevelClassifier;
     }
 
     public Logger getLogger() {
@@ -666,6 +701,53 @@ public class ExperimentBatch {
 
     public void setAppendTestTimeContract(final boolean appendTestTimeContract) {
         this.appendTestTimeContract = appendTestTimeContract;
+    }
+
+    public List<String> getClassifierParameterStrs() {
+        return classifierParameterStrs;
+    }
+
+    public ExperimentBatch setClassifierParameterStrs(final List<String> classifierParameterStrs) {
+        this.classifierParameterStrs = classifierParameterStrs;
+        return this;
+    }
+
+    public Map<String, ParamSet> getBespokeClassifierParametersMap() {
+        return bespokeClassifierParametersMap;
+    }
+
+    public ExperimentBatch setBespokeClassifierParametersMap(
+        final Map<String, ParamSet> bespokeClassifierParametersMap) {
+        this.bespokeClassifierParametersMap = bespokeClassifierParametersMap;
+        return this;
+    }
+
+    public ParamSet getUniversalClassifierParameters() {
+        return universalClassifierParameters;
+    }
+
+    public ExperimentBatch setUniversalClassifierParameters(
+        final ParamSet universalClassifierParameters) {
+        this.universalClassifierParameters = universalClassifierParameters;
+        return this;
+    }
+
+    public boolean isAppendClassifierParameters() {
+        return appendClassifierParameters;
+    }
+
+    public ExperimentBatch setAppendClassifierParameters(final boolean appendClassifierParameters) {
+        this.appendClassifierParameters = appendClassifierParameters;
+        return this;
+    }
+
+    public String getLogLevelExperiment() {
+        return logLevelExperiment;
+    }
+
+    public ExperimentBatch setLogLevelExperiment(final String logLevelExperiment) {
+        this.logLevelExperiment = logLevelExperiment;
+        return this;
     }
 
     public static class Runner {
