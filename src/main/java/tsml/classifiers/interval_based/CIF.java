@@ -118,6 +118,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private String visSavePath;
     private String interpSavePath;
     private ArrayList<ArrayList<double[]>> interpData;
+    private int interpCount = 0;
 
     /** Stored for temporal importance curves **/
     private int seriesLength;
@@ -690,7 +691,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
         }
 
-        if (interpSavePath != null) outputInterpretability();
+        if (interpSavePath != null) lastClassifiedInterpretability();
 
         double sum=0;
         for(double x:d)
@@ -820,7 +821,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     @Override
     public boolean setInterpretabilitySavePath(String path) {
-        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
+        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path +
+                "/InterpretabilityCIF" + seed + "/");
         if(validPath){
             interpSavePath = path;
         }
@@ -828,7 +830,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public boolean outputInterpretability() {
+    public boolean lastClassifiedInterpretability() {
         if (!(base instanceof TimeSeriesTree)) {
             System.err.println("CIF interpretability output only available for time series tree.");
             return false;
@@ -839,11 +841,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             return false;
         }
 
-        for (ArrayList<double[]> treePaths: interpData){
-            for (double[] pathInfo: treePaths){
-
+        OutFile of = new OutFile(visSavePath + "/InterpretabilityCIF" + seed + "/pred" + interpCount + ".txt");
+        for (int i = 0; i < interpData.size(); i++){
+            of.writeLine("Tree " + i);
+            for (int n = 0; n < interpData.get(i).size(); n++){
+                String ln = Arrays.toString(interpData.get(i).get(n));
+                of.writeLine(ln);
             }
         }
+        of.closeFile();
+        interpCount++;
 
         return true;
     }

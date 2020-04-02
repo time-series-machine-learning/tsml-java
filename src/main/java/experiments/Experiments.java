@@ -374,6 +374,9 @@ public class Experiments  {
                 LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Visualisable.");
         }
 
+        //actual output of files for this is done in the classifier distForInstance currently.
+        //probably better suited to evaluator stuff, for proper prediction timings if anything but waiting to consult
+        //first.
         if (expSettings.interpret) {
             if (classifier instanceof Interpretable) {
                 ((Interpretable) classifier).setInterpretabilitySavePath(expSettings.supportingFilePath);

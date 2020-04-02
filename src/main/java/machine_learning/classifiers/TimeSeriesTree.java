@@ -384,13 +384,14 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
             if (bestSplit > -1) {
                 if (inst.value(bestSplit) <= bestThreshold) {
                     info.add(new double[]{bestSplit, bestThreshold, 0});
-                    return children[0].distributionForInstance(inst);
+                    return children[0].distributionForInstance(inst, info);
                 } else {
-                    info.add(new double[]{bestSplit, bestThreshold, 0});
-                    return children[1].distributionForInstance(inst);
+                    info.add(new double[]{bestSplit, bestThreshold, 1});
+                    return children[1].distributionForInstance(inst, info);
                 }
             }
             else{
+                info.add(leafDistribution);
                 return leafDistribution;
             }
         }
