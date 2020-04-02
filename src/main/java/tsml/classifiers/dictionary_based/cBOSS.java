@@ -436,9 +436,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
+        trainResults.setBuildTime(System.nanoTime());
+        long startTime=System.nanoTime();
 
         if (data.checkForAttributeType(Attribute.RELATIONAL)) {
             isMultivariate = true;
@@ -455,17 +456,14 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (winInc < 1) winInc = 1;
 
         //path checkpoint files will be saved to
-        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
-        File f = new File(checkpointPath + "BOSS.ser");
-
+//        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
+        File file = new File(checkpointPath + "BOSS" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && f.exists()) {
-            if(debug)
-                System.out.println("Loading from checkpoint file");
-            long time = System.nanoTime();
-            loadFromFile(checkpointPath + "BOSS.ser");
-            if(debug)
-                System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading ser files");
+        if (checkpoint && file.exists()){
+            //path checkpoint files will be saved to
+            printLineDebug("Loading from checkpoint file");
+            loadFromFile(checkpointPath + "BOSS" + seed + ".ser");
+            //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
         //initialise variables
         else {

@@ -88,7 +88,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private int minIntervalLength = 16;
     private int numClassifiers = 500;
     //Global variable due to serialisation.
-    private int treeCount = 0;
+    private int classifiersBuilt = 0;
     //Used in conjunction with contract to enforce a minimum number of trees.
     private int minNumTrees = 0;
     //Enable random downsampling of intervals.
@@ -117,11 +117,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private ArrayList<Integer> rawIntervalIndexes = null;
     private PowerSpectrum PS;
     private TransformType transformType = TransformType.ACF_PS;
-    private String serialisePath = null;
     private Instances data = null;
-
-    //Updated work
-    private ArrayList<int[]> startEndPoints = null;
 
     /** If trainAccuracy is required, there are two mechanisms to obtain it:
      * 2. estimator=CV: do a 10x CV on the train set with a clone
@@ -140,6 +136,17 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         else
             throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
     }
+
+
+/**** Checkpointing variables *****/
+    private boolean checkpoint = false;
+    private String checkpointPath = null;
+    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
+    private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
+
+    //Updated work
+    private ArrayList<int[]> startEndPoints = null;
+
 
 
     /**
@@ -172,7 +179,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         rawIntervalIndexes = new ArrayList<>();
         startEndPoints = new ArrayList<>();
         PS = new PowerSpectrum();
-        treeCount = 0;
+        classifiersBuilt = 0;
     }
 
     /**
@@ -244,10 +251,13 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      * @param serialisePath Path to folder in which to save serialisation files.
      */
     @Override //Checkpointable
-    public boolean setCheckpointPath(String serialisePath) {
-        boolean validPath=Checkpointable.super.createDirectories(serialisePath);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
+        printLineDebug(" Writing checkpoint to "+path);
         if(validPath){
-            this.serialisePath = serialisePath;
+            this.checkpointPath = path;
+            checkpoint = true;
+
         }
         return validPath;
     }
@@ -335,10 +345,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         //If this tree is one of first four trees use tree number as powersOf2 index. Establishes robust foundation for
         //timing model. However, logic should be refactored to check this before executing prior code.
         try{
-            if(treeCount < 4){
-                index = (treeCount + 2) < powersOf2.size()-1 ? (treeCount + 2) : powersOf2.size()-1;
+            if(classifiersBuilt < 4){
+                index = (classifiersBuilt + 2) < powersOf2.size()-1 ? (classifiersBuilt + 2) : powersOf2.size()-1;
             }
-            if(treeCount == 4){
+            if(classifiersBuilt == 4){
                 index = powersOf2.size()-1;
             }
             intervalInfo[0] = powersOf2.get(index);
@@ -501,12 +511,24 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
         return temp;
     }
+    @Override // Checkpointable
+    public void saveToFile(String filename) throws Exception{
+        Checkpointable.super.saveToFile(checkpointPath + "RISE" + seed + "temp.ser");
+        File file = new File(checkpointPath + "RISE" + seed + "temp.ser");
+        File file2 = new File(checkpointPath + "RISE" + seed + ".ser");
+        file2.delete();
+        file.renameTo(file2);
+    }
 
+    /**
+     * Legacy method for old version of serialise
+      * @param seed
+     */
     private void saveToFile(long seed){
         try{
             System.out.println("Serialising classifier.");
-            File file = new File(serialisePath
-                    + (serialisePath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
+            File file = new File(checkpointPath
+                    + (checkpointPath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
                     + seed
                     + ".txt");
             file.setWritable(true, false);
@@ -518,7 +540,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             o.writeObject(this);
             o.close();
             f.close();
-            System.out.println("Serialisation completed: " + treeCount + " trees");
+            System.out.println("Serialisation completed: " + classifiersBuilt + " trees");
         } catch (IOException ex) {
             System.out.println("Serialisation failed: " + ex);
         }
@@ -529,15 +551,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         RISE temp = null;
         try {
             FileInputStream fi = new FileInputStream(new File(
-                    serialisePath
-                            + (serialisePath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
+                    checkpointPath
+                            + (checkpointPath.isEmpty()? "SERIALISE_cRISE_" : "\\SERIALISE_cRISE_")
                             + seed
                             + ".txt"));
             oi = new ObjectInputStream(fi);
             temp = (RISE)oi.readObject();
             oi.close();
             fi.close();
-            System.out.println("File load successful: " + ((RISE)temp).treeCount + " trees.");
+            System.out.println("File load successful: " + ((RISE)temp).classifiersBuilt + " trees.");
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("File load: failed.");
         }
@@ -546,31 +568,35 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     @Override
     public void copyFromSerObject(Object temp){
-
+        RISE rise;
         try{
-            this.baseClassifiers = ((RISE)temp).baseClassifiers;
-            this.classifier = ((RISE)temp).classifier;
-            this.data = ((RISE)temp).data;
-            this.downSample = ((RISE)temp).downSample;
-            this.PS = ((RISE)temp).PS;
-            this.intervalsAttIndexes = ((RISE)temp).intervalsAttIndexes;
-            this.intervalsInfo = ((RISE)temp).intervalsInfo;
-            this.maxIntervalLength = ((RISE)temp).maxIntervalLength;
-            this.minIntervalLength = ((RISE)temp).minIntervalLength;
-            this.numClassifiers = ((RISE)temp).numClassifiers;
-            this.rand = ((RISE)temp).rand;
-            this.rawIntervalIndexes = ((RISE)temp).rawIntervalIndexes;
-            this.serialisePath = ((RISE)temp).serialisePath;
-            this.stabilise = ((RISE)temp).stabilise;
-            this.timer = ((RISE)temp).timer;
-            this.transformType = ((RISE)temp).transformType;
-            this.treeCount = ((RISE)temp).treeCount;
-            this.startEndPoints = ((RISE)temp).startEndPoints;
-            this.loadedFromFile = true;
-            System.out.println("Varible assignment: successful.");
+            rise=(RISE)temp;
         }catch(Exception ex){
-            System.out.println("Varible assignment: unsuccessful.");
+            throw new RuntimeException(" Trying to load from ser object thar is not a RISE object. QUITING at copyFromSerObject");
         }
+
+        this.baseClassifiers = rise.baseClassifiers;
+        this.classifier = rise.classifier;
+        this.data = rise.data;
+        this.downSample = rise.downSample;
+        this.PS = rise.PS;
+        this.intervalsAttIndexes = rise.intervalsAttIndexes;
+        this.intervalsInfo = rise.intervalsInfo;
+        this.maxIntervalLength = rise.maxIntervalLength;
+        this.minIntervalLength = rise.minIntervalLength;
+        this.numClassifiers = rise.numClassifiers;
+        this.rand = rise.rand;
+        this.rawIntervalIndexes = rise.rawIntervalIndexes;
+        this.checkpointPath = rise.checkpointPath;
+        this.stabilise = rise.stabilise;
+        this.timer = rise.timer;
+        this.transformType = rise.transformType;
+        this.classifiersBuilt = rise.classifiersBuilt;
+        this.startEndPoints = rise.startEndPoints;
+        this.loadedFromFile = true;
+        printDebug("Variable assignment: successful.");
+        printDebug("Classifiers built = "+classifiersBuilt);
+
 
     }
 
@@ -596,23 +622,23 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void buildClassifier(Instances trainingData) throws Exception {
+        // Can classifier handle the data?
+        getCapabilities().testWithFail(trainingData);
         //Start forest timer.
         timer.forestStartTime = System.nanoTime();
-
-        if(serialisePath != null){
-            RISE temp = this.readSerialise(seed);
-            if(temp != null) {
-                this.copyFromSerObject(temp);
-                this.loadedFromFile = true;
-            }
+        File file = new File(checkpointPath + "RISE" + seed + ".ser");
+        //if checkpointing and serialised files exist load said files
+        if (checkpoint && file.exists()){
+            //path checkpoint files will be saved to
+            printLineDebug("Loading from checkpoint file");
+            loadFromFile(checkpointPath + "RISE" + seed + ".ser");
+            //               checkpointTimeElapsed -= System.nanoTime()-t1;
+            this.loadedFromFile = true;
         }
-
         //If not loaded from file e.g. Starting fresh experiment.
         if (!loadedFromFile) {
             //Just used for getParameters.
             data = trainingData;
-            // Can classifier handle the data?
-            getCapabilities().testWithFail(data);
             //(re)Initialise all variables to account for multiple calls of buildClassifier.
             initialise();
 
@@ -623,6 +649,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             if(minIntervalLength >= trainingData.numAttributes()-1 || minIntervalLength <= 0){
                 minIntervalLength = (trainingData.numAttributes()-1)/2;
             }
+            lastCheckpointTime=timer.forestStartTime;
 
         }
 
@@ -634,7 +661,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
-        for (; treeCount < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); treeCount++) {
+        for (; classifiersBuilt < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); classifiersBuilt++) {
 
             //Start tree timer.
             timer.treeStartTime = System.nanoTime();
@@ -668,13 +695,28 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             //Add dependant variable to model (time taken).
             timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
 
-            //Serialise every 100 trees (if path has been set).
-            if(treeCount % 100 == 0 && treeCount != 0 && serialisePath != null){
-                saveToFile(seed);
+            //Serialise every 100 trees by default (if set to checkpoint).
+            if (checkpoint){
+                if(checkpointTime>0)    //Timed checkpointing
+                {
+                    if(System.nanoTime()-lastCheckpointTime>checkpointTime){
+                        saveToFile(checkpointPath);
+//                        checkpoint(startTime);
+                        lastCheckpointTime=System.nanoTime();
+                    }
+                }
+                else {    //Default checkpoint every 100 trees
+                    if(classifiersBuilt %100 == 0 && classifiersBuilt >0)
+                        saveToFile(checkpointPath);
+                }
             }
         }
-        if (serialisePath != null) {
-            saveToFile(seed);
+        if(classifiersBuilt==0){//Not enough time to build a single classifier
+            throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
+        }
+
+        if (checkpoint) {
+            saveToFile(checkpointPath);
         }
 
         if (timer.modelOutPath != null) {
@@ -926,8 +968,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
             distribution[(int)baseClassifiers.get(i).classifyInstance((intervalInstance))]++;
         }
-        for (int j = 0; j < testInstance.numClasses(); j++) {
-            distribution[j] /= baseClassifiers.size();
+        if(baseClassifiers.size()>0) {
+            for (int j = 0; j < testInstance.numClasses(); j++) {
+                distribution[j] /= baseClassifiers.size();
+            }
         }
         return distribution;
     }
@@ -943,7 +987,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
         String result=super.getParameters();
         result+=", MaxNumTrees," + numClassifiers
-                + ", NumTrees," + treeCount
+                + ", NumTrees," + classifiersBuilt
                 + ", MinIntervalLength," + minIntervalLength
                 + ", Filters, " + this.transformType.toString()
                 + ",BaseClassifier, "+classifier.getClass().getSimpleName();
@@ -1191,10 +1235,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             double y = timeRemaining;
             double x = ((-b) + (Math.sqrt((b * b) - (4 * a * (c - y))))) / (2 * a);
 
-            if (treeCount < minNumTrees) {
-                x = x / (minNumTrees - treeCount);
+            if (classifiersBuilt < minNumTrees) {
+                x = x / (minNumTrees - classifiersBuilt);
             }
-            if(treeCount == minNumTrees){
+            if(classifiersBuilt == minNumTrees){
                 maxIntervalLength = data.numAttributes()-1;
             }
 

@@ -166,9 +166,20 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     */
     enum EstimatorMethod{CV,OOB}
     private EstimatorMethod estimator=EstimatorMethod.CV;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
+    }
 
+
+    /**** Checkpointing variables *****/
     private boolean checkpoint = false;
-    private String checkpointPath;
+    private String checkpointPath=null;
     private long checkpointTime = 0;    //Time between checkpoints in nanosecs
     private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
 
@@ -507,7 +518,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                     }
                 }
                 else {    //Default checkpoint every 100 trees
-                    if(numClassifiers%100 == 0)
+                    if(classifiersBuilt%100 == 0 && classifiersBuilt>0)
                         saveToFile(checkpointPath);
 //                        checkpoint(startTime);
                 }
@@ -516,8 +527,12 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if(classifiersBuilt==0){//Not enough time to build a single classifier
             throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
         }
+        if (checkpoint) {
+            saveToFile(checkpointPath);
+        }
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
+
     /** Estimate accuracy stage: Three scenarios
      * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
     *  If we built on all data (bagging ==false) we estimate either
@@ -611,15 +626,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //        this.trainContractTimeNanos=other.trainContractTimeNanos;
     }
 
-    public void setEstimatorMethod(String str){
-        String s=str.toUpperCase();
-        if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
-        else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else
-            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
-    }
 /**
  * @param ins to classifier
  * @return array of doubles: probability of each class 
@@ -798,7 +804,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         return System.nanoTime()-start < trainContractTimeNanos;
     }
 
-    @Override // C
+    @Override // Checkpointable
     public void saveToFile(String filename) throws Exception{
         Checkpointable.super.saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
         File file = new File(checkpointPath + "TSF" + seed + "temp.ser");

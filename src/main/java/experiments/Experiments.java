@@ -1002,6 +1002,7 @@ public class Experiments  {
                 //some kind of checkpointing is wanted
 
                 // is it simply "true"?
+
                 checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
                 if(!checkpointing){
                     //it's not. must be a timing string
