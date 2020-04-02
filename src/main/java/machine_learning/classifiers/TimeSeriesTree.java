@@ -15,13 +15,11 @@
 package machine_learning.classifiers;
 
 import weka.classifiers.AbstractClassifier;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.Randomizable;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import static utilities.ArrayUtilities.normalise;
@@ -32,19 +30,36 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
     private static double log2 = Math.log(2);
 
     private boolean norm = true;
-    private boolean useEntrance = true;
     private int k = 20;
 
     private int seed = 0;
     private Random rand;
 
     private TreeNode root;
+
     private double[] mean;
     private double[] stdev;
+    private int numAttributes;
 
     protected static final long serialVersionUID = 1L;
 
     public TimeSeriesTree(){}
+
+    @Override
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+
+        result.setMinimumNumberInstances(2);
+
+        // attributes
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+
+        return result;
+    }
 
     @Override
     public void setSeed(int seed) {
@@ -58,17 +73,18 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        if (data.classIndex() != data.numAttributes()-1) throw new Exception("Class attribute must be the last index.");
+        numAttributes = data.numAttributes()-1;
+        if (data.classIndex() != numAttributes) throw new Exception("Class attribute must be the last index.");
 
         rand = new Random(seed);
 
         Instances newData;
         if (norm){
             newData = new Instances(data);
-            mean = new double[newData.numAttributes()-1];
-            stdev = new double[newData.numAttributes()-1];
+            mean = new double[numAttributes];
+            stdev = new double[numAttributes];
 
-            for (int i = 0; i < newData.numAttributes()-1; i++){
+            for (int i = 0; i < numAttributes; i++){
                 for (Instance inst: newData){
                     mean[i] += inst.value(i);
                 }
@@ -114,13 +130,21 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
 
         int maxClass = 0;
         for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass]) {
+            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }
-            else if (probs[n] == probs[maxClass]){
-                if (rand.nextBoolean()){
-                    maxClass = n;
-                }
+        }
+
+        return maxClass;
+    }
+
+    public double classifyInstance(Instance instance, ArrayList<double[]> info) throws Exception {
+        double[] probs = distributionForInstance(instance, info);
+
+        int maxClass = 0;
+        for (int n = 1; n < probs.length; ++n) {
+            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
+                maxClass = n;
             }
         }
 
@@ -132,7 +156,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         Instance newInst;
         if (norm){
             newInst = new DenseInstance(instance);
-            for (int i = 0; i < newInst.numAttributes()-1; i++){
+            for (int i = 0; i < numAttributes; i++){
                 newInst.setValue(i, (newInst.value(i) - mean[i]) / stdev[i]);
             }
             newInst.setDataset(instance.dataset());
@@ -144,9 +168,25 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         return root.distributionForInstance(newInst);
     }
 
+    public double[] distributionForInstance(Instance instance, ArrayList<double[]> info) throws Exception {
+        Instance newInst;
+        if (norm){
+            newInst = new DenseInstance(instance);
+            for (int i = 0; i < numAttributes; i++){
+                newInst.setValue(i, (newInst.value(i) - mean[i]) / stdev[i]);
+            }
+            newInst.setDataset(instance.dataset());
+        }
+        else{
+            newInst = instance;
+        }
+
+        return root.distributionForInstance(newInst, info);
+    }
+
     private double[][] findThresholds(Instances data){
-        double[][] thresholds = new double[data.numAttributes()-1][k];
-        for (int i = 0; i < data.numAttributes()-1; i++){
+        double[][] thresholds = new double[numAttributes][k];
+        for (int i = 0; i < numAttributes; i++){
             double min = Double.MAX_VALUE;
             double max = Double.MIN_VALUE;
             for (Instance inst: data){
@@ -190,11 +230,29 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         }
     }
 
+    public boolean[] getAttributesUsed(){
+        boolean[] attsUsed = new boolean[numAttributes];
+        findAttributesUsed(root, attsUsed);
+        return attsUsed;
+    }
+
+    private void findAttributesUsed(TreeNode tree, boolean[] attsUsed){
+        //if (!attsUsed[tree.bestSplit]){
+            attsUsed[tree.bestSplit] = true;
+        //}
+
+        for (int i = 0; i < tree.children.length; i++){
+            if (tree.children[i].bestSplit > -1){
+                findAttributesUsed(tree.children[i], attsUsed);
+            }
+        }
+    }
+
     private class TreeNode implements Serializable {
         int bestSplit = -1;
         double bestThreshold = 0;
         double bestGain = 0;
-        double bestMargin = 0;
+        double bestMargin = Double.MIN_VALUE;
         TreeNode[] children;
         double[] leafDistribution;
 
@@ -205,36 +263,26 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         void buildTree(Instances data, double[][] thresholds, double entropy, double[] distribution){
             double[][] bestEntropies = new double[0][0];
 
-            for (int i = 0; i < data.numAttributes()-1; i++){
+            for (int i = 0; i < numAttributes; i++){
                 for (int n = 0; n < k; n++){
                     //gain stored in [0][0]
                     double[][] entropies = entropyGain(data, i, thresholds[i][n], entropy);
 
-                    if (useEntrance){
-                        if (entropies[0][0] > bestGain){
-                            bestSplit = i;
-                            bestThreshold = thresholds[i][n];
-                            bestGain = entropies[0][0];
-                            bestMargin = findMargin(data, i, thresholds[i][n]);
-                            bestEntropies = entropies;
-                        }
-                        else if (entropies[0][0] == bestGain && entropies[0][0] > 0){
-                            double margin = findMargin(data, i, thresholds[i][n]);
-
-                            if (margin > bestMargin || (margin == bestMargin && rand.nextBoolean())){
-                                bestSplit = i;
-                                bestThreshold = thresholds[i][n];
-                                bestMargin = margin;
-                                bestEntropies = entropies;
-                            }
-                        }
+                    if (entropies[0][0] > bestGain){
+                        bestSplit = i;
+                        bestThreshold = thresholds[i][n];
+                        bestGain = entropies[0][0];
+                        bestMargin = Double.MIN_VALUE;
+                        bestEntropies = entropies;
                     }
-                    else{
-                        if (entropies[0][0] > bestGain ||
-                                (entropies[0][0] == bestGain && entropies[0][0] > 0 && rand.nextBoolean())){
+                    else if (entropies[0][0] == bestGain && entropies[0][0] > 0){
+                        double margin = findMargin(data, i, thresholds[i][n]);
+                        if (bestMargin == Double.MIN_VALUE) bestMargin = findMargin(data, bestSplit, bestThreshold);
+
+                        if (margin > bestMargin || (margin == bestMargin && rand.nextBoolean())){
                             bestSplit = i;
                             bestThreshold = thresholds[i][n];
-                            bestGain = entropies[0][0];
+                            bestMargin = margin;
                             bestEntropies = entropies;
                         }
                     }
@@ -251,7 +299,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
             }
             else{
                 leafDistribution = distribution;
-                normalise(leafDistribution);
+                leafDistribution = normalise(leafDistribution);
             }
         }
 
@@ -320,6 +368,21 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
                 if (inst.value(bestSplit) <= bestThreshold) {
                     return children[0].distributionForInstance(inst);
                 } else {
+                    return children[1].distributionForInstance(inst);
+                }
+            }
+            else{
+                return leafDistribution;
+            }
+        }
+
+        double[] distributionForInstance(Instance inst, ArrayList<double[]> info){
+            if (bestSplit > -1) {
+                if (inst.value(bestSplit) <= bestThreshold) {
+                    info.add(new double[]{bestSplit, bestThreshold, 0});
+                    return children[0].distributionForInstance(inst);
+                } else {
+                    info.add(new double[]{bestSplit, bestThreshold, 0});
                     return children[1].distributionForInstance(inst);
                 }
             }

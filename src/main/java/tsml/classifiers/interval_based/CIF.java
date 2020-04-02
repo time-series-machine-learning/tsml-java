@@ -29,6 +29,7 @@ import weka.core.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +72,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private ArrayList<Classifier> trees;
     private Classifier base= new TimeSeriesTree();
 
+    /** Attributes used in each tree, used to skip transforms for unused attributes/intervals **/
+    private ArrayList<boolean[]> attUsage;
+
     /** for each classifier [i]  interval j  starts at intervals.get(i)[j][0] and
      ends  at  intervals.get(i)[j][1] */
     private  ArrayList<int[][]> intervals;
@@ -112,6 +116,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     //temp vis/int
     private String visSavePath;
+    private String interpSavePath;
+    private ArrayList<ArrayList<double[]>> interpData;
 
     /** Stored for temporal importance curves **/
     private int seriesLength;
@@ -263,6 +269,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             trees = new ArrayList<>(numClassifiers);
             intervals = new ArrayList<>(numClassifiers);
+            attUsage = new ArrayList<>(numClassifiers);
         }
 
         c22 = new Catch22();
@@ -493,6 +500,19 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
         }
 
+        if (base instanceof TimeSeriesTree) {
+            for (Classifier tree : trees) {
+                attUsage.add(((TimeSeriesTree)tree).getAttributesUsed());
+            }
+        }
+        else{
+            boolean[] b = new boolean[numAttributes*numIntervals];
+            Arrays.fill(b,true);
+            for (int i = 0; i < trees.size(); i++) {
+                attUsage.add(b);
+            }
+        }
+
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
                 - trainResults.getErrorEstimateTime());
 
@@ -599,19 +619,26 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] d=new double[ins.numClasses()];
 
-        Catch22 c22 = new Catch22();
-        c22.setOutlierNormalise(outlierNorm);
+        if (interpSavePath != null) interpData = new ArrayList<>();
 
         //Build transformed instance
         double[] series=ins.toDoubleArray();
         for(int i=0;i<trees.size();i++){
-            for(int j=0;j<numIntervals;j++){
+            Catch22 c22 = new Catch22();
+            c22.setOutlierNormalise(outlierNorm);
+            boolean[] usedAtts = attUsage.get(i);
 
+            for(int j=0;j<numIntervals;j++){
                 FeatureSet f = new FeatureSet();
                 double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
                         intervals.get(i)[j][1]+1);
 
-                for (int g = 0; g < subsampleAtts.get(i).size(); g++){
+                for (int g = 0; g < numAttributes; g++){
+                    if (!usedAtts[j * numAttributes + g]) {
+                        testHolder.instance(0).setValue(j * numAttributes + g, 0);
+                        continue;
+                    }
+
                     if (subsampleAtts.get(i).get(g) < 22) {
                         testHolder.instance(0).setValue(j * numAttributes + g,
                                 c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
@@ -638,14 +665,31 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
 
             if(voteEnsemble){
-                int c=(int)trees.get(i).classifyInstance(testHolder.instance(0));
+                int c;
+                if(interpSavePath != null && base instanceof TimeSeriesTree) {
+                    ArrayList<double[]> al = new ArrayList<>();
+                    c=(int)((TimeSeriesTree)trees.get(i)).classifyInstance(testHolder.instance(0), al);
+                    interpData.add(al);
+                }
+                else {
+                    c=(int)trees.get(i).classifyInstance(testHolder.instance(0));
+                }
                 d[c]++;
             }else{
-                double[] temp=trees.get(i).distributionForInstance(testHolder.instance(0));
+                double[] temp;
+                if(interpSavePath != null && base instanceof TimeSeriesTree) {
+                    ArrayList<double[]> al = new ArrayList<>();
+                    temp=((TimeSeriesTree)trees.get(i)).distributionForInstance(testHolder.instance(0), al);
+                    interpData.add(al);
+                }
+                else {
+                    temp=trees.get(i).distributionForInstance(testHolder.instance(0));
+                }
                 for(int j=0;j<temp.length;j++)
                     d[j]+=temp[j];
             }
         }
+
         double sum=0;
         for(double x:d)
             sum+=x;
@@ -660,12 +704,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
-        double[] d=distributionForInstance(ins);
-        int max=0;
-        for(int i=1;i<d.length;i++)
-            if(d[i]>d[max])
-                max=i;
-        return (double)max;
+        double[] probs = distributionForInstance(ins);
+
+        int maxClass = 0;
+        for (int n = 1; n < probs.length; ++n) {
+            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
+                maxClass = n;
+            }
+        }
+
+        return maxClass;
     }
 
     @Override //Checkpointable
@@ -708,6 +756,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             //maxIntervalLengthFinder = saved.maxIntervalLengthFinder;
             trees = saved.trees;
             base = saved.base;
+            attUsage = saved.attUsage;
             intervals = saved.intervals;
             //testHolder = saved.testHolder;
             voteEnsemble = saved.voteEnsemble;
@@ -725,6 +774,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainTimeContract = saved.trainTimeContract;
             if (internalContractCheckpointHandling) contractTime = saved.contractTime;
             visSavePath = saved.visSavePath;
+            interpSavePath = saved.interpSavePath;
+            interpData = saved.interpData;
             seriesLength = saved.seriesLength;
             //c22 = saved.c22;
 
@@ -766,8 +817,33 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public String outputInterpretabilitySummary() {
-        return null;
+    public boolean setInterpretabilitySavePath(String path) {
+        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
+        if(validPath){
+            interpSavePath = path;
+        }
+        return validPath;
+    }
+
+    @Override
+    public boolean outputInterpretability() {
+        if (!(base instanceof TimeSeriesTree)) {
+            System.err.println("CIF interpretability output only available for time series tree.");
+            return false;
+        }
+
+        if (interpSavePath == null){
+            System.err.println("CIF interpretability output save path not set.");
+            return false;
+        }
+
+        for (ArrayList<double[]> treePaths: interpData){
+            for (double[] pathInfo: treePaths){
+
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -780,15 +856,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public void createVisualisation() throws Exception {
+    public boolean createVisualisation() throws Exception {
         if (!(base instanceof TimeSeriesTree)) {
-            System.err.println("Temporal importance curve only available for time series tree.");
-            return;
+            System.err.println("CIF temporal importance curve only available for time series tree.");
+            return false;
         }
 
         if (visSavePath == null){
             System.err.println("CIF visualisation save path not set.");
-            return;
+            return false;
         }
 
         double[][] curves = new double[startNumAttributes][seriesLength];
@@ -828,25 +904,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
+        Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes);
 
-        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-        System.out.println("output : ");
-        String outLine = out.readLine();
-        while (outLine != null){
-            System.out.println(outLine);
-            outLine = out.readLine();
-        }
-
-        System.out.println("error : ");
-        String errLine = err.readLine();
-        while (errLine != null){
-            System.out.println(errLine);
-            errLine = err.readLine();
-        }
+        return true;
     }
 
     //Nested class to store three simple summary features used to construct train data
@@ -886,7 +947,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     public static void main(String[] arg) throws Exception{
-        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
+        String dataLocation="D:\\CMP Machine Learning\\uea-tsc-fork\\src\\main\\java\\experiments\\data\\tsc\\";
         String problem="ItalyPowerDemand";
         Instances train= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");

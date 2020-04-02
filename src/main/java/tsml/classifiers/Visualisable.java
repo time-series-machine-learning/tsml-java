@@ -6,7 +6,7 @@ public interface Visualisable {
 
     boolean setVisualisationSavePath(String path);
 
-    void createVisualisation() throws Exception;
+    boolean createVisualisation() throws Exception;
 
     default boolean createVisualisationDirectories(String path){
         File f = new File(path);
