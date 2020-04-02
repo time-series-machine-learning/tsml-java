@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+#Temporal importance curve diagram generator for interval forests.
+#
+#Author: Matthew Middlehurst
+
 import sys
 import numpy as np
 from utilities import arrayStringToList

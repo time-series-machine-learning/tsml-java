@@ -15,16 +15,13 @@
  */
 package tsml.classifiers.interval_based;
  
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
-import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -118,7 +115,7 @@ import weka.core.Utils;
 **/
  
 public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable, Tuneable , Visualisable, Interpretable{
+        TrainTimeContractable, Checkpointable, Tuneable, Visualisable {
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -750,9 +747,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if(!(obj instanceof TSF))
             throw new Exception("The SER file is not an instance of TSF");
         TSF saved = ((TSF)obj);
-        System.out.println("Loading TSF" + seed + ".ser");
 
-        try{
+        try{        printLineDebug("Loading TSF" + seed + ".ser");
+
             numClassifiers = saved.numClassifiers;
             maxClassifiers = saved.maxClassifiers;
             numIntervals = saved.numIntervals;
@@ -896,11 +893,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public String outputInterpretabilitySummary() {
-        return null;
-    }
-
-    @Override
     public boolean setVisualisationSavePath(String path) {
         boolean validPath = Visualisable.super.createVisualisationDirectories(path);
         if(validPath){
@@ -910,15 +902,15 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public void createVisualisation() throws Exception {
+    public boolean createVisualisation() throws Exception {
         if (!(classifier instanceof TimeSeriesTree)) {
-            System.err.println("Temporal importance curve only available for time series tree.");
-            return;
+            System.err.println("TSF temporal importance curve only available for time series tree.");
+            return false;
         }
 
         if (visSavePath == null){
-            System.err.println("CIF visualisation save path not set.");
-            return;
+            System.err.println("TSF visualisation save path not set.");
+            return false;
         }
 
         double[][] curves = new double[3][seriesLength];
@@ -946,25 +938,10 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
+        Runtime.getRuntime().exec("py src/main/python/temporalImportanceCurves.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
 
-        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-        System.out.println("output : ");
-        String outLine = out.readLine();
-        while (outLine != null){
-            System.out.println(outLine);
-            outLine = out.readLine();
-        }
-
-        System.out.println("error : ");
-        String errLine = err.readLine();
-        while (errLine != null){
-            System.out.println(errLine);
-            errLine = err.readLine();
-        }
+        return true;
     }
 
     public static void main(String[] arg) throws Exception{

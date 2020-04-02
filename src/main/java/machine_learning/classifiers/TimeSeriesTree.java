@@ -19,12 +19,16 @@ import weka.core.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 import static utilities.ArrayUtilities.normalise;
 import static utilities.ArrayUtilities.sum;
 
+/**
+ * Time series tree implementation from the time series forest (TSF) paper.
+ *
+ * Author: Matthew Middlehurst
+ **/
 public class TimeSeriesTree extends AbstractClassifier implements Randomizable, Serializable {
 
     private static double log2 = Math.log(2);

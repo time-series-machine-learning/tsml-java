@@ -2,6 +2,11 @@ package tsml.classifiers;
 
 import java.io.File;
 
+/**
+ * Interface for classifiers that can output visualisations of the final model.
+ *
+ * Author: Matthew Middlehurst
+ **/
 public interface Visualisable {
 
     boolean setVisualisationSavePath(String path);

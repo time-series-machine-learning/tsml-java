@@ -690,6 +690,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
         }
 
+        if (interpSavePath != null) outputInterpretability();
+
         double sum=0;
         for(double x:d)
             sum+=x;
@@ -904,7 +906,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Runtime.getRuntime().exec("py src/main/python/visualisationCIF.py \"" +
+        Runtime.getRuntime().exec("py src/main/python/temporalImportanceCurves.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes);
 
         return true;
