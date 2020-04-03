@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.utils.random;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -69,6 +71,14 @@ public class RandomUtils {
         Assert.assertNotNull(random);
         Assert.assertNotNull(list);
         Assert.assertTrue(numChoices > 0);
+        final int size = list.size();
+        if(size <= 0) {
+            throw new IllegalArgumentException("empty list");
+        } else if(size == 1) {
+            return list;
+        } else if(numChoices == 1) {
+            return new ArrayList<>(Collections.singletonList(list.get(random.nextInt(size))));
+        }
         final List<A> choices = new ArrayList<>();
         final List<Integer> indices = CollectionUtils.sequence(list.size());
         for(int i = 0; i < numChoices; i++) {
@@ -87,9 +97,7 @@ public class RandomUtils {
      * @return
      */
     public static <A> A choice(List<A> list, Random random) {
-        Assert.assertNotNull(random);
-        Assert.assertNotNull(list);
-        return list.get(random.nextInt(list.size()));
+        return choice(list, random, 1).get(0);
     }
 
     public static <A> A choice(Iterable<A> iterable, Random random) {
