@@ -14,6 +14,7 @@ import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.distribution.DoubleToIntDistributionAdapter;
 import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
 import utilities.InstanceTools;
 import utilities.StatisticalUtilities;
@@ -33,8 +34,8 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwParams(Instances data) {
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0,
-            (int) (((double) data.numAttributes() + 1) / 4)));
+        subSpace.add(DTW.getWarpingWindowFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
+            (int) (((double) data.numAttributes() + 1) / 4))));
         return subSpace;
     }
 
@@ -55,7 +56,8 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildErpParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(ERPDistance.getBandSizeFlag(), new UniformDistribution(0, (int) (((double) data.numAttributes() + 1) / 4)));
+        subSpace.add(ERPDistance.getBandSizeFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
+            (int) (((double) data.numAttributes() + 1) / 4))));
         subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDistribution(0.2 * std, std));
         return subSpace;
     }
@@ -70,8 +72,8 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildLcssParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(LCSSDistance.getDeltaFlag(), new UniformDistribution(0,
-            (int) (((double) data.numAttributes() + 1) / 4)));
+        subSpace.add(LCSSDistance.getDeltaFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
+            (int) (((double) data.numAttributes() + 1) / 4))));
         subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDistribution(0.2 * std, std));
         return subSpace;
     }
