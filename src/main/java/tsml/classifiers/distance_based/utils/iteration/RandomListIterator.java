@@ -1,15 +1,5 @@
 package tsml.classifiers.distance_based.utils.iteration;
 
-import java.util.function.Function;
-import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.random.RandomUtils;
-import utilities.ArrayUtilities;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import weka.core.Debug;
-import weka.core.OptionHandler;
-import weka.core.Randomizable;
-
-import java.io.Serializable;
 import java.util.*;
 
 /**

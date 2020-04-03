@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances;
 import static utilities.ArrayUtilities.incrementalRange;
 
 import com.beust.jcommander.internal.Lists;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
@@ -27,7 +28,7 @@ public class DistanceMeasureConfigs {
 
     public static ParamSpace buildEdParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DTW.getWarpingWindowFlag(), Lists.newArrayList(0));
+        params.add(DTW.getWarpingWindowFlag(), new ArrayList<>(Arrays.asList(0)));
         return params;
     }
 
@@ -38,7 +39,7 @@ public class DistanceMeasureConfigs {
 
     public static ParamSpace buildFullDtwParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DTW.getWarpingWindowFlag(), Lists.newArrayList(-1));
+        params.add(DTW.getWarpingWindowFlag(), new ArrayList<>(Arrays.asList(-1)));
         return params;
     }
 

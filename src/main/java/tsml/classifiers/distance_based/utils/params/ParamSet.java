@@ -11,11 +11,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.Utils;
 
 /**
@@ -102,6 +99,18 @@ public class ParamSet implements ParamHandler {
         return paramMap.isEmpty();
     }
 
+    /**
+     * NOTE: the values associated with each parameter name may be strings. This is especially likely when the options come
+     * from the command line. It is down to the client to handle the fact that the object returned by the get() method
+     * may be a string instead of the object they are intending. E.g. say I have the ParamSet { "w" -> 5 }. 5 is an
+     * integer so I can handle it normally. However, if this ParamSet had come off the cmdline then it would be { "w"
+     * -> "5" } as there is no context to what the value of "w" (i.e. "5") should be (is it a long / double / int /
+     * String?). Consequently, the value you expect back from this function may be as a string rather than the type
+     * you're expecting. You must do a "x instanceof String" check and parse from a string as necessary / required.
+     *
+     * @param name
+     * @return
+     */
     public List<Object> get(String name) {
         return paramMap.get(name);
     }
@@ -145,9 +154,7 @@ public class ParamSet implements ParamHandler {
                 }
             } else {
                 throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
-                    + "cannot "
-                    + "set the "
-                    + "parameters {" + params.toString() + "}");
+                    + "cannot set the parameters {" + params.toString() + "}");
             }
         }
     }
@@ -198,51 +205,43 @@ public class ParamSet implements ParamHandler {
      */
     @Override
     public void setOptionsList(final List<String> options) throws
-        Exception { // todo fix this; it's got a horrible type floor for handling str -> whatever raw param type value
-        // should be :(
-        // todo solution :we can assume that strings can be put directly into the paramset from cmdline. It's then the
-        //  job
-        //  of
-        //  the paramhandler to handle objects of different types. E.g. DTW's warping window (-w). It is integer type
-        //  . If we were to pass "-w \"5\"" then it must be able to handle it. Similarly, if we programmatically set
-        //  "-w" to 5 (int not str) then it must also be able to handle it. This can probably be sorted with a change
-        //  to setParams / setOptions util method
+        Exception {
         for(int i = 0; i < options.size(); i++) {
-//            String option = options.get(i);
-//            String flag = StrUtils.unflagify(option);
-//            // if the flag is an option (i.e. key value pair, not just a flag)
-//            if(StrUtils.isOption(option, options)) {
-//                // for example, "-d "DTW -w 5""
-//                // get the next value as the option value and split it into sub options
-//                // the example would be split into ["DTW", "-w", "5"]
-//                String[] subOptions = Utils.splitOptions(options.get(++i));
-//                options.set(i, "");
-//                options.set(i - 1, "");
-//                // the 0th element is the main option value
-//                // in the example this is "DTW"
-//                String optionValue = subOptions[0];
-//                subOptions[0] = "";
-//                // get the value from str form
-//                Object value = StrUtils.fromOptionValue(optionValue);
-//                if(value instanceof ParamHandler) {
-//                    // handle sub parameters
-//                    ParamSet paramSet = new ParamSet();
-//                    // subOptions contains only the parameters for the option value
-//                    // in the example this is ["-w", "5"]
-//                    // set these suboptions for the parameter value
-//                    paramSet.setOptions(subOptions);
-//                    // add the parameter to this paramSet with correspond value (example "DTW") and corresponding
-//                    // sub options / parameters for that value (example "-w 5")
-//                    add(flag, value, paramSet);
-//                } else {
-//                    // the parameter is raw, i.e. "-a 6" <-- 6 has no parameters, therefore is raw
-//                    add(flag, value);
-//                }
-//            } else {
-//                // assume all flags are represented using boolean values
-//                add(flag, true);
-//            }
-//            options.set(i, "");
+            String option = options.get(i);
+            String flag = StrUtils.unflagify(option);
+            // if the flag is an option (i.e. key value pair, not just a flag)
+            if(StrUtils.isOption(option, options)) {
+                // for example, "-d "DTW -w 5""
+                // get the next value as the option value and split it into sub options
+                // the example would be split into ["DTW", "-w", "5"]
+                String[] subOptions = Utils.splitOptions(options.get(++i));
+                options.set(i, "");
+                options.set(i - 1, "");
+                // the 0th element is the main option value
+                // in the example this is "DTW"
+                String optionValue = subOptions[0];
+                subOptions[0] = "";
+                // get the value from str form
+                Object value = StrUtils.fromOptionValue(optionValue);
+                if(value instanceof ParamHandler) {
+                    // handle sub parameters
+                    ParamSet paramSet = new ParamSet();
+                    // subOptions contains only the parameters for the option value
+                    // in the example this is ["-w", "5"]
+                    // set these suboptions for the parameter value
+                    paramSet.setOptions(subOptions);
+                    // add the parameter to this paramSet with correspond value (example "DTW") and corresponding
+                    // sub options / parameters for that value (example "-w 5")
+                    add(flag, value, paramSet);
+                } else {
+                    // the parameter is raw, i.e. "-a 6" <-- 6 has no parameters, therefore is raw
+                    add(flag, value);
+                }
+            } else {
+                // assume all flags are represented using boolean values
+                add(flag, true);
+            }
+            options.set(i, "");
         }
     }
 
@@ -265,12 +264,7 @@ public class ParamSet implements ParamHandler {
         return StrUtils.join(", ", getOptions());
     }
 
-    // todo handle lists as the value of param value --> i.e. split list into separate param values
-    // this should probably be done in the client, i.e. handle 1 flag corresponding to multiple values
-
     public static class UnitTests {
-
-        // todo test to / from options str array
 
         @Test
         public void testSetAndGetOptions() {

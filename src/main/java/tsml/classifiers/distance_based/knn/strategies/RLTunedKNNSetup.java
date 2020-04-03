@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static tsml.classifiers.distance_based.utils.StrUtils.extractNameAndParams;
+import static tsml.classifiers.distance_based.utils.strings.StrUtils.extractNameAndParams;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
 /**

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.memory;
+package tsml.classifiers.distance_based.utils.system.memory;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

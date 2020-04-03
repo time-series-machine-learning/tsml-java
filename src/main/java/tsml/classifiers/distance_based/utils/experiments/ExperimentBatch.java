@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.experiments;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -24,8 +24,8 @@ import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuild
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.memory.MemoryAmount;
-import tsml.classifiers.distance_based.utils.parallel.BlockingExecutor;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryAmount;
+import tsml.classifiers.distance_based.utils.system.parallel.BlockingExecutor;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount;
 import utilities.FileUtils;

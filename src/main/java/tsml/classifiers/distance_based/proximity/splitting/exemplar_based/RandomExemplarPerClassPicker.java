@@ -1,41 +1,40 @@
 package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
+import com.beust.jcommander.internal.Lists;
+import java.util.List;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.ReadOnlyRandomSource;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 public class RandomExemplarPerClassPicker extends ExemplarPicker {
 
-    private ReadOnlyRandomSource random;
+    private Random random;
 
-    public RandomExemplarPerClassPicker(ReadOnlyRandomSource random) {
-        setRandomSource(random);
+    public RandomExemplarPerClassPicker(Random random) {
+        setRandom(random);
     }
 
-    @Override public List<Instance> pickExemplars(final Instances instances) {
-        final Random random = getRandomSource().getRandom();
+    @Override public List<List<Instance>> pickExemplars(final Instances instances) {
+        final Random random = getRandom();
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
-        List<Instance> exemplars = new ArrayList<>();
+        List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
             final Instance exemplar = Utilities.randPickOne(instanceClass, random);
-            exemplars.add(exemplar);
+            exemplars.add(Lists.newArrayList(exemplar));
         }
         return exemplars;
     }
 
-    public ReadOnlyRandomSource getRandomSource() {
+    public Random getRandom() {
         return random;
     }
 
-    public RandomExemplarPerClassPicker setRandomSource(ReadOnlyRandomSource random) {
+    public RandomExemplarPerClassPicker setRandom(Random random) {
         Assert.assertNotNull(random);
         this.random = random;
         return this;

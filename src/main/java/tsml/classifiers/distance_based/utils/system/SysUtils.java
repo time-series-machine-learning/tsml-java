@@ -1,10 +1,11 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.system;
 
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
  * Purpose: find details about the system we're running on.

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.memory;
+package tsml.classifiers.distance_based.utils.system.memory;
 
 import org.junit.Assert;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.strings;
 
 import experiments.ClassifierLists;
 import experiments.Experiments;

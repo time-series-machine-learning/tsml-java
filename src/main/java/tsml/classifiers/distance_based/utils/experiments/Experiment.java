@@ -1,6 +1,5 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.experiments;
 
-import com.beust.jcommander.Parameter;
 import evaluation.storage.ClassifierResults;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;

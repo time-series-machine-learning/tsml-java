@@ -1,8 +1,7 @@
-package tsml.classifiers.distance_based.utils.memory;
+package tsml.classifiers.distance_based.utils.system.memory;
 
 import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
 
 import javax.management.ListenerNotFoundException;
 import javax.management.NotificationEmitter;

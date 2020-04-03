@@ -5,12 +5,12 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
@@ -23,8 +23,6 @@ import weka.core.Instances;
 import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Logger;
-
-import static experiments.data.DatasetLoading.sampleGunPoint;
 
 /**
  * k-nearest-neighbour classifier.

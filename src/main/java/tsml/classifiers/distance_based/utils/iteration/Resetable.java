@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils;
+package tsml.classifiers.distance_based.utils.iteration;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

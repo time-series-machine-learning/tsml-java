@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.parallel;
+package tsml.classifiers.distance_based.utils.system.parallel;
 
 import java.util.ArrayList;
 import java.util.Collection;

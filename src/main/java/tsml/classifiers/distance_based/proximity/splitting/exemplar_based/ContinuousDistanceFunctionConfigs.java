@@ -10,6 +10,7 @@ import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
+import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -39,13 +40,15 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DTWDistance(), buildDtwParams(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DTWDistance()),
+            buildDtwParams(data));
         return space;
     }
 
     public static ParamSpace buildDdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new DDTWDistance(), buildDtwParams(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DDTWDistance()),
+            buildDtwParams(data));
         return space;
     }
 
@@ -59,7 +62,8 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildErpSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new ERPDistance(), buildErpParams(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new ERPDistance()),
+            buildErpParams(data));
         return space;
     }
 
@@ -74,26 +78,31 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildLcssSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new LCSSDistance(), buildLcssParams(data));
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new LCSSDistance()),
+            buildLcssParams(data));
         return space;
     }
 
     public static ParamSpace buildWdtwParams() {
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformDistribution(0, 1));
+        subSpace.add(WDTW.getGFlag(), new UniformDistribution(0, 1));
         return subSpace;
     }
 
     public static ParamSpace buildWdtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDTWDistance(), buildWdtwSpace());
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new WDTWDistance()),
+            buildWdtwParams());
         return space;
     }
 
 
     public static ParamSpace buildWddtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), new WDDTWDistance(), buildWdtwParams());
+        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new WDDTWDistance()),
+            buildWdtwParams());
         return space;
     }
+
+    // todo unit test these just to make sure param flags match up and actually set the param when applied
 }

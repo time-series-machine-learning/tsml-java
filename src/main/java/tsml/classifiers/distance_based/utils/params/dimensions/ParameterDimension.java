@@ -10,7 +10,7 @@ import tsml.classifiers.distance_based.utils.params.ParamSpace;
  * with sub parameter spaces to explore
  * @param <A>
  */
-public class ParameterDimension<A> {
+public abstract class ParameterDimension<A> {
 
     // list of subspaces to explore
     private List<ParamSpace> subSpaces;

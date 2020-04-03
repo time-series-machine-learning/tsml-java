@@ -6,7 +6,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: split data into partitions and score the split.
  * <p>
  * Contributors: goastler
  */
@@ -26,6 +26,7 @@ public abstract class Split {
     protected Split() {}
 
     public double getScore() {
+        score = scorer.findScore(data, partitions);
         return score;
     }
 
@@ -33,14 +34,18 @@ public abstract class Split {
         return data;
     }
 
-    protected abstract List<Instances> findPartitions();
-
     public List<Instances> getPartitions() {
+        return partitions;
+    }
+
+    protected abstract List<Instances> split();
+
+    public List<Instances> findPartitions() {
         List<Instances> partitions = getPartitions();
         if(partitions == null) {
-            partitions = findPartitions();
+            partitions = split();
             setPartitions(partitions);
-            final double score = scorer.findScore(getData(), partitions);
+            double score = getScorer().findScore(getData(), partitions);
             setScore(score);
         }
         return partitions;
@@ -50,13 +55,8 @@ public abstract class Split {
 
     public Instances getPartitionFor(Instance instance) {
         final int index = getPartitionIndexOf(instance);
-        final List<Instances> partitions = getPartitions();
+        final List<Instances> partitions = findPartitions();
         return partitions.get(index);
-    }
-
-    public Split setScore(double score) {
-        this.score = score;
-        return this;
     }
 
     public Split setData(Instances data) {
@@ -79,6 +79,11 @@ public abstract class Split {
 
     public Split setScorer(final Scorer scorer) {
         this.scorer = scorer;
+        return this;
+    }
+
+    public Split setScore(final double score) {
+        this.score = score;
         return this;
     }
 }

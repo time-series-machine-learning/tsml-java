@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.ListIterator;
 
+import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
@@ -13,6 +14,7 @@ import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.Random
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
+import tsml.classifiers.distance_based.proximity.stopping_conditions.PureSplit;
 import tsml.classifiers.distance_based.utils.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.tree.Tree;
@@ -39,50 +41,50 @@ public class ProxTree extends BaseClassifier {
             add(new SuppliedClassifierBuilder<>("PROXIMITY_TREE", Factory::buildProximityTree));
 
         public static ProxTree buildProximityTree() {
-            ProxTree pt = new ProxTree();
-            pt.setNodeIteratorBuilder(LinearListIterator::new);
-            pt.setSplitterBuilder(new SplitterBuilder() {
-                @Override
-                public Splitter build() {
-                    final Instances data = getData();
-                    final ReadOnlyRandomSource randomSource = getRandomSource();
-                    Assert.assertNotNull(data);
-                    Assert.assertNotNull(randomSource);
-                    final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(randomSource);
-                    final List<ParamSpace> paramSpaces = Lists.newArrayList(
-                        DistanceMeasureConfigs.buildEdSpace(),
-                        DistanceMeasureConfigs.buildFullDtwSpace(),
-                        DistanceMeasureConfigs.buildFullDdtwSpace(),
-                        ContinuousDistanceFunctionConfigs.buildDtwSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildDdtwSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildErpSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildLcssSpace(data),
-                        DistanceMeasureConfigs.buildMsmSpace(),
-                        ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
-                        ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
-                        DistanceMeasureConfigs.buildTwedSpace()
-                    );
-                    return new RandomExemplarSimilaritySplitter(paramSpaces, randomSource, exemplarPicker);
-                }
-            });
-
-            return pt;
+            return setProximityTreeConfig(new ProxTree());
         }
     }
 
     public static void main(String[] args) throws Exception {
-        ProxTree pt = Factory.buildProximityTree();
+        ProxTree pt = FACTORY.PROXIMITY_TREE.build();
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
         System.out.println(results.writeSummaryResultsToString()); // todo interfaces or abst classes for fields in
         // this cls, e.g. node iterator?
     }
 
+    public static ProxTree setProximityTreeConfig(ProxTree pt) {
+        pt.setNodeIteratorBuilder(LinearListIterator::new);
+        pt.setSplitterBuilder(new SplitterBuilder() {
+
+            @Override
+            public Splitter build() {
+                final Instances data = getData();
+                final Random randomSource = getRandom();
+                Assert.assertNotNull(data);
+                Assert.assertNotNull(randomSource);
+                final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(pt.getRandom());
+                final List<ParamSpace> paramSpaces = Lists.newArrayList(
+                    DistanceMeasureConfigs.buildEdSpace(),
+                    DistanceMeasureConfigs.buildFullDtwSpace(),
+                    DistanceMeasureConfigs.buildFullDdtwSpace(),
+                    ContinuousDistanceFunctionConfigs.buildDtwSpace(data),
+                    ContinuousDistanceFunctionConfigs.buildDdtwSpace(data),
+                    ContinuousDistanceFunctionConfigs.buildErpSpace(data),
+                    ContinuousDistanceFunctionConfigs.buildLcssSpace(data),
+                    DistanceMeasureConfigs.buildMsmSpace(),
+                    ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
+                    ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
+                    DistanceMeasureConfigs.buildTwedSpace()
+                );
+                return new RandomExemplarSimilaritySplitter(paramSpaces, randomSource, exemplarPicker);
+            }
+        });
+        pt.setStoppingCondition(new PureSplit());
+        return pt;
+    }
+
     public ProxTree() {
-        try {
-            shallowCopyFrom(Factory.buildProximityTree());
-        } catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
+        setProximityTreeConfig(this);
     }
 
     private Tree<Split> tree;
@@ -104,10 +106,12 @@ public class ProxTree extends BaseClassifier {
 
     public abstract static class SplitterBuilder implements Serializable {
         private Instances data;
-        private ReadOnlyRandomSource randomSource;
+        private Random randomSource;
 
-        public SplitterBuilder setRandomSource(ReadOnlyRandomSource randomSource) {
-            return null;
+        public SplitterBuilder setRandom(Random randomSource) {
+            Assert.assertNotNull(randomSource);
+            this.randomSource = randomSource;
+            return this;
         }
 
         public SplitterBuilder setData(Instances data) {
@@ -121,7 +125,7 @@ public class ProxTree extends BaseClassifier {
             return data;
         }
 
-        public ReadOnlyRandomSource getRandomSource() {
+        public Random getRandom() {
             return randomSource;
         }
     }
@@ -158,7 +162,7 @@ public class ProxTree extends BaseClassifier {
             nodeIterator = nodeIteratorBuilder.build();
             final SplitterBuilder splitterBuilder = getSplitterBuilder();
             this.splitterBuilder.setData(trainData);
-            this.splitterBuilder.setRandomSource(this);
+            this.splitterBuilder.setRandom(getRandom());
             final Splitter splitter = this.splitterBuilder.build();
             setSplitter(splitter);
             final Split split = splitter.buildSplit(trainData);
@@ -168,8 +172,8 @@ public class ProxTree extends BaseClassifier {
         }
         while(nodeIterator.hasNext()) {
             final TreeNode<Split> node = nodeIterator.next();
-            final List<Instances> split = node.getElement().getPartitions();
-            for(Instances childData : split) {
+            final List<Instances> partitions = node.getElement().findPartitions();
+            for(Instances childData : partitions) {
                 final Split childSplit = splitter.buildSplit(childData);
                 final TreeNode<Split> child = new BaseTreeNode<>(childSplit);
                 final boolean shouldAdd = !stoppingCondition.shouldStop(node);
