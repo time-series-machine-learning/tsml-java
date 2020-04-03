@@ -15,6 +15,7 @@
 package utilities;
 
 import com.beust.jcommander.internal.Lists;
+import java.util.function.BiFunction;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
@@ -351,6 +352,10 @@ public class Utilities {
         }
     }
 
+    public static double infoGainEntropyFromClassCounts(Instances data) {
+        return infoGainEntropyFromClassCounts(findClassCounts(data));
+    }
+
     public static double infoGainEntropyFromClassCounts(List<Integer> classCounts) {
         return infoGainEntropyFromClassCounts(new ClassCount(classCounts));
     }
@@ -401,6 +406,14 @@ public class Utilities {
         return gain(parentClassCount, childClassCounts, Utilities::infoGainEntropyFromClassCounts);
     }
 
+    public static double infoGain(Instances parentData, List<Instances> childData) {
+        return infoGain(findClassCounts(parentData), findClassCounts(childData));
+    }
+
+    public static double giniImpurityEntropyFromClassCounts(Instances data) {
+        return giniImpurityEntropyFromClassCounts(findClassCounts(data));
+    }
+
     /**
      * lower value -> more pure
      * @param classCounts
@@ -431,6 +444,22 @@ public class Utilities {
      */
     public static double giniImpurity(List<Integer> parentClassCount, List<List<Integer>> childClassCounts) {
         return gain(parentClassCount, childClassCounts, Utilities::giniImpurityEntropyFromClassCounts);
+    }
+
+    public static double giniImpurity(Instances parentData, List<Instances> childData) {
+        return giniImpurity(findClassCounts(parentData), findClassCounts(childData));
+    }
+
+    public static List<Integer> findClassCounts(Instances data) {
+        TreeMap<Double, Integer> map = new TreeMap<>();
+        for(Instance instance : data) {
+            map.merge(instance.classValue(), 1, (a, b) -> a + b);
+        }
+        return new ArrayList<>(map.values());
+    }
+
+    public static List<List<Integer>> findClassCounts(List<Instances> datas) {
+        return convert(datas, Utilities::findClassCounts);
     }
 
     public static class UnitTests {

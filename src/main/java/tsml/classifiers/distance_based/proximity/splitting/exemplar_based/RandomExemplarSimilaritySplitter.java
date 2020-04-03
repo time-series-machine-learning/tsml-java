@@ -2,20 +2,16 @@ package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
 import com.beust.jcommander.internal.Lists;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.proximity.splitting.Scorer;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
-import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
-import tsml.transformers.shapelet_tools.search_functions.RandomSearch;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -27,12 +23,16 @@ import weka.core.Instances;
  */
 public class RandomExemplarSimilaritySplitter extends Splitter {
 
-    private List<ParamSpace> paramSpaces;
+    private List<ParamSpace> paramSpaces = new ArrayList<>();
     private Random random;
     private ExemplarPicker exemplarPicker;
-    private List<RandomSearchIterator> randomSearchIteratorList;
+    private List<RandomSearchIterator> randomSearchIteratorList = new ArrayList<>();
     private boolean useEarlyAbandon = true;
-    private Scorer scorer = Scorer.giniScore;
+    private Scorer scorer = Scorer.getGiniImpurityScorer();
+
+    public List<ParamSpace> getParamSpaces() {
+        return paramSpaces;
+    }
 
     protected List<RandomSearchIterator> getRandomSearchIteratorList() {
         return randomSearchIteratorList;
@@ -67,7 +67,6 @@ public class RandomExemplarSimilaritySplitter extends Splitter {
 
     public RandomExemplarSimilaritySplitter(List<ParamSpace> paramSpaces, Random random,
         ExemplarPicker exemplarPicker) {
-        randomSearchIteratorList = Lists.newArrayList(); // placeholder while setting up
         setExemplarPicker(exemplarPicker);
         setRandom(random);
         setParamSpaces(paramSpaces);
@@ -86,9 +85,6 @@ public class RandomExemplarSimilaritySplitter extends Splitter {
 
     @Override
     public RandomExemplarSimilaritySplit buildSplit(Instances data) {
-        // pick distance measure via param space
-        // todo
-        // pick exemplars
         List<List<Instance>> exemplars = exemplarPicker.pickExemplars(data);
         List<Instances> partitions = Lists.newArrayList(exemplars.size());
         for(List<Instance> exemplarGroup : exemplars) {
@@ -108,10 +104,6 @@ public class RandomExemplarSimilaritySplitter extends Splitter {
     public RandomExemplarSimilaritySplitter setScorer(final Scorer scorer) {
         this.scorer = scorer;
         return this;
-    }
-
-    public List<ParamSpace> getParamSpaces() {
-        return paramSpaces;
     }
 
     public ExemplarPicker getExemplarPicker() {

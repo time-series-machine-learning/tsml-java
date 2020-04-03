@@ -5,16 +5,30 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public interface Scorer {
-    double findScore(Instances parent, List<Instances> parts);
+public abstract class Scorer {
+    public abstract double findScore(Instances parent, List<Instances> parts);
 
-    Scorer giniScore = (parent, parts) -> {
-        throw new UnsupportedOperationException();
-//        Utilities.giniScore(parent.size(), Utilities.convert(parts,
-//            Instances::size));
+    private static final Scorer GINI_IMPURITY = new Scorer() {
+        @Override
+        public double findScore(final Instances parent, final List<Instances> parts) {
+            return Utilities.giniImpurity(parent, parts);
+        }
     };
-    Scorer infoGain = (parent, parts) -> {
-//        Utilities.infoGain(parent.size(), Utilities.convert(parts, Instances::size));
-        throw new UnsupportedOperationException(); // todo
+
+    public static Scorer getGiniImpurityScorer() {
+        return GINI_IMPURITY;
+    }
+
+    private static final Scorer INFO_GAIN = new Scorer() {
+        @Override
+        public double findScore(final Instances parent, final List<Instances> parts) {
+            return Utilities.infoGain(parent, parts);
+        }
     };
+
+    public static Scorer getInfoGainScorer() {
+        return INFO_GAIN;
+    }
+
+
 }

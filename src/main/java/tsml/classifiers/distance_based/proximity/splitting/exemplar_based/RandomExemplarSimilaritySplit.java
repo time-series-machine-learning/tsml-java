@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.proximity.ReadOnlyRandomSource;
 import tsml.classifiers.distance_based.proximity.splitting.Scorer;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
@@ -25,7 +24,7 @@ public class RandomExemplarSimilaritySplit extends Split {
     private List<List<Instance>> exemplars;
     private boolean useEarlyAbandon = true;
     private Random random;
-    private Scorer scorer = Scorer.giniScore;
+    private Scorer scorer = Scorer.getGiniImpurityScorer();
 
     @Override
     public Scorer getScorer() {
@@ -95,7 +94,7 @@ public class RandomExemplarSimilaritySplit extends Split {
         distanceToPartitionIndexMap.setSoftLimit(1);
         final boolean useEarlyAbandon = isUseEarlyAbandon();
         for(int i = 0; i < exemplars.size(); i++) {
-            // todo extract min dist to exemplar in group into own interface
+            // todo extract min dist to exemplar in group into own interfaceMu
             double minDistance = DistanceMeasureable.getMaxDistance();
             for(Instance exemplar : exemplars.get(i)) {
                 final double distance = distanceFunction.distance(instance, exemplar, limit);

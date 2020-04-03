@@ -12,7 +12,7 @@ import weka.core.Instances;
  */
 public abstract class Split {
     private double score = -1;
-    private Scorer scorer = Scorer.giniScore;
+    private Scorer scorer = Scorer.getGiniImpurityScorer();
     private Instances data;
     private List<Instances> partitions;
 
