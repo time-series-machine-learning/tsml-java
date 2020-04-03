@@ -28,11 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.TrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.SysUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.system.SysUtils;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instances;

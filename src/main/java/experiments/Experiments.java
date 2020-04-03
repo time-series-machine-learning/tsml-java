@@ -36,12 +36,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.distance_based.utils.logging.Debugable;
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.logging.Loggable;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import utilities.FileUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -59,7 +54,6 @@ import java.util.concurrent.TimeUnit;
 
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
-import weka.core.Randomizable;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is

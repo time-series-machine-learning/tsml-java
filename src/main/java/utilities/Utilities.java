@@ -14,11 +14,14 @@
  */
 package utilities;
 
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
+import com.beust.jcommander.internal.Lists;
+import org.junit.Assert;
+import org.junit.Test;
+import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.collections.IntListView;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -48,10 +51,6 @@ public class Utilities {
             sum += integer;
         }
         return sum;
-    }
-
-    public static <A> int sum(Iterable<A> iterable, Function<A, Integer> func) {
-        return sum(iterable.iterator(), func);
     }
 
     public static <A, B> List<B> convert(Iterable<A> source, Function<A, B> converter) { // todo stream version
@@ -265,26 +264,11 @@ public class Utilities {
         }
     }
 
-    public static final double log(double value, double base) { // beware, this is inaccurate due to floating point error!
+    public static double log(double value, double base) { // beware, this is inaccurate due to floating point error!
+        if(value == 0) {
+            return 0;
+        }
         return Math.log(value) / Math.log(base);
-    }
-
-    public static double giniScore(int parent, Iterable<Integer> children) {
-        if(parent <= 0) {
-            throw new IllegalArgumentException("parent leq 0");
-        }
-        int sum = ArrayUtilities.sum(children);
-        if(sum > parent) {
-            throw new IllegalArgumentException("children sum greater than parent");
-        }
-        double scoreSum = 0;
-        for(int child : children) {
-            double proportion = (double) child / parent;
-            double score = Math.pow(child, 2);
-            score *= proportion;
-            scoreSum += score;
-        }
-        return 1 - scoreSum;
     }
 
     public static Map<Double, Instances> instancesByClass(Instances instances) {
@@ -295,20 +279,283 @@ public class Utilities {
         return map;
     }
 
-    public static double infoGain(int parent, Iterable<Integer> children) {
-        if(parent <= 0) {
-            throw new IllegalArgumentException("parent leq 0");
+    public static double sum(Iterable<Double> iterable) {
+        return sum(iterable, (Function<Double, Double>) aDouble -> aDouble);
+    }
+
+    public static <A> double sum(Iterable<A> iterable, Function<A, Double> func) {
+        double sum = 0;
+        for(A item : iterable) {
+            sum += func.apply(item);
         }
-        int sum = ArrayUtilities.sum(children);
-        if(sum > parent) {
-            throw new IllegalArgumentException("children sum greater than parent");
+        return sum;
+    }
+
+    public static List<Double> divide(Iterable<Integer> iterable, int quotient) {
+        List<Double> result = Lists.newArrayList();
+        for(Integer integer : iterable) {
+            double v = (double) integer / quotient;
+            result.add(v);
         }
-        double scoreSum = 0;
-        for(int child : children) {
-            double score = child * Utilities.log(child, 2);
-            scoreSum += score;
+        return result;
+    }
+
+    public static List<Double> normalise(Iterable<Integer> iterable) {
+        List<Integer> list = ArrayUtilities.drain(iterable);
+        return divide(list, ArrayUtilities.sum(list));
+    }
+
+    private static class ClassCount {
+        private List<Integer> counts;
+        private int sum;
+        private List<Double> distribution;
+
+        private ClassCount(final List<Integer> counts) {
+            setCounts(counts);
         }
-        return 0 - scoreSum;
+
+        public List<Integer> getCounts() {
+            return counts;
+        }
+
+        public int getSum() {
+            if(sum < 0) {
+                sum = ArrayUtilities.sum(getCounts());
+            }
+            return sum;
+        }
+
+        public List<Double> getDistribution() {
+            if(distribution == null) {
+                int sum = getSum();
+                distribution = divide(getCounts(), sum);
+            }
+            return distribution;
+        }
+
+        public ClassCount setCounts(final List<Integer> counts) {
+            this.counts = counts;
+            setDistribution(null);
+            setSum(-1);
+            return this;
+        }
+
+        private ClassCount setDistribution(final List<Double> distribution) {
+            this.distribution = distribution;
+            return this;
+        }
+
+        private ClassCount setSum(final int sum) {
+            this.sum = sum;
+            return this;
+        }
+    }
+
+    public static double infoGainEntropyFromClassCounts(List<Integer> classCounts) {
+        return infoGainEntropyFromClassCounts(new ClassCount(classCounts));
+    }
+
+    public static double infoGainEntropyFromDistribution(List<Double> classDistribution) {
+        double entropy = 0;
+        for(Double proportion : classDistribution) {
+            double score = proportion * log(proportion, 2);
+            entropy += score;
+        }
+        entropy = 0 - entropy;
+        return entropy;
+    }
+
+    private static double infoGainEntropyFromClassCounts(ClassCount classCount) {
+        return infoGainEntropyFromDistribution(classCount.getDistribution());
+    }
+
+    public static double gain(List<Integer> parentClassCounts, List<List<Integer>> childClassCounts,
+        Function<ClassCount, Double> entropyFunction) {
+        ClassCount parentClassCount = new ClassCount(parentClassCounts);
+        int parentClassCountSum = parentClassCount.getSum();
+        if(parentClassCountSum <= 0) {
+            throw new IllegalArgumentException("parent has empty class count");
+        }
+        double score = entropyFunction.apply(parentClassCount); // find how pure the parent node is
+        for(List<Integer> classCount : childClassCounts) {
+            // find the proportion of classes in the child node
+            ClassCount childClassCount = new ClassCount(classCount);
+            double proportion = (double) childClassCount.getSum() / parentClassCountSum;
+            // find the entropy at the child
+            double entropy = entropyFunction.apply(childClassCount);
+            // weight the entropy by the number of cases at the child node
+            entropy *= proportion;
+            // subtract the child entropy from the parent for relative improvement
+            score -= entropy;
+        }
+        return score;
+    }
+
+    /**
+     * larger value -> better gain
+     * @param parentClassCount
+     * @param childClassCounts
+     * @return
+     */
+    public static double infoGain(List<Integer> parentClassCount, List<List<Integer>> childClassCounts) {
+        return gain(parentClassCount, childClassCounts, Utilities::infoGainEntropyFromClassCounts);
+    }
+
+    /**
+     * lower value -> more pure
+     * @param classCounts
+     * @return
+     */
+    public static double giniImpurityEntropyFromClassCounts(List<Integer> classCounts) {
+        return giniImpurityEntropyFromClassCounts(new ClassCount(classCounts));
+    }
+
+    public static double giniImpurityEntropyFromClassCounts(ClassCount classCounts) {
+        return giniImpurityEntropyFromDistribution(classCounts.getDistribution());
+    }
+
+    public static double giniImpurityEntropyFromDistribution(List<Double> distribution) {
+        double entropy = 0;
+        for(Double proportion : distribution) {
+            double score = Math.pow(proportion, 2);
+            entropy += score;
+        }
+        return 1 - entropy;
+    }
+
+    /**
+     * larger value -> better gain
+     * @param parentClassCount
+     * @param childClassCounts
+     * @return
+     */
+    public static double giniImpurity(List<Integer> parentClassCount, List<List<Integer>> childClassCounts) {
+        return gain(parentClassCount, childClassCounts, Utilities::giniImpurityEntropyFromClassCounts);
+    }
+
+    public static class UnitTests {
+
+        @Test
+        public void testGiniImpurityEntropyImpure() {
+            double score = Utilities.giniImpurityEntropyFromClassCounts(Lists.newArrayList(5, 5));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.5);
+        }
+
+        @Test
+        public void testGiniImpurityEntropyPure() {
+            double score = Utilities.giniImpurityEntropyFromClassCounts(Lists.newArrayList(10, 0));
+            System.out.println(score);
+            Assert.assertTrue(score == 0);
+        }
+
+        @Test
+        public void testGiniImpurityEntropyA() {
+            double score = Utilities.giniImpurityEntropyFromClassCounts(Lists.newArrayList(4, 6));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.48);
+        }
+
+        @Test
+        public void testGiniImpurityEntropyB() {
+            double score = Utilities.giniImpurityEntropyFromClassCounts(Lists.newArrayList(1, 9));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.17999999999999994);
+        }
+
+        @Test
+        public void testGiniImpurityPure() {
+            double score = giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(8, 0),
+                Lists.newArrayList(0, 4)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.4444444444444444);
+        }
+
+        @Test
+        public void testGiniImpurityImpure() {
+            double score = giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(4, 2),
+                Lists.newArrayList(4, 2)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0);
+        }
+
+        @Test
+        public void testGiniImpurityA() {
+            double score = giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(7, 3),
+                Lists.newArrayList(1, 1)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.011111111111111058);
+        }
+
+        @Test
+        public void testGiniImpurityB() {
+            double score = giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(7, 1),
+                Lists.newArrayList(1, 3)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.1736111111111111);
+        }
+
+        @Test
+        public void testInfoGainEntropyImpure() {
+            double score = infoGainEntropyFromClassCounts(Lists.newArrayList(5, 5));
+            System.out.println(score);
+            Assert.assertTrue(score == 1);
+        }
+
+        @Test
+        public void testInfoGainEntropyPure() {
+            double score = infoGainEntropyFromClassCounts(Lists.newArrayList(10, 0));
+            System.out.println(score);
+            Assert.assertTrue(score == 0);
+        }
+
+        @Test
+        public void testInfoGainPure() {
+            double score = infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(8, 0),
+                Lists.newArrayList(0, 4)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.9182958340544896);
+        }
+
+        @Test
+        public void testInfoGainImpure() {
+            double score = infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(4, 2),
+                Lists.newArrayList(4, 2)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0);
+        }
+
+        @Test
+        public void testInfoGainA() {
+            double score = infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(7, 3),
+                Lists.newArrayList(1, 1)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.01722008469557898);
+        }
+
+        @Test
+        public void testInfoGainB() {
+            double score = infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
+                Lists.newArrayList(7, 1),
+                Lists.newArrayList(1, 3)
+            ));
+            System.out.println(score);
+            Assert.assertTrue(score == 0.28549349710171434);
+        }
     }
 
     public static final double[] interpolate(double min, double max, int num) {
@@ -589,14 +836,5 @@ public class Utilities {
         return removed;
     }
 
-//    public static <A> int sum(Iterator<? extends A> iterator, Function<A, Integer> func) {
-//        int sum = 0;
-//        while (iterator.hasNext()) {
-//            A next = iterator.next();
-//            Integer integer = func.apply(next);
-//            sum += integer;
-//        }
-//        return sum;
-//    }
 
 }

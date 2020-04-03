@@ -9,12 +9,10 @@ import java.util.ListIterator;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ExemplarPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
-import tsml.classifiers.distance_based.proximity.stopping_conditions.PureSplit;
 import tsml.classifiers.distance_based.utils.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.tree.Tree;
@@ -73,9 +71,10 @@ public class ProxTree extends BaseClassifier {
     }
 
     public static void main(String[] args) throws Exception {
-        ProxTree pt = new ProxTree();
+        ProxTree pt = Factory.buildProximityTree();
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
-        System.out.println(results.writeSummaryResultsToString());
+        System.out.println(results.writeSummaryResultsToString()); // todo interfaces or abst classes for fields in
+        // this cls, e.g. node iterator?
     }
 
     public ProxTree() {
