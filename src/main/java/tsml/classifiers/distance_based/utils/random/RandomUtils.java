@@ -6,6 +6,8 @@ import java.util.Random;
 import java.util.function.Function;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
+import utilities.ArrayUtilities;
+import utilities.Utilities;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -88,5 +90,9 @@ public class RandomUtils {
         Assert.assertNotNull(random);
         Assert.assertNotNull(list);
         return list.get(random.nextInt(list.size()));
+    }
+
+    public static <A> A choice(Iterable<A> iterable, Random random) {
+        return choice(ArrayUtilities.drain(iterable), random);
     }
 }
