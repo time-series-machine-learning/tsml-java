@@ -9,7 +9,10 @@ import java.util.ListIterator;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.proximity.splitting.AbstractSplitterBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
+import tsml.classifiers.distance_based.proximity.splitting.DecoratedSplitterBuilder;
+import tsml.classifiers.distance_based.proximity.splitting.SplitterBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
@@ -62,7 +65,7 @@ public class ProxTree extends BaseClassifier {
 
         public static ProxTree setProximityTreeR1GiniConfig(ProxTree pt) {
             pt.setNodeIteratorBuilder(LinearListIterator::new);
-            pt.setSplitterBuilder(new SplitterBuilder() {
+            pt.setSplitterBuilder(new AbstractSplitterBuilder() {
 
                 @Override
                 public Splitter build() {
@@ -93,8 +96,13 @@ public class ProxTree extends BaseClassifier {
 
         public static ProxTree setProximityTreeRXGiniConfig(ProxTree pt, int numSplits) {
             setProximityTreeR1GiniConfig(pt);
-            BestOfNSplits splitter = new BestOfNSplits(numSplits, pt.getSplitter(), pt.getRandom());
-            pt.setSplitter(splitter);
+            SplitterBuilder splitterBuilder = pt.getSplitterBuilder();
+            pt.setSplitterBuilder(new DecoratedSplitterBuilder(splitterBuilder) {
+                @Override
+                public Splitter build() {
+                    return new BestOfNSplits(numSplits, getDelegate().build(), pt.getRandom());
+                }
+            });
             return pt;
         }
 
@@ -109,7 +117,7 @@ public class ProxTree extends BaseClassifier {
     }
 
     public static void main(String[] args) throws Exception {
-        ProxTree pt = FACTORY.PROXIMITY_TREE_R1_GINI.build();
+        ProxTree pt = FACTORY.PROXIMITY_TREE_R5_GINI.build();
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
         System.out.println(results.writeSummaryResultsToString()); // todo interfaces or abst classes for fields in
         // this cls, e.g. node iterator?
@@ -126,7 +134,7 @@ public class ProxTree extends BaseClassifier {
         throw new UnsupportedOperationException();
     };
     private Splitter splitter;
-    private SplitterBuilder splitterBuilder = new SplitterBuilder() {
+    private SplitterBuilder splitterBuilder = new AbstractSplitterBuilder() {
 
         @Override
         public Splitter build() {
@@ -137,31 +145,6 @@ public class ProxTree extends BaseClassifier {
         throw new UnsupportedOperationException();
     };
 
-    public abstract static class SplitterBuilder implements Serializable {
-        private Instances data;
-        private Random randomSource;
-
-        public SplitterBuilder setRandom(Random randomSource) {
-            Assert.assertNotNull(randomSource);
-            this.randomSource = randomSource;
-            return this;
-        }
-
-        public SplitterBuilder setData(Instances data) {
-            this.data = data;
-            return this;
-        }
-
-        public abstract Splitter build();
-
-        public Instances getData() {
-            return data;
-        }
-
-        public Random getRandom() {
-            return randomSource;
-        }
-    }
 
     public StoppingCondition getStoppingCondition() {
         return stoppingCondition;
