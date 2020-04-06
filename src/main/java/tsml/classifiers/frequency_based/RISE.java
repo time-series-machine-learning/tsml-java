@@ -157,7 +157,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         this(0);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC, MFCC_FFT, MFCC_ACF}
+    public enum TransformType {ACF, FACF, PS, FFT, MFCC, SPEC, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC_FFT, MFCC_ACF, SPEC_MFCC}
 
     /**
      * Function used to reset internal state of classifier.
@@ -441,6 +441,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                     e.printStackTrace();
                 }
                 break;
+            case SPEC:
+                Spectrogram spec = new Spectrogram();
+                try{
+                    temp = spec.process(instances);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+                break;
             case MFCC_FFT:
                 temp = transformInstances(instances, TransformType.MFCC);
                 temp.setClassIndex(-1);
@@ -496,6 +504,13 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                     e.printStackTrace();
                 }
                 temp = Instances.mergeInstances(temp, arData);
+                temp.setClassIndex(temp.numAttributes()-1);
+                break;
+            case SPEC_MFCC:
+                temp = transformInstances(instances, TransformType.SPEC);
+                temp.setClassIndex(-1);
+                temp.deleteAttributeAt(temp.numAttributes()-1);
+                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.MFCC));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
         }
@@ -1254,7 +1269,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
         ClassifierResults cr = null;
         SingleSampleEvaluator sse = new SingleSampleEvaluator();
-        sse.setPropInstancesInTrain(0.5);
+        //sse.setPropInstancesInTrain(0.5);
         sse.setSeed(1);
 
         RISE RISE = null;
@@ -1267,21 +1282,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             RISE = new RISE();
             RISE.setTransformType(TransformType.MFCC);
             cr = sse.evaluate(RISE, data);
-            System.out.println("MFCC");
-            System.out.println("Accuracy: " + cr.getAcc());
-            System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
-
-            RISE = new RISE();
-            RISE.setTransformType(TransformType.MFCC_ACF);
-            cr = sse.evaluate(RISE, data);
-            System.out.println("MFCC_ACF");
+            System.out.println("MFCC_SPEC");
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
-            e.printStackTrace();
+                e.printStackTrace();
         }
     }
-}
+ }
 
 /*
 Dataset = ADIAC
