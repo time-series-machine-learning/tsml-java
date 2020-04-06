@@ -31,15 +31,11 @@ import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.LPS;
-import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
-import tsml.classifiers.multivariate.NN_DTW_A;
-import tsml.classifiers.multivariate.NN_DTW_D;
-import tsml.classifiers.multivariate.NN_DTW_I;
-import tsml.classifiers.multivariate.NN_ED_I;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -305,7 +301,7 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D","DTW_A", "HC_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -322,6 +318,9 @@ public class ClassifierLists {
             case "ED_I":
                 c=new NN_ED_I();
                 break;
+            case "ED_D":
+                c=new NN_ED_D();
+                break;
             case "DTW_I":
                 c=new NN_DTW_I();
                 break;
@@ -330,6 +329,9 @@ public class ClassifierLists {
                 break;
             case "DTW_A":
                 c=new NN_DTW_A();
+                break;
+            case "HC_I":
+                c=new MultivariateHiveCote();
                 break;
             default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
@@ -650,6 +652,7 @@ public class ClassifierLists {
             ((Randomizable)c).setSeed(exp.foldId);
         return c;
     }
+
 
     /**
      * This method redproduces the old usage exactly as it was in old experiments.java.
