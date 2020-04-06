@@ -63,7 +63,17 @@ public class Spectrogram extends SimpleBatchFilter {
             spectrogram = spectrogram(signal, windowLength, overlap, nfft);
             spectrogramsInstances[i] = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
         }
-        return MultivariateInstanceTools.mergeToMultivariateInstances(spectrogramsInstances);
+
+        //Rearrange data
+        Instances[] temp = new Instances[spectrogramsInstances[0].size()];
+        for (int i = 0; i < temp.length; i++) {
+            temp[i] = new Instances(spectrogramsInstances[0], 0);
+            for (int j = 0; j < spectrogramsInstances.length; j++) {
+                temp[i].add(spectrogramsInstances[j].get(i));
+            }
+        }
+
+        return MultivariateInstanceTools.concatinateInstances(temp);
     }
 
     public int getNumWindows(int signalLength){
