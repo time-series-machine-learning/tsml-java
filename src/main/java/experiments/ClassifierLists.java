@@ -331,7 +331,7 @@ public class ClassifierLists {
                 c=new NN_DTW_A();
                 break;
             case "HC_I":
-                c=new MultivariateHiveCote();
+                c=new MultivariateHiveCote(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
                 break;
             default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
