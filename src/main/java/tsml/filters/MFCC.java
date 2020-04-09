@@ -1,4 +1,4 @@
-package tsml.filters;;
+package tsml.filters;
 import org.apache.commons.math3.transform.DctNormalization;
 import org.apache.commons.math3.transform.FastCosineTransformer;
 import org.apache.commons.math3.transform.TransformType;

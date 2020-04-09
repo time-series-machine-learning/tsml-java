@@ -15,16 +15,18 @@
  */
 package tsml.classifiers.interval_based;
  
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.TrainTimeContractable;
+import fileIO.OutFile;
+import machine_learning.classifiers.TimeSeriesTree;
+import tsml.classifiers.*;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -33,15 +35,15 @@ import weka.core.TechnicalInformation;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import tsml.classifiers.EnhancedAbstractClassifier;
+
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import tsml.classifiers.Tuneable;
- 
+
 /** 
   <!-- globalinfo-start -->
 * Implementation of Time Series Forest
@@ -114,9 +116,8 @@ import tsml.classifiers.Tuneable;
  *  true, in which case it does. This is a minor bug.
 **/
  
-public class TSF extends EnhancedAbstractClassifier 
-        implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable, Tuneable{
+public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
+        TrainTimeContractable, Checkpointable, Tuneable , Visualisable{
 //Static defaults
      
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -124,6 +125,7 @@ public class TSF extends EnhancedAbstractClassifier
     /** Primary parameters potentially tunable*/   
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
+    //Not required
     private int maxClassifiers = 1000;
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
@@ -135,7 +137,7 @@ public class TSF extends EnhancedAbstractClassifier
  
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    private Classifier classifier = new RandomTree();
+    private Classifier classifier = new TimeSeriesTree();
  
     /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
      ends  at  intervals[i][j][1] */
@@ -167,15 +169,20 @@ public class TSF extends EnhancedAbstractClassifier
 
     private boolean checkpoint = false;
     private String checkpointPath;
-    private long checkpointTime = 0;
+    private long checkpointTime = 0;    //Time between checkpoints in nanosecs
+    private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
+
+
     private long checkpointTimeElapsed= 0;
 
     private boolean trainTimeContract = false;
-    private long trainContractTimeNanos = 0;
+    transient private long trainContractTimeNanos = 0;
 
     protected static final long serialVersionUID = 32554L;
 
     private int seriesLength;
+
+    private String visSavePath;
 
     public TSF(){
         //TSF Has the capability to form train estimates
@@ -213,9 +220,7 @@ public class TSF extends EnhancedAbstractClassifier
      */
     @Override
     public String getParameters() {
-        String result=super.getParameters()+",numTrees,"+numClassifiers+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
-        if(classifier instanceof RandomTree)
-            result+="AttsConsideredPerNode,"+((RandomTree) classifier).getKValue();
+        String result=super.getParameters()+",numTrees,"+trees.size()+",numIntervals,"+numIntervals+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
 
         if(trainTimeContract)
             result+= ",trainContractTimeNanos," +trainContractTimeNanos;
@@ -360,9 +365,6 @@ public class TSF extends EnhancedAbstractClassifier
  */     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-/** Build Stage: 
- *  Builds the final classifier with or without bagging.  
- */       
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
@@ -370,8 +372,7 @@ public class TSF extends EnhancedAbstractClassifier
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
             //path checkpoint files will be saved to
-            if(debug)
-                System.out.println("Loading from checkpoint file");
+            printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
             //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
@@ -379,7 +380,7 @@ public class TSF extends EnhancedAbstractClassifier
         else {
             seriesLength = data.numAttributes() - 1;
             numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
-            printDebug("Building TSF: number of intervals = " + numIntervals);
+            printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers);
 //Set up instances size and format.
             trees = new ArrayList(numClassifiers);
 
@@ -395,12 +396,12 @@ public class TSF extends EnhancedAbstractClassifier
                 printLineDebug("TSF is using Bagging");
             }
 
-            //cancel loop using time instead of number built.
+/*            //cancel loop using time instead of number built.
             if (trainTimeContract){
                 numClassifiers = 0;
             }
-
-            intervals = new ArrayList();
+ */        intervals = new ArrayList();
+           lastCheckpointTime=startTime;
         }
 
         ArrayList<Attribute> atts=new ArrayList<>();
@@ -428,10 +429,6 @@ public class TSF extends EnhancedAbstractClassifier
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
 //Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-        if(classifier instanceof RandomTree){
-            ((RandomTree) classifier).setKValue(result.numAttributes()-1);
-//            ((RandomTree) base).setKValue((int)Math.sqrt(result.numAttributes()-1));
-        }
 
         int classifiersBuilt = trees.size();
 
@@ -440,9 +437,8 @@ public class TSF extends EnhancedAbstractClassifier
          *      do the transfrorms
          *      build the classifier
          * */
-        while(((System.nanoTime()-startTime)+checkpointTimeElapsed < trainContractTimeNanos || classifiersBuilt < numClassifiers)
-                && classifiersBuilt < maxClassifiers){
-
+        while(withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)){
+            printLineDebug("Building tree "+classifiersBuilt);
             if(classifiersBuilt%100==0)
                 printLineDebug("\t\t\t\t\tBuilding TSF tree "+classifiersBuilt);
 
@@ -502,8 +498,23 @@ public class TSF extends EnhancedAbstractClassifier
             classifiersBuilt++;
 
             if (checkpoint){
-                checkpoint(startTime);
+                if(checkpointTime>0)    //Timed checkpointing
+                {
+                    if(System.nanoTime()-lastCheckpointTime>checkpointTime){
+                        saveToFile(checkpointPath);
+//                        checkpoint(startTime);
+                        lastCheckpointTime=System.nanoTime();
+                    }
+                }
+                else {    //Default checkpoint every 100 trees
+                    if(numClassifiers%100 == 0)
+                        saveToFile(checkpointPath);
+//                        checkpoint(startTime);
+                }
             }
+        }
+        if(classifiersBuilt==0){//Not enough time to build a single classifier
+            throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
         }
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
@@ -596,8 +607,8 @@ public class TSF extends EnhancedAbstractClassifier
     private void copyParameters(TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
-        this.trainTimeContract=other.trainTimeContract;
-        this.trainContractTimeNanos=other.trainContractTimeNanos;
+//        this.trainTimeContract=other.trainTimeContract;
+//        this.trainContractTimeNanos=other.trainContractTimeNanos;
     }
 
     public void setEstimatorMethod(String str){
@@ -640,8 +651,9 @@ public class TSF extends EnhancedAbstractClassifier
         double sum=0;
         for(double x:d)
             sum+=x;
-        for(int i=0;i<d.length;i++)
-            d[i]=d[i]/sum;
+        if(sum>0)
+            for(int i=0;i<d.length;i++)
+                d[i]=d[i]/sum;
         return d;
     }
 /**
@@ -717,23 +729,29 @@ public class TSF extends EnhancedAbstractClassifier
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
+        printLineDebug(" Writing checkpoint to "+path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
         }
         return validPath;
     }
-
-    @Override
+    @Override //Checkpointable
+    public boolean setCheckpointTimeHours(int t){
+        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
+        checkpoint = true;
+        return true;
+    }
+    @Override //Checkpointable
     public void copyFromSerObject(Object obj) throws Exception {
         if(!(obj instanceof TSF))
             throw new Exception("The SER file is not an instance of TSF");
         TSF saved = ((TSF)obj);
-        System.out.println("Loading TSF" + seed + ".ser");
 
-        try{
+        try{        printLineDebug("Loading TSF" + seed + ".ser");
+
             numClassifiers = saved.numClassifiers;
             maxClassifiers = saved.maxClassifiers;
             numIntervals = saved.numIntervals;
@@ -749,12 +767,12 @@ public class TSF extends EnhancedAbstractClassifier
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
             estimator = saved.estimator;
-            //checkpoint = saved.checkpoint;
-            //checkpointPath = saved.checkpointPath
+            checkpoint = saved.checkpoint;
+            checkpointPath = saved.checkpointPath;
             checkpointTime = saved.checkpointTime;
             checkpointTimeElapsed = saved.checkpointTime; //intentional, time spent building previously unchanged
-            trainTimeContract = saved.trainTimeContract;
-            trainContractTimeNanos = saved.trainContractTimeNanos;
+//            trainTimeContract = saved.trainTimeContract;
+//            trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
 
             rand = saved.rand;
@@ -767,38 +785,26 @@ public class TSF extends EnhancedAbstractClassifier
         }
     }
 
-    @Override
+
+    @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
         trainContractTimeNanos =amount;
         trainTimeContract = true;
     }
+    @Override//TrainTimeContractable
+    public boolean withinTrainContract(long start){
+        printLineDebug(" In withinTrainContract: "+trainContractTimeNanos+"  "+(System.nanoTime()-start));
+        if(trainContractTimeNanos<=0) return true; //Not contracted
+        return System.nanoTime()-start < trainContractTimeNanos;
+    }
 
-    private void checkpoint(long startTime){
-        if(checkpointPath!=null){
-            try{
-                long t1 = System.nanoTime();
-                File f = new File(checkpointPath);
-                if(!f.isDirectory())
-                    f.mkdirs();
-
-                //time spent building so far.
-                checkpointTime = ((System.nanoTime() - startTime) + checkpointTimeElapsed);
-
-                //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
-
-                File file = new File(checkpointPath + "TSF" + seed + "temp.ser");
-                File file2 = new File(checkpointPath + "TSF" + seed + ".ser");
-                file2.delete();
-                file.renameTo(file2);
-
-                checkpointTimeElapsed -= System.nanoTime()-t1;
-            }
-            catch(Exception e){
-                e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+"TSF" + seed + ".ser FAILED");
-            }
-        }
+    @Override // C
+    public void saveToFile(String filename) throws Exception{
+        Checkpointable.super.saveToFile(checkpointPath + "TSF" + seed + "temp.ser");
+        File file = new File(checkpointPath + "TSF" + seed + "temp.ser");
+        File file2 = new File(checkpointPath + "TSF" + seed + ".ser");
+        file2.delete();
+        file.renameTo(file2);
     }
  
 //Nested class to store three simple summary features used to construct train data
@@ -887,7 +893,75 @@ public class TSF extends EnhancedAbstractClassifier
 
         return ps;
     }
-     
+
+    @Override
+    public boolean setVisualisationSavePath(String path) {
+        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
+        if(validPath){
+            visSavePath = path;
+        }
+        return validPath;
+    }
+
+    @Override
+    public void createVisualisation() throws Exception {
+        if (!(classifier instanceof TimeSeriesTree)) {
+            System.err.println("Temporal importance curve only available for time series tree.");
+            return;
+        }
+
+        if (visSavePath == null){
+            System.err.println("CIF visualisation save path not set.");
+            return;
+        }
+
+        double[][] curves = new double[3][seriesLength];
+        for (int i = 0; i < trees.size(); i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/3);
+                int att = (int)(split%3);
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        OutFile of = new OutFile(visSavePath + "/temporalImportanceCurves" + seed + ".txt");
+        String[] atts = new String[]{"mean","stdev","slope"};
+        for (int i = 0 ; i < 3; i++){
+            of.writeLine(atts[i]);
+            of.writeLine(Arrays.toString(curves[i]));
+        }
+        of.closeFile();
+
+        Process p = Runtime.getRuntime().exec("py src/main/python/temporalImportanceCurves.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
+
+        //the following will output the Python output and error messaged. used for debugging
+        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+        System.out.println("output : ");
+        String outLine = out.readLine();
+        while (outLine != null){
+            System.out.println(outLine);
+            outLine = out.readLine();
+        }
+
+        System.out.println("error : ");
+        String errLine = err.readLine();
+        while (errLine != null){
+            System.out.println(errLine);
+            errLine = err.readLine();
+        }
+    }
+
     public static void main(String[] arg) throws Exception{
         
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));

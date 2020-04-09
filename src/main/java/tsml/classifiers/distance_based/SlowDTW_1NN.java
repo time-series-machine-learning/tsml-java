@@ -58,11 +58,6 @@ public class SlowDTW_1NN extends EnhancedAbstractClassifier  implements SaveEach
 //Think this always does para search?
 //    @Override
 //    public boolean findsTrainAccuracyEstimate(){ return findTrainAcc;}
-       
-      @Override
-    public String getParas() { //This is redundant really.
-        return getParameters();
-    }
 
 
     public SlowDTW_1NN(){

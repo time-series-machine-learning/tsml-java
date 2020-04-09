@@ -577,7 +577,7 @@ public class ClassifierLists {
 
             case "TunedHIVE-COTE":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC","EE"};//RotF for ST
+                    String[] cls={"TSF","BOSS","RISE","STC"};//RotF for ST
                     HIVE_COTE hc=new HIVE_COTE();
                     hc.setFillMissingDistsWithOneHotVectors(true);
                     hc.setSeed(fold);
@@ -588,7 +588,7 @@ public class ClassifierLists {
                     tuner.setClassifier(hc);
                     ParameterSpace pc=new ParameterSpace();
                     double[] alphaVals={1,2,3,4,5,6,7,8,9,10};
-                    pc.addParameter("a",alphaVals);
+                    pc.addParameter("A",alphaVals);
                     tuner.setParameterSpace(pc);
                     c=tuner;
                 }

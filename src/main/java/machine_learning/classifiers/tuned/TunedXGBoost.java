@@ -480,7 +480,7 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(tuneParameters ? "TunedXGBoost" : "XGBoost");
         trainResults.setDatasetName(trainInsts.relationName());
-        trainResults.setParas(getParas());
+        trainResults.setParas(getParameters());
     }
 
     @Override
@@ -593,13 +593,6 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
         return result;
     }
 
-    /**
-     * ParameterSplittable interface
-     */
-    @Override
-    public String getParas() {
-        return getParameters();
-    }
 
     /**
      * Provides a smallish speedup when crossvalidating to tune hyperparameters. 

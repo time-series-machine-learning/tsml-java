@@ -94,6 +94,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
       */
     private boolean trainTimeContract =false;
     private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
+
+
     private long transformContractTime = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
 
 
