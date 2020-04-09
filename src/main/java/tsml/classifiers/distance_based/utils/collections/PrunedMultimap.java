@@ -14,6 +14,7 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private int hardLimit = -1;
     private int seed = 0;
     private Random random = new Random(seed);
+    private boolean randomInitialised = false;
     private final TreeMap<K, Collection<V>> backingMap;
 
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc() {
@@ -90,7 +91,7 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
         if(diff > 0) {
             Map.Entry<K, Collection<V>> entry = backingMap.lastEntry();
             Collection<V> values = entry.getValue();
-            List<V> toRemove = Utilities.randPickN(values, diff, random);
+            List<V> toRemove = Utilities.randPickN(values, diff, getRandom());
             K k = entry.getKey();
             for(V v : toRemove) {
                 remove(k, v);
@@ -132,7 +133,17 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
 
     @Override public void setSeed(final int seed) {
         this.seed = seed;
-        random.setSeed(seed);
+        setRandomInitialised(true);
+        getRandom().setSeed(seed);
+    }
+
+    public boolean isRandomInitialised() {
+        return randomInitialised;
+    }
+
+    private PrunedMultimap<K, V> setRandomInitialised(final boolean randomInitialised) {
+        this.randomInitialised = randomInitialised;
+        return this;
     }
 
     @Override public int getSeed() {
@@ -158,11 +169,15 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     }
 
     public Random getRandom() {
+        if(!isRandomInitialised()) {
+            throw new IllegalStateException("random or seed must be set");
+        }
         return random;
     }
 
     public void setRandom(final Random random) {
         this.random = random;
+        setRandomInitialised(true);
     }
 
     public void disableHardLimit() {
