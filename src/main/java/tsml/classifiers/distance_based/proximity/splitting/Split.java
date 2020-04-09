@@ -1,89 +1,27 @@
 package tsml.classifiers.distance_based.proximity.splitting;
 
 import java.util.List;
-import org.junit.Assert;
+import tsml.classifiers.distance_based.proximity.splitting.partition.PartitionSet;
+import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
 import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Purpose: split data into partitions and score the split.
+ * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public abstract class Split {
-    private double score = -1;
-    private Scorer scorer = Scorer.getGiniImpurityScorer();
-    private Instances data;
-    private List<Instances> partitions;
 
-    public Split(double score, Instances data, List<Instances> partitions) {
-        setScore(score);
-        setData(data);
-        setPartitions(partitions);
-    }
+public interface Split extends PartitionSet {
 
-    // on the assumption that subclasses know what they're doing
-    protected Split() {}
+    List<Instances> split();
 
-    public double getScore() {
-        score = scorer.findScore(data, partitions);
-        return score;
-    }
+    Instances getPartitionFor(Instance instance);
 
-    public Instances getData() {
-        return data;
-    }
+    int getPartitionIndexFor(Instance instance);
 
-    public List<Instances> getPartitions() {
-        return partitions;
-    }
+    Scorer getScorer();
 
-    protected abstract List<Instances> split();
+    Split setScorer(Scorer scorer);
 
-    public List<Instances> findPartitions() {
-        List<Instances> partitions = getPartitions();
-        if(partitions == null) {
-            partitions = split();
-            setPartitions(partitions);
-            double score = getScorer().findScore(getData(), partitions);
-            setScore(score);
-        }
-        return partitions;
-    }
-
-    public abstract int getPartitionIndexOf(Instance instance);
-
-    public Instances getPartitionFor(Instance instance) {
-        final int index = getPartitionIndexOf(instance);
-        final List<Instances> partitions = findPartitions();
-        return partitions.get(index);
-    }
-
-    public Split setData(Instances data) {
-        Assert.assertNotNull(data);
-        this.data = data;
-        return this;
-    }
-
-    public Split setPartitions(List<Instances> partitions) {
-        if(partitions != null) {
-            Assert.assertFalse(partitions.isEmpty());
-        }
-        this.partitions = partitions;
-        return this;
-    }
-
-    public Scorer getScorer() {
-        return scorer;
-    }
-
-    public Split setScorer(final Scorer scorer) {
-        this.scorer = scorer;
-        return this;
-    }
-
-    public Split setScore(final double score) {
-        this.score = score;
-        return this;
-    }
 }

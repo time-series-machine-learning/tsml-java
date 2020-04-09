@@ -3,11 +3,11 @@ package tsml.classifiers.distance_based.proximity.splitting;
 import weka.core.Instances;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: a splitter takes a given set of data and splits it into one to many partitions.
  * <p>
  * Contributors: goastler
  */
-public abstract class Splitter {
+public interface Splitter {
 
-    public abstract Split buildSplit(Instances data);
+    public Split buildSplit(Instances data);
 }
