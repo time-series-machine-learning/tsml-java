@@ -598,8 +598,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
+                        exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
+                        exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
 //                        exp.performTimingBenchmark = true;
-                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp,data[0],data[1],c);
                     }
                 }
             }
