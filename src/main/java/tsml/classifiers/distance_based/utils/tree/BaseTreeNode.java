@@ -33,7 +33,7 @@ public class BaseTreeNode<A> implements TreeNode<A> {
 
     @Override
     public void setParent(TreeNode<A> parent) {
-        if(parent != null && !this.parent.equals(parent)) {
+        if(parent != null && (this.parent == null || !this.parent.equals(parent))) {
             parent.getChildren().add(this);
             setLevel(parent.getLevel() + 1);
         }
