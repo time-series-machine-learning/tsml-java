@@ -7,7 +7,6 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.iteration.RandomIteration;
-import tsml.classifiers.distance_based.utils.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.dimensions.ParameterDimension;
@@ -24,41 +23,66 @@ import tsml.classifiers.distance_based.utils.random.RandomUtils;
 public class RandomSearchIterator extends BaseRandom implements RandomIteration<ParamSet> {
 
     private ParamSpace paramSpace;
-    private static final int DEFAULT_NUM_ITERATIONS = 100;
-    private int numIterations;
+    private static final int DEFAULT_ITERATION_LIMIT = 100;
+    private int iterationLimit;
     private int iterationCount = 0;
     private boolean replacement;
+
+    public int getIterationCount() {
+        return iterationCount;
+    }
+
+    protected RandomSearchIterator setIterationCount(final int iterationCount) {
+        this.iterationCount = iterationCount;
+        return this;
+    }
+
+    public boolean hasIterationLimit() {
+        return getIterationLimit() >= 0;
+    }
+
+    public RandomSearchIterator disableIterationLimit() {
+        return setIterationLimit(-1);
+    }
+
+    public boolean withinIterationLimit() {
+        if(!hasIterationLimit()) {
+            return true;
+        } else {
+            return getIterationCount() < getIterationLimit();
+        }
+    }
 
     private void setup(ParamSpace paramSpace, boolean replacement, int numIterations) {
         setParamSpace(paramSpace);
         setReplacement(replacement);
-        setNumIterations(numIterations);
+        setIterationLimit(numIterations);
     }
 
-    public RandomSearchIterator(int seed, ParamSpace paramSpace, int numIterations) {
-        this(seed, paramSpace, numIterations, false);
+    public RandomSearchIterator(int seed, ParamSpace paramSpace, int iterationLimit) {
+        this(seed, paramSpace, iterationLimit, false);
     }
 
-    public RandomSearchIterator(int seed, final ParamSpace paramSpace, final int numIterations, boolean replacement) {
+    public RandomSearchIterator(int seed, final ParamSpace paramSpace, final int iterationLimit, boolean replacement) {
         super(seed);
-        setup(paramSpace, replacement, numIterations);
+        setup(paramSpace, replacement, iterationLimit);
     }
 
     public RandomSearchIterator(int seed, final ParamSpace paramSpace) {
-        this(seed, paramSpace, DEFAULT_NUM_ITERATIONS, false);
+        this(seed, paramSpace, DEFAULT_ITERATION_LIMIT, false);
     }
 
-    public RandomSearchIterator(Random random, ParamSpace paramSpace, int numIterations) {
-        this(random, paramSpace, numIterations, false);
+    public RandomSearchIterator(Random random, ParamSpace paramSpace, int iterationLimit) {
+        this(random, paramSpace, iterationLimit, false);
     }
 
-    public RandomSearchIterator(Random random, final ParamSpace paramSpace, final int numIterations, boolean replacement) {
+    public RandomSearchIterator(Random random, final ParamSpace paramSpace, final int iterationLimit, boolean replacement) {
         super(random);
-        setup(paramSpace, replacement, numIterations);
+        setup(paramSpace, replacement, iterationLimit);
     }
 
     public RandomSearchIterator(Random random, final ParamSpace paramSpace) {
-        this(random, paramSpace, DEFAULT_NUM_ITERATIONS, false);
+        this(random, paramSpace, DEFAULT_ITERATION_LIMIT, false);
     }
 
     public ParamSpace getParamSpace() {
@@ -91,7 +115,7 @@ public class RandomSearchIterator extends BaseRandom implements RandomIteration<
 
     @Override
     public boolean hasNext() {
-        return iterationCount < numIterations;
+        return withinIterationLimit();
     }
 
     private Object extractRandomValue(Object values) {
@@ -130,17 +154,16 @@ public class RandomSearchIterator extends BaseRandom implements RandomIteration<
     @Override
     public ParamSet next() {
         ParamSet paramSet = extractRandomParamSet(paramSpace);
-        iterationCount++;
+        setIterationCount(getIterationCount() + 1);
         return paramSet;
     }
 
-    public int getNumIterations() {
-        return numIterations;
+    public int getIterationLimit() {
+        return iterationLimit;
     }
 
-    public RandomSearchIterator setNumIterations(final int numIterations) {
-        Assert.assertTrue(numIterations >= 0);
-        this.numIterations = numIterations;
+    public RandomSearchIterator setIterationLimit(final int iterationLimit) {
+        this.iterationLimit = iterationLimit;
         return this;
     }
 
