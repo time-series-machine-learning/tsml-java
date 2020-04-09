@@ -9,7 +9,7 @@ import utilities.ArrayUtilities;
 import utilities.Utilities;
 import utilities.class_counts.ClassCounts;
 
-public class PureSplit implements ProxTree.StoppingCondition {
+public class Pure implements ProxTree.StoppingCondition {
     @Override public boolean shouldStop(final TreeNode<Split> node) {
         return Utilities.isHomogeneous(node.getElement().getData());
     }

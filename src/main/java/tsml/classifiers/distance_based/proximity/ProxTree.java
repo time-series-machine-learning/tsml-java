@@ -11,14 +11,14 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.AbstractSplitterBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
-import tsml.classifiers.distance_based.proximity.splitting.DecoratedSplitterBuilder;
+import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.proximity.splitting.SplitterBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomDistanceFunctionPicker;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarSimilaritySplitter;
-import tsml.classifiers.distance_based.proximity.splitting.Split;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarProximitySplit;
 import tsml.classifiers.distance_based.proximity.splitting.Splitter;
-import tsml.classifiers.distance_based.proximity.stopping_conditions.PureSplit;
+import tsml.classifiers.distance_based.proximity.stopping_conditions.Pure;
 import tsml.classifiers.distance_based.utils.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.tree.Tree;
@@ -69,39 +69,49 @@ public class ProxTree extends BaseClassifier {
 
                 @Override
                 public Splitter build() {
-                    final Instances data = getData();
-                    final Random randomSource = getRandom();
-                    Assert.assertNotNull(data);
-                    Assert.assertNotNull(randomSource);
-                    final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(pt.getRandom());
+                    final Instances trainData = getData();
+                    Assert.assertNotNull(trainData);
+                    final Random random = pt.getRandom();
+                    Assert.assertNotNull(random);
+                    final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
                     final List<ParamSpace> paramSpaces = Lists.newArrayList(
                         DistanceMeasureConfigs.buildEdSpace(),
                         DistanceMeasureConfigs.buildFullDtwSpace(),
                         DistanceMeasureConfigs.buildFullDdtwSpace(),
-                        ContinuousDistanceFunctionConfigs.buildDtwSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildDdtwSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildErpSpace(data),
-                        ContinuousDistanceFunctionConfigs.buildLcssSpace(data),
+                        ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
+                        ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
+                        ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
+                        ContinuousDistanceFunctionConfigs.buildLcssSpace(trainData),
                         DistanceMeasureConfigs.buildMsmSpace(),
                         ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
                         ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
                         DistanceMeasureConfigs.buildTwedSpace()
                     );
-                    return new RandomExemplarSimilaritySplitter(paramSpaces, randomSource, exemplarPicker);
+                    final RandomDistanceFunctionPicker distanceFunctionPicker = new RandomDistanceFunctionPicker(
+                        random, paramSpaces);
+                    return new Splitter() {
+                        @Override
+                        public Split buildSplit(final Instances data) {
+                            RandomExemplarProximitySplit split = new RandomExemplarProximitySplit(
+                                random, exemplarPicker,
+                                distanceFunctionPicker);
+                            split.setData(data);
+                            return split;
+                        }
+                    };
                 }
             });
-            pt.setStoppingCondition(new PureSplit());
+            pt.setStoppingCondition(new Pure());
             return pt;
         }
 
         public static ProxTree setProximityTreeRXGiniConfig(ProxTree pt, int numSplits) {
             setProximityTreeR1GiniConfig(pt);
-            SplitterBuilder splitterBuilder = pt.getSplitterBuilder();
-            pt.setSplitterBuilder(new DecoratedSplitterBuilder(splitterBuilder) {
-                @Override
-                public Splitter build() {
-                    return new BestOfNSplits(numSplits, getDelegate().build(), pt.getRandom());
-                }
+            Splitter splitter = pt.getSplitter();
+            pt.setSplitter(data -> {
+                BestOfNSplits bestOfNSplits = new BestOfNSplits(splitter, pt.getRandom(), numSplits);
+                bestOfNSplits.setData(data);
+                return bestOfNSplits;
             });
             return pt;
         }
@@ -184,23 +194,28 @@ public class ProxTree extends BaseClassifier {
                 splitter = this.splitterBuilder.build();
                 setSplitter(splitter);
             }
-            final Split split = splitter.buildSplit(trainData);
-            BaseTreeNode<Split> root = new BaseTreeNode<>(split);
+            TreeNode<Split> root = buildNode(trainData, null);
             tree.setRoot(root);
-            nodeIterator.add(root);
         }
         while(nodeIterator.hasNext()) {
             final TreeNode<Split> node = nodeIterator.next();
-            final List<Instances> partitions = node.getElement().findPartitions();
+            final List<Instances> partitions = node.getElement().split();
+            System.out.println(node.getElement());
             for(Instances childData : partitions) {
-                final Split childSplit = splitter.buildSplit(childData);
-                final TreeNode<Split> child = new BaseTreeNode<>(childSplit);
-                final boolean shouldAdd = !stoppingCondition.shouldStop(node);
-                if(shouldAdd) {
-                    nodeIterator.add(child);
-                }
+                buildNode(childData, node);
             }
         }
+    }
+
+    private TreeNode<Split> buildNode(Instances data, TreeNode<Split> parent) {
+        final Split split = splitter.buildSplit(data);
+        final TreeNode<Split> node = new BaseTreeNode<>(split);
+        node.setParent(parent);
+        final boolean stop = stoppingCondition.shouldStop(node);
+        if(!stop) {
+            nodeIterator.add(node);
+        }
+        return node;
     }
 
     @Override
@@ -210,16 +225,16 @@ public class ProxTree extends BaseClassifier {
         int index = -1;
         while(!node.isLeaf()) {
             final Split split = node.getElement();
-            index = split.getPartitionIndexOf(instance);
+            index = split.getPartitionIndexFor(instance);
             final List<TreeNode<Split>> children = node.getChildren();
             node = children.get(index);
         }
-        if(index < 0) {
-            // todo log warning that we haven't done any tree traversal
-            // todo perhaps rand pick result?
-        } else {
+//        if(index < 0) {
+//            // todo log warning that we haven't done any tree traversal
+//            // todo perhaps rand pick result?
+//        } else {
             distribution[index]++;
-        }
+//        }
         return distribution;
     }
 
