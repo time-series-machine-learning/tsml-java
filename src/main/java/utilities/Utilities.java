@@ -15,7 +15,6 @@
 package utilities;
 
 import com.beust.jcommander.internal.Lists;
-import java.util.function.BiFunction;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
@@ -304,6 +303,40 @@ public class Utilities {
     public static List<Double> normalise(Iterable<Integer> iterable) {
         List<Integer> list = ArrayUtilities.drain(iterable);
         return divide(list, ArrayUtilities.sum(list));
+    }
+
+    public static <A, B> boolean isUnique(final Iterator<A> iterator, Function<A, B> func) {
+        if(!iterator.hasNext()) {
+            return true;
+        }
+        B value = func.apply(iterator.next());
+        while(iterator.hasNext()) {
+            B nextValue = func.apply(iterator.next());
+            if(value == null) {
+                if(nextValue != null) {
+                    return false;
+                }
+            } else if(!value.equals(nextValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static <A> boolean isUnique(final Iterator<A> iterator) {
+        return isUnique(iterator, i -> i);
+    }
+
+    public static <A> boolean isUnique(Iterable<A> iterable) {
+        return isUnique(iterable.iterator());
+    }
+
+    public static <A, B> boolean isUnique(Iterable<A> iterable, Function<A, B> func) {
+        return isUnique(iterable.iterator(), func);
+    }
+
+    public static boolean isHomogeneous(Instances data) {
+        return isUnique(data, Instance::classValue);
     }
 
     private static class ClassCount {
