@@ -10,7 +10,7 @@ import weka.core.Instances;
 import java.util.Map;
 import java.util.Random;
 
-public class RandomExemplarPerClassPicker extends ExemplarPicker {
+public class RandomExemplarPerClassPicker implements ExemplarPicker {
 
     private Random random;
 

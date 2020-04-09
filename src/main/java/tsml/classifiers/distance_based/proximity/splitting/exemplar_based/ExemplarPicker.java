@@ -8,11 +8,11 @@ import weka.core.Instances;
 import weka.core.Randomizable;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: pick one to many groups of exemplars from some given data. Each group represents a branch.
  * <p>
  * Contributors: goastler
  */
-public abstract class ExemplarPicker {
+public interface ExemplarPicker {
 
-    public abstract List<List<Instance>> pickExemplars(Instances instances);
+    List<List<Instance>> pickExemplars(Instances instances);
 }
