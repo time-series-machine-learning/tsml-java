@@ -248,7 +248,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      * RISE will attempt to load serialisation file on method call using the seed set on instantiation as file
  identifier.
      * If successful this object is returned to state in which it was at creation of serialisation file.
-     * @param serialisePath Path to folder in which to save serialisation files.
+     * @param path Path to folder in which to save serialisation files.
      */
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
@@ -626,6 +626,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         getCapabilities().testWithFail(trainingData);
         //Start forest timer.
         timer.forestStartTime = System.nanoTime();
+        long startTime=timer.forestStartTime;
         File file = new File(checkpointPath + "RISE" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
@@ -650,6 +651,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 minIntervalLength = (trainingData.numAttributes()-1)/2;
             }
             lastCheckpointTime=timer.forestStartTime;
+            printLineDebug("Building RISE: minIntervalLength = " + minIntervalLength+" max number of trees ="+numClassifiers);
 
         }
 
@@ -662,6 +664,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
 
         for (; classifiersBuilt < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); classifiersBuilt++) {
+            if(debug && classifiersBuilt%100==0)
+                printLineDebug("Building RISE tree "+classifiersBuilt+" time taken = "+(System.nanoTime()-startTime)+" contract ="+trainContractTimeNanos+" nanos");
+
 
             //Start tree timer.
             timer.treeStartTime = System.nanoTime();
@@ -712,7 +717,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
         }
         if(classifiersBuilt==0){//Not enough time to build a single classifier
-            throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
+            throw new Exception((" ERROR in RISE, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
         }
 
         if (checkpoint) {
@@ -726,6 +731,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(timer.forestElapsedTime);
         trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
+
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception{
@@ -853,7 +860,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             if (seedClassifier)
                 rise.setSeed(seed * 100);
             if (trainTimeContract) {//Set the contract for each fold
-                rise.setTrainTimeLimit(trainContractTimeNanos/10);
+                rise.setTrainTimeLimit(trainContractTimeNanos/(numFolds-2));
             }
             rise.setEstimateOwnPerformance(false);
             trainResults = cv.evaluate(rise, data);
@@ -1021,12 +1028,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public void setTrainTimeLimit(long amount) {
+        printLineDebug(" RISE setting contract to "+amount);
+
         if(amount>0) {
             trainTimeContract = true;
             trainContractTimeNanos = amount;
+            timer.setTimeLimit(amount);
         }
-
-        timer.setTimeLimit(amount);
+        else
+            trainTimeContract = false;
     }
 
     /**

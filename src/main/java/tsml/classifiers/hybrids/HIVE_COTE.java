@@ -59,7 +59,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     //TrainTimeContractable
     protected boolean trainTimeContract = false;
-    protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
+    protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(5); // if contracting with no time limit given, default to 7 days.
     protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     
     
@@ -186,7 +186,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         TSF tsf = new TSF();
         classifiers[3] = tsf;
         classifierNames[3] = "TSF";
-        
+        tsf.setEstimateOwnPerformance(true);
+
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
@@ -202,19 +203,19 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     }
 
     @Override
-    public void buildClassifier(Instances data) throws Exception {        
-        if (trainTimeContract)
-            setupContracting();
-
+    public void buildClassifier(Instances data) throws Exception {
         if(debug) {
             printDebug(" Building HIVE-COTE with components: ");
             for (EnsembleModule module : modules){
                 if (module.getClassifier() instanceof EnhancedAbstractClassifier)
                     ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
                 printDebug(module.getModuleName()+" ");
-                printDebug(" \n ");
             }
+            printDebug(" \n ");
         }
+        if (trainTimeContract)
+            setupContracting();
+
         super.buildClassifier(data);
         trainResults.setParas(getParameters());
     }
@@ -269,12 +270,13 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                         + "likely not meet the contract.");
             }
         }
-        
+
         //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
         long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
         long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
-        
+        printLineDebug(" Setting up contract\nTotal Contract = "+trainContractTimeNanos/1000000000+" Secs");
+        printLineDebug(" Per Classifier = "+highFidelityTimePerClassifier+" Nanos");
         for (EnsembleModule module : modules)
             if(module.isTrainTimeContractable())
                 ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);

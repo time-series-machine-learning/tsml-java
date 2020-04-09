@@ -109,7 +109,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
-    private long contractTime = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private boolean underContractTime = false;
 
@@ -217,8 +217,13 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTrainTimeLimit(long amount){
-        contractTime = amount;
-        trainTimeContract = true;
+        printLineDebug(" cBOSS setting contract to "+amount);
+        if(amount>0) {
+            trainContractTimeNanos = amount;
+            trainTimeContract = true;
+        }
+        else
+            trainTimeContract = false;
     }
 
     @Override
@@ -310,7 +315,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         checkpointTime = saved.checkpointTime;
 //        checkpointTimeDiff = checkpointTimeDiff;
         cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
-        contractTime = saved.contractTime;
+        trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
         memoryLimit = saved.memoryLimit;
@@ -470,6 +475,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             if (data.classIndex() != data.numAttributes() - 1)
                 throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
+            printLineDebug("Building cBOSS  target number of classifiers = " +ensembleSize);
+
             //Multivariate
             if (isMultivariate) {
                 numSeries = numDimensions(data);
@@ -589,6 +596,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated *************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained  = ");
 
     }
 
@@ -846,7 +854,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         String name = datasetName + seed + "cBOSS";
 
         if (trainTimeContract){
-            name += ("TTC" + contractTime);
+            name += ("TTC" + trainContractTimeNanos);
         }
         else if (isMultivariate && ensembleSizePerChannel > 0){
             name += ("PC" + (ensembleSizePerChannel*numSeries));
@@ -871,7 +879,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     public void checkContracts(){
-        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime;
+        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
 
@@ -960,7 +968,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
                 GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
-                long remainingTime = contractTime - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
+                long remainingTime = trainContractTimeNanos - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
                 for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));

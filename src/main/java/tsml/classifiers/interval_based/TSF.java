@@ -391,7 +391,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         else {
             seriesLength = data.numAttributes() - 1;
             numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
-            printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers);
+            printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers+"\n");
 //Set up instances size and format.
             trees = new ArrayList(numClassifiers);
 
@@ -414,6 +414,16 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
  */        intervals = new ArrayList();
            lastCheckpointTime=startTime;
         }
+        /** Estimate accuracy stage: Three scenarios
+         * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
+         *  If we built on all data (bagging ==false) we estimate either
+         *  2. with a 10xCV if estimator==EstimatorMethod.CV
+         *  3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
+         *  Note that all this needs to come out of any contract time we specify.
+         */
+        if(getEstimateOwnPerformance())
+            estimateOwnPerformance(data);
+
 
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
@@ -449,9 +459,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
          *      build the classifier
          * */
         while(withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)){
-            printLineDebug("Building tree "+classifiersBuilt);
             if(classifiersBuilt%100==0)
-                printLineDebug("\t\t\t\t\tBuilding TSF tree "+classifiersBuilt);
+                printLineDebug("\t\t\t\t\tBuilding TSF tree "+classifiersBuilt+" time taken = "+(System.nanoTime()-startTime)+" contract ="+trainContractTimeNanos+" nanos");
 
             //1. Select random intervals for tree i
             int[][] interval =new int[numIntervals][2];  //Start and end
@@ -533,18 +542,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
 
-    /** Estimate accuracy stage: Three scenarios
-     * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
-    *  If we built on all data (bagging ==false) we estimate either
-    *  2. with a 10xCV if estimator==EstimatorMethod.CV
-    *  3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
-     */
-        if(getEstimateOwnPerformance())
-            estimateOwnPerformance(data);
-
 
         trainResults.setParas(getParameters());
-
+        printLineDebug("*************** Finished TSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception {
@@ -589,6 +589,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             if (seedClassifier)
                 tsf.setSeed(seed*100);
             tsf.setEstimateOwnPerformance(false);
+            if(trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
+                tsf.setTrainTimeLimit(trainContractTimeNanos/(numFolds+2));
+            printLineDebug(" Doing CV evaluation using "+trainContractTimeNanos/(numFolds+2)+" nanos per fold");
             trainResults=cv.evaluate(tsf,data);
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
@@ -794,12 +797,17 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
-        trainContractTimeNanos =amount;
-        trainTimeContract = true;
+        printLineDebug(" TSF setting contract to "+amount);
+
+        if(amount>0) {
+            trainContractTimeNanos = amount;
+            trainTimeContract = true;
+        }
+        else
+            trainTimeContract = false;
     }
     @Override//TrainTimeContractable
     public boolean withinTrainContract(long start){
-        printLineDebug(" In withinTrainContract: "+trainContractTimeNanos+"  "+(System.nanoTime()-start));
         if(trainContractTimeNanos<=0) return true; //Not contracted
         return System.nanoTime()-start < trainContractTimeNanos;
     }

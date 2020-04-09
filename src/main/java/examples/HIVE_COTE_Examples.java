@@ -2,9 +2,15 @@ package examples;
 
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.dictionary_based.cBOSS;
+import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.hybrids.HIVE_COTE;
+import tsml.classifiers.interval_based.TSF;
 import weka.core.Instance;
 import weka.core.Instances;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class demonstrates how to use the HIVE-COTE classifier
@@ -79,7 +85,7 @@ public class HIVE_COTE_Examples {
         String[] settings=new String[6];
 //Location of data set
         settings[0]="-dp=src/main/java/experiments/data/tsc/";//Where to get data
-        settings[1]="-rp=C:/Temp/";//Where to write results
+        settings[1]="-rp=C:/Temp";//Where to write results
         settings[2]="-gtf=true"; //HIVE-COTE requires train files
         settings[3]="-cn="; //Classifier name: See ClassifierLists for valid options
         settings[4]="-dn="+problem; //Problem file,
@@ -105,11 +111,10 @@ public class HIVE_COTE_Examples {
         Experiments.setupAndRunExperiment(expSettings);
         System.out.println("HIVE-COTE Finished. Results will be in C:/Temp/HIVE-COTE1.0/Predictions/Chinatown/");
         System.out.println(" or just run it yourself");
-        String[] cls={"TSF","RISE","STC","cBOSS"};//RotF for ST
         HIVE_COTE hc=new HIVE_COTE();
         hc.setBuildIndividualsFromResultsFiles(true);
-        hc.setResultsFileLocationParameters(settings[1], problem, 0);
-        hc.setClassifiersNamesForFileRead(cls);
+        hc.setResultsFileLocationParameters("C:/Temp/", problem, 0);
+        hc.setClassifiersNamesForFileRead(components);
         Instances train = DatasetLoading.loadData("src/main/java/experiments/data/tsc/Chinatown/Chinatown_TRAIN");
         Instances test = DatasetLoading.loadData("src/main/java/experiments/data/tsc/Chinatown/Chinatown_TEST");
         hc.setDebug(true);//Verbose version
@@ -126,11 +131,88 @@ public class HIVE_COTE_Examples {
     }
 
 
+    public static void setClassifiersAndThread() throws Exception {
+        System.out.println(" HIVE COTE is configurable in many ways");
+        HIVE_COTE hc = new HIVE_COTE();
+        System.out.println(" Current default for HC is to use version 1.0: RISE, TSF, cBOSS and STC");
+        System.out.printf("Suppose we want different classifiers\n");
+        EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[2];
+        c[0]=new RISE();
+        c[1]=new TSF();
+        String[] names={"RISE","TSF"};
+        hc.setClassifiers(c,names,null);
+        String[] n=hc.getClassifierNames();
+        for(String s:n)
+            System.out.println(" Classifier "+s);
+
+        System.out.println(" We can make it threaded so each component runs in its own thread\n");
+        System.out.println(" Threading demonstrated by interleaved printouts\n");
+        hc.enableMultiThreading(2);
+        Instances[] trainTest = DatasetLoading.sampleItalyPowerDemand(0); //Loads the default italy power demans
+        hc.setDebug(true);
+        hc.buildClassifier(trainTest[0]);
+        int correct=0;
+        for(Instance ins: trainTest[1]){
+            double cls=hc.classifyInstance(ins);
+            if(cls==ins.classValue())
+                correct++;
+        }
+        System.out.println(" Number correct = "+correct+ " accuracy = "+correct/(double)trainTest[1].numInstances());
+        System.out.println(" HIVE COTE is contractable, if its components are contractable.");
+        System.out.println(" To set a contract (max run time) use any of the Contractable methods\n");
+        hc.enableMultiThreading(1);
+
+        hc.setTrainTimeLimit(10, TimeUnit.SECONDS);
+        long t =System.nanoTime();
+        hc.buildClassifier(trainTest[0]);
+        t =System.nanoTime()-t;
+        System.out.println("\t\t Time elapsed = "+t/1000000000+" seconds");
+
+    }
+
+
+    public static void contractAndCheckpoint() throws Exception {
+        System.out.println(" HIVE COTE is contractable and checkpointable");
+        System.out.println(" these can be set through Experiments or directly");
+        HIVE_COTE hc = new HIVE_COTE();
+        EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[4];
+        c[0]=new TSF();
+        c[1]=new RISE();
+        c[2]=new cBOSS();
+        c[3]=new cBOSS();
+        String[] names={"TSF","RISE","cBOSS","STC"};//
+        hc.setClassifiers(c,names,null);
+        String[] n=hc.getClassifierNames();
+        for(String s:n)
+            System.out.println(" Classifier "+s);
+        Instances train = DatasetLoading.loadData("src/main/java/experiments/data/tsc/Beef/Beef_TRAIN");
+        Instances test = DatasetLoading.loadData("src/main/java/experiments/data/tsc/Beef/Beef_TEST");
+
+        hc.setDebug(true);
+        System.out.println(" HIVE COTE is contractable only if its components are contractable.");
+        System.out.println(" To set a contract (max run time) use any of the Contractable methods\n");
+//Ways of setting the time
+        hc.setMinuteLimit(1);
+        hc.setHourLimit(2);
+        hc.setDayLimit(1);
+        hc.setTrainTimeLimit(30, TimeUnit.SECONDS);
+        hc.setTrainTimeLimit(1, TimeUnit.MINUTES);
+
+        long t =System.nanoTime();
+        hc.buildClassifier(train);
+        t =System.nanoTime()-t;
+        System.out.println("\t\t Time elapsed = "+t/1000000000+" seconds");
+
+    }
+
+
     public static void main(String[] args) throws Exception {
         HIVE_COTE hc = new HIVE_COTE();
         System.out.println(" HIVE COTE classifier, location "+hc.getClass().getName());
 //        basicUsage();
 //        usageWithExperimentsClass();
-        buildingFromComponents();
+//        buildingFromComponents();
+ //       setClassifiersAndThread();
+        contractAndCheckpoint();
     }
 }
