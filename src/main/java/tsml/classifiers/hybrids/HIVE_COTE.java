@@ -27,6 +27,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
 import tsml.classifiers.dictionary_based.BOSS;
+import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
@@ -91,29 +92,33 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     public HIVE_COTE() { 
         super();
     }
-    
     @Override
     public void setupDefaultEnsembleSettings() {
+        setupHIVE_COTE_1_0();
+    }
+
+
+    public void setupHIVE_COTE_0_1() {
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //TODO jay/tony review
-        this.ensembleName = "HIVE-COTE";
-        
+        this.ensembleName = "HIVE-COTE 0.1";
+
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
-        this.trainEstimator = cv; 
+        this.trainEstimator = cv;
 
         Classifier[] classifiers = new Classifier[5];
         String[] classifierNames = new String[5];
-        
+
         EnhancedAbstractClassifier ee = new ElasticEnsemble();
         ee.setEstimateOwnPerformance(true);
         classifiers[0] = ee;
         classifierNames[0] = "EE";
-        
+
 //        CAWPE st_classifier = new CAWPE();
 //        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
 //        st_classifier.setTransform(st_transform);
@@ -123,19 +128,64 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         stc.setEstimateOwnPerformance(true);
         classifiers[1] = stc;
         classifierNames[1] = "STC";
-        
+
         classifiers[2] = new RISE();
         classifierNames[2] = "RISE";
-        
+
         BOSS boss = new BOSS();
         boss.setEstimateOwnPerformance(true);
         classifiers[3] = boss;
         classifierNames[3] = "BOSS";
-        
+
         TSF tsf = new TSF();
         tsf.setEstimateOwnPerformance(true);
         classifiers[4] = tsf;
         classifierNames[4] = "TSF";
+
+        try {
+            setClassifiers(classifiers, classifierNames, null);
+        } catch (Exception e) {
+            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
+                    + "be fixed before continuing");
+            System.exit(1);
+        }
+
+        setSeed(seed);
+
+        if(trainTimeContract)
+            setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
+    }
+
+    public void setupHIVE_COTE_1_0() {
+        this.ensembleName = "HIVE-COTE 1.0";
+        
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        this.transform = null;
+        
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+        cv.setNumFolds(10);
+        this.trainEstimator = cv; 
+
+        Classifier[] classifiers = new Classifier[4];
+        String[] classifierNames = new String[4];
+        
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+        stc.setEstimateOwnPerformance(true);
+        classifiers[0] = stc;
+        classifierNames[0] = "STC";
+        
+        classifiers[1] = new RISE();
+        classifierNames[1] = "RISE";
+        
+        cBOSS boss = new cBOSS();
+        boss.setEstimateOwnPerformance(true);
+        classifiers[2] = boss;
+        classifierNames[2] = "cBOSS";
+        
+        TSF tsf = new TSF();
+        classifiers[3] = tsf;
+        classifierNames[3] = "TSF";
         
         try {
             setClassifiers(classifiers, classifierNames, null);
@@ -268,7 +318,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public String getParameters() {
-        String str="WeightingScheme,"+weightingScheme;//+alpha;
+        String str="WeightingScheme,"+weightingScheme+",";//+alpha;
         for (EnsembleModule module : modules)
             str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
         for (EnsembleModule module : modules) {
