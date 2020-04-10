@@ -4,37 +4,42 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public enum MemoryUnit {
-    BYTES,
-    KIBIBYTES,
-    MEBIBYTES,
-    GIBIBYTES,
+    BYTES(1),
+    B(BYTES),
+    KIBIBYTES(1024, BYTES),
+    KB(KIBIBYTES),
+    KILOBYTES(1000, BYTES),
+    MEBIBYTES(1024, KIBIBYTES),
+    MB(MEBIBYTES),
+    MEGABYTES(1000, KILOBYTES),
+    GIBIBYTES(1024, MEBIBYTES),
+    GB(GIBIBYTES),
+    GIGABYTES(1000, MEGABYTES),
     ;
 
-    public static long FACTOR = 1024;
+    private final long oneUnitInBytes;
+
+    MemoryUnit(final long oneUnitInBytes) {
+        Assert.assertTrue(oneUnitInBytes > 0);
+        this.oneUnitInBytes = oneUnitInBytes;
+    }
+
+    MemoryUnit(MemoryUnit alias) {
+        this(1, alias);
+    }
+
+    MemoryUnit(long amount, MemoryUnit unit) {
+        this(amount * unit.oneUnitInBytes);
+    }
 
     public long convert(long amount, MemoryUnit unit) {
-        int factorDifference = ordinal() - unit.ordinal();
-        if(factorDifference > 0) {
-            return amount / (FACTOR * factorDifference);
+        if(oneUnitInBytes > unit.oneUnitInBytes) {
+            long ratio = oneUnitInBytes / unit.oneUnitInBytes;
+            return amount / ratio;
         } else {
-            return amount * (FACTOR * -factorDifference);
+            long ratio = unit.oneUnitInBytes / oneUnitInBytes;
+            return amount * ratio;
         }
-    }
-
-    public long toBytes(long amount) {
-        return convert(amount, BYTES);
-    }
-
-    public long toKibibytes(long amount) {
-        return convert(amount, KIBIBYTES);
-    }
-
-    public long toMebibytes(long amount) {
-        return convert(amount, MEBIBYTES);
-    }
-
-    public long toGibibytes(long amount) {
-        return convert(amount, GIBIBYTES);
     }
 
     public static class UnitTests {
