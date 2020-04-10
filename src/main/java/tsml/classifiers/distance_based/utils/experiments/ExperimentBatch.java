@@ -108,77 +108,77 @@ public class ExperimentBatch {
 
     // the train time contract for the classifier
     public static final String TRAIN_TIME_CONTRACT_SHORT_FLAG = "--ttc";
-    public static final String LONG_TRAIN_TIME_CONTRACT_FLAG = "--trainTimeContract";
-    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, LONG_TRAIN_TIME_CONTRACT_FLAG}, arity = 2, description =
+    public static final String TRAIN_TIME_CONTRACT_LONG_FLAG = "--trainTimeContract";
+    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, TRAIN_TIME_CONTRACT_LONG_FLAG}, arity = 2, description =
         "specify a train time contract for the classifier in the form \"<amount> <units>\", e.g. \"4 hour\"")
     private List<String> trainTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> trainTimeContracts = new ArrayList<>();
 
     // the train memory contract for the classifier
-    public static final String SHORT_TRAIN_MEMORY_CONTRACT_FLAG = "--tmc";
-    public static final String LONG_TRAIN_MEMORY_CONTRACT_FLAG = "--trainMemoryContract";
-    @Parameter(names = {SHORT_TRAIN_MEMORY_CONTRACT_FLAG, LONG_TRAIN_MEMORY_CONTRACT_FLAG}, arity = 2, description =
+    public static final String TRAIN_MEMORY_CONTRACT_SHORT_FLAG = "--tmc";
+    public static final String TRAIN_MEMORY_CONTRACT_LONG_FLAG = "--trainMemoryContract";
+    @Parameter(names = {TRAIN_MEMORY_CONTRACT_SHORT_FLAG, TRAIN_MEMORY_CONTRACT_LONG_FLAG}, arity = 2, description =
         "specify a train memory contract for the classifier in the form \"<amount> <units>\", e.g. \"4 GIGABYTE\" - make"
             + " sure you've considered whether you need GIBIbyte or GIGAbyte though.")
     private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
 
     // the test time contract
-    public static final String SHORT_TEST_TIME_CONTRACT_FLAG = "--ptc";
-    public static final String LONG_TEST_TIME_CONTRACT_FLAG = "--testTimeContract";
-    @Parameter(names = {SHORT_TEST_TIME_CONTRACT_FLAG, LONG_TEST_TIME_CONTRACT_FLAG}, arity = 2, description =
+    public static final String TEST_TIME_CONTRACT_SHORT_FLAG = "--ptc";
+    public static final String TEST_TIME_CONTRACT_LONG_FLAG = "--testTimeContract";
+    @Parameter(names = {TEST_TIME_CONTRACT_SHORT_FLAG, TEST_TIME_CONTRACT_LONG_FLAG}, arity = 2, description =
         "specify a test time contract for the classifier in the form \"<amount> <unit>\", e.g. \"1 minute\"")
     private List<String> testTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> testTimeContracts = new ArrayList<>();
 
     // whether to checkpoint or not. Paths for checkpointing will be auto generated.
-    public static final String SHORT_CHECKPOINT_FLAG = "--cp";
-    public static final String LONG_CHECKPOINT_FLAG = "--checkpoint";
-    @Parameter(names = {SHORT_CHECKPOINT_FLAG, LONG_CHECKPOINT_FLAG}, description = "whether to save the classifier "
+    public static final String CHECKPOINT_SHORT_FLAG = "--cp";
+    public static final String CHECKPOINT_LONG_FLAG = "--checkpoint";
+    @Parameter(names = {CHECKPOINT_SHORT_FLAG, CHECKPOINT_LONG_FLAG}, description = "whether to save the classifier "
         + "to file")
     private boolean checkpoint = false;
     // todo swap train contract save / load path over for checkpointing
     // todo enable checkpointing on classifier
 
     // checkpoint interval (if using checkpointing)
-    public static final String SHORT_CHECKPOINT_INTERVAL_FLAG = "--cpi";
-    public static final String LONG_CHECKPOINT_INTERVAL_FLAG = "--checkpointInterval";
-    @Parameter(names = {SHORT_CHECKPOINT_INTERVAL_FLAG, LONG_CHECKPOINT_INTERVAL_FLAG}, description = "how often to "
+    public static final String CHECKPOINT_INTERVAL_SHORT_FLAG = "--cpi";
+    public static final String CHECKPOINT_INTERVAL_LONG_FLAG = "--checkpointInterval";
+    @Parameter(names = {CHECKPOINT_INTERVAL_SHORT_FLAG, CHECKPOINT_INTERVAL_LONG_FLAG}, description = "how often to "
         + "save the classifier to file in the form \"<amount> <unit>\", e.g. \"1 hour\"")
     // todo add checkpoint interval to classifier post tony's interface changes
 
     // the number of threads to run individual experiments on
-    public static final String SHORT_THREADS_FLAG = "-t";
-    public static final String LONG_THREADS_FLAG = "--threads";
-    @Parameter(names = {SHORT_THREADS_FLAG, LONG_THREADS_FLAG}, description = "how many threads to run experiments on"
+    public static final String THREADS_SHORT_FLAG = "-t";
+    public static final String THREADS_LONG_FLAG = "--threads";
+    @Parameter(names = {THREADS_SHORT_FLAG, THREADS_LONG_FLAG}, description = "how many threads to run experiments on"
         + ". Set this to <=0 to use all processor cores.")
     private int numThreads = 1;
 
     // whether to append the train time to the classifier name
-    public static final String SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--attc";
-    public static final String LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--appendTrainTimeContract";
-    @Parameter(names = {SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG, LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG}, description =
+    public static final String APPEND_TRAIN_TIME_CONTRACT_SHORT_FLAG = "--attc";
+    public static final String APPEND_TRAIN_TIME_CONTRACT_LONG_FLAG = "--appendTrainTimeContract";
+    @Parameter(names = {APPEND_TRAIN_TIME_CONTRACT_SHORT_FLAG, APPEND_TRAIN_TIME_CONTRACT_LONG_FLAG}, description =
         "append the train time contract to the classifier name")
     private boolean appendTrainTimeContract = false;
 
     // whether to append the train memory contract to the classifier name
-    public static final String SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--atmc";
-    public static final String LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--appendTrainMemoryContract";
-    @Parameter(names = {SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG, LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG},
+    public static final String APPEND_TRAIN_MEMORY_CONTRACT_SHORT_FLAG = "--atmc";
+    public static final String APPEND_TRAIN_MEMORY_CONTRACT_LONG_FLAG = "--appendTrainMemoryContract";
+    @Parameter(names = {APPEND_TRAIN_MEMORY_CONTRACT_SHORT_FLAG, APPEND_TRAIN_MEMORY_CONTRACT_LONG_FLAG},
         description = "append the train memory contract to the classifier name")
     private boolean appendTrainMemoryContract = false;
 
     // whether to append the test time contract to the classifier name
-    public static final String SHORT_APPEND_TEST_TIME_CONTRACT_FLAG = "--aptc";
-    public static final String LONG_APPEND_TEST_TIME_CONTRACT_FLAG = "--appendTestTimeContract";
-    @Parameter(names = {SHORT_APPEND_TEST_TIME_CONTRACT_FLAG, LONG_APPEND_TEST_TIME_CONTRACT_FLAG}, description =
+    public static final String APPEND_TEST_TIME_CONTRACT_SHORT_FLAG = "--aptc";
+    public static final String APPEND_TEST_TIME_CONTRACT_LONG_FLAG = "--appendTestTimeContract";
+    @Parameter(names = {APPEND_TEST_TIME_CONTRACT_SHORT_FLAG, APPEND_TEST_TIME_CONTRACT_LONG_FLAG}, description =
         "append the test time contract to the classifier name")
     private boolean appendTestTimeContract = false;
 
     // whether to find a train estimate for the classifier
-    public static final String SHORT_ESTIMATE_TRAIN_ERROR_FLAG = "-e";
-    public static final String LONG_ESTIMATE_TRAIN_ERROR_FLAG = "--estimateTrainError";
-    @Parameter(names = {SHORT_ESTIMATE_TRAIN_ERROR_FLAG, LONG_ESTIMATE_TRAIN_ERROR_FLAG}, description = "set the "
+    public static final String ESTIMATE_TRAIN_ERROR_SHORT_FLAG = "-e";
+    public static final String ESTIMATE_TRAIN_ERROR_LONG_FLAG = "--estimateTrainError";
+    @Parameter(names = {ESTIMATE_TRAIN_ERROR_SHORT_FLAG, ESTIMATE_TRAIN_ERROR_LONG_FLAG}, description = "set the "
         + "classifier to find a train estimate")
     private boolean estimateTrainError = false;
     // todo enable train estimate to be set on a per classifier basis, similar to universal / bespoke params
@@ -186,29 +186,29 @@ public class ExperimentBatch {
     //  estimate for it
 
     // the log level to use on the classifier
-    public static final String SHORT_CLASSIFIER_VERBOSITY_FLAG = "--cv";
-    public static final String LONG_CLASSIFIER_VERBOSITY_FLAG = "--classifierVerbosity";
-    @Parameter(names = {SHORT_CLASSIFIER_VERBOSITY_FLAG, LONG_CLASSIFIER_VERBOSITY_FLAG}, description = "classifier "
+    public static final String CLASSIFIER_VERBOSITY_SHORT_FLAG = "--cv";
+    public static final String CLASSIFIER_VERBOSITY_LONG_FLAG = "--classifierVerbosity";
+    @Parameter(names = {CLASSIFIER_VERBOSITY_SHORT_FLAG, CLASSIFIER_VERBOSITY_LONG_FLAG}, description = "classifier "
         + "verbosity")
     private String classifierVerbosity = Level.SEVERE.toString();
 
     // the log level to use on the experiment
-    public static final String SHORT_EXPERIMENT_VERBOSITY_FLAG = "--ev";
-    public static final String LONG_EXPERIMENT_VERBOSITY_FLAG = "--experimentVerbosity";
-    @Parameter(names = {SHORT_EXPERIMENT_VERBOSITY_FLAG, LONG_EXPERIMENT_VERBOSITY_FLAG}, description = "experiment "
+    public static final String EXPERIMENT_VERBOSITY_SHORT_FLAG = "--ev";
+    public static final String EXPERIMENT_VERBOSITY_LONG_FLAG = "--experimentVerbosity";
+    @Parameter(names = {EXPERIMENT_VERBOSITY_SHORT_FLAG, EXPERIMENT_VERBOSITY_LONG_FLAG}, description = "experiment "
         + "verbosity")
     private String experimentVerbosity = Level.ALL.toString();
 
     // whether to overwrite train files
-    public static final String SHORT_OVERWRITE_TRAIN_FLAG = "--ot";
-    public static final String LONG_OVERWRITE_TRAIN_FLAG = "--overwriteTrain";
-    @Parameter(names = {SHORT_OVERWRITE_TRAIN_FLAG, LONG_OVERWRITE_TRAIN_FLAG}, description = "overwrite train results")
+    public static final String OVERWRITE_TRAIN_SHORT_FLAG = "--ot";
+    public static final String OVERWRITE_TRAIN_LONG_FLAG = "--overwriteTrain";
+    @Parameter(names = {OVERWRITE_TRAIN_SHORT_FLAG, OVERWRITE_TRAIN_LONG_FLAG}, description = "overwrite train results")
     private boolean overwriteTrain = false;
 
     // whether to overwrite test results
-    public static final String SHORT_OVERWRITE_TEST_FLAG = "--op";
-    public static final String LONG_OVERWRITE_TEST_FLAG = "--overwriteTest";
-    @Parameter(names = {SHORT_OVERWRITE_TEST_FLAG, LONG_OVERWRITE_TEST_FLAG}, description = "overwrite test results")
+    public static final String OVERWRITE_TEST_SHORT_FLAG = "--op";
+    public static final String OVERWRITE_TEST_LONG_FLAG = "--overwriteTest";
+    @Parameter(names = {OVERWRITE_TEST_SHORT_FLAG, OVERWRITE_TEST_LONG_FLAG}, description = "overwrite test results")
     private boolean overwriteTest = false;
 
     // the factory to build classifiers using classifier name
@@ -933,104 +933,104 @@ public class ExperimentBatch {
         return TRAIN_TIME_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongTrainTimeContractFlag() {
-        return LONG_TRAIN_TIME_CONTRACT_FLAG;
+    public static String getTrainTimeContractLongFlag() {
+        return TRAIN_TIME_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortTrainMemoryContractFlag() {
-        return SHORT_TRAIN_MEMORY_CONTRACT_FLAG;
+    public static String getTrainMemoryContractShortFlag() {
+        return TRAIN_MEMORY_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongTrainMemoryContractFlag() {
-        return LONG_TRAIN_MEMORY_CONTRACT_FLAG;
+    public static String getTrainMemoryContractLongFlag() {
+        return TRAIN_MEMORY_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortTestTimeContractFlag() {
-        return SHORT_TEST_TIME_CONTRACT_FLAG;
+    public static String getTestTimeContractShortFlag() {
+        return TEST_TIME_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongTestTimeContractFlag() {
-        return LONG_TEST_TIME_CONTRACT_FLAG;
+    public static String getTestTimeContractLongFlag() {
+        return TEST_TIME_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortCheckpointFlag() {
-        return SHORT_CHECKPOINT_FLAG;
+    public static String getCheckpointShortFlag() {
+        return CHECKPOINT_SHORT_FLAG;
     }
 
-    public static String getLongCheckpointFlag() {
-        return LONG_CHECKPOINT_FLAG;
+    public static String getCheckpointLongFlag() {
+        return CHECKPOINT_LONG_FLAG;
     }
 
-    public static String getShortThreadsFlag() {
-        return SHORT_THREADS_FLAG;
+    public static String getThreadsShortFlag() {
+        return THREADS_SHORT_FLAG;
     }
 
-    public static String getLongThreadsFlag() {
-        return LONG_THREADS_FLAG;
+    public static String getThreadsLongFlag() {
+        return THREADS_LONG_FLAG;
     }
 
-    public static String getShortAppendTrainTimeContractFlag() {
-        return SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG;
+    public static String getAppendTrainTimeContractShortFlag() {
+        return APPEND_TRAIN_TIME_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongAppendTrainTimeContractFlag() {
-        return LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG;
+    public static String getAppendTrainTimeContractLongFlag() {
+        return APPEND_TRAIN_TIME_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortAppendTrainMemoryContractFlag() {
-        return SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG;
+    public static String getAppendTrainMemoryContractShortFlag() {
+        return APPEND_TRAIN_MEMORY_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongAppendTrainMemoryContractFlag() {
-        return LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG;
+    public static String getAppendTrainMemoryContractLongFlag() {
+        return APPEND_TRAIN_MEMORY_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortAppendTestTimeContractFlag() {
-        return SHORT_APPEND_TEST_TIME_CONTRACT_FLAG;
+    public static String getAppendTestTimeContractShortFlag() {
+        return APPEND_TEST_TIME_CONTRACT_SHORT_FLAG;
     }
 
-    public static String getLongAppendTestTimeContractFlag() {
-        return LONG_APPEND_TEST_TIME_CONTRACT_FLAG;
+    public static String getAppendTestTimeContractLongFlag() {
+        return APPEND_TEST_TIME_CONTRACT_LONG_FLAG;
     }
 
-    public static String getShortEstimateTrainErrorFlag() {
-        return SHORT_ESTIMATE_TRAIN_ERROR_FLAG;
+    public static String getEstimateTrainErrorShortFlag() {
+        return ESTIMATE_TRAIN_ERROR_SHORT_FLAG;
     }
 
-    public static String getLongEstimateTrainErrorFlag() {
-        return LONG_ESTIMATE_TRAIN_ERROR_FLAG;
+    public static String getEstimateTrainErrorLongFlag() {
+        return ESTIMATE_TRAIN_ERROR_LONG_FLAG;
     }
 
-    public static String getShortClassifierVerbosityFlag() {
-        return SHORT_CLASSIFIER_VERBOSITY_FLAG;
+    public static String getClassifierVerbosityShortFlag() {
+        return CLASSIFIER_VERBOSITY_SHORT_FLAG;
     }
 
-    public static String getLongClassifierVerbosityFlag() {
-        return LONG_CLASSIFIER_VERBOSITY_FLAG;
+    public static String getClassifierVerbosityLongFlag() {
+        return CLASSIFIER_VERBOSITY_LONG_FLAG;
     }
 
-    public static String getShortExperimentVerbosityFlag() {
-        return SHORT_EXPERIMENT_VERBOSITY_FLAG;
+    public static String getExperimentVerbosityShortFlag() {
+        return EXPERIMENT_VERBOSITY_SHORT_FLAG;
     }
 
-    public static String getLongExperimentVerbosityFlag() {
-        return LONG_EXPERIMENT_VERBOSITY_FLAG;
+    public static String getExperimentVerbosityLongFlag() {
+        return EXPERIMENT_VERBOSITY_LONG_FLAG;
     }
 
-    public static String getShortOverwriteTrainFlag() {
-        return SHORT_OVERWRITE_TRAIN_FLAG;
+    public static String getOverwriteTrainShortFlag() {
+        return OVERWRITE_TRAIN_SHORT_FLAG;
     }
 
-    public static String getLongOverwriteTrainFlag() {
-        return LONG_OVERWRITE_TRAIN_FLAG;
+    public static String getOverwriteTrainLongFlag() {
+        return OVERWRITE_TRAIN_LONG_FLAG;
     }
 
-    public static String getShortOverwriteTestFlag() {
-        return SHORT_OVERWRITE_TEST_FLAG;
+    public static String getOverwriteTestShortFlag() {
+        return OVERWRITE_TEST_SHORT_FLAG;
     }
 
-    public static String getLongOverwriteTestFlag() {
-        return LONG_OVERWRITE_TEST_FLAG;
+    public static String getOverwriteTestLongFlag() {
+        return OVERWRITE_TEST_LONG_FLAG;
     }
 
     public static class Runner {
