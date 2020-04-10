@@ -42,97 +42,179 @@ public class ExperimentBatch {
     // todo use getters and setters internally
 
     // abide by unix cmdline args convention! single char --> single hyphen, multiple chars --> double hyphen
-    // todo getter sna setters
+
+    // logger for printing messages
     private final Logger logger = LogUtils.buildLogger(this);
-    public static final String SHORT_CLASSIFIER_NAME_FLAG = "-c";
-    public static final String LONG_CLASSIFIER_NAME_FLAG = "--classifier";
-    @Parameter(names = {SHORT_CLASSIFIER_NAME_FLAG, LONG_CLASSIFIER_NAME_FLAG}, description = "todo",
+
+    // names of the classifiers that should be run
+    public static final String CLASSIFIER_NAME_SHORT_FLAG = "-c";
+    public static final String CLASSIFIER_NAME_LONG_FLAG = "--classifier";
+    @Parameter(names = {CLASSIFIER_NAME_SHORT_FLAG, CLASSIFIER_NAME_LONG_FLAG}, description = "the name of the "
+        + "classifier to be run",
         required = true)
     private List<String> classifierNames = new ArrayList<>();
-    public static final String SHORT_DATASET_DIR_FLAG = "--dd";
-    public static final String LONG_DATASET_DIR_FLAG = "--datasetsDir";
-    @Parameter(names = {SHORT_DATASET_DIR_FLAG, LONG_DATASET_DIR_FLAG}, description = "todo", required = true)
+
+    // paths to directories where problem data is stored
+    public static final String DATASET_DIR_SHORT_FLAG = "--dd";
+    public static final String DATASET_DIR_LONG_FLAG = "--datasetsDir";
+    @Parameter(names = {DATASET_DIR_SHORT_FLAG, DATASET_DIR_LONG_FLAG}, description = "the path to the folder "
+        + "containing the datasets",
+        required = true)
     private List<String> datasetDirPaths = new ArrayList<>();
-    public static final String SHORT_DATASET_NAME_FLAG = "-d";
-    public static final String LONG_DATASET_NAME_FLAG = "--dataset";
-    @Parameter(names = {SHORT_DATASET_NAME_FLAG, LONG_DATASET_NAME_FLAG}, description = "todo", required = true)
+
+    // names of the datasets that should be run
+    public static final String DATASET_NAME_SHORT_FLAG = "-d";
+    public static final String DATASET_NAME_LONG_FLAG = "--dataset";
+    @Parameter(names = {DATASET_NAME_SHORT_FLAG, DATASET_NAME_LONG_FLAG}, description = "the name of the dataset",
+        required = true)
     private List<String> datasetNames = new ArrayList<>();
-    public static final String SHORT_SEED_FLAG = "-s";
-    public static final String LONG_SEED_FLAG = "--seed";
-    @Parameter(names = {SHORT_SEED_FLAG, LONG_SEED_FLAG}, description = "todo", required = true)
+
+    // the seeds to run
+    public static final String SEED_SHORT_FLAG = "-s";
+    public static final String SEED_LONG_FLAG = "--seed";
+    @Parameter(names = {SEED_SHORT_FLAG, SEED_LONG_FLAG}, description = "the seed to be used in sampling a dataset "
+        + "and in the random source for the classifier", required = true)
     private List<Integer> seeds = Lists.newArrayList(0);
-    public static final String SHORT_RESULTS_DIR_FLAG = "-r";
-    public static final String LONG_RESULTS_DIR_FLAG = "--resultsDir";
-    @Parameter(names = {SHORT_RESULTS_DIR_FLAG, LONG_RESULTS_DIR_FLAG}, description = "todo", required = true)
+
+    // where to put the results when finished
+    public static final String RESULTS_DIR_SHORT_FLAG = "-r";
+    public static final String RESULTS_DIR_LONG_FLAG = "--resultsDir";
+    @Parameter(names = {RESULTS_DIR_SHORT_FLAG, RESULTS_DIR_LONG_FLAG}, description = "path to a folder to place "
+        + "results in",
+        required = true)
     private String resultsDirPath = null;
-    public static final String SHORT_PARAMETERS_FLAG = "-p";
-    public static final String LONG_PARAMETERS_FLAG = "--parameters";
-    @Parameter(names = {SHORT_PARAMETERS_FLAG, LONG_PARAMETERS_FLAG}, description = "todo", variableArity = true)
+
+    // parameters to pass onto the classifiers. Note, there are two types: universal parameters and bespoke
+    // parameters. Universal parameters are applied to all classifiers whereas bespoke parameters are prepended with
+    // the name of the classifier to apply those parameters to.
+    public static final String PARAMETERS_SHORT_FLAG = "-p";
+    public static final String PARAMETERS_LONG_FLAG = "--parameters";
+    @Parameter(names = {PARAMETERS_SHORT_FLAG, PARAMETERS_LONG_FLAG}, description = "parameters for the classifiers. "
+        + "These can be specified as \"-<parameter_name> <parameter_value>\" (two terms) for all classifiers or "
+        + "\"<classifier_name> "
+        + "<parameter_name> <parameter_value>\" to apply "
+        + "the parameter to only <classifier_name>", variableArity =
+        true)
     private List<String> classifierParameterStrs = new ArrayList<>();
     private Map<String, ParamSet> bespokeClassifierParametersMap = new HashMap<>();
     private ParamSet universalClassifierParameters = new ParamSet();
-    public static final String SHORT_APPEND_CLASSIFIER_PARAMETERS_FLAG = "--acp";
-    public static final String LONG_APPEND_CLASSIFIER_PARAMETERS_FLAG = "--appendClassifierParameters";
-    @Parameter(names = {SHORT_APPEND_CLASSIFIER_PARAMETERS_FLAG, LONG_APPEND_CLASSIFIER_PARAMETERS_FLAG}, description = "todo")
+
+    // whether to append the classifier parameters to the classifier name
+    public static final String APPEND_CLASSIFIER_PARAMETERS_SHORT_FLAG = "--acp";
+    public static final String APPEND_CLASSIFIER_PARAMETERS_LONG_FLAG = "--appendClassifierParameters";
+    @Parameter(names = {APPEND_CLASSIFIER_PARAMETERS_SHORT_FLAG, APPEND_CLASSIFIER_PARAMETERS_LONG_FLAG},
+        description = "append the classifier parameters to the classifier name")
     private boolean appendClassifierParameters = false;
-    public static final String SHORT_TRAIN_TIME_CONTRACT_FLAG = "--ttc";
+
+    // the train time contract for the classifier
+    public static final String TRAIN_TIME_CONTRACT_SHORT_FLAG = "--ttc";
     public static final String LONG_TRAIN_TIME_CONTRACT_FLAG = "--trainTimeContract";
-    @Parameter(names = {SHORT_TRAIN_TIME_CONTRACT_FLAG, LONG_TRAIN_TIME_CONTRACT_FLAG}, arity = 2, description = "todo")
+    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, LONG_TRAIN_TIME_CONTRACT_FLAG}, arity = 2, description =
+        "specify a train time contract for the classifier in the form \"<amount> <units>\", e.g. \"4 hour\"")
     private List<String> trainTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> trainTimeContracts = new ArrayList<>();
+
+    // the train memory contract for the classifier
     public static final String SHORT_TRAIN_MEMORY_CONTRACT_FLAG = "--tmc";
     public static final String LONG_TRAIN_MEMORY_CONTRACT_FLAG = "--trainMemoryContract";
-    @Parameter(names = {SHORT_TRAIN_MEMORY_CONTRACT_FLAG, LONG_TRAIN_MEMORY_CONTRACT_FLAG}, arity = 2, description = "todo")
+    @Parameter(names = {SHORT_TRAIN_MEMORY_CONTRACT_FLAG, LONG_TRAIN_MEMORY_CONTRACT_FLAG}, arity = 2, description =
+        "specify a train memory contract for the classifier in the form \"<amount> <units>\", e.g. \"4 GIGABYTE\" - make"
+            + " sure you've considered whether you need GIBIbyte or GIGAbyte though.")
     private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
+
+    // the test time contract
     public static final String SHORT_TEST_TIME_CONTRACT_FLAG = "--ptc";
     public static final String LONG_TEST_TIME_CONTRACT_FLAG = "--testTimeContract";
-    @Parameter(names = {SHORT_TEST_TIME_CONTRACT_FLAG, LONG_TEST_TIME_CONTRACT_FLAG}, arity = 2, description = "todo")
+    @Parameter(names = {SHORT_TEST_TIME_CONTRACT_FLAG, LONG_TEST_TIME_CONTRACT_FLAG}, arity = 2, description =
+        "specify a test time contract for the classifier in the form \"<amount> <unit>\", e.g. \"1 minute\"")
     private List<String> testTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> testTimeContracts = new ArrayList<>();
+
+    // whether to checkpoint or not. Paths for checkpointing will be auto generated.
     public static final String SHORT_CHECKPOINT_FLAG = "--cp";
     public static final String LONG_CHECKPOINT_FLAG = "--checkpoint";
-    @Parameter(names = {SHORT_CHECKPOINT_FLAG, LONG_CHECKPOINT_FLAG}, description = "todo")
-    private boolean checkpoint = false; // todo swap train contract save / load path over for checkpointing
+    @Parameter(names = {SHORT_CHECKPOINT_FLAG, LONG_CHECKPOINT_FLAG}, description = "whether to save the classifier "
+        + "to file")
+    private boolean checkpoint = false;
+    // todo swap train contract save / load path over for checkpointing
+    // todo enable checkpointing on classifier
+
+    // checkpoint interval (if using checkpointing)
+    public static final String SHORT_CHECKPOINT_INTERVAL_FLAG = "--cpi";
+    public static final String LONG_CHECKPOINT_INTERVAL_FLAG = "--checkpointInterval";
+    @Parameter(names = {SHORT_CHECKPOINT_INTERVAL_FLAG, LONG_CHECKPOINT_INTERVAL_FLAG}, description = "how often to "
+        + "save the classifier to file in the form \"<amount> <unit>\", e.g. \"1 hour\"")
+    // todo add checkpoint interval to classifier post tony's interface changes
+
+    // the number of threads to run individual experiments on
     public static final String SHORT_THREADS_FLAG = "-t";
     public static final String LONG_THREADS_FLAG = "--threads";
-    @Parameter(names = {SHORT_THREADS_FLAG, LONG_THREADS_FLAG}, description = "todo")
-    private int numThreads = 1; // <=0 for all available threads
+    @Parameter(names = {SHORT_THREADS_FLAG, LONG_THREADS_FLAG}, description = "how many threads to run experiments on"
+        + ". Set this to <=0 to use all processor cores.")
+    private int numThreads = 1;
+
+    // whether to append the train time to the classifier name
     public static final String SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--attc";
     public static final String LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG = "--appendTrainTimeContract";
-    @Parameter(names = {SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG, LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG}, description = "todo")
+    @Parameter(names = {SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG, LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG}, description =
+        "append the train time contract to the classifier name")
     private boolean appendTrainTimeContract = false;
+
+    // whether to append the train memory contract to the classifier name
     public static final String SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--atmc";
     public static final String LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG = "--appendTrainMemoryContract";
-    @Parameter(names = {SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG, LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG}, description = "todo")
+    @Parameter(names = {SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG, LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG},
+        description = "append the train memory contract to the classifier name")
     private boolean appendTrainMemoryContract = false;
+
+    // whether to append the test time contract to the classifier name
     public static final String SHORT_APPEND_TEST_TIME_CONTRACT_FLAG = "--aptc";
     public static final String LONG_APPEND_TEST_TIME_CONTRACT_FLAG = "--appendTestTimeContract";
     @Parameter(names = {SHORT_APPEND_TEST_TIME_CONTRACT_FLAG, LONG_APPEND_TEST_TIME_CONTRACT_FLAG}, description =
-        "todo")
+        "append the test time contract to the classifier name")
     private boolean appendTestTimeContract = false;
+
+    // whether to find a train estimate for the classifier
     public static final String SHORT_ESTIMATE_TRAIN_ERROR_FLAG = "-e";
     public static final String LONG_ESTIMATE_TRAIN_ERROR_FLAG = "--estimateTrainError";
-    @Parameter(names = {SHORT_ESTIMATE_TRAIN_ERROR_FLAG, LONG_ESTIMATE_TRAIN_ERROR_FLAG}, description = "todo")
+    @Parameter(names = {SHORT_ESTIMATE_TRAIN_ERROR_FLAG, LONG_ESTIMATE_TRAIN_ERROR_FLAG}, description = "set the "
+        + "classifier to find a train estimate")
     private boolean estimateTrainError = false;
-    public static final String SHORT_LOG_LEVEL_CLASSIFIER_FLAG = "-l";
-    public static final String LONG_LOG_LEVEL_CLASSIFIER_FLAG = "--logLevel";
-    @Parameter(names = {SHORT_LOG_LEVEL_CLASSIFIER_FLAG, LONG_LOG_LEVEL_CLASSIFIER_FLAG}, description = "todo")
-    private String logLevelClassifier = Level.SEVERE.toString(); // todo better name for these two
-    public static final String SHORT_LOG_LEVEL_EXPERIMENT_FLAG = "-el";
-    public static final String LONG_LOG_LEVEL_EXPERIMENT_FLAG = "--experimentLogLevel";
-    @Parameter(names = {SHORT_LOG_LEVEL_EXPERIMENT_FLAG, LONG_LOG_LEVEL_EXPERIMENT_FLAG}, description = "todo")
-    private String logLevelExperiment = Level.ALL.toString();
+    // todo enable train estimate to be set on a per classifier basis, similar to universal / bespoke params
+    // todo another parameter for specifying a cv or something of a non-train-estimateable classifier to find a train
+    //  estimate for it
+
+    // the log level to use on the classifier
+    public static final String SHORT_CLASSIFIER_VERBOSITY_FLAG = "--cv";
+    public static final String LONG_CLASSIFIER_VERBOSITY_FLAG = "--classifierVerbosity";
+    @Parameter(names = {SHORT_CLASSIFIER_VERBOSITY_FLAG, LONG_CLASSIFIER_VERBOSITY_FLAG}, description = "classifier "
+        + "verbosity")
+    private String classifierVerbosity = Level.SEVERE.toString();
+
+    // the log level to use on the experiment
+    public static final String SHORT_EXPERIMENT_VERBOSITY_FLAG = "--ev";
+    public static final String LONG_EXPERIMENT_VERBOSITY_FLAG = "--experimentVerbosity";
+    @Parameter(names = {SHORT_EXPERIMENT_VERBOSITY_FLAG, LONG_EXPERIMENT_VERBOSITY_FLAG}, description = "experiment "
+        + "verbosity")
+    private String experimentVerbosity = Level.ALL.toString();
+
+    // whether to overwrite train files
     public static final String SHORT_OVERWRITE_TRAIN_FLAG = "--ot";
     public static final String LONG_OVERWRITE_TRAIN_FLAG = "--overwriteTrain";
-    @Parameter(names = {SHORT_OVERWRITE_TRAIN_FLAG, LONG_OVERWRITE_TRAIN_FLAG}, description = "todo")
+    @Parameter(names = {SHORT_OVERWRITE_TRAIN_FLAG, LONG_OVERWRITE_TRAIN_FLAG}, description = "overwrite train results")
     private boolean overwriteTrain = false;
+
+    // whether to overwrite test results
     public static final String SHORT_OVERWRITE_TEST_FLAG = "--op";
     public static final String LONG_OVERWRITE_TEST_FLAG = "--overwriteTest";
-    @Parameter(names = {SHORT_OVERWRITE_TEST_FLAG, LONG_OVERWRITE_TEST_FLAG}, description = "todo")
+    @Parameter(names = {SHORT_OVERWRITE_TEST_FLAG, LONG_OVERWRITE_TEST_FLAG}, description = "overwrite test results")
     private boolean overwriteTest = false;
+
+    // the factory to build classifiers using classifier name
     private ClassifierBuilderFactory<Classifier> classifierBuilderFactory =
-        ClassifierBuilderFactory.getGlobalInstance(); // todo get this by string, i.e. factory
+        ClassifierBuilderFactory.getGlobalInstance();
+    // todo get this by string, i.e. factory, and make into cmdline param
 
     public ExperimentBatch(String... args) throws Exception {
         parse(args);
@@ -166,8 +248,8 @@ public class ExperimentBatch {
             ", appendTrainMemoryContract=" + appendTrainMemoryContract +
             ", appendTestTimeContract=" + appendTestTimeContract +
             ", estimateTrainError=" + estimateTrainError +
-            ", logLevelClassifier='" + logLevelClassifier + '\'' +
-            ", logLevelExperiment='" + logLevelExperiment + '\'' +
+            ", logLevelClassifier='" + classifierVerbosity + '\'' +
+            ", logLevelExperiment='" + experimentVerbosity + '\'' +
             ", overwriteTrain=" + overwriteTrain +
             ", overwriteTest=" + overwriteTest +
             ", classifierBuilderFactory=" + classifierBuilderFactory +
@@ -200,9 +282,9 @@ public class ExperimentBatch {
     }
 
     private void parseLogLevel() {
-        logger.finest("parsing {" + logLevelExperiment + "} as logLevel");
-        if(logLevelExperiment != null) {
-            logger.setLevel(Level.parse(logLevelExperiment));
+        logger.finest("parsing {" + experimentVerbosity + "} as logLevel");
+        if(experimentVerbosity != null) {
+            logger.setLevel(Level.parse(experimentVerbosity));
         }
     }
 
@@ -371,7 +453,7 @@ public class ExperimentBatch {
                         }
                         final Classifier classifier = classifierBuilder.build();
                         final Experiment experiment = new Experiment(trainData, testData, classifier, seed, classifierName, datasetName);
-                        experiment.getLogger().setLevel(Level.parse(logLevelClassifier));
+                        experiment.getLogger().setLevel(Level.parse(classifierVerbosity));
                         experiment.setEstimateTrainError(estimateTrainError);
                         executor.submit(buildExperimentTask(experiment));
                     } catch(Exception e) {
@@ -657,12 +739,12 @@ public class ExperimentBatch {
         this.estimateTrainError = estimateTrainError;
     }
 
-    public String getLogLevelClassifier() {
-        return logLevelClassifier;
+    public String getClassifierVerbosity() {
+        return classifierVerbosity;
     }
 
-    public void setLogLevelClassifier(final String logLevelClassifier) {
-        this.logLevelClassifier = logLevelClassifier;
+    public void setClassifierVerbosity(final String classifierVerbosity) {
+        this.classifierVerbosity = classifierVerbosity;
     }
 
     public Logger getLogger() {
@@ -782,13 +864,173 @@ public class ExperimentBatch {
         return this;
     }
 
-    public String getLogLevelExperiment() {
-        return logLevelExperiment;
+    public String getExperimentVerbosity() {
+        return experimentVerbosity;
     }
 
-    public ExperimentBatch setLogLevelExperiment(final String logLevelExperiment) {
-        this.logLevelExperiment = logLevelExperiment;
+    public ExperimentBatch setExperimentVerbosity(final String experimentVerbosity) {
+        this.experimentVerbosity = experimentVerbosity;
         return this;
+    }
+
+    public static String getClassifierNameShortFlag() {
+        return CLASSIFIER_NAME_SHORT_FLAG;
+    }
+
+    public static String getClassifierNameLongFlag() {
+        return CLASSIFIER_NAME_LONG_FLAG;
+    }
+
+    public static String getDatasetDirShortFlag() {
+        return DATASET_DIR_SHORT_FLAG;
+    }
+
+    public static String getDatasetDirLongFlag() {
+        return DATASET_DIR_LONG_FLAG;
+    }
+
+    public static String getDatasetNameShortFlag() {
+        return DATASET_NAME_SHORT_FLAG;
+    }
+
+    public static String getDatasetNameLongFlag() {
+        return DATASET_NAME_LONG_FLAG;
+    }
+
+    public static String getSeedShortFlag() {
+        return SEED_SHORT_FLAG;
+    }
+
+    public static String getSeedLongFlag() {
+        return SEED_LONG_FLAG;
+    }
+
+    public static String getResultsDirShortFlag() {
+        return RESULTS_DIR_SHORT_FLAG;
+    }
+
+    public static String getResultsDirLongFlag() {
+        return RESULTS_DIR_LONG_FLAG;
+    }
+
+    public static String getParametersShortFlag() {
+        return PARAMETERS_SHORT_FLAG;
+    }
+
+    public static String getParametersLongFlag() {
+        return PARAMETERS_LONG_FLAG;
+    }
+
+    public static String getAppendClassifierParametersShortFlag() {
+        return APPEND_CLASSIFIER_PARAMETERS_SHORT_FLAG;
+    }
+
+    public static String getAppendClassifierParametersLongFlag() {
+        return APPEND_CLASSIFIER_PARAMETERS_LONG_FLAG;
+    }
+
+    public static String getTrainTimeContractShortFlag() {
+        return TRAIN_TIME_CONTRACT_SHORT_FLAG;
+    }
+
+    public static String getLongTrainTimeContractFlag() {
+        return LONG_TRAIN_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getShortTrainMemoryContractFlag() {
+        return SHORT_TRAIN_MEMORY_CONTRACT_FLAG;
+    }
+
+    public static String getLongTrainMemoryContractFlag() {
+        return LONG_TRAIN_MEMORY_CONTRACT_FLAG;
+    }
+
+    public static String getShortTestTimeContractFlag() {
+        return SHORT_TEST_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getLongTestTimeContractFlag() {
+        return LONG_TEST_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getShortCheckpointFlag() {
+        return SHORT_CHECKPOINT_FLAG;
+    }
+
+    public static String getLongCheckpointFlag() {
+        return LONG_CHECKPOINT_FLAG;
+    }
+
+    public static String getShortThreadsFlag() {
+        return SHORT_THREADS_FLAG;
+    }
+
+    public static String getLongThreadsFlag() {
+        return LONG_THREADS_FLAG;
+    }
+
+    public static String getShortAppendTrainTimeContractFlag() {
+        return SHORT_APPEND_TRAIN_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getLongAppendTrainTimeContractFlag() {
+        return LONG_APPEND_TRAIN_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getShortAppendTrainMemoryContractFlag() {
+        return SHORT_APPEND_TRAIN_MEMORY_CONTRACT_FLAG;
+    }
+
+    public static String getLongAppendTrainMemoryContractFlag() {
+        return LONG_APPEND_TRAIN_MEMORY_CONTRACT_FLAG;
+    }
+
+    public static String getShortAppendTestTimeContractFlag() {
+        return SHORT_APPEND_TEST_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getLongAppendTestTimeContractFlag() {
+        return LONG_APPEND_TEST_TIME_CONTRACT_FLAG;
+    }
+
+    public static String getShortEstimateTrainErrorFlag() {
+        return SHORT_ESTIMATE_TRAIN_ERROR_FLAG;
+    }
+
+    public static String getLongEstimateTrainErrorFlag() {
+        return LONG_ESTIMATE_TRAIN_ERROR_FLAG;
+    }
+
+    public static String getShortClassifierVerbosityFlag() {
+        return SHORT_CLASSIFIER_VERBOSITY_FLAG;
+    }
+
+    public static String getLongClassifierVerbosityFlag() {
+        return LONG_CLASSIFIER_VERBOSITY_FLAG;
+    }
+
+    public static String getShortExperimentVerbosityFlag() {
+        return SHORT_EXPERIMENT_VERBOSITY_FLAG;
+    }
+
+    public static String getLongExperimentVerbosityFlag() {
+        return LONG_EXPERIMENT_VERBOSITY_FLAG;
+    }
+
+    public static String getShortOverwriteTrainFlag() {
+        return SHORT_OVERWRITE_TRAIN_FLAG;
+    }
+
+    public static String getLongOverwriteTrainFlag() {
+        return LONG_OVERWRITE_TRAIN_FLAG;
+    }
+
+    public static String getShortOverwriteTestFlag() {
+        return SHORT_OVERWRITE_TEST_FLAG;
+    }
+
+    public static String getLongOverwriteTestFlag() {
+        return LONG_OVERWRITE_TEST_FLAG;
     }
 
     public static class Runner {
