@@ -163,18 +163,18 @@ public class Experiments  {
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[9];
+                String[] settings=new String[6];
 //Location of data set
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
-                settings[1]="-rp=C:\\Temp\\";//Where to write results
-                settings[2]="-gtf=true"; //Whether to generate train files or not
-                settings[3]="-cn=TSF"; //Classifier name
+                settings[1]="-rp=Z:\\ReferenceResults\\";//Where to write results
+                settings[2]="-gtf=false"; //Whether to generate train files or not
+                settings[3]="-cn=TS-CHIEF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+""; //Problem file, added below
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
-                settings[6]="--force=true";
-                settings[7]="-ctrs=0";
-                settings[8]="-tb=true";
+//                settings[6]="--force=true";
+//                settings[7]="-ctrs=0";
+//                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);
