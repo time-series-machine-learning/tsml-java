@@ -36,7 +36,16 @@ public class AudioFeatures extends SimpleBatchFilter {
     public Instances process(Instances instances) throws Exception {
         Instances output = determineOutputFormat(instances);
         for (int i = 0; i < instances.size(); i++) {
-            output.add(new DenseInstance(1, audioTransform(instances.get(i).toDoubleArray(), instances.get(i).classValue())));
+            double[] data = new double[instances.numAttributes() - 1];
+            for (int j = 0; j < data.length; j++) {
+                data[j] = instances.get(i).value(j);
+            }
+            try{
+                output.add(new DenseInstance(1, audioTransform(data, instances.get(i).classValue())));
+            }catch(Exception e){
+                output.add(new DenseInstance(1, audioTransform(data, instances.get(i).classValue())));
+            }
+
         }
         return output;
     }
@@ -120,7 +129,7 @@ public class AudioFeatures extends SimpleBatchFilter {
     }
 
     private static double spectralFlatness(double[] spectralMag){
-        int numBands = 10;
+        int numBands = (10 > spectralMag.length ? spectralMag.length : 10);
         double numerator = 0.0;
         double denominator = 0.0;
         double spectralFlatness = 0.0;
@@ -196,8 +205,9 @@ public class AudioFeatures extends SimpleBatchFilter {
     public static void main(String[] args) {
         AudioFeatures af = new AudioFeatures();
         Instances[] data = new Instances[2];
-        data[0] = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TRAIN");
-        data[0].addAll(loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[3] + "/" + DatasetLists.tscProblems112[3] + "_TEST"));
+        data[0] = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[88] + "/" + DatasetLists.tscProblems112[88] + "_TRAIN");
+        data[0].addAll(loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[88] + "/" + DatasetLists.tscProblems112[88] + "_TEST"));
+        System.out.println(data[0].relationName());
         try {
             data[1] = af.process(data[0]);
         } catch (Exception e) {
